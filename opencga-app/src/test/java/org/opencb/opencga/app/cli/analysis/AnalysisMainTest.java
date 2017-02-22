@@ -24,14 +24,14 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.storage.OpenCGATestExternalResource;
+import org.opencb.opencga.storage.core.manager.OpenCGATestExternalResource;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,8 +79,9 @@ public class AnalysisMainTest {
         opencga.clearStorageDB(STORAGE_ENGINE, dbNameAlignments);
 
         User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
-        sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
-        projectId = catalogManager.createProject("p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
+        sessionId = catalogManager.login(userId, "user", "localhost").first().getId();
+        projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
+                null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
 
         Map<File.Bioformat, DataStore> datastores = new HashMap<>();
         datastores.put(File.Bioformat.VARIANT, new DataStore(STORAGE_ENGINE, dbNameVariants));
@@ -88,9 +89,10 @@ public class AnalysisMainTest {
 
         studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, "Study 1", null,
                 null, null, null, datastores, null,
-                Collections.singletonMap(VariantStorageManager.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.NONE),
+                Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.NONE),
                 null, sessionId).first().getId();
-        outdirId = catalogManager.createFolder(studyId, Paths.get("data", "index"), false, null, sessionId).first().getId();
+        outdirId = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data", "index").toString(), null,
+                false, null, QueryOptions.empty(), sessionId).first().getId();
     }
 
     @Test

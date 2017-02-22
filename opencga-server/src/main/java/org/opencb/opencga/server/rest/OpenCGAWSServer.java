@@ -35,18 +35,19 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.variant.io.json.GenericRecordAvroJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.GenotypeJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
+import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +63,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 
 @ApplicationPath("/")
 @Path("/{version}")
@@ -74,22 +74,22 @@ public class OpenCGAWSServer {
     @ApiParam(name = "version", value = "OpenCGA major version", allowableValues = "v1", defaultValue = "v1")
     protected String version;
 
-//    @DefaultValue("")
+    //    @DefaultValue("")
 //    @QueryParam("exclude")
 //    @ApiParam(name = "exclude", value = "Fields excluded in response. Whole JSON path.")
     protected String exclude;
 
-//    @DefaultValue("")
+    //    @DefaultValue("")
 //    @QueryParam("include")
 //    @ApiParam(name = "include", value = "Only fields included in response. Whole JSON path.")
     protected String include;
 
-//    @DefaultValue("-1")
+    //    @DefaultValue("-1")
 //    @QueryParam("limit")
 //    @ApiParam(name = "limit", value = "Maximum number of documents to be returned.")
     protected int limit;
 
-//    @DefaultValue("0")
+    //    @DefaultValue("0")
 //    @QueryParam("skip")
 //    @ApiParam(name = "skip", value = "Number of documents to be skipped when querying for data.")
     protected long skip;
@@ -125,11 +125,12 @@ public class OpenCGAWSServer {
 
     protected static AtomicBoolean initialized;
 
-    protected static CatalogConfiguration catalogConfiguration;
+    protected static Configuration configuration;
     protected static CatalogManager catalogManager;
 
     protected static StorageConfiguration storageConfiguration;
-    protected static StorageManagerFactory storageManagerFactory;
+    protected static StorageEngineFactory storageEngineFactory;
+    protected static VariantStorageManager variantManager;
 
     private static final int DEFAULT_LIMIT = 2000;
     private static final int MAX_LIMIT = 5000;
@@ -229,10 +230,10 @@ public class OpenCGAWSServer {
      */
     private void initOpenCGAObjects(java.nio.file.Path configDir) {
         try {
-            logger.info("|  * Catalog configuration file: '{}'", configDir.toFile().getAbsolutePath() + "/catalog-configuration.yml");
-            catalogConfiguration = CatalogConfiguration
-                    .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/catalog-configuration.yml")));
-            catalogManager = new CatalogManager(catalogConfiguration);
+            logger.info("|  * Catalog configuration file: '{}'", configDir.toFile().getAbsolutePath() + "/configuration.yml");
+            configuration = Configuration
+                    .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/configuration.yml")));
+            catalogManager = new CatalogManager(configuration);
             // TODO think about this
             if (!catalogManager.existsCatalogDB()) {
 //                logger.info("|  * Catalog database created: '{}'", catalogConfiguration.getDatabase().getDatabase());
@@ -243,7 +244,8 @@ public class OpenCGAWSServer {
             logger.info("|  * Storage configuration file: '{}'", configDir.toFile().getAbsolutePath() + "/storage-configuration.yml");
             storageConfiguration = StorageConfiguration
                     .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/storage-configuration.yml")));
-            storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
+            storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
+            variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (CatalogException e) {
@@ -329,7 +331,7 @@ public class OpenCGAWSServer {
             }
         }
 
-         // Check version parameter, must be: v1, v2, ... If 'latest' then is converted to appropriate version.
+        // Check version parameter, must be: v1, v2, ... If 'latest' then is converted to appropriate version.
         if (version.equalsIgnoreCase("latest")) {
             logger.info("Version 'latest' detected, setting 'version' parameter to 'v1'");
             version = "v1";
@@ -337,6 +339,9 @@ public class OpenCGAWSServer {
 
         MultivaluedMap<String, String> multivaluedMap = uriInfo.getQueryParameters();
         queryOptions.put("metadata", multivaluedMap.get("metadata") == null || multivaluedMap.get("metadata").get(0).equals("true"));
+
+        // By default, we will avoid counting the number of documents unless explicitly specified.
+        queryOptions.put(QueryOptions.SKIP_COUNT, true);
 
         // Add all the others QueryParams from the URL
         for (Map.Entry<String, List<String>> entry : multivaluedMap.entrySet()) {
@@ -350,6 +355,9 @@ public class OpenCGAWSServer {
                 case QueryOptions.LIMIT:
                     limit = Integer.parseInt(value);
                     break;
+                case QueryOptions.TIMEOUT:
+                    queryOptions.put(entry.getKey(), Integer.parseInt(value));
+                    break;
                 case QueryOptions.SKIP:
                     int skip = Integer.parseInt(value);
                     queryOptions.put(entry.getKey(), (skip >= 0) ? skip : -1);
@@ -357,10 +365,16 @@ public class OpenCGAWSServer {
                 case QueryOptions.ORDER:
                     queryOptions.put(entry.getKey(), value);
                     break;
+                case QueryOptions.SKIP_COUNT:
+                    queryOptions.put(QueryOptions.SKIP_COUNT, Boolean.parseBoolean(value));
+                    break;
                 case "count":
+                    count = Boolean.parseBoolean(value);
+                    queryOptions.put(entry.getKey(), count);
+                    break;
                 case "lazy":
-                    boolean booleanValue = Boolean.parseBoolean(value);
-                    queryOptions.put(entry.getKey(), booleanValue);
+                    lazy = Boolean.parseBoolean(value);
+                    queryOptions.put(entry.getKey(), lazy);
                     break;
                 default:
                     // Query
@@ -397,6 +411,18 @@ public class OpenCGAWSServer {
     }
 
 
+    protected void addParamIfNotNull(Map<String, String> params, String key, String value) {
+        if (key != null && value != null) {
+            params.put(key, value);
+        }
+    }
+
+    protected void addParamIfTrue(Map<String, String> params, String key, boolean value) {
+        if (key != null && value) {
+            params.put(key, Boolean.toString(value));
+        }
+    }
+
     @Deprecated
     @GET
     @Path("/help")
@@ -410,13 +436,17 @@ public class OpenCGAWSServer {
         logger.error("Catch error: " + e.getMessage(), e);
 
         // Now we prepare the response to client
-        QueryResponse queryResponse = new QueryResponse();
+        QueryResponse<ObjectMap> queryResponse = new QueryResponse<>();
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
         queryResponse.setApiVersion(version);
         queryResponse.setQueryOptions(queryOptions);
-        queryResponse.setError(e.getMessage());
+        if (StringUtils.isEmpty(e.getMessage())) {
+            queryResponse.setError(e.toString());
+        } else {
+            queryResponse.setError(e.getMessage());
+        }
 
-        QueryResult<ObjectMap> result = new QueryResult();
+        QueryResult<ObjectMap> result = new QueryResult<>();
         result.setWarningMsg("Future errors will ONLY be shown in the QueryResponse body");
         result.setErrorMsg("DEPRECATED: " + e.toString());
         queryResponse.setResponse(Arrays.asList(result));
@@ -441,6 +471,9 @@ public class OpenCGAWSServer {
         return buildResponse(Response.ok("{\"error\":\"Error parsing json error\"}", MediaType.APPLICATION_JSON_TYPE));
     }
 
+    // TODO: Change signature
+    //    protected <T> Response createOkResponse(QueryResult<T> result)
+    //    protected <T> Response createOkResponse(List<QueryResult<T>> results)
     protected Response createOkResponse(Object obj) {
         QueryResponse queryResponse = new QueryResponse();
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
@@ -453,7 +486,11 @@ public class OpenCGAWSServer {
             list = (List) obj;
         } else {
             list = new ArrayList();
-            list.add(obj);
+            if (!(obj instanceof QueryResult)) {
+                list.add(new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(obj)));
+            } else {
+                list.add(obj);
+            }
         }
         queryResponse.setResponse(list);
 

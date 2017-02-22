@@ -17,6 +17,7 @@
 package org.opencb.opencga.client.config;
 
 import org.junit.Test;
+import org.opencb.opencga.catalog.models.Project;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -37,6 +38,8 @@ public class ClientConfigurationTest {
 
         clientConfiguration.setRest(restConfig);
         clientConfiguration.setGrpc(grpcConfig);
+
+        clientConfiguration.setOrganism(new Project.Organism("Homo sapiens", "human", 9606, "GRCh38"));
 
         try {
             clientConfiguration.serialize(new FileOutputStream("/tmp/client-configuration-test.yml"));

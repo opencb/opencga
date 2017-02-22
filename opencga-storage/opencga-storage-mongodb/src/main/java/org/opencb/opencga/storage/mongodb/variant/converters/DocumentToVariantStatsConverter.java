@@ -25,7 +25,7 @@ import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +33,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia &lt;cyenyxe@ebi.ac.uk&gt;
@@ -44,6 +46,12 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
             .append(StudyConfigurationManager.CACHED, true).append(StudyConfigurationManager.READ_ONLY, true);
 
     public DocumentToVariantStatsConverter() {
+    }
+
+    public DocumentToVariantStatsConverter(List<StudyConfiguration> studyConfigurations) {
+        this.studyConfigurations = studyConfigurations
+                .stream()
+                .collect(Collectors.toMap(StudyConfiguration::getStudyId, Function.identity()));
     }
 
     public DocumentToVariantStatsConverter(StudyConfigurationManager studyConfigurationManager) {
@@ -65,6 +73,7 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
     protected static Logger logger = LoggerFactory.getLogger(DocumentToVariantStatsConverter.class);
 
     private StudyConfigurationManager studyConfigurationManager = null;
+    private Map<Integer, StudyConfiguration> studyConfigurations;
     private Map<Integer, String> studyIds = new HashMap<>();
     private Map<Integer, Map<Integer, String>> studyCohortNames = new HashMap<>();
 
@@ -216,7 +225,7 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
     /**
      * converts just some cohorts stats in one VariantSourceEntry.
      *
-     * @param cohortStats for instance, you can pass in sourceEntry.getStats()
+     * @param cohortStats for instance, you can pass in sourceEntry.stats()
      * @param studyId     of the source entry
      * @return list of VariantStats (as Documents)
      */
@@ -272,7 +281,11 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
     }
 
     private StudyConfiguration getStudyConfiguration(int studyId) {
-        return studyConfigurationManager.getStudyConfiguration(studyId, STUDY_CONFIGURATION_MANAGER_QUERY_OPTIONS).first();
+        if (studyConfigurations != null && studyConfigurations.containsKey(studyId)) {
+            return studyConfigurations.get(studyId);
+        } else {
+            return studyConfigurationManager.getStudyConfiguration(studyId, STUDY_CONFIGURATION_MANAGER_QUERY_OPTIONS).first();
+        }
     }
 
 

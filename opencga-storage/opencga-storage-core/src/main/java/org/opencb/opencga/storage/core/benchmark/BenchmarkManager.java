@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.storage.core.benchmark;
 
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 import java.util.HashSet;
@@ -33,7 +33,7 @@ public class BenchmarkManager {
         this.storageConfiguration = storageConfiguration;
     }
 
-    public BenchmarkStats variantBenchmark() throws ClassNotFoundException, StorageManagerException, InstantiationException,
+    public BenchmarkStats variantBenchmark() throws ClassNotFoundException, StorageEngineException, InstantiationException,
             IllegalAccessException, ExecutionException, InterruptedException {
 
         BenchmarkRunner benchmarkRunner = new VariantBenchmarkRunner(storageConfiguration);

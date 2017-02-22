@@ -57,7 +57,7 @@ public class File extends AbstractAcl<FileAclEntry> {
     private FileStatus status;
     private boolean external;
 
-    private long diskUsage;
+    private long size;
     private Experiment experiment;
     private List<Long> sampleIds;
 
@@ -80,14 +80,14 @@ public class File extends AbstractAcl<FileAclEntry> {
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status,
-                long diskUsage) {
+                long size) {
         this(-1, name, type, format, bioformat, null, path, TimeUtils.getTime(), TimeUtils.getTime(), description, status, false,
-                diskUsage, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), Collections.emptyList(),
+                size, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), Collections.emptyList(),
                 new FileIndex(), Collections.emptyMap(), Collections.emptyMap());
     }
 
     public File(long id, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String creationDate,
-                String modificationDate, String description, FileStatus status, boolean external, long diskUsage, Experiment experiment,
+                String modificationDate, String description, FileStatus status, boolean external, long size, Experiment experiment,
                 List<Long> sampleIds, Job job, List<RelatedFile> relatedFiles, List<FileAclEntry> acl, FileIndex index,
                 Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
@@ -102,7 +102,7 @@ public class File extends AbstractAcl<FileAclEntry> {
         this.description = description;
         this.status = status;
         this.external = external;
-        this.diskUsage = diskUsage;
+        this.size = size;
         this.experiment = experiment;
         this.sampleIds = sampleIds;
         this.job = job;
@@ -224,7 +224,8 @@ public class File extends AbstractAcl<FileAclEntry> {
         ALIGNMENT,
         SEQUENCE,
         PEDIGREE,
-        NONE
+        NONE,
+        UNKNOWN
     }
 
     public static class RelatedFile {
@@ -289,7 +290,7 @@ public class File extends AbstractAcl<FileAclEntry> {
         sb.append(", description='").append(description).append('\'');
         sb.append(", status=").append(status);
         sb.append(", external=").append(external);
-        sb.append(", diskUsage=").append(diskUsage);
+        sb.append(", size=").append(size);
         sb.append(", experiment=").append(experiment);
         sb.append(", sampleIds=").append(sampleIds);
         sb.append(", job=").append(job);
@@ -409,12 +410,12 @@ public class File extends AbstractAcl<FileAclEntry> {
         return this;
     }
 
-    public long getDiskUsage() {
-        return diskUsage;
+    public long getSize() {
+        return size;
     }
 
-    public File setDiskUsage(long diskUsage) {
-        this.diskUsage = diskUsage;
+    public File setSize(long size) {
+        this.size = size;
         return this;
     }
 

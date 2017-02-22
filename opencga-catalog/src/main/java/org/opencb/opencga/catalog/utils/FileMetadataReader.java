@@ -207,10 +207,10 @@ public class FileMetadataReader {
         if (!modifyParams.isEmpty()) {
 //            start = System.currentTimeMillis();
 
-            if (modifyParams.get(FileDBAdaptor.QueryParams.DISK_USAGE.key()) != null) {
+            if (modifyParams.get(FileDBAdaptor.QueryParams.SIZE.key()) != null) {
                 catalogManager.getFileManager()
-                        .setDiskUsage(file.getId(), modifyParams.getLong(FileDBAdaptor.QueryParams.DISK_USAGE.key()), sessionId);
-                modifyParams.remove(FileDBAdaptor.QueryParams.DISK_USAGE.key());
+                        .setDiskUsage(file.getId(), modifyParams.getLong(FileDBAdaptor.QueryParams.SIZE.key()), sessionId);
+                modifyParams.remove(FileDBAdaptor.QueryParams.SIZE.key());
             }
             if (modifyParams.get(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()) != null) {
                 catalogManager.getFileManager()
@@ -218,8 +218,15 @@ public class FileMetadataReader {
                                 sessionId);
                 modifyParams.remove(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key());
             }
+            if (modifyParams.get(FileDBAdaptor.QueryParams.URI.key()) != null) {
+                catalogManager.getFileManager()
+                        .setUri(file.getId(), modifyParams.getString(FileDBAdaptor.QueryParams.URI.key()), sessionId);
+                modifyParams.remove(FileDBAdaptor.QueryParams.URI.key());
+            }
 
-            catalogManager.getFileManager().update(file.getId(), modifyParams, new QueryOptions(), sessionId);
+            if (!modifyParams.isEmpty()) {
+                catalogManager.getFileManager().update(file.getId(), modifyParams, new QueryOptions(), sessionId);
+            }
 //            logger.trace("modifyFile = " + (System.currentTimeMillis() - start) / 1000.0);
 
             return catalogManager.getFile(file.getId(), options, sessionId).first();
@@ -344,7 +351,8 @@ public class FileMetadataReader {
                 for (Sample sample : sampleList) {
                     set.remove(sample.getName());
                 }
-                logger.warn("Missing samples: {}", set);
+                logger.warn("Some samples from file \"{}\" were not registered in Catalog. Registering new samples: {}",
+                        file.getName(), set);
                 if (createMissingSamples) {
                     for (String sampleName : set) {
                         if (simulate) {
@@ -380,7 +388,7 @@ public class FileMetadataReader {
         } else {
             //Get samples from file.sampleIds
             Query query = new Query("id", file.getSampleIds());
-            sampleList = catalogManager.getAllSamples(study.getId(), query, options, sessionId).getResult();
+            sampleList = catalogManager.getAllSamples(study.getId(), query, new QueryOptions(), sessionId).getResult();
         }
 
         List<Long> sampleIdsList = sampleList.stream().map(Sample::getId).collect(Collectors.toList());

@@ -16,10 +16,7 @@
 
 package org.opencb.opencga.storage.core.metadata;
 
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * Batch file operation information.
@@ -40,24 +37,34 @@ public class BatchFileOperation {
         ERROR
     }
 
+    public enum Type {
+        LOAD,
+        REMOVE,
+        OTHER
+    }
+
     private String operationName;
     private List<Integer> fileIds;
     private long timestamp;
     private final TreeMap<Date, Status> status = new TreeMap<>(Date::compareTo);
+    private Type type = Type.OTHER;
 
     public BatchFileOperation() {
     }
 
-    public BatchFileOperation(List<Integer> fileIds, long timestamp, TreeMap<Date, Status> status, String operationName) {
+    public BatchFileOperation(String operationName, List<Integer> fileIds, long timestamp, Type type) {
+        this.operationName = operationName;
         this.fileIds = fileIds;
         this.timestamp = timestamp;
-        this.operationName = operationName;
+        this.type = type;
     }
 
-    public BatchFileOperation(String operationName, List<Integer> fileIds, long timestamp) {
-        this.operationName = operationName;
-        this.fileIds = fileIds;
-        this.timestamp = timestamp;
+    public BatchFileOperation(BatchFileOperation batch) {
+        this.operationName = batch.operationName;
+        this.fileIds = new ArrayList<>(batch.fileIds);
+        this.timestamp = batch.timestamp;
+        this.status.putAll(batch.status);
+        this.type = batch.type;
     }
 
     public Status currentStatus() {
@@ -101,6 +108,15 @@ public class BatchFileOperation {
 
     public BatchFileOperation addStatus(Date date, Status status) {
         this.status.put(date, status);
+        return this;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public BatchFileOperation setType(Type type) {
+        this.type = type;
         return this;
     }
 

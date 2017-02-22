@@ -75,10 +75,12 @@ public class FileMetadataReaderTest {
         catalogManager = catalogManagerExternalResource.getCatalogManager();
 
         catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, null);
-        sessionIdUser = catalogManager.login("user", PASSWORD, "127.0.0.1").first().getString("sessionId");
-        project = catalogManager.createProject("Project about some genomes", "1000G", "", "ACME", null, sessionIdUser).first();
+        sessionIdUser = catalogManager.login("user", PASSWORD, "127.0.0.1").first().getId();
+        project = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
+                null, null, "GRCh38", new QueryOptions(), sessionIdUser).first();
         study = catalogManager.createStudy(project.getId(), "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first();
-        folder = catalogManager.createFolder(study.getId(), Paths.get("data/vcf/"), true, null, sessionIdUser).first();
+        folder = catalogManager.getFileManager().createFolder(Long.toString(study.getId()), Paths.get("data/vcf/").toString(), null, true,
+                null, QueryOptions.empty(), sessionIdUser).first();
 
         Path vcfPath = catalogManagerExternalResource.getOpencgaHome().resolve(VCF_FILE_NAME);
         Files.copy(this.getClass().getClassLoader().getResourceAsStream("biofiles/" + VCF_FILE_NAME), vcfPath, StandardCopyOption.REPLACE_EXISTING);
@@ -102,7 +104,7 @@ public class FileMetadataReaderTest {
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get("variantSource"));
         assertEquals(4, file.getSampleIds().size());
-        assertEquals(21499, file.getDiskUsage());
+        assertEquals(21499, file.getSize());
 
         new CatalogFileUtils(catalogManager).upload(vcfFileUri, file, null, sessionIdUser, false, false, true, true, Integer.MAX_VALUE);
         file = catalogManager.getFile(file.getId(), sessionIdUser).first();
@@ -112,7 +114,7 @@ public class FileMetadataReaderTest {
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get("variantSource"));
         assertEquals(4, file.getSampleIds().size());
-        assertEquals(21499, file.getDiskUsage());
+        assertEquals(21499, file.getSize());
     }
 
     @Test
@@ -121,7 +123,7 @@ public class FileMetadataReaderTest {
         File file = catalogManager.createFile(study.getId(), File.Format.PLAIN,
                 File.Bioformat.NONE, folder.getPath() + "test.txt", bytes, "", false, sessionIdUser).first();
 
-        assertEquals(bytes.length, file.getDiskUsage());
+        assertEquals(bytes.length, file.getSize());
 
         String creationDate = file.getCreationDate();
         String modificationDate = file.getModificationDate();
@@ -140,7 +142,7 @@ public class FileMetadataReaderTest {
         file = FileMetadataReader.get(catalogManager).
                 setMetadataInformation(file, null, null, sessionIdUser, false);
 
-        assertEquals(bytes.length + bytes2.length, file.getDiskUsage());
+        assertEquals(bytes.length + bytes2.length, file.getSize());
         assertTrue(TimeUtils.toDate(modificationDate).getTime() < TimeUtils.toDate(file.getModificationDate()).getTime());
         assertEquals(creationDate, file.getCreationDate());
 
@@ -159,13 +161,13 @@ public class FileMetadataReaderTest {
         assertEquals(File.Bioformat.NONE, file.getBioformat());
         assertNull(file.getAttributes().get("variantSource"));
         assertEquals(0, file.getSampleIds().size());
-        assertEquals(0, file.getDiskUsage());
+        assertEquals(0, file.getSize());
 
         new CatalogFileUtils(catalogManager).
                 upload(vcfFileUri, file, null, sessionIdUser, false, false, true, true, Integer.MAX_VALUE);
 
         file = catalogManager.getFile(file.getId(), null, sessionIdUser).first();
-        assertTrue(file.getDiskUsage() > 0);
+        assertTrue(file.getSize() > 0);
 
         file = FileMetadataReader.get(catalogManager).
                 setMetadataInformation(file, null, null, sessionIdUser, false);
@@ -255,14 +257,14 @@ public class FileMetadataReaderTest {
         assertEquals(File.Bioformat.NONE, file.getBioformat());
         assertNull(file.getAttributes().get("variantSource"));
         assertEquals(0, file.getSampleIds().size());
-        assertEquals(0, file.getDiskUsage());
+        assertEquals(0, file.getSize());
 
         new CatalogFileUtils(catalogManager).
                 upload(bamFileUri, file, null, sessionIdUser, false, false, true, true, Integer.MAX_VALUE);
 
         file = catalogManager.getFile(file.getId(), null, sessionIdUser).first();
 
-        assertTrue(file.getDiskUsage() > 0);
+        assertTrue(file.getSize() > 0);
 
         file = FileMetadataReader.get(catalogManager).
                 setMetadataInformation(file, null, null, sessionIdUser, false);

@@ -71,7 +71,7 @@ public class AdminCliOptionsParser {
         usersSubCommands.addCommand("create", usersCommandOptions.createUserCommandOptions);
         usersSubCommands.addCommand("import", usersCommandOptions.importUserCommandOptions);
         usersSubCommands.addCommand("delete", usersCommandOptions.deleteUserCommandOptions);
-        usersSubCommands.addCommand("disk-quota", usersCommandOptions.diskQuotaUserCommandOptions);
+        usersSubCommands.addCommand("quota", usersCommandOptions.QuotaUserCommandOptions);
         usersSubCommands.addCommand("stats", usersCommandOptions.statsUserCommandOptions);
 
         auditCommandOptions = new AuditCommandOptions();
@@ -201,7 +201,7 @@ public class AdminCliOptionsParser {
         ImportUserCommandOptions importUserCommandOptions;
         DeleteUserCommandOptions deleteUserCommandOptions;
         StatsUserCommandOptions statsUserCommandOptions;
-        DiskQuotaUserCommandOptions diskQuotaUserCommandOptions;
+        QuotaUserCommandOptions QuotaUserCommandOptions;
 
         AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
@@ -210,7 +210,7 @@ public class AdminCliOptionsParser {
             this.importUserCommandOptions = new ImportUserCommandOptions();
             this.deleteUserCommandOptions = new DeleteUserCommandOptions();
             this.statsUserCommandOptions = new StatsUserCommandOptions();
-            this.diskQuotaUserCommandOptions = new DiskQuotaUserCommandOptions();
+            this.QuotaUserCommandOptions = new QuotaUserCommandOptions();
         }
     }
 
@@ -275,17 +275,17 @@ public class AdminCliOptionsParser {
      */
     class CatalogDatabaseCommandOptions {
 
-        @Parameter(names = {"-d", "--database"}, description = "Database name for the catalog metadata, eg. opencga_catalog. If not present is read from catalog-configuration.yml")
-        @Deprecated
-        public String database;
+        @Parameter(names = {"-d", "--database-prefix"}, description = "Prefix name of the catalog database. If not present this is read "
+                + "from configuration.yml.")
+        public String prefix;
 
-        @Parameter(names = {"--database-host"}, description = "Database host and port, eg. localhost:27017. If not present is read from catalog-configuration.yml")
+        @Parameter(names = {"--database-host"}, description = "Database host and port, eg. localhost:27017. If not present is read from configuration.yml")
         public String databaseHost;
 
-        @Parameter(names = {"--database-user"}, description = "Database user name. If not present is read from catalog-configuration.yml")
+        @Parameter(names = {"--database-user"}, description = "Database user name. If not present is read from configuration.yml")
         public String databaseUser;
 
-        @Parameter(names = {"--database-password"}, description = "Database password. If not present is read from catalog-configuration.yml", password = true, arity = 0)
+        @Parameter(names = {"--database-password"}, description = "Database password. If not present is read from configuration.yml", password = true, arity = 0)
         public String databasePassword;
     }
 
@@ -301,8 +301,9 @@ public class AdminCliOptionsParser {
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"--database-name"}, description = "Database name for the catalog metadata. If not present, it will be set to opencga_catalog_demo")
-        public String database;
+        @Parameter(names = {"--database-prefix"}, description = "Prefix name for the catalog demo database. If not present, it will be "
+                + "set to 'demo'.")
+        public String prefix;
 
         @Parameter(names = {"--force"}, description = "If this parameters is set, it will override the database installation.")
         public boolean force;
@@ -421,42 +422,32 @@ public class AdminCliOptionsParser {
      * USER SUB-COMMANDS
      */
 
-    @Parameters(commandNames = {"create"}, commandDescription = "Create a new user with a default project in Catalog database and the workspace")
+    @Parameters(commandNames = {"create"}, commandDescription = "Create a new user")
     public class CreateUserCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"-u", "--user-id"}, description = "User id", required = true, arity = 1)
+        @Parameter(names = {"-u", "--id"}, description = "User id", required = true, arity = 1)
         public String userId;
 
-        @Parameter(names = {"--user-name"}, description = "User name", required = true, arity = 1)
+        @Parameter(names = {"--name"}, description = "User name", required = true, arity = 1)
         public String userName;
 
-//        @Parameter(names = {"--user-password"}, description = "User password", required = true, password = true, arity = 0)
         @Parameter(names = {"--user-password"}, description = "User password", required = true, arity = 1)
         public String userPassword;
 
-        @Parameter(names = {"--user-email"}, description = "User email", required = true, arity = 1)
+        @Parameter(names = {"--type"}, description = "User account type of the user (guest or full).", arity = 1)
+        public String type = Account.FULL;
+
+        @Parameter(names = {"--email"}, description = "User email", required = true, arity = 1)
         public String userEmail;
 
-        @Parameter(names = {"--user-organization"}, description = "User organization", required = false, arity = 1)
+        @Parameter(names = {"--organization"}, description = "User organization", required = false, arity = 1)
         public String userOrganization;
 
-        @Parameter(names = {"--user-DiskQuota"}, description = "User disk quota", required = false, arity = 1)
-        public Long userDiskQuota;
-
-        @Parameter(names = {"--project-name"}, description = "Project name. Default: Default", required = false, arity = 1)
-        public String projectName;
-
-        @Parameter(names = {"--project-alias"}, description = "Project alias: Default: default", required = false, arity = 1)
-        public String projectAlias;
-
-        @Parameter(names = {"--project-description"}, description = "Project description.", required = false, arity = 1)
-        public String projectDescription;
-
-        @Parameter(names = {"--project-organization"}, description = "Project organization", required = false, arity = 1)
-        public String projectOrganization;
+        @Parameter(names = {"--quota"}, description = "User disk quota", required = false, arity = 1)
+        public Long userQuota;
 
     }
 
@@ -501,8 +492,8 @@ public class AdminCliOptionsParser {
     }
 
 
-    @Parameters(commandNames = {"disk-quota"}, commandDescription = "Set a new disk quota for an user")
-    public class DiskQuotaUserCommandOptions extends CatalogDatabaseCommandOptions {
+    @Parameters(commandNames = {"quota"}, commandDescription = "Set a new disk quota for an user")
+    public class QuotaUserCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
@@ -512,7 +503,7 @@ public class AdminCliOptionsParser {
         public String userId;
 
         @Parameter(names = {"--quota"}, description = "Disk quota in GB", required = true, arity = 1)
-        public long diskQuota;
+        public long quota;
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "Print summary stats for an user")
@@ -602,7 +593,7 @@ public class AdminCliOptionsParser {
         String parsedCommand = getCommand();
         if (parsedCommand.isEmpty()) {
             System.err.println("");
-            System.err.println("Program:     OpenCGA Catalog (OpenCB)");
+            System.err.println("Program:     OpenCGA Admin (OpenCB)");
             System.err.println("Version:     " + GitRepositoryState.get().getBuildVersion());
             System.err.println("Git commit:  " + GitRepositoryState.get().getCommitId());
             System.err.println("Description: Big Data platform for processing and analysing NGS data");

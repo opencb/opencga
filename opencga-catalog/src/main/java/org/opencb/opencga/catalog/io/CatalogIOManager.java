@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.io;
 
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +57,7 @@ public abstract class CatalogIOManager {
     protected URI tmp;
     @Deprecated
     protected Properties properties;
-    protected CatalogConfiguration catalogConfiguration;
+    protected Configuration configuration;
 
     private CatalogIOManager() {
         logger = LoggerFactory.getLogger(this.getClass());
@@ -65,10 +65,10 @@ public abstract class CatalogIOManager {
 
     public CatalogIOManager(String catalogConfigurationFile) throws CatalogIOException {
         this();
-        this.catalogConfiguration = new CatalogConfiguration();
+        this.configuration = new Configuration();
         //this.properties = new Properties();
         try {
-            this.catalogConfiguration.load(new FileInputStream(catalogConfigurationFile));
+            this.configuration.load(new FileInputStream(catalogConfigurationFile));
             //this.properties.load(new FileInputStream(propertiesFile));
         } catch (IOException e) {
             throw new CatalogIOException("Error loading Catalog Configuration file", e);
@@ -83,13 +83,13 @@ public abstract class CatalogIOManager {
         setup();
     }
 
-    public CatalogIOManager(CatalogConfiguration catalogConfiguration) throws CatalogIOException {
+    public CatalogIOManager(Configuration configuration) throws CatalogIOException {
         this();
-        this.catalogConfiguration = catalogConfiguration;
+        this.configuration = configuration;
         setup();
     }
 
-    protected abstract void setConfiguration(CatalogConfiguration catalogConfiguration) throws CatalogIOException;
+    protected abstract void setConfiguration(Configuration configuration) throws CatalogIOException;
 
     /**
      * This method creates the folders and workspace structure for storing the OpenCGA data. I
@@ -97,7 +97,7 @@ public abstract class CatalogIOManager {
      * @throws CatalogIOException CatalogIOException
      */
     public void setup() throws CatalogIOException {
-        setConfiguration(catalogConfiguration);
+        setConfiguration(configuration);
         if (!exists(rootDir)) {
             logger.info("Initializing CatalogIOManager. Creating main folder '" + rootDir + "'");
             createDirectory(rootDir, true);
@@ -314,7 +314,7 @@ public abstract class CatalogIOManager {
                 //createDirectory(projectUri.resolve(SHARED_DATA_FOLDER));
             }
         } catch (CatalogIOException e) {
-            throw new CatalogIOException("createProject(): could not create the project folder: " + e.toString());
+            throw new CatalogIOException("createProject(): could not create the project folder", e);
         }
 
         return projectUri;
@@ -399,7 +399,6 @@ public abstract class CatalogIOManager {
             try {
                 jobUri = createDirectory(jobUri, true);
             } catch (CatalogIOException e) {
-                e.printStackTrace();
                 throw new CatalogIOException("createStudy method: could not create the study folder: " + e.toString(), e);
             }
         } else {
@@ -433,7 +432,7 @@ public abstract class CatalogIOManager {
                 }
             }
         } catch (CatalogIOException e) {
-            throw new CatalogIOException("createFolder(): could not create the directory " + e.toString());
+            throw new CatalogIOException("createFolder(): could not create the directory", e);
         }
 
         return folderUri;

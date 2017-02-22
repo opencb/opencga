@@ -1,0 +1,157 @@
+!define TEST_SYSTEM {slim}
+!define user {test}
+!define baseURL {http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/}
+
+
+!3 Create Project A 
+!|Table: Rest Fixture | ${baseURL} |
+| setBody |{  "name": "$projectA",  "alias": "$projectAAlias","organism.scientificName": "Homo sapiens", "organism.assembly": "GRCh37"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/projects/create?sid=$sessionId |200|  Content-Type: application/json ||
+|let|projectAId|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Project B 
+!|Table: Rest Fixture | ${baseURL} |
+| setBody |{  "name": "$projectB",  "alias": "$projectBAlias","organism.scientificName": "Homo sapiens", "organism.assembly": "GRCh37"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/projects/create?sid=$sessionId |200|  Content-Type: application/json ||
+|let|projectBId|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Study A 
+!|Table: Rest Fixture | ${baseURL} |
+| setBody |{  "name": "$studyA", "alias": "$studyAAlias", "type": "CASE_CONTROL"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/create?sid=$sessionId&projectId=$projectAId |200|  Content-Type: application/json ||
+|let|studyAId|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Study B 
+!|Table: Rest Fixture | ${baseURL} |
+| setBody |{  "name": "$studyB",  "alias": "$studyBAlias", "type": "CASE_CONTROL"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/create?sid=$sessionId&projectId=$projectAId |200|  Content-Type: application/json ||
+|let|studyBId|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create ACL For fUser
+!|Table: Rest Fixture | ${baseURL} |
+| setBody | {  "templateId" : "admin",  "members": "$fUser"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/$studyAId/acl/create?sid=$sessionId|200|  Content-Type: application/json ||
+
+!3 Get Study with fUser 
+!|Table: Rest Fixture | ${baseURL} |
+| GET | /v1/studies/$studyAId/info?sid=$fUserSessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == '$studyAId'| 
+
+!3 (Negative) Get Study with eUser 
+!|Table: Rest Fixture | ${baseURL} |
+| GET | /v1/studies/$studyAId/info?sid=$eUserSessionId |500|  Content-Type: application/json |jsonbody.error != ''|
+
+!3 Create Individual A1
+!|Table: Rest Fixture | ${baseURL} |
+| setBody | {"name" : "$iA1" }|
+| setHeader|Content-Type:application/json|
+| POST | /v1/individuals/create?sid=$fUserSessionId&study=$studyAId |200|  Content-Type: application/json ||
+|let|iA1Id|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Individual A2
+!|Table: Rest Fixture | ${baseURL} |
+| setBody | {"name" : "$iA2" }|
+| setHeader|Content-Type:application/json|
+| POST | /v1/individuals/create?sid=$fUserSessionId&study=$studyAId |200|  Content-Type: application/json ||
+|let|iA2Id|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Individual A3
+!|Table: Rest Fixture | ${baseURL} |
+| setBody | {"name" : "$iA3" }|
+| setHeader|Content-Type:application/json|
+| POST | /v1/individuals/create?sid=$eUserSessionId&study=$studyAId |500|  Content-Type: application/json ||
+
+!3 Create Individual B1
+!|Table: Rest Fixture | ${baseURL} |
+| setBody | {"name" : "$iA1" }|
+| setHeader|Content-Type:application/json|
+| POST | /v1/individuals/create?sid=$sessionId&study=$studyBId |200|  Content-Type: application/json ||
+|let|iB1Id|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Sample A1
+!|Table: Rest Fixture | ${baseURL} |
+| setBody | {"name" : "$sA1" }|
+| setHeader|Content-Type:application/json|
+| POST | /v1/samples/create?sid=$sessionId&study=$studyAId |200|  Content-Type: application/json ||
+|let|sA1Id|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Sample A2
+!|Table: Rest Fixture | ${baseURL} |
+| setBody | {"name" : "$sA2" }|
+| setHeader|Content-Type:application/json|
+| POST | /v1/samples/create?sid=$sessionId&study=$studyAId |200|  Content-Type: application/json ||
+|let|sB2Id|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Sample A3
+!|Table: Rest Fixture | ${baseURL} |
+| setBody | {"name" : "$sA3" }|
+| setHeader|Content-Type:application/json|
+| POST | /v1/samples/create?sid=$sessionId&study=$studyAId |200|  Content-Type: application/json ||
+|let|sB3Id|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Sample B1
+!|Table: Rest Fixture | ${baseURL} |
+| setBody | {"name" : "$sB1" }|
+| setHeader|Content-Type:application/json|
+| POST | /v1/samples/create?sid=$sessionId&study=$studyBId |200|  Content-Type: application/json ||
+|let|sB1Id|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Cohort A1
+!|Table: Rest Fixture | ${baseURL} |
+| setBody |{ "name": "$cA1"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/cohorts/create?sid=$sessionId&study=$studyAId |200|  Content-Type: application/json ||
+|let|cA1Id|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Cohort A2
+!|Table: Rest Fixture | ${baseURL} |
+| setBody |{ "name": "$cA2"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/cohorts/create?sid=$sessionId&study=$studyAId |200|  Content-Type: application/json ||
+|let|cA2Id|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Cohort A3
+!|Table: Rest Fixture | ${baseURL} |
+| setBody |{ "name": "$cA3"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/cohorts/create?sid=$sessionId&study=$studyAId |200|  Content-Type: application/json ||
+|let|cA3Id|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Cohort B1
+!|Table: Rest Fixture | ${baseURL} |
+| setBody |{ "name": "$cB1"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/cohorts/create?sid=$sessionId&study=$studyBId |200|  Content-Type: application/json ||
+|let|cB1Id|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Variable Set A1 
+!|Table: Rest Fixture  | ${baseURL} |
+| setBody |  {  "unique": false,  "name": "$vsA1",  "description": "string",  "variables": [{"name": "variable1","category": "string","type": "BOOLEAN","defaultValue": {},"required": false,"multiValue":false}]}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/variableset/create?sid=$sessionId&study=$studyAId |200| Content-Type : application/json||
+|let|vsAId1|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Variable Set A2 
+!|Table: Rest Fixture  | ${baseURL} |
+| setBody |  {  "unique": false,  "name": "$vsA2",  "description": "string",  "variables": [{"name": "variable1","category": "string","type": "BOOLEAN","defaultValue": {},"required": false,"multiValue":false}]}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/variableset/create?sid=$sessionId&study=$studyAId |200| Content-Type : application/json||
+|let|vsAId2|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Variable Set A3 
+!|Table: Rest Fixture  | ${baseURL} |
+| setBody |  {  "unique": false,  "name": "$vsA3",  "description": "string",  "variables": [{"name": "variable1","category": "string","type": "BOOLEAN","defaultValue": {},"required": false,"multiValue":false}]}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/variableset/create?sid=$sessionId&study=$studyAId |200| Content-Type : application/json||
+|let|vsAId3|js|response.jsonbody.response[0].result[0].id||
+
+!3 Create Variable Set B1 
+!|Table: Rest Fixture  | ${baseURL} |
+| setBody |  {  "unique": false,  "name": "$vsA3",  "description": "string",  "variables": [{"name": "variable1","category": "string","type": "BOOLEAN","defaultValue": {},"required": false,"multiValue":false}]}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/variableset/create?sid=$sessionId&study=$studyBId |200| Content-Type : application/json||
+|let|vsBId1|js|response.jsonbody.response[0].result[0].id||

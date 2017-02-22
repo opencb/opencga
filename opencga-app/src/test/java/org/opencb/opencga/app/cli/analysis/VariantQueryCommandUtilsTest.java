@@ -18,6 +18,8 @@ package org.opencb.opencga.app.cli.analysis;
 
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.app.cli.analysis.executors.VariantQueryCommandUtils;
+import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.util.Collections;
@@ -36,10 +38,10 @@ public class VariantQueryCommandUtilsTest {
     public void parseQueryTest() throws Exception {
 
         AnalysisCliOptionsParser cliOptionsParser = new AnalysisCliOptionsParser();
-        AnalysisCliOptionsParser.QueryVariantCommandOptions queryVariantsOptions = cliOptionsParser.getVariantCommandOptions().queryVariantCommandOptions;
+        VariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions = cliOptionsParser.getVariantCommandOptions().queryVariantCommandOptions;
 
-        queryVariantsOptions.hpo = "HP:0002812";
-        queryVariantsOptions.returnStudy = "1";
+        queryVariantsOptions.genericVariantQueryOptions.hpo = "HP:0002812";
+        queryVariantsOptions.genericVariantQueryOptions.returnStudy = "1";
         Map<Long, String> studyIds = Collections.singletonMap(1L, "study");
 
         Query query = VariantQueryCommandUtils.parseQuery(queryVariantsOptions, studyIds);

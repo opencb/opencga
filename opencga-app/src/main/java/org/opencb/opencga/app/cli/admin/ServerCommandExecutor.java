@@ -17,8 +17,8 @@
 package org.opencb.opencga.app.cli.admin;
 
 
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.server.RestServer;
+import org.opencb.opencga.server.grpc.GrpcServer;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -83,8 +83,9 @@ public class ServerCommandExecutor extends AdminCommandExecutor {
 //                port = restCommandOptions.restStopCommandOptions.port;
 //            }
 
+//            GeneralConfiguration openCGAGeneralConfiguration = getOpenCGAConfiguration();catalogConfiguration
             Client client = ClientBuilder.newClient();
-            WebTarget target = client.target("http://localhost:" + 9090)
+            WebTarget target = client.target("http://localhost:" + configuration.getServer().getRest().getPort())
                     .path("opencga")
                     .path("webservices")
                     .path("rest")
@@ -95,8 +96,33 @@ public class ServerCommandExecutor extends AdminCommandExecutor {
         }
     }
 
-    private void grpc() throws CatalogException {
+    private void grpc() throws Exception {
+        if (serverCommandOptions.grpcServerCommandOptions.start) {
 
+            // Server crated and started
+//            FileInputStream fileInputStream = new FileInputStream(Paths.get(this.conf).resolve("storage-configuration.yml").toFile());
+//            StorageConfiguration load = StorageConfiguration.load(fileInputStream);
+            GrpcServer server = new GrpcServer(Paths.get(this.conf));
+            server.start();
+            server.blockUntilShutdown();
+            logger.info("Shutting down OpenCGA Storage GRPC server");
+        }
+
+        if (serverCommandOptions.grpcServerCommandOptions.stop) {
+//            if (serverCommandOptions.restStopCommandOptions.port > 0) {
+//                port = restCommandOptions.restStopCommandOptions.port;
+//            }
+//            GeneralConfiguration openCGAGeneralConfiguration = getOpenCGAConfiguration();
+            Client client = ClientBuilder.newClient();
+            WebTarget target = client.target("http://localhost" + configuration.getServer().getGrpc().getPort())
+                    .path("opencga")
+                    .path("webservices")
+                    .path("rest")
+                    .path("admin")
+                    .path("stop");
+            Response response = target.request().get();
+            logger.info(response.toString());
+        }
     }
 
 }

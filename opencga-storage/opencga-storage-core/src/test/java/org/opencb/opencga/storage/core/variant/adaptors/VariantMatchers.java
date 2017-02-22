@@ -26,7 +26,9 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.QueryResult;
 
 import java.util.*;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -130,7 +132,7 @@ public class VariantMatchers {
 
             @Override
             public void describeTo(Description description) {
-                description.appendText("overlaps with " + region + (inclusive? "inclusively" : "non inclusively"));
+                description.appendText("overlaps with region " + region + (inclusive? " inclusively" : " non inclusively"));
             }
         };
     }
@@ -142,6 +144,15 @@ public class VariantMatchers {
                 return actual.getAnnotation();
             }
         };
+    }
+
+    public static Matcher<VariantAnnotation> at(final String variant) {
+        Variant v = new Variant(variant);
+        return allOf(with("chromosome", VariantAnnotation::getChromosome, is(v.getChromosome())),
+                with("position", VariantAnnotation::getStart, is(v.getStart())),
+                with("reference", VariantAnnotation::getReference, is(v.getReference())),
+                with("alternate", VariantAnnotation::getAlternate, is(v.getAlternate()))
+        );
     }
 
     public static Matcher<VariantAnnotation> hasGenes(Matcher<? super Collection<String>> subMatcher) {
@@ -242,7 +253,7 @@ public class VariantMatchers {
     }
 
     public static Matcher<VariantAnnotation> hasProteinSubstitutionScoreDesc(String source, Matcher<? super Iterable<String>> subMatcher) {
-        return hasProteinSubstitutionScore(source, subMatcher, Score::getSource);
+        return hasProteinSubstitutionScore(source, subMatcher, Score::getDescription);
     }
 
     private static <T> Matcher<VariantAnnotation> hasProteinSubstitutionScore(String source, Matcher<? super Iterable<T>> subMatcher, Function<Score, T> mapper) {
@@ -277,11 +288,26 @@ public class VariantMatchers {
         };
     }
 
+    public static Matcher<Variant> withStudy(final String study) {
+        return withStudy(study, notNullValue());
+    }
+
     public static Matcher<Variant> withStudy(final String study, Matcher<? super StudyEntry> subMatcher) {
         return new FeatureMatcher<Variant, StudyEntry>(subMatcher, "with study " + study, "Study") {
             @Override
             protected StudyEntry featureValueOf(Variant actual) {
                 return actual.getStudy(study);
+            }
+        };
+    }
+
+    public static Matcher<StudyEntry> withFileId(Matcher<? super Iterable<? super String>> subMatcher) {
+        return new FeatureMatcher<StudyEntry, List<String>>(subMatcher, "with fileIds ", "FileIds") {
+            @Override
+            protected List<String> featureValueOf(StudyEntry actual) {
+                return actual.getFiles()
+                        .stream()
+                        .map(FileEntry::getFileId).collect(Collectors.toList());
             }
         };
     }
@@ -309,6 +335,51 @@ public class VariantMatchers {
             @Override
             protected Float featureValueOf(VariantStats actual) {
                 return actual.getMgf();
+            }
+        };
+    }
+
+    public static <T, R> Matcher<T> with(String name, Function<T, R> f, Matcher<? super R> subMatcher) {
+        return new FeatureMatcher<T, R>(subMatcher, "with " + name, name) {
+            @Override
+            protected R featureValueOf(T actual) {
+                return f.apply(actual);
+            }
+        };
+    }
+
+    public static <T, R> Matcher<T> withAny(String name, Function<T, Iterable<? super R>> f, Matcher<? super R> subMatcher) {
+        Matcher<Iterable<? super R>> iterableMatcher = hasItem(subMatcher);
+        return new FeatureMatcher<T, Iterable<? super R>>(iterableMatcher, "with " + name, name) {
+            @Override
+            protected Iterable<? super R> featureValueOf(T actual) {
+                return f.apply(actual);
+            }
+        };
+    }
+
+    public static <T> Matcher<T> matcher(Predicate<T> predicate, final String describe) {
+        return matcher((t, description) -> {
+            if (predicate.test(t)) {
+                return true;
+            } else {
+                description.appendText("is " + t);
+                return false;
+            }
+        }, describe);
+    }
+
+    public static <T> Matcher<T> matcher(BiPredicate<T, Description> predicate, final String describe) {
+        Objects.requireNonNull(predicate);
+        return new TypeSafeDiagnosingMatcher<T>() {
+            @Override
+            protected boolean matchesSafely(T item, Description mismatchDescription) {
+                return predicate.test(item, mismatchDescription);
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText(describe);
             }
         };
     }

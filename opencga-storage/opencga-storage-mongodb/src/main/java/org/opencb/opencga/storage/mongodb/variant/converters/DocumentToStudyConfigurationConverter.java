@@ -16,54 +16,15 @@
 
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.bson.Document;
-import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-
-import java.io.IOException;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
- * TODO: Extend {@link org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter}
  */
-public class DocumentToStudyConfigurationConverter implements ComplexTypeConverter<StudyConfiguration, Document> {
-
-    static final char CHARACTER_TO_REPLACE_DOTS = (char) 163; // <-- £
-    static final String TO_REPLACE_DOTS = "&#46;";
-    public static final String FIELD_FILE_IDS = "_fileIds";
-
-    private final ObjectMapper objectMapper;
+public class DocumentToStudyConfigurationConverter extends GenericDocumentComplexConverter<StudyConfiguration> {
 
     public DocumentToStudyConfigurationConverter() {
-        objectMapper = new ObjectMapper();
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    }
-
-
-    @Override
-    public StudyConfiguration convertToDataModelType(Document document) {
-        try {
-            String json = objectMapper.writeValueAsString(document).replace(TO_REPLACE_DOTS, ".");
-            return objectMapper.readValue(json, StudyConfiguration.class);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    @Override
-    public Document convertToStorageType(StudyConfiguration studyConfiguration) {
-        try {
-            Document studyMongo = Document.parse(objectMapper.writeValueAsString(studyConfiguration).replace(".", TO_REPLACE_DOTS));
-            studyMongo.put(FIELD_FILE_IDS, studyConfiguration.getFileIds().values());
-            studyMongo.put("_id", studyConfiguration.getStudyId());
-            return studyMongo;
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
-        return null;
+        super(StudyConfiguration.class);
     }
 }

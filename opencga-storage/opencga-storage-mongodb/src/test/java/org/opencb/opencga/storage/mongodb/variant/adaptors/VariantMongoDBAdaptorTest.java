@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant.adaptors;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -24,7 +25,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
-import org.opencb.opencga.storage.mongodb.variant.MongoVariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
 import java.util.Map;
 
@@ -34,7 +35,13 @@ import static org.junit.Assert.*;
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements MongoVariantStorageManagerTestUtils {
+public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements MongoDBVariantStorageTest {
+
+
+    @Before
+    public void setUpLoggers() throws Exception {
+        logLevelDebug();
+    }
 
     @Test
     public void deleteStudyTest() throws Exception {

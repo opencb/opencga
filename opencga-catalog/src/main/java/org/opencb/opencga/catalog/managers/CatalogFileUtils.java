@@ -302,8 +302,8 @@ public class CatalogFileUtils {
             throws CatalogException {
         ParamUtils.checkObj(externalUri, "externalUri");
 
-        File folder = catalogManager.createFolder(studyId, Paths.get(filePath), new File.FileStatus(File.FileStatus.STAGE), parents,
-                description, null, sessionId).first();
+        File folder = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get(filePath).toString(),
+                new File.FileStatus(File.FileStatus.STAGE), parents, description, null, sessionId).first();
 
         checkCanLinkFile(folder, relink);
 
@@ -503,14 +503,19 @@ public class CatalogFileUtils {
                                 params.get(FileDBAdaptor.QueryParams.ATTRIBUTES.key()));
                         catalogManager.getFileManager().update(file.getId(), attributes, new QueryOptions(), sessionId);
                     }
-                    if (params.get(FileDBAdaptor.QueryParams.DISK_USAGE.key()) != null) {
+                    if (params.get(FileDBAdaptor.QueryParams.SIZE.key()) != null) {
                         catalogManager.getFileManager()
-                                .setDiskUsage(file.getId(), params.getLong(FileDBAdaptor.QueryParams.DISK_USAGE.key()), sessionId);
+                                .setDiskUsage(file.getId(), params.getLong(FileDBAdaptor.QueryParams.SIZE.key()), sessionId);
                     }
                     if (params.get(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()) != null) {
                         catalogManager.getFileManager()
                                 .setModificationDate(file.getId(), params.getString(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()),
                                         sessionId);
+                    }
+                    if (params.get(FileDBAdaptor.QueryParams.URI.key()) != null) {
+                        catalogManager.getFileManager()
+                                .setUri(file.getId(), params.getString(FileDBAdaptor.QueryParams.URI.key()), sessionId);
+                        params.remove(FileDBAdaptor.QueryParams.URI.key());
                     }
                     // Update status
                     catalogManager.getFileManager()
@@ -538,7 +543,7 @@ public class CatalogFileUtils {
 
     /**
      * Update some file attributes.
-     * diskUsage
+     * size
      * modificationDate
      * attributes.checksum
      *
@@ -558,14 +563,15 @@ public class CatalogFileUtils {
 
     /**
      * Get a ObjectMap with some fields if they have been modified.
-     * diskUsage
+     * size
      * modificationDate
      * attributes.checksum
+     * uri
      *
      * @param file              file
      * @param fileUri           If null, calls to getFileUri()
      *                          <p>
-     *                          TODO: Lazy checksum: Only calculate checksum if the diskUsage has changed.
+     *                          TODO: Lazy checksum: Only calculate checksum if the size has changed.
      * @param calculateChecksum Calculate checksum to check if have changed
      * @return ObjectMap ObjectMap
      * @throws CatalogException CatalogException
@@ -584,9 +590,10 @@ public class CatalogFileUtils {
 
     /**
      * Update some file attributes.
-     * diskUsage
+     * size
      * modificationDate
      * attributes.checksum
+     * uri
      *
      * @throws CatalogException CatalogException
      */
@@ -607,14 +614,18 @@ public class CatalogFileUtils {
                             .setStatus(Long.toString(file.getId()), parameters.getString(FileDBAdaptor.QueryParams.STATUS_NAME.key()), null,
                                     sessionId);
                 }
-                if (parameters.get(FileDBAdaptor.QueryParams.DISK_USAGE.key()) != null) {
+                if (parameters.get(FileDBAdaptor.QueryParams.SIZE.key()) != null) {
                     catalogManager.getFileManager()
-                            .setDiskUsage(file.getId(), parameters.getLong(FileDBAdaptor.QueryParams.DISK_USAGE.key()), sessionId);
+                            .setDiskUsage(file.getId(), parameters.getLong(FileDBAdaptor.QueryParams.SIZE.key()), sessionId);
                 }
                 if (parameters.get(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()) != null) {
                     catalogManager.getFileManager()
                             .setModificationDate(file.getId(), parameters.getString(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()),
                                     sessionId);
+                }
+                if (parameters.get(FileDBAdaptor.QueryParams.URI.key()) != null) {
+                    catalogManager.getFileManager()
+                            .setUri(file.getId(), parameters.getString(FileDBAdaptor.QueryParams.URI.key()), sessionId);
                 }
             }
         } catch (CatalogException e) {
@@ -624,9 +635,10 @@ public class CatalogFileUtils {
 
     /**
      * Get a ObjectMap with some fields if they have been modified.
-     * diskUsage
+     * size
      * modificationDate
      * attributes.checksum
+     * uri
      *
      * @throws CatalogException CatalogException
      */
@@ -643,10 +655,14 @@ public class CatalogFileUtils {
             }
         }
 
+        if (file.getUri() == null || !file.getUri().toString().equals(fileUri.toString())) {
+            parameters.put(FileDBAdaptor.QueryParams.URI.key(), fileUri.toString());
+        }
+
         try {
             long size = catalogIOManager.getFileSize(fileUri);
-            if (file.getDiskUsage() != size) {
-                parameters.put(FileDBAdaptor.QueryParams.DISK_USAGE.key(), size);
+            if (file.getSize() != size) {
+                parameters.put(FileDBAdaptor.QueryParams.SIZE.key(), size);
             }
         } catch (CatalogIOException e) {
             e.printStackTrace();

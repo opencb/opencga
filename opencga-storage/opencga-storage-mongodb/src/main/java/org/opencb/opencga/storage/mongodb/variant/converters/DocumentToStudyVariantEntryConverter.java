@@ -18,13 +18,13 @@ package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import org.bson.Document;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 
 import java.io.IOException;
 import java.util.*;
@@ -34,16 +34,16 @@ import java.util.logging.Logger;
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class DocumentToStudyVariantEntryConverter implements ComplexTypeConverter<StudyEntry, Document> {
+public class DocumentToStudyVariantEntryConverter {
 
-    public static final String FILEID_FIELD = "fid";
     public static final String STUDYID_FIELD = "sid";
-    public static final String ATTRIBUTES_FIELD = "attrs";
     //    public static final String FORMAT_FIELD = "fm";
     public static final String GENOTYPES_FIELD = "gt";
 
     public static final String FILES_FIELD = "files";
+    public static final String FILEID_FIELD = "fid";
     public static final String SAMPLE_DATA_FIELD = "sampleData";
+    public static final String ATTRIBUTES_FIELD = "attrs";
     public static final String ORI_FIELD = "_ori";
 
     public static final String ALTERNATES_FIELD = "alts";
@@ -118,7 +118,6 @@ public class DocumentToStudyVariantEntryConverter implements ComplexTypeConverte
         this.studyIds.put(studyId, studyName);
     }
 
-    @Override
     public StudyEntry convertToDataModelType(Document document) {
         int studyId = ((Number) document.get(STUDYID_FIELD)).intValue();
 //        String fileId = this.fileId == null? null : String.valueOf(this.fileId);
@@ -234,23 +233,24 @@ public class DocumentToStudyVariantEntryConverter implements ComplexTypeConverte
         return studyIds.get(studyId);
     }
 
-    @Override
-    public Document convertToStorageType(StudyEntry object) {
+    public Document convertToStorageType(Variant variant, StudyEntry studyEntry) {
 
-        if (object.getFiles().size() != 1) {
+        if (studyEntry.getFiles().size() != 1) {
             throw new IllegalArgumentException("Expected just one file in the study to convert");
         }
-        FileEntry file = object.getFiles().get(0);
+        FileEntry file = studyEntry.getFiles().get(0);
 
-        return convertToStorageType(object, file, object.getSamplesName());
+        return convertToStorageType(variant, studyEntry, file, new LinkedHashSet<>(studyEntry.getOrderedSamplesName()));
     }
 
-    public Document convertToStorageType(StudyEntry studyEntry, FileEntry file, Set<String> sampleNames) {
+    public Document convertToStorageType(Variant variant, StudyEntry studyEntry, FileEntry file, LinkedHashSet<String> sampleNames) {
+        return convertToStorageType(variant, studyEntry, Collections.singletonList(file), sampleNames);
+    }
+
+    public Document convertToStorageType(Variant variant, StudyEntry studyEntry, List<FileEntry> files, LinkedHashSet<String> sampleNames) {
 
         int studyId = Integer.parseInt(studyEntry.getStudyId());
-        int fileId = Integer.parseInt(file.getFileId());
         Document studyObject = new Document(STUDYID_FIELD, studyId);
-        Document fileObject = new Document(FILEID_FIELD, fileId);
 
         // Alternate alleles
         List<Document> alternates = new LinkedList<>();
@@ -258,26 +258,48 @@ public class DocumentToStudyVariantEntryConverter implements ComplexTypeConverte
 //            fileObject.append(ALTERNATES_FIELD, studyEntry.getSecondaryAlternatesAlleles());
             for (AlternateCoordinate coordinate : studyEntry.getSecondaryAlternates()) {
                 Document alt = new Document();
-                if (coordinate.getChromosome() != null) {
-                    alt.put(ALTERNATES_CHR, coordinate.getChromosome());
-                }
-                if (coordinate.getReference() != null) {
-                    alt.put(ALTERNATES_REF, coordinate.getReference());
-                }
+                alt.put(ALTERNATES_CHR, coordinate.getChromosome() != null ? coordinate.getChromosome() : variant.getChromosome());
+                alt.put(ALTERNATES_REF, coordinate.getReference() != null ? coordinate.getReference() : variant.getReference());
                 alt.put(ALTERNATES_ALT, coordinate.getAlternate());
-                if (coordinate.getStart() != null) {
-                    alt.put(ALTERNATES_START, coordinate.getStart());
-                }
-                if (coordinate.getStart() != null) {
-                    alt.put(ALTERNATES_END, coordinate.getEnd());
-                }
-                if (coordinate.getType() != null) {
-                    alt.put(ALTERNATES_TYPE, coordinate.getType().toString());
-                }
+                alt.put(ALTERNATES_START, coordinate.getStart() != null ? coordinate.getStart() : variant.getStart());
+                alt.put(ALTERNATES_END, coordinate.getEnd() != null ? coordinate.getEnd() : variant.getEnd());
+                alt.put(ALTERNATES_TYPE, coordinate.getType() != null ? coordinate.getType().toString() : variant.getType().toString());
                 alternates.add(alt);
             }
         }
 
+        final List<Document> fileDocuments;
+        if (!files.isEmpty()) {
+            fileDocuments = new ArrayList<>(files.size());
+
+            for (FileEntry file : files) {
+                Document fileObject = convertFileDocument(studyEntry, file);
+                fileDocuments.add(fileObject);
+
+                if (samplesConverter != null) {
+                    Document otherFields = new Document();
+                    fileObject.append(SAMPLE_DATA_FIELD, otherFields);
+                    studyObject.putAll(samplesConverter.convertToStorageType(studyEntry, studyId, otherFields, sampleNames));
+                }
+            }
+
+        } else {
+            fileDocuments = Collections.singletonList(convertFileDocument(studyEntry, new FileEntry()));
+        }
+
+        studyObject.append(FILES_FIELD, fileDocuments);
+        if (alternates != null && !alternates.isEmpty()) {
+            studyObject.append(ALTERNATES_FIELD, alternates);
+        }
+
+
+
+        return studyObject;
+    }
+
+    protected Document convertFileDocument(StudyEntry studyEntry, FileEntry file) {
+        int fileId = Integer.parseInt(file.getFileId());
+        Document fileObject = new Document(FILEID_FIELD, fileId);
         // Attributes
         if (file.getAttributes().size() > 0) {
             Document attrs = null;
@@ -329,22 +351,7 @@ public class DocumentToStudyVariantEntryConverter implements ComplexTypeConverte
                     new Document("s", call.substring(0, indexOf))
                             .append("i", Integer.parseInt(call.substring(indexOf + 1))));
         }
-
-        studyObject.append(FILES_FIELD, Collections.singletonList(fileObject));
-        if (alternates != null && !alternates.isEmpty()) {
-            studyObject.append(ALTERNATES_FIELD, alternates);
-        }
-
-//        if (samples != null && !samples.isEmpty()) {
-        if (samplesConverter != null) {
-            Document otherFields = new Document();
-            fileObject.append(SAMPLE_DATA_FIELD, otherFields);
-            studyObject.putAll(samplesConverter.convertToStorageType(studyEntry, studyId, fileId, otherFields, sampleNames));
-
-        }
-
-
-        return studyObject;
+        return fileObject;
     }
 
     public DocumentToSamplesConverter getSamplesConverter() {

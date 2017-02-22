@@ -28,10 +28,10 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.variant.io.json.*;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.*;
 import org.opencb.opencga.storage.server.common.AuthManager;
 import org.opencb.opencga.storage.server.common.DefaultAuthManager;
 import org.opencb.opencga.storage.server.common.exceptions.NotAuthorizedHostException;
@@ -73,7 +73,7 @@ public class GenericRestWebService {
     protected static StorageConfiguration storageConfiguration;
 
     protected static String defaultStorageEngine;
-    protected static StorageManagerFactory storageManagerFactory;
+    protected static StorageEngineFactory storageEngineFactory;
 
     protected static AuthManager authManager;
 
@@ -112,9 +112,10 @@ public class GenericRestWebService {
         defaultStorageEngine = storageConfiguration.getDefaultStorageEngineId();
 
         // Only one StorageManagerFactory is needed, this acts as a simple Singleton pattern which improves the performance significantly
-        if (storageManagerFactory == null) {
+        if (storageEngineFactory == null) {
             privLogger.debug("Creating the StorageManagerFactory object");
-            storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
+            // TODO: We will need to pass catalog manager once storage starts doing things over catalog
+            storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
         }
 
         if (authorizedHosts == null) {

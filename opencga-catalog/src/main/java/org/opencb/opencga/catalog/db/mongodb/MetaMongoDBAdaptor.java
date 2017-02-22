@@ -30,7 +30,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.config.Admin;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -40,10 +40,7 @@ import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -119,7 +116,8 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         try {
             bufferedReader.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Error closing the buffer reader", e);
+            throw new UncheckedIOException(e);
         }
 
         createIndexes(dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection(), indexes.get("user"));
@@ -173,13 +171,13 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         }
     }
 
-    public void initializeMetaCollection(CatalogConfiguration catalogConfiguration) throws CatalogException {
-        Admin admin = catalogConfiguration.getAdmin();
+    public void initializeMetaCollection(Configuration configuration) throws CatalogException {
+        Admin admin = configuration.getAdmin();
         admin.setPassword(CatalogAuthenticationManager.cypherPassword(admin.getPassword()));
 
-        Metadata metadata = new Metadata().setIdCounter(0).setVersion(VERSION);
+        Metadata metadata = new Metadata().setIdCounter(configuration.getCatalog().getOffset()).setVersion(VERSION);
 
-        if (catalogConfiguration.isOpenRegister()) {
+        if (configuration.isOpenRegister()) {
             metadata.setOpen("public");
         } else {
             metadata.setOpen("private");
@@ -192,10 +190,10 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         metadataObject.put("admin", adminDocument);
 
         // We store the original configuration file
-        Document config = getMongoDBDocument(catalogConfiguration, "CatalogConfiguration");
+        Document config = getMongoDBDocument(configuration, "CatalogConfiguration");
         metadataObject.put("config", config);
 
-        List<StudyAclEntry> acls = catalogConfiguration.getAcl();
+        List<StudyAclEntry> acls = configuration.getAcl();
         List<Document> aclList = new ArrayList<>(acls.size());
         for (StudyAclEntry acl : acls) {
             aclList.add(getMongoDBDocument(acl, "StudyAcl"));
@@ -222,7 +220,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     }
 
     @Override
-    public QueryResult<ObjectMap> addAdminSession(Session session) throws CatalogDBException {
+    public QueryResult<Session> addAdminSession(Session session) throws CatalogDBException {
         long startTime = startQuery();
 
         Bson query = new Document(PRIVATE_ID, "METADATA");
@@ -235,10 +233,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
             throw new CatalogDBException("An internal error occurred when logging the admin");
         }
 
-        ObjectMap resultObjectMap = new ObjectMap();
-        resultObjectMap.put("sessionId", session.getId());
-        resultObjectMap.put("userId", "admin");
-        return endQuery("Login", startTime, Collections.singletonList(resultObjectMap));
+        return endQuery("Login", startTime, Collections.singletonList(session));
     }
 
     @Override

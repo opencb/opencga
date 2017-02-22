@@ -193,7 +193,7 @@ public interface StudyDBAdaptor extends AclDBAdaptor<Study, StudyAclEntry> {
 
     QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<VariableSet> getAllVariableSets(long studyId, QueryOptions queryOptions) throws CatalogDBException;
+    QueryResult<VariableSet> getVariableSets(Query query, QueryOptions queryOptions) throws CatalogDBException;
 
     QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions) throws CatalogDBException;
 
@@ -212,7 +212,8 @@ public interface StudyDBAdaptor extends AclDBAdaptor<Study, StudyAclEntry> {
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         LAST_MODIFIED("lastModified", TEXT_ARRAY, ""),
-        DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
+        DATASTORES("dataStores", TEXT_ARRAY, ""),
+        SIZE("size", INTEGER_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),
         ACL("acl", TEXT_ARRAY, ""),
         ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
@@ -248,7 +249,7 @@ public interface StudyDBAdaptor extends AclDBAdaptor<Study, StudyAclEntry> {
 //        FILE_TYPE("files.type", TEXT_ARRAY, ""),
 //        FILE_FORMAT("files.format", TEXT_ARRAY, ""),
 //        FILE_BIOFORMAT("files.bioformat", TEXT_ARRAY, ""),
-//        FILE_DISK_USAGE("files.diskUsage", INTEGER_ARRAY, ""),
+//        FILE_DISK_USAGE("files.size", INTEGER_ARRAY, ""),
 
 //        JOB_ID("jobs.id", INTEGER_ARRAY, ""),
 //        JOB_NAME("jobs.name", TEXT_ARRAY, ""),
@@ -256,7 +257,7 @@ public interface StudyDBAdaptor extends AclDBAdaptor<Study, StudyAclEntry> {
 //        JOB_TOOL_NAME("jobs.toolName", TEXT_ARRAY, ""),
 //        JOB_CREATION_DATE("jobs.creationDate", TEXT_ARRAY, ""),
 //        JOB_STATUS("jobs.status", TEXT_ARRAY, ""),
-//        JOB_DISK_USAGE("jobs.diskUsage", DECIMAL, ""),
+//        JOB_DISK_USAGE("jobs.size", DECIMAL, ""),
 
 //        INDIVIDUAL_ID("individuals.id", INTEGER_ARRAY, ""),
 //        INDIVIDUAL_NAME("individuals.name", TEXT_ARRAY, ""),

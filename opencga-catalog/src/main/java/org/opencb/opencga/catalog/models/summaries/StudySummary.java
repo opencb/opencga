@@ -33,7 +33,7 @@ public class StudySummary {
     private String creationDate;
     private String description;
     private Status status;
-    private long diskUsage;
+    private long size;
     private String cipher;
 
     private List<Group> groups;
@@ -121,11 +121,11 @@ public class StudySummary {
     }
 
     public long getDiskUsage() {
-        return diskUsage;
+        return size;
     }
 
-    public StudySummary setDiskUsage(long diskUsage) {
-        this.diskUsage = diskUsage;
+    public StudySummary setDiskUsage(long size) {
+        this.size = size;
         return this;
     }
 

@@ -50,6 +50,10 @@ public class CatalogSampleAnnotationsLoader {
 
     public QueryResult<Sample> loadSampleAnnotations(File pedFile, Long variableSetId, String sessionId) throws CatalogException {
 
+        if (!pedFile.getFormat().equals(File.Format.PED)) {
+            throw new CatalogException(pedFile.getId() + " is not a pedigree file");
+        }
+
         URI fileUri = catalogManager.getFileUri(pedFile);
         long studyId = catalogManager.getStudyIdByFileId(pedFile.getId());
         long auxTime;
@@ -127,8 +131,8 @@ public class CatalogSampleAnnotationsLoader {
         for (Map.Entry<String, Sample> entry : sampleMap.entrySet()) {
             Map<String, Object> annotations = getAnnotation(ped.getIndividuals().get(entry.getKey()), sampleMap, variableSet, ped
                     .getFields());
-            catalogManager.createSampleAnnotationSet(Long.toString(entry.getValue().getId()), variableSetId, "pedigreeAnnotation",
-                    annotations, Collections.emptyMap(), sessionId);
+            catalogManager.getSampleManager().createAnnotationSet(Long.toString(entry.getValue().getId()), Long.toString(studyId),
+                    variableSetId, "pedigreeAnnotation", annotations, Collections.emptyMap(), sessionId);
         }
         logger.debug("Annotated {} samples in {}ms", ped.getIndividuals().size(), System.currentTimeMillis() - auxTime);
 

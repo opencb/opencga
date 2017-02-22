@@ -16,25 +16,28 @@
 
 package org.opencb.opencga.app.cli;
 
+import com.beust.jcommander.JCommander;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.*;
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.RollingFileAppender;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.app.cli.analysis.AnalysisCliOptionsParser;
-import org.opencb.opencga.app.cli.main.SessionFile;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.core.common.Config;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by imedina on 19/04/16.
@@ -42,91 +45,119 @@ import java.time.LocalDateTime;
 public abstract class CommandExecutor {
 
     protected String logLevel;
+    @Deprecated
     protected String logFile;
     protected boolean verbose;
 
     protected String appHome;
     protected String conf;
 
+    @Deprecated
+    protected String userId;
+    @Deprecated
     protected String sessionId;
+    protected CliSession cliSession;
 
     protected Configuration configuration;
-    protected CatalogConfiguration catalogConfiguration;
     protected StorageConfiguration storageConfiguration;
+    protected ClientConfiguration clientConfiguration;
+
+    protected GeneralCliOptions.CommonCommandOptions options;
 
     protected Logger logger;
+    private Logger privateLogger;
 
     private static final String SESSION_FILENAME = "session.json";
 
     public CommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
-//        init(options);
-        init(options.logLevel, options.verbose, options.conf);
+        this(options, false);
     }
 
+    public CommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean loadClientConfiguration) {
+        this.options = options;
+        init(options.logLevel, options.verbose, options.conf, loadClientConfiguration);
+    }
+
+    @Deprecated
     public CommandExecutor(String logLevel, boolean verbose, String conf) {
-//        init(options);
-        init(logLevel, verbose, conf);
+        init(logLevel, verbose, conf, true);
     }
 
 //    protected void init(GeneralCliOptions.CommonCommandOptions options) {
 //        init(options.logLevel, options.verbose, options.conf);
 //    }
 
-    protected void init(String logLevel, boolean verbose, String conf) {
+    protected void init(String logLevel, boolean verbose, String conf, boolean loadClientConfiguration) {
         this.logLevel = logLevel;
         this.verbose = verbose;
         this.conf = conf;
 
         /**
-         * System property 'app.home' is automatically set up in opencga-storage.sh. If by any reason
+         * System property 'app.home' is automatically set up in opencga.sh. If by any reason
          * this is 'null' then OPENCGA_HOME environment variable is used instead.
          */
         this.appHome = System.getProperty("app.home", System.getenv("OPENCGA_HOME"));
-        Config.setOpenCGAHome(appHome);
 
         if (StringUtils.isEmpty(conf)) {
             this.conf = appHome + "/conf";
         }
 
-
+        // At the moment verbose CLI param acts as a debug log level
         if (verbose) {
-            logLevel = "debug";
+            this.logLevel = "debug";
         }
 
-        if (logLevel != null && !logLevel.isEmpty()) {
-            this.logLevel = logLevel;
-            // We must call to this method
-            configureDefaultLog(logLevel);
-        }
+        // Loggers can be initialized, the configuration happens just below these lines
+        logger = LoggerFactory.getLogger(this.getClass().toString());
+        privateLogger = LoggerFactory.getLogger(CommandExecutor.class);
 
         try {
-            SessionFile sessionFile = loadSessionFile();
-            if (sessionFile != null) {
-                this.sessionId = sessionFile.getSessionId();
+            // At the moment this is needed for all three command lines, this might change soon since REST client should not need this one.
+            loadConfiguration();
+
+            // This code assumes general configuration will be always needed and general configuration is overwritten,
+            // maybe in the near future this should be an if/else.
+            if (loadClientConfiguration) {
+                loadClientConfiguration();
+                if (StringUtils.isNotEmpty(this.clientConfiguration.getLogLevel())) {
+                    this.configuration.setLogLevel(this.clientConfiguration.getLogLevel());
+                }
+                if (StringUtils.isNotEmpty(this.clientConfiguration.getLogFile())) {
+                    this.configuration.setLogFile(this.clientConfiguration.getLogFile());
+                }
             }
+
+            // Do not change the order here, we can only configure logger after loading the configuration files,
+            // this still relies on general configuration file.
+            configureLogger();
+
+            // Let's check the session file, maybe the session is still valid
+            loadCliSessionFile();
+            privateLogger.debug("CLI session file is: {}", this.cliSession);
+
+            if (cliSession != null) {
+                this.sessionId = cliSession.getSessionId();
+                this.userId = cliSession.getUserId();
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-
-        // This updated the timestamp every time the command is finished
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                try {
-                    updateSessionTimestamp();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+        // Update the timestamp every time one executed command finishes
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                updateCliSessionFileTimestamp();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        });
-
-//        loadConfigurations();
+        }));
     }
 
-    protected String getSessionId(AnalysisCliOptionsParser.AnalysisCommonCommandOptions commonOptions) {
+    @Deprecated
+    protected String getSessionId(GeneralCliOptions.CommonCommandOptions commonOptions) {
         if (StringUtils.isBlank(commonOptions.sessionId)) {
-            return sessionId;
+            return cliSession.getSessionId();
         } else {
             return commonOptions.sessionId;
         }
@@ -135,28 +166,42 @@ public abstract class CommandExecutor {
 
     public abstract void execute() throws Exception;
 
-    public void configureDefaultLog(String logLevel) {
-        // This small hack allow to configure the appropriate Logger level from the command line, this is done
-        // by setting the DEFAULT_LOG_LEVEL_KEY before the logger object is created.
-//        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
+    private void configureLogger() throws IOException {
         org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
-//        rootLogger.setLevel(Level.toLevel(logLevel));
 
-        ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
-        stderr.setThreshold(Level.toLevel(logLevel));
-
-        //Disable MongoDB useless logging
+        // Disable MongoDB useless logging
         org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
         org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
 
-        logger = LoggerFactory.getLogger(this.getClass().toString());
+        // Command line parameters have preference over configuration file
+        // We overwrite logLevel configuration param with command line value
+        if (StringUtils.isNotEmpty(this.logLevel)) {
+            this.configuration.setLogLevel(this.logLevel);
+        }
+
+        // We overwrite logFile configuration param with command line value
+        if (StringUtils.isNotEmpty(this.options.logFile)) {
+            this.configuration.setLogFile(this.options.logFile);
+        }
+
+        // Configure the logger output, this can be the console or a file if provided by CLI or by configuration file
+        ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
+        if (StringUtils.isEmpty(this.configuration.getLogFile())) {
+            stderr.setThreshold(Level.toLevel(configuration.getLogLevel(), Level.INFO));
+        } else {
+            RollingFileAppender rollingFileAppender = new RollingFileAppender(stderr.getLayout(), this.configuration.getLogFile(), true);
+            rootLogger.addAppender(rollingFileAppender);
+            rollingFileAppender.setThreshold(Level.toLevel(configuration.getLogLevel(), Level.INFO));
+            rollingFileAppender.setMaxFileSize("100MB");
+            rollingFileAppender.setMaxBackupIndex(10);
+        }
     }
 
 
     @Deprecated
     public boolean loadConfigurations() {
         try {
-            loadCatalogConfiguration();
+            loadConfiguration();
         } catch (IOException ex) {
             if (getLogger() == null) {
                 ex.printStackTrace();
@@ -178,78 +223,43 @@ public abstract class CommandExecutor {
         return true;
     }
 
-
     /**
      * This method attempts to load general configuration from CLI 'conf' parameter, if not exists then loads JAR storage-configuration.yml.
      *
      * @throws IOException If any IO problem occurs
      */
-    public void loadOpencgaConfiguration() throws IOException {
+    public void loadConfiguration() throws IOException {
         FileUtils.checkDirectory(Paths.get(this.conf));
 
         // We load configuration file either from app home folder or from the JAR
         Path path = Paths.get(this.conf).resolve("configuration.yml");
         if (path != null && Files.exists(path)) {
-            logger.debug("Loading configuration from '{}'", path.toAbsolutePath());
-            this.configuration= Configuration.load(new FileInputStream(path.toFile()));
+            privateLogger.debug("Loading configuration from '{}'", path.toAbsolutePath());
+            this.configuration = Configuration.load(new FileInputStream(path.toFile()));
         } else {
-            logger.debug("Loading configuration from JAR file");
-            this.configuration = Configuration.load(ClientConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml"));
+            privateLogger.debug("Loading configuration from JAR file");
+            this.configuration = Configuration
+                    .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml"));
         }
     }
 
-
     /**
-     * This method attempts to load general configuration from CLI 'conf' parameter, if not exists then loads JAR storage-configuration.yml.
+     * This method attempts to first data configuration from CLI parameter, if not present then uses
+     * the configuration from installation directory, if not exists then loads JAR storage-configuration.yml.
      *
      * @throws IOException If any IO problem occurs
      */
-    public void loadCatalogConfiguration() throws IOException {
-        FileUtils.checkDirectory(Paths.get(this.conf));
-
+    public void loadClientConfiguration() throws IOException {
         // We load configuration file either from app home folder or from the JAR
-        Path path = Paths.get(this.conf).resolve("catalog-configuration.yml");
+        Path path = Paths.get(this.conf).resolve("client-configuration.yml");
         if (path != null && Files.exists(path)) {
-            logger.debug("Loading configuration from '{}'", path.toAbsolutePath());
-            this.catalogConfiguration = CatalogConfiguration.load(new FileInputStream(path.toFile()));
+            privateLogger.debug("Loading configuration from '{}'", path.toAbsolutePath());
+            this.clientConfiguration = ClientConfiguration.load(new FileInputStream(path.toFile()));
         } else {
-            logger.debug("Loading configuration from JAR file");
-            this.catalogConfiguration = CatalogConfiguration
-                    .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("catalog-configuration.yml"));
+            privateLogger.debug("Loading configuration from JAR file");
+            this.clientConfiguration = ClientConfiguration
+                    .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("client-configuration.yml"));
         }
-
-
-        // logLevel parameter has preference in CLI over configuration file
-        if (this.logLevel == null || this.logLevel.isEmpty()) {
-            this.logLevel = this.catalogConfiguration.getLogLevel();
-            configureDefaultLog(this.logLevel);
-        } else {
-            if (!this.logLevel.equalsIgnoreCase(this.catalogConfiguration.getLogLevel())) {
-                this.catalogConfiguration.setLogLevel(this.logLevel);
-                configureDefaultLog(this.logLevel);
-            }
-        }
-
-        // logFile parameter has preference in CLI over configuration file, we first set the logFile passed
-        if (this.logFile != null && !this.logFile.isEmpty()) {
-            this.catalogConfiguration.setLogFile(logFile);
-        }
-
-        // If user has set up a logFile we redirect logs to it
-        if (this.catalogConfiguration.getLogFile() != null && !this.catalogConfiguration.getLogFile().isEmpty()) {
-            org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
-
-            // If a log file is used then console log is removed
-            rootLogger.removeAppender("stderr");
-
-            // Creating a RollingFileAppender to output the log
-            RollingFileAppender rollingFileAppender = new RollingFileAppender(new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - "
-                    + "%m%n"), this.catalogConfiguration.getLogFile(), true);
-            rollingFileAppender.setThreshold(Level.toLevel(catalogConfiguration.getLogLevel()));
-            rootLogger.addAppender(rollingFileAppender);
-        }
-
-//        logger.debug("Loading configuration from '{}'", loadedConfigurationFile);
     }
 
     /**
@@ -263,62 +273,71 @@ public abstract class CommandExecutor {
         // We load configuration file either from app home folder or from the JAR
         Path path = Paths.get(this.conf).resolve("storage-configuration.yml");
         if (path != null && Files.exists(path)) {
-            logger.debug("Loading storage configuration from '{}'", path.toAbsolutePath());
+            privateLogger.debug("Loading storage configuration from '{}'", path.toAbsolutePath());
             this.storageConfiguration = StorageConfiguration.load(new FileInputStream(path.toFile()));
         } else {
-            logger.debug("Loading storage configuration from JAR file");
+            privateLogger.debug("Loading storage configuration from JAR file");
             this.storageConfiguration = StorageConfiguration
                     .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
         }
     }
 
 
-    protected void saveSessionFile(String user, String session) throws IOException {
+    protected void loadCliSessionFile() throws IOException {
+        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
+        if (Files.exists(sessionPath)) {
+            this.cliSession = new ObjectMapper().readValue(sessionPath.toFile(), CliSession.class);
+        }
+    }
+
+    protected void saveCliSessionFile(String user, String session, Map<String, List<String>> studies) throws IOException {
         Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga");
         // check if ~/.opencga folder exists
         if (!Files.exists(sessionPath)) {
             Files.createDirectory(sessionPath);
         }
         sessionPath = sessionPath.resolve(SESSION_FILENAME);
-        new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), new SessionFile(user, session));
+        new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), new CliSession(user, session, studies));
     }
 
-    protected SessionFile loadSessionFile() throws IOException {
+    protected void updateCliSessionFileTimestamp() throws IOException {
         Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
         if (Files.exists(sessionPath)) {
-            return new ObjectMapper().readValue(sessionPath.toFile(), SessionFile.class);
+            ObjectMapper objectMapper = new ObjectMapper();
+            CliSession cliSession = objectMapper.readValue(sessionPath.toFile(), CliSession.class);
+            cliSession.setTimestamp(System.currentTimeMillis());
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), cliSession);
+        }
+    }
+
+    protected void logoutCliSessionFile() throws IOException {
+        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
+        if (Files.exists(sessionPath)) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            CliSession cliSession = objectMapper.readValue(sessionPath.toFile(), CliSession.class);
+            cliSession.setLogout(LocalDateTime.now().toString());
+            cliSession.setProjectsAndStudies(null);
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), cliSession);
+        }
+    }
+
+    protected static String getParsedSubCommand(JCommander jCommander) {
+        String parsedCommand = jCommander.getParsedCommand();
+        if (jCommander.getCommands().containsKey(parsedCommand)) {
+            String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
+            return subCommand != null ? subCommand: "";
         } else {
-            return null;
-        }
-    }
-
-    protected void updateSessionTimestamp() throws IOException {
-        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
-        if (Files.exists(sessionPath)) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            SessionFile sessionFile = objectMapper.readValue(sessionPath.toFile(), SessionFile.class);
-            sessionFile.setTimestamp(System.currentTimeMillis());
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), sessionFile);
-        }
-    }
-
-    protected void logoutSessionFile() throws IOException {
-        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
-        if (Files.exists(sessionPath)) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            SessionFile sessionFile = objectMapper.readValue(sessionPath.toFile(), SessionFile.class);
-            sessionFile.setLogout(LocalDateTime.now().toString());
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), sessionFile);
+            return "";
         }
     }
 
 
-    public CatalogConfiguration getCatalogConfiguration() {
-        return catalogConfiguration;
+    public Configuration getConfiguration() {
+        return configuration;
     }
 
-    public void setCatalogConfiguration(CatalogConfiguration catalogConfiguration) {
-        this.catalogConfiguration = catalogConfiguration;
+    public void setConfiguration(Configuration configuration) {
+        this.configuration = configuration;
     }
 
     public String getLogLevel() {
@@ -354,4 +373,5 @@ public abstract class CommandExecutor {
     public Logger getLogger() {
         return logger;
     }
+
 }

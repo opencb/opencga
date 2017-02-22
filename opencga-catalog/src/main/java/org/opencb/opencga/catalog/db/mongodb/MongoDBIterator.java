@@ -18,8 +18,8 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.client.MongoCursor;
 import org.bson.Document;
+import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.mongodb.converters.GenericConverter;
 
 /**
  * Created by imedina on 27/01/16.
@@ -27,13 +27,13 @@ import org.opencb.opencga.catalog.db.mongodb.converters.GenericConverter;
 public class MongoDBIterator<E> implements DBIterator<E> {
 
     private MongoCursor mongoCursor;
-    private GenericConverter<E, Document> converter;
+    private GenericDocumentComplexConverter<E> converter;
 
     MongoDBIterator(MongoCursor mongoCursor) { //Package protected
         this(mongoCursor, null);
     }
 
-    MongoDBIterator(MongoCursor mongoCursor, GenericConverter<E, Document> converter) { //Package protected
+    MongoDBIterator(MongoCursor mongoCursor, GenericDocumentComplexConverter<E> converter) { //Package protected
         this.mongoCursor = mongoCursor;
         this.converter = converter;
     }

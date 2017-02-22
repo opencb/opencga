@@ -18,6 +18,7 @@ package org.opencb.opencga.client.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.opencb.opencga.catalog.models.Project;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,8 +29,14 @@ import java.io.OutputStream;
  */
 public class ClientConfiguration {
 
+    private String logLevel;
+    private String logFile;
+
     private String version;
     private int sessionDuration;
+
+    private Project.Organism organism;
+    private String defaultStudy;
 
     private RestConfig rest;
     private GrpcConfig grpc;
@@ -71,12 +78,74 @@ public class ClientConfiguration {
         jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOutputStream, this);
     }
 
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("ClientConfiguration{");
+        sb.append("logLevel='").append(logLevel).append('\'');
+        sb.append(", logFile='").append(logFile).append('\'');
+        sb.append(", version='").append(version).append('\'');
+        sb.append(", sessionDuration=").append(sessionDuration);
+        sb.append(", organism=").append(organism);
+        sb.append(", defaultStudy='").append(defaultStudy).append('\'');
+        sb.append(", rest=").append(rest);
+        sb.append(", grpc=").append(grpc);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public String getLogLevel() {
+        return logLevel;
+    }
+
+    public ClientConfiguration setLogLevel(String logLevel) {
+        this.logLevel = logLevel;
+        return this;
+    }
+
+    public String getLogFile() {
+        return logFile;
+    }
+
+    public ClientConfiguration setLogFile(String logFile) {
+        this.logFile = logFile;
+        return this;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public ClientConfiguration setVersion(String version) {
+        this.version = version;
+        return this;
+    }
+
     public int getSessionDuration() {
         return sessionDuration;
     }
 
-    public void setSessionDuration(int sessionDuration) {
+    public ClientConfiguration setSessionDuration(int sessionDuration) {
         this.sessionDuration = sessionDuration;
+        return this;
+    }
+
+    public Project.Organism getOrganism() {
+        return organism;
+    }
+
+    public ClientConfiguration setOrganism(Project.Organism organism) {
+        this.organism = organism;
+        return this;
+    }
+
+    public String getDefaultStudy() {
+        return defaultStudy;
+    }
+
+    public ClientConfiguration setDefaultStudy(String defaultStudy) {
+        this.defaultStudy = defaultStudy;
+        return this;
     }
 
     public RestConfig getRest() {

@@ -1,0 +1,32 @@
+!define TEST_SYSTEM {slim}
+!define user {test}
+!define study {2}
+
+!3 Delete ACL for User (fUser)
+!|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/  |
+| GET | /v1/studies/${study}/acl/$fUser/delete?sid=$sessionId |200|  Content-Type: application/json ||
+
+!3 Login fUser 
+!|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/  |
+| setBody | {"password" : "p@ssword"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/users/$fUser/login |200|  Content-Type: application/json ||
+|let|fUserSessionId|js|response.jsonbody.response[0].result[0].sessionId||
+
+
+!3 Delete fUser 
+!|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/  |
+| GET | /v1/users/$fUser/delete?&sid=$fUserSessionId |200|  Content-Type: application/json |jsonbody.error === ''|
+
+
+!3 Login eUser 
+!|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/  |
+| setBody | {"password" : "p@ssword"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/users/$eUser/login |200|  Content-Type: application/json ||
+|let|eUserSessionId|js|response.jsonbody.response[0].result[0].sessionId||
+
+!3 Delete eUser 
+!|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/  |
+| GET | /v1/users/$eUser/delete?&sid=$eUserSessionId |200|  Content-Type: application/json |jsonbody.error === ''|
+

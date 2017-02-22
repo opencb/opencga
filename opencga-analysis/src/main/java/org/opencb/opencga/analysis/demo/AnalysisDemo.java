@@ -32,8 +32,8 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -48,7 +48,7 @@ public class AnalysisDemo {
     }
 
     public static void insertPedigreeFile(CatalogManager catalogManager, long studyId, Path inputFile, String sessionId)
-            throws CatalogException, StorageManagerException {
+            throws CatalogException, StorageEngineException {
         String path = "data/peds";
         URI sourceUri = inputFile.toUri();
         File file = catalogManager.createFile(studyId, File.Format.PED, File.Bioformat.PEDIGREE,
@@ -62,7 +62,7 @@ public class AnalysisDemo {
     }
 
     public static void insertVariantFile(CatalogManager catalogManager, long studyId, Path inputFile, String sessionId)
-            throws CatalogException, StorageManagerException, AnalysisExecutionException, JsonProcessingException {
+            throws CatalogException, StorageEngineException, AnalysisExecutionException, JsonProcessingException {
         String path = "data/vcfs";
         URI sourceUri = inputFile.toUri();
         File file = catalogManager.createFile(studyId, File.Format.VCF, File.Bioformat.VARIANT,
@@ -77,7 +77,8 @@ public class AnalysisDemo {
                 new Query(FileDBAdaptor.QueryParams.PATH.key(), "data/jobs/"), sessionId);
         long outDirId;
         if (outdirResult.getResult().isEmpty()) {
-            outDirId = catalogManager.createFolder(studyId, Paths.get("data/jobs/"), true, null, sessionId).first().getId();
+            outDirId = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data/jobs/").toString(), null,
+                    true, null, QueryOptions.empty(), sessionId).first().getId();
         } else {
             outDirId = outdirResult.first().getId();
         }
@@ -100,18 +101,18 @@ public class AnalysisDemo {
                 .append(ExecutorManager.EXECUTE, !queue)
                 .append(AnalysisFileIndexer.TRANSFORM, doTransform)
                 .append(AnalysisFileIndexer.LOAD, doLoad)
-                .append(VariantStorageManager.Options.CALCULATE_STATS.key(), calculateStats)
-                .append(VariantStorageManager.Options.ANNOTATE.key(), annotate)
+                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), calculateStats)
+                .append(VariantStorageEngine.Options.ANNOTATE.key(), annotate)
                 .append(AnalysisFileIndexer.LOG_LEVEL, logLevel);
 //                .append(AnalysisFileIndexer.PARAMETERS, extraParams)
-//                .append(VariantStorageManager.Options.AGGREGATED_TYPE.key(), cliOptions.aggregated)
-//                .append(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), cliOptions.extraFields)
-//                .append(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), cliOptions.excludeGenotype)
+//                .append(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), cliOptions.aggregated)
+//                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), cliOptions.extraFields)
+//                .append(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), cliOptions.excludeGenotype)
 
         QueryResult<Job> result = analysisFileIndexer.index(inputFileId, outDirId, sessionId, options);
-        if (queue) {
-            System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result));
-        }
+//        if (queue) {
+//            System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result));
+//        }
     }
 
 }

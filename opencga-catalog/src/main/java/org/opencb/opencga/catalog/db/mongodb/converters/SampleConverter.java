@@ -16,52 +16,44 @@
 
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import org.bson.Document;
+import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.catalog.models.Sample;
 
-import java.io.IOException;
 import java.util.List;
 
 /**
  * Created by pfurio on 19/01/16.
  */
-public class SampleConverter extends GenericConverter<Sample, Document> {
-
-    private ObjectWriter sampleWriter;
+public class SampleConverter extends GenericDocumentComplexConverter<Sample> {
 
     public SampleConverter() {
-        objectReader = objectMapper.reader(Sample.class);
-        sampleWriter = objectMapper.writerFor(Sample.class);
+        super(Sample.class);
     }
 
     @Override
     public Sample convertToDataModelType(Document object) {
-        Sample sample = null;
-        try {
+        if (object.get("individual") != null) {
             if (object.get("individual") instanceof List) {
-                object.put("individual", ((List) object.get("individual")).get(0));
+                if (((List) object.get("individual")).size() > 0) {
+                    object.put("individual", ((List) object.get("individual")).get(0));
+                } else {
+                    object.put("individual", new Document("id", -1));
+                }
             }
-            sample = objectReader.readValue(objectWriter.writeValueAsString(object));
-        } catch (IOException e) {
-            e.printStackTrace();
+        } else {
+            object.put("individual", new Document("id", -1));
         }
-        return sample;
+        return super.convertToDataModelType(object);
     }
 
     @Override
     public Document convertToStorageType(Sample object) {
-        Document document = null;
-        try {
-            document = Document.parse(sampleWriter.writeValueAsString(object));
-            document.put("id", document.getInteger("id").longValue());
-            long individualId = object.getIndividual() != null
-                    ? (object.getIndividual().getId() == 0 ? -1L : object.getIndividual().getId()) : -1L;
-            document.put("individual", new Document("id", individualId));
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
+        Document document = super.convertToStorageType(object);
+        document.put("id", document.getInteger("id").longValue());
+        long individualId = object.getIndividual() != null
+                ? (object.getIndividual().getId() == 0 ? -1L : object.getIndividual().getId()) : -1L;
+        document.put("individual", new Document("id", individualId));
         return document;
     }
 }

@@ -43,7 +43,6 @@ public class GrpcServer extends AbstractStorageServer {
 
     public GrpcServer(Path configDir) {
         super(configDir);
-
         init();
     }
 
@@ -58,15 +57,19 @@ public class GrpcServer extends AbstractStorageServer {
     private void init() {
         logger = LoggerFactory.getLogger(this.getClass());
         if (configuration != null) {
-            this.port = configuration.getGrpc().getPort();
+            this.port = configuration.getServer().getGrpc().getPort();
         }
     }
 
     @Override
     public void start() throws Exception {
         server = ServerBuilder.forPort(port)
-                .addService(AdminServiceGrpc.bindService(new AdminGrpcService(catalogConfiguration, storageConfiguration, this)))
-                .addService(VariantServiceGrpc.bindService(new VariantGrpcService(catalogConfiguration, storageConfiguration)))
+//                .addService(AdminServiceGrpc.bindService(new AdminGrpcService(catalogConfiguration, storageConfiguration, this)))
+//                .addService(VariantServiceGrpc.bindService(new VariantGrpcService(catalogConfiguration, storageConfiguration)))
+//                .addService(AlignmentServiceGrpc.bindService(new AlignmentGrpcService(catalogConfiguration, storageConfiguration)))
+                .addService(new AdminGrpcService(configuration, storageConfiguration, this))
+                .addService(new VariantGrpcService(configuration, storageConfiguration))
+                .addService(new AlignmentGrpcService(configuration, storageConfiguration))
                 .build()
                 .start();
         logger.info("gRPC server started, listening on {}", port);

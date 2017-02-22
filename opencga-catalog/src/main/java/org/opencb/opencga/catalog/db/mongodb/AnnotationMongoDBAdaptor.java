@@ -28,8 +28,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.mongodb.converters.GenericConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Annotable;
 import org.opencb.opencga.catalog.models.Annotation;
@@ -53,7 +53,7 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         super(logger);
     }
 
-    protected abstract GenericConverter<? extends Annotable, Document> getConverter();
+    protected abstract GenericDocumentComplexConverter<? extends Annotable> getConverter();
 
     protected abstract MongoDBCollection getCollection();
 

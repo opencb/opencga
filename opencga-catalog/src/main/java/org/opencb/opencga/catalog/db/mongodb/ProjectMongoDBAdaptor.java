@@ -48,7 +48,6 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.FORCE;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.parseUser;
 
 /**
@@ -246,7 +245,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 //                ((Document) projectParameters).put("projects.$." + s, parameters.getString(s));
 //            }
 //        }
-//        String[] acceptedIntParams = {"diskQuota", "diskUsage"};
+//        String[] acceptedIntParams = {"quota", "size"};
 //        for (String s : acceptedIntParams) {
 //            if (parameters.containsKey(s)) {
 //                int anInt = parameters.getInt(s, Integer.MIN_VALUE);
@@ -444,18 +443,19 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         Bson projectParameters = new Document();
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(),
-                QueryParams.ORGANIZATION.key(), QueryParams.LAST_MODIFIED.key(), };
+                QueryParams.ORGANIZATION.key(), QueryParams.LAST_MODIFIED.key(), QueryParams.ORGANISM_SCIENTIFIC_NAME.key(),
+                QueryParams.ORGANISM_COMMON_NAME.key(), QueryParams.ORGANISM_ASSEMBLY.key(), };
         for (String s : acceptedParams) {
             if (parameters.containsKey(s)) {
                 ((Document) projectParameters).put("projects.$." + s, parameters.getString(s));
             }
         }
-        String[] acceptedIntParams = {QueryParams.DISK_USAGE.key()};
+        String[] acceptedIntParams = {QueryParams.SIZE.key(), QueryParams.ORGANISM_TAXONOMY_CODE.key(), };
         for (String s : acceptedIntParams) {
             if (parameters.containsKey(s)) {
                 int anInt = parameters.getInt(s, Integer.MIN_VALUE);
                 if (anInt != Integer.MIN_VALUE) {
-                    ((Document) projectParameters).put(s, anInt);
+                    ((Document) projectParameters).put("projects.$." + s, anInt);
                 }
             }
         }
@@ -508,6 +508,23 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         return endQuery("Update project", startTime, get(id, null));
     }
 
+    public void delete(long id) throws CatalogDBException {
+        Query query = new Query(QueryParams.ID.key(), id);
+
+        Document pull = new Document("$pull", new Document("projects", new Document("id", id)));
+        QueryResult<UpdateResult> update = userCollection.update(parseQuery(query), pull, null);
+
+        if (update.first().getModifiedCount() != 1) {
+            throw CatalogDBException.deleteError("Project " + id);
+        }
+    }
+
+    @Override
+    public void delete(Query query) throws CatalogDBException {
+        throw new NotImplementedException();
+    }
+
+    @Deprecated
     @Override
     public QueryResult<Project> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
@@ -643,6 +660,9 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
+            if (queryParam == null) {
+                continue;
+            }
             try {
                 switch (queryParam) {
                     case ID:
@@ -662,8 +682,32 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                         mongoKey = "projects." + entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
-                    default:
+                    case NAME:
+                    case ALIAS:
+                    case CREATION_DATE:
+                    case DESCRIPTION:
+                    case ORGANIZATION:
+                    case ORGANISM:
+                    case ORGANISM_SCIENTIFIC_NAME:
+                    case ORGANISM_COMMON_NAME:
+                    case ORGANISM_TAXONOMY_CODE:
+                    case ORGANISM_ASSEMBLY:
+                    case STATUS_NAME:
+                    case STATUS_MSG:
+                    case STATUS_DATE:
+                    case LAST_MODIFIED:
+                    case SIZE:
+                    case DATASTORES:
+                    case STUDY_ID:
+                    case STUDY_NAME:
+                    case STUDY_ALIAS:
+                    case STUDY_CREATOR_ID:
+                    case STUDY_STATUS:
+                    case STUDY_LAST_MODIFIED:
+                    case ACL_USER_ID:
                         addAutoOrQuery("projects." + queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    default:
                         break;
                 }
             } catch (Exception e) {

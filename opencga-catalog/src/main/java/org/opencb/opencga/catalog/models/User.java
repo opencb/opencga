@@ -44,8 +44,8 @@ public class User {
 
     private UserStatus status;
     private String lastModified;
-    private long diskUsage;
-    private long diskQuota;
+    private long size;
+    private long quota;
 
     private List<Project> projects;
     private List<Tool> tools;
@@ -207,7 +207,7 @@ public class User {
     }
 
     public User(String id, String name, String email, String password, String organization, Account account, String status,
-                String lastModified, long diskUsage, long diskQuota, List<Project> projects, List<Tool> tools, List<Session> sessions,
+                String lastModified, long size, long quota, List<Project> projects, List<Tool> tools, List<Session> sessions,
                 Map<String, Object> configs, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -218,8 +218,8 @@ public class User {
         this.account = account != null ? account : new Account();
         this.status = new UserStatus(status);
         this.lastModified = lastModified;
-        this.diskUsage = diskUsage;
-        this.diskQuota = diskQuota;
+        this.size = size;
+        this.quota = quota;
         this.projects = projects;
         this.tools = tools;
         this.sessions = sessions;
@@ -242,8 +242,8 @@ public class User {
         sb.append(", account=").append(account);
         sb.append(", status=").append(status);
         sb.append(", lastModified='").append(lastModified).append('\'');
-        sb.append(", diskUsage=").append(diskUsage);
-        sb.append(", diskQuota=").append(diskQuota);
+        sb.append(", size=").append(size);
+        sb.append(", quota=").append(quota);
         sb.append(", projects=").append(projects);
         sb.append(", tools=").append(tools);
         sb.append(", sessions=").append(sessions);
@@ -357,21 +357,21 @@ public class User {
         return this;
     }
 
-    public long getDiskUsage() {
-        return diskUsage;
+    public long getSize() {
+        return size;
     }
 
-    public User setDiskUsage(long diskUsage) {
-        this.diskUsage = diskUsage;
+    public User setSize(long size) {
+        this.size = size;
         return this;
     }
 
-    public long getDiskQuota() {
-        return diskQuota;
+    public long getQuota() {
+        return quota;
     }
 
-    public User setDiskQuota(long diskQuota) {
-        this.diskQuota = diskQuota;
+    public User setQuota(long quota) {
+        this.quota = quota;
         return this;
     }
 

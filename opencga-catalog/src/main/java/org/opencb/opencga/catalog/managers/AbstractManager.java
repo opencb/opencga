@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -47,7 +47,7 @@ public abstract class AbstractManager {
     protected final CatalogIOManagerFactory catalogIOManagerFactory;
     protected final CatalogManager catalogManager;
 
-    protected CatalogConfiguration catalogConfiguration;
+    protected Configuration configuration;
     @Deprecated
     protected Properties catalogProperties;
 
@@ -66,10 +66,10 @@ public abstract class AbstractManager {
     @Deprecated
     public AbstractManager(AuthorizationManager authorizationManager, AuditManager auditManager,
                            DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                           CatalogConfiguration catalogConfiguration) {
+                           Configuration configuration) {
         this.authorizationManager = authorizationManager;
         this.auditManager = auditManager;
-        this.catalogConfiguration = catalogConfiguration;
+        this.configuration = configuration;
         this.userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
         this.studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
         this.fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();
@@ -88,10 +88,10 @@ public abstract class AbstractManager {
 
     public AbstractManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                            DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                           CatalogConfiguration catalogConfiguration) {
+                           Configuration configuration) {
         this.authorizationManager = authorizationManager;
         this.auditManager = auditManager;
-        this.catalogConfiguration = catalogConfiguration;
+        this.configuration = configuration;
         this.userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
         this.studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
         this.fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();
@@ -170,6 +170,7 @@ public abstract class AbstractManager {
      * @return a list of study ids.
      * @throws CatalogException when no project or study id could be found.
      */
+    @Deprecated
     protected List<Long> getStudyIds(ObjectMap parameters) throws CatalogException {
         String ownerId = (String) parameters.get("user");
         String aliasProject = (String) parameters.get("project");
@@ -220,4 +221,87 @@ public abstract class AbstractManager {
         return studyIds;
     }
 
+    public class MyResourceId {
+        private String user;
+        private long studyId;
+        private long resourceId;
+
+        public MyResourceId() {
+        }
+
+        public MyResourceId(String user, long studyId, long resourceId) {
+            this.user = user;
+            this.studyId = studyId;
+            this.resourceId = resourceId;
+        }
+
+        public String getUser() {
+            return user;
+        }
+
+        public MyResourceId setUser(String user) {
+            this.user = user;
+            return this;
+        }
+
+        public long getStudyId() {
+            return studyId;
+        }
+
+        public MyResourceId setStudyId(long studyId) {
+            this.studyId = studyId;
+            return this;
+        }
+
+        public long getResourceId() {
+            return resourceId;
+        }
+
+        public MyResourceId setResourceId(long resourceId) {
+            this.resourceId = resourceId;
+            return this;
+        }
+    }
+
+    public class MyResourceIds {
+        private String user;
+        private long studyId;
+        private List<Long> resourceIds;
+
+        public MyResourceIds() {
+        }
+
+        public MyResourceIds(String user, long studyId, List<Long> resourceIds) {
+            this.user = user;
+            this.studyId = studyId;
+            this.resourceIds = resourceIds;
+        }
+
+        public String getUser() {
+            return user;
+        }
+
+        public MyResourceIds setUser(String user) {
+            this.user = user;
+            return this;
+        }
+
+        public long getStudyId() {
+            return studyId;
+        }
+
+        public MyResourceIds setStudyId(long studyId) {
+            this.studyId = studyId;
+            return this;
+        }
+
+        public List<Long> getResourceIds() {
+            return resourceIds;
+        }
+
+        public MyResourceIds setResourceIds(List<Long> resourceIds) {
+            this.resourceIds = resourceIds;
+            return this;
+        }
+    }
 }

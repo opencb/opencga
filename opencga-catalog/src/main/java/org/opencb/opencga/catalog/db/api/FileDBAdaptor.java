@@ -16,7 +16,10 @@
 
 package org.opencb.opencga.catalog.db.api;
 
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.File;
@@ -52,11 +55,9 @@ public interface FileDBAdaptor extends AclDBAdaptor<File, FileAclEntry> {
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
-        @Deprecated
-        FILE_STATUS("status.name", TEXT, ""),
         RELATED_FILES("relatedFiles", TEXT_ARRAY, ""),
         RELATED_FILES_RELATION("relatedFiles.relation", TEXT, ""),
-        DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
+        SIZE("size", INTEGER_ARRAY, ""),
         EXPERIMENT_ID("experiment.id", INTEGER_ARRAY, ""),
         SAMPLE_IDS("sampleIds", INTEGER_ARRAY, ""),
 
@@ -85,7 +86,8 @@ public interface FileDBAdaptor extends AclDBAdaptor<File, FileAclEntry> {
         NSTATS("nstats", DECIMAL, ""),
 
         DIRECTORY("directory", TEXT, ""),
-        STUDY_ID("studyId", INTEGER_ARRAY, "");
+        STUDY_ID("studyId", INTEGER_ARRAY, ""),
+        STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
 
         // Fixme: Index attributes
         private static Map<String, QueryParams> map = new HashMap<>();
@@ -218,18 +220,6 @@ public interface FileDBAdaptor extends AclDBAdaptor<File, FileAclEntry> {
      */
     QueryResult<Long> extractSampleFromFiles(Query query, List<Long> sampleIds) throws CatalogDBException;
 
-    /**
-     * Delete file.
-     *
-     * @param fileId fileId.
-     * @param update Map containing the parameters that will be updated after deletion. SKIP_CHECK might also be found in the map
-     *               to avoid checking whether the fileId is being used and delete it anyway.
-     * @param queryOptions Query Options.
-     * @return the deleted file.
-     * @throws CatalogDBException when the file could not be deleted.
-     */
-    QueryResult<File> delete(long fileId, ObjectMap update, QueryOptions queryOptions) throws CatalogDBException;
-
     /*
      * ACL methods
      * ***************************
@@ -268,7 +258,7 @@ public interface FileDBAdaptor extends AclDBAdaptor<File, FileAclEntry> {
         modificationDate(Type.TEXT, ""),
         description(Type.TEXT, ""),
         status(Type.TEXT, ""),
-        diskUsage(Type.NUMERICAL, ""),
+        size(Type.NUMERICAL, ""),
         experimentId(Type.NUMERICAL, ""),
         sampleIds(Type.NUMERICAL, ""),
         jobId(Type.NUMERICAL, ""),

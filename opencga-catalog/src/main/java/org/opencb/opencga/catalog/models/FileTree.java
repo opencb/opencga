@@ -27,6 +27,9 @@ public class FileTree {
     private File file;
     private List<FileTree> children;
 
+    public FileTree() {
+    }
+
     public FileTree(File file) {
         this.file = file;
         this.children = Collections.emptyList();

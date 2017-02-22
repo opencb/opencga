@@ -73,7 +73,7 @@ public class FileDaemon extends MonitorParentDaemon {
     private void checkDeletedFiles() throws CatalogException {
         QueryResult<File> files = catalogManager.searchFile(
                 -1,
-                new Query(FileDBAdaptor.QueryParams.FILE_STATUS.key(), File.FileStatus.TRASHED),
+                new Query(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED),
                 new QueryOptions(),
                 sessionId);
 
@@ -90,9 +90,9 @@ public class FileDaemon extends MonitorParentDaemon {
 //                            logger.info("Deleting file {} from study {id: {}, alias: {}}", file, study.getId(), study.getAlias());
                     catalogFileUtils.delete(file, sessionId);
                 } else {
-                            logger.info("Don't delete file {id: {}, path: '{}', attributes: {}}}", file.getId(), file.getPath(),
-                                    file.getAttributes());
-                            logger.info("{}s", (currentTimeMillis - deleteTimeMillis) / 1000);
+                    logger.info("Don't delete file {id: {}, path: '{}', attributes: {}}}", file.getId(), file.getPath(),
+                            file.getAttributes());
+                    logger.info("{}s", (currentTimeMillis - deleteTimeMillis) / 1000);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -103,7 +103,7 @@ public class FileDaemon extends MonitorParentDaemon {
     private void checkPendingRemoveFiles() throws CatalogException {
         QueryResult<File> files = catalogManager.searchFile(
                 -1,
-                new Query(FileDBAdaptor.QueryParams.FILE_STATUS.key(), File.FileStatus.DELETED),
+                new Query(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED),
                 new QueryOptions(),
                 sessionId);
 
@@ -113,7 +113,7 @@ public class FileDaemon extends MonitorParentDaemon {
                 long deleteTimeMillis = TimeUtils.toDate(file.getStatus().getDate()).toInstant().toEpochMilli();
                 if ((currentTimeMillis - deleteTimeMillis) > deleteDelayMillis) {
                     if (file.getType().equals(File.Type.FILE)) {
-                        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, sessionId);
+                        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, null, sessionId);
                     } else {
                         System.out.println("empty block");
                     }

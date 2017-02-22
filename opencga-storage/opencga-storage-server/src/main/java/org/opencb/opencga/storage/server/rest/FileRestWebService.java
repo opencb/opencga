@@ -20,9 +20,9 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
-import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
+import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import javax.servlet.ServletContext;
@@ -84,7 +84,7 @@ public class FileRestWebService extends GenericRestWebService {
                     return createOkResponse(VariantRestWebService.VariantFetcher.getVariants(storageEngine, dbName, histogram, interval,
                             queryOptions));
                 case "bam":
-                    AlignmentStorageManager sm = StorageManagerFactory.get().getAlignmentStorageManager(storageEngine);
+                    AlignmentStorageEngine sm = StorageEngineFactory.get().getAlignmentStorageEngine(storageEngine);
                     ObjectMap params = new ObjectMap();
                     AlignmentDBAdaptor dbAdaptor = sm.getDBAdaptor(dbName);
 

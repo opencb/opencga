@@ -19,10 +19,10 @@ package org.opencb.opencga.storage.core.benchmark;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.LoggerFactory;
 
@@ -39,12 +39,12 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
     private BenchmarkStats benchmarkStats;
 
     public VariantBenchmarkRunner(StorageConfiguration storageConfiguration) throws IllegalAccessException, ClassNotFoundException,
-            InstantiationException, StorageManagerException {
+            InstantiationException, StorageEngineException {
         this(storageConfiguration.getDefaultStorageEngineId(), storageConfiguration);
     }
 
     public VariantBenchmarkRunner(String storageEngine, StorageConfiguration storageConfiguration)
-            throws IllegalAccessException, ClassNotFoundException, InstantiationException, StorageManagerException {
+            throws IllegalAccessException, ClassNotFoundException, InstantiationException, StorageEngineException {
         this.storageEngine = storageEngine;
         this.storageConfiguration = storageConfiguration;
         logger = LoggerFactory.getLogger(this.getClass());
@@ -52,10 +52,10 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
     }
 
     private void init(String storageEngine)
-            throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageManagerException {
-        StorageManagerFactory storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
-        VariantStorageManager variantStorageManager = storageManagerFactory.getVariantStorageManager(storageEngine);
-        variantDBAdaptor = variantStorageManager.getDBAdaptor(storageConfiguration.getBenchmark().getDatabaseName());
+            throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
+        VariantStorageEngine variantStorageEngine = storageEngineFactory.getVariantStorageEngine(storageEngine);
+        variantDBAdaptor = variantStorageEngine.getDBAdaptor(storageConfiguration.getBenchmark().getDatabaseName());
     }
 
 

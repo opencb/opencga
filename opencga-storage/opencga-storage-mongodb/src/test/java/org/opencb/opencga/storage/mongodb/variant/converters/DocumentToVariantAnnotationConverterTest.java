@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.util.JSON;
@@ -25,9 +26,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 
-import java.util.LinkedList;
+import java.util.Arrays;
 import java.util.List;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.*;
 
@@ -38,9 +41,12 @@ public class DocumentToVariantAnnotationConverterTest {
 
     private VariantAnnotation variantAnnotation;
     private Document dbObject;
+    private static final Document ANY = new Document();
+    private static final List ANY_LIST = Arrays.asList();
+
 
     @Before
-    public void setUp() {
+    public void setUp() throws JsonProcessingException {
         //Setup variant
         // 19:45411941:T:C
         // curl 'http://${CELLBASE_HOST}/cellbase/webservices/rest/v3/hsapiens/genomic/variant/19:45411941:T:C/full_annotation?exclude
@@ -137,109 +143,116 @@ public class DocumentToVariantAnnotationConverterTest {
         jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         variantAnnotation = jsonObjectMapper.convertValue(JSON.parse(variantJson), VariantAnnotation.class);
 
-        LinkedList soDBList1 = new LinkedList();
-        soDBList1.add(1632);
-        Document ctDBObject1 = new Document(CT_GENE_NAME_FIELD, "TOMM40")
-                .append(CT_ENSEMBL_GENE_ID_FIELD, "ENSG00000130204")
-                .append(CT_ENSEMBL_TRANSCRIPT_ID_FIELD, "ENST00000592434")
-                .append(CT_STRAND_FIELD, "+")
-                .append(CT_BIOTYPE_FIELD, "protein_coding")
-                .append(CT_SO_ACCESSION_FIELD, soDBList1);
+//        System.out.println("annotation = " + jsonObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(variantAnnotation));
+        dbObject = new Document()
+                .append(ANNOT_ID_FIELD, "?")
+                .append(CONSEQUENCE_TYPE_FIELD, asList(
+                        new Document(CT_GENE_NAME_FIELD, "TOMM40")
+                                .append(CT_ENSEMBL_GENE_ID_FIELD, "ENSG00000130204")
+                                .append(CT_ENSEMBL_TRANSCRIPT_ID_FIELD, "ENST00000252487")
+                                .append(CT_BIOTYPE_FIELD, "protein_coding")
+                                .append(CT_SO_ACCESSION_FIELD, singletonList(1632)),
+                        new Document(CT_GENE_NAME_FIELD, "TOMM40")
+                                .append(CT_ENSEMBL_GENE_ID_FIELD, "ENSG00000130204")
+                                .append(CT_ENSEMBL_TRANSCRIPT_ID_FIELD, "ENST00000592434")
+                                .append(CT_BIOTYPE_FIELD, "protein_coding")
+                                .append(CT_SO_ACCESSION_FIELD, singletonList(1632)),
+                        new Document(CT_GENE_NAME_FIELD, "APOE")
+                                .append(CT_ENSEMBL_GENE_ID_FIELD, "ENSG00000130203")
+                                .append(CT_ENSEMBL_TRANSCRIPT_ID_FIELD, "ENST00000252486")
+                                .append(CT_CODON_FIELD, "Tgc/Cgc")
+                                .append(CT_BIOTYPE_FIELD, "protein_coding")
+                                .append(CT_C_DNA_POSITION_FIELD, 499)
+                                .append(CT_CDS_POSITION_FIELD, 388)
+                                .append(CT_SO_ACCESSION_FIELD, singletonList(1583))
+                                .append(CT_AA_POSITION_FIELD, 130)
+                                .append(CT_AA_REFERENCE_FIELD, "CYS")
+                                .append(CT_AA_ALTERNATE_FIELD, "ARG")
+                                .append(CT_PROTEIN_UNIPROT_ACCESSION, "P02649")
+                                .append(CT_PROTEIN_UNIPROT_VARIANT_ID, "VAR_000652")
+                                .append(CT_PROTEIN_SIFT_FIELD, new Document()
+                                        .append(SCORE_SCORE_FIELD, 1.0)/*.append(SCORE_DESCRIPTION_FIELD, "tolerated")*/)
+                                .append(CT_PROTEIN_POLYPHEN_FIELD, new Document()
+                                        .append(SCORE_SCORE_FIELD, 0.0)/*.append(SCORE_DESCRIPTION_FIELD, "benign")*/)
+                                .append(CT_PROTEIN_KEYWORDS, asList("3D-structure", "Alzheimer disease", "Amyloidosis", "Cholesterol metabolism", "Chylomicron", "Complete proteome", "Direct protein sequencing", "Disease mutation", "Glycation", "Glycoprotein", "HDL", "Heparin-binding", "Hyperlipidemia", "Lipid metabolism", "Lipid transport", "Neurodegeneration", "Oxidation", "Phosphoprotein", "Polymorphism", "Reference proteome", "Repeat", "Secreted", "Signal", "Steroid metabolism", "Sterol metabolism", "Transport", "VLDL"))
+                                .append(CT_PROTEIN_FEATURE_FIELD, asList(new Document()
+                                                .append(CT_PROTEIN_FEATURE_START_FIELD, 106)
+                                                .append(CT_PROTEIN_FEATURE_END_FIELD, 141)
+                                                .append(CT_PROTEIN_FEATURE_TYPE_FIELD, "helix"),
+                                        new Document()
+                                                .append(CT_PROTEIN_FEATURE_START_FIELD, 80)
+                                                .append(CT_PROTEIN_FEATURE_END_FIELD, 255)
+                                                .append(CT_PROTEIN_FEATURE_TYPE_FIELD, "region of interest")
+                                                .append(CT_PROTEIN_FEATURE_DESCRIPTION_FIELD, "8 X 22 AA approximate tandem repeats"),
+                                        new Document()
+                                                .append(CT_PROTEIN_FEATURE_START_FIELD, 124)
+                                                .append(CT_PROTEIN_FEATURE_END_FIELD, 145)
+                                                .append(CT_PROTEIN_FEATURE_TYPE_FIELD, "repeat")
+                                                .append(CT_PROTEIN_FEATURE_DESCRIPTION_FIELD, "3"),
+                                        new Document()
+                                                .append(CT_PROTEIN_FEATURE_ID_FIELD, "PRO_0000001987")
+                                                .append(CT_PROTEIN_FEATURE_START_FIELD, 19)
+                                                .append(CT_PROTEIN_FEATURE_END_FIELD, 317)
+                                                .append(CT_PROTEIN_FEATURE_TYPE_FIELD, "chain")
+                                                .append(CT_PROTEIN_FEATURE_DESCRIPTION_FIELD, "Apolipoprotein E")
 
-        LinkedList soDBList2 = new LinkedList<>();
-        soDBList2.add(1583);
-        Document scoreDBobject1 = new Document(SCORE_SOURCE_FIELD, 1.0)
-                .append(SCORE_DESCRIPTION_FIELD, "tolerated");
-        Document scoreDBobject2 = new Document(SCORE_SOURCE_FIELD, 0.0)
-                .append(SCORE_DESCRIPTION_FIELD, "benign");
-        Document ctDBObject2 = new Document(CT_GENE_NAME_FIELD, "APOE")
-                .append(CT_ENSEMBL_GENE_ID_FIELD, "ENSG00000130203")
-                .append(CT_ENSEMBL_TRANSCRIPT_ID_FIELD, "ENST00000252486")
-                .append(CT_CODON_FIELD, "Tgc/Cgc")
-                .append(CT_STRAND_FIELD, "+")
-                .append(CT_BIOTYPE_FIELD, "protein_coding")
-                .append(CT_C_DNA_POSITION_FIELD, 499)
-                .append(CT_CDS_POSITION_FIELD, 388)
-                .append(CT_SO_ACCESSION_FIELD, soDBList2)
-                .append(CT_AA_POSITION_FIELD, 130)
-                .append(CT_AA_REFERENCE_FIELD, "CYS")
-                .append(CT_AA_ALTERNATE_FIELD, "ARG")
-                .append(CT_PROTEIN_SIFT_FIELD, scoreDBobject1)
-                .append(CT_PROTEIN_POLYPHEN_FIELD, scoreDBobject2);
+                                )),
+                        ANY,
+                        ANY,
+                        ANY,
+                        ANY,
+                        new Document(CT_SO_ACCESSION_FIELD, singletonList(1566))
+                ))
+                .append(CONSERVED_REGION_PHASTCONS_FIELD, new Document(SCORE_SCORE_FIELD, 0.11100000143051147))
+                .append(CONSERVED_REGION_PHYLOP_FIELD, new Document(SCORE_SCORE_FIELD, 0.5609999895095825))
+                .append(CLINICAL_DATA_FIELD, new Document()
+                        .append(CLINICAL_COSMIC_FIELD, asList(
+                                new Document()
+                                        .append("mutationId", "3749517")
+                                        .append("primarySite", "large_intestine")
+                                        .append("siteSubtype", "rectum")
+                                        .append("primaryHistology", "carcinoma")
+                                        .append("histologySubtype", "adenocarcinoma")
+                                        .append("sampleSource", "NS")
+                                        .append("tumourOrigin", "primary")
+                                        .append("geneName", "APOE")
+                                        .append("mutationSomaticStatus", "Confirmed somatic variant")))
+                        .append(CLINICAL_GWAS_FIELD, asList(
+                                new Document()
+                                        .append("snpIdCurrent", "429358")
+                                        .append("traits", asList("Alzheimer's disease biomarkers"))
+                                        .append("riskAlleleFrequency", 0.28)
+                                        .append("reportedGenes", "APOE")))
+                        .append(CLINICAL_CLINVAR_FIELD, asList(
+                                new Document()
+                                        .append("accession", "RCV000019456")
+                                        .append("clinicalSignificance", "Pathogenic")
+                                        .append("traits", singletonList("APOE4(-)-FREIBURG"))
+                                        .append("geneNames", singletonList("APOE"))
+                                        .append("reviewStatus", "CLASSIFIED_BY_SINGLE_SUBMITTER"),
+                                ANY,
+                                ANY,
+                                ANY,
+                                ANY
+                        )))
+                .append(XREFS_FIELD, ANY_LIST)
+                .append(POPULATION_FREQUENCIES_FIELD, ANY_LIST);
 
-        LinkedList soDBList3 = new LinkedList();
-        soDBList3.add(1566);
-        Document ctDBObject3 = new Document(CT_SO_ACCESSION_FIELD,
-                soDBList3);
+//        Document drugDBObject = new Document(DRUG_NAME_FIELD, "TOMM40")
+//                .append(DRUG_NAME_FIELD, "PA164712505")
+//                .append(DRUG_STUDY_TYPE_FIELD, "PharmGKB");
+//        LinkedList drugDBList = new LinkedList();
+//        drugDBList.add(drugDBObject);
+//        dbObject.append(DRUG_FIELD, drugDBList);
 
-        dbObject = new Document("id", "?");
-        LinkedList ctDBList = new LinkedList();
-        ctDBList.add(ctDBObject1);
-        ctDBList.add(ctDBObject2);
-        ctDBList.add(ctDBObject3);
-        dbObject.append("ct", ctDBList);
 
-        LinkedList conservationDBList = new LinkedList();
-        Document conservationScore1 =
-                new Document(SCORE_SCORE_FIELD, 0.11100000143051147)
-                        .append(SCORE_SCORE_FIELD, "phastCons");
-        Document conservationScore2 =
-                new Document(SCORE_SCORE_FIELD, 0.5609999895095825)
-                        .append(SCORE_SCORE_FIELD, "phylop");
-        conservationDBList.add(conservationScore1);
-        conservationDBList.add(conservationScore2);
-        dbObject.append("cr_score", conservationDBList);
-
-        Document drugDBObject = new Document(DRUG_NAME_FIELD, "TOMM40")
-                .append(DRUG_NAME_FIELD, "PA164712505")
-                .append(DRUG_STUDY_TYPE_FIELD, "PharmGKB");
-        LinkedList drugDBList = new LinkedList();
-        drugDBList.add(drugDBObject);
-        dbObject.append("drug", drugDBList);
-
-        Document clinicalDBObject = new Document();
-        Document cosmicDBObject = new Document("mutationId", "3749517")
-                .append("primarySite", "large_intestine")
-                .append("siteSubtype", "rectum")
-                .append("primaryHistology", "carcinoma")
-                .append("histologySubtype", "adenocarcinoma")
-                .append("sampleSource", "NS")
-                .append("tumourOrigin", "primary")
-                .append("geneName", "APOE")
-                .append("mutationSomaticStatus", "Confirmed somatic variant");
-        LinkedList cosmicDBList = new LinkedList();
-        cosmicDBList.add(cosmicDBObject);
-        clinicalDBObject.append("cosmic", cosmicDBList);
-        LinkedList traitDBList1 = new LinkedList();
-        traitDBList1.add("Alzheimer's disease biomarkers");
-        Document gwasDBObject = new Document("snpIdCurrent", "429358")
-                .append("traits", traitDBList1)
-                .append("riskAlleleFrequency", 0.28)
-                .append("reportedGenes", "APOE");
-        LinkedList gwasDBList = new LinkedList();
-        gwasDBList.add(gwasDBObject);
-        clinicalDBObject.append("gwas", gwasDBList);
-        LinkedList traitDBList2 = new LinkedList();
-        traitDBList2.add("APOE4(-)-FREIBURG");
-        LinkedList geneNameDBList = new LinkedList();
-        geneNameDBList.add("APOE");
-        Document clinvarDBObject = new Document("accession", "RCV000019456")
-                .append("clinicalSignificance", "Pathogenic")
-                .append("traits", traitDBList2)
-                .append("geneNames", geneNameDBList)
-                .append("reviewStatus", "CLASSIFIED_BY_SINGLE_SUBMITTER");
-        LinkedList clinvarDBList = new LinkedList();
-        clinvarDBList.add(clinvarDBObject);
-        clinicalDBObject.append("clinvar", clinvarDBList);
-        dbObject.append("clinical", clinicalDBObject);
     }
 
     @Test
     public void testConvertToDataModelType() throws Exception {
         DocumentToVariantAnnotationConverter documentToVariantAnnotationConverter = new DocumentToVariantAnnotationConverter();
         VariantAnnotation convertedVariantAnnotation = documentToVariantAnnotationConverter.convertToDataModelType(dbObject);
-        assertEquals(convertedVariantAnnotation.getConsequenceTypes().get(1).getProteinVariantAnnotation().getReference(), "CYS");
-        assertEquals(convertedVariantAnnotation.getGeneDrugInteraction().get(0).getDrugName(), "PA164712505");
+        assertEquals(convertedVariantAnnotation.getConsequenceTypes().get(2).getProteinVariantAnnotation().getReference(), "CYS");
         assertEquals(convertedVariantAnnotation.getVariantTraitAssociation().getCosmic().get(0).getPrimarySite(), "large_intestine");
 
     }
@@ -253,5 +266,39 @@ public class DocumentToVariantAnnotationConverterTest {
         assertEquals("RCV000019456", ((Document)  convertedDBObject.get(CLINICAL_DATA_FIELD, Document.class)
                 .get(CLINICAL_CLINVAR_FIELD, List.class).get(0)).get("accession", String.class));
 
+//        System.out.println("convertedDBObject = " + convertedDBObject.toJson(new JsonWriterSettings(JsonMode.SHELL, true)));
+        checkEqualDocuments(dbObject, convertedDBObject);
+
     }
+
+    public void checkEqualDocuments(Document expected, Document actual) {
+        checkEqualObjects(expected, actual, "");
+    }
+
+    private void checkEqualObjects(Object expected, Object actual, String path) {
+        if (expected == ANY || expected == ANY_LIST) {
+            // Accept ANY field. Ignore
+            return;
+        }
+        if (expected instanceof Document && actual instanceof Document) {
+            checkEqualObjects((Document) expected, (Document) actual, path);
+        } else if (expected instanceof List && actual instanceof List) {
+            assertEquals(path + ".size", ((List) expected).size(), ((List) actual).size());
+            for (int i = 0; i < ((List) expected).size(); i++) {
+                checkEqualObjects(((List) expected).get(i), ((List) actual).get(i), path + '[' + i + ']');
+            }
+        } else {
+            assertEquals("Throught " + path, expected, actual);
+        }
+    }
+
+    private void checkEqualObjects(Document expected, Document actual, String path) {
+        assertEquals("Throught " + path, expected.keySet(), actual.keySet());
+        for (String key : expected.keySet()) {
+            Object e = expected.get(key);
+            Object a = actual.get(key);
+            checkEqualObjects(e, a, path + '.' + key);
+        }
+    }
+
 }

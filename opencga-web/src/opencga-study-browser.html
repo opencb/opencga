@@ -15,24 +15,35 @@
   -->
 <link rel="import" href="../lib/jsorolla/src/lib/opencga/catalog/opencga-study.html">
 <link rel="import" href="../lib/jsorolla/src/lib/opencga/catalog/variableSets/opencga-variable-set-panel.html">
-<link rel="import" href="components/files/opencga-files-panel.html">
-<link rel="import" href="components/samples/opencga-samples-panel.html">
+<link rel="import" href="../lib/jsorolla/src/lib/opencga/catalog/files/opencga-files-panel.html">
+<link rel="import" href="../lib/jsorolla/src/lib/opencga/catalog/samples/opencga-samples-panel.html">
 <link rel="import" href="components/panels/opencga-panels-panel.html">
 
 <dom-module id="opencga-study-browser">
     <template>
         <style is="custom-style" include="jso-styles"></style>
 
-        <div style="margin: 10px">
-            <h2>{{study.name}}</h2>
+        <div>
+            <h3>{{study.name}} <span style="font-size: smaller">({{study.alias}})</span>
+                <span style="float: right; font-size: 20px; display: block; cursor: pointer;" on-click="backToDashboard">
+                    <i class="fa fa-undo" aria-hidden="true"></i>
+                    <span>Back to user dashboard</span>
+                </span>
+            </h3>
 
-            <ul id="myTabs" class="nav nav-pills" role="tablist">
+            <ul id="myTabs" class="nav nav-tabs" role="tablist">
                 <li role="presentation" class="active"><a href="#{{prefix}}studyInfo" role="tab" data-toggle="tab">Summary</a></li>
-                <li role="presentation"><a href="#{{prefix}}dashboardFiles" role="tab" data-toggle="tab">Files<span class="badge">{{study.files}}</span></a></li>
-                <li role="presentation"><a id="{{prefix}}SampleTab" href="#{{prefix}}dashboardSamples" role="tab" data-toggle="tab">Samples</a></li>
-                <li role="presentation"><a href="#{{prefix}}dashboardJobs" role="tab" data-toggle="tab">Jobs</a></li>
-                <li role="presentation"><a href="#{{prefix}}dashboardPanels" role="tab" data-toggle="tab">Panels</a></li>
-                <li role="presentation"><a href="#{{prefix}}dashboardFilters" role="tab" data-toggle="tab">Filter annotation</a></li>
+                <li role="presentation"><a href="#{{prefix}}dashboardFiles" role="tab" data-toggle="tab">
+                    <i class="fa fa-file-text-o" aria-hidden="true"></i> Files
+                    <span class="badge">{{study.files}}</span></a></li>
+                <li role="presentation"><a id="{{prefix}}SampleTab" href="#{{prefix}}dashboardSamples" role="tab" data-toggle="tab">
+                    <i class="fa fa-users" aria-hidden="true"></i> Samples</a></li>
+                <li role="presentation"><a href="#{{prefix}}dashboardJobs" role="tab" data-toggle="tab">
+                    <i class="fa fa-tasks" aria-hidden="true"></i> Jobs</a></li>
+                <li role="presentation"><a href="#{{prefix}}dashboardPanels" role="tab" data-toggle="tab">
+                    <i class="fa fa-list-alt" aria-hidden="true"></i> Panels</a></li>
+                <li role="presentation"><a href="#{{prefix}}dashboardFilters" role="tab" data-toggle="tab">
+                    <i class="fa fa-user-md" aria-hidden="true"></i> Clinical data</a></li>
             </ul>
 
             <div class="tab-content">
@@ -81,6 +92,9 @@
                 if (typeof this.prefix === "undefined" || this.prefix == "") {
                     this.prefix = Utils.randomString(6);
                 }
+            },
+            backToDashboard: function() {
+                window.location.hash = "dashboard";
             }
         });
     </script>

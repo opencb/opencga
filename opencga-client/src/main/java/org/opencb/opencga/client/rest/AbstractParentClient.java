@@ -16,12 +16,17 @@
 
 package org.opencb.opencga.client.rest;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.slf4j.Logger;
@@ -31,15 +36,18 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by imedina on 04/05/16.
  */
-public abstract class AbstractParentClient<T, A> {
+public abstract class AbstractParentClient {
 
     protected Client client;
 
@@ -47,13 +55,11 @@ public abstract class AbstractParentClient<T, A> {
     private String sessionId;
     private ClientConfiguration configuration;
 
-    protected String category;
-    protected Class<T> clazz;
-    protected Class<A> aclClass;
+    protected ObjectMapper jsonObjectMapper;
 
-    protected static ObjectMapper jsonObjectMapper;
-
-    private static final int BATCH_SIZE = 2000;
+    private static int timeout = 10000;
+    private static int batchSize = 2000;
+    private static int defaultLimit = 2000;
     private static final int DEFAULT_SKIP = 0;
     protected static final String GET = "GET";
     protected static final String POST = "POST";
@@ -68,81 +74,22 @@ public abstract class AbstractParentClient<T, A> {
         init();
     }
 
-    public enum AclParams {
-        ADD_PERMISSIONS("addPermissions"),
-        REMOVE_PERMISSIONS("removePermissions"),
-        SET_PERMISSIONS("setPermissions");
-
-        private String key;
-
-        AclParams(String value) {
-            this.key = value;
-        }
-
-        public String key() {
-            return this.key;
-        }
-    }
-
     private void init() {
         this.logger = LoggerFactory.getLogger(this.getClass().toString());
         this.client = ClientBuilder.newClient();
         jsonObjectMapper = new ObjectMapper();
-    }
 
-
-    public QueryResponse<Long> count(Query query) throws IOException {
-        return execute(category, "count", query, GET, Long.class);
-    }
-
-    public QueryResponse<T> get(String id, QueryOptions options) throws CatalogException, IOException {
-        return execute(category, id, "info", options, GET, clazz);
-    }
-
-    public QueryResponse<T> search(Query query, QueryOptions options) throws IOException {
-        ObjectMap myQuery = new ObjectMap(query);
-        myQuery.putAll(options);
-        return execute(category, "search", myQuery, GET, clazz);
-    }
-
-    public QueryResponse<T> update(String id, ObjectMap params) throws CatalogException, IOException {
-        //TODO REVISAR
-        if (params.containsKey("method") && params.get("method").equals("GET")) {
-            return execute(category, id, "update", params, GET, clazz);
+        if (configuration.getRest() != null) {
+            if (configuration.getRest().getTimeout() > 0) {
+                timeout = configuration.getRest().getTimeout();
+            }
+            if (configuration.getRest().getBatchQuerySize() > 0) {
+                batchSize = configuration.getRest().getBatchQuerySize();
+            }
+            if (configuration.getRest().getDefaultLimit() > 0) {
+                defaultLimit = configuration.getRest().getDefaultLimit();
+            }
         }
-        ObjectMapper mapper = new ObjectMapper();
-        String json = mapper.writeValueAsString(params);
-        ObjectMap p = new ObjectMap("body", json);
-        logger.debug("Json in update client: " + json);
-        return execute(category, id, "update", p, POST, clazz);
-    }
-
-    public QueryResponse<T> delete(String id, ObjectMap params) throws CatalogException, IOException {
-        return execute(category, id, "delete", params, GET, clazz);
-    }
-
-    // Acl methods
-
-    public QueryResponse<A> getAcls(String id) throws IOException {
-        return execute(category, id, "acl", new ObjectMap(), GET, aclClass);
-    }
-
-    public QueryResponse<A> getAcl(String id, String memberId) throws CatalogException, IOException {
-        return execute(category, id, "acl", memberId, "info", new ObjectMap(), GET, aclClass);
-    }
-
-    public QueryResponse<A> createAcl(String id, String members, ObjectMap params) throws CatalogException,
-            IOException {
-        params = addParamsToObjectMap(params, "members", members);
-        return execute(category, id, "acl", null, "create", params, GET, aclClass);
-    }
-
-    public QueryResponse<A> deleteAcl(String id, String memberId) throws CatalogException, IOException {
-        return execute(category, id, "acl", memberId, "delete", new ObjectMap(), GET, aclClass);
-    }
-
-    public QueryResponse<A> updateAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {
-        return execute(category, id, "acl", memberId, "update", params, GET, aclClass);
     }
 
     protected <T> QueryResponse<T> execute(String category, String action, Map<String, Object> params, String method, Class<T> clazz)
@@ -156,10 +103,13 @@ public abstract class AbstractParentClient<T, A> {
     }
 
     protected <T> QueryResponse<T> execute(String category1, String id1, String category2, String id2, String action,
-                                           Map<String, Object> params, String method, Class<T> clazz) throws IOException {
+                                           Map<String, Object> paramsMap, String method, Class<T> clazz) throws IOException {
 
-        if (params == null) {
-            params = new HashMap<>();
+        ObjectMap params;
+        if (paramsMap == null) {
+            params = new ObjectMap();
+        } else {
+            params = new ObjectMap(paramsMap);
         }
 
 //        // Remove null or empty params
@@ -169,6 +119,9 @@ public abstract class AbstractParentClient<T, A> {
 //                params.remove(param.getKey());
 //            }
 //        }
+
+        client.property(ClientProperties.CONNECT_TIMEOUT, 1000);
+        client.property(ClientProperties.READ_TIMEOUT, timeout);
 
         // Build the basic URL
         WebTarget path = client
@@ -195,10 +148,10 @@ public abstract class AbstractParentClient<T, A> {
         // Add the last URL part, the 'action'
         path = path.path(action);
 
-        int numRequiredFeatures = (int) params.getOrDefault(QueryOptions.LIMIT, Integer.MAX_VALUE);
-        int limit = Math.min(numRequiredFeatures, BATCH_SIZE);
+        int numRequiredFeatures = params.getInt(QueryOptions.LIMIT, defaultLimit);
+        int limit = Math.min(numRequiredFeatures, batchSize);
 
-        int skip = (int) params.getOrDefault(QueryOptions.SKIP, DEFAULT_SKIP);
+        int skip = params.getInt(QueryOptions.SKIP, DEFAULT_SKIP);
 
         // Session ID is needed almost always, the only exceptions are 'create/user', 'login' and 'changePassword'
         if (this.sessionId != null && !this.sessionId.isEmpty()) {
@@ -211,13 +164,14 @@ public abstract class AbstractParentClient<T, A> {
         while (true) {
             params.put(QueryOptions.SKIP, skip);
             params.put(QueryOptions.LIMIT, limit);
+            params.put(QueryOptions.TIMEOUT, timeout);
 
             if (!action.equals("upload")) {
-                queryResponse = (QueryResponse<T>) callRest(path, params, clazz, method);
+                queryResponse = callRest(path, params, clazz, method);
             } else {
-                queryResponse = (QueryResponse<T>) callUploadRest(path, params, clazz);
+                queryResponse = callUploadRest(path, params, clazz);
             }
-            int numResults = queryResponse.getResponse().get(0).getNumResults();
+            int numResults = queryResponse.getResponse().isEmpty() ? 0 : queryResponse.getResponse().get(0).getNumResults();
 
             if (finalQueryResponse == null) {
                 finalQueryResponse = queryResponse;
@@ -228,15 +182,15 @@ public abstract class AbstractParentClient<T, A> {
                 }
             }
 
-            int numTotalResults = finalQueryResponse.getResponse().get(0).getNumResults();
-            if (numResults < limit || numTotalResults == numRequiredFeatures || numResults == 0) {
+            int numTotalResults = queryResponse.getResponse().isEmpty() ? 0 : finalQueryResponse.getResponse().get(0).getNumResults();
+            if (numResults < limit || numTotalResults >= numRequiredFeatures || numResults == 0) {
                 break;
             }
 
             // DO NOT CHANGE THE ORDER OF THE FOLLOWING CODE
             skip += numResults;
-            if (skip + BATCH_SIZE < numRequiredFeatures) {
-                limit = BATCH_SIZE;
+            if (skip + batchSize < numRequiredFeatures) {
+                limit = batchSize;
             } else {
                 limit = numRequiredFeatures - numTotalResults;
             }
@@ -255,14 +209,20 @@ public abstract class AbstractParentClient<T, A> {
      * @return A queryResponse object containing the results of the query.
      * @throws IOException if the path is wrong and cannot be converted to a proper url.
      */
-    protected QueryResponse<T> callRest(WebTarget path, Map<String, Object> params, Class clazz, String method) throws IOException {
+    private <T> QueryResponse<T> callRest(WebTarget path, Map<String, Object> params, Class clazz, String method) throws IOException {
 
         String jsonString = "{}";
         if (method.equalsIgnoreCase(GET)) {
             // TODO we still have to check the limit of the query, and keep querying while there are more results
             if (params != null) {
                 for (String s : params.keySet()) {
-                    path = path.queryParam(s, params.get(s));
+                    Object o = params.get(s);
+                    if (o instanceof Collection) {
+                        String value = ((Collection<?>) o).stream().map(Object::toString).collect(Collectors.joining(","));
+                        path = path.queryParam(s, value);
+                    } else {
+                        path = path.queryParam(s, o);
+                    }
                 }
             }
 
@@ -293,9 +253,9 @@ public abstract class AbstractParentClient<T, A> {
 //            ObjectMap json = new ObjectMap("body", params.get("body"));
 
             logger.debug("POST URL: " + path.getUri().toURL());
-//            jsonString = path.request().accept(MediaType.APPLICATION_JSON).post(Entity.entity(json, MediaType.APPLICATION_JSON),
-//                    String.class);est().accept(MediaType.APPLICATION_JSON).post(Entity.entity(json, MediaType.APPLICATION_JSON),
-            jsonString = path.request().post(Entity.json(params.get("body")), String.class);
+            Response body = path.request().post(Entity.json(params.get("body")));
+            jsonString = body.readEntity(String.class);
+//            jsonString = path.request().post(Entity.json(params.get("body")), String.class);
         }
         return parseResult(jsonString, clazz);
     }
@@ -309,7 +269,7 @@ public abstract class AbstractParentClient<T, A> {
      * @return A queryResponse object containing the results of the query.
      * @throws IOException if the path is wrong and cannot be converted to a proper url.
      */
-    protected QueryResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class clazz) throws IOException {
+    private <T> QueryResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class<T> clazz) throws IOException {
 
         String jsonString;
 
@@ -334,24 +294,27 @@ public abstract class AbstractParentClient<T, A> {
         return parseResult(jsonString, clazz);
     }
 
-    public static <T> QueryResponse<T> parseResult(String json, Class<T> clazz) throws IOException {
+    private <T> QueryResponse<T> parseResult(String json, Class<T> clazz) throws IOException {
         if (json != null && !json.isEmpty()) {
             ObjectReader reader = jsonObjectMapper
                     .readerFor(jsonObjectMapper.getTypeFactory().constructParametrizedType(QueryResponse.class, QueryResult.class, clazz));
-            return reader.readValue(json);
+            try {
+                return reader.readValue(json);
+            } catch (JsonParseException e) {
+                if (json.startsWith("<html>")) {
+                    if (json.contains("504 Gateway Time-out")) {
+                        return new QueryResponse<>("", 0, "", "Error 504 Gateway Time-out. The server didn't respond in time.", null,
+                                Collections.emptyList());
+                    }
+                }
+                throw e;
+            }
         } else {
             return new QueryResponse<>();
         }
     }
 
-    @Deprecated
-    protected Map<String, Object> createParamsMap(String key, Object value) {
-        Map<String, Object> params= new HashMap<>(10);
-        params.put(key, value);
-        return params;
-    }
-
-    protected ObjectMap createIfNull(ObjectMap objectMap) {
+    private ObjectMap createIfNull(ObjectMap objectMap) {
         if (objectMap == null) {
             objectMap = new ObjectMap();
         }
@@ -368,7 +331,6 @@ public abstract class AbstractParentClient<T, A> {
         }
         return objectMap;
     }
-
 
     public String getSessionId() {
         return sessionId;
@@ -388,7 +350,14 @@ public abstract class AbstractParentClient<T, A> {
         return this;
     }
 
-    public String getUserId() {
+    public String getUserId(ObjectMap options) throws CatalogException {
+        String userId = this.userId;
+        if (options != null && options.containsKey("userId")) {
+            userId = options.getString("userId");
+        }
+        if (userId == null || userId.isEmpty()) {
+            throw new CatalogException("Missing user id");
+        }
         return userId;
     }
 

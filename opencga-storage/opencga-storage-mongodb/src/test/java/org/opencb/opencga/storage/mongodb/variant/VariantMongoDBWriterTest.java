@@ -24,27 +24,33 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.formats.variant.io.VariantReader;
-import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantMerger;
-import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageLoader;
-import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageReader;
+import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
+import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBWriter;
+import org.opencb.opencga.storage.mongodb.variant.load.*;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageConverterTask;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageReader;
+import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBOperations;
+import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantMergeLoader;
+import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantMerger;
 
 import java.io.IOException;
 import java.util.*;
@@ -60,10 +66,10 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSa
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestUtils {
+public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
 
     private static String inputFile;
-    private static MongoDBVariantStorageManager variantStorageManager;
+    private static MongoDBVariantStorageEngine variantStorageManager;
     private VariantSource source1, source2, source3;
     private StudyConfiguration studyConfiguration, studyConfiguration2;
     private final Integer fileId1 = 10000;
@@ -83,10 +89,10 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
         stderr.setThreshold(Level.toLevel("debug"));
 
-        inputFile = VariantStorageManagerTestUtils.getResourceUri("variant-test-file.vcf.gz").getPath();
+        inputFile = VariantStorageBaseTest.getResourceUri("variant-test-file.vcf.gz").getPath();
 
-        clearDB(VariantStorageManagerTestUtils.DB_NAME);
-        variantStorageManager = getVariantStorageManager();
+        clearDB(VariantStorageBaseTest.DB_NAME);
+        variantStorageManager = getVariantStorageEngine();
 
         source1 = new VariantSource(getFileName(fileId1), fileId1.toString(), studyId1.toString(), studyName1);
         studyConfiguration = new StudyConfiguration(studyId1, studyName1);
@@ -117,7 +123,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         studyConfiguration2.getFileIds().put(source3.getFileName(), fileId3);
         studyConfiguration2.getSamplesInFiles().put(fileId3, file3SampleIds);
 
-        dbAdaptor = variantStorageManager.getDBAdaptor(VariantStorageManagerTestUtils.DB_NAME);
+        dbAdaptor = variantStorageManager.getDBAdaptor(VariantStorageBaseTest.DB_NAME);
     }
 
 
@@ -126,13 +132,13 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
     }
 
     @Test
-    public void test() throws IOException, StorageManagerException {
+    public void test() throws IOException, StorageEngineException {
 
 
         VariantReader reader = new VariantVcfReader(source1, inputFile);
 
         List<Task<Variant>> taskList = new SortedList<>();
-        List<VariantWriter> writers = new ArrayList<>();
+        List<DataWriter<Variant>> writers = new ArrayList<>();
 
 
         writers.add(new VariantMongoDBWriter(fileId1, studyConfiguration, dbAdaptor, true, false));
@@ -144,7 +150,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
 //        }
 //        taskList.add(new VariantStatsTask(reader, study1));
 
-        VariantRunner vr = new VariantRunner(source1, reader, null, writers, taskList, 200);
+        Runner<Variant> vr = new Runner<>(reader, writers, taskList, 200);
         vr.run();
 
     }
@@ -165,12 +171,12 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
      *
      */
     @Test
-    public void testInsertMultiFiles() throws StorageManagerException {
+    public void testInsertMultiFiles() throws StorageEngineException {
         List<Variant> allVariants;
-        studyConfiguration.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GQX", "DP"));
-        studyConfiguration.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
-        studyConfiguration2.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DP", "GQX"));
-        studyConfiguration2.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
+        studyConfiguration.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GQX", "DP"));
+        studyConfiguration.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
+        studyConfiguration2.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DP", "GQX"));
+        studyConfiguration2.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
 
         assertEquals(new MongoDBVariantWriteResult(3, 0, 0, 0, 0, 0), clearTime(loadFile1()));
         allVariants = dbAdaptor.get(new Query(), new QueryOptions("sort", true)).getResult();
@@ -189,12 +195,12 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
     }
 
     @Test
-    public void testInsertMultiFilesMultiMerge() throws StorageManagerException {
+    public void testInsertMultiFilesMultiMerge() throws StorageEngineException {
         List<Variant> allVariants;
-        studyConfiguration.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GQX", "DP"));
-        studyConfiguration.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
-        studyConfiguration2.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DP", "GQX"));
-        studyConfiguration2.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
+        studyConfiguration.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GQX", "DP"));
+        studyConfiguration.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
+        studyConfiguration2.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DP", "GQX"));
+        studyConfiguration2.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
 
         assertEquals(new MongoDBVariantWriteResult(3, 0, 0, 0, 0, 0), clearTime(loadFile1()));
         allVariants = dbAdaptor.get(new Query(), new QueryOptions("sort", true)).getResult();
@@ -215,15 +221,15 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
     /**
      * Insert variants chromosome by chromosome
      *
-     * @throws StorageManagerException
+     * @throws StorageEngineException
      */
     @Test
-    public void testInsertMultiFilesMultipleRegions() throws StorageManagerException {
+    public void testInsertMultiFilesMultipleRegions() throws StorageEngineException {
         List<Variant> allVariants;
-        studyConfiguration.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GQX", "DP"));
-        studyConfiguration.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
-        studyConfiguration2.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DP", "GQX"));
-        studyConfiguration2.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
+        studyConfiguration.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GQX", "DP"));
+        studyConfiguration.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
+        studyConfiguration2.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DP", "GQX"));
+        studyConfiguration2.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
 
         int i = 1;
         for (String chr : Arrays.asList("1", "2", "3")) {
@@ -248,15 +254,15 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
     /**
      * Insert variants study by study
      *
-     * @throws StorageManagerException
+     * @throws StorageEngineException
      */
     @Test
-    public void testInsertMultiFilesMultipleRegionsStudyByStudy() throws StorageManagerException {
+    public void testInsertMultiFilesMultipleRegionsStudyByStudy() throws StorageEngineException {
         List<Variant> allVariants;
-        studyConfiguration.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GQX", "DP"));
-        studyConfiguration.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
-        studyConfiguration2.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DP", "GQX"));
-        studyConfiguration2.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
+        studyConfiguration.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GQX", "DP"));
+        studyConfiguration.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
+        studyConfiguration2.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DP", "GQX"));
+        studyConfiguration2.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
 
 
         int i = 1;
@@ -296,15 +302,15 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
     /**
      * Insert variants study by study
      *
-     * @throws StorageManagerException
+     * @throws StorageEngineException
      */
     @Test
-    public void testInsertMultiFilesMultipleRegionsStudyByStudy2() throws StorageManagerException {
+    public void testInsertMultiFilesMultipleRegionsStudyByStudy2() throws StorageEngineException {
         List<Variant> allVariants;
-        studyConfiguration.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GQX", "DP"));
-        studyConfiguration.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
-        studyConfiguration2.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DP", "GQX"));
-        studyConfiguration2.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
+        studyConfiguration.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GQX", "DP"));
+        studyConfiguration.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
+        studyConfiguration2.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DP", "GQX"));
+        studyConfiguration2.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
 
 
         int i = 1;
@@ -396,11 +402,11 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         });
     }
 
-    public MongoDBVariantWriteResult loadFile1() throws StorageManagerException {
+    public MongoDBVariantWriteResult loadFile1() throws StorageEngineException {
         return loadFile1("X", Integer.parseInt(source1.getFileId()), Collections.emptyList());
     }
 
-    public MongoDBVariantWriteResult loadFile1(String chromosome, Integer fileId, List<String> chromosomes) throws StorageManagerException {
+    public MongoDBVariantWriteResult loadFile1(String chromosome, Integer fileId, List<String> chromosomes) throws StorageEngineException {
         studyConfiguration.getFileIds().putIfAbsent(getFileName(fileId), fileId);
         studyConfiguration.getSamplesInFiles().putIfAbsent(fileId, file1SampleIds);
         System.out.println("chromosome = " + chromosome);
@@ -409,11 +415,11 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         return loadFile(studyConfiguration, createFile1Variants(chromosome, fileId.toString(), Integer.toString(studyConfiguration.getStudyId())), fileId, chromosomes);
     }
 
-    public MongoDBVariantWriteResult loadFile2() throws StorageManagerException {
+    public MongoDBVariantWriteResult loadFile2() throws StorageEngineException {
         return loadFile2("X", Integer.parseInt(source2.getFileId()), Collections.emptyList());
     }
 
-    public MongoDBVariantWriteResult loadFile2(String chromosome, Integer fileId, List<String> chromosomes) throws StorageManagerException {
+    public MongoDBVariantWriteResult loadFile2(String chromosome, Integer fileId, List<String> chromosomes) throws StorageEngineException {
         studyConfiguration2.getFileIds().putIfAbsent(getFileName(fileId), fileId);
         studyConfiguration2.getSamplesInFiles().putIfAbsent(fileId, file2SampleIds);
         System.out.println("chromosome = " + chromosome);
@@ -422,11 +428,11 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         return loadFile(studyConfiguration2, createFile2Variants(chromosome, fileId.toString(), source2.getStudyId()), fileId, chromosomes);
     }
 
-    public MongoDBVariantWriteResult loadFile3() throws StorageManagerException {
+    public MongoDBVariantWriteResult loadFile3() throws StorageEngineException {
         return loadFile3("X", Integer.parseInt(source3.getFileId()), Collections.emptyList());
     }
 
-    public MongoDBVariantWriteResult loadFile3(String chromosome, Integer fileId, List<String> chromosomes) throws StorageManagerException {
+    public MongoDBVariantWriteResult loadFile3(String chromosome, Integer fileId, List<String> chromosomes) throws StorageEngineException {
         studyConfiguration2.getFileIds().putIfAbsent(getFileName(fileId), fileId);
         studyConfiguration2.getSamplesInFiles().putIfAbsent(fileId, file3SampleIds);
         System.out.println("chromosome = " + chromosome);
@@ -436,19 +442,19 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
     }
 
     public MongoDBVariantWriteResult loadFile(StudyConfiguration studyConfiguration, List<Variant> variants, int fileId)
-            throws StorageManagerException {
+            throws StorageEngineException {
         return loadFile(studyConfiguration, variants, fileId, Collections.emptyList());
     }
 
     public MongoDBVariantWriteResult loadFile(StudyConfiguration studyConfiguration, List<Variant> variants, int fileId, List<String> chromosomes)
-            throws StorageManagerException {
+            throws StorageEngineException {
 //        return loadFileOld(studyConfiguration, variants, fileId);
         MongoDBVariantWriteResult stageWriteResult = stageVariants(studyConfiguration, variants, fileId);
         return mergeVariants(studyConfiguration, Collections.singletonList(fileId), stageWriteResult, chromosomes);
     }
 
     public MongoDBVariantWriteResult loadFileOld(StudyConfiguration studyConfiguration, List<Variant> variants, int fileId)
-            throws StorageManagerException {
+            throws StorageEngineException {
         VariantMongoDBWriter mongoDBWriter;
         mongoDBWriter = new VariantMongoDBWriter(fileId, studyConfiguration, dbAdaptor, true, false);
         mongoDBWriter.setThreadSynchronizationBoolean(new AtomicBoolean(false));
@@ -465,10 +471,11 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
     }
 
     public MongoDBVariantWriteResult stageVariants(StudyConfiguration studyConfiguration, List<Variant> variants, int fileId) {
-        MongoDBCollection stage = dbAdaptor.getDB().getCollection("stage");
-        MongoDBVariantStageLoader variantStageLoader = new MongoDBVariantStageLoader(stage, studyConfiguration.getStudyId(), fileId, variants.size(), false);
+        MongoDBCollection stage = dbAdaptor.getStageCollection();
+        MongoDBVariantStageLoader variantStageLoader = new MongoDBVariantStageLoader(stage, studyConfiguration.getStudyId(), fileId, false);
+        MongoDBVariantStageConverterTask converterTask = new MongoDBVariantStageConverterTask(null);
 
-        variantStageLoader.insert(variants);
+        variantStageLoader.write(converterTask.apply(variants));
 
         return variantStageLoader.getWriteResult();
     }
@@ -480,18 +487,20 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
     }
     public MongoDBVariantWriteResult mergeVariants(StudyConfiguration studyConfiguration, List<Integer> fileIds,
                                                    MongoDBVariantWriteResult stageWriteResult, List<String> chromosomes) {
-        MongoDBCollection stage = dbAdaptor.getDB().getCollection("stage");
-        MongoDBCollection variantsCollection = dbAdaptor.getDB().getCollection("variants");
+        MongoDBCollection stage = dbAdaptor.getStageCollection();
+        MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stage, studyConfiguration.getStudyId(), chromosomes);
         MongoDBVariantMerger dbMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
-                variantsCollection, reader.countAproxNumVariants(), studyConfiguration.getIndexedFiles(), false);
+                variantsCollection, studyConfiguration.getIndexedFiles(), false);
+        MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(variantsCollection, fileIds, false, null);
 
         reader.open();
         reader.pre();
 
         List<Document> batch = reader.read(100);
         while (batch != null && !batch.isEmpty()) {
-            dbMerger.apply(batch);
+            List<MongoDBOperations> apply = dbMerger.apply(batch);
+            variantLoader.write(apply);
             batch = reader.read(100);
         }
 
@@ -501,7 +510,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         MongoDBVariantStageLoader.cleanStageCollection(stage, studyConfiguration.getStudyId(), fileIds);
         studyConfiguration.getIndexedFiles().addAll(fileIds);
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
-        return dbMerger.getResult().setSkippedVariants(stageWriteResult.getSkippedVariants());
+        return variantLoader.getResult().setSkippedVariants(stageWriteResult.getSkippedVariants());
     }
 
     public List<Variant> createFile1Variants() {
@@ -615,7 +624,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
     }
 
     @Test
-    public void testInsertSameVariantTwice() throws StorageManagerException {
+    public void testInsertSameVariantTwice() throws StorageEngineException {
 
         VariantMongoDBWriter mongoDBWriter;
         StudyEntry sourceEntry;

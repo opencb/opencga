@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.catalog.models;
 
+import java.util.Objects;
+
 /**
  * Created by jacobo on 14/04/15.
  */
@@ -59,4 +61,21 @@ public class DataStore {
         return this;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof DataStore)) {
+            return false;
+        }
+        DataStore dataStore = (DataStore) o;
+        return Objects.equals(storageEngine, dataStore.storageEngine)
+                && Objects.equals(dbName, dataStore.dbName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(storageEngine, dbName);
+    }
 }

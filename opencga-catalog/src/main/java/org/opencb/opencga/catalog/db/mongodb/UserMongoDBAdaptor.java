@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.DuplicateKeyException;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
@@ -114,37 +115,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    @Deprecated
-    public QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogDBException {
-        checkParameter(userId, "userId");
-        checkParameter(password, "password");
-        long startTime = startQuery();
-//        QueryResult<Long> count = userCollection.count(BasicDBObjectBuilder.start("id", userId).append("password", password).get());
-//        Bson and = Filters.and(Filters.eq("id", userId), Filters.eq("password", password));
-        Query query = new Query(QueryParams.ID.key(), userId).append(QueryParams.PASSWORD.key(), password);
-        //QueryResult queryResult = nativeGet(query, new QueryOptions());
-
-        QueryResult<Long> count = count(query);
-        if (count.getResult().get(0) == 0) {
-            throw new CatalogDBException("Bad user or password");
-        } else {
-            query = new Query(QueryParams.SESSION_ID.key(), session.getId());
-//            QueryResult<Long> countSessions = userCollection.count(new BasicDBObject("sessions.id", session.getId()));
-            QueryResult<Long> countSessions = count(query);
-            if (countSessions.getResult().get(0) != 0) {
-                throw new CatalogDBException("Already logged in");
-            } else {
-                addSession(userId, session);
-                ObjectMap resultObjectMap = new ObjectMap();
-                resultObjectMap.put("sessionId", session.getId());
-                resultObjectMap.put("userId", userId);
-                return endQuery("Login", startTime, Collections.singletonList(resultObjectMap));
-            }
-        }
-    }
-
-    @Override
-    public QueryResult<ObjectMap> addSession(String userId, Session session) throws CatalogDBException {
+    public QueryResult<Session> addSession(String userId, Session session) throws CatalogDBException {
         long startTime = startQuery();
 
         Bson query = new Document(QueryParams.ID.key(), userId);
@@ -157,29 +128,51 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             throw new CatalogDBException("An internal error occurred when logging the user" + userId);
         }
 
-        ObjectMap resultObjectMap = new ObjectMap();
-        resultObjectMap.put("sessionId", session.getId());
-        resultObjectMap.put("userId", userId);
-        return endQuery("Login", startTime, Collections.singletonList(resultObjectMap));
+//        ObjectMap resultObjectMap = new ObjectMap();
+//        resultObjectMap.put("sessionId", session.getId());
+//        resultObjectMap.put("userId", userId);
+        return endQuery("Login", startTime, Collections.singletonList(session));
     }
 
     @Override
-    public QueryResult logout(String userId, String sessionId) throws CatalogDBException {
+    public QueryResult<Session> logout(String userId, String sessionId) throws CatalogDBException {
         long startTime = startQuery();
 
         String userIdBySessionId = getUserIdBySessionId(sessionId);
         if (userIdBySessionId.isEmpty()) {
             return endQuery("logout", startTime, null, "", "Session not found");
         }
+
+        List<Session> retSession = Collections.emptyList();
         if (userIdBySessionId.equals(userId)) {
-            Bson query = new Document(QueryParams.SESSION_ID.key(), sessionId);
-            Bson updates = Updates.set("sessions.$.logout", TimeUtils.getTime());
-            userCollection.update(query, updates, null);
+            // Get the session object
+            List<Bson> aggregates = new ArrayList<>();
+            aggregates.add(Aggregates.match(Filters.eq("id", userId)));
+            aggregates.add(Aggregates.unwind("$sessions"));
+            aggregates.add(Aggregates.match(Filters.eq("sessions.id", sessionId)));
+            QueryResult<User> aggregate = userCollection.aggregate(aggregates, userConverter, new QueryOptions());
+            if (aggregate.first() != null && aggregate.first().getSessions() != null && aggregate.first().getSessions().size() == 1) {
+                retSession = aggregate.first().getSessions();
+
+                // Remove the session object
+                Bson query = new Document(QueryParams.ID.key(), userId);
+                Bson update = new Document("$pull", new Document("sessions", new Document("id", sessionId)));
+                QueryResult<UpdateResult> updateQueryResult = userCollection.update(query, update, null);
+                if (updateQueryResult.first().getModifiedCount() == 0) {
+                    throw new CatalogDBException("Internal error: Could not remove closed session from user " + userId);
+                }
+            } else {
+                throw new CatalogDBException("Internal error: Could not obtain session object from user " + userId + " when attempting to "
+                        + "logout");
+            }
+//            Bson query = new Document(QueryParams.SESSION_ID.key(), sessionId);
+//            Bson updates = Updates.set("sessions.$.logout", TimeUtils.getTime());
+//            userCollection.update(query, updates, null);
         } else {
             throw new CatalogDBException("UserId mismatches with the sessionId");
         }
 
-        return endQuery("Logout", startTime);
+        return endQuery("Logout", startTime, retSession);
     }
 
     @Override
@@ -322,7 +315,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     @Override
     public String getUserIdBySessionId(String sessionId) {
 
-        Bson query = new Document("sessions", new Document("$elemMatch", new Document("id", sessionId).append("logout", "")));
+        Bson query = new Document("sessions", new Document("$elemMatch", new Document("id", sessionId)));
         Bson projection = Projections.include(QueryParams.ID.key());
         QueryResult<Document> id = userCollection.find(query, projection, null);
 
@@ -544,7 +537,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             userParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
-        final String[] acceptedLongParams = {QueryParams.DISK_QUOTA.key(), QueryParams.DISK_USAGE.key()};
+        final String[] acceptedLongParams = {QueryParams.QUOTA.key(), QueryParams.SIZE.key()};
         filterLongParams(parameters, userParameters, acceptedLongParams);
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
@@ -557,6 +550,21 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         }
 
         return endQuery("Update user", startTime, new QueryResult<>());
+    }
+
+    @Override
+    public void delete(long id) throws CatalogDBException {
+        Query query = new Query(QueryParams.ID.key(), id);
+        delete(query);
+    }
+
+    @Override
+    public void delete(Query query) throws CatalogDBException {
+        QueryResult<DeleteResult> remove = userCollection.remove(parseQuery(query), null);
+
+        if (remove.first().getDeletedCount() == 0) {
+            throw CatalogDBException.deleteError("User");
+        }
     }
 
     @Override
@@ -776,6 +784,9 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
+            if (queryParam == null) {
+                continue;
+            }
             try {
                 switch (queryParam) {
                     case ID:
@@ -792,9 +803,37 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
-
-                    default:
+                    case NAME:
+                    case EMAIL:
+                    case PASSWORD:
+                    case ORGANIZATION:
+                    case STATUS_NAME:
+                    case STATUS_MSG:
+                    case STATUS_DATE:
+                    case LAST_MODIFIED:
+                    case SIZE:
+                    case QUOTA:
+                    case PROJECTS:
+                    case PROJECT_ID:
+                    case PROJECT_NAME:
+                    case PROJECT_ALIAS:
+                    case PROJECT_ORGANIZATION:
+                    case PROJECT_STATUS:
+                    case PROJECT_LAST_MODIFIED:
+                    case TOOL_ID:
+                    case TOOL_NAME:
+                    case TOOL_ALIAS:
+                    case SESSIONS:
+                    case SESSION_ID:
+                    case SESSION_IP:
+                    case SESSION_LOGIN:
+                    case SESSION_LOGOUT:
+                    case CONFIGS:
+                    case CONFIGS_FILTERS:
+                    case CONFIGS_FILTERS_NAME:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    default:
                         break;
                 }
             } catch (Exception e) {

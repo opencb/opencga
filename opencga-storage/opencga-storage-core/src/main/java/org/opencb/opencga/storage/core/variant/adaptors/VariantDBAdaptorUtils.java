@@ -19,19 +19,27 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.cellbase.core.api.GeneDBAdaptor;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.SAMPLES_METADATA;
 
 /**
  * Created on 29/01/16 .
@@ -46,28 +54,10 @@ public class VariantDBAdaptorUtils {
     public static final String AND = ";";
     public static final String IS = ":";
     public static final String STUDY_POP_FREQ_SEPARATOR = ":";
-    public static final Map<String, String> PROJECT_FIELD_ALIAS;
+//    public static final Map<String, String> PROJECT_FIELD_ALIAS;
 
-    public static final String SAMPLES_FIELD = "samples";
-    public static final String STUDIES_FIELD = "studies";
-    public static final String STATS_FIELD = "stats";
-    public static final String ANNOTATION_FIELD = "annotation";
     private static final int GENE_EXTRA_REGION = 5000;
-
-    static {
-        Map<String, String> map =  new HashMap<>();
-        map.put("studies.samplesData", SAMPLES_FIELD);
-        map.put("samplesData", SAMPLES_FIELD);
-        map.put(SAMPLES_FIELD, SAMPLES_FIELD);
-        map.put("sourceEntries", STUDIES_FIELD);
-        map.put("studies.cohortStats", STATS_FIELD);
-        map.put("studies.stats", STATS_FIELD);
-        map.put("sourceEntries.stats", STATS_FIELD);
-        map.put(STATS_FIELD, STATS_FIELD);
-        map.put(STUDIES_FIELD, STUDIES_FIELD);
-        map.put(ANNOTATION_FIELD, ANNOTATION_FIELD);
-        PROJECT_FIELD_ALIAS = Collections.unmodifiableMap(map);
-    }
+    private static Logger logger = LoggerFactory.getLogger(VariantDBAdaptorUtils.class);
 
     private VariantDBAdaptor adaptor;
 
@@ -88,6 +78,110 @@ public class VariantDBAdaptorUtils {
 
     public VariantDBAdaptorUtils(VariantDBAdaptor variantDBAdaptor) {
         adaptor = variantDBAdaptor;
+    }
+
+    /**
+     * Check if the object query contains the value param, is not null and, if is an string or a list, is not empty.
+     *
+     * isValidParam(new Query(), PARAM) == false
+     * isValidParam(new Query(PARAM.key(), null), PARAM) == false
+     * isValidParam(new Query(PARAM.key(), ""), PARAM) == false
+     * isValidParam(new Query(PARAM.key(), Collections.emptyList()), PARAM) == false
+     * isValidParam(new Query(PARAM.key(), 5), PARAM) == true
+     * isValidParam(new Query(PARAM.key(), "sdfas"), PARAM) == true
+     *
+     * @param query Query to parse
+     * @param param QueryParam to check
+     * @return If is valid or not
+     */
+    public static boolean isValidParam(Query query, VariantDBAdaptor.VariantQueryParams param) {
+        Object value = query.getOrDefault(param.key(), null);
+        return (value != null)
+                && !(value instanceof String && ((String) value).isEmpty()
+                || value instanceof Collection && ((Collection) value).isEmpty());
+    }
+
+    /**
+     * Determines if the filter is negated.
+     *
+     * @param value Value to check
+     * @return If the value is negated
+     */
+    public static boolean isNegated(String value) {
+        return value.startsWith("!");
+    }
+
+    /**
+     * Determines if the given value is a known variant accession or not.
+     *
+     * @param value Value to check
+     * @return      If is a known accession
+     */
+    public static boolean isVariantAccession(String value) {
+        return value.startsWith("rs") || value.startsWith("VAR_");
+    }
+
+    /**
+     * Determines if the given value is a known clinical accession or not.
+     *
+     * ClinVar accession starts with 'RCV'
+     * COSMIC mutationId starts with 'COSM'
+     *
+     * @param value Value to check
+     * @return      If is a known accession
+     */
+    public static boolean isClinicalAccession(String value) {
+        return value.startsWith("RCV") || value.startsWith("COSM");
+    }
+
+    /**
+     * Determines if the given value is a known gene accession or not.
+     *
+     * Human Phenotype Ontology (HPO) terms starts with 'HP:'
+     * Online Mendelian Inheritance in Man (OMIM) terms starts with 'OMIM:'
+     *
+     * @param value Value to check
+     * @return      If is a known accession
+     */
+    public static boolean isGeneAccession(String value) {
+        return value.startsWith("HP:") || value.startsWith("OMIM:");
+    }
+
+    /**
+     * Determines if the given value is a variant id or not.
+     *
+     * chr:pos:ref:alt
+     *
+     * @param value Value to check
+     * @return      If is a variant id
+     */
+    public static boolean isVariantId(String value) {
+        int count = StringUtils.countMatches(value, ':');
+        return count == 3;
+    }
+
+    /**
+     * Determines if the given value is a variant id or not.
+     *
+     * chr:pos:ref:alt
+     *
+     * @param value Value to check
+     * @return      If is a variant id
+     */
+    public static Variant toVariant(String value) {
+        Variant variant = null;
+        if (isVariantId(value)) {
+            if (value.contains(":")) {
+                try {
+                    variant = new Variant(value);
+                } catch (IllegalArgumentException ignore) {
+                    variant = null;
+                    // TODO: Should this throw an exception?
+                    logger.info("Wrong variant " + value, ignore);
+                }
+            }
+        }
+        return variant;
     }
 
     public StudyConfigurationManager getStudyConfigurationManager() {
@@ -178,10 +272,6 @@ public class VariantDBAdaptorUtils {
         return studyId;
     }
 
-    public boolean isNegated(String value) {
-        return value.startsWith("!");
-    }
-
     /**
      * Given a study reference (name or id) and a default study, returns the associated StudyConfiguration.
      *
@@ -222,6 +312,59 @@ public class VariantDBAdaptorUtils {
         return studyConfiguration;
     }
 
+    public List<Integer> getFileIds(List files, boolean skipNegated, StudyConfiguration defaultStudyConfiguration) {
+        List<Integer> fileIds;
+        if (files == null || files.isEmpty()) {
+            return Collections.emptyList();
+        }
+        fileIds = new ArrayList<>(files.size());
+        for (Object fileObj : files) {
+            Integer fileId = getFileId(fileObj, skipNegated, defaultStudyConfiguration);
+            if (fileId != null) {
+                fileIds.add(fileId);
+            }
+        }
+        return fileIds;
+    }
+
+    public Integer getFileId(Object fileObj, boolean skipNegated, StudyConfiguration defaultStudyConfiguration) {
+        if (fileObj == null) {
+            return null;
+        } else if (fileObj instanceof Number) {
+            return ((Number) fileObj).intValue();
+        } else {
+            String file = String.valueOf(fileObj);
+            if (isNegated(file)) { //Skip negated studies
+                if (skipNegated) {
+                    return null;
+                } else {
+                    file = file.substring(1);
+                }
+            }
+            if (file.contains(":")) {
+                String[] studyFile = file.split(":");
+                QueryResult<StudyConfiguration> queryResult = getStudyConfigurationManager().getStudyConfiguration(studyFile[0], null);
+                if (queryResult.getResult().isEmpty()) {
+                    throw VariantQueryException.studyNotFound(studyFile[0]);
+                }
+                return queryResult.first().getFileIds().get(studyFile[1]);
+            } else {
+                try {
+                    return Integer.parseInt(file);
+                } catch (NumberFormatException e) {
+                    if (defaultStudyConfiguration != null) {
+                        return defaultStudyConfiguration.getFileIds().get(file);
+                    } else {
+                        List<String> studyNames = getStudyConfigurationManager().getStudyNames(null);
+                        throw new VariantQueryException("Unknown file \"" + file + "\". "
+                                + "Please, specify the study belonging."
+                                + (studyNames == null ? "" : " Available studies: " + studyNames));
+                    }
+                }
+            }
+        }
+    }
+
     public int getSampleId(Object sampleObj, StudyConfiguration defaultStudyConfiguration) {
         int sampleId;
         if (sampleObj instanceof Number) {
@@ -246,49 +389,98 @@ public class VariantDBAdaptorUtils {
         return sampleId;
     }
 
-    public Set<String> getReturnedFields(QueryOptions options) {
-        Set<String> returnedFields;
-
-        List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
-        if (includeList != null && !includeList.isEmpty()) {
-//            System.out.println("includeList = " + includeList);
-            returnedFields = new HashSet<>();
-            for (String include : includeList) {
-                returnedFields.add(PROJECT_FIELD_ALIAS.get(include));
-            }
-            if (returnedFields.contains(STUDIES_FIELD)) {
-                returnedFields.add(SAMPLES_FIELD);
-                returnedFields.add(STATS_FIELD);
-            } else if (returnedFields.contains(SAMPLES_FIELD) || returnedFields.contains(STATS_FIELD)) {
-                returnedFields.add(STUDIES_FIELD);
-            }
-
-        } else {
-            List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
-            if (excludeList != null && !excludeList.isEmpty()) {
-//                System.out.println("excludeList = " + excludeList);
-                returnedFields = new HashSet<>(PROJECT_FIELD_ALIAS.values());
-                for (String exclude : excludeList) {
-                    returnedFields.remove(PROJECT_FIELD_ALIAS.get(exclude));
-                }
-            } else {
-                returnedFields = new HashSet<>(PROJECT_FIELD_ALIAS.values());
-            }
+    public List<Integer> getReturnedStudies(Query query, QueryOptions options) {
+        List<Integer> studyIds = getStudyIds(query.getAsList(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key()), options);
+        if (studyIds.isEmpty()) {
+            studyIds = getStudyIds(getStudyConfigurationManager().getStudyNames(options), options);
         }
-//        System.out.println("returnedFields = " + returnedFields);
-        return returnedFields;
+        return studyIds;
     }
 
-    public List<String> getReturnedSamples(Query query, QueryOptions options) {
-        if (!getReturnedFields(options).contains(SAMPLES_FIELD)) {
+    public Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
+        List<Integer> returnedStudies = getReturnedStudies(query, options);
+        return getReturnedSamples(query, options, returnedStudies, studyId -> getStudyConfigurationManager()
+                .getStudyConfiguration(studyId, options).first());
+    }
+
+    public Map<String, List<String>> getSamplesMetadata(Query query, QueryOptions options) {
+        if (query.getBoolean(SAMPLES_METADATA.key(), false)) {
+            if (VariantField.getReturnedFields(options).contains(VariantField.STUDIES)) {
+                List<Integer> returnedStudies = getReturnedStudies(query, options);
+                return getReturnedSamplesString(query, options, returnedStudies, studyId -> getStudyConfigurationManager()
+                        .getStudyConfiguration(studyId, options).first());
+            } else {
+                return Collections.emptyMap();
+            }
+        } else {
+            return null;
+        }
+    }
+
+    public static Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options, StudyConfiguration... studies) {
+        return getReturnedSamples(query, options, Arrays.asList(studies));
+    }
+
+    public static Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options,
+                                                                 Collection<StudyConfiguration> studies) {
+        Map<Integer, StudyConfiguration> map = studies.stream()
+                .collect(Collectors.toMap(StudyConfiguration::getStudyId, Function.identity()));
+        return getReturnedSamples(query, options, map.keySet(), map::get);
+    }
+
+    public static Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options, Collection<Integer> studyIds,
+                                                                               Function<Integer, StudyConfiguration> studyProvider) {
+        return getReturnedSamples(query, options, studyIds, studyProvider, (sc, s) -> sc.getSampleIds().get(s),
+                StudyConfiguration::getStudyId);
+    }
+
+    public static Map<String, List<String>> getReturnedSamplesString(Query query, QueryOptions options, Collection<Integer> studyIds,
+                                                                      Function<Integer, StudyConfiguration> studyProvider) {
+        return getReturnedSamples(query, options, studyIds, studyProvider, (sc, s) -> s, StudyConfiguration::getStudyName);
+    }
+
+    private static <T> Map<T, List<T>> getReturnedSamples(
+            Query query, QueryOptions options, Collection<Integer> studyIds,
+            Function<Integer, StudyConfiguration> studyProvider,
+            BiFunction<StudyConfiguration, String, T> getSample, Function<StudyConfiguration, T> getStudyId) {
+
+        List<String> returnedSamples = getReturnedSamplesList(query, options);
+        LinkedHashSet<String> returnedSamplesSet = new LinkedHashSet<>(returnedSamples);
+
+        Map<T, List<T>> samples = new HashMap<>(studyIds.size());
+        for (Integer studyId : studyIds) {
+            StudyConfiguration sc = studyProvider.apply(studyId);
+            if (sc == null) {
+                continue;
+            }
+            LinkedHashMap<String, Integer> returnedSamplesPosition = StudyConfiguration.getReturnedSamplesPosition(sc, returnedSamplesSet);
+
+            @SuppressWarnings("unchecked")
+            List<T> sampleNames = Arrays.asList((T[]) new Object[returnedSamplesPosition.size()]);
+
+            returnedSamplesPosition.forEach((sample, position) -> {
+                sampleNames.set(position, getSample.apply(sc, sample));
+            });
+            samples.put(getStudyId.apply(sc), sampleNames);
+        }
+
+        return samples;
+    }
+
+    public static List<String> getReturnedSamplesList(Query query, QueryOptions options) {
+        return getReturnedSamplesList(query, VariantField.getReturnedFields(options));
+    }
+
+    public static List<String> getReturnedSamplesList(Query query, Set<VariantField> returnedFields) {
+        if (!returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
             return Collections.singletonList("none");
         } else {
             //Remove the studyName, if any
-            return getReturnedSamples(query);
+            return getReturnedSamplesList(query);
         }
     }
 
-    public List<String> getReturnedSamples(Query query) {
+    public static List<String> getReturnedSamplesList(Query query) {
         return query.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key())
                 .stream()
                 .map(s -> s.contains(":") ? s.split(":")[1] : s)
@@ -380,6 +572,35 @@ public class VariantDBAdaptorUtils {
         return genes;
     }
 
+    public static int parseConsequenceType(String so) {
+        int soAccession;
+        boolean startsWithSO = so.toUpperCase().startsWith("SO:");
+        if (startsWithSO || StringUtils.isNumeric(so)) {
+            try {
+                if (startsWithSO) {
+                    soAccession = Integer.parseInt(so.substring("SO:".length()));
+                } else {
+                    soAccession = Integer.parseInt(so);
+                }
+            } catch (NumberFormatException e) {
+                throw VariantQueryException.malformedParam(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE, so,
+                        "Not a valid SO number");
+            }
+            if (!ConsequenceTypeMappings.accessionToTerm.containsKey(soAccession)) {
+                throw VariantQueryException.malformedParam(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE, so,
+                        "Not a valid SO number");
+            }
+        } else {
+            if (!ConsequenceTypeMappings.termToAccession.containsKey(so)) {
+                throw VariantQueryException.malformedParam(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE, so,
+                        "Not a valid Accession term");
+            } else {
+                soAccession = ConsequenceTypeMappings.termToAccession.get(so);
+            }
+        }
+        return soAccession;
+    }
+
     /**
      * Checks that the filter value list contains only one type of operations.
      *
@@ -410,7 +631,9 @@ public class VariantDBAdaptorUtils {
      */
     public static List<String> splitValue(String value, QueryOperation operation) {
         List<String> list;
-        if (operation == null) {
+        if (value == null || value.isEmpty()) {
+            list = Collections.emptyList();
+        } else if (operation == null) {
             list = Collections.singletonList(value);
         } else if (operation == QueryOperation.AND) {
             list = Arrays.asList(value.split(QueryOperation.AND.separator()));

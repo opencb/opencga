@@ -21,9 +21,10 @@ import org.bson.Document;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 
 import java.util.*;
 
@@ -34,6 +35,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class DocumentToStudyVariantEntryConverterTest {
 
+    private final Variant variant = new Variant();
     private StudyEntry studyEntry;
     private Document mongoStudy;
     private Document mongoFileWithIds;
@@ -93,7 +95,7 @@ public class DocumentToStudyVariantEntryConverterTest {
         studyConfiguration.setSampleIds(sampleIds);
         studyConfiguration.getIndexedFiles().add(fileId);
         studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Arrays.asList(15, 25, 35)));
-        studyConfiguration.getAttributes().put(MongoDBVariantStorageManager.MongoDBVariantOptions.DEFAULT_GENOTYPE.key(), Collections.singleton("0/0"));
+        studyConfiguration.getAttributes().put(MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE.key(), Collections.singleton("0/0"));
 
         sampleNames = Lists.newArrayList("NA001", "NA002", "NA003");
 
@@ -204,7 +206,7 @@ public class DocumentToStudyVariantEntryConverterTest {
         // Test with no stats converter provided
         DocumentToStudyVariantEntryConverter converter = new DocumentToStudyVariantEntryConverter(true, fileId,
                 new DocumentToSamplesConverter(studyId, fileId, sampleNames, "0/0"));
-        Document converted = converter.convertToStorageType(studyEntry);
+        Document converted = converter.convertToStorageType(variant, studyEntry);
         assertEquals(mongoStudy, converted);
     }
 
@@ -221,7 +223,7 @@ public class DocumentToStudyVariantEntryConverterTest {
                 true, fileId,
                 samplesConverter
         );
-        convertedMongo = converter.convertToStorageType(studyEntry);
+        convertedMongo = converter.convertToStorageType(variant, studyEntry);
         assertEquals(mongoFileWithIds, convertedMongo);
         convertedFile = converter.convertToDataModelType(convertedMongo);
         assertEquals(studyEntry, convertedFile);
@@ -242,7 +244,7 @@ public class DocumentToStudyVariantEntryConverterTest {
                 samplesConverter
         );
         convertedFile = converter.convertToDataModelType(mongoFileWithIds);
-        convertedMongo = converter.convertToStorageType(convertedFile);
+        convertedMongo = converter.convertToStorageType(variant, convertedFile);
         assertEquals(studyEntry, convertedFile);
         assertEquals(mongoFileWithIds, convertedMongo);
 
