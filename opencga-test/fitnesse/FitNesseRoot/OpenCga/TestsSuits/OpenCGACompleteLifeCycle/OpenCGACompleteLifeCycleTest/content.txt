@@ -31,39 +31,39 @@
 | POST | /v1/studies/create?sid=$sessionId&projectId=$projectAId |200|  Content-Type: application/json ||
 |let|studyBId|js|response.jsonbody.response[0].result[0].id||
 
-!3 Create ACL For fUser
+!3 Create ACL For userA
 !|Table: Rest Fixture | ${baseURL} |
-| setBody | {  "templateId" : "admin",  "members": "$fUser"}|
+| setBody | {  "templateId" : "admin",  "members": "$userA"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/studies/$studyAId/acl/create?sid=$sessionId|200|  Content-Type: application/json ||
 
-!3 Get Study with fUser 
+!3 Get Study with userA 
 !|Table: Rest Fixture | ${baseURL} |
-| GET | /v1/studies/$studyAId/info?sid=$fUserSessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == '$studyAId'| 
+| GET | /v1/studies/$studyAId/info?sid=$userASessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == '$studyAId'| 
 
-!3 (Negative) Get Study with eUser 
+!3 (Negative) Get Study with userB 
 !|Table: Rest Fixture | ${baseURL} |
-| GET | /v1/studies/$studyAId/info?sid=$eUserSessionId |500|  Content-Type: application/json |jsonbody.error != ''|
+| GET | /v1/studies/$studyAId/info?sid=$userBSessionId |500|  Content-Type: application/json |jsonbody.error != ''|
 
 !3 Create Individual A1
 !|Table: Rest Fixture | ${baseURL} |
 | setBody | {"name" : "$iA1" }|
 | setHeader|Content-Type:application/json|
-| POST | /v1/individuals/create?sid=$fUserSessionId&study=$studyAId |200|  Content-Type: application/json ||
+| POST | /v1/individuals/create?sid=$userASessionId&study=$studyAId |200|  Content-Type: application/json ||
 |let|iA1Id|js|response.jsonbody.response[0].result[0].id||
 
 !3 Create Individual A2
 !|Table: Rest Fixture | ${baseURL} |
 | setBody | {"name" : "$iA2" }|
 | setHeader|Content-Type:application/json|
-| POST | /v1/individuals/create?sid=$fUserSessionId&study=$studyAId |200|  Content-Type: application/json ||
+| POST | /v1/individuals/create?sid=$userASessionId&study=$studyAId |200|  Content-Type: application/json ||
 |let|iA2Id|js|response.jsonbody.response[0].result[0].id||
 
 !3 Create Individual A3
 !|Table: Rest Fixture | ${baseURL} |
 | setBody | {"name" : "$iA3" }|
 | setHeader|Content-Type:application/json|
-| POST | /v1/individuals/create?sid=$eUserSessionId&study=$studyAId |500|  Content-Type: application/json ||
+| POST | /v1/individuals/create?sid=$userBSessionId&study=$studyAId |500|  Content-Type: application/json ||
 
 !3 Create Individual B1
 !|Table: Rest Fixture | ${baseURL} |

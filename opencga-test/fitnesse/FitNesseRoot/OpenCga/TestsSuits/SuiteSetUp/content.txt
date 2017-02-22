@@ -15,8 +15,8 @@
 
 !3 Generate Random Variables 
 !|Table: Rest Fixture | ${baseURL} |
-|let|fUser|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
-|let|eUser|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|userA|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|userB|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 
 !3 Login User 
 !|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/  |
@@ -25,24 +25,24 @@
 | POST | /v1/users/${user}/login |200|  Content-Type: application/json ||
 |let|sessionId|js|response.jsonbody.response[0].result[0].sessionId||
 
-#fUser has Full Permissions
-!3 Create fUser  
+#userA has Full Permissions
+!3 Create userA  
 !|Table: Rest Fixture  | ${baseURL} |
-| setBody |  { "name": "$fUser", "userId": "$fUser","email": "test@test.com", "password" : "p@ssword" }|
+| setBody |  { "name": "$userA", "userId": "$userA","email": "test@test.com", "password" : "p@ssword" }|
 | setHeader|Content-Type:application/json|
 | POST | /v1/users/create?sid=$sessionId |200| Content-Type : application/json| jsonbody.error === '' |
 
-#eUser has Empty(no) Permissions
-!3 Create eUser  
+#userB has Empty(no) Permissions
+!3 Create userB  
 !|Table: Rest Fixture  | ${baseURL} |
-| setBody |  { "name": "$eUser", "userId": "$eUser","email": "test@test.com", "password" : "p@ssword" }|
+| setBody |  { "name": "$userB", "userId": "$userB","email": "test@test.com", "password" : "p@ssword" }|
 | setHeader|Content-Type:application/json|
 | POST | /v1/users/create?sid=$sessionId |200| Content-Type : application/json| jsonbody.error === '' |
 
 
-!3 Create ACL for User (fUser)
+!3 Create ACL for User (userA)
 !|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/  |
-| setBody | {"members" : "$fUser"}|
+| setBody | {"members" : "$userA"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/studies/${study}/acl/create?sid=$sessionId |200|  Content-Type: application/json ||
 

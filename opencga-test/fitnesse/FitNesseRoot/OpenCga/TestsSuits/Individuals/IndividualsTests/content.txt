@@ -33,29 +33,29 @@
 
 !3 Create Individual ACL
 !|Table: Rest Fixture | ${baseURL} |
-| GET | /v1/individuals/$individualId/acl/create?sid=$sessionId&permissions=VIEW&members=$fUser|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$fUser' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
+| GET | /v1/individuals/$individualId/acl/create?sid=$sessionId&permissions=VIEW&members=$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
 
 !3 Update Individual ACL (add)
 !|Table: Rest Fixture | ${baseURL} |
 | setBody | {"add" : "DELETE" }|
 | setHeader|Content-Type:application/json|
-| POST |/v1/individuals/$individualId/acl/$fUser/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$fUser' && jsonbody.response[0].result[0].permissions[1] == 'DELETE'|
+| POST |/v1/individuals/$individualId/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[1] == 'DELETE'|
 
 !3 Update Individual ACL (remove)
 !|Table: Rest Fixture | ${baseURL} |
 | setBody | {"remove" : "DELETE" }|
 | setHeader|Content-Type:application/json|
-| POST |/v1/individuals/$individualId/acl/$fUser/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$fUser' && jsonbody.response[0].result[0].permissions.length == '1.0'|
+| POST |/v1/individuals/$individualId/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '1.0'|
 
 !3 Update Individual ACL (set)
 !|Table: Rest Fixture | ${baseURL} |
 | setBody | {"set" : "DELETE,VIEW" }|
 | setHeader|Content-Type:application/json|
-| POST |/v1/individuals/$individualId/acl/$fUser/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$fUser' && jsonbody.response[0].result[0].permissions.length == '2.0'|
+| POST |/v1/individuals/$individualId/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0'|
 
 !3 Get Member ACL
 !|Table: Rest Fixture | ${baseURL} |
-| GET | /v1/individuals/$individualId/acl/$fUser/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$fUser' && jsonbody.response[0].result[0].permissions.length == '2.0'|
+| GET | /v1/individuals/$individualId/acl/$userA/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0'|
 
 !3 Search Individual (ALL)
 !|Table: Rest Fixture | ${baseURL} |

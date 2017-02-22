@@ -37,27 +37,27 @@
 
 !3 Create ACL For A Member 
 !|Table: Rest Fixture | ${baseURL} |
-| setBody | {  "permissions": "VIEW",  "members": "$fUser"}|
+| setBody | {  "permissions": "VIEW",  "members": "$userA"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/jobs/$jobId/acl/create?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$fUser' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
+| POST | /v1/jobs/$jobId/acl/create?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
 
 !3 Get ACL For A Member
 !|Table: Rest Fixture | ${baseURL} |
-| GET | /v1/jobs/$jobId/acl?sid=$sessionId&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$fUser' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
+| GET | /v1/jobs/$jobId/acl?sid=$sessionId&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
 
 !3 Update ACL For A Member
 !|Table: Rest Fixture | ${baseURL} |
 | setBody | {  "add": "SHARE" }|
 | setHeader|Content-Type:application/json|
-| POST | /v1/jobs/$jobId/acl/$fUser/update?sid=$sessionId&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$fUser' && jsonbody.response[0].result[0].permissions.length == '2'|
+| POST | /v1/jobs/$jobId/acl/$userA/update?sid=$sessionId&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2'|
 
 !3 Get Updated ACL For The Member
 !|Table: Rest Fixture | ${baseURL} |
-| GET | /v1/jobs/$jobId/acl?sid=$sessionId&study=${study}&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$fUser' && jsonbody.response[0].result[0].permissions.length == '2.0'|
+| GET | /v1/jobs/$jobId/acl?sid=$sessionId&study=${study}&name=$jobName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0'|
 
 !3 Delete ACL For A Member
 !|Table: Rest Fixture | ${baseURL} |
-| GET | /v1/jobs/$jobId/acl/$fUser/delete?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == ''|
+| GET | /v1/jobs/$jobId/acl/$userA/delete?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == ''|
 
 !3 Get Deleted ACL For The Member
 !|Table: Rest Fixture | ${baseURL} |
