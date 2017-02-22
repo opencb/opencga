@@ -81,7 +81,10 @@ public class StudyConfiguration {
         this.samplesInFiles = new HashMap<>(other.samplesInFiles);
         this.calculatedStats = new LinkedHashSet<>(other.calculatedStats);
         this.invalidStats = new LinkedHashSet<>(other.invalidStats);
-        this.batches = other.batches;
+        this.batches = new ArrayList<>(other.batches.size());
+        for (BatchFileOperation batch : other.batches) {
+            this.batches.add(new BatchFileOperation(batch));
+        }
         this.aggregation = other.aggregation;
         this.timeStamp = other.timeStamp;
         this.attributes = new ObjectMap(other.attributes);

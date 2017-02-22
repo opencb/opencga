@@ -17,16 +17,26 @@
 package org.opencb.opencga.storage.hadoop.variant.converters.annotation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.introspect.Annotated;
+import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Result;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.variant.converters.Converter;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Created on 03/12/15.
@@ -35,28 +45,55 @@ import java.sql.SQLException;
  */
 public class HBaseToVariantAnnotationConverter implements Converter<Result, VariantAnnotation> {
 
-    private GenomeHelper genomeHelper;
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
+    private final byte[] columnFamily;
 
     public HBaseToVariantAnnotationConverter(GenomeHelper genomeHelper) {
-        this.genomeHelper = genomeHelper;
+        columnFamily = genomeHelper.getColumnFamily();
         objectMapper = new ObjectMapper();
         objectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
+    }
+
+    public HBaseToVariantAnnotationConverter setReturnedFields(Set<VariantField> allReturnedFields) {
+        List<String> list = new ArrayList<>();
+        if (allReturnedFields != null) {
+            for (VariantField annotationField : VariantField.values()) {
+                if (annotationField.getParent() == VariantField.ANNOTATION && !allReturnedFields.contains(annotationField)) {
+                    list.add(annotationField.fieldName().replace(VariantField.ANNOTATION.fieldName() + '.', ""));
+                }
+            }
+        }
+        String[] returnedAnnotationFields = list.toArray(new String[list.size()]);
+        objectMapper.setAnnotationIntrospector(
+                new JacksonAnnotationIntrospector() {
+                    @Override
+                    public String[] findPropertiesToIgnore(Annotated ac, boolean forSerialization) {
+                        String[] propertiesToIgnore = super.findPropertiesToIgnore(ac, forSerialization);
+                        if (ArrayUtils.isNotEmpty(propertiesToIgnore)) {
+                            List<String> list = new ArrayList<>();
+                            Collections.addAll(list, returnedAnnotationFields);
+                            Collections.addAll(list, propertiesToIgnore);
+                            return list.toArray(new String[list.size()]);
+                        } else {
+                            return returnedAnnotationFields;
+                        }
+                    }
+                });
+        return this;
     }
 
     @Override
     public VariantAnnotation convert(Result result) {
 
-        byte[] value = result.getValue(genomeHelper.getColumnFamily(), VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
-        if (value != null && value.length > 0) {
+        byte[] value = result.getValue(columnFamily, VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
+        if (ArrayUtils.isNotEmpty(value)) {
             try {
                 return objectMapper.readValue(value, VariantAnnotation.class);
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new UncheckedIOException(e);
             }
         }
         return null;
-
     }
 
     public VariantAnnotation convert(ResultSet resultSet) {
@@ -69,15 +106,16 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
         }
         try {
             String value = resultSet.getString(column);
-            if (value != null && !value.isEmpty()) {
+            if (StringUtils.isNotEmpty(value)) {
                 try {
                     return objectMapper.readValue(value, VariantAnnotation.class);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    throw new UncheckedIOException(e);
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            // This should never happen!
+            throw new IllegalStateException(e);
         }
         return null;
 

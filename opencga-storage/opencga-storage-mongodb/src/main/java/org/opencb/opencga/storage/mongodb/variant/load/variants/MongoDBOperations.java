@@ -27,6 +27,9 @@ public class MongoDBOperations {
     /** Missing variants. See A3) */
     private long missingVariants = 0;
 
+    /** Missing variants. See A3) . No fill gaps needed*/
+    private long missingVariantsNoFillGaps = 0;
+
     protected MongoDBOperations() {
     }
 
@@ -81,6 +84,15 @@ public class MongoDBOperations {
 
     MongoDBOperations setMissingVariants(long missingVariants) {
         this.missingVariants = missingVariants;
+        return this;
+    }
+
+    long getMissingVariantsNoFillGaps() {
+        return missingVariantsNoFillGaps;
+    }
+
+    MongoDBOperations setMissingVariantsNoFillGaps(long missingVariantsNoFillGaps) {
+        this.missingVariantsNoFillGaps = missingVariantsNoFillGaps;
         return this;
     }
 

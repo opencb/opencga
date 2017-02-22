@@ -19,26 +19,24 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
 import org.bson.Document;
-import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
-import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
@@ -203,12 +201,14 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
         StudyConfiguration studyConfiguration = createStudyConfiguration();
 
         StoragePipelineResult storagePipelineResult = runDefaultETL(smallInputUri, variantStorageManager, studyConfiguration, new ObjectMap()
+                .append(VariantStorageEngine.Options.FILE_ID.key(), 3)
                 .append(MongoDBVariantOptions.STAGE.key(), true)
                 .append(MongoDBVariantOptions.MERGE.key(), false));
 
         runETL(variantStorageManager, storagePipelineResult.getTransformResult(), outputUri, new ObjectMap()
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(MongoDBVariantOptions.STAGE.key(), true)
+                .append(VariantStorageEngine.Options.FILE_ID.key(), -1)
+                .append(MongoDBVariantOptions.STAGE.key(), false)
                 .append(MongoDBVariantOptions.MERGE.key(), true), false, false, true);
 
         Long count = variantStorageManager.getDBAdaptor(DB_NAME).count(null).first();
@@ -318,18 +318,20 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
         }
     }
 
-    @Test
     /**
      * Try to merge two different files in the same study at the same time.
      */
+    @Test
     public void mergeWhileMerging() throws Exception {
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         StoragePipelineResult storagePipelineResult = runDefaultETL(inputUri, getVariantStorageEngine(), studyConfiguration, new ObjectMap()
                 .append(MongoDBVariantOptions.STAGE.key(), true));
 
         int secondFileId = 8;
-        StoragePipelineResult storagePipelineResult2 = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyConfiguration, new ObjectMap()
-                .append(MongoDBVariantOptions.STAGE.key(), true).append(VariantStorageEngine.Options.FILE_ID.key(), secondFileId));
+        StoragePipelineResult storagePipelineResult2 = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyConfiguration,
+                new ObjectMap()
+                        .append(MongoDBVariantOptions.STAGE.key(), true)
+                        .append(VariantStorageEngine.Options.FILE_ID.key(), secondFileId));
         Thread thread = new Thread(() -> {
             try {
                 runDefaultETL(storagePipelineResult.getTransformResult(), getVariantStorageEngine(), studyConfiguration, new ObjectMap(),

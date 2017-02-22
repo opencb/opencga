@@ -25,11 +25,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
-import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import javax.servlet.http.HttpServletRequest;
@@ -157,6 +156,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = "List of samples to be returned") @QueryParam("returnedSamples") String returnedSamples,
                                 @ApiParam(value = "List of files to be returned.") @QueryParam("returnedFiles") String returnedFiles,
                                 @ApiParam(value = "Variants in specific files") @QueryParam("files") String files,
+                                @ApiParam(value = VariantDBAdaptor.FILTER_DESCR) @QueryParam("filter") String filter,
                                 @ApiParam(value = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("maf") String maf,
                                 @ApiParam(value = "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("mgf") String mgf,
                                 @ApiParam(value = "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("missingAlleles") String missingAlleles,
@@ -233,6 +233,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         public String returnedSamples;
         public String returnedFiles;
         public String files;
+        public String filter;
         public String maf;
         public String mgf;
         public String missingAlleles;

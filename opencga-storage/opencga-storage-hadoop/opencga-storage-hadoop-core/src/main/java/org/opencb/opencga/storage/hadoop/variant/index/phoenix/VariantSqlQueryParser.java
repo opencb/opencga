@@ -252,6 +252,7 @@ public class VariantSqlQueryParser {
      * Using annotation:
      * {@link VariantQueryParams#ID}
      * {@link VariantQueryParams#GENE}
+     * {@link VariantQueryParams#ANNOT_XREF}
      *
      * @param query Query to parse
      * @return List of region filters
@@ -270,17 +271,10 @@ public class VariantSqlQueryParser {
         addQueryFilter(query, CHROMOSOME, VariantColumn.CHROMOSOME, regionFilters);
 
 //        addQueryFilter(query, ID, VariantColumn.XREFS, regionFilters);
+        List<Variant> variants = new ArrayList<>();
         if (isValidParam(query, ID)) {
-            List<Variant> variants = new ArrayList<>();
             for (String id : query.getAsStringList(ID.key())) {
-                Variant variant = null;
-                if (id.contains(":")) {
-                    try {
-                        variant = new Variant(id);
-                    } catch (IllegalArgumentException ignore) {
-                        logger.info("Wrong variant " + id);
-                    }
-                }
+                Variant variant = toVariant(id);
                 if (variant == null) {
                     regionFilters.add(buildFilter(VariantColumn.XREFS, "=", id));
                 } else {
@@ -293,15 +287,14 @@ public class VariantSqlQueryParser {
 //                    regionFilters.add(appendFilters(subFilters, QueryOperation.AND.toString()));
                 }
             }
-            if (!variants.isEmpty()) {
-                regionFilters.add(getVariantFilter(variants));
-            }
         }
 
         // TODO: Ask cellbase for gene region?
 //        addQueryFilter(query, GENE, VariantColumn.GENES, regionFilters);
+        List<String> genes = new ArrayList<>();
         if (isValidParam(query, GENE)) {
             for (String gene : query.getAsStringList(GENE.key())) {
+                genes.add(gene);
                 Region region = utils.getGeneRegion(gene);
                 if (region != null) {
                     regionFilters.add(getRegionFilter(region));
@@ -309,6 +302,28 @@ public class VariantSqlQueryParser {
                     regionFilters.add(getVoidFilter());
                 }
             }
+        }
+
+//        addQueryFilter(query, ANNOT_XREF, VariantColumn.XREFS, regionFilters);
+        if (isValidParam(query, ANNOT_XREF)) {
+            List<String> xrefs = query.getAsStringList(VariantQueryParams.ANNOT_XREF.key());
+            List<String> otherXrefs = new ArrayList<>();
+            for (String value : xrefs) {
+                Variant variant = toVariant(value);
+                if (variant != null) {
+                    variants.add(variant);
+                } else {
+                    if (isVariantAccession(value) || isClinicalAccession(value) || isGeneAccession(value)) {
+                        otherXrefs.add(value);
+                    } else {
+                        genes.add(value);
+                    }
+                    regionFilters.add(buildFilter(VariantColumn.XREFS, "=", value));
+                }
+            }
+        }
+        if (!variants.isEmpty()) {
+            regionFilters.add(getVariantFilter(variants));
         }
 
         if (regionFilters.isEmpty()) {
@@ -383,7 +398,6 @@ public class VariantSqlQueryParser {
      * Annotation filters:
      * {@link VariantQueryParams#ANNOTATION_EXISTS}
      * {@link VariantQueryParams#ANNOT_CONSEQUENCE_TYPE}
-     * {@link VariantQueryParams#ANNOT_XREF}
      * {@link VariantQueryParams#ANNOT_BIOTYPE}
      * {@link VariantQueryParams#ANNOT_POLYPHEN}
      * {@link VariantQueryParams#ANNOT_SIFT}
@@ -614,8 +628,6 @@ public class VariantSqlQueryParser {
 
         addQueryFilter(query, ANNOT_CONSEQUENCE_TYPE, VariantColumn.SO, filters, VariantDBAdaptorUtils::parseConsequenceType);
 
-        addQueryFilter(query, ANNOT_XREF, VariantColumn.XREFS, filters);
-
         addQueryFilter(query, ANNOT_BIOTYPE, VariantColumn.BIOTYPE, filters);
 
         addQueryFilter(query, ANNOT_SIFT, (keyOpValue, rawValue) -> {
@@ -703,7 +715,7 @@ public class VariantSqlQueryParser {
 
         addQueryFilter(query, ANNOT_GENE_TRAITS_NAME, VariantColumn.GENE_TRAITS_NAME, filters);
 
-        addQueryFilter(query, ANNOT_HPO, VariantColumn.HPO, filters);
+        addQueryFilter(query, ANNOT_HPO, VariantColumn.XREFS, filters);
 
         if (isValidParam(query, ANNOT_GO)) {
             String value = query.getString(ANNOT_GO.key());
