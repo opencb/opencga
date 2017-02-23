@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.storage.core.search.solr;
 
-import org.opencb.opencga.storage.core.search.VariantSearch;
+import org.opencb.opencga.storage.core.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.search.VariantSearchIterator;
 
 import java.util.Iterator;
@@ -26,9 +26,9 @@ import java.util.Iterator;
  */
 public class SolrVariantSearchIterator extends VariantSearchIterator {
 
-    private Iterator<VariantSearch> solrIterator;
+    private Iterator<VariantSearchModel> solrIterator;
 
-    public SolrVariantSearchIterator(Iterator<VariantSearch> solrIterator) {
+    public SolrVariantSearchIterator(Iterator<VariantSearchModel> solrIterator) {
         this.solrIterator = solrIterator;
     }
 
@@ -38,7 +38,7 @@ public class SolrVariantSearchIterator extends VariantSearchIterator {
     }
 
     @Override
-    public VariantSearch next() {
+    public VariantSearchModel next() {
         return solrIterator.next();
     }
 

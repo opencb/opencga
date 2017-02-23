@@ -44,10 +44,11 @@ import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.search.SearchManager;
-import org.opencb.opencga.storage.core.search.VariantSearch;
+import org.opencb.opencga.storage.core.search.VariantSearchManager;
+import org.opencb.opencga.storage.core.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.search.solr.SolrVariantSearchIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
@@ -668,25 +669,75 @@ public class VariantCommandExecutor extends CommandExecutor {
     /**
      * search command
      */
-    private void search() throws IOException, SolrServerException {
+    private void search() throws Exception {
         StorageVariantCommandOptions.VariantSearchCommandOptions searchOptions = variantCommandOptions.searchVariantsCommandOptions;
 
-        SearchManager searchManager = new SearchManager();
+        //VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor(exportVariantsCommandOptions.dbName);
+        // variantStorageEngine.getConfiguration().getSearch()
+
+        // TODO: initialize solrUrl and database (i.e.: core/collection name) from the configuration file
+        String solrUrl = (searchOptions.solrUrl == null ? "http://localhost:8983/solr/" : searchOptions.solrUrl);
+        String dbName = (searchOptions.dbName == null ? "variants" : searchOptions.dbName);
+
+        VariantSearchManager variantSearchManager = new VariantSearchManager(solrUrl, dbName);
+        boolean querying = true;
+        String mode = searchOptions.mode;
+
+        // create the core or collection
+        if (searchOptions.create) {
+            querying = false;
+            switch (mode.toLowerCase()) {
+                case "core": {
+                    if (variantSearchManager.existCore(dbName)) {
+                        throw new IllegalArgumentException("Core '" + dbName + "' already exists");
+                    }
+                    variantSearchManager.createCore(searchOptions.dbName, searchOptions.solrConfig);
+                    break;
+                }
+                case "collection": {
+                    if (variantSearchManager.existCore(dbName)) {
+                        throw new IllegalArgumentException("Collection '" + dbName + "' already exists");
+                    }
+                    variantSearchManager.createCollection(searchOptions.dbName, searchOptions.solrConfig,
+                            searchOptions.numShards, searchOptions.numReplicas);
+                    break;
+                }
+                default: {
+                    throw new IllegalArgumentException("Invalid value '" + searchOptions.create
+                            + "' for the --create parameter. Valid values are 'core' or 'collection'");
+                }
+            }
+        }
+
+        // index
         if (searchOptions.index) {
-            // index
+            if (!variantSearchManager.existCore(dbName)) {
+                throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
+            }
+            querying = false;
             Path path = Paths.get(searchOptions.inputFilename);
-            searchManager.load(path);
-        } else {
-            // query
-            Query query = new Query(); // VariantQueryCommandUtils.parseQuery(searchOptions, null);
-            QueryOptions queryOptions = new QueryOptions(); // VariantQueryCommandUtils.parseQueryOptions(searchOptions);
-            SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
+            variantSearchManager.load(path);
+        }
+
+        // query
+        if (querying) {
+            if (!variantSearchManager.existCore(dbName)) {
+                throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
+            }
             int count = 0;
-            while (iterator.hasNext()) {
-                VariantSearch variantSearch = iterator.next();
-                System.out.println("Variant #" + count);
-                System.out.println(variantSearch.toString());
-                count++;
+            try {
+                Query query = new Query();
+                query = VariantQueryCommandUtils.parseQuery(searchOptions, query);
+                QueryOptions queryOptions = new QueryOptions(); // VariantQueryCommandUtils.parseQueryOptions(searchOptions);
+                SolrVariantSearchIterator iterator = variantSearchManager.iterator(query, queryOptions);
+                while (iterator.hasNext()) {
+                    VariantSearchModel variantSearch = iterator.next();
+                    System.out.println("Variant #" + count);
+                    System.out.println(variantSearch.toString());
+                    count++;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
             System.out.println("Num. variants: " + count);
         }
