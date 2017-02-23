@@ -309,7 +309,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                                 : samplesDataDocument.get(extraField, Binary.class).getData();
 
                         VariantMongoDBProto.OtherFields otherFields = null;
-                        if (compressExtraParams && byteArray != null) {
+                        if (compressExtraParams && byteArray != null && byteArray.length > 0) {
                             try {
                                 byteArray = CompressionUtils.decompress(byteArray);
                             } catch (IOException e) {
@@ -319,7 +319,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                             }
                         }
                         try {
-                            if (byteArray != null) {
+                            if (byteArray != null && byteArray.length > 0) {
                                 otherFields = VariantMongoDBProto.OtherFields.parseFrom(byteArray);
                             }
                         } catch (InvalidProtocolBufferException e) {

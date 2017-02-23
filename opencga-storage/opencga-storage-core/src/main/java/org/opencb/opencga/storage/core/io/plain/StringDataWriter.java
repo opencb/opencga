@@ -67,13 +67,13 @@ public class StringDataWriter implements DataWriter<String> {
         try {
             String fileName = path.toFile().getName();
             if (fileName.endsWith(".gz")) {
-                logger.info("Gzip output compress");
+                logger.debug("Gzip output compress");
                 os = new GZIPOutputStream(new FileOutputStream(path.toAbsolutePath().toString()));
             } else if (fileName.endsWith(".snappy") || fileName.endsWith(".snz")) {
-                logger.info("Snappy output compress");
+                logger.debug("Snappy output compress");
                 os = new SnappyOutputStream(new FileOutputStream(path.toAbsolutePath().toString()));
             } else {
-                logger.info("Plain output");
+                logger.debug("Plain output");
                 os = new FileOutputStream(path.toAbsolutePath().toString());
             }
         } catch (IOException e) {

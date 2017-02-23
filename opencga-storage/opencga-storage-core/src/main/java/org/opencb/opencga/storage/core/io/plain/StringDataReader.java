@@ -104,7 +104,6 @@ public class StringDataReader implements DataReader<String> {
             for (int i = 0; i < batchSize; i++) {
                 String line = reader.readLine();
                 if (line == null) {
-                    System.out.println("Read null line");
                     break;
                 }
                 batch.add(line);
