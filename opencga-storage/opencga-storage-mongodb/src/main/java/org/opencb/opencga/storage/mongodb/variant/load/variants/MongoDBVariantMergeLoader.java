@@ -46,6 +46,7 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
     private final MongoDBCollection variantsCollection;
     private final MongoDBCollection stageCollection;
     private final boolean resume;
+    private final boolean cleanWhileLoading;
     private final Integer studyId;
     /** Files to be loaded. */
     private final List<Integer> fileIds;
@@ -54,7 +55,8 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
     private final MongoDBVariantWriteResult result;
 
     public MongoDBVariantMergeLoader(MongoDBCollection variantsCollection, MongoDBCollection stageCollection,
-                                     Integer studyId, List<Integer> fileIds, boolean resume, ProgressLogger progressLogger) {
+                                     Integer studyId, List<Integer> fileIds, boolean resume, boolean cleanWhileLoading,
+                                     ProgressLogger progressLogger) {
         this.progressLogger = progressLogger;
         this.variantsCollection = variantsCollection;
         this.stageCollection = stageCollection;
@@ -62,6 +64,7 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         this.studyId = studyId;
         this.fileIds = fileIds;
         this.result = new MongoDBVariantWriteResult();
+        this.cleanWhileLoading = cleanWhileLoading;
     }
 
     @Override
@@ -100,7 +103,9 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         }
         fillGapsVariants.stop();
 
-        cleanStage(mongoDBOps);
+        if (cleanWhileLoading) {
+            cleanStage(mongoDBOps);
+        }
 
         long updatesNewStudyExistingVariant = mongoDBOps.getNewStudy().getUpdates().size() - newVariants;
         long updatesWithDataExistingStudy = mongoDBOps.getExistingStudy().getUpdates().size() - mongoDBOps.getMissingVariants();

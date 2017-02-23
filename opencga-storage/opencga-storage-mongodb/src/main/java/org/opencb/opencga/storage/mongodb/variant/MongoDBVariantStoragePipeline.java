@@ -574,7 +574,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             setStatus(BatchFileOperation.Status.DONE, MERGE.key(), fileIds);
         }
 
-        if (options.getBoolean(STAGE_CLEAN_CHECK.key(), STAGE_CLEAN_CHECK.defaultValue())) {
+        if (!options.getBoolean(STAGE_CLEAN_WHILE_LOAD.key(), STAGE_CLEAN_WHILE_LOAD.defaultValue())) {
             StopWatch time = StopWatch.createStarted();
             logger.info("Deleting variant records from Stage collection");
             long modifiedCount = MongoDBVariantStageLoader.cleanStageCollection(stageCollection, studyConfiguration.getStudyId(), fileIds,
@@ -674,13 +674,14 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stageCollection, studyConfiguration.getStudyId(),
                 chromosomeToLoad == null ? Collections.emptyList() : Collections.singletonList(chromosomeToLoad));
         boolean resume = isResumeMerge(options);
+        boolean cleanWhileLoading = options.getBoolean(STAGE_CLEAN_WHILE_LOAD.key(), STAGE_CLEAN_WHILE_LOAD.defaultValue());
         ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", reader::countNumVariants, 200);
         progressLogger.setApproximateTotalCount(reader.countAproxNumVariants());
 
         MongoDBVariantMerger variantMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
                 dbAdaptor.getVariantsCollection(), indexedFiles, resume);
         MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(dbAdaptor.getVariantsCollection(), stageCollection,
-                studyConfiguration.getStudyId(), fileIds, resume, progressLogger);
+                studyConfiguration.getStudyId(), fileIds, resume, cleanWhileLoading, progressLogger);
 
         ParallelTaskRunner<Document, MongoDBOperations> ptrMerge;
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
