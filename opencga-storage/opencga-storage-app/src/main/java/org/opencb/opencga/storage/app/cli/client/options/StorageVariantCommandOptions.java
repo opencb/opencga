@@ -565,7 +565,7 @@ public class StorageVariantCommandOptions {
 
 
     @Parameters(commandNames = {"export"}, commandDescription = "Export variants into a VCF file.")
-    public class VariantExportCommandOptions  { //extends GenericVariantExportOptions
+    public class VariantExportCommandOptions extends GenericVariantExportOptions {
 
 //        @ParametersDelegate
 //        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;

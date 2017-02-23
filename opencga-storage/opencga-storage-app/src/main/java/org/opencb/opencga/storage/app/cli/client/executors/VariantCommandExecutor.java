@@ -19,10 +19,16 @@ package org.opencb.opencga.storage.app.cli.client.executors;
 import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.Options;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.vcf.VCFHeader;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.tools.variant.converters.VariantContextToAvroVariantConverter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -52,15 +58,13 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -614,26 +618,51 @@ public class VariantCommandExecutor extends CommandExecutor {
         VariantDBAdaptor variantDBAdaptor = variantStorageEngine.getDBAdaptor(exportVariantsCommandOptions.queryOptions.commonQueryOptions.dbName);
         List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
 
+
         // TODO: JT
-//        try {
-//            Query query = VariantQueryCommandUtils.parseQuery(exportVariantsCommandOptions.queryOptions, studyNames);
-//            QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(exportVariantsCommandOptions.queryOptions);
-//
-//            // TODO: get study id/name
-//            VariantContextToAvroVariantConverter variantContextToAvroVariantConverter =
-//                    new VariantContextToAvroVariantConverter("" + 0, Collections.emptyList(), Collections.emptyList());
-////                    new VariantContextToAvroVariantConverter("default", Collections.emptyList(), Collections.emptyList());
-//            VariantDBIterator iterator = variantDBAdaptor.iterator(query, options);
-//            while (iterator.hasNext()) {
-//                Variant variant = iterator.next();
-//                VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
-//
-//                System.out.println(variantContext.toString());
-//            }
-//
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
+        try {
+            Query query = VariantQueryCommandUtils.parseQuery(exportVariantsCommandOptions.queryOptions, studyNames);
+            QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(exportVariantsCommandOptions.queryOptions);
+
+            // create VCF header by getting information from metadata or study configuration
+            List<String> cohortNames = null;
+            List<String> annotations = null;
+            List<String> formatFields = null;
+            List<String> formatFieldsType = null;
+            List<String> formatFieldsDescr = null;
+            List<String> sampleNames = null;
+            Function<String, String> converter = null;
+
+            VCFHeader vcfHeader = VcfUtils.createVCFHeader(cohortNames, annotations, formatFields,
+                    formatFieldsType, formatFieldsDescr, sampleNames, converter);
+
+            // create the variant context writer
+            OutputStream outputStream = new FileOutputStream(exportVariantsCommandOptions.outFilename);
+            Options writerOptions = null;
+            VariantContextWriter writer = VcfUtils.createVariantContextWriter(outputStream,
+                    vcfHeader.getSequenceDictionary(), writerOptions);
+
+            // write VCF header
+            writer.writeHeader(vcfHeader);
+
+            // TODO: get study id/name
+            VariantContextToAvroVariantConverter variantContextToAvroVariantConverter =
+                    new VariantContextToAvroVariantConverter(0, Collections.emptyList(), Collections.emptyList());
+            VariantDBIterator iterator = variantDBAdaptor.iterator(query, options);
+            while (iterator.hasNext()) {
+                Variant variant = iterator.next();
+                VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
+                System.out.println(variantContext.toString());
+
+                writer.add(variantContext);
+            }
+
+            // close
+            writer.close();
+            outputStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
