@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.mongodb.variant.load.variants;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -19,6 +20,11 @@ public class MongoDBOperations {
 
     // Document and study exist
     private ExistingStudy existingStudy = new ExistingStudy();
+
+    // Stage documents to cleanup
+//    private List<Pair<Bson, Bson>> cleanFromStage = new ArrayList<>();
+    private List<String> documentsToCleanStudies = new ArrayList<>();
+    private List<String> documentsToCleanFiles = new ArrayList<>();
 
     private int skipped = 0;
     private int nonInserted = 0;
@@ -48,6 +54,24 @@ public class MongoDBOperations {
 
     MongoDBOperations setExistingStudy(ExistingStudy existingStudy) {
         this.existingStudy = existingStudy;
+        return this;
+    }
+
+    List<String> getDocumentsToCleanStudies() {
+        return documentsToCleanStudies;
+    }
+
+    MongoDBOperations setDocumentsToCleanStudies(List<String> documentsToCleanStudies) {
+        this.documentsToCleanStudies = documentsToCleanStudies;
+        return this;
+    }
+
+    List<String> getDocumentsToCleanFiles() {
+        return documentsToCleanFiles;
+    }
+
+    MongoDBOperations setDocumentsToCleanFiles(List<String> documentsToCleanFiles) {
+        this.documentsToCleanFiles = documentsToCleanFiles;
         return this;
     }
 
