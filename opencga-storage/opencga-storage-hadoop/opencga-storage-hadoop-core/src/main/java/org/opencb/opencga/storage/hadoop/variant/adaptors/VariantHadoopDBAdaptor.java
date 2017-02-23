@@ -44,7 +44,9 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -93,6 +95,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final VariantSqlQueryParser queryParser;
     private final HadoopVariantSourceDBAdaptor variantSourceDBAdaptor;
     private final CellBaseClient cellBaseClient;
+    private boolean clientSideSkip;
 
     public VariantHadoopDBAdaptor(HBaseCredentials credentials, StorageConfiguration configuration,
                                   Configuration conf) throws IOException {
@@ -117,9 +120,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         if (StringUtils.isEmpty(species)) {
             species = clientConfiguration.getDefaultSpecies();
         }
-        cellBaseClient = new CellBaseClient(species, assembly, clientConfiguration);
+        cellBaseClient = new CellBaseClient(AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(species), assembly, clientConfiguration);
 
-        this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable, new VariantDBAdaptorUtils(this), cellBaseClient);
+        clientSideSkip = !options.getBoolean(PhoenixHelper.PHOENIX_SERVER_OFFSET_AVAILABLE, true);
+        this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable, new VariantDBAdaptorUtils(this),
+                clientSideSkip);
 
         phoenixHelper = new VariantPhoenixHelper(genomeHelper);
     }
@@ -413,19 +418,12 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             }
         } else {
 
-            int limit = options.getInt(QueryOptions.LIMIT, -1);
-            int skip = options.getInt(QueryOptions.SKIP, -1);
-            // Increment the limit with the skip to do a client side skip
-            if (limit > 0 && skip > 0) {
-                options = new QueryOptions(options);
-                options.put(QueryOptions.LIMIT, limit + skip);
-            }
             logger.debug("Table name = " + variantTable);
             String sql = queryParser.parse(query, options);
             logger.info(sql);
             logger.debug("Creating {} iterator", VariantHBaseResultSetIterator.class);
             try {
-                if (true) {
+                if (options.getBoolean("explain", true)) {
                     logger.info("---- " + "EXPLAIN " + sql);
                     phoenixHelper.getPhoenixHelper().explain(getJdbcConnection(), sql, Logger::info);
                 }
@@ -433,12 +431,19 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 Statement statement = getJdbcConnection().createStatement(); // Statemnet closed by iterator
                 statement.setFetchSize(options.getInt("batchSize", -1));
                 ResultSet resultSet = statement.executeQuery(sql); // RS closed by iterator
-                List<String> returnedSamples = getReturnedSamplesList(query, options);
+                Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
+                List<String> returnedSamples = getReturnedSamplesList(query, returnedFields);
                 VariantHBaseResultSetIterator iterator = new VariantHBaseResultSetIterator(statement,
-                        resultSet, genomeHelper, getStudyConfigurationManager(), options, returnedSamples);
+                        resultSet, genomeHelper, getStudyConfigurationManager(), returnedSamples, returnedFields, options);
 
-                // Client side skip!
-                iterator.skip(skip);
+                if (clientSideSkip) {
+                    // Client side skip!
+                    int skip = options.getInt(QueryOptions.SKIP, -1);
+                    if (skip > 0) {
+                        logger.info("Client side skip! skip = {}", skip);
+                        iterator.skip(skip);
+                    }
+                }
                 return iterator;
             } catch (SQLException e) {
                 throw new RuntimeException(e);

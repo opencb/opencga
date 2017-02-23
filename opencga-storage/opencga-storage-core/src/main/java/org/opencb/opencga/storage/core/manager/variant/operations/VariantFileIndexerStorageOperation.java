@@ -244,32 +244,16 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             }
         }
         // Only if we are not transforming or if a path has been passed, we will update catalog information
-        List<String> previousFileStatus = new ArrayList<>(filesToIndex.size());
         if (!step.equals(Type.TRANSFORM) || catalogOutDirId != null) {
             for (File file : filesToIndex) {
-                previousFileStatus.add(file.getIndex().getStatus().getName());
                 QueryResult<FileIndex> fileIndexQueryResult = fileManager.updateFileIndexStatus(file, fileStatus,
                         fileStatusMessage, sessionId);
                 file.setIndex(fileIndexQueryResult.first());
             }
         }
 
-
         logger.info("Starting to {}", step);
         List<StoragePipelineResult> storagePipelineResults;
-
-//        try {
-//            storagePipelineResults = variantStorageManager.index(fileUris, outdir.toUri(), false, transform, load);
-//        } catch(StorageEngineException e) {
-//            // Restore previous status
-//            if (!step.equals(Type.TRANSFORM) || options.get(CATALOG_PATH) != null) {
-//                for (int i = 0; i < filesToIndex.size(); i++) {
-//                    File file = filesToIndex.get(i);
-//                    fileManager.updateFileIndexStatus(file, previousFileStatus.get(i), sessionId);
-//                }
-//            }
-//            throw e;
-//        }
 
         // Save exception to throw at the end
         StorageEngineException exception = null;
@@ -689,16 +673,16 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             return new ArrayList<>();
         }
 
-        List<String> avroFiles = null;
+        List<String> transformedFiles = null;
         if (options.get(TRANSFORMED_FILES) != null) {
-            avroFiles = options.getAsStringList(TRANSFORMED_FILES);
-            if (avroFiles.size() != fileList.size()) {
-                throw new CatalogException("The number of avro files (" + avroFiles.size() + ") passed does not match the number of vcf "
-                        + "files (" + fileList.size() + ").");
+            transformedFiles = options.getAsStringList(TRANSFORMED_FILES);
+            if (transformedFiles.size() != fileList.size()) {
+                throw new CatalogException("The number of transformed files (" + transformedFiles.size() + ") passed does not match the"
+                        + " number of vcf files (" + fileList.size() + ").");
             }
             // Check all the files are accessible and are actually files
-            for (String avroFile : avroFiles) {
-                java.io.File file = Paths.get(avroFile).toFile();
+            for (String transformedFile : transformedFiles) {
+                java.io.File file = Paths.get(transformedFile).toFile();
                 if (!file.exists() || !file.isFile()) {
                     throw new CatalogException("File " + file + " does not exist or it is not an avro file");
                 }
@@ -709,43 +693,46 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         for (int i = 0; i < fileList.size(); i++) {
             File file = fileList.get(i);
 
+            // If is a transformed file, get the related VCF file
+            if (VariantReaderUtils.isTransformedVariants(file.getName())) {
+                if (transformedFiles != null) {
+                    // Check if the uri is different
+                    URI avroUri = UriUtils.createUri(transformedFiles.get(i));
+                    if (!avroUri.equals(file.getUri())) {
+                        // This case should never happen. If we are here, it means that the input file was already an avro file and that
+                        // a list of avro uris have been found. However, the uri of the avro does not match the uri we have for the avro
+                        // file. Nonsense.
+                        throw new CatalogException("The avro file " + file.getId() + " in " + file.getUri() + " has been associated a "
+                                + "different uri " + avroUri + " by the user.");
+                    }
+                }
+                file = getOriginalFromTransformed(sessionId, file);
+            }
+
             if (file.getFormat().equals(File.Format.VCF) || file.getFormat().equals(File.Format.GVCF)) {
                 String status = file.getIndex() == null ? FileIndex.IndexStatus.NONE : file.getIndex().getStatus().getName();
                 switch (status) {
                     case FileIndex.IndexStatus.NONE:
-                        if (avroFiles != null) {
+                        if (transformedFiles != null) {
                             filteredFiles.add(file);
-                            fileUris.add(UriUtils.createUri(avroFiles.get(i)));
+                            fileUris.add(UriUtils.createUri(transformedFiles.get(i)));
                         } else {
                             logger.warn("Cannot load vcf file " + file.getId() + " if no avro file is provided.");
                         }
                         break;
                     case FileIndex.IndexStatus.TRANSFORMED:
                         // We will attempt to use the avro file registered in catalog
-                        long avroId = file.getIndex() != null && file.getIndex().getTransformedFile() != null
-                                ? file.getIndex().getTransformedFile().getId()
-                                : -1;
-                        if (avroId == -1) {
-                            logger.error("This code should never be executed. Every vcf file containing the transformed status should have"
-                                    + " a registered avro file");
-                            throw new CatalogException("Internal error. No avro file could be found for file " + file.getId());
-                        }
-                        QueryResult<File> avroQueryResult = fileManager.get(avroId, new QueryOptions(), sessionId);
-                        if (avroQueryResult.getNumResults() != 1) {
-                            logger.error("This code should never be executed. No avro file could be found under ");
-                            throw new CatalogException("Internal error. No avro file could be found under id " + avroId);
-                        }
-
-                        if (avroFiles != null) {
+                        File transformed = getTransformedFromOriginal(sessionId, file);
+                        if (transformedFiles != null) {
                             // Check that the uri from the avro file obtained from catalog is the same the user has put as input
-                            URI avroUri = UriUtils.createUri(avroFiles.get(i));
-                            if (!avroUri.equals(avroQueryResult.first().getUri())) {
+                            URI uri = UriUtils.createUri(transformedFiles.get(i));
+                            if (!uri.equals(transformed.getUri())) {
                                 throw new CatalogException("An Avro file was found for file " + file.getId() + " in "
-                                        + avroQueryResult.first().getUri() + ". However, the user selected a different one in " + avroUri);
+                                        + transformed.getUri() + ". However, the user selected a different one in " + uri);
                             }
                         }
                         filteredFiles.add(file);
-                        fileUris.add(avroQueryResult.first().getUri());
+                        fileUris.add(transformed.getUri());
                         break;
                     case FileIndex.IndexStatus.TRANSFORMING:
                         logger.warn("We can only load files previously transformed. Skipping file {}", file.getName());
@@ -761,47 +748,58 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                         logger.warn("We can only load files previously transformed, File {} with status is {}", file.getName(), status);
                         break;
                 }
-            } else if (file.getFormat().equals(File.Format.AVRO)) {
-                if (avroFiles != null) {
-                    // Check if the uri is different
-                    URI avroUri = UriUtils.createUri(avroFiles.get(i));
-                    if (!avroUri.equals(file.getUri())) {
-                        // This case should never happen. If we are here, it means that the input file was already an avro file and that
-                        // a list of avro uris have been found. However, the uri of the avro does not match the uri we have for the avro
-                        // file. Nonsense.
-                        throw new CatalogException("The avro file " + file.getId() + " in " + file.getUri() + " has been associated a "
-                                + "different uri " + avroUri + " by the user.");
-                    }
-                }
-                // Look for the vcf file
-                long vcfId = -1;
-                // Matchup variant files, if missing
-                if (file.getRelatedFiles() == null || file.getRelatedFiles().isEmpty()) {
-                    catalogManager.getFileManager().matchUpVariantFiles(Collections.singletonList(file), sessionId);
-                }
-                for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
-                    if (File.RelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {
-                        vcfId = relatedFile.getFileId();
-                        break;
-                    }
-                }
-                if (vcfId == -1) {
-                    logger.error("This code should never be executed. Every transformed avro file should come from a registered vcf file");
-                    throw new CatalogException("Internal error. No vcf file could be found for file " + file.getId());
-                }
-                QueryResult<File> vcfQueryResult = fileManager.get(vcfId, new QueryOptions(), sessionId);
-                if (vcfQueryResult.getNumResults() != 1) {
-                    logger.error("This code should never be executed. No vcf file could be found for vcf id " + vcfId);
-                    throw new CatalogException("Internal error. No vcf file could be found under id " + vcfId);
-                }
-                filteredFiles.add(vcfQueryResult.first());
-                fileUris.add(file.getUri());
             } else {
                 logger.warn("The input file is not a variant file. Format {}", file.getFormat());
             }
 
         }
         return filteredFiles;
+    }
+
+    private File getOriginalFromTransformed(String sessionId, File file)
+            throws URISyntaxException, CatalogException {
+        // Look for the vcf file
+        long vcfId = -1;
+        // Matchup variant files, if missing
+        if (file.getRelatedFiles() == null || file.getRelatedFiles().isEmpty()) {
+            catalogManager.getFileManager().matchUpVariantFiles(Collections.singletonList(file), sessionId);
+        }
+        for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
+            if (File.RelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {
+                vcfId = relatedFile.getFileId();
+                break;
+            }
+        }
+        if (vcfId == -1) {
+            logger.error("This code should never be executed. Every transformed avro file should come from a registered vcf file");
+            throw new CatalogException("Internal error. No vcf file could be found for file " + file.getId());
+        }
+        QueryResult<File> vcfQueryResult = fileManager.get(vcfId, new QueryOptions(), sessionId);
+        if (vcfQueryResult.getNumResults() != 1) {
+            logger.error("This code should never be executed. No vcf file could be found for vcf id " + vcfId);
+            throw new CatalogException("Internal error. No vcf file could be found under id " + vcfId);
+        }
+        file = vcfQueryResult.first();
+        return file;
+    }
+
+    private File getTransformedFromOriginal(String sessionId, File file)
+            throws CatalogException, URISyntaxException {
+        long transformedFile = file.getIndex() != null && file.getIndex().getTransformedFile() != null
+                ? file.getIndex().getTransformedFile().getId()
+                : -1;
+        if (transformedFile == -1) {
+            logger.error("This code should never be executed. Every vcf file containing the transformed status should have"
+                    + " a registered transformed file");
+            throw new CatalogException("Internal error. No transformed file could be found for file " + file.getId());
+        }
+        QueryResult<File> queryResult = fileManager.get(transformedFile, new QueryOptions(), sessionId);
+        if (queryResult.getNumResults() != 1) {
+            logger.error("This code should never be executed. No transformed file could be found under ");
+            throw new CatalogException("Internal error. No transformed file could be found under id " + transformedFile);
+        }
+
+        return queryResult.first();
     }
 
 

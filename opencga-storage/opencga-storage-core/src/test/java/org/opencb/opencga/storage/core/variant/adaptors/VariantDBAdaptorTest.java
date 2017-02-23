@@ -198,21 +198,46 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetAllVariants_limit_skip() {
-        int numVariants = allVariants.getResult().size();
+        limitSkip(new Query(), new QueryOptions());
+    }
+
+    @Test
+    public void testGetAllVariants_limit_skip_sorted() {
+        limitSkip(new Query(), new QueryOptions(QueryOptions.SORT, true));
+    }
+
+    @Test
+    public void testGetAllVariants_limit_skip_filters() {
+        limitSkip(new Query(ANNOT_POLYPHEN.key(), "<0.5"), new QueryOptions());
+    }
+
+    @Test
+    public void testGetAllVariants_limit_skip_sorted_filters() {
+        limitSkip(new Query(ANNOT_POLYPHEN.key(), "<0.5"), new QueryOptions(QueryOptions.SORT, true));
+    }
+
+    public void limitSkip(Query query, QueryOptions options) {
+        VariantQueryResult<Variant> expected = dbAdaptor.get(query, options);
+        int numVariants = expected.getNumResults();
+//        expected.getResult().forEach(v -> logger.info("expected variant: == " + v));
         for (int batchSize : new int[]{50, 100, 1000}) {
             List<Variant> variants = new ArrayList<>();
             Set<String> variantStr = new HashSet<>();
             for (int i = 0; i < numVariants / batchSize + 1; i++) {
-                QueryResult<Variant> result = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.LIMIT, batchSize).append(QueryOptions.SKIP, i * batchSize));
+                QueryResult<Variant> result = dbAdaptor.get(query, new QueryOptions(options)
+                        .append(QueryOptions.LIMIT, batchSize)
+                        .append(QueryOptions.SKIP, i * batchSize));
+                logger.info("Got " + result.getNumResults() + " results");
                 variants.addAll(result.getResult());
                 for (Variant variant : result.getResult()) {
-                    variantStr.add(variant.toString());
+                    boolean repeated = !variantStr.add(variant.toString());
+                    assertFalse("Repeated variant! : " + variant.toString(), repeated);
                 }
             }
             assertEquals(numVariants, variants.size());
-            assertEquals(variantStr.size(), variants.size());
+            assertEquals(numVariants, variantStr.size());
+            assertEquals(expected.getResult().stream().map(Object::toString).collect(Collectors.toSet()), variantStr);
         }
-
     }
 
     @Test
@@ -444,6 +469,32 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetAllVariants_xref() {
+        Query query = new Query(ANNOT_XREF.key(), "3:108634973:C:A,rs2032582,HP:0001250,VAR_048225,Q9BY64,ENSG00000250026,TMPRSS11B,COSM1421316");
+        queryResult = dbAdaptor.get(query, null);
+        assertThat(queryResult, everyResult(allVariants, anyOf(
+                hasAnnotation(at("3:108634973:C:A")),
+                with("id", Variant::getId, is("rs2032582")),
+                hasAnnotation(with("GeneTraitAssociation", VariantAnnotation::getGeneTraitAssociation,
+                        hasItem(with("HPO", GeneTraitAssociation::getHpo, is("HP:0001250"))))),
+                hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
+                        hasItem(with("ProteinVariantAnnotation", ConsequenceType::getProteinVariantAnnotation,
+                                with("UniprotVariantId", ProteinVariantAnnotation::getUniprotVariantId, is("VAR_048225")))))),
+                hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
+                        hasItem(with("ProteinVariantAnnotation", ConsequenceType::getProteinVariantAnnotation,
+                                with("UniprotName", ProteinVariantAnnotation::getUniprotAccession, is("Q9BY64")))))),
+                hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
+                        hasItem(with("EnsemblGene", ConsequenceType::getEnsemblGeneId, is("ENSG00000250026"))))),
+                hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
+                        hasItem(with("GeneName", ConsequenceType::getGeneName, is("TMPRSS11B"))))),
+                hasAnnotation(with("VariantTraitAssociation", VariantAnnotation::getVariantTraitAssociation,
+                        with("Cosmic", VariantTraitAssociation::getCosmic,
+                                hasItem(with("MutationId", Cosmic::getMutationId, is("COSM1421316"))))))
+        )));
+
+    }
+
+    @Test
+    public void testGetAllVariants_xref_rs() {
         testGetAllVariants_rs(ANNOT_XREF.key());
     }
 
@@ -1070,11 +1121,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         queryResult = dbAdaptor.get(query, options);
         assertEquals(2, queryResult.getNumResults());
 
-        query = new Query(CHROMOSOME.key(), "1");
-        queryResult = dbAdaptor.get(query, options);
-        assertThat(queryResult, everyResult(allVariants, overlaps(new Region("1"))));
-
-        options.put("sort", true);
+        options.put(QueryOptions.SORT, true);
         query = new Query(REGION.key(), "1:14000000-160000000");
         queryResult = dbAdaptor.get(query, options);
         assertThat(queryResult, everyResult(allVariants, overlaps(new Region("1:14000000-160000000"))));
@@ -1090,7 +1137,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         checkRegion(new Region("1:1000000-2000000"));
         checkRegion(new Region("1:10000000-20000000"));
         checkRegion(new Region("1:14000000-160000000"));
-        checkRegion(new Region("1"));
+        checkRegion(new Region("2"));
         checkRegion(new Region("X"));
         checkRegion(new Region("30"));
         checkRegion(new Region("3:1-200000000"));
@@ -1176,6 +1223,41 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
+    public void testGetAllVariants_filter() {
+        // FILTER
+        Query query = new Query(FILTER.key(), "PASS");
+        long numResults = dbAdaptor.count(query).first();
+        assertEquals(NUM_VARIANTS, numResults);
+
+        query.append(FILTER.key(), "NO_PASS");
+        assertEquals(0, dbAdaptor.count(query).first().longValue());
+
+        // FILTER+FILE
+        query = new Query(FILES.key(), 6).append(FILTER.key(), "PASS");
+        numResults = dbAdaptor.count(query).first();
+        assertEquals(NUM_VARIANTS, numResults);
+
+        query.append(FILTER.key(), "NO_PASS");
+        assertEquals(0, dbAdaptor.count(query).first().longValue());
+
+        // FILTER+STUDY
+        query = new Query(STUDIES.key(), studyConfiguration.getStudyId()).append(FILTER.key(), "PASS");
+        numResults = dbAdaptor.count(query).first();
+        assertEquals(NUM_VARIANTS, numResults);
+
+        query.append(FILTER.key(), "NO_PASS");
+        assertEquals(0, dbAdaptor.count(query).first().longValue());
+
+        // FILTER+FILE+STUDY
+        query = new Query(FILES.key(), 6).append(STUDIES.key(), studyConfiguration.getStudyId()).append(FILTER.key(), "PASS");
+        numResults = dbAdaptor.count(query).first();
+        assertEquals(NUM_VARIANTS, numResults);
+
+        query.append(FILTER.key(), "NO_PASS");
+        assertEquals(0, dbAdaptor.count(query).first().longValue());
+    }
+
+    @Test
     public void testGetAllVariants_returned_samples() {
         checkSamplesData("NA19600");
         checkSamplesData("NA19660");
@@ -1188,7 +1270,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     public void checkSamplesData(String samples) {
-        Query query = new Query();
+        Query query = new Query(SAMPLES_METADATA.key(), true);
         QueryOptions options = new QueryOptions(QueryOptions.SORT, true); //no limit;
 
         query.put(RETURNED_SAMPLES.key(), samples);
@@ -1587,7 +1669,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             VariantAnnotation expectedAnnotation = expectedVariant.getAnnotation();
             VariantAnnotation annotation = variant.getAnnotation();
 
-            expectedAnnotation.setXrefs(Collections.emptyList());
+            expectedAnnotation.setXrefs(null);
             assertEquals(expectedAnnotation, annotation);
         }
     }

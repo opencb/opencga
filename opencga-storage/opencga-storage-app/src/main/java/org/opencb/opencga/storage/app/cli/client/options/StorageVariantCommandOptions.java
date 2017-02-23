@@ -223,6 +223,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"-f", "--file"}, description = "A comma separated list of files to be used as filter", arity = 1)
         public String file;
 
+        @Parameter(names = {"--filter"}, description = VariantDBAdaptor.FILTER_DESCR, arity = 1)
+        public String filter;
+
         @Parameter(names = {"--gene-biotype"}, description = "Biotype CSV", arity = 1)
         public String geneBiotype;
 

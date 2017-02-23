@@ -279,7 +279,16 @@ public class VariantPhoenixHelper {
         if (!phoenixHelper.tableExists(con, table)) {
             String sql = buildCreate(table);
             logger.info(sql);
-            phoenixHelper.execute(con, sql);
+            try {
+                phoenixHelper.execute(con, sql);
+            } catch (Exception e) {
+                if (!phoenixHelper.tableExists(con, table)) {
+                    throw e;
+                } else {
+                    logger.info("Table {} already exists", table);
+                    logger.debug("Table " + table + " already exists. Hide exception", e);
+                }
+            }
         } else {
             logger.info("Table {} already exists", table);
         }
@@ -443,7 +452,7 @@ public class VariantPhoenixHelper {
                 return GERP;
             default:
                 if (throwException) {
-                    throw VariantQueryException.malformedParam(ANNOT_CONSERVATION, rawValue, "Unknown conservation value.");
+                    throw VariantQueryException.malformedParam(ANNOT_CONSERVATION, rawValue);
                 } else {
                     logger.warn("Unknown Conservation source {}", rawValue);
                 }

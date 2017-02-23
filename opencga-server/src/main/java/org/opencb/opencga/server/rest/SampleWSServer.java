@@ -22,6 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.config.Catalog;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
@@ -272,6 +273,11 @@ public class SampleWSServer extends OpenCGAWSServer {
                 params.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), params.get("individualId"));
                 params.remove("individualId");
             }
+
+            if (params.size() == 0) {
+                throw new CatalogException("Missing parameters to update.");
+            }
+
             QueryResult<Sample> queryResult = catalogManager.getSampleManager().update(resourceId.getResourceId(), params, queryOptions,
                     sessionId);
             return createOkResponse(queryResult);
@@ -281,9 +287,9 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{sample}/delete")
+    @Path("/{samples}/delete")
     @ApiOperation(value = "Delete a sample", position = 9)
-    public Response delete(@ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("sample")
+    public Response delete(@ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("samples")
                                        String sampleStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                            @QueryParam("study") String studyStr) {

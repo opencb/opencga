@@ -77,8 +77,8 @@ public class AlignmentCommandExecutor extends AnalysisCommandExecutor {
     private void index() throws Exception {
         AlignmentCommandOptions.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
 
-        ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull("fileId", cliOptions.fileId);
+//        ObjectMap objectMap = new ObjectMap();
+//        objectMap.putIfNotNull("fileId", cliOptions.fileId);
 
         ObjectMap params = new ObjectMap();
         if (!cliOptions.load && !cliOptions.transform) {  // if not present --transform nor --load,

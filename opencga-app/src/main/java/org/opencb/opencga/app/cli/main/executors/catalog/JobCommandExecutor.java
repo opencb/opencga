@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -30,6 +31,8 @@ import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by imedina on 03/06/16.
@@ -101,15 +104,36 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating a new job");
 
         String studyId = jobsCommandOptions.createCommandOptions.study;
-        String name = jobsCommandOptions.createCommandOptions.name;
-        String toolId = jobsCommandOptions.createCommandOptions.toolId;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), jobsCommandOptions.createCommandOptions.study);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.EXECUTION.key(), jobsCommandOptions.createCommandOptions.execution);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.NAME.key(), jobsCommandOptions.createCommandOptions.name);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.TOOL_NAME.key(), jobsCommandOptions.createCommandOptions.toolName);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.DESCRIPTION.key(), jobsCommandOptions.createCommandOptions.description);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.EXECUTION.key(), jobsCommandOptions.createCommandOptions.execution);
+        if (jobsCommandOptions.createCommandOptions.startTime > 0) {
+            params.put(JobDBAdaptor.QueryParams.START_TIME.key(), jobsCommandOptions.createCommandOptions.startTime);
+        }
+        if (jobsCommandOptions.createCommandOptions.endTime > 0) {
+            params.put(JobDBAdaptor.QueryParams.END_TIME.key(), jobsCommandOptions.createCommandOptions.endTime);
+        }
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.COMMAND_LINE.key(), jobsCommandOptions.createCommandOptions.commandLine);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.OUT_DIR_ID.key(), jobsCommandOptions.createCommandOptions.outDir);
+        if (StringUtils.isNotEmpty(jobsCommandOptions.createCommandOptions.input)) {
+            List<Long> list = new ArrayList<>();
+            for (String aux : jobsCommandOptions.createCommandOptions.input.split(",")) {
+                list.add(Long.parseLong(aux));
+            }
+            params.put(JobDBAdaptor.QueryParams.INPUT.key(), list);
+        }
+        if (StringUtils.isNotEmpty(jobsCommandOptions.createCommandOptions.output)) {
+            List<Long> list = new ArrayList<>();
+            for (String aux : jobsCommandOptions.createCommandOptions.output.split(",")) {
+                list.add(Long.parseLong(aux));
+            }
+            params.put(JobDBAdaptor.QueryParams.OUTPUT.key(), list);
+        }
 
-        return openCGAClient.getJobClient().create(studyId, name, toolId, params);
+        return openCGAClient.getJobClient().create(studyId, params);
     }
 
     private QueryResponse<Job> info() throws CatalogException, IOException {

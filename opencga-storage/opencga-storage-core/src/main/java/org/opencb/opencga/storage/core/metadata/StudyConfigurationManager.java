@@ -192,9 +192,11 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
         logger.debug("Updating studyConfiguration : {}", studyConfiguration.toJson());
         studyConfiguration.setHeaders(headers);
 
-        stringStudyConfigurationMap.put(studyConfiguration.getStudyName(), studyConfiguration);
-        intStudyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
-        return internalUpdateStudyConfiguration(studyConfiguration, options);
+        // Store a copy of the StudyConfiguration.
+        StudyConfiguration copy = studyConfiguration.newInstance();
+        stringStudyConfigurationMap.put(copy.getStudyName(), copy);
+        intStudyConfigurationMap.put(copy.getStudyId(), copy);
+        return internalUpdateStudyConfiguration(copy, options);
     }
 
     public static StudyConfigurationManager build(String className, ObjectMap params)

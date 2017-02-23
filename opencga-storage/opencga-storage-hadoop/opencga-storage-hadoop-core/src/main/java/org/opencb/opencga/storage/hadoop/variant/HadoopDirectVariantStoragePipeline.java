@@ -99,7 +99,7 @@ public class HadoopDirectVariantStoragePipeline extends AbstractHadoopVariantSto
             throw new NotImplementedException("Direct loading only available for PROTO files.");
         }
 
-        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
+        StudyConfiguration studyConfiguration = getStudyConfiguration();
         Integer fileId;
         if (options.getBoolean(
                 Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(),

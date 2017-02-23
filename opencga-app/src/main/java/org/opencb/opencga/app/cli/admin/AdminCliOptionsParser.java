@@ -275,17 +275,17 @@ public class AdminCliOptionsParser {
      */
     class CatalogDatabaseCommandOptions {
 
-        @Parameter(names = {"-d", "--database"}, description = "Database name for the catalog metadata, eg. opencga_catalog. If not present is read from configuration-test.yml")
-        @Deprecated
-        public String database;
+        @Parameter(names = {"-d", "--database-prefix"}, description = "Prefix name of the catalog database. If not present this is read "
+                + "from configuration.yml.")
+        public String prefix;
 
-        @Parameter(names = {"--database-host"}, description = "Database host and port, eg. localhost:27017. If not present is read from configuration-test.yml")
+        @Parameter(names = {"--database-host"}, description = "Database host and port, eg. localhost:27017. If not present is read from configuration.yml")
         public String databaseHost;
 
-        @Parameter(names = {"--database-user"}, description = "Database user name. If not present is read from configuration-test.yml")
+        @Parameter(names = {"--database-user"}, description = "Database user name. If not present is read from configuration.yml")
         public String databaseUser;
 
-        @Parameter(names = {"--database-password"}, description = "Database password. If not present is read from configuration-test.yml", password = true, arity = 0)
+        @Parameter(names = {"--database-password"}, description = "Database password. If not present is read from configuration.yml", password = true, arity = 0)
         public String databasePassword;
     }
 
@@ -301,8 +301,9 @@ public class AdminCliOptionsParser {
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"--database-name"}, description = "Database name for the catalog metadata. If not present, it will be set to opencga_catalog_demo")
-        public String database;
+        @Parameter(names = {"--database-prefix"}, description = "Prefix name for the catalog demo database. If not present, it will be "
+                + "set to 'demo'.")
+        public String prefix;
 
         @Parameter(names = {"--force"}, description = "If this parameters is set, it will override the database installation.")
         public boolean force;

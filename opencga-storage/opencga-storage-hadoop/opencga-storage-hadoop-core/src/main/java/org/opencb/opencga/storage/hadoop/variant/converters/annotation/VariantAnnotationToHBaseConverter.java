@@ -104,6 +104,22 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter
                 if (consequenceType.getProteinVariantAnnotation().getKeywords() != null) {
                     proteinKeywords.addAll(consequenceType.getProteinVariantAnnotation().getKeywords());
                 }
+                addNotNull(xrefs, consequenceType.getProteinVariantAnnotation().getUniprotName());
+                addNotNull(xrefs, consequenceType.getProteinVariantAnnotation().getUniprotAccession());
+                addNotNull(xrefs, consequenceType.getProteinVariantAnnotation().getUniprotVariantId());
+            }
+        }
+
+        if (variantAnnotation.getVariantTraitAssociation() != null) {
+            if (variantAnnotation.getVariantTraitAssociation().getCosmic() != null) {
+                for (Cosmic cosmic : variantAnnotation.getVariantTraitAssociation().getCosmic()) {
+                    addNotNull(xrefs, cosmic.getMutationId());
+                }
+            }
+            if (variantAnnotation.getVariantTraitAssociation().getClinvar() != null) {
+                for (ClinVar clinVar : variantAnnotation.getVariantTraitAssociation().getClinvar()) {
+                    addNotNull(xrefs, clinVar.getAccession());
+                }
             }
         }
 
@@ -122,6 +138,7 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter
                 addNotNull(hpo, geneTrait.getHpo());
             }
         }
+        xrefs.addAll(hpo);
 
         if (variantAnnotation.getGeneDrugInteraction() != null) {
             for (GeneDrugInteraction drug : variantAnnotation.getGeneDrugInteraction()) {

@@ -54,6 +54,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by imedina on 13/08/14.
@@ -95,7 +96,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         TRANSFORM_FORMAT("transform.format", "avro"),
         LOAD_BATCH_SIZE("load.batch.size", 100),
         LOAD_THREADS("load.threads", 6),
-        MERGE_BATCH_SIZE("merge.batch.size", 10),          //Number of files to merge directly from first to second table
 
         CALCULATE_STATS("calculateStats", false),          //Calculate stats on the postLoad step
         OVERWRITE_STATS("overwriteStats", false),          //Overwrite stats already present
@@ -167,16 +167,18 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      *
      * @param inputFile     Variants input file in avro format.
      * @param metadata      Metadata related with the data to be loaded.
+     * @param studiesOldNewMap  Map from old to new StudyConfiguration, in case of name remapping
      * @param dbName        Database name where to load the variants
      * @param options       Other options
      * @throws IOException      if there is any I/O error
      * @throws StorageEngineException  if there si any error loading the variants
      * */
-    public void importData(URI inputFile, ExportMetadata metadata, String dbName, ObjectMap options)
+    public void importData(URI inputFile, ExportMetadata metadata, Map<StudyConfiguration, StudyConfiguration> studiesOldNewMap,
+                           String dbName, ObjectMap options)
             throws StorageEngineException, IOException {
         try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
             VariantImporter variantImporter = newVariantImporter(dbAdaptor);
-            variantImporter.importData(inputFile, metadata);
+            variantImporter.importData(inputFile, metadata, studiesOldNewMap);
         }
     }
 

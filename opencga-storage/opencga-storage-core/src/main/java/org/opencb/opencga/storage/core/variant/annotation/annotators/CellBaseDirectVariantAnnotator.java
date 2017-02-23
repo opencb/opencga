@@ -4,10 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.core.api.DBAdaptorFactory;
-import org.opencb.cellbase.core.config.CellBaseConfiguration;
-import org.opencb.cellbase.core.config.Databases;
-import org.opencb.cellbase.core.config.Species;
-import org.opencb.cellbase.core.config.SpeciesProperties;
+import org.opencb.cellbase.core.config.*;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -30,14 +27,13 @@ public class CellBaseDirectVariantAnnotator extends AbstractCellBaseVariantAnnot
     public CellBaseDirectVariantAnnotator(StorageConfiguration storageConfiguration, ObjectMap options) throws VariantAnnotatorException {
         super(storageConfiguration, options);
 
-        List<String> hosts = storageConfiguration.getCellbase().getHosts();
-
         CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration();
         cellBaseConfiguration.setVersion(cellbaseVersion);
+
         // Database connection details
         Databases databases = new Databases();
-        org.opencb.cellbase.core.config.DatabaseCredentials databaseCredentials
-                = new org.opencb.cellbase.core.config.DatabaseCredentials();
+        DatabaseCredentials databaseCredentials = new DatabaseCredentials();
+        List<String> hosts = storageConfiguration.getCellbase().getDatabase().getHosts();
         String hostsString = StringUtils.join(hosts, ",");
         checkNotNull(hostsString, "cellbase database host");
         databaseCredentials.setHost(hostsString);

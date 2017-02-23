@@ -305,10 +305,16 @@ public class CatalogStudyConfigurationFactory {
         studyConfiguration.getIndexedFiles().forEach((e) -> indexedFiles.add(e.longValue()));
         for (File file : catalogManager.getAllFiles(studyConfiguration.getStudyId(), query, queryOptions, sessionId).getResult()) {
             if (!indexedFiles.contains(file.getId())) {
+                String newStatus;
+                if (hasTransformedFile(file.getIndex())) {
+                    newStatus = FileIndex.IndexStatus.TRANSFORMED;
+                } else {
+                    newStatus = FileIndex.IndexStatus.NONE;
+                }
                 logger.info("File \"{}\":{} change status from {} to {}", file.getName(), file.getId(),
-                        FileIndex.IndexStatus.READY, FileIndex.IndexStatus.TRANSFORMED);
-                catalogManager.getFileManager().updateFileIndexStatus(file, FileIndex.IndexStatus.TRANSFORMED,
-                        "Not indexed, regarding StudyConfiguration", sessionId);
+                        FileIndex.IndexStatus.READY, newStatus);
+                catalogManager.getFileManager()
+                        .updateFileIndexStatus(file, newStatus, "Not indexed, regarding StudyConfiguration", sessionId);
             }
         }
 
@@ -335,7 +341,7 @@ public class CatalogStudyConfigurationFactory {
                 index = file.getIndex() == null ? new FileIndex() : file.getIndex();
                 String prevStatus = index.getStatus().getName();
                 String newStatus;
-                if (index.getTransformedFile() != null && index.getTransformedFile().getId() > 0) {
+                if (hasTransformedFile(index)) {
                     newStatus = FileIndex.IndexStatus.TRANSFORMED;
                 } else {
                     newStatus = FileIndex.IndexStatus.NONE;
@@ -348,6 +354,10 @@ public class CatalogStudyConfigurationFactory {
             }
 
         }
+    }
+
+    public boolean hasTransformedFile(FileIndex index) {
+        return index.getTransformedFile() != null && index.getTransformedFile().getId() > 0;
     }
 
 }
