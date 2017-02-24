@@ -58,6 +58,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter.UNKNOWN_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter.UNKNOWN_GENOTYPE;
@@ -492,7 +493,10 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stage, studyConfiguration.getStudyId(), chromosomes);
         MongoDBVariantMerger dbMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
                 variantsCollection, studyConfiguration.getIndexedFiles(), false);
-        MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(variantsCollection, dbAdaptor.getStageCollection(), studyConfiguration.getStudyId(), fileIds, false, null);
+        boolean cleanWhileLoading = true;
+        boolean resume = false;
+        MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(variantsCollection, dbAdaptor.getStageCollection(),
+                studyConfiguration.getStudyId(), fileIds, resume, cleanWhileLoading, null);
 
         reader.open();
         reader.pre();
@@ -508,7 +512,11 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         reader.close();
 
         long cleanedDocuments = MongoDBVariantStageLoader.cleanStageCollection(stage, studyConfiguration.getStudyId(), fileIds, null, null);
-        assertEquals(0, cleanedDocuments);
+        if (cleanWhileLoading) {
+            assertEquals(0, cleanedDocuments);
+        } else {
+            assertNotEquals(0, cleanedDocuments);
+        }
         studyConfiguration.getIndexedFiles().addAll(fileIds);
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
         return variantLoader.getResult().setSkippedVariants(stageWriteResult.getSkippedVariants());
