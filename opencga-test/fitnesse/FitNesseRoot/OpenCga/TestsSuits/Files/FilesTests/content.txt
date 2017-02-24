@@ -5,7 +5,7 @@
 
 !3 Create Folder
 !|Table: Rest Fixture | ${baseURL} |
-| GET | /v1/files/create-folder?sid=$sessionId&folders=folder&path=${path}&parents=false&study=2 |  |  Content-Type: application/json | jsonbody.error === '' && jsonbody.response[0].result[0].path =='${path}/' |
+| GET | /v1/files/create-folder?sid=$sessionId&folders=folder&path=${path}&parents=true&study=2 |  |  Content-Type: application/json | jsonbody.error === '' && jsonbody.response[0].result[0].path =='${path}/' |
 |let|fileId|js|response.jsonbody.response[0].result[0].id||
 
 !3 Get File(Directory) Info
