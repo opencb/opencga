@@ -108,7 +108,7 @@ public class VariantSearchManager {
      * @param numReplicas        Number of replicas
      */
     public void createCollection(String collectionName, String config, int numShards, int numReplicas) {
-        System.out.println("Creating core: " + hostName + ", collection=" + collectionName + ", config=" + config
+        System.out.println("Creating collection: " + hostName + ", collection=" + collectionName + ", config=" + config
                 + ", numShards=" + numShards + ", numReplicas=" + numReplicas);
         try {
             HttpSolrClient solrClient = new HttpSolrClient.Builder(hostName).build();
