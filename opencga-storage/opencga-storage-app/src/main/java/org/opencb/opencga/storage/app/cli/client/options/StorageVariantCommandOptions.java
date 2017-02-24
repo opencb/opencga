@@ -552,10 +552,10 @@ public class StorageVariantCommandOptions {
 
     public static class GenericVariantExportOptions {
 
-        @Parameter(names = {"-f", "--file-id"}, description = "Calculate stats only for the selected file", arity = 1)
+        @Parameter(names = {"--file-id"}, description = "Calculate stats only for the selected file", arity = 1)
         public String fileId;
 
-        @Parameter(names = {"-o", "--output-filename"}, description = "Output filename.", arity = 1)
+        @Parameter(names = {"--output-filename"}, description = "Output filename.", arity = 1)
         public String outFilename = ".";
 
 //        @Parameter(names = {"--region"}, description = "Variant region to export.")
