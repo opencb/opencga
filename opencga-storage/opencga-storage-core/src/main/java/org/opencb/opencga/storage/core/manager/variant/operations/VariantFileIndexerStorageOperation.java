@@ -217,7 +217,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 }
                 break;
             case LOAD:
-                filesToIndex = filterLoadFiles(inputFiles, options, fileUris, sessionId);
+                filesToIndex = filterLoadFiles(inputFiles, options, fileUris, resume, sessionId);
                 fileStatus = FileIndex.IndexStatus.LOADING;
                 fileStatusMessage = "Start loading file";
                 break;
@@ -667,7 +667,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         return filteredFiles;
     }
 
-    private List<File> filterLoadFiles(List<File> fileList, QueryOptions options, List<URI> fileUris, String sessionId)
+    private List<File> filterLoadFiles(List<File> fileList, QueryOptions options, List<URI> fileUris, boolean resume, String sessionId)
             throws CatalogException, URISyntaxException {
         if (fileList == null || fileList.isEmpty()) {
             return new ArrayList<>();
@@ -720,6 +720,12 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                             logger.warn("Cannot load vcf file " + file.getId() + " if no avro file is provided.");
                         }
                         break;
+                    case FileIndex.IndexStatus.INDEXING:
+                    case FileIndex.IndexStatus.LOADING:
+                        if (!resume) {
+                            logger.warn("Unable to load this file. Already being loaded. Skipping file {}", file.getName());
+                            break;
+                        }
                     case FileIndex.IndexStatus.TRANSFORMED:
                         // We will attempt to use the avro file registered in catalog
                         File transformed = getTransformedFromOriginal(sessionId, file);
@@ -727,7 +733,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                             // Check that the uri from the avro file obtained from catalog is the same the user has put as input
                             URI uri = UriUtils.createUri(transformedFiles.get(i));
                             if (!uri.equals(transformed.getUri())) {
-                                throw new CatalogException("An Avro file was found for file " + file.getId() + " in "
+                                throw new CatalogException("A transformed file was found for file " + file.getId() + " in "
                                         + transformed.getUri() + ". However, the user selected a different one in " + uri);
                             }
                         }
@@ -736,10 +742,6 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                         break;
                     case FileIndex.IndexStatus.TRANSFORMING:
                         logger.warn("We can only load files previously transformed. Skipping file {}", file.getName());
-                        break;
-                    case FileIndex.IndexStatus.LOADING:
-                    case FileIndex.IndexStatus.INDEXING:
-                        logger.warn("Unable to load this file. Already being loaded. Skipping file {}", file.getName());
                         break;
                     case FileIndex.IndexStatus.READY:
                         logger.warn("Already loaded file. Skipping file {}", file.getName());
