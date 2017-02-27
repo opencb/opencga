@@ -1,5 +1,6 @@
 !define TEST_SYSTEM {slim}
 !path target/appassembler/dependencies/*.jar
+!define OpenCGA_VERSION {opencga-1.0.0-final}
 
 !|import|
 |smartrics.rest.fitnesse.fixture|
@@ -16,7 +17,7 @@
 |let|study|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|userA|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|userB|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
-|let|baseURL|const|http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/||
+|let|baseURL|const|http://bioinfoint.hpc.cam.ac.uk/${OpenCGA_VERSION}/webservices/rest/||
 
 
 !3 Create User
