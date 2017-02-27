@@ -552,10 +552,10 @@ public class StorageVariantCommandOptions {
 
     public static class GenericVariantExportOptions {
 
-        @Parameter(names = {"-f", "--file-id"}, description = "Calculate stats only for the selected file", arity = 1)
+        @Parameter(names = {"--file-id"}, description = "Calculate stats only for the selected file", arity = 1)
         public String fileId;
 
-        @Parameter(names = {"-o", "--output-filename"}, description = "Output filename.", arity = 1)
+        @Parameter(names = {"--output-filename"}, description = "Output filename.", arity = 1)
         public String outFilename = ".";
 
 //        @Parameter(names = {"--region"}, description = "Variant region to export.")
@@ -627,16 +627,16 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--create"}, description = "Create a new core/collection.", arity = 0)
         public boolean create;
 
-        @Parameter(names = {"--solrUrl"}, description = "Url to Solr server, e.g.: http://localhost:8983/solr/", arity = 1)
+        @Parameter(names = {"--solr-url"}, description = "Url to Solr server, e.g.: http://localhost:8983/solr/", arity = 1)
         public String solrUrl;
 
         @Parameter(names = {"--solr-config"}, description = "Solr configuration name.", arity = 1)
         public String solrConfig;
 
-        @Parameter(names = {"--num-shards"}, description = "Number of Solr collection shards (only for a Solr cluster mode).", arity = 1)
+        @Parameter(names = {"--solr-num-shards"}, description = "Number of Solr collection shards (only for a Solr cluster mode).", arity = 1)
         public int numShards = 2;
 
-        @Parameter(names = {"--num-replicas"}, description = "Number of Solr collection replicas (only for a Solr cluster mode).", arity = 1)
+        @Parameter(names = {"--solr-num-replicas"}, description = "Number of Solr collection replicas (only for a Solr cluster mode).", arity = 1)
         public int numReplicas = 2;
 
         @Parameter(names = {"-d", "--database"}, description = "Name of the target core ore collection.", arity = 1)

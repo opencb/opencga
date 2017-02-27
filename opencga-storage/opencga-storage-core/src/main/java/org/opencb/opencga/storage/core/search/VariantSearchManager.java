@@ -108,7 +108,7 @@ public class VariantSearchManager {
      * @param numReplicas        Number of replicas
      */
     public void createCollection(String collectionName, String config, int numShards, int numReplicas) {
-        System.out.println("Creating core: " + hostName + ", collection=" + collectionName + ", config=" + config
+        System.out.println("Creating collection: " + hostName + ", collection=" + collectionName + ", config=" + config
                 + ", numShards=" + numShards + ", numReplicas=" + numReplicas);
         try {
             HttpSolrClient solrClient = new HttpSolrClient.Builder(hostName).build();
@@ -129,18 +129,20 @@ public class VariantSearchManager {
      */
     public boolean existCollection(String collectionName) throws Exception {
 
-        HttpSolrClient solrClient = new HttpSolrClient.Builder(hostName).build();
-
-        List<String> collections = CollectionAdminRequest.listCollections(solrClient);
-        for (String collection: collections) {
-            System.out.println(collection);
-        }
-        for (String collection: collections) {
-            if (collection.equals(collectionName)) {
-                return true;
-            }
-        }
+//        HttpSolrClient solrClient = new HttpSolrClient.Builder(hostName).build();
+//
+//        List<String> collections = CollectionAdminRequest.listCollections(solrClient);
+//        for (String collection: collections) {
+//            System.out.println(collection);
+//        }
+//        for (String collection: collections) {
+//            if (collection.equals(collectionName)) {
+//                return true;
+//            }
+//        }
         return false;
+
+
 //        .getCoreStatus(coreName, solrClient);
 //        try {
 //            // if the status.response is null, catch the exception
