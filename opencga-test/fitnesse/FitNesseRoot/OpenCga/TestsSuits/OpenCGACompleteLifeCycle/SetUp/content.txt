@@ -1,9 +1,7 @@
 !define TEST_SYSTEM {slim}
-!define user {test}
-!define baseURL {http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/}
 
 
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 |let|analyst|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|ROU|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|admin|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
@@ -37,19 +35,19 @@
 |let|asB1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 
 !3 Create Analyst User
-!|Table: Rest Fixture  | ${baseURL} |
+!|Table: Rest Fixture  | $baseURL |
 | setBody |  { "name": "$analyst", "userId": "$analyst","email": "test@test.com", "password" : "p@ssword" }|
 | setHeader|Content-Type:application/json|
 | POST | /v1/users/create?sid=$sessionId |200| Content-Type : application/json| jsonbody.error === '' |
 
 !3 Create Read Only User (ROU)
-!|Table: Rest Fixture  | ${baseURL} |
+!|Table: Rest Fixture  | $baseURL |
 | setBody |  { "name": "$ROU", "userId": "$ROU","email": "test@test.com", "password" : "p@ssword" }|
 | setHeader|Content-Type:application/json|
 | POST | /v1/users/create?sid=$sessionId |200| Content-Type : application/json| jsonbody.error === '' |
 
 !3 Create Admin User
-!|Table: Rest Fixture  | ${baseURL} |
+!|Table: Rest Fixture  | $baseURL |
 | setBody |  { "name": "$admin", "userId": "$admin","email": "test@test.com", "password" : "p@ssword" }|
 | setHeader|Content-Type:application/json|
 | POST | /v1/users/create?sid=$sessionId |200| Content-Type : application/json| jsonbody.error === '' |
@@ -74,13 +72,6 @@
 | setHeader|Content-Type:application/json|
 | POST | /v1/users/$ROU/login |200|  Content-Type: application/json ||
 |let|ROUSessionId|js|response.jsonbody.response[0].result[0].sessionId||
-
-!3 Login Admin 
-!|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/  |
-| setBody | {"password" : "p@ssword"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/users/$admin/login |200|  Content-Type: application/json ||
-|let|adminSessionId|js|response.jsonbody.response[0].result[0].sessionId||
 
 !3 Login user A 
 !|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/  |

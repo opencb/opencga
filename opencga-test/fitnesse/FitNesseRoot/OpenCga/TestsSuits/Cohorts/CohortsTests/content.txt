@@ -1,11 +1,10 @@
 !define TEST_SYSTEM {slim}
-!define baseURL {http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/}
-!define user {test}
+!define user {$user}
 !define file {4}
-!define study {2}
+!define study {$studyId}
 
 !3 Generate Random Variables 
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 |let|CohortName1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|CohortName2|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|sName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
@@ -13,111 +12,111 @@
 |let|createPostName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 
 !3 Create Cohort 
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | setBody |{ "name": "$CohortName1"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/cohorts/create?sid=$sessionId&study=${study} |200|  Content-Type: application/json ||
 |let|cohortId|js|response.jsonbody.response[0].result[0].id||
 
 !3 Create Second Cohort 
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | setBody |{ "name": "$CohortName2"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/cohorts/create?sid=$sessionId&study=${study} |200|  Content-Type: application/json ||
 |let|cohortId2|js|response.jsonbody.response[0].result[0].id||
 
 !3 Search Cohort 
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/cohorts/search?sid=$sessionId&study=${study}&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId'|
 
 !3 Find Info About A Cohort 
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/cohorts/search?sid=$sessionId&study=${study}&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' |
 
 !3 Get cohorts as Groups
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/cohorts/groupBy?sid=$sessionId&study=${study}&fields=toolName%2CcommandLine|200|  Content-Type: application/json |jsonbody.error == ''|
 
 !3 Create Sample (POST)
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "$createPostName" }|
 | setHeader|Content-Type:application/json|
 | POST | /v1/samples/create?sid=$sessionId&study=${study} |200|  Content-Type: application/json |jsonbody.error == ''|
 |let|sampleId|js|response.jsonbody.response[0].result[0].id||
 
 !3 Create Second Sample (POST)
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "$sName2" }|
 | setHeader|Content-Type:application/json|
 | POST | /v1/samples/create?sid=$sessionId&study=${study} |200|  Content-Type: application/json |jsonbody.error == ''|
 |let|sampleId2|js|response.jsonbody.response[0].result[0].id||
 
 !3 Update Cohort (POST)
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | setBody | {"samples" : "$sampleId,$sampleId2"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/cohorts/$cohortId/update?sid=$sessionId&study=${study} |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].samples.length == '2'|
 
 !3 Delete Sample 
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/samples/$sampleId/delete?sid=$sessionId&study=${study}|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].errorMsg == 'The sample $sampleId is part of 1 cohorts. Please, first update or delete the cohorts'|
 
 !3 Delete Second Sample 
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/samples/$sampleId2/delete?sid=$sessionId&study=${study}|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].errorMsg == 'The sample $sampleId2 is part of 1 cohorts. Please, first update or delete the cohorts'|
 
 !3 Create ACL For A Member 
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | setBody | {  "permissions": "VIEW",  "members": "$userA"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/cohorts/$cohortId/acl/create?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
 
 !3 (Negative) Create ACL For A Member Without Permissions 
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | setBody | {  "permissions": "VIEW",  "members": "$userB"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/cohorts/$cohortId/acl/create?sid=$sessionId|500|Content-Type: application/json|jsonbody.error == 'Cannot create ACL for $userB. First, a general study permission must be defined for that member.'|
 
 !3 Get ACL For A Member
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/cohorts/$cohortId/acl?sid=$sessionId&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
 
 !3 Update ACL For A Member
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | setBody | {  "add": "SHARE" }|
 | setHeader|Content-Type:application/json|
 | POST | /v1/cohorts/$cohortId/acl/$userA/update?sid=$sessionId&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2'|
 
 !3 Get Updated ACL For The Member
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/cohorts/$cohortId/acl?sid=$sessionId&study=${study}&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0'|
 
 !3 Delete ACL For A Member
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/cohorts/$cohortId/acl/$userA/delete?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == ''|
 # Once we have delete response object, replace above line with following commented
 #| GET | /v1/cohorts/$cohortId/acl/$userA/delete?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
 
 !3 Get Deleted ACL For The Member
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/cohorts/$cohortId/acl?sid=$sessionId&study=${study}&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
 
 !3 Delete a Cohort
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/cohorts/$cohortId/delete?sid=$sessionId&study=${study}&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId'|
 
 !3 Search Deleted Cohort 
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/cohorts/search?sid=$sessionId&study=${study}&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
 
 !3 Search Second Cohort 
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/cohorts/search?sid=$sessionId&study=${study}&name=$CohortName2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == '$CohortName2'|
 
 !3 Delete Second Cohort
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/cohorts/$cohortId2/delete?sid=$sessionId&study=${study}&name=$CohortName2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == '$CohortName2'|
 
 !3 Search Deleted Cohort 
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/cohorts/search?sid=$sessionId&study=${study}&name=$CohortName2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
