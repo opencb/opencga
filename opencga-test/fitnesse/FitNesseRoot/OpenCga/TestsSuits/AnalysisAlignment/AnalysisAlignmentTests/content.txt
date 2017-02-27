@@ -1,22 +1,19 @@
 !define TEST_SYSTEM {slim}
-!define baseURL {http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/}
-!define user {test}
 !define file {4}
-!define study {2}
 
 
 !3 Create Allignment Index 
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/analysis/alignment/index?sid=$sessionId&file=${file} |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id > 0 && jsonbody.response[0].result[0].type == 'INDEX' |
 
 !3 Get Allignment Coverage
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/analysis/alignment/coverage?sid=$sessionId&file=${file} |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].type == 'INDEX'|
 
 !3 Get Allignment Stats
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/analysis/alignment/stats?sid=$sessionId&file=${file} |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].type == 'INDEX'|
 
 !3 Allignment Query
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/analysis/variant/query?sid=$sessionId&file=${file} |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].type == 'INDEX'|

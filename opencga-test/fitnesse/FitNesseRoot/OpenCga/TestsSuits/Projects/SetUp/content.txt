@@ -1,7 +1,0 @@
-!define TEST_SYSTEM {slim}
-!define user {test}
-!define baseURL {http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/}
-
-!|Table: Rest Fixture | ${baseURL} |
-|let|projectName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
-|let|projectAlias|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
