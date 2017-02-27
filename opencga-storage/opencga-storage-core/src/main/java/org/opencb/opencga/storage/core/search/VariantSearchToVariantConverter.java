@@ -24,12 +24,14 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
     public Variant convertToDataModelType(VariantSearchModel variantSearchModel) {
         Variant variant = new Variant();
 
-        // set id, chromosome, start, end, dbSNP, type
-        variant.setId(variantSearchModel.getId());
+        // set ID, chromosome, start, end, ref, alt, type
+        variant.setId(variantSearchModel.getVariantId());
         variant.setChromosome(variantSearchModel.getChromosome());
         variant.setStart(variantSearchModel.getStart());
         variant.setEnd(variantSearchModel.getEnd());
-        variant.setId(variantSearchModel.getDbSNP());
+        String[] split = variantSearchModel.getId().split(":");
+        variant.setReference(split[2]);
+        variant.setAlternate(split[3]);
         variant.setType(VariantType.valueOf(variantSearchModel.getType()));
 
         // set studies and stats
@@ -46,15 +48,15 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
         if (variantSearchModel.getStats() != null && variantSearchModel.getStats().size() > 0) {
             for (String key: variantSearchModel.getStats().keySet()) {
-                // key is consists of "stats" + "__" + studyId + "__" + cohort
+                // key consists of 'stats' + "__" + studyId + "__" + cohort
                 String[] fields = key.split("__");
                 if (studyEntryMap.containsKey(fields[1])) {
                     VariantStats variantStats = new VariantStats();
                     variantStats.setMaf(variantSearchModel.getStats().get(key));
+
                     studyEntryMap.get(fields[1]).setStats(fields[2], variantStats);
                 } else {
-                    System.out.println("Something wrong happened: stats " + key + ", but there is no study for that"
-                            + " stats.");
+                    System.out.println("Something wrong happened: stats " + key + ", but there is no study for that stats.");
                 }
             }
         }
@@ -72,9 +74,11 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         // protein substitution scores: sift and polyphen
         ProteinVariantAnnotation proteinAnnotation = new ProteinVariantAnnotation();
         List<Score> scores = new ArrayList<>();
-        scores.add(new Score(variantSearchModel.getSift(), "sift", ""));
-        scores.add(new Score(variantSearchModel.getPolyphen(), "polyhen", ""));
-        proteinAnnotation.setSubstitutionScores(scores);
+        if (variantSearchModel.getSift() != Double.MIN_VALUE || variantSearchModel.getPolyphen() != Double.MIN_VALUE) {
+            scores.add(new Score(variantSearchModel.getSift(), "sift", ""));
+            scores.add(new Score(variantSearchModel.getPolyphen(), "polyphen", ""));
+            proteinAnnotation.setSubstitutionScores(scores);
+        }
 
         int i = 0;
         while (i < genes.length) {
@@ -135,7 +139,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         variantAnnotation.setConservation(scores);
 
         // set cadd
-        scores.clear();
+        scores = new ArrayList<>();
         scores.add(new Score(variantSearchModel.getCaddRaw(), "cadd_raw", ""));
         scores.add(new Score(variantSearchModel.getCaddScaled(), "cadd_scaled", ""));
         variantAnnotation.setFunctionalScore(scores);
@@ -219,20 +223,19 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         VariantSearchModel variantSearchModel = new VariantSearchModel();
 
         // Set general Variant attributes: id, dbSNP, chromosome, start, end, type
-        variantSearchModel.setId(variant.getChromosome() + "_" + variant.getStart() + "_"
-                + variant.getReference() + "_" + variant.getAlternate());
+        variantSearchModel.setId(variant.getChromosome() + ":" + variant.getStart() + ":"
+                + variant.getReference() + ":" + variant.getAlternate());
         variantSearchModel.setChromosome(variant.getChromosome());
         variantSearchModel.setStart(variant.getStart());
         variantSearchModel.setEnd(variant.getEnd());
-        variantSearchModel.setDbSNP(variant.getId());
+        variantSearchModel.setVariantId(variant.getId());
         variantSearchModel.setType(variant.getType().toString());
 
         // This field contains all possible IDs: id, dbSNP, genes, transcripts, protein, clinvar, hpo, ...
-        // This will help when searching by variant id
+        // This will help when searching by variant id. This is added at the end of the method after collecting all IDs
         Set<String> xrefs = new HashSet<>();
-        xrefs.add(variant.getChromosome() + ":" + variant.getStart() + ":" + variant.getReference() + ":"
-                + variant.getAlternate());
-        xrefs.add(variantSearchModel.getDbSNP());
+        xrefs.add(variant.getChromosome() + ":" + variant.getStart() + ":" + variant.getReference() + ":" + variant.getAlternate());
+        xrefs.add(variantSearchModel.getVariantId());
 
         // Set Studies Alias
         if (variant.getStudies() != null && variant.getStudies().size() > 0) {
@@ -262,9 +265,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             List<ConsequenceType> consequenceTypes = variantAnnotation.getConsequenceTypes();
             if (consequenceTypes != null) {
                 Map<String, Set<String>> genes = new LinkedHashMap<>();
-//                List<String> genes = new ArrayList<>();
-//                Set<String> genes = new LinkedHashSet<>();
-                Set<Integer> soAccessions = new HashSet<>();
+                Set<Integer> soAccessions = new LinkedHashSet<>();
                 Set<String> geneToSOAccessions = new LinkedHashSet<>();
 
                 for (ConsequenceType consequenceType : consequenceTypes) {
@@ -274,6 +275,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         if (!genes.containsKey(consequenceType.getGeneName())) {
                             genes.put(consequenceType.getGeneName(), new LinkedHashSet<>());
                         }
+                        genes.get(consequenceType.getGeneName()).add(consequenceType.getGeneName());
                         genes.get(consequenceType.getGeneName()).add(consequenceType.getEnsemblGeneId());
                         genes.get(consequenceType.getGeneName()).add(consequenceType.getEnsemblTranscriptId());
 
@@ -297,27 +299,26 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
                     // Set sift and polyphen and also the protein id in xrefs
                     if (consequenceType.getProteinVariantAnnotation() != null) {
-
                         // set protein substitution scores: sift and polyphen
                         double[] proteinScores = getSubstitutionScores(consequenceType);
                         variantSearchModel.setSift(proteinScores[0]);
                         variantSearchModel.setPolyphen(proteinScores[1]);
 
                         xrefs.add(consequenceType.getProteinVariantAnnotation().getUniprotAccession());
+                    } else {
+                        variantSearchModel.setSift(Double.MIN_VALUE);
+                        variantSearchModel.setPolyphen(Double.MIN_VALUE);
                     }
                 }
 
                 // We store the accumulated data
-                for (String gene: genes.keySet()) {
-                    variantSearchModel.getGenes().add(gene);
-                    variantSearchModel.getGenes().addAll(genes.get(gene));
-                }
+                genes.forEach((s, strings) -> variantSearchModel.getGenes().addAll(strings));
+//                for (String gene: genes.keySet()) {
+////                    variantSearchModel.getGenes().add(gene);
+//                    variantSearchModel.getGenes().addAll(genes.get(gene));
+//                }
                 variantSearchModel.setSoAcc(new ArrayList<>(soAccessions));
                 variantSearchModel.setGeneToSoAcc(new ArrayList<>(geneToSOAccessions));
-
-                // JT: we don't need it, it is already done previously (~40 lines before)
-                // We accumulate genes in xrefs
-                // xrefs.addAll(genes);
             }
 
             // Set Populations frequencies
@@ -346,8 +347,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             variantSearchModel.setGerp(score.getScore());
                             break;
                         default:
-                            System.out.println("Unknown 'conservation' source: score.getSource() = "
-                                    + score.getSource());
+                            System.out.println("Unknown 'conservation' source: score.getSource() = " + score.getSource());
                             break;
                     }
                 }
@@ -366,8 +366,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             variantSearchModel.setCaddScaled(score.getScore());
                             break;
                         default:
-                            System.out.println("Unknown 'functional score' source: score.getSource() = "
-                                    + score.getSource());
+                            System.out.println("Unknown 'functional score' source: score.getSource() = " + score.getSource());
                             break;
                     }
                 }
@@ -427,7 +426,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
      */
     private double[] getSubstitutionScores(ConsequenceType consequenceType) {
         double sift = 10;
-        double polytphen = 0;
+        double polyphen = 0;
 
         if (consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
             for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
@@ -437,14 +436,14 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         sift = score.getScore();
                     }
                 } else if (source.equals("polyphen")) {
-                    if (score.getScore() > polytphen) {
-                        polytphen = score.getScore();
+                    if (score.getScore() > polyphen) {
+                        polyphen = score.getScore();
                     }
                 }
             }
         }
 
-        double[] result = new double[] {sift, polytphen};
+        double[] result = new double[] {sift, polyphen};
         return result;
     }
 }

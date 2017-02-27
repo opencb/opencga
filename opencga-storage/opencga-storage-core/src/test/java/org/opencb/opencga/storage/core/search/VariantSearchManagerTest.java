@@ -5,9 +5,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.RangeFacet;
 import org.junit.Assert;
 import org.junit.Before;
@@ -48,10 +45,10 @@ public class VariantSearchManagerTest extends GenericTest {
     public void setUp() throws Exception {
         factory = new JsonFactory();
         jsonObjectMapper = new ObjectMapper();
-        initJSONParser(new File(VariantStorageBaseTest.getResourceUri("variant-solr-sample.json.gz")));
+        initJSONParser(new File(VariantStorageBaseTest.getResourceUri("/home/imedina/Downloads/variation_chr1.full.json.gz")));
         variantList = readNextVariantFromJSON(100);
 //        variantSearchManager = new VariantSearchManager("http://localhost:8983/solr/", "biotest_core2");
-        variantSearchManager = new VariantSearchManager("http://localhost:8983/solr/", "core123");
+        variantSearchManager = new VariantSearchManager("http://localhost:8983/solr/", "biotest_collection_4");
     }
 
     //    @Test
@@ -139,15 +136,15 @@ public class VariantSearchManagerTest extends GenericTest {
         }
     }
 
-//    @Test
+    @Test
     public void loadVariantFileIntoSolrTest() {
 
         String test = "Test_Variant_Insert_";
         try {
-            variantSearchManager = new VariantSearchManager("http://localhost:8983/solr/", "core.002");
+            variantSearchManager = new VariantSearchManager("http://localhost:8983/solr/", "biotest_1");
 
 //            String filename = "/home/imedina/Downloads/variation_chr1.full.json.gz";
-            String filename = "/home/jtarraga/data150/vcf/variation_chr22.3.json";
+            String filename = "/home/imedina/Downloads/variation_chr1.full.json.gz";
             BufferedReader bufferedReader = FileUtils.newBufferedReader(Paths.get(filename));
 
             VariantSearchToVariantConverter variantSearchToVariantConverter = new VariantSearchToVariantConverter();
@@ -278,7 +275,7 @@ public class VariantSearchManagerTest extends GenericTest {
         Variant variant = variantList.get(0);
         VariantSearchModel variantSearchModel = VariantSearchManager.getVariantSearchToVariantConverter().convertToStorageType(variant);
         Assert.assertEquals(variantSearchModel.getId(), getVariantSolrID(variant));
-        Assert.assertEquals(variantSearchModel.getDbSNP(), variant.getId());
+        Assert.assertEquals(variantSearchModel.getVariantId(), variant.getId());
         Assert.assertEquals(variantSearchModel.getChromosome(), variant.getChromosome());
         Assert.assertEquals(variantSearchModel.getType().toString(), variant.getType().toString());
     }

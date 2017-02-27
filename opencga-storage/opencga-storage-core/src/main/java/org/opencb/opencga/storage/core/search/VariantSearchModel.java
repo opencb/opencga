@@ -15,7 +15,7 @@ import java.util.*;
  * add the below fields in the the file schema.xml located in the core/collection folder. Or you
  * can use the solr_schema.xml file from opencga/opencga-storage/opencga-storage-core/src/main/resources/solr_schema.xml
  *
- <field name="dbSNP" type="string" indexed="false" stored="true" multiValued="false"/>
+ <field name="variantId" type="string" indexed="false" stored="true" multiValued="false"/>
  <field name="chromosome" type="string" indexed="true" stored="true" multiValued="false"/>
  <field name="start" type="int" indexed="true" stored="true" multiValued="false"/>
  <field name="end" type="int" indexed="true" stored="true" multiValued="false"/>
@@ -42,8 +42,8 @@ public class VariantSearchModel {
     @Field
     private String id;
 
-    @Field("dbSNP")
-    private String dbSNP;
+    @Field("variantId")
+    private String variantId;
 
     @Field("chromosome")
     private String chromosome;
@@ -55,7 +55,6 @@ public class VariantSearchModel {
     private int end;
 
     @Field("xrefs")
-//    private Set<String> xrefs;
     private List<String> xrefs;
 
     @Field("type")
@@ -90,15 +89,12 @@ public class VariantSearchModel {
 
     @Field("soAcc")
     private List<Integer> soAcc;
-//    private Set<Integer> soAcc;
 
     @Field("geneToSoAcc")
     private List<String> geneToSoAcc;
-//    private Set<String> geneToSoAcc;
 
     @Field("traits")
     private List<String> traits;
-//    private Set<String> traits;
 
     @Field("stats_*")
     private Map<String, Float> stats;
@@ -119,7 +115,7 @@ public class VariantSearchModel {
     public String toString() {
         final StringBuilder sb = new StringBuilder("VariantSearchModel{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", dbSNP='").append(dbSNP).append('\'');
+        sb.append(", dbSNP='").append(variantId).append('\'');
         sb.append(", chromosome='").append(chromosome).append('\'');
         sb.append(", start=").append(start);
         sb.append(", end=").append(end);
@@ -152,12 +148,12 @@ public class VariantSearchModel {
         return this;
     }
 
-    public String getDbSNP() {
-        return dbSNP;
+    public String getVariantId() {
+        return variantId;
     }
 
-    public VariantSearchModel setDbSNP(String dbSNP) {
-        this.dbSNP = dbSNP;
+    public VariantSearchModel setVariantId(String variantId) {
+        this.variantId = variantId;
         return this;
     }
 
