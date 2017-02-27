@@ -72,9 +72,11 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         Map<String, ConsequenceType> consequenceTypeMap = new HashMap<>();
 
         // protein substitution scores: sift and polyphen
-        ProteinVariantAnnotation proteinAnnotation = new ProteinVariantAnnotation();
-        List<Score> scores = new ArrayList<>();
+        List<Score> scores;
+        ProteinVariantAnnotation proteinAnnotation = null;
         if (variantSearchModel.getSift() != Double.MIN_VALUE || variantSearchModel.getPolyphen() != Double.MIN_VALUE) {
+            proteinAnnotation = new ProteinVariantAnnotation();
+            scores = new ArrayList<>();
             scores.add(new Score(variantSearchModel.getSift(), "sift", ""));
             scores.add(new Score(variantSearchModel.getPolyphen(), "polyphen", ""));
             proteinAnnotation.setSubstitutionScores(scores);
@@ -85,6 +87,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             // in the gene list, genes are ordered: 1) one gene name, 2) one ensembl gene id,
             // 3) one or more ensembl transcript ids, and then, repeat
             ConsequenceType consequenceType = new ConsequenceType();
+
             // gene name
             consequenceType.setGeneName(genes[i++]);
 
@@ -100,7 +103,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
             // for every consequence type, we set protein substitution scores
             // (in the VariantSearchModel only scores for one single consequence type is saved)
-            consequenceType.setProteinVariantAnnotation(proteinAnnotation);
+            if (proteinAnnotation != null) {
+                consequenceType.setProteinVariantAnnotation(proteinAnnotation);
+            }
         }
         // and finally, update the SO accession for each consequence type
         for (String geneToSoAcc: variantSearchModel.getGeneToSoAcc()) {

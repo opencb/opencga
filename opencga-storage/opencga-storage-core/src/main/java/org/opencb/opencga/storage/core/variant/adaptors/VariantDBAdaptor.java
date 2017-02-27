@@ -87,9 +87,10 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
             + "mRNA_end_NF,cds_start_NF,mRNA_start_NF,seleno";
     String ANNOT_GENE_TRAITS_ID_DESCR = "List of gene trait association id. e.g. \"umls:C0007222,OMIM:269600\"";
     String ANNOT_GENE_TRAITS_NAME_DESCR = "List of gene trait association names. e.g. \"Cardiovascular Diseases\"";
-    String ANNOT_CLINVAR_DESCR = "List of ClinVar accessions or traits.";
-    String ANNOT_COSMIC_DESCR = "List of COSMIC mutation IDs, primary histologies or histology subtypes.";
+    String ANNOT_CLINVAR_DESCR = "List of ClinVar accessions";
+    String ANNOT_COSMIC_DESCR = "List of COSMIC mutation IDs.";
     String ANNOT_HPO_DESCR = "List of HPO terms. e.g. \"HP:0000545\"";
+    String ANNOT_TRAITS_DESCR = "List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...";
     String ANNOT_GO_DESCR = "List of GO (Genome Ontology) terms. e.g. \"GO:0002020\"";
     String ANNOT_EXPRESSION_DESCR = "List of tissues of interest. e.g. \"tongue\"";
     String ANNOT_PROTEIN_KEYWORDS_DESCR = "List of protein variant annotation keywords";
@@ -140,6 +141,7 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
         ANNOT_GENE_TRAITS_NAME("annot-gene-trait-name", TEXT_ARRAY, ANNOT_GENE_TRAITS_NAME_DESCR),
         ANNOT_CLINVAR("clinvar", TEXT_ARRAY, ANNOT_CLINVAR_DESCR),
         ANNOT_COSMIC("cosmic", TEXT_ARRAY, ANNOT_COSMIC_DESCR),
+        ANNOT_TRAITS("traits", TEXT_ARRAY, ANNOT_TRAITS_DESCR),
         ANNOT_HPO("annot-hpo", TEXT_ARRAY, ANNOT_HPO_DESCR),
         ANNOT_GO("annot-go", TEXT_ARRAY, ANNOT_GO_DESCR),
         ANNOT_EXPRESSION("annot-expression", TEXT_ARRAY, ANNOT_EXPRESSION_DESCR),

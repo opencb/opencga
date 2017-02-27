@@ -74,71 +74,109 @@ public class ParseSolrQuery {
         List<String> orFilterList = new ArrayList<>();
         System.out.println("query = \n" + query.toJson() + "\n");
 
-        // id, to the OR filter list
-        key = VariantDBAdaptor.VariantQueryParams.ID.key();
-        orFilterList.addAll(parseTermValue("xrefs", (String) query.get(key)));
+        // OR conditions
+        // create a list for xrefs and another for genes, and insert the different IDs
+        List<String> xrefs = new ArrayList<>();
+        List<String> genes = new ArrayList<>();
+        classifyIds(VariantDBAdaptor.VariantQueryParams.ANNOT_XREF.key(), query, xrefs, genes);
 
-        // type (t)
-        key = VariantDBAdaptor.VariantQueryParams.TYPE.key();
-        filterList.addAll(parseTermValue(key, (String) query.get(key)));
+        // id
+        classifyIds(VariantDBAdaptor.VariantQueryParams.ID.key(), query, xrefs, genes);
 
-        // consequence type and gene
-        key = VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key();
-        String geneKey = VariantDBAdaptor.VariantQueryParams.GENE.key();
-        if (query.get(key) != null && !((String) query.get(key)).isEmpty()
-            && query.get(geneKey) != null && !((String) query.get(geneKey)).isEmpty()) {
+        // gene
+        classifyIds(VariantDBAdaptor.VariantQueryParams.GENE.key(), query, xrefs, genes);
 
-            // special case, check geneToSoAcc from the VariantSearchModel
-            List<String> genes = Arrays.asList(((String) query.get(geneKey)).split("[,;]"));
-            List<String> cts = Arrays.asList(((String) query.get(key)).replace("SO:", "").split("[,;]"));
-            for (String gene: genes) {
-                for (String ct: cts) {
-                    filterList.addAll(parseTermValue("geneToSoAcc", gene + "_" + Integer.parseInt(ct)));
-                }
+        // clinvar
+        classifyIds(VariantDBAdaptor.VariantQueryParams.ANNOT_CLINVAR.key(), query, xrefs, genes);
+
+        // cosmic
+        classifyIds(VariantDBAdaptor.VariantQueryParams.ANNOT_COSMIC.key(), query, xrefs, genes);
+
+        // hpo
+        classifyIds(VariantDBAdaptor.VariantQueryParams.ANNOT_HPO.key(), query, xrefs, genes);
+
+        StringBuilder orXref = new StringBuilder();
+        for (String xref: xrefs) {
+            if (orXref.length() > 0) {
+                orXref.append(" OR ");
             }
-
-        } else if (query.get(key) != null && !((String) query.get(key)).isEmpty()) {
-
-            // only consequence type (accession)
-            filterList.addAll(parseTermValue("soAcc", ((String) query.get(key)).replace("SO:", "")));
-
-        } else if (query.get(geneKey) != null && !((String) query.get(geneKey)).isEmpty()) {
-
-            // only gene, therefore to the OR filter list
-            orFilterList.addAll(parseTermValue("xrefs", (String) query.get(geneKey)));
+            orXref.append("xref:\"").append(xref).append("\"");
         }
 
         // region, to the OR filter list
         if (query.containsKey(VariantDBAdaptor.VariantQueryParams.REGION)) {
             StringBuilder sb = new StringBuilder();
-            List<Region> regions = new ArrayList<>();
             String[] regionStr = ((String) query.get(VariantDBAdaptor.VariantQueryParams.REGION)).split("[,;]");
             for (String regStr: regionStr) {
                 Region region = new Region(regStr);
-                sb.setLength(0);
-                sb.append("(chromosome:").append(region.getChromosome())
+                if (orXref.length() > 0) {
+                    orXref.append(" OR ");
+                }
+                orXref.append("(chromosome:").append(region.getChromosome())
                         .append(" AND start:[").append(region.getStart()).append(" TO *]")
-                        .append(" AND end:[* TO ").append(region.getEnd()).append("]");
-                orFilterList.add(sb.toString());
+                        .append(" AND end:[* TO ").append(region.getEnd()).append("])");
             }
         }
 
-        // group all OR filters, i.e.: genes, ids and regions; and add them to the filter list
-        if (orFilterList.size() > 0) {
-            filterList.add(StringUtils.join(orFilterList, " OR "));
+        // consequence type
+        key = VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key();
+        if (query.get(key) == null || ((String) query.get(key)).isEmpty()) {
+            // consequence type is null or empty, then we add the genes to the orStatement and then to the Solr AND filter list
+            for (String gene: genes) {
+                if (orXref.length() > 0) {
+                    orXref.append(" OR ");
+                }
+                orXref.append("xref:\"").append(gene).append("\"");
+            }
+            // add the OR statement to the AND filter list
+            if (orXref.length() > 0) {
+                filterList.add(orXref.toString());
+            }
+        } else {
+            // we have consequence types, we have to check if there are genes too
+            List<String> cts = Arrays.asList(((String) query.get(key)).replace("SO:", "").split("[,;]"));
+            StringBuilder orCts = new StringBuilder();
+            if (orXref.length() > 0) {
+                for (String ct : cts) {
+                    if (orCts.length() > 0) {
+                        orCts.append(" OR ");
+                    }
+                    orCts.append("soAcc:").append(Integer.parseInt(ct));
+                }
+            }
+            if (genes.size() == 0) {
+                // add the OR statement to the AND filter list
+                filterList.add(orXref.toString());
+
+                // and the cts too
+                if (orCts.length() > 0) {
+                    filterList.add(orCts.toString());
+                }
+            } else if (genes.size() > 0) {
+                // special case, check geneToSoAcc from the VariantSearchModel
+                StringBuilder orGeneToCts = new StringBuilder();
+                for (String gene: genes) {
+                    for (String ct: cts) {
+                        if (orGeneToCts.length() > 0) {
+                            orGeneToCts.append(" OR ");
+                        }
+                        orGeneToCts.append("geneToSoAcc:").append(gene).append("_").append(Integer.parseInt(ct));
+                    }
+                }
+                // and the cts too
+                if (orXref.length() > 0) {
+                    filterList.add("((" + orXref + ") AND (" + orCts + ")) OR (" + orGeneToCts.toString() + ")");
+                } else {
+                    filterList.add(orGeneToCts.toString());
+                }
+            }
         }
 
-        // clinvar
-        key = VariantDBAdaptor.VariantQueryParams.ANNOT_CLINVAR.key();
-        filterList.addAll(parseTraitValue("ClinVar", (String) query.get(key)));
+        // AND conditions
 
-        // cosmic
-        key = VariantDBAdaptor.VariantQueryParams.ANNOT_COSMIC.key();
-        filterList.addAll(parseTraitValue("COSMIC", (String) query.get(key)));
-
-        // hpo
-        key = VariantDBAdaptor.VariantQueryParams.ANNOT_HPO.key();
-        filterList.addAll(parseTraitValue("HPO", (String) query.get(key)));
+        // type (t)
+        key = VariantDBAdaptor.VariantQueryParams.TYPE.key();
+        filterList.addAll(parseTermValue(key, (String) query.get(key)));
 
         // cadd, functional score
         key = VariantDBAdaptor.VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key();
@@ -198,6 +236,47 @@ public class ParseSolrQuery {
         solrQuery.setQuery("*:*");
         filterList.forEach(filter -> solrQuery.addFilterQuery(filter));
         return solrQuery;
+    }
+
+    /**
+     * Check if the target xref is a gene.
+     *
+     * @param xref    Target xref
+     * @return        True or false
+     */
+    private static boolean isGene(String xref) {
+        if (xref.isEmpty()) {
+            return false;
+        }
+        if (xref.indexOf(":") == -1) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Insert the IDs for this key in the query into the xref or gene list depending on they are or not genes.
+     *
+     * @param key     Key in the query
+     * @param query   Query
+     * @param xrefs   List to insert the xrefs (no genes)
+     * @param genes   List to insert the genes
+     */
+    private static void classifyIds(String key, Query query, List<String> xrefs, List<String> genes) {
+        String value;
+        if (query.containsKey(key)) {
+            value = (String) query.get(key);
+            if (StringUtils.isNotEmpty(value)) {
+                List<String> items = Arrays.asList(value.split("[,;]"));
+                for (String item: items) {
+                    if (isGene(item)) {
+                        genes.add(item);
+                    } else {
+                        xrefs.add(item);
+                    }
+                }
+            }
+        }
     }
 
     /**
