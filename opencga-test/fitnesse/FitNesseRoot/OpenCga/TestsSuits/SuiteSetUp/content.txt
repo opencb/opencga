@@ -10,7 +10,7 @@
 |http.client.connection.timeout| 100000|
 
 !3 Generate Random Variables 
-!|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/|
+!|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/|
 |let|user|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|project|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|study|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
@@ -38,7 +38,7 @@
 | setBody |{  "name": "$project",  "alias": "$project","organism.scientificName": "Homo sapiens", "organism.assembly": "GRCh37"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/projects/create?sid=$sessionId |200|  Content-Type: application/json ||
-|let|projectId|js|response.jsonbody.response[0].result[0].id||
+|let|projectId|js|response.jsonbody.response[0].result[0].id.toString()||
 
 !3 Create Study  
 !|Table: Rest Fixture | $baseURL |
