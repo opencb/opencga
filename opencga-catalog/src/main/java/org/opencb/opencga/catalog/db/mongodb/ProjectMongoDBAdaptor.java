@@ -90,7 +90,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         Bson countQuery = Filters.and(Filters.eq("id", userId), Filters.eq("projects.alias", project.getAlias()));
         QueryResult<Long> count = userCollection.count(countQuery);
         if (count.getResult().get(0) != 0) {
-            throw new CatalogDBException("Project {alias:\"" + project.getAlias() + "\"} already exists in this user");
+            throw new CatalogDBException("Project {alias:\"" + project.getAlias() + "\"} already exists for this user");
         }
 //        if(getProjectId(userId, project.getAlias()) >= 0){
 //            throw new CatalogManagerException( "Project {alias:\"" + project.getAlias() + "\"} already exists in this user");
@@ -113,7 +113,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         QueryResult<UpdateResult> queryResult = userCollection.update(query, update, null);
 
         if (queryResult.getResult().get(0).getModifiedCount() == 0) { // Check if the project has been inserted
-            throw new CatalogDBException("Project {alias:\"" + project.getAlias() + "\"} already exists in this user");
+            throw new CatalogDBException("Project {alias:\"" + project.getAlias() + "\"} already exists for this user");
         }
 
         String errorMsg = "";
