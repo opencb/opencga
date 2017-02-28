@@ -301,6 +301,15 @@ public class VariantMatchers {
         };
     }
 
+    public static Matcher<? super StudyEntry> withSampleData(String sampleName, String formatField, Matcher<String> subMatcher) {
+        return new FeatureMatcher<StudyEntry, String>(subMatcher, "with sample " + sampleName + " with " + formatField, "SampleData") {
+            @Override
+            protected String featureValueOf(StudyEntry actual) {
+                return actual.getSampleData(sampleName, formatField);
+            }
+        };
+    }
+
     public static Matcher<StudyEntry> withFileId(Matcher<? super Iterable<? super String>> subMatcher) {
         return new FeatureMatcher<StudyEntry, List<String>>(subMatcher, "with fileIds ", "FileIds") {
             @Override

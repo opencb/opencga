@@ -172,7 +172,7 @@ public class VariantWriterFactory {
             outputStream = new BufferedOutputStream(outputStream);
         }
 
-        logger.debug("using %s output stream", gzip ? "gzipped" : "plain");
+        logger.debug("using {} output stream", gzip ? "gzipped" : "plain");
 
         return outputStream;
     }
