@@ -509,68 +509,6 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/ranges")
-    @ApiOperation(value = "Fetchs alignment files using HTTP Ranges protocol")
-    @Produces("text/plain")
-    public Response getRanges(@Context HttpHeaders headers,
-                              @ApiParam(value = "File id, name or path") @QueryParam("file") String fileIdStr,
-                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                              @QueryParam("study") String studyStr) {
-        DataInputStream stream = null;
-        try {
-            AbstractManager.MyResourceId resource = catalogManager.getFileManager().getId(fileIdStr, studyStr, sessionId);
-            catalogManager.getAuthorizationManager().checkFilePermission(resource.getResourceId(), resource.getUser(),
-                    FileAclEntry.FilePermissions.DOWNLOAD);
-            QueryResult<File> queryResult = catalogManager.getFile(resource.getResourceId(), this.queryOptions, sessionId);
-            File file = queryResult.getResult().get(0);
-
-            List<String> rangeList = headers.getRequestHeader("range");
-            if (rangeList != null) {
-                long from;
-                long to;
-                String[] acceptedRanges = rangeList.get(0).split("=")[1].split("-");
-                from = Long.parseLong(acceptedRanges[0]);
-                to = Long.parseLong(acceptedRanges[1]);
-                int length = (int) (to - from) + 1;
-                ByteBuffer buf = ByteBuffer.allocate(length);
-
-                logger.debug("from: {} , to: {}, length:{}", from, to, length);
-                StopWatch t = StopWatch.createStarted();
-
-                java.nio.file.Path filePath = Paths.get(file.getUri());
-                try (FileChannel fc = (FileChannel.open(filePath, StandardOpenOption.READ))) {
-                    fc.position(from);
-                    fc.read(buf);
-                }
-
-                t.stop();
-                logger.debug("Skip {}B and read {}B in {}s", from, length, t.getTime(TimeUnit.MILLISECONDS) / 1000.0);
-
-                return Response.ok(buf.array(), MediaType.APPLICATION_OCTET_STREAM_TYPE)
-                        .header("Accept-Ranges", "bytes")
-                        .header("Access-Control-Allow-Origin", "*")
-                        .header("Access-Control-Allow-Headers", "x-requested-with, content-type, range")
-                        .header("Access-Control-Allow-Credentials", "true")
-                        .header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-                        .header("Content-Range", "bytes " + from + "-" + to + "/" + file.getSize())
-                        .header("Content-length", to - from + 1)
-                        .status(Response.Status.PARTIAL_CONTENT).build();
-
-            } else {
-                stream = catalogManager.downloadFile(resource.getResourceId(), sessionId);
-                return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, file.getName());
-            }
-        } catch (Exception e) {
-            if (stream != null) {
-                try {
-                    stream.close();
-                } catch (IOException ignore) { }
-            }
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
     @Path("/{file}/content")
     @ApiOperation(value = "Show the content of a file (up to a limit)", position = 6, response = String.class)
     public Response content(@ApiParam(value = "File id") @PathParam("file") String fileIdStr,

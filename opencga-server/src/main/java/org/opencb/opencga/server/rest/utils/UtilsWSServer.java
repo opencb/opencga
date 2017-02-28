@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server.rest;
+package org.opencb.opencga.server.rest.utils;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
@@ -24,6 +24,7 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.server.rest.OpenCGAWSServer;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;

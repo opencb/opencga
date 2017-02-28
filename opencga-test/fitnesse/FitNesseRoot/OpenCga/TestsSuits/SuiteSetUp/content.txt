@@ -1,9 +1,7 @@
 !define TEST_SYSTEM {slim}
 !path target/appassembler/dependencies/*.jar
-!define baseURL {http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/}
-!define user {test}
-!define study {2}
-
+!define OpenCGA_VERSION {opencga-1.0.0-final}
+!define TEST_HOST {bioinfoint.hpc.cam.ac.uk}
 
 !|import|
 |smartrics.rest.fitnesse.fixture|
@@ -14,35 +12,61 @@
 |http.client.connection.timeout| 100000|
 
 !3 Generate Random Variables 
-!|Table: Rest Fixture | ${baseURL} |
-|let|fUser|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
-|let|eUser|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+!|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/|
+|let|user|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|project|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|study|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|userA|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|userB|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|baseURL|const|http://${TEST_HOST}/${OpenCGA_VERSION}/webservices/rest/||
+
+
+!3 Create User
+!|Table: Rest Fixture  | $baseURL |
+| setBody |  { "name": "$user", "userId": "$user","email": "test@test.com", "password" : "user_P@ssword" }|
+| setHeader|Content-Type:application/json|
+| POST | /v1/users/create |200| Content-Type : application/json| jsonbody.error === '' |
+|let|user|js|response.jsonbody.response[0].result[0].id||
 
 !3 Login User 
 !|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/  |
 | setBody | {"password" : "user_P@ssword"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/users/${user}/login |200|  Content-Type: application/json ||
+| POST | /v1/users/$user/login |200|  Content-Type: application/json ||
 |let|sessionId|js|response.jsonbody.response[0].result[0].sessionId||
 
-#fUser has Full Permissions
-!3 Create fUser  
-!|Table: Rest Fixture  | ${baseURL} |
-| setBody |  { "name": "$fUser", "userId": "$fUser","email": "test@test.com", "password" : "p@ssword" }|
+!3 Create Project 
+!|Table: Rest Fixture | $baseURL |
+| setBody |{  "name": "$project",  "alias": "$project","organism.scientificName": "Homo sapiens", "organism.assembly": "GRCh37"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/projects/create?sid=$sessionId |200|  Content-Type: application/json ||
+|let|projectId|js|response.jsonbody.response[0].result[0].id.toString()||
+
+!3 Create Study  
+!|Table: Rest Fixture | $baseURL |
+| setBody |{  "name": "$study", "alias": "$study", "type": "CASE_CONTROL"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/create?sid=$sessionId&projectId=$projectId |200|  Content-Type: application/json ||
+|let|studyId|js|response.jsonbody.response[0].result[0].id||
+
+#userA has Full Permissions
+!3 Create userA  
+!|Table: Rest Fixture  | $baseURL |
+| setBody |  { "name": "$userA", "userId": "$userA","email": "test@test.com", "password" : "p@ssword" }|
 | setHeader|Content-Type:application/json|
 | POST | /v1/users/create?sid=$sessionId |200| Content-Type : application/json| jsonbody.error === '' |
 
-#eUser has Empty(no) Permissions
-!3 Create eUser  
-!|Table: Rest Fixture  | ${baseURL} |
-| setBody |  { "name": "$eUser", "userId": "$eUser","email": "test@test.com", "password" : "p@ssword" }|
+#userB has Empty(no) Permissions
+!3 Create userB  
+!|Table: Rest Fixture  | $baseURL |
+| setBody |  { "name": "$userB", "userId": "$userB","email": "test@test.com", "password" : "p@ssword" }|
 | setHeader|Content-Type:application/json|
 | POST | /v1/users/create?sid=$sessionId |200| Content-Type : application/json| jsonbody.error === '' |
 
 
-!3 Create ACL for User (fUser)
-!|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/  |
-| setBody | {"members" : "$fUser"}|
+!3 Create ACL for User (userA)
+!|Table: Rest Fixture | $baseURL  |
+| setBody | {"members" : "$userA"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/${study}/acl/create?sid=$sessionId |200|  Content-Type: application/json ||
+| POST | /v1/studies/$study/acl/create?sid=$sessionId |200|  Content-Type: application/json ||
 

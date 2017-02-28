@@ -274,8 +274,11 @@ def execute(host, version, sid, category, resource, method, subcategory=None, qu
     """Queries the REST service using multiple threads if needed"""
 
     # If query_id is an array, convert to comma-separated string
-    if query_id is not None and isinstance(query_id, list):
-        query_id = ','.join(query_id)
+    if query_id is not None:
+        if isinstance(query_id, list):
+            query_id = ','.join([str(item) for item in query_id])
+        else:
+            query_id = str(query_id)  # convert to string so we can call this method with int ids
 
     # Multithread if the number of queries is greater than _CALL_BATCH_SIZE
     if query_id is None or len(query_id.split(',')) <= _CALL_BATCH_SIZE:
