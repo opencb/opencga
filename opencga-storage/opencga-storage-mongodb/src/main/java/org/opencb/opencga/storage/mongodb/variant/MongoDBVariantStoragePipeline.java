@@ -21,7 +21,6 @@ import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
-import org.bson.types.Binary;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -260,37 +259,17 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                             isResumeStage(options));
 
             ParallelTaskRunner<Variant, ?> ptr;
-            ParallelTaskRunner.Config build = ParallelTaskRunner.Config.builder()
+            ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
                     .setReadQueuePutTimeout(20 * 60)
                     .setNumTasks(loadThreads)
                     .setBatchSize(batchSize)
                     .setAbortOnFail(true).build();
             if (options.getBoolean(STAGE_PARALLEL_WRITE.key(), STAGE_PARALLEL_WRITE.defaultValue())) {
                 logger.info("Multi thread stage load... [{} readerThreads, {} writerThreads]", numReaders, loadThreads);
-                ptr = new ParallelTaskRunner<>(
-                        variantReader,
-                        batch -> { // Parallel loading
-                            List<Variant> remappedVariants = remapIdsTask.apply(batch);
-                            List<ListMultimap<Document, Binary>> mongoObjects = converterTask.apply(remappedVariants);
-                            stageLoader.write(mongoObjects);
-                            return null;
-                        },
-//                        remapIdsTask.then(converterTask).then(stageLoader),
-                        null,
-                        build
-                );
+                ptr = new ParallelTaskRunner<>(variantReader, remapIdsTask.then(converterTask).then(stageLoader), null, config);
             } else {
                 logger.info("Multi thread stage load... [{} readerThreads, {} tasks, {} writerThreads]", numReaders, loadThreads, 1);
-                ptr = new ParallelTaskRunner<>(
-                        variantReader,
-                        batch -> {
-                            List<Variant> remappedVariants = remapIdsTask.apply(batch);
-                            return converterTask.apply(remappedVariants);
-                        },
-//                        remapIdsTask.then(converterTask),
-                        stageLoader,
-                        build
-                );
+                ptr = new ParallelTaskRunner<>(variantReader, remapIdsTask.then(converterTask), stageLoader, config);
             }
 
             Thread hook = new Thread(() -> {
@@ -691,11 +670,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 .setAbortOnFail(true).build();
         try {
             if (options.getBoolean(MERGE_PARALLEL_WRITE.key(), MERGE_PARALLEL_WRITE.defaultValue())) {
-                ptrMerge = new ParallelTaskRunner<>(reader, batch -> {
-                    List<MongoDBOperations> apply = variantMerger.apply(batch);
-                    variantLoader.write(apply);     // Load in each thread
-                    return apply;
-                }, null, config);
+                ptrMerge = new ParallelTaskRunner<>(reader, variantMerger.then(variantLoader), null, config);
             } else {
                 ptrMerge = new ParallelTaskRunner<>(reader, variantMerger, variantLoader, config);
             }

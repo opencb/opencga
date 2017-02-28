@@ -35,7 +35,6 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
@@ -289,11 +288,6 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             }
             throw e;
         }
-    }
-
-    @Override
-    public void post() {
-        VariantMongoDBAdaptor.createIndexes(new QueryOptions(), collection);
     }
 
     public MongoDBOperations merge(List<Document> variants) {
