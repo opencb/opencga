@@ -43,6 +43,8 @@ public class VariantSearchManager {
     private HttpSolrClient solrClient;
     private static VariantSearchToVariantConverter variantSearchToVariantConverter;
 
+    private static int DEFAULT_INSERT_SIZE = 10000;
+
     public VariantSearchManager(String host, String collection) {
         this.hostName = host;
         this.collectionName = collection;
@@ -206,16 +208,24 @@ public class VariantSearchManager {
     /**
      * Load a Solr core/collection from a variant DB iterator.
      *
-     * @param iterator      Iterator to retrieve the variants to load
+     * @param variantDBIterator      Iterator to retrieve the variants to load
      * @throws IOException          IOException
      * @throws SolrServerException  SolrServerException
      */
-    public void load(VariantDBIterator iterator) throws IOException, SolrServerException {
-        if (iterator != null) {
-            while (iterator.hasNext()) {
-                Variant variant = iterator.next();
-                insert(variant);
+    public void load(VariantDBIterator variantDBIterator) throws IOException, SolrServerException {
+        if (variantDBIterator != null) {
+            int count = 0;
+            List<Variant> variantList = new ArrayList<>(DEFAULT_INSERT_SIZE);
+            while (variantDBIterator.hasNext()) {
+                variantList.add(variantDBIterator.next());
+                count++;
+                if (count % DEFAULT_INSERT_SIZE == 0) {
+                    insert(variantList);
+                    variantList.clear();
+                }
             }
+            // Insert the remaining variants
+            insert(variantList);
         }
     }
 
