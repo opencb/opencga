@@ -880,7 +880,25 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         }
 
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key());
-        return individualDBAdaptor.get(query, queryOptions);
+        logger.debug("Query: {}, \t QueryOptions: {}", query.safeToString(), queryOptions.safeToString());
+
+        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
+
+        // Filter out annotation sets only from the variable set id specified
+        for (Individual individual : individualQueryResult.getResult()) {
+            List<AnnotationSet> finalAnnotationSets = new ArrayList<>();
+            for (AnnotationSet annotationSet : individual.getAnnotationSets()) {
+                if (annotationSet.getVariableSetId() == variableSetId) {
+                    finalAnnotationSets.add(annotationSet);
+                }
+            }
+
+            if (finalAnnotationSets.size() > 0) {
+                individual.setAnnotationSets(finalAnnotationSets);
+            }
+        }
+
+        return individualQueryResult;
     }
 
 }

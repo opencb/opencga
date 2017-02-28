@@ -57,7 +57,10 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
     String RETURNED_SAMPLES_DESCR = "List of samples to be returned";
     String SAMPLES_METADATA_DESCR =
             "Returns the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.";
-    String FILES_DESCR = "";
+    String FILES_DESCR = "Select variants in specific files";
+    String FILTER_DESCR =
+            "Specify the FILTER for any of the files. If \"files\" filter is provided, will match the file and the filter."
+                    + " e.g.: PASS,LowGQX";
     String RETURNED_FILES_DESCR = "List of files to be returned";
 
     String COHORTS_DESCR = "Select variants with calculated stats for the selected cohorts";
@@ -109,6 +112,7 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
         RETURNED_SAMPLES("returnedSamples", TEXT_ARRAY, RETURNED_SAMPLES_DESCR),
         SAMPLES_METADATA("samplesMetadata", TEXT_ARRAY, SAMPLES_METADATA_DESCR),
         FILES("files", TEXT_ARRAY, FILES_DESCR),
+        FILTER("filter", TEXT_ARRAY, FILTER_DESCR),
         RETURNED_FILES("returnedFiles", TEXT_ARRAY, RETURNED_FILES_DESCR),
 
         COHORTS("cohorts", TEXT_ARRAY, COHORTS_DESCR),

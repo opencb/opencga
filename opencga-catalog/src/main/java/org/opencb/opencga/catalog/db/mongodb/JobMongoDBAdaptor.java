@@ -245,7 +245,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Query query1 = new Query(QueryParams.ID.key(), userId).append("tools.alias", tool.getAlias());
         QueryResult<Long> count = dbAdaptorFactory.getCatalogUserDBAdaptor().count(query1);
         if (count.getResult().get(0) != 0) {
-            throw new CatalogDBException("Tool {alias:\"" + tool.getAlias() + "\"} already exists in this user");
+            throw new CatalogDBException("Tool {alias:\"" + tool.getAlias() + "\"} already exists for this user");
         }
 
         // Create and add the new tool
@@ -262,7 +262,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         QueryResult<UpdateResult> queryResult = dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection().update(query, push, null);
 
         if (queryResult.getResult().get(0).getModifiedCount() == 0) { // Check if the project has been inserted
-            throw new CatalogDBException("Tool {alias:\"" + tool.getAlias() + "\"} already exists in this user");
+            throw new CatalogDBException("Tool {alias:\"" + tool.getAlias() + "\"} already exists for this user");
         }
 
         return endQuery("Create tool", startTime, getTool(tool.getId()).getResult());

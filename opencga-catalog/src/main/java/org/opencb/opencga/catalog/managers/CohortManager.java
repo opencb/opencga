@@ -643,6 +643,24 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         }
 
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key());
-        return cohortDBAdaptor.get(query, queryOptions);
+        logger.debug("Query: {}, \t QueryOptions: {}", query.safeToString(), queryOptions.safeToString());
+
+        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query, queryOptions);
+
+        // Filter out annotation sets only from the variable set id specified
+        for (Cohort cohort : cohortQueryResult.getResult()) {
+            List<AnnotationSet> finalAnnotationSets = new ArrayList<>();
+            for (AnnotationSet annotationSet : cohort.getAnnotationSets()) {
+                if (annotationSet.getVariableSetId() == variableSetId) {
+                    finalAnnotationSets.add(annotationSet);
+                }
+            }
+
+            if (finalAnnotationSets.size() > 0) {
+                cohort.setAnnotationSets(finalAnnotationSets);
+            }
+        }
+
+        return cohortQueryResult;
     }
 }

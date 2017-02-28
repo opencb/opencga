@@ -83,7 +83,7 @@ public class JobCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"create"}, commandDescription = "Create a job")
+    @Parameters(commandNames = {"create"}, commandDescription = "Create a job in catalog (register an already executed job)")
     public class CreateCommandOptions extends StudyOption {
 
         @ParametersDelegate
@@ -92,14 +92,33 @@ public class JobCommandOptions {
         @Parameter(names = {"-n", "--name"}, description = "Job name", required = true, arity = 1)
         public String name;
 
-        @Parameter(names = {"--tool-id"}, description = "Tool Id", required = true, arity = 1)
-        public String toolId;
+        @Parameter(names = {"--tool-name"}, description = "Tool name", required = true, arity = 1)
+        public String toolName;
 
-        @Parameter(names = {"--execution"}, description = "Execution", required = false, arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = "Job description", arity = 1)
+        public String description;
+
+        @Parameter(names = {"--execution"}, description = "Execution", arity = 1)
         public String execution;
 
-        @Parameter(names = {"-d", "--description"}, description = "Job description", required = false, arity = 1)
-        public String description;
+        @Parameter(names = {"--start-time"}, description = "Start time of the job", arity = 1)
+        public long startTime;
+
+        @Parameter(names = {"--end-time"}, description = "End time of the job", arity = 1)
+        public long endTime;
+
+        @Parameter(names = {"--command-line"}, description = "Command line", required = true, arity = 1)
+        public String commandLine;
+
+        @Parameter(names = {"--output-directory"}, description = "Directory (previously registered in catalog) where the output is stored",
+                required = true, arity = 1)
+        public String outDir;
+
+        @Parameter(names = {"--input"}, description = "Comma separated list of file ids used as input of the job", arity = 1)
+        public String input;
+
+        @Parameter(names = {"--output"}, description = "Comma separated list of file ids used as output of the job", arity = 1)
+        public String output;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get job information")

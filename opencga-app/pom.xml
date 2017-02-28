@@ -178,7 +178,7 @@
                     <configurationDirectory>conf</configurationDirectory>
                     <!--Do we need to include the configuration folder in the classpath?-->
                     <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
-                    <extraJvmArguments>-Xms256m -Xmx2048m</extraJvmArguments>
+                    <extraJvmArguments>-Xms256m -Xmx2048m -Dfile.encoding=UTF-8</extraJvmArguments>
                     <environmentSetupFileName>${opencga.env.file}</environmentSetupFileName>
                     <programs>
                         <program>
@@ -288,6 +288,11 @@
                                     <arg value="${project.basedir}/../opencga-test/README.md"/>
                                     <arg value="${project.basedir}/../opencga-test/fitnesse"/>
                                     <arg value="${build.dir}/test"/>
+                                </exec>
+				<exec executable="sed">
+                                    <arg value="-i"/>
+                                    <arg value="s/target\/appassembler\/dependencies/dependencies/"/>
+                                    <arg value="${build.dir}/test/fitnesse/FitNesseRoot/OpenCga/TestsSuits/SuiteSetUp/content.txt"/>
                                 </exec>
                             </target>
                         </configuration>

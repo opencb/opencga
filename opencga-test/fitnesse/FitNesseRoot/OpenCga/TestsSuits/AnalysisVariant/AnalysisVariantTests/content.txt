@@ -1,59 +1,56 @@
 !define TEST_SYSTEM {slim}
-!define baseURL {http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/}
-!define user {test}
 !define file {4}
-!define study {2}
-!define totalVariants {1110102}
+!define totalVariants {9789}
 !define sift {%3E0.1}
 !define totalVariantsWithsift {7405}
 
 
 !3 Create Variant Index 
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/analysis/variant/index?sid=$sessionId&file=${file} |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id > 0 && jsonbody.response[0].result[0].type == 'INDEX' |
 
 !3 Create Variant Index With Transform
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/analysis/variant/index?sid=$sessionId&file=${file}&transform=true |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].type == 'INDEX' && jsonbody.response[0].result[0].params.transform =='true' |
 
 !3 Create Variant Index With Load
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/analysis/variant/index?sid=$sessionId&file=${file}&load=true |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].type == 'INDEX' &&  jsonbody.response[0].result[0].params.load === 'true'|
 
 !3 Create Variant Index With Annotate
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/analysis/variant/index?sid=$sessionId&file=${file}&annotate=true |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].type == 'INDEX' &&  jsonbody.response[0].result[0].params.annotate == 'true'|
 
 !3 Create Variant Index With Calculate Stats
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/analysis/variant/index?sid=$sessionId&file=${file}&calculateStats=true |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].type == 'INDEX' &&  jsonbody.response[0].result[0].params.calculateStats == 'true'|
 
 !3 Create Variant Index As Pipeline
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/analysis/variant/index?sid=$sessionId&file=${file}&transform=true&load=true&annotate=true&calculateStats=true|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].type == 'INDEX' && jsonbody.response[0].result[0].params.transform === 'true' && jsonbody.response[0].result[0].params.load === 'true' && jsonbody.response[0].result[0].params.annotate === 'true' &&jsonbody.response[0].result[0].params.calculateStats === 'true'|
 
 !3 Create Variant Index With Extra Field
-!|Table: Rest Fixture | ${baseURL} |
+!|Table: Rest Fixture | $baseURL |
 | GET | /v1/analysis/variant/index?sid=$sessionId&file=${file}&includeExtraFields=extraField |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].type == 'INDEX' && jsonbody.response[0].result[0].params["include.extra-fields"] == 'extraField'| 
 
-!3 Negative: Create Variant Index (In-Valid FileID)
-!|Table: Rest Fixture | ${baseURL} |
-| GET | /v1/analysis/variant/index?sid=$sessionId&file=invalid&study=${study}|500|  Content-Type: application/json |jsonbody.error == 'File invalid not found in study 2'|
+!3 (Negative) Create Variant Index (In-Valid FileID)
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/analysis/variant/index?sid=$sessionId&file=invalid&study=$study|500|  Content-Type: application/json |jsonbody.error == 'File invalid not found in study $studyId'|
 
 !3 Query Variant
-!|Table: Rest Fixture | ${baseURL} |
-| GET | /v1/analysis/variant/query?sid=$sessionId&studies=${study}&limit=1 |200|  Content-Type: application/json |jsonbody.response[0].numResults =='1' && jsonbody.response[0].result[0].studies[0].studyId =='test@reference_grch37:1kG_phase3'|
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/analysis/variant/query?sid=$sessionId&studies=$study&limit=1 |200|  Content-Type: application/json |jsonbody.response[0].numResults =='1' && jsonbody.response[0].result[0].studies[0].studyId =='test@reference_grch37:1kG_phase3'|
 
 !3 Count Variant
-!|Table: Rest Fixture | ${baseURL} |
-| GET | /v1/analysis/variant/query?sid=$sessionId&studies=${study}&count=true |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0] == '${totalVariants}'|
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/analysis/variant/query?sid=$sessionId&studies=$study&count=true |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0] == '${totalVariants}'|
 
 !3 Get Variant With Sift 
-!|Table: Rest Fixture | ${baseURL} |
-| GET | /v1/analysis/variant/query?sid=$sessionId&studies=${study}&sift=${sift}&count=true |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0] == '${totalVariantsWithsift}'|
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/analysis/variant/query?sid=$sessionId&studies=$study&sift=${sift}&count=true |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0] == '${totalVariantsWithsift}'|
 
 # There is a FIX for RESTFIXTURE, just commited today ( 19 Jan, 2017) for json bigger than 64k, we need that to make this test work
 !3 Get Variant With Sort 
-!|Table: Rest Fixture | ${baseURL} |
-| GET | /v1/analysis/variant/query?sid=$sessionId&studies=${study}&sort=true&limit=1 |200|  Content-Type: application/json | jsonbody.response[0].result[0].id =='rs587697622'|
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/analysis/variant/query?sid=$sessionId&studies=$study&sort=true&limit=1 |200|  Content-Type: application/json | jsonbody.response[0].result[0].id =='rs587697622'|
 

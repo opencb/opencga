@@ -914,9 +914,23 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         }
 
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key());
+        logger.debug("Query: {}, \t QueryOptions: {}", query.safeToString(), queryOptions.safeToString());
         QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions);
 
-        logger.debug("Query: {}, \t QueryOptions: {}", query.safeToString(), queryOptions.safeToString());
+        // Filter out annotation sets only from the variable set id specified
+        for (Sample sample : sampleQueryResult.getResult()) {
+            List<AnnotationSet> finalAnnotationSets = new ArrayList<>();
+            for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
+                if (annotationSet.getVariableSetId() == variableSetId) {
+                    finalAnnotationSets.add(annotationSet);
+                }
+            }
+
+            if (finalAnnotationSets.size() > 0) {
+                sample.setAnnotationSets(finalAnnotationSets);
+            }
+        }
+
         return sampleQueryResult;
     }
 }

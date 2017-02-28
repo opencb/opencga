@@ -162,8 +162,11 @@ public class VariantExportStorageOperation extends StorageOperation {
             try (StudyConfigurationManager scm = variantStorageEngine.getStudyConfigurationManager(options)) {
                 exportMetadata = variantMetadataImporter.importMetaData(inputUri, scm);
             }
+            StudyConfiguration oldSC = VariantMetadataImporter.readMetadata(inputUri).getStudies().get(0);
+            StudyConfiguration newSC = exportMetadata.getStudies().get(0);
+            Map<StudyConfiguration, StudyConfiguration> studiesOldNewMap = Collections.singletonMap(oldSC, newSC);
 
-            variantStorageEngine.importData(inputUri, exportMetadata, dataStore.getDbName(), options);
+            variantStorageEngine.importData(inputUri, exportMetadata, studiesOldNewMap, dataStore.getDbName(), options);
 
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
             throw new StorageEngineException("Error importing data", e);

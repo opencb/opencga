@@ -4,6 +4,7 @@ import com.mongodb.ErrorCategory;
 import com.mongodb.MongoBulkWriteException;
 import com.mongodb.bulk.BulkWriteError;
 import com.mongodb.bulk.BulkWriteResult;
+import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -18,12 +19,13 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.regex.Matcher;
 
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.nin;
+import static com.mongodb.client.model.Filters.*;
+import static com.mongodb.client.model.Updates.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.FILEID_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.FILES_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.STUDIES_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.DUP_KEY_WRITE_RESULT_ERROR_PATTERN;
+import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.NEW_STUDY_FIELD;
 
 /**
  * Created on 21/11/16.
@@ -41,20 +43,28 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
 
 
     private final ProgressLogger progressLogger;
-    private final MongoDBCollection collection;
+    private final MongoDBCollection variantsCollection;
+    private final MongoDBCollection stageCollection;
     private final boolean resume;
+    private final boolean cleanWhileLoading;
+    private final Integer studyId;
     /** Files to be loaded. */
     private final List<Integer> fileIds;
 
     // Variables that must be aware of concurrent modification
     private final MongoDBVariantWriteResult result;
 
-    public MongoDBVariantMergeLoader(MongoDBCollection collection, List<Integer> fileIds, boolean resume, ProgressLogger progressLogger) {
+    public MongoDBVariantMergeLoader(MongoDBCollection variantsCollection, MongoDBCollection stageCollection,
+                                     Integer studyId, List<Integer> fileIds, boolean resume, boolean cleanWhileLoading,
+                                     ProgressLogger progressLogger) {
         this.progressLogger = progressLogger;
-        this.collection = collection;
+        this.variantsCollection = variantsCollection;
+        this.stageCollection = stageCollection;
         this.resume = resume;
+        this.studyId = studyId;
         this.fileIds = fileIds;
         this.result = new MongoDBVariantWriteResult();
+        this.cleanWhileLoading = cleanWhileLoading;
     }
 
     @Override
@@ -76,38 +86,66 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
      * @return           MongoDBVariantWriteResult
      */
     protected MongoDBVariantWriteResult executeMongoDBOperations(MongoDBOperations mongoDBOps) {
-        long newVariantsTime = -System.nanoTime();
-
-        newVariantsTime += System.nanoTime();
-        long existingVariants = -System.nanoTime();
+        long newVariantsTime = 0; // Impossible to know how much time spend in insert or update in operation "UPSERT"
+        StopWatch existingVariants = StopWatch.createStarted();
         long newVariants = 0;
         if (!mongoDBOps.getNewStudy().getQueries().isEmpty()) {
             newVariants = executeMongoDBOperationsNewStudy(mongoDBOps, true);
         }
-        existingVariants += System.nanoTime();
-        long fillGapsVariants = -System.nanoTime();
+        existingVariants.stop();
+        StopWatch fillGapsVariants = StopWatch.createStarted();
         if (!mongoDBOps.getExistingStudy().getQueries().isEmpty()) {
-            QueryResult<BulkWriteResult> update = collection.update(mongoDBOps.getExistingStudy().getQueries(),
+            QueryResult<BulkWriteResult> update = variantsCollection.update(mongoDBOps.getExistingStudy().getQueries(),
                     mongoDBOps.getExistingStudy().getUpdates(), QUERY_OPTIONS);
             if (update.first().getMatchedCount() != mongoDBOps.getExistingStudy().getQueries().size()) {
                 onUpdateError("fill gaps", update, mongoDBOps.getExistingStudy().getQueries(), mongoDBOps.getExistingStudy().getIds());
             }
         }
-        fillGapsVariants += System.nanoTime();
+        fillGapsVariants.stop();
+
+        if (cleanWhileLoading) {
+            cleanStage(mongoDBOps);
+        }
 
         long updatesNewStudyExistingVariant = mongoDBOps.getNewStudy().getUpdates().size() - newVariants;
         long updatesWithDataExistingStudy = mongoDBOps.getExistingStudy().getUpdates().size() - mongoDBOps.getMissingVariants();
         MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult(newVariants,
                 updatesNewStudyExistingVariant + updatesWithDataExistingStudy, mongoDBOps.getMissingVariants(),
-                mongoDBOps.getOverlappedVariants(), mongoDBOps.getSkipped(), mongoDBOps.getNonInserted(), newVariantsTime, existingVariants,
-                fillGapsVariants);
+                mongoDBOps.getOverlappedVariants(), mongoDBOps.getSkipped(), mongoDBOps.getNonInserted(), newVariantsTime,
+                existingVariants.getNanoTime(), fillGapsVariants.getNanoTime());
         synchronized (result) {
             result.merge(writeResult);
         }
 
-        int processedVariants = mongoDBOps.getNewStudy().getQueries().size() + mongoDBOps.getExistingStudy().getQueries().size();
+        long processedVariants = mongoDBOps.getNewStudy().getQueries().size()
+                + mongoDBOps.getExistingStudy().getQueries().size()
+                + mongoDBOps.getMissingVariantsNoFillGaps();
         logProgress(processedVariants);
         return writeResult;
+    }
+
+    private long cleanStage(MongoDBOperations mongoDBOps) {
+        long modifiedCount = 0;
+        if (!mongoDBOps.getDocumentsToCleanStudies().isEmpty()) {
+            logger.debug("Clean study {} from stage where all the files {} where duplicated : {}", studyId, fileIds,
+                    mongoDBOps.getDocumentsToCleanStudies());
+            modifiedCount += stageCollection.update(
+                    in("_id", mongoDBOps.getDocumentsToCleanStudies()), unset(String.valueOf(studyId)),
+                    new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
+        }
+        if (!mongoDBOps.getDocumentsToCleanFiles().isEmpty()) {
+            logger.debug("Cleaning files {} from stage collection", fileIds);
+            List<Bson> fileUpdates = new LinkedList<>();
+            for (Integer fileId : fileIds) {
+//                fileUpdates.add(unset(studyId + "." + fileId));
+                fileUpdates.add(set(studyId + "." + fileId, null));
+            }
+            fileUpdates.add(set(studyId + "." + NEW_STUDY_FIELD, false));
+            modifiedCount += stageCollection.update(in("_id", mongoDBOps.getDocumentsToCleanFiles()), combine(fileUpdates),
+                    new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
+        }
+
+        return modifiedCount;
     }
 
     private int executeMongoDBOperationsNewStudy(MongoDBOperations mongoDBOps, boolean retry) {
@@ -119,7 +157,7 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
                 try {
                     if (!newStudy.getVariants().isEmpty()) {
                         newVariants += newStudy.getVariants().size();
-                        collection.insert(newStudy.getVariants(), QUERY_OPTIONS);
+                        variantsCollection.insert(newStudy.getVariants(), QUERY_OPTIONS);
                     }
                 } catch (MongoBulkWriteException e) {
                     for (BulkWriteError writeError : e.getWriteErrors()) {
@@ -138,13 +176,13 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
                     queriesExisting.add(and(bson, nin(STUDIES_FIELD + "." + FILES_FIELD + "." + FILEID_FIELD, fileIds)));
                 }
                 // Update those existing variants
-                QueryResult<BulkWriteResult> update = collection.update(queriesExisting, newStudy.getUpdates(), QUERY_OPTIONS);
+                QueryResult<BulkWriteResult> update = variantsCollection.update(queriesExisting, newStudy.getUpdates(), QUERY_OPTIONS);
                 //                if (update.first().getModifiedCount() != mongoDBOps.queriesExisting.size()) {
                 //                    // FIXME: Don't know if there is some error inserting. Query already existing?
                 //                    onUpdateError("existing variants", update, mongoDBOps.queriesExisting, mongoDBOps.queriesExistingId);
                 //                }
             } else {
-                QueryResult<BulkWriteResult> update = collection.update(newStudy.getQueries(), newStudy.getUpdates(), UPSERT);
+                QueryResult<BulkWriteResult> update = variantsCollection.update(newStudy.getQueries(), newStudy.getUpdates(), UPSERT);
                 if (update.first().getModifiedCount() + update.first().getUpserts().size() != newStudy.getQueries().size()) {
                     onUpdateError("existing variants", update, newStudy.getQueries(), newStudy.getIds());
                 }
@@ -203,7 +241,7 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         logger.error("(Updated " + updateName + " variants = " + queries.size() + " ) != "
                 + "(ModifiedCount = " + update.first().getModifiedCount() + "). MatchedCount:" + update.first().getMatchedCount());
         logger.info("QueryIDs: {}", queryIds);
-        List<QueryResult<Document>> queryResults = collection.find(queries, null);
+        List<QueryResult<Document>> queryResults = variantsCollection.find(queries, null);
         logger.info("Results: ", queryResults.size());
 
         for (QueryResult<Document> r : queryResults) {
@@ -223,7 +261,7 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
     }
 
 
-    protected void logProgress(int processedVariants) {
+    protected void logProgress(long processedVariants) {
         if (progressLogger != null) {
             progressLogger.increment(processedVariants);
         }

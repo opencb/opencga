@@ -124,14 +124,27 @@ public class VariantDBAdaptorUtils {
     /**
      * Determines if the given value is a known clinical accession or not.
      *
-     * ClinVar accession starts with RCV
-     * COSMIC mutationId starts with RCV
+     * ClinVar accession starts with 'RCV'
+     * COSMIC mutationId starts with 'COSM'
      *
      * @param value Value to check
      * @return      If is a known accession
      */
     public static boolean isClinicalAccession(String value) {
         return value.startsWith("RCV") || value.startsWith("COSM");
+    }
+
+    /**
+     * Determines if the given value is a known gene accession or not.
+     *
+     * Human Phenotype Ontology (HPO) terms starts with 'HP:'
+     * Online Mendelian Inheritance in Man (OMIM) terms starts with 'OMIM:'
+     *
+     * @param value Value to check
+     * @return      If is a known accession
+     */
+    public static boolean isGeneAccession(String value) {
+        return value.startsWith("HP:") || value.startsWith("OMIM:");
     }
 
     /**
@@ -297,6 +310,59 @@ public class VariantDBAdaptorUtils {
             }
         }
         return studyConfiguration;
+    }
+
+    public List<Integer> getFileIds(List files, boolean skipNegated, StudyConfiguration defaultStudyConfiguration) {
+        List<Integer> fileIds;
+        if (files == null || files.isEmpty()) {
+            return Collections.emptyList();
+        }
+        fileIds = new ArrayList<>(files.size());
+        for (Object fileObj : files) {
+            Integer fileId = getFileId(fileObj, skipNegated, defaultStudyConfiguration);
+            if (fileId != null) {
+                fileIds.add(fileId);
+            }
+        }
+        return fileIds;
+    }
+
+    public Integer getFileId(Object fileObj, boolean skipNegated, StudyConfiguration defaultStudyConfiguration) {
+        if (fileObj == null) {
+            return null;
+        } else if (fileObj instanceof Number) {
+            return ((Number) fileObj).intValue();
+        } else {
+            String file = String.valueOf(fileObj);
+            if (isNegated(file)) { //Skip negated studies
+                if (skipNegated) {
+                    return null;
+                } else {
+                    file = file.substring(1);
+                }
+            }
+            if (file.contains(":")) {
+                String[] studyFile = file.split(":");
+                QueryResult<StudyConfiguration> queryResult = getStudyConfigurationManager().getStudyConfiguration(studyFile[0], null);
+                if (queryResult.getResult().isEmpty()) {
+                    throw VariantQueryException.studyNotFound(studyFile[0]);
+                }
+                return queryResult.first().getFileIds().get(studyFile[1]);
+            } else {
+                try {
+                    return Integer.parseInt(file);
+                } catch (NumberFormatException e) {
+                    if (defaultStudyConfiguration != null) {
+                        return defaultStudyConfiguration.getFileIds().get(file);
+                    } else {
+                        List<String> studyNames = getStudyConfigurationManager().getStudyNames(null);
+                        throw new VariantQueryException("Unknown file \"" + file + "\". "
+                                + "Please, specify the study belonging."
+                                + (studyNames == null ? "" : " Available studies: " + studyNames));
+                    }
+                }
+            }
+        }
     }
 
     public int getSampleId(Object sampleObj, StudyConfiguration defaultStudyConfiguration) {
@@ -565,7 +631,9 @@ public class VariantDBAdaptorUtils {
      */
     public static List<String> splitValue(String value, QueryOperation operation) {
         List<String> list;
-        if (operation == null) {
+        if (value == null || value.isEmpty()) {
+            list = Collections.emptyList();
+        } else if (operation == null) {
             list = Collections.singletonList(value);
         } else if (operation == QueryOperation.AND) {
             list = Arrays.asList(value.split(QueryOperation.AND.separator()));
