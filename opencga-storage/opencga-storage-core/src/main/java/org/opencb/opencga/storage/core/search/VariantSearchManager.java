@@ -44,7 +44,7 @@ public class VariantSearchManager {
     private HttpSolrClient solrClient;
     private static VariantSearchToVariantConverter variantSearchToVariantConverter;
 
-    private static int DEFAULT_INSERT_SIZE = 10000;
+    private static final int DEFAULT_INSERT_SIZE = 10000;
 
     public VariantSearchManager(String host, String collection) {
         this.hostName = host;

@@ -33,6 +33,7 @@ import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.search.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
@@ -60,6 +61,8 @@ import java.util.Map;
  * Created by imedina on 13/08/14.
  */
 public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdaptor> {
+
+    protected VariantSearchManager variantSearchManager;
 
     public enum Options {
         INCLUDE_STATS("include.stats", true),              //Include existing stats on the original file.
