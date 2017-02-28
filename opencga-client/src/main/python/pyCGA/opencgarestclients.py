@@ -20,7 +20,6 @@ class _ParentRestClient(object):
         if isinstance(query_id, list):
             query_id = ','.join(query_id)
 
-
         response = execute(host=self._configuration.host,
                            version=self._configuration.version,
                            sid=self.session_id,
@@ -767,7 +766,7 @@ class GA4GH(_ParentRestClient):
 
 
 class OpenCGAClient(object):
-    
+
     def __init__(self, configuration, user=None, pwd=None, session_id=None):
         self.configuration = ConfigClient(configuration)
         if user and pwd:
@@ -789,6 +788,20 @@ class OpenCGAClient(object):
         self.analysis_alignment = AnalysisAlignment(self.configuration, self.session_id)
         self.analysis_variant = AnalysisVariant(self.configuration, self.session_id)
         self.ga4gh = GA4GH(self.configuration, self.session_id)
+
+    @classmethod
+    def basic(cls, service_url, user, pwd):
+        """
+        Creates an instance of OpenCGAClient for v1 API
+        :param service_url: service URL, including host, port, and instance. Example: http://localhost:8080/opencga
+            The http:// prefix is optional
+        :param user: username for logging in
+        :param pwd: password for logging in
+        :return: an instance of OpenCGAClient
+        """
+        return cls(configuration={'version': 'v1',
+                                  'rest': {'hosts': [service_url]}},
+                   user=user, pwd=pwd)
 
     def _login(self, user, pwd):
         session_id = self.users.login(user=user, pwd=pwd).get().sessionId
