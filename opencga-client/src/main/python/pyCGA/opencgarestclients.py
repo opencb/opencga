@@ -736,15 +736,31 @@ class AnalysisVariant(_ParentRestClient):
         return self._get('variant', subcategory='index', file=file, study=study, **options)
 
     def query(self, pag_size, data, skip=0, **options):
+        max =None
+        if 'limit' in options:
+            max = options['limit']
+            del options['limit']
+
         skip = skip
         limit = pag_size
         next_page = True
+        count = 0
         while next_page:
+            if max is not None:
+                if count + limit >= max:
+                    limit -= (count + limit) - max
+                    next_page = False
             page_result = self._post('variant', subcategory='query', data=data, skipCount=True, skip=skip,
                                      limit=limit, **options)
             skip += pag_size
-            if len(page_result.get()) < pag_size:
-                next_page = False
+            num_res = len(page_result.get())
+            count += num_res
+            if max is not None:
+                if num_res == 0:
+                    break
+            else:
+                if len(page_result.get()) < pag_size:
+                    next_page = False
             if page_result:
                 yield page_result
 

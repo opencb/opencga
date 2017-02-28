@@ -33,7 +33,7 @@ def catalog_login(func):
 
     def create_session_file(configuration, opencga_dir):
         fdw = open(os.path.join(opencga_dir, 'session_python.json'), 'w')
-        user = input("User: ")
+        user = raw_input("User: ")
         pwd = getpass.getpass()
         o = OpenCGAClient(configuration=configuration, user=user, pwd=pwd)
         session = {'userId': user, 'sessionId': o.session_id}
@@ -46,10 +46,16 @@ def catalog_login(func):
 
         fdw = open(os.path.join(opencga_dir, 'configuration.json'), 'w')
         if not configuration:
-            host = input("Please provide OpenCGA Host name: ")
-            configuration = {'version': 'v1', 'rest': {'hosts': [host]}}
-        json.dump(configuration, fdw)
+            host = raw_input("Please provide OpenCGA Host name: ")
+            conf_json = {'version': 'v1', 'rest': {'hosts': [host]}}
+            json.dump(conf_json, fdw)
+        if isinstance(configuration, dict):
+            conf_json = configuration
+        else:
+            conf_json = json.load(open(configuration, 'r'))
+        json.dump(conf_json, fdw)
+
         fdw.close()
-        return configuration
+        return conf_json
 
     return log_method
