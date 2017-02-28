@@ -26,6 +26,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -176,34 +177,19 @@ public class VariantSearchManager {
     public void load(Path path) throws IOException, SolrServerException, StorageEngineException {
         // TODO: can we use VariantReaderUtils as implemented in the function load00 below ?
         // TODO: VarriantReaderUtils supports JSON, AVRO and VCF file formats.
-        if (path.toString().toLowerCase().endsWith("json")) {
+
+        // Check path is not null and exists.
+        FileUtils.checkFile(path);
+
+        File file = path.toFile();
+        if (file.getName().endsWith("json") || file.getName().endsWith("json.gz")) {
             loadJson(path);
-        } else if (path.toString().toLowerCase().endsWith("avro")) {
+        } else if (file.getName().endsWith("avro") || file.getName().endsWith("avro.gz")) {
             loadAvro(path);
         } else {
             throw new IOException("File format " + path + " not supported. Please, use Avro or JSON file formats.");
         }
     }
-
-    // TODO: can we use VariantReaderUtils? It supports JSON, AVRO and VCF file formats.
-    // TODO: test !
-//    private void load00(Path path) throws IOException, SolrServerException, StorageEngineException {
-//        // reader
-//        VariantSource source = null;
-//        VariantReader reader = VariantReaderUtils.getVariantReader(path, source);
-//
-//        List<Variant> variants;
-//
-//        // TODO: get the buffer size from configuration file
-//        int bufferSize = 10000;
-//
-//        do {
-//            variants = reader.read(bufferSize);
-//            insert(variants);
-//        } while (variants.size() == bufferSize);
-//
-//        reader.close();
-//    }
 
     /**
      * Load a Solr core/collection from a variant DB iterator.
@@ -225,7 +211,9 @@ public class VariantSearchManager {
                 }
             }
             // Insert the remaining variants
-            insert(variantList);
+            if (variantList.size() > 0) {
+                insert(variantList);
+            }
         }
     }
 
@@ -344,25 +332,26 @@ public class VariantSearchManager {
      * @throws SolrServerException
      */
     private void loadJson(Path path) throws IOException, SolrServerException {
-        // reader
-        BufferedReader bufferedReader;
-        bufferedReader = FileUtils.newBufferedReader(path);
-        ObjectReader objectReader = new ObjectMapper().readerFor(Variant.class);
+        // This opens json and json.gz files automatically
+        BufferedReader bufferedReader = FileUtils.newBufferedReader(path);
 
         // TODO: get the buffer size from configuration file
-        int bufferSize = 10000;
-        List<Variant> variants = new ArrayList<>(bufferSize);
+        List<Variant> variants = new ArrayList<>(DEFAULT_INSERT_SIZE);
 
-        String line;
         int count = 0;
+        String line;
+        ObjectReader objectReader = new ObjectMapper().readerFor(Variant.class);
         while ((line = bufferedReader.readLine()) != null) {
             Variant variant = objectReader.readValue(line);
             variants.add(variant);
-            if (++count % bufferSize == 0) {
+            count++;
+            if (count % DEFAULT_INSERT_SIZE == 0) {
                 insert(variants);
                 variants.clear();
             }
         }
+
+        // Insert the remaining variants
         if (variants.size() > 0) {
             insert(variants);
         }
