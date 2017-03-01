@@ -1368,28 +1368,62 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
                     String[] genotypesArray = genotypes.split(OR);
                     QueryBuilder genotypesBuilder = QueryBuilder.start();
+
+                    List<String> defaultGenotypes;
+                    if (defaultStudyConfiguration != null) {
+                        defaultGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
+                    } else {
+                        defaultGenotypes = Arrays.asList("0/0", "0|0");
+                    }
                     for (String genotype : genotypesArray) {
-                        if ("0/0".equals(genotype) || "0|0".equals(genotype)) {
-                            QueryBuilder andBuilder = QueryBuilder.start();
+                        boolean negated = isNegated(genotype);
+                        if (negated) {
+                            genotype = genotype.substring(1);
+                        }
+                        if (defaultGenotypes.contains(genotype)) {
                             List<String> otherGenotypes = Arrays.asList(
+                                    "0/0", "0|0",
                                     "0/1", "1/0", "1/1", "-1/-1",
                                     "0|1", "1|0", "1|1", "-1|-1",
                                     "0|2", "2|0", "2|1", "1|2", "2|2",
                                     "0/2", "2/0", "2/1", "1/2", "2/2",
                                     DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
-                            for (String otherGenotype : otherGenotypes) {
-                                andBuilder.and(new BasicDBObject(studyQueryPrefix
-                                        + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD
-                                        + "." + otherGenotype,
-                                        new Document("$not", new Document("$elemMatch", new Document("$eq", sampleId)))));
+                            if (negated) {
+                                for (String otherGenotype : otherGenotypes) {
+                                    if (defaultGenotypes.contains(otherGenotype)) {
+                                        continue;
+                                    }
+                                    String key = studyQueryPrefix
+                                            + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD
+                                            + '.' + otherGenotype;
+                                    genotypesBuilder.or(new BasicDBObject(key, sampleId));
+                                }
+                            } else {
+                                QueryBuilder andBuilder = QueryBuilder.start();
+                                for (String otherGenotype : otherGenotypes) {
+                                    if (defaultGenotypes.contains(otherGenotype)) {
+                                        continue;
+                                    }
+                                    String key = studyQueryPrefix
+                                            + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD
+                                            + '.' + otherGenotype;
+                                    andBuilder.and(new BasicDBObject(key,
+                                            new Document("$ne", sampleId)));
+                                }
+                                genotypesBuilder.or(andBuilder.get());
                             }
-                            genotypesBuilder.or(andBuilder.get());
                         } else {
                             String s = studyQueryPrefix
                                     + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD
-                                    + "." + DocumentToSamplesConverter.genotypeToStorageType(genotype);
-                            //or [ {"samp.0|0" : { $elemMatch : { $eq : <sampleId> } } } ]
-                            genotypesBuilder.or(new BasicDBObject(s, new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sampleId))));
+                                    + '.' + DocumentToSamplesConverter.genotypeToStorageType(genotype);
+                            if (negated) {
+                                //and [ {"gt.0|1" : { $ne : <sampleId> } } ]
+                                genotypesBuilder.and(new BasicDBObject(s, new BasicDBObject("$ne", sampleId)));
+
+                            } else {
+                                //or [ {"gt.0|1" : <sampleId> } ]
+                                genotypesBuilder.or(new BasicDBObject(s, sampleId));
+                            }
                         }
                     }
                     studyBuilder.and(genotypesBuilder.get());

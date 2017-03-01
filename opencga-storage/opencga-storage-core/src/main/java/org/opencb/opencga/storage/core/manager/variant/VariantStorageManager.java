@@ -42,8 +42,11 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.StorageManager;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.manager.variant.operations.*;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 
 import java.io.IOException;
@@ -57,8 +60,11 @@ public class VariantStorageManager extends StorageManager {
     public static final int LIMIT_DEFAULT = 1000;
     public static final int LIMIT_MAX = 5000;
 
+    private final VariantCatalogQueryUtils catalogUtils;
+
     public VariantStorageManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
         super(catalogManager, storageEngineFactory);
+        catalogUtils = new VariantCatalogQueryUtils(catalogManager);
     }
 
     public void clearCache(String studyId, String type, String sessionId) throws CatalogException {
@@ -456,6 +462,9 @@ public class VariantStorageManager extends StorageManager {
             if (queryOptions.containsKey(queryParams.key())) {
                 query.put(queryParams.key(), queryOptions.get(queryParams.key()));
             }
+        }
+        if (queryOptions.containsKey(VariantCatalogQueryUtils.SAMPLE_ANNOTATION)) {
+            query.put(VariantCatalogQueryUtils.SAMPLE_ANNOTATION, queryOptions.get(VariantCatalogQueryUtils.SAMPLE_ANNOTATION));
         }
 
         return query;

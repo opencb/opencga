@@ -12,6 +12,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.core.common.ProgressLogger;
+import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -267,6 +268,11 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         }
     }
 
+    @Override
+    public boolean post() {
+        VariantMongoDBAdaptor.createIndexes(new QueryOptions(), variantsCollection);
+        return true;
+    }
 //    protected void onInsertError(MongoDBOperations mongoDBOps, BulkWriteResult writeResult) {
 //        logger.error("(Inserts = " + mongoDBOps.inserts.size() + ") "
 //                + "!= (InsertedCount = " + writeResult.getInsertedCount() + ")");

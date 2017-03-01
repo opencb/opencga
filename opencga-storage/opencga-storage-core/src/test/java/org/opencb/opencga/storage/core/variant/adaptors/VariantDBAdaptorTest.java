@@ -1391,6 +1391,40 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
+    public void testGetAllVariants_negatedGenotypes() {
+        Query query;
+        Integer na19600 = studyConfiguration.getSampleIds().get("NA19600");
+        Integer na19685 = studyConfiguration.getSampleIds().get("NA19685");
+
+        //Get all variants with not 1|1 for na19600
+        query = new Query(GENOTYPE.key(), na19600 + ":!1|1");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", not(is("1|1"))))));
+
+        //Get all variants with not 0/0 for na19600
+        query = new Query(GENOTYPE.key(), na19600 + ":!0/0");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", not(is("0/0"))))));
+
+        //Get all variants with not 0/0 or 0|1 for na19600
+        query = new Query(GENOTYPE.key(), na19600 + ":!0/0,!0|1");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", allOf(not(is("0/0")), not(is("0|1")))))));
+
+        query = new Query(GENOTYPE.key(), na19600 + ":!0/0,0|1");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", is("0|1")))));
+
+        //Get all variants with 1|1 for na19600 and 0|0 or 1|0 for na19685
+        query = new Query(GENOTYPE.key(), na19600 + ":1|1" + ';' + na19685 + ":!0|0,!1|0");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, allOf(
+                withSampleData("NA19600", "GT", is("1|1")),
+                withSampleData("NA19685", "GT", allOf(not(is("0/0")), not(is("1|0"))))))));
+
+    }
+
+    @Test
     public void testGetAllVariants_genotypes_wrong_values() {
         Query query = new Query(GENOTYPE.key(), "WRONG_SAMPLE:1|1");
         thrown.expect(VariantQueryException.class);

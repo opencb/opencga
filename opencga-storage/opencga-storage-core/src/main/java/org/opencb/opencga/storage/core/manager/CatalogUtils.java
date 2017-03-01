@@ -22,7 +22,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorU
  */
 public class CatalogUtils {
 
-    private final CatalogManager catalogManager;
+    protected final CatalogManager catalogManager;
 
     public CatalogUtils(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
@@ -34,53 +34,19 @@ public class CatalogUtils {
     public static final Pattern ANNOTATION_PATTERN = Pattern.compile("^([a-zA-Z\\\\.]+)([\\^=<>~!$]+.*)$");
 
     /**
-     * Transforms a high level Query to a query fully understandable by storage.
-     * @param query     High level query. Will be modified by the method.
-     * @param sessionId User's session id
-     * @return          Modified input query (same instance)
-     * @throws CatalogException if there is any catalog error
-     */
-    public Query parseQuery(Query query, String sessionId) throws CatalogException {
-        if (query == null) {
-            // Nothing to do!
-            return null;
-        }
-        List<Long> studies = getStudies(query, VariantQueryParams.STUDIES, sessionId);
-        String defaultStudyStr;
-        if (studies.size() == 1) {
-            defaultStudyStr = String.valueOf(studies.get(0));
-        } else {
-            defaultStudyStr = null;
-        }
-
-        transformFilter(query, VariantQueryParams.STUDIES, value -> catalogManager.getStudyId(value, sessionId));
-        transformFilter(query, VariantQueryParams.RETURNED_STUDIES, value -> catalogManager.getStudyId(value, sessionId));
-        transformFilter(query, VariantQueryParams.COHORTS, value ->
-                catalogManager.getCohortManager().getId(value, defaultStudyStr, sessionId).getResourceId());
-        transformFilter(query, VariantQueryParams.FILES, value ->
-                catalogManager.getFileId(value, defaultStudyStr, sessionId));
-        transformFilter(query, VariantQueryParams.RETURNED_FILES, value ->
-                catalogManager.getFileId(value, defaultStudyStr, sessionId));
-
-        // TODO: Parse sample filter and add genotype filter
-
-        return query;
-    }
-
-    /**
      * Parse a generic string with comma separated key=values and obtain a query understandable by catalog.
      *
-     * @param myString String of the kind age>20;ontologies=hpo:123,hpo:456;name=smith
+     * @param value String of the kind age>20;ontologies=hpo:123,hpo:456;name=smith
      * @param getParam Get param function that will return null if the key string is not one of the accepted keys in catalog. For those
      *                 cases, they will be treated as annotations.
      * @return A query object.
      */
-    protected static Query parseSampleAnnotationQuery(String myString, Function<String, QueryParam> getParam) {
+    protected static Query parseSampleAnnotationQuery(String value, Function<String, QueryParam> getParam) {
 
         Query query = new Query();
 
         List<String> annotationList = new ArrayList<>();
-        List<String> params = Arrays.asList(myString.replaceAll("\\s+", "").split(";"));
+        List<String> params = Arrays.asList(value.replaceAll("\\s+", "").split(";"));
         for (String param : params) {
             Matcher matcher = ANNOTATION_PATTERN.matcher(param);
             String key;
@@ -105,7 +71,7 @@ public class CatalogUtils {
     }
 
     @FunctionalInterface
-    private interface CatalogIdResolver {
+    protected interface CatalogIdResolver {
         Long get(String value) throws CatalogException;
     }
 
@@ -116,7 +82,7 @@ public class CatalogUtils {
      * @param toId      Method to translate from String to numerical ID
      * @throws CatalogException if there is any catalog error
      */
-    private void transformFilter(Query query, VariantQueryParams param, CatalogIdResolver toId) throws CatalogException {
+    protected void transformFilter(Query query, VariantQueryParams param, CatalogIdResolver toId) throws CatalogException {
         if (VariantDBAdaptorUtils.isValidParam(query, param)) {
             String valuesStr = query.getString(param.key());
             VariantDBAdaptorUtils.QueryOperation queryOperation = VariantDBAdaptorUtils.checkOperator(valuesStr);

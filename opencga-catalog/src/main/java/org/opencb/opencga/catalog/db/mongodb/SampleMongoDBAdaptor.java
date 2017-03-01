@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
@@ -438,7 +439,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         } else {
             sampleQueryResult = sampleCollection.find(bson, sampleConverter, qOptions);
         }
-        logger.debug("Sample get: query : {}, dbTime: {}", bson, qOptions == null ? "" : qOptions.toJson(), sampleQueryResult.getDbTime());
+        logger.debug("Sample get: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                qOptions == null ? "" : qOptions.toJson(), sampleQueryResult.getDbTime());
         return endQuery("Get sample", startTime, sampleQueryResult);
     }
 

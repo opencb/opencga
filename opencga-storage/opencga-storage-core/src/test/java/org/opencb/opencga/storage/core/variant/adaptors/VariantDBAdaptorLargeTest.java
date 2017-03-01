@@ -39,9 +39,8 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.everyResult;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.withFileId;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.withStudy;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.withSampleData;
 
 /**
  * Tests that all the VariantDBAdaptor filters and methods work correctly with more than one study loaded.
@@ -276,6 +275,39 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
 
         thrown.expect(IllegalArgumentException.class); //Unspecified study exception
         queryResult = dbAdaptor.get(query, options);
+    }
+
+    @Test
+    public void testGetAllVariants_negatedGenotypes() {
+        Iterator<Map.Entry<String, Integer>> it = studyConfiguration1.getSampleIds().entrySet().iterator();
+        String s1 = it.next().getKey();
+        String s2 = it.next().getKey();
+        String study = studyConfiguration1.getStudyName();
+        Query query = new Query(STUDIES.key(), study).append(UNKNOWN_GENOTYPE.key(), "./.");
+        QueryResult<Variant> allVariants = dbAdaptor.get(new Query(UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions());
+
+        //Get all variants with not 1|1 for s1
+        query.put(GENOTYPE.key(), s1 + ":!1|1");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(study, withSampleData(s1, "GT", not(is("1|1"))))));
+
+        //Get all variants with not 0/0 for s1
+        query.put(GENOTYPE.key(), s1 + ":!0/0");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(study, withSampleData(s1, "GT", not(is("0/0"))))));
+
+        //Get all variants with not 0/0 or 0|1 for s1
+        query.put(GENOTYPE.key(), s1 + ":!0/0,!0|1");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(study, withSampleData(s1, "GT", allOf(not(is("0/0")), not(is("0|1")))))));
+
+        //Get all variants with 1|1 for s1 and 0|0 or 1|0 for s2
+        query.put(GENOTYPE.key(), s1 + ":1|1" + ';' + s2 + ":!0|0,!1|0");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(study, allOf(
+                withSampleData(s1, "GT", is("1|1")),
+                withSampleData(s2, "GT", allOf(not(is("0/0")), not(is("1|0"))))))));
+
     }
 
     @Test
