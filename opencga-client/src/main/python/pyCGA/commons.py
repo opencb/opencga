@@ -60,7 +60,7 @@ class OpenCGAResponseList(list):
             query_ids = []
         else:
             query_ids = query_ids.split(',')
-        # query_ids is not known to be a list of strings
+        # query_ids is now known to be a list of strings
         self.query_ids = query_ids
         response_list = [OpenCGAResponse(response) for response in response_list]
         super(OpenCGAResponseList, self).__init__(response_list)
