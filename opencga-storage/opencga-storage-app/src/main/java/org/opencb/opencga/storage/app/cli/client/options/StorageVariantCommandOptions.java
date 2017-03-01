@@ -103,6 +103,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--annotate"}, description = "Annotate indexed variants after the load step")
         public boolean annotate;
 
+        @Parameter(names = {"--index-search"}, description = "Indexed Solr search database")
+        public boolean indexSearch;
+
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}", arity = 1)
         public VariantAnnotatorFactory.AnnotationSource annotator;
 

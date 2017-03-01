@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.core.variant;
 
-import org.apache.solr.client.solrj.SolrServerException;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
@@ -29,6 +28,7 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -129,20 +129,20 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     }
 
-//    protected static Logger logger;
-
+    @Deprecated
     public VariantStorageEngine() {
         logger = LoggerFactory.getLogger(VariantStorageEngine.class);
     }
 
     public VariantStorageEngine(StorageConfiguration configuration) {
-        super(configuration);
-        logger = LoggerFactory.getLogger(VariantStorageEngine.class);
-
+        this(configuration.getDefaultStorageEngineId(), configuration);
     }
 
     public VariantStorageEngine(String storageEngineId, StorageConfiguration configuration) {
         super(storageEngineId, configuration);
+
+        variantSearchManager = new VariantSearchManager(configuration);
+
         logger = LoggerFactory.getLogger(VariantStorageEngine.class);
     }
 
@@ -412,6 +412,20 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
 
+    public void searchIndex(String database) throws StorageEngineException, IOException, VariantSearchException {
+        searchIndex(database, new Query(), new QueryOptions());
+    }
+
+    public void searchIndex(String database, Query query, QueryOptions queryOptions) throws StorageEngineException, IOException,
+            VariantSearchException {
+        if (configuration.getSearch().getActive() && variantSearchManager.isAlive()) {
+            VariantDBAdaptor dbAdaptor = getDBAdaptor(database);
+            VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
+            variantSearchManager.load(iterator);
+        }
+    }
+
+
     /**
      * Drops a file from the Variant Storage.
      *
@@ -502,16 +516,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public static String buildFilename(String studyName, int fileId) {
         return VariantStoragePipeline.buildFilename(studyName, fileId);
-    }
-
-    public void insertVariantIntoSolr() throws IOException, SolrServerException, StorageEngineException {
-
-        VariantDBAdaptor dbAdaptor = getDBAdaptor();
-        VariantDBIterator variantDBIterator = dbAdaptor.iterator();
-
-        while (variantDBIterator.hasNext()) {
-            variantSearchManager.insert(variantDBIterator.next());
-        }
     }
 
 }

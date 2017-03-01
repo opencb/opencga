@@ -24,7 +24,6 @@ import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFHeader;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
 import org.opencb.biodata.models.variant.Variant;
@@ -42,13 +41,13 @@ import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOp
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.search.VariantSearchManager;
 import org.opencb.opencga.storage.core.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.search.solr.SolrVariantSearchIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
@@ -238,18 +237,26 @@ public class VariantCommandExecutor extends CommandExecutor {
         /** Execute ETL steps **/
         boolean doExtract, doTransform, doLoad;
 
-        if (!indexVariantsCommandOptions.load && !indexVariantsCommandOptions.transform) {
-            doExtract = true;
-            doTransform = true;
-            doLoad = true;
+
+        if (!indexVariantsCommandOptions.indexSearch) {
+            if (!indexVariantsCommandOptions.load && !indexVariantsCommandOptions.transform) {
+                doExtract = true;
+                doTransform = true;
+                doLoad = true;
+            } else {
+                doExtract = indexVariantsCommandOptions.transform;
+                doTransform = indexVariantsCommandOptions.transform;
+                doLoad = indexVariantsCommandOptions.load;
+            }
+
+            variantStorageEngine.index(inputUris, outdirUri, doExtract, doTransform, doLoad);
         } else {
-            doExtract = indexVariantsCommandOptions.transform;
-            doTransform = indexVariantsCommandOptions.transform;
-            doLoad = indexVariantsCommandOptions.load;
+            try {
+                variantStorageEngine.searchIndex(indexVariantsCommandOptions.commonIndexOptions.dbName);
+            } catch (VariantSearchException e) {
+                e.printStackTrace();
+            }
         }
-
-        variantStorageEngine.index(inputUris, outdirUri, doExtract, doTransform, doLoad);
-
     }
 
     private void query() throws Exception {

@@ -20,6 +20,7 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.config.SearchConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.search.solr.ParseSolrQuery;
 import org.opencb.opencga.storage.core.search.solr.SolrVariantSearchIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -58,6 +59,14 @@ public class VariantSearchManager {
     public VariantSearchManager(StorageConfiguration storageConfiguration) {
         this(storageConfiguration.getSearch().getHost(), storageConfiguration.getSearch().getCollection());
         this.searchConfiguration = storageConfiguration.getSearch();
+    }
+
+    public boolean isAlive() {
+        try {
+            return solrClient.ping().getResponse().get("status").equals("OK");
+        } catch (SolrServerException | IOException e) {
+            return false;
+        }
     }
 
     /**
@@ -161,7 +170,7 @@ public class VariantSearchManager {
 //
 //
 //        CollectionAdminRequest.ClusterStatus request = new CollectionAdminRequest.ClusterStatus();
-//        request.setCollectionName(collectionName);
+//        request.setCollectionName(collectionName);`
 //        System.out.println(request.process(solrClient).getCollectionStatus().size());
 //        return (request.process(solrClient).getCollectionStatus().size() == 1);
     }
@@ -171,10 +180,10 @@ public class VariantSearchManager {
      *
      * @param path      Path to the file to load
      * @throws IOException          IOException
-     * @throws SolrServerException  SolrServerException
+     * @throws VariantSearchException  SolrServerException
      * @throws StorageEngineException  SolrServerException
      */
-    public void load(Path path) throws IOException, SolrServerException, StorageEngineException {
+    public void load(Path path) throws IOException, VariantSearchException, StorageEngineException {
         // TODO: can we use VariantReaderUtils as implemented in the function load00 below ?
         // TODO: VarriantReaderUtils supports JSON, AVRO and VCF file formats.
 
@@ -196,9 +205,9 @@ public class VariantSearchManager {
      *
      * @param variantDBIterator      Iterator to retrieve the variants to load
      * @throws IOException          IOException
-     * @throws SolrServerException  SolrServerException
+     * @throws VariantSearchException  VariantSearchException
      */
-    public void load(VariantDBIterator variantDBIterator) throws IOException, SolrServerException {
+    public void load(VariantDBIterator variantDBIterator) throws IOException, VariantSearchException {
         if (variantDBIterator != null) {
             int count = 0;
             List<Variant> variantList = new ArrayList<>(DEFAULT_INSERT_SIZE);
@@ -217,76 +226,46 @@ public class VariantSearchManager {
         }
     }
 
+    public void insert(Variant variant) throws IOException, VariantSearchException {
+
+        VariantSearchModel variantSearchModel = variantSearchToVariantConverter.convertToStorageType(variant);
+
+        if (variantSearchModel != null && variantSearchModel.getId() != null) {
+            UpdateResponse updateResponse = null;
+            try {
+                updateResponse = solrClient.addBean(variantSearchModel);
+                if (0 == updateResponse.getStatus()) {
+                    solrClient.commit();
+                }
+            } catch (SolrServerException e) {
+                throw new VariantSearchException(e.getMessage(), e);
+            }
+        }
+    }
+
     /**
      * Insert a list of variants into solr.
      *
      * @param variants  List of variants to insert
      * @throws IOException          IOException
-     * @throws SolrServerException  SolrServerException
+     * @throws VariantSearchException  VariantSearchException
      */
-    public void insert(List<Variant> variants) throws IOException, SolrServerException {
+    public void insert(List<Variant> variants) throws IOException, VariantSearchException {
         if (variants != null && variants.size() > 0) {
             List<VariantSearchModel> variantSearchModels = variantSearchToVariantConverter.convertListToStorageType(variants);
 
             if (!variantSearchModels.isEmpty()) {
-                UpdateResponse updateResponse = solrClient.addBeans(variantSearchModels);
-                if (0 == updateResponse.getStatus()) {
-                    solrClient.commit();
+                UpdateResponse updateResponse = null;
+                try {
+                    updateResponse = solrClient.addBeans(variantSearchModels);
+                    if (0 == updateResponse.getStatus()) {
+                        solrClient.commit();
+                    }
+                } catch (SolrServerException e) {
+                    throw new VariantSearchException(e.getMessage(), e);
                 }
             }
         }
-    }
-
-    public void insert(Variant variant) throws IOException, SolrServerException {
-
-        VariantSearchModel variantSearchModel = variantSearchToVariantConverter.convertToStorageType(variant);
-
-        if (variantSearchModel != null && variantSearchModel.getId() != null) {
-            UpdateResponse updateResponse = solrClient.addBean(variantSearchModel);
-            if (0 == updateResponse.getStatus()) {
-                solrClient.commit();
-            }
-        }
-    }
-
-    /**
-     * Return a Solr variant iterator to retrieve VariantSearchModel objects from a Solr core/collection
-     * according a given query.
-     *
-     * @param query         Query
-     * @param queryOptions  Query options
-     * @return              Solr VariantSearch iterator
-     */
-    public SolrVariantSearchIterator iterator(Query query, QueryOptions queryOptions) {
-
-        SolrQuery solrQuery = ParseSolrQuery.parse(query, queryOptions);
-        QueryResponse response = null;
-
-        System.out.println("solrQuery.toQueryString = " + solrQuery.toQueryString());
-        try {
-            response = solrClient.query(solrQuery);
-        } catch (SolrServerException | IOException e) {
-            e.printStackTrace();
-        }
-
-        return new SolrVariantSearchIterator(response.getBeans(VariantSearchModel.class).iterator());
-    }
-
-    /**
-     * Return the list of VariantSearchModel objects from a Solr core/collection
-     * according a given query.
-     *
-     * @param query         Query
-     * @param queryOptions  Query options
-     * @return              List of VariantSearchModel objects
-     */
-    public List<VariantSearchModel> query(Query query, QueryOptions queryOptions) {
-        List<VariantSearchModel> results = new ArrayList<>();
-        SolrVariantSearchIterator iterator = iterator(query, queryOptions);
-        while (iterator.hasNext()) {
-            results.add(iterator.next());
-        }
-        return results;
     }
 
     /**
@@ -296,14 +275,56 @@ public class VariantSearchManager {
      * @param query         Query
      * @param queryOptions  Query options
      * @return              List of Variant objects
+     * @throws IOException          IOException
+     * @throws VariantSearchException  VariantSearchException
      */
-    public List<Variant> queryVariant(Query query, QueryOptions queryOptions) {
+    public List<Variant> query(Query query, QueryOptions queryOptions) throws IOException, VariantSearchException {
         List<Variant> results = new ArrayList<>();
         SolrVariantSearchIterator iterator = iterator(query, queryOptions);
         while (iterator.hasNext()) {
             results.add(variantSearchToVariantConverter.convertToDataModelType(iterator.next()));
         }
         return results;
+    }
+
+    /**
+     * Return the list of VariantSearchModel objects from a Solr core/collection
+     * according a given query.
+     *
+     * @param query         Query
+     * @param queryOptions  Query options
+     * @return              List of VariantSearchModel objects
+     * @throws IOException          IOException
+     * @throws VariantSearchException  VariantSearchException
+     */
+    public List<VariantSearchModel> nativeQuery(Query query, QueryOptions queryOptions) throws IOException, VariantSearchException {
+        List<VariantSearchModel> results = new ArrayList<>();
+        SolrVariantSearchIterator iterator = iterator(query, queryOptions);
+        while (iterator.hasNext()) {
+            results.add(iterator.next());
+        }
+        return results;
+    }
+
+    /**
+     * Return a Solr variant iterator to retrieve VariantSearchModel objects from a Solr core/collection
+     * according a given query.
+     *
+     * @param query         Query
+     * @param queryOptions  Query options
+     * @return              Solr VariantSearch iterator
+     * @throws IOException          IOException
+     * @throws VariantSearchException  VariantSearchException
+     */
+    public SolrVariantSearchIterator iterator(Query query, QueryOptions queryOptions) throws VariantSearchException, IOException {
+        try {
+            SolrQuery solrQuery = ParseSolrQuery.parse(query, queryOptions);
+            QueryResponse response = solrClient.query(solrQuery);
+            return new SolrVariantSearchIterator(response.getBeans(VariantSearchModel.class).iterator());
+        } catch (SolrServerException e) {
+            throw new VariantSearchException(e.getMessage(), e);
+        }
+
     }
 
     public VariantSearchFacet getFacet(Query query, QueryOptions queryOptions) {
@@ -329,9 +350,9 @@ public class VariantSearchManager {
      *
      * @param path          Path to the JSON file
      * @throws IOException
-     * @throws SolrServerException
+     * @throws VariantSearchException
      */
-    private void loadJson(Path path) throws IOException, SolrServerException {
+    private void loadJson(Path path) throws IOException, VariantSearchException {
         // This opens json and json.gz files automatically
         BufferedReader bufferedReader = FileUtils.newBufferedReader(path);
 
@@ -360,7 +381,7 @@ public class VariantSearchManager {
         bufferedReader.close();
     }
 
-    private void loadAvro(Path path) throws IOException, SolrServerException, StorageEngineException {
+    private void loadAvro(Path path) throws IOException, VariantSearchException, StorageEngineException {
         // reader
         VariantSource source = null;
         VariantReader reader = VariantReaderUtils.getVariantReader(path, source);

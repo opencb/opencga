@@ -410,8 +410,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         return variantSearchModel;
     }
 
-
-    @Deprecated
     public List<VariantSearchModel> convertListToStorageType(List<Variant> variants) {
         List<VariantSearchModel> variantSearchModelList = new ArrayList<>(variants.size());
         for (Variant variant: variants) {
