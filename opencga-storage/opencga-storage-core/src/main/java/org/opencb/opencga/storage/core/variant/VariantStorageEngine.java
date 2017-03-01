@@ -423,7 +423,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             variantSearchManager = new VariantSearchManager(configuration);
         }
 
-        if (configuration.getSearch().getActive() && variantSearchManager.isAlive()) {
+        if (configuration.getSearch().getActive() && variantSearchManager.isAlive(database)) {
             // first, create the collection it it does not exist
             if (!variantSearchManager.existCollection(database)) {
                 // by default: config=OpenCGAConfSet, shards=1, replicas=1

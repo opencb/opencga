@@ -135,7 +135,7 @@ public class VariantSearchManagerTest extends GenericTest {
             e.printStackTrace();
         }
     }
-
+/*
     @Test
     public void loadVariantFileIntoSolrTest() {
 
@@ -417,6 +417,7 @@ public class VariantSearchManagerTest extends GenericTest {
         }
 
     }
+*/
 
     private String getVariantSolrID(Variant variant) {
         VariantAnnotation variantAnnotation = variant.getAnnotation();

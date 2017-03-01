@@ -275,6 +275,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
 
+        logger.info("******************** Summary => " + options.getBoolean("summary"));
+
         VariantQueryResult<Variant> queryResult;
 
         if (options.getBoolean("cache") && cacheManager.isTypeAllowed("var")) {
@@ -288,7 +290,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         } else {
             if (options.getBoolean("summary", false) && storageConfiguration.getSearch().getActive()
-                    && variantSearchManager.isAlive()) {
+                    && variantSearchManager.isAlive(credentials.getMongoDbName())) {
                 try {
                     queryResult = variantSearchManager.query(credentials.getMongoDbName(), query, options);
                 } catch (IOException | VariantSearchException e) {
@@ -395,7 +397,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return new VariantQueryResult<>("getPhased", ((int) watch.getTime()), 0, 0, null, null, Collections.emptyList(), null);
     }
 
-
     @Override
     public QueryResult<Long> count(Query query) {
         Document mongoQuery = parseQuery(query);
@@ -429,7 +430,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         + "." + DocumentToVariantAnnotationConverter.CT_GENE_NAME_FIELD;
                 break;
         }
-
         Document mongoQuery = parseQuery(query);
         return variantsCollection.distinct(documentPath, mongoQuery);
     }
@@ -447,20 +447,33 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (query == null) {
             query = new Query();
         }
-        Document mongoQuery = parseQuery(query);
-        Document projection = createProjection(query, options);
-        DocumentToVariantConverter converter = getDocumentToVariantConverter(query, options);
-        options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
 
-        // Short unsorted queries with timeout or limit don't need the persistent cursor.
-        if (options.containsKey(QueryOptions.TIMEOUT)
-                || options.containsKey(QueryOptions.LIMIT)
-                || !options.containsKey(QueryOptions.SORT)) {
-            FindIterable<Document> dbCursor = variantsCollection.nativeQuery().find(mongoQuery, projection, options);
-            return new VariantMongoDBIterator(dbCursor, converter);
+        if (options.getBoolean("summary", false) && storageConfiguration.getSearch().getActive()
+                && variantSearchManager.isAlive(credentials.getMongoDbName())) {
+            // Solr iterator
+            try {
+                return variantSearchManager.iterator(credentials.getMongoDbName(), query, options);
+            } catch (VariantSearchException | IOException e) {
+                e.printStackTrace();
+            }
+            //throw new UnsupportedOperationException("Summary option (i.e., Solr search) not implemented yet!!");
         } else {
-            return VariantMongoDBIterator.persistentIterator(variantsCollection, mongoQuery, projection, options, converter);
+            Document mongoQuery = parseQuery(query);
+            Document projection = createProjection(query, options);
+            DocumentToVariantConverter converter = getDocumentToVariantConverter(query, options);
+            options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
+
+            // Short unsorted queries with timeout or limit don't need the persistent cursor.
+            if (options.containsKey(QueryOptions.TIMEOUT)
+                    || options.containsKey(QueryOptions.LIMIT)
+                    || !options.containsKey(QueryOptions.SORT)) {
+                FindIterable<Document> dbCursor = variantsCollection.nativeQuery().find(mongoQuery, projection, options);
+                return new VariantMongoDBIterator(dbCursor, converter);
+            } else {
+                return VariantMongoDBIterator.persistentIterator(variantsCollection, mongoQuery, projection, options, converter);
+            }
         }
+        return null;
     }
 
     @Override
@@ -476,7 +489,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             action.accept(variantDBIterator.next());
         }
     }
-
 
     @Override
     public QueryResult getFrequency(Query query, Region region, int regionIntervalSize) {
@@ -2383,24 +2395,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return builder;
     }
 
-    /**
-     * Parses the string to integer number.
-     * <p>
-     * Returns null if the string was not an integer.
-     *
-     * @param study
-     * @return
-     */
-    private Integer getInteger(String study) {
-        Integer integer;
-        try {
-            integer = Integer.parseInt(study);
-        } catch (NumberFormatException ignored) {
-            integer = null;
-        }
-        return integer;
-    }
-
     private QueryBuilder getRegionFilter(Region region, QueryBuilder builder) {
         List<String> chunkIds = getChunkIds(region);
         builder.and(DocumentToVariantConverter.AT_FIELD + '.' + DocumentToVariantConverter.CHUNK_IDS_FIELD).in(chunkIds);
@@ -2738,7 +2732,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         loadedSampleIds.removeAll(studyConfiguration.getSamplesInFiles().get(fileId));
         return loadedSampleIds;
     }
-
 
     public VariantMongoDBAdaptor setVariantSearchManager(VariantSearchManager variantSearchManager) {
         this.variantSearchManager = variantSearchManager;

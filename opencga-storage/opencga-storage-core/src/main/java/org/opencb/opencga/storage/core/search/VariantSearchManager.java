@@ -23,6 +23,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.search.solr.ParseSolrQuery;
+import org.opencb.opencga.storage.core.search.solr.SolrVariantIterator;
 import org.opencb.opencga.storage.core.search.solr.SolrVariantSearchIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -89,8 +90,14 @@ public class VariantSearchManager {
 //        logger = LoggerFactory.getLogger(VariantSearchManager.class);
 //    }
 
-    private void init(String collection) {
+    private void init(String collection) throws VariantSearchException {
         if (this.solrClient == null || StringUtils.isEmpty(this.collection) || !this.collection.equals(collection)) {
+
+            // check if collection exist
+            if (!existCollection(collection)) {
+                createCollection(collection);
+            }
+
             this.solrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost() + collection).build();
             this.solrClient.setRequestWriter(new BinaryRequestWriter());
 
@@ -98,10 +105,13 @@ public class VariantSearchManager {
         }
     }
 
-    public boolean isAlive() {
+    public boolean isAlive(String collection) {
         try {
+            // init collection
+            init(collection);
+
             return solrClient.ping().getResponse().get("status").equals("OK");
-        } catch (SolrServerException | IOException e) {
+        } catch (VariantSearchException | SolrServerException | IOException e) {
             return false;
         }
     }
@@ -132,12 +142,11 @@ public class VariantSearchManager {
      *
      * @param coreName          Core name
      * @return                  True or false
-     * @throws Exception        Exception
      */
-    public boolean existCore(String coreName) throws Exception {
+    public boolean existCore(String coreName) {
         HttpSolrClient solrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost()).build();
-        CoreStatus status = CoreAdminRequest.getCoreStatus(coreName, solrClient);
         try {
+            CoreStatus status = CoreAdminRequest.getCoreStatus(coreName, solrClient);
             // if the status.response is null, catch the exception
             status.getInstanceDirectory();
         } catch (Exception e) {
@@ -186,25 +195,25 @@ public class VariantSearchManager {
      *
      * @param collectionName             Collection name
      * @return                           True or false
-     * @throws VariantSearchException    Exception
      */
-    public boolean existCollection(String collectionName) throws VariantSearchException {
+    public boolean existCollection(String collectionName) {
         HttpSolrClient solrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost()).build();
 
         try {
             List<String> collections = CollectionAdminRequest.listCollections(solrClient);
-            for (String collection : collections) {
-                System.out.println(collection);
-            }
+//            for (String collection : collections) {
+//                System.out.println(collection);
+//            }
             for (String collection : collections) {
                 if (collection.equals(collectionName)) {
                     return true;
                 }
             }
-            return false;
         } catch (Exception e) {
-            throw new VariantSearchException(e.getMessage(), e);
+            return false;
         }
+
+        return false;
 
 
 //        .getCoreStatus(coreName, solrClient);
@@ -302,10 +311,14 @@ public class VariantSearchManager {
             throws IOException, VariantSearchException {
         // we don't initialize here the collection, the iterator does
         List<Variant> results = new ArrayList<>();
-        SolrVariantSearchIterator iterator = iterator(collection, query, queryOptions);
+        SolrVariantIterator iterator = iterator(collection, query, queryOptions);
         while (iterator.hasNext()) {
-            results.add(variantSearchToVariantConverter.convertToDataModelType(iterator.next()));
+            results.add(iterator.next());
         }
+//        SolrVariantSearchIterator iterator = iterator(collection, query, queryOptions);
+//        while (iterator.hasNext()) {
+//            results.add(variantSearchToVariantConverter.convertToDataModelType(iterator.next()));
+//        }
         return new VariantQueryResult<>("", 0, results.size(), results.size(), "Data from Solr", "", results, null);
     }
 
@@ -324,11 +337,37 @@ public class VariantSearchManager {
             VariantSearchException {
         // we don't initialize here the collection, the iterator does
         List<VariantSearchModel> results = new ArrayList<>();
-        SolrVariantSearchIterator iterator = iterator(collection, query, queryOptions);
+        SolrVariantSearchIterator iterator = nativeIterator(collection, query, queryOptions);
         while (iterator.hasNext()) {
             results.add(iterator.next());
         }
         return results;
+    }
+
+    /**
+     * Return a Solr variant iterator to retrieve Variant objects from a Solr core/collection
+     * according a given query.
+     *
+     * @param collection    Collection name
+     * @param query         Query
+     * @param queryOptions  Query options
+     * @return              Solr Variant iterator
+     * @throws IOException          IOException
+     * @throws VariantSearchException  VariantSearchException
+     */
+    public SolrVariantIterator iterator(String collection, Query query, QueryOptions queryOptions) throws VariantSearchException,
+            IOException {
+        // init collection if needed
+        init(collection);
+
+        try {
+            SolrQuery solrQuery = ParseSolrQuery.parse(query, queryOptions);
+            QueryResponse response = solrClient.query(solrQuery);
+            return new SolrVariantIterator((response.getBeans(VariantSearchModel.class).iterator()));
+        } catch (SolrServerException e) {
+            throw new VariantSearchException(e.getMessage(), e);
+        }
+
     }
 
     /**
@@ -342,8 +381,8 @@ public class VariantSearchManager {
      * @throws IOException          IOException
      * @throws VariantSearchException  VariantSearchException
      */
-    public SolrVariantSearchIterator iterator(String collection, Query query, QueryOptions queryOptions) throws VariantSearchException,
-            IOException {
+    public SolrVariantSearchIterator nativeIterator(String collection, Query query, QueryOptions queryOptions)
+            throws VariantSearchException, IOException {
         // init collection if needed
         init(collection);
 

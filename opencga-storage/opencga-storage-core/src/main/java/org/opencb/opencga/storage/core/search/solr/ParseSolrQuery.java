@@ -100,7 +100,7 @@ public class ParseSolrQuery {
             if (orXref.length() > 0) {
                 orXref.append(" OR ");
             }
-            orXref.append("xref:\"").append(xref).append("\"");
+            orXref.append("xrefs:\"").append(xref).append("\"");
         }
 
         // region, to the OR filter list
@@ -234,7 +234,9 @@ public class ParseSolrQuery {
 
 //        solrQuery.setQuery(queryString.toString());
         solrQuery.setQuery("*:*");
-        filterList.forEach(filter -> solrQuery.addFilterQuery(filter));
+        filterList.forEach(filter -> { solrQuery.addFilterQuery(filter);
+                    System.out.println(filter); });
+
         return solrQuery;
     }
 

@@ -7,6 +7,7 @@ import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 
+import java.text.DecimalFormat;
 import java.util.*;
 
 /**
@@ -92,12 +93,12 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             consequenceType.setGeneName(genes[i++]);
 
             // ensembl gene ids
-            while (genes[i].startsWith("ENSG")) {
+            while (i < genes.length && genes[i].startsWith("ENSG")) {
                 consequenceType.setEnsemblGeneId(genes[i++]);
             }
 
             // ensembl transcript ids
-            while (genes[i].startsWith("ENST")) {
+            while (i < genes.length && genes[i].startsWith("ENST")) {
                 consequenceType.setEnsemblTranscriptId(genes[i++]);
             }
 
@@ -130,7 +131,12 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 String[] fields = key.split("__");
                 populationFrequency.setStudy(fields[1]);
                 populationFrequency.setPopulation(fields[2]);
-                populationFrequency.setAltAlleleFreq(variantSearchModel.getPopFreq().get(key));
+                // TODO: find a simple way to convert double to float !!
+                DecimalFormat decimalFormat = new DecimalFormat("#");
+                System.out.println("value = " + variantSearchModel.getPopFreq().get(key));
+                System.out.println("to float = " + Float.parseFloat(decimalFormat.format(variantSearchModel.getPopFreq().get(key))));
+                populationFrequency.setAltAlleleFreq(Float.parseFloat(decimalFormat.format(variantSearchModel.getPopFreq().get(key))));
+                //populationFrequency.setAltAlleleFreq((float) variantSearchModel.getPopFreq().get(key));
                 populationFrequencies.add(populationFrequency);
             }
             variantAnnotation.setPopulationFrequencies(populationFrequencies);
@@ -153,40 +159,42 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         Map<String, List<String>> clinVarMap = new HashMap<>();
         List<Cosmic> cosmicList = new ArrayList<>();
         List<GeneTraitAssociation> geneTraitAssociationList = new ArrayList<>();
-        for (String trait: variantSearchModel.getTraits()) {
-            String[] fields = trait.split(" -- ");
-            switch (fields[0]) {
-                case "ClinVar": {
-                    // variant trait
-                    // ClinVar -- accession -- trait
-                    if (!clinVarMap.containsKey(fields[1])) {
-                        clinVarMap.put(fields[1], new ArrayList<>());
+        if (variantSearchModel.getTraits() != null) {
+            for (String trait : variantSearchModel.getTraits()) {
+                String[] fields = trait.split(" -- ");
+                switch (fields[0]) {
+                    case "ClinVar": {
+                        // variant trait
+                        // ClinVar -- accession -- trait
+                        if (!clinVarMap.containsKey(fields[1])) {
+                            clinVarMap.put(fields[1], new ArrayList<>());
+                        }
+                        clinVarMap.get(fields[1]).add(fields[2]);
+                        break;
                     }
-                    clinVarMap.get(fields[1]).add(fields[2]);
-                    break;
-                }
-                case "COSMIC": {
-                    // variant trait
-                    // COSMIC -- mutation id -- primary histology -- histology subtype
-                    Cosmic cosmic = new Cosmic();
-                    cosmic.setMutationId(fields[1]);
-                    cosmic.setPrimaryHistology(fields[2]);
-                    cosmic.setHistologySubtype(fields[3]);
-                    cosmicList.add(cosmic);
-                    break;
-                }
-                case "HP0": {
-                    // gene trait
-                    // HPO -- hpo -- name
-                    GeneTraitAssociation geneTraitAssociation = new GeneTraitAssociation();
-                    geneTraitAssociation.setHpo(fields[1]);
-                    geneTraitAssociation.setName(fields[2]);
-                    geneTraitAssociationList.add(geneTraitAssociation);
-                    break;
-                }
-                default: {
-                    System.out.println("Unknown trait type: " + fields[0] + ", it should be ClinVar, COSMIC or HPO");
-                    break;
+                    case "COSMIC": {
+                        // variant trait
+                        // COSMIC -- mutation id -- primary histology -- histology subtype
+                        Cosmic cosmic = new Cosmic();
+                        cosmic.setMutationId(fields[1]);
+                        cosmic.setPrimaryHistology(fields[2]);
+                        cosmic.setHistologySubtype(fields[3]);
+                        cosmicList.add(cosmic);
+                        break;
+                    }
+                    case "HP0": {
+                        // gene trait
+                        // HPO -- hpo -- name
+                        GeneTraitAssociation geneTraitAssociation = new GeneTraitAssociation();
+                        geneTraitAssociation.setHpo(fields[1]);
+                        geneTraitAssociation.setName(fields[2]);
+                        geneTraitAssociationList.add(geneTraitAssociation);
+                        break;
+                    }
+                    default: {
+                        System.out.println("Unknown trait type: " + fields[0] + ", it should be ClinVar, COSMIC or HPO");
+                        break;
+                    }
                 }
             }
         }
