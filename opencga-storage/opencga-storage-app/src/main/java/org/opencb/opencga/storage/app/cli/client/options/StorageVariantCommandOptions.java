@@ -167,6 +167,7 @@ public class StorageVariantCommandOptions {
      */
 
     public static class BasicVariantQueryOptions {
+
         @Parameter(names = {"--id"}, description = VariantDBAdaptor.ID_DESCR)
         public String id;
 
@@ -329,6 +330,9 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--samples-metadata"}, description = "Returns the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.")
         public boolean samplesMetadata;
+
+        @Parameter(names = {"--summary"}, description = "Fast fetch of main variant parameters")
+        public boolean summary;
 
     }
 

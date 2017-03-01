@@ -276,6 +276,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
         Query query = VariantQueryCommandUtils.parseQuery(variantQueryCommandOptions, studyNames);
         QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(variantQueryCommandOptions);
+        options.put("summary", variantQueryCommandOptions.summary);
 
         if (variantQueryCommandOptions.commonQueryOptions.count) {
             QueryResult<Long> result = variantDBAdaptor.count(query);
@@ -723,7 +724,7 @@ public class VariantCommandExecutor extends CommandExecutor {
             }
             querying = false;
             Path path = Paths.get(searchOptions.inputFilename);
-            variantSearchManager.load(path);
+            variantSearchManager.load(dbName, path);
         }
 
         // query
@@ -736,7 +737,7 @@ public class VariantCommandExecutor extends CommandExecutor {
                 Query query = new Query();
                 query = VariantQueryCommandUtils.parseQuery(searchOptions, query);
                 QueryOptions queryOptions = new QueryOptions(); // VariantQueryCommandUtils.parseQueryOptions(searchOptions);
-                SolrVariantSearchIterator iterator = variantSearchManager.iterator(query, queryOptions);
+                SolrVariantSearchIterator iterator = variantSearchManager.iterator(dbName, query, queryOptions);
                 while (iterator.hasNext()) {
                     VariantSearchModel variantSearch = iterator.next();
                     System.out.println("Variant #" + count);

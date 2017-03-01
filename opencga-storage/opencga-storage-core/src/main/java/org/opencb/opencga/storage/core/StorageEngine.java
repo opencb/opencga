@@ -53,10 +53,6 @@ public abstract class StorageEngine<DBADAPTOR> {
         this.storageEngineId = storageEngineId;
     }
 
-    public StorageConfiguration getConfiguration() {
-        return configuration;
-    }
-
     public String getStorageEngineId() {
         return storageEngineId;
     }
@@ -173,4 +169,13 @@ public abstract class StorageEngine<DBADAPTOR> {
      */
     public abstract StoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException;
 
+
+    public StorageConfiguration getConfiguration() {
+        return configuration;
+    }
+
+    public StorageEngine setConfiguration(StorageConfiguration configuration) {
+        this.configuration = configuration;
+        return this;
+    }
 }

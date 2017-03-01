@@ -419,9 +419,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public void searchIndex(String database, Query query, QueryOptions queryOptions) throws StorageEngineException, IOException,
             VariantSearchException {
 
-        // TODO: move to the constructor (the empty constructor does not initialzed VariantSearchManager)
         if (variantSearchManager == null) {
-            configuration.getSearch().setCollection(database);
             variantSearchManager = new VariantSearchManager(configuration);
         }
 
@@ -438,7 +436,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             // then, load variants
             VariantDBAdaptor dbAdaptor = getDBAdaptor(database);
             VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
-            variantSearchManager.load(iterator);
+            variantSearchManager.load(database, iterator);
         }
     }
 
@@ -534,4 +532,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return VariantStoragePipeline.buildFilename(studyName, fileId);
     }
 
+    public VariantSearchManager getVariantSearchManager() {
+        return variantSearchManager;
+    }
+
+    public VariantStorageEngine setVariantSearchManager(VariantSearchManager variantSearchManager) {
+        this.variantSearchManager = variantSearchManager;
+        return this;
+    }
 }

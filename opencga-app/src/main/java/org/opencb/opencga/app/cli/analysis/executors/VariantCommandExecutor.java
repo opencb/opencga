@@ -157,6 +157,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         Map<Long, String> studyIds = getStudyIds(sessionId);
         Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds);
         QueryOptions queryOptions = VariantQueryCommandUtils.parseQueryOptions(cliOptions);
+        queryOptions.put("summary", cliOptions.genericVariantQueryOptions.summary);
 
         org.opencb.opencga.storage.core.manager.variant.VariantStorageManager variantManager =
                 new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageEngineFactory);
@@ -229,7 +230,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageEngineFactory);
 
         variantManager.index(cliOptions.study, cliOptions.fileId, cliOptions.outdir, queryOptions, sessionId);
-
     }
 
     private void stats() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException,

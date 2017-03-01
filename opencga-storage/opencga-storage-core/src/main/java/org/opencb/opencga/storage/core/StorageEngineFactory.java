@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
+import org.opencb.opencga.storage.core.search.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,10 +129,15 @@ public final class StorageEngineFactory {
                     break;
             }
 
-            T storageManager = (T) Class.forName(clazz).newInstance();
-            storageManager.setConfiguration(this.storageConfiguration, storageEngineName);
+            T storageEngine = (T) Class.forName(clazz).newInstance();
+            storageEngine.setConfiguration(this.storageConfiguration, storageEngineName);
 
-            storageManagerMap.put(storageEngineName, storageManager);
+            // If VariantStorageEngine then we set the Solr search manager
+            if (bioformat.equalsIgnoreCase("variant")) {
+                ((VariantStorageEngine)storageEngine).setVariantSearchManager(new VariantSearchManager(storageConfiguration));
+            }
+
+            storageManagerMap.put(storageEngineName, storageEngine);
         }
         return storageManagerMap.get(storageEngineName);
     }

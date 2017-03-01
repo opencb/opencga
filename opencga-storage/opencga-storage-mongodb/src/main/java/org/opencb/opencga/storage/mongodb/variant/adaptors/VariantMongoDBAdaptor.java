@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant.adaptors;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
@@ -55,8 +56,10 @@ import org.opencb.opencga.storage.core.cache.CacheManager;
 import org.opencb.opencga.storage.core.config.CellBaseConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.search.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
@@ -104,6 +107,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final String collectionName;
     private final MongoDBCollection variantsCollection;
     private final VariantSourceMongoDBAdaptor variantSourceMongoDBAdaptor;
+    private final StorageConfiguration storageConfiguration;
+    @Deprecated
     private final StorageEngineConfiguration storageEngineConfiguration;
     private final Pattern writeResultErrorPattern = Pattern.compile("^.*dup key: \\{ : \"([^\"]*)\" \\}$");
     private final VariantDBAdaptorUtils utils;
@@ -114,6 +119,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final ObjectMap configuration;
     private final CellBaseConfiguration cellbaseConfiguration;
     private CacheManager cacheManager;
+
+    private VariantSearchManager variantSearchManager;
 
     @Deprecated
     private DataWriter dataWriter;
@@ -145,6 +152,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         variantsCollection = db.getCollection(collectionName);
         this.studyConfigurationManager = studyConfigurationManager;
         cellbaseConfiguration = storageConfiguration.getCellbase();
+        this.storageConfiguration = storageConfiguration;
         this.storageEngineConfiguration = storageConfiguration.getStorageEngine(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
         this.configuration = storageEngineConfiguration == null || this.storageEngineConfiguration.getVariant().getOptions() == null
                 ? new ObjectMap()
@@ -274,14 +282,21 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             // TODO : ONLY USING ONE STUDY ID ?
             String key = cacheManager.createKey(studyIds.get(0).toString(), "var", query, options);
             queryResult = new VariantQueryResult<>(cacheManager.get(key), null);
-            if (queryResult.getResult() != null && queryResult.getResult().size() != 0) {
-                return queryResult;
-            } else {
+            if (queryResult.getResult() == null || queryResult.getResult().size() == 0) {
                 queryResult = getVariantQueryResult(query, options);
                 cacheManager.set(key, query, queryResult);
             }
         } else {
-            return getVariantQueryResult(query, options);
+            if (options.getBoolean("summary", false) && storageConfiguration.getSearch().getActive()
+                    && variantSearchManager.isAlive()) {
+                try {
+                    queryResult = variantSearchManager.query(credentials.getMongoDbName(), query, options);
+                } catch (IOException | VariantSearchException e) {
+                    throw Throwables.propagate(e);
+                }
+            } else {
+                queryResult = getVariantQueryResult(query, options);
+            }
         }
         return queryResult;
     }
@@ -2724,4 +2739,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return loadedSampleIds;
     }
 
+
+    public VariantMongoDBAdaptor setVariantSearchManager(VariantSearchManager variantSearchManager) {
+        this.variantSearchManager = variantSearchManager;
+        return this;
+    }
 }

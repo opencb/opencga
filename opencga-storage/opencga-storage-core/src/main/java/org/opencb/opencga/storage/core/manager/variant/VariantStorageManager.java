@@ -39,9 +39,11 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.manager.StorageManager;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.manager.variant.operations.*;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
@@ -165,6 +167,21 @@ public class VariantStorageManager extends StorageManager {
         StudyInfo studyInfo = getStudyInfo(study, files, sessionId);
         return indexOperation.index(studyInfo, outDir, options, sessionId);
     }
+
+
+    public void searchIndex(String database) throws StorageEngineException, IOException, VariantSearchException, IllegalAccessException,
+            ClassNotFoundException, InstantiationException {
+        searchIndex(database, new Query(), new QueryOptions());
+    }
+
+    public void searchIndex(String database, Query query, QueryOptions queryOptions) throws StorageEngineException, IOException,
+            VariantSearchException, IllegalAccessException, InstantiationException, ClassNotFoundException {
+        VariantStorageEngine variantStorageEngine =
+                storageEngineFactory.getVariantStorageEngine(storageConfiguration.getDefaultStorageEngineId());
+        variantStorageEngine.searchIndex(database, query, queryOptions);
+    }
+
+
 
     public void deleteStudy(String studyId, String sessionId) {
         throw new UnsupportedOperationException();
