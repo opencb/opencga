@@ -19,16 +19,15 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.test.GenericTest;
 
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.isValidParam;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.parseConsequenceType;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
 
 /**
  * Created on 01/02/16
@@ -145,4 +144,27 @@ public class VariantDBAdaptorUtilsTest extends GenericTest {
         thrown.expect(VariantQueryException.class);
         parseConsequenceType("SO:9999999");
     }
+
+    @Test
+    public void testParseGenotypeFilter() throws Exception {
+        @SuppressWarnings("unchecked")
+        Map<String, List<String>> expected = new HashMap(new ObjectMap()
+                .append("study:sample", Arrays.asList("1/1", "2/2"))
+                .append("sample2", Arrays.asList("0/0", "2/2"))
+                .append("sample3", Arrays.asList("0/0"))
+                .append("study1:sample4", Arrays.asList("0/0", "2/2")));
+
+        HashMap<Object, List<String>> map = new HashMap<>();
+        assertEquals(VariantDBAdaptorUtils.QueryOperation.AND, parseGenotypeFilter("study:sample:1/1,2/2;sample2:0/0,2/2;sample3:0/0;study1:sample4:0/0,2/2", map));
+        assertEquals(expected, map);
+
+        map = new HashMap<>();
+        assertEquals(VariantDBAdaptorUtils.QueryOperation.OR, parseGenotypeFilter("study:sample:1/1,2/2,sample2:0/0,2/2,sample3:0/0,study1:sample4:0/0,2/2", map));
+        assertEquals(expected, map);
+
+        thrown.expect(VariantQueryException.class);
+        parseGenotypeFilter("sample:1/1,2/2,sample2:0/0,2/2;sample3:0/0,2/2", map);
+    }
+
+
 }

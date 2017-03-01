@@ -107,7 +107,9 @@ public class VariantMatchers {
                         missingValues.add(expectedValue);
                     }
                 }
-                mismatchDescription.appendText(" has " + item.getNumResults() + " values");
+                mismatchDescription.appendText(" has " + item.getNumResults() + " values "
+                        + '(' + missingValues.size() + " missing, " + extraValues.size() + " extra)");
+
                 if (!missingValues.isEmpty()) {
                     mismatchDescription.appendValueList(" , missing values [", ", ", "] ", missingValues);
                 }
