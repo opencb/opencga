@@ -19,9 +19,15 @@ package org.opencb.opencga.storage.app.cli.client.executors;
 import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.Options;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.vcf.VCFHeader;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.tools.variant.converters.VariantContextToAvroVariantConverter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -35,8 +41,12 @@ import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOp
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.search.VariantSearchManager;
+import org.opencb.opencga.storage.core.search.VariantSearchModel;
+import org.opencb.opencga.storage.core.search.solr.SolrVariantSearchIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -48,15 +58,13 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -130,6 +138,14 @@ public class VariantCommandExecutor extends CommandExecutor {
             case "stats":
                 configure(variantCommandOptions.statsVariantsCommandOptions.commonOptions);
                 stats();
+                break;
+            case "export":
+                configure(variantCommandOptions.exportVariantsCommandOptions.queryOptions.commonOptions);
+                export();
+                break;
+            case "search":
+                configure(variantCommandOptions.searchVariantsCommandOptions.commonOptions);
+                search();
                 break;
 //            case "benchmark":
 //                configure(variantCommandOptions.statsVariantsCommandOptions.commonOptions);
@@ -221,18 +237,26 @@ public class VariantCommandExecutor extends CommandExecutor {
         /** Execute ETL steps **/
         boolean doExtract, doTransform, doLoad;
 
-        if (!indexVariantsCommandOptions.load && !indexVariantsCommandOptions.transform) {
-            doExtract = true;
-            doTransform = true;
-            doLoad = true;
+
+        if (!indexVariantsCommandOptions.indexSearch) {
+            if (!indexVariantsCommandOptions.load && !indexVariantsCommandOptions.transform) {
+                doExtract = true;
+                doTransform = true;
+                doLoad = true;
+            } else {
+                doExtract = indexVariantsCommandOptions.transform;
+                doTransform = indexVariantsCommandOptions.transform;
+                doLoad = indexVariantsCommandOptions.load;
+            }
+
+            variantStorageEngine.index(inputUris, outdirUri, doExtract, doTransform, doLoad);
         } else {
-            doExtract = indexVariantsCommandOptions.transform;
-            doTransform = indexVariantsCommandOptions.transform;
-            doLoad = indexVariantsCommandOptions.load;
+            try {
+                variantStorageEngine.searchIndex(indexVariantsCommandOptions.commonIndexOptions.dbName);
+            } catch (VariantSearchException e) {
+                e.printStackTrace();
+            }
         }
-
-        variantStorageEngine.index(inputUris, outdirUri, doExtract, doTransform, doLoad);
-
     }
 
     private void query() throws Exception {
@@ -552,7 +576,179 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
     }
 
+    private void export() throws URISyntaxException, StorageEngineException, IOException {
+        StorageVariantCommandOptions.VariantExportCommandOptions exportVariantsCommandOptions = variantCommandOptions.exportVariantsCommandOptions;
+//
+//        ObjectMap options = storageConfiguration.getVariant().getOptions();
+//        if (exportVariantsCommandOptions.dbName != null && !exportVariantsCommandOptions.dbName.isEmpty()) {
+//            options.put(VariantStorageEngine.Options.DB_NAME.key(), exportVariantsCommandOptions.dbName);
+//        }
+//        options.putIfNotEmpty(VariantStorageEngine.Options.FILE_ID.key(), exportVariantsCommandOptions.fileId);
+//        options.put(VariantStorageEngine.Options.STUDY_ID.key(), exportVariantsCommandOptions.studyId);
+//        if (exportVariantsCommandOptions.studyConfigurationFile != null && !exportVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
+//            options.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, exportVariantsCommandOptions.studyConfigurationFile);
+//        }
+//
+//        if (exportVariantsCommandOptions.commonOptions.params != null) {
+//            options.putAll(exportVariantsCommandOptions.commonOptions.params);
+//        }
+//
+//
+//        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor(exportVariantsCommandOptions.dbName);
+//
+//        URI outputUri = UriUtils.createUri(exportVariantsCommandOptions.outFilename == null ? "" : exportVariantsCommandOptions.outFilename);
+//        URI directoryUri = outputUri.resolve(".");
+//        StudyConfiguration studyConfiguration = dbAdaptor.getStudyConfigurationManager()
+//                .getStudyConfiguration(exportVariantsCommandOptions.studyId, new QueryOptions(options)).first();
+//        if (studyConfiguration == null) {
+//            studyConfiguration = new StudyConfiguration(Integer.parseInt(exportVariantsCommandOptions.studyId),
+//                    exportVariantsCommandOptions.dbName);
+//        }
+//        String filename = outputUri.equals(directoryUri) ? VariantStorageEngine.buildFilename(studyConfiguration.getStudyName(),
+//                Integer.parseInt(exportVariantsCommandOptions.fileId))
+//                : Paths.get(outputUri.getPath()).getFileName().toString();
+//
 
+
+//        URI outputFile = Paths.get(exportVariantsCommandOptions.outFilename).toUri();
+//        VariantWriterFactory.VariantOutputFormat outputFormat = VariantWriterFactory.toOutputFormat(null,
+//                outputFile.getPath());
+//
+//        Query query = new Query();
+//        QueryOptions queryOptions = new QueryOptions();
+//
+//        variantStorageEngine.exportData(outputFile, outputFormat, exportVariantsCommandOptions.dbName,
+//                query, queryOptions);
+
+
+//        storageConfiguration.getVariant().getOptions().putAll(exportVariantsCommandOptions.commonOptions.params);
+
+        VariantDBAdaptor variantDBAdaptor = variantStorageEngine.getDBAdaptor(exportVariantsCommandOptions.queryOptions.commonQueryOptions.dbName);
+        List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
+
+
+        // TODO: JT
+        try {
+            Query query = VariantQueryCommandUtils.parseQuery(exportVariantsCommandOptions.queryOptions, studyNames);
+            QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(exportVariantsCommandOptions.queryOptions);
+
+            // create VCF header by getting information from metadata or study configuration
+            List<String> cohortNames = null;
+            List<String> annotations = null;
+            List<String> formatFields = null;
+            List<String> formatFieldsType = null;
+            List<String> formatFieldsDescr = null;
+            List<String> sampleNames = null;
+            Function<String, String> converter = null;
+
+            VCFHeader vcfHeader = VcfUtils.createVCFHeader(cohortNames, annotations, formatFields,
+                    formatFieldsType, formatFieldsDescr, sampleNames, converter);
+
+            // create the variant context writer
+            OutputStream outputStream = new FileOutputStream(exportVariantsCommandOptions.outFilename);
+            Options writerOptions = null;
+            VariantContextWriter writer = VcfUtils.createVariantContextWriter(outputStream,
+                    vcfHeader.getSequenceDictionary(), writerOptions);
+
+            // write VCF header
+            writer.writeHeader(vcfHeader);
+
+            // TODO: get study id/name
+            VariantContextToAvroVariantConverter variantContextToAvroVariantConverter =
+                    new VariantContextToAvroVariantConverter(0, Collections.emptyList(), Collections.emptyList());
+            VariantDBIterator iterator = variantDBAdaptor.iterator(query, options);
+            while (iterator.hasNext()) {
+                Variant variant = iterator.next();
+                VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
+                System.out.println(variantContext.toString());
+
+                writer.add(variantContext);
+            }
+
+            // close
+            writer.close();
+            outputStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * search command
+     */
+    private void search() throws Exception {
+        StorageVariantCommandOptions.VariantSearchCommandOptions searchOptions = variantCommandOptions.searchVariantsCommandOptions;
+
+        //VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor(exportVariantsCommandOptions.dbName);
+        // variantStorageEngine.getConfiguration().getSearch()
+
+        // TODO: initialize solrUrl and database (i.e.: core/collection name) from the configuration file
+        String solrUrl = (searchOptions.solrUrl == null ? "http://localhost:8983/solr/" : searchOptions.solrUrl);
+        String dbName = (searchOptions.dbName == null ? "variants" : searchOptions.dbName);
+
+        VariantSearchManager variantSearchManager = new VariantSearchManager(solrUrl, dbName);
+        boolean querying = true;
+        String mode = searchOptions.mode;
+
+        // create the core or collection
+        if (searchOptions.create) {
+            querying = false;
+            switch (mode.toLowerCase()) {
+                case "core": {
+                    if (variantSearchManager.existCore(dbName)) {
+                        throw new IllegalArgumentException("Core '" + dbName + "' already exists");
+                    }
+                    variantSearchManager.createCore(searchOptions.dbName, searchOptions.solrConfig);
+                    break;
+                }
+                case "collection": {
+                    if (variantSearchManager.existCollection(dbName)) {
+                        throw new IllegalArgumentException("Collection '" + dbName + "' already exists");
+                    }
+                    variantSearchManager.createCollection(searchOptions.dbName, searchOptions.solrConfig,
+                            searchOptions.numShards, searchOptions.numReplicas);
+                    break;
+                }
+                default: {
+                    throw new IllegalArgumentException("Invalid value '" + searchOptions.create
+                            + "' for the --create parameter. Valid values are 'core' or 'collection'");
+                }
+            }
+        }
+
+        // index
+        if (searchOptions.index) {
+            if (!variantSearchManager.existCore(dbName)) {
+                throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
+            }
+            querying = false;
+            Path path = Paths.get(searchOptions.inputFilename);
+            variantSearchManager.load(path);
+        }
+
+        // query
+        if (querying) {
+            if (!variantSearchManager.existCore(dbName)) {
+                throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
+            }
+            int count = 0;
+            try {
+                Query query = new Query();
+                query = VariantQueryCommandUtils.parseQuery(searchOptions, query);
+                QueryOptions queryOptions = new QueryOptions(); // VariantQueryCommandUtils.parseQueryOptions(searchOptions);
+                SolrVariantSearchIterator iterator = variantSearchManager.iterator(query, queryOptions);
+                while (iterator.hasNext()) {
+                    VariantSearchModel variantSearch = iterator.next();
+                    System.out.println("Variant #" + count);
+                    System.out.println(variantSearch.toString());
+                    count++;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            System.out.println("Num. variants: " + count);
+        }
+    }
 
     private void executeRank(Query query, VariantDBAdaptor variantDBAdaptor,
                              StorageVariantCommandOptions.VariantQueryCommandOptions variantQueryCommandOptions) throws JsonProcessingException {

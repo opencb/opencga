@@ -32,6 +32,7 @@ import java.util.Map;
 /**
  * Created by imedina on 22/01/17.
  */
+@Parameters(commandNames = {"variant"}, commandDescription = "Variant management.")
 public class StorageVariantCommandOptions {
 
     public VariantIndexCommandOptions indexVariantsCommandOptions;
@@ -39,6 +40,8 @@ public class StorageVariantCommandOptions {
     public ImportVariantsCommandOptions importVariantsCommandOptions;
     public VariantAnnotateCommandOptions annotateVariantsCommandOptions;
     public VariantStatsCommandOptions statsVariantsCommandOptions;
+    public VariantExportCommandOptions exportVariantsCommandOptions;
+    public VariantSearchCommandOptions searchVariantsCommandOptions;
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonOptions commonCommandOptions;
@@ -57,8 +60,13 @@ public class StorageVariantCommandOptions {
         this.importVariantsCommandOptions = new ImportVariantsCommandOptions();
         this.annotateVariantsCommandOptions = new VariantAnnotateCommandOptions();
         this.statsVariantsCommandOptions = new VariantStatsCommandOptions();
+        this.exportVariantsCommandOptions = new VariantExportCommandOptions();
+        this.searchVariantsCommandOptions = new VariantSearchCommandOptions();
     }
 
+    /**
+     *  index: generic and specific options
+     */
     public static class GenericVariantIndexOptions {
 
         @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
@@ -94,6 +102,9 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--annotate"}, description = "Annotate indexed variants after the load step")
         public boolean annotate;
+
+        @Parameter(names = {"--index-search"}, description = "Indexed Solr search database")
+        public boolean indexSearch;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}", arity = 1)
         public VariantAnnotatorFactory.AnnotationSource annotator;
@@ -151,8 +162,11 @@ public class StorageVariantCommandOptions {
 
     }
 
-    public static class GenericVariantQueryOptions {
+    /**
+     *  query: basic, generic and specific options
+     */
 
+    public static class BasicVariantQueryOptions {
         @Parameter(names = {"--id"}, description = VariantDBAdaptor.ID_DESCR)
         public String id;
 
@@ -164,6 +178,37 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"-g", "--gene"}, description = VariantDBAdaptor.GENE_DESCR)
         public String gene;
+
+        @Parameter(names = {"-t", "--type"}, description = "Whether the variant is a: SNV, INDEL or SV")
+        public String type;
+
+        @Parameter(names = {"--ct", "--consequence-type"}, description = "Consequence type SO term list. example: SO:0000045,SO:0000046",
+                arity = 1)
+        public String consequenceType;
+
+        @Parameter(names = {"-c", "--conservation"}, description = "Conservation score: {conservation_score}[<|>|<=|>=]{number} example: " +
+                "phastCons>0.5,phylop<0.1", arity = 1)
+        public String conservation;
+
+        @Parameter(names = {"--ps", "--protein-substitution"}, description = "Filter by Sift or/and Polyphen scores, e.g. \"sift<0.2;polyphen<0.4\"", arity = 1)
+        public String proteinSubstitution;
+
+        @Parameter(names = {"--cadd"}, description = "Functional score: {functional_score}[<|>|<=|>=]{number} "
+                + "e.g. cadd_scaled>5.2,cadd_raw<=0.3", arity = 1)
+        public String functionalScore;
+
+        @Parameter(names = {"--hpo"}, description = "List of HPO terms. e.g. \"HP:0000545,HP:0002812\"", arity = 1)
+        public String hpo;
+
+        @Parameter(names = {"--apf", "--alt-population-frequency"}, description = "Alternate Population Frequency: " +
+                "{study}:{population}[<|>|<=|>=]{number}", arity = 1)
+        public String populationFreqs;
+
+        @Parameter(names = {"--maf", "--stats-maf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Allele Frequency, example: 1000g:all>0.4")
+        public String maf;
+    }
+
+    public static class GenericVariantQueryOptions extends BasicVariantQueryOptions {
 
         @Parameter(names = {"--group-by"}, description = "Group by gene, ensembl gene or consequence_type")
         public String groupBy;
@@ -184,27 +229,12 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--filter"}, description = VariantDBAdaptor.FILTER_DESCR, arity = 1)
         public String filter;
 
-        @Parameter(names = {"-t", "--type"}, description = "Whether the variant is a: SNV, INDEL or SV")
-        public String type;
-
-        @Parameter(names = {"--ct", "--consequence-type"}, description = "Consequence type SO term list. example: SO:0000045,SO:0000046",
-                arity = 1)
-        public String consequenceType;
-
         @Parameter(names = {"--gene-biotype"}, description = "Biotype CSV", arity = 1)
         public String geneBiotype;
 
         @Parameter(names = {"--pmaf", "--population-maf"}, description = "Population minor allele frequency: " +
                 "{study}:{population}[<|>|<=|>=]{number}", arity = 1)
         public String populationMaf;
-
-        @Parameter(names = {"--apf", "--alt-population-frequency"}, description = "Alternate Population Frequency: " +
-                "{study}:{population}[<|>|<=|>=]{number}", arity = 1)
-        public String populationFreqs;
-
-        @Parameter(names = {"-c", "--conservation"}, description = "Conservation score: {conservation_score}[<|>|<=|>=]{number} example: " +
-                "phastCons>0.5,phylop<0.1", arity = 1)
-        public String conservation;
 
         @Parameter(names = {"--transcript-flag"}, description = "List of transcript annotation flags. e.g. CCDS,basic,cds_end_NF, mRNA_end_NF,cds_start_NF,mRNA_start_NF,seleno", arity = 1)
         public String flags;
@@ -221,9 +251,6 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--gene-trait-name"}, description = "[DEPRECATED] List of gene trait association id. e.g. \"umls:C0007222,OMIM:269600\"", arity = 1)
         public String geneTraitName;
 
-        @Parameter(names = {"--hpo"}, description = "List of HPO terms. e.g. \"HP:0000545,HP:0002812\"", arity = 1)
-        public String hpo;
-
         @Parameter(names = {"--go", "--gene-ontology"}, description = "List of Gene Ontology (GO) accessions or names. e.g. \"GO:0002020\"", arity = 1)
         public String go;
 
@@ -235,9 +262,6 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--drug"}, description = "List of drug names", arity = 1)
         public String drugs;
-
-        @Parameter(names = {"--ps", "--protein-substitution"}, description = "Filter by Sift or/and Polyphen scores, e.g. \"sift<0.2;polyphen<0.4\"", arity = 1)
-        public String proteinSubstitution;
 
         @Deprecated
         @Parameter(names = {"--gwas"}, description = "[DEPRECATED]", arity = 1, hidden = true)
@@ -252,9 +276,6 @@ public class StorageVariantCommandOptions {
         @Deprecated
         @Parameter(names = {"--stats"}, description = "[DEPRECATED]", hidden = true)
         public String stats;
-
-        @Parameter(names = {"--maf", "--stats-maf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Allele Frequency, example: 1000g:all>0.4")
-        public String maf;
 
         @Parameter(names = {"--mgf", "--stats-mgf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Genotype Frequency, example: 1000g:all<=0.4")
         public String mgf;
@@ -301,10 +322,6 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--histogram-interval"}, description = "Histogram interval size. Default:2000", arity = 1)
         public int interval;
-
-        @Parameter(names = {"--cadd"}, description = "Functional score: {functional_score}[<|>|<=|>=]{number} "
-                + "e.g. cadd_scaled>5.2,cadd_raw<=0.3", arity = 1)
-        public String functionalScore;
 
         @Deprecated
         @Parameter(names = {"--annot-xref"}, description = "XRef", arity = 1)
@@ -353,6 +370,9 @@ public class StorageVariantCommandOptions {
 
     }
 
+    /**
+     *  import: specific options
+     */
     @Parameters(commandNames = {"import"}, commandDescription = "Import a variants dataset into an empty database")
     public class ImportVariantsCommandOptions {
 
@@ -367,6 +387,9 @@ public class StorageVariantCommandOptions {
 
     }
 
+    /**
+     *  annotate: generic and specific options
+     */
     public static class GenericVariantAnnotateOptions {
 
         @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-filename)")
@@ -422,7 +445,9 @@ public class StorageVariantCommandOptions {
         public String outdir;
     }
 
-
+    /**
+     *  benchmark: specific options
+     */
     @Parameters(commandNames = {"benchmark"}, commandDescription = "[PENDING] Benchmark load and fetch variants with different databases")
     public class BenchmarkCommandOptions {
 
@@ -453,6 +478,9 @@ public class StorageVariantCommandOptions {
 
     }
 
+    /**
+     *  stats: generic and specific options
+     */
     public static class GenericVariantStatsOptions {
 
         @Parameter(names = {"--create"}, description = "Run only the creation of the stats to a file")
@@ -519,5 +547,102 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage" +
                 ".core.StudyConfiguration", arity = 1)
         public String studyConfigurationFile;
+    }
+
+    /**
+     * export: generic and specific options
+     */
+
+    public static class GenericVariantExportOptions {
+
+        @Parameter(names = {"--file-id"}, description = "Calculate stats only for the selected file", arity = 1)
+        public String fileId;
+
+        @Parameter(names = {"--output-filename"}, description = "Output filename.", arity = 1)
+        public String outFilename = ".";
+
+//        @Parameter(names = {"--region"}, description = "Variant region to export.")
+//        public String region;
+
+        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage" +
+                ".core.StudyConfiguration", arity = 1)
+        public String studyConfigurationFile;
+    }
+
+
+    @Parameters(commandNames = {"export"}, commandDescription = "Export variants into a VCF file.")
+    public class VariantExportCommandOptions extends GenericVariantExportOptions {
+
+//        @ParametersDelegate
+//        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public VariantQueryCommandOptions queryOptions = new VariantQueryCommandOptions();
+
+//        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true,
+//                arity = 1)
+//        public String studyId;
+//
+//        @Parameter(names = {"-d", "--database"}, description = "DataBase name", arity = 1)
+//        public String dbName;
+    }
+
+    /**
+     * export: specific options
+     */
+
+    public static class GenericVariantSearchOptions extends BasicVariantQueryOptions {
+
+        // TODO: both clinvar and cosmic should be moved to basic variant query options
+        @Parameter(names = {"---clinvar"}, description = "List of ClinVar accessions or traits.", arity = 1)
+        public String clinvar;
+
+        @Parameter(names = {"---cosmic"}, description = "List of COSMIC mutation IDs, primary histologies"
+                + " or histology subtypes.", arity = 1)
+        public String cosmic;
+
+        // TODO: facet options
+    }
+
+    @Parameters(commandNames = {"search"}, commandDescription = "Solr support.")
+    public class VariantSearchCommandOptions extends GenericVariantSearchOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--index"}, description = "Index a file into core/collection Solr.", arity = 0)
+        public boolean index;
+
+        @Parameter(names = {"-i", "--input"}, description = "Path to the file to index. Valid formats: AVRO and JSON.", arity = 1)
+        public String inputFilename;
+
+//        @Parameter(names = {"-f", "--file-id"}, description = "Calculate stats only for the selected file", arity = 1)
+//        public String fileId;
+//
+//        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true,
+//                arity = 1)
+//        public String studyId;
+//
+
+        @Parameter(names = {"--mode"}, description = "Search mode. Valid values: core, collection.", arity = 1)
+        public String mode = "core";
+
+        @Parameter(names = {"--create"}, description = "Create a new core/collection.", arity = 0)
+        public boolean create;
+
+        @Parameter(names = {"--solr-url"}, description = "Url to Solr server, e.g.: http://localhost:8983/solr/", arity = 1)
+        public String solrUrl;
+
+        @Parameter(names = {"--solr-config"}, description = "Solr configuration name.", arity = 1)
+        public String solrConfig;
+
+        @Parameter(names = {"--solr-num-shards"}, description = "Number of Solr collection shards (only for a Solr cluster mode).", arity = 1)
+        public int numShards = 2;
+
+        @Parameter(names = {"--solr-num-replicas"}, description = "Number of Solr collection replicas (only for a Solr cluster mode).", arity = 1)
+        public int numReplicas = 2;
+
+        @Parameter(names = {"-d", "--database"}, description = "Name of the target core ore collection.", arity = 1)
+        public String dbName;
     }
 }

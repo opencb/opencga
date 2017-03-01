@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.core.variant;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Ignore;
@@ -35,7 +34,7 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.search.SearchManager;
+import org.opencb.opencga.storage.core.search.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -872,10 +871,10 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         VariantDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME);
 
 
-        SearchManager searchManager = new SearchManager(variantStorageManager.getConfiguration());
+        VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageManager.getConfiguration());
 
         for (Variant variant:dbAdaptor) {
-            searchManager.insert(variant);
+            variantSearchManager.insert(variant);
         }
 
     }

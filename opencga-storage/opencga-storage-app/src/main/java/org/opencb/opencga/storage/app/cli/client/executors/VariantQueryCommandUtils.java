@@ -45,6 +45,81 @@ public class VariantQueryCommandUtils {
 
     private static Logger logger = LoggerFactory.getLogger("org.opencb.opencga.storage.app.cli.client.VariantQueryCommandUtils");
 
+    public static Query parseBasicVariantQuery(StorageVariantCommandOptions.BasicVariantQueryOptions options,
+                                               Query query) throws Exception {
+
+        /*
+         * Parse Variant parameters
+         */
+        if (options.region != null && !options.region.isEmpty()) {
+            query.put(REGION.key(), options.region);
+        } else if (options.regionFile != null && !options.regionFile.isEmpty()) {
+            Path gffPath = Paths.get(options.regionFile);
+            FileUtils.checkFile(gffPath);
+            String regionsFromFile = Files.readAllLines(gffPath).stream().map(line -> {
+                String[] array = line.split("\t");
+                return new String(array[0].replace("chr", "") + ":" + array[3] + "-" + array[4]);
+            }).collect(Collectors.joining(","));
+            query.put(REGION.key(), regionsFromFile);
+        }
+
+        addParam(query, ID, options.id);
+        addParam(query, GENE, options.gene);
+        addParam(query, TYPE, options.type);
+
+        /**
+         * Annotation parameters
+         */
+        addParam(query, ANNOT_CONSEQUENCE_TYPE, options.consequenceType);
+        addParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY, options.populationFreqs);
+        addParam(query, ANNOT_CONSERVATION, options.conservation);
+        addParam(query, ANNOT_FUNCTIONAL_SCORE, options.functionalScore);
+        addParam(query, ANNOT_PROTEIN_SUBSTITUTION, options.proteinSubstitution);
+
+        /*
+         * Stats parameters
+         */
+//        if (options.stats != null && !options.stats.isEmpty()) {
+//            Set<String> acceptedStatKeys = new HashSet<>(Arrays.asList(STATS_MAF.key(),
+//                    STATS_MGF.key(),
+//                    MISSING_ALLELES.key(),
+//                    MISSING_GENOTYPES.key()));
+//
+//            for (String stat : options.stats.split(",")) {
+//                int index = stat.indexOf("<");
+//                index = index >= 0 ? index : stat.indexOf("!");
+//                index = index >= 0 ? index : stat.indexOf("~");
+//                index = index >= 0 ? index : stat.indexOf("<");
+//                index = index >= 0 ? index : stat.indexOf(">");
+//                index = index >= 0 ? index : stat.indexOf("=");
+//                if (index < 0) {
+//                    throw new UnsupportedOperationException("Unknown stat filter operation: " + stat);
+//                }
+//                String name = stat.substring(0, index);
+//                String cond = stat.substring(index);
+//
+//                if (acceptedStatKeys.contains(name)) {
+//                    query.put(name, cond);
+//                } else {
+//                    throw new UnsupportedOperationException("Unknown stat filter name: " + name);
+//                }
+//                logger.info("Parsed stat filter: {} {}", name, cond);
+//            }
+//        }
+
+        addParam(query, STATS_MAF, options.maf);
+
+        return query;
+    }
+
+    public static Query parseQuery(StorageVariantCommandOptions.GenericVariantSearchOptions options, Query query)
+            throws Exception {
+        query = parseBasicVariantQuery(options, query);
+        addParam(query, ANNOT_CLINVAR, options.clinvar);
+        addParam(query, ANNOT_COSMIC, options.cosmic);
+        return query;
+    }
+
     public static Query parseQuery(StorageVariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions, List<String> studyNames)
             throws Exception {
         Query query = new Query();
