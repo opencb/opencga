@@ -418,13 +418,29 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public void searchIndex(String database, Query query, QueryOptions queryOptions) throws StorageEngineException, IOException,
             VariantSearchException {
+
+        // TODO: move to the constructor (the empty constructor does not initialzed VariantSearchManager)
+        if (variantSearchManager == null) {
+            configuration.getSearch().setCollection(database);
+            variantSearchManager = new VariantSearchManager(configuration);
+        }
+
         if (configuration.getSearch().getActive() && variantSearchManager.isAlive()) {
+            // first, create the collection it it does not exist
+            if (!variantSearchManager.existCollection(database)) {
+                // by default: config=OpenCGAConfSet, shards=1, replicas=1
+                logger.info("Creating Solr collection " + database);
+                variantSearchManager.createCollection(database);
+            } else {
+                logger.info("Solr collection '" + database + "' exists.");
+            }
+
+            // then, load variants
             VariantDBAdaptor dbAdaptor = getDBAdaptor(database);
             VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
             variantSearchManager.load(iterator);
         }
     }
-
 
     /**
      * Drops a file from the Variant Storage.

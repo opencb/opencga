@@ -109,17 +109,28 @@ public class VariantSearchManager {
     }
 
     /**
+     * * Create a Solr collection with default parameters: configuration, shards and replicas.
+     *
+     * @param collectionName             Collection name
+     * @throws VariantSearchException    Exception
+     */
+    public void createCollection(String collectionName) throws VariantSearchException {
+        createCollection(collectionName, "OpenCGAConfSet", 1, 1);
+    }
+
+    /**
      * Create a Solr collection from a configuration directory. The configuration has to be uploaded to the zookeeper,
      * $ ./bin/solr zk upconfig -n <config name> -d <path to the config dir> -z <host:port zookeeper>.
      * For Solr, collection name, configuration name and number of shards are mandatory in order to create a collection.
      * Number of replicas is optional.
      *
-     * @param collectionName     Collection name
-     * @param config             Configuration name
-     * @param numShards          Number of shards
-     * @param numReplicas        Number of replicas
+     * @param collectionName             Collection name
+     * @param config                     Configuration name
+     * @param numShards                  Number of shards
+     * @param numReplicas                Number of replicas
+     * @throws VariantSearchException    Exception
      */
-    public void createCollection(String collectionName, String config, int numShards, int numReplicas) {
+    public void createCollection(String collectionName, String config, int numShards, int numReplicas) throws VariantSearchException {
         System.out.println("Creating collection: " + hostName + ", collection=" + collectionName + ", config=" + config
                 + ", numShards=" + numShards + ", numReplicas=" + numReplicas);
         try {
@@ -128,31 +139,35 @@ public class VariantSearchManager {
                     numShards, numReplicas);
             request.process(solrClient);
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new VariantSearchException(e.getMessage(), e);
         }
     }
 
     /**
      * Check if a given collection exists.
      *
-     * @param collectionName    Collection name
-     * @return                  True or false
-     * @throws Exception        Exception
+     * @param collectionName             Collection name
+     * @return                           True or false
+     * @throws VariantSearchException    Exception
      */
-    public boolean existCollection(String collectionName) throws Exception {
+    public boolean existCollection(String collectionName) throws VariantSearchException {
 
-//        HttpSolrClient solrClient = new HttpSolrClient.Builder(hostName).build();
-//
-//        List<String> collections = CollectionAdminRequest.listCollections(solrClient);
-//        for (String collection: collections) {
-//            System.out.println(collection);
-//        }
-//        for (String collection: collections) {
-//            if (collection.equals(collectionName)) {
-//                return true;
-//            }
-//        }
-        return false;
+        HttpSolrClient solrClient = new HttpSolrClient.Builder(hostName).build();
+
+        try {
+            List<String> collections = CollectionAdminRequest.listCollections(solrClient);
+            for (String collection : collections) {
+                System.out.println(collection);
+            }
+            for (String collection : collections) {
+                if (collection.equals(collectionName)) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            throw new VariantSearchException(e.getMessage(), e);
+        }
 
 
 //        .getCoreStatus(coreName, solrClient);
