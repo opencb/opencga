@@ -60,19 +60,20 @@ class OpenCGAResponseList(list):
             query_ids = []
         else:
             query_ids = query_ids.split(',')
+        # query_ids is not known to be a list of strings
         self.query_ids = query_ids
         response_list = [OpenCGAResponse(response) for response in response_list]
         super(OpenCGAResponseList, self).__init__(response_list)
 
     def get(self, query_id=None):
         if query_id:
+            query_id = str(query_id)
             if query_id in self.query_ids:
                 return self[self.query_ids.index(query_id)]
             else:
                 raise LookupError(query_id + " was not found")
         else:
             return self[0]
-
 
 
 def _create_rest_url(host, version, sid, category, resource, subcategory=None, query_id=None,

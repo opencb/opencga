@@ -14,31 +14,36 @@ class _ParentRestClient(object):
         self._category = category
         self.session_id = session_id
 
+    @staticmethod
+    def _get_query_id_str(query_ids, **options):
+        if query_ids is None:
+            return None
+        elif isinstance(query_ids, list):
+            return ','.join(map(str, query_ids))
+        else:
+            return str(query_ids)
+
     def _get(self, resource, query_id=None, subcategory=None, second_query_id=None, **options):
         """Queries the REST service and returns the result"""
 
-        if isinstance(query_id, list):
-            query_id = ','.join(query_id)
-
+        query_ids_str = self._get_query_id_str(query_id)
         response = execute(host=self._configuration.host,
                            version=self._configuration.version,
                            sid=self.session_id,
                            category=self._category,
                            subcategory=subcategory,
                            method='get',
-                           query_id=query_id,
+                           query_id=query_ids_str,
                            second_query_id=second_query_id,
                            resource=resource,
                            options=options)
 
-        return OpenCGAResponseList(response, query_id)
+        return OpenCGAResponseList(response, query_ids_str)
 
     def _post(self, resource, data, query_id=None, subcategory=None, second_query_id=None, **options):
         """Queries the REST service and returns the result"""
 
-        if isinstance(query_id, list):
-            query_id = ','.join(query_id)
-
+        query_ids_str = self._get_query_id_str(query_id, **options)
         response = execute(host=self._configuration.host,
                            version=self._configuration.version,
                            sid=self.session_id,
@@ -46,35 +51,29 @@ class _ParentRestClient(object):
                            method='post',
                            data=data,
                            subcategory=subcategory,
-                           query_id=query_id,
+                           query_id=query_ids_str,
                            second_query_id=second_query_id,
                            resource=resource,
                            options=options)
 
-        return OpenCGAResponseList(response, query_id)
+        return OpenCGAResponseList(response, query_ids_str)
 
 
 class _ParentBasicCRUDClient(_ParentRestClient):
-
     def create(self, data, **options):
-
         return self._post('create', data=data, **options)
 
     def info(self, query_id, **options):
-
         return self._get('info', query_id=query_id, **options)
 
     def update(self, query_id, data, **options):
-
         return self._post('update', query_id=query_id, data=data, **options)
 
     def delete(self, query_id, **options):
-
         return self._get('delete', query_id=query_id, **options)
 
 
 class _ParentAclRestClient(_ParentRestClient):
-
     def acl(self, query_id, **options):
         """
         acl info
@@ -123,11 +122,11 @@ class _ParentAclRestClient(_ParentRestClient):
         :param options:
         """
 
-        return self._post('acl', query_id=query_id, subcategory='update', second_query_id=memberId, data=data, **options)
+        return self._post('acl', query_id=query_id, subcategory='update', second_query_id=memberId, data=data,
+                          **options)
 
 
 class _ParentAnnotationSetRestClient(_ParentRestClient):
-
     def annotationsets_search(self, query_id, study, **options):
         """
         annotationsets search
@@ -156,7 +155,8 @@ class _ParentAnnotationSetRestClient(_ParentRestClient):
         :param options:
         """
 
-        return self._get('annotationsets', query_id=query_id, study=study, subcategory='delete', second_query_id=annotationset_name, **options)
+        return self._get('annotationsets', query_id=query_id, study=study, subcategory='delete',
+                         second_query_id=annotationset_name, **options)
 
     def annotationsets_info(self, query_id, study, annotationset_name, **options):
         """
@@ -166,7 +166,8 @@ class _ParentAnnotationSetRestClient(_ParentRestClient):
         :param options:
         """
 
-        return self._get('annotationsets', query_id=query_id, study=study, subcategory='info', second_query_id=annotationset_name, **options)
+        return self._get('annotationsets', query_id=query_id, study=study, subcategory='info',
+                         second_query_id=annotationset_name, **options)
 
     def annotationsets_create(self, query_id, study, variable_set_id, data, **options):
         """
@@ -176,7 +177,8 @@ class _ParentAnnotationSetRestClient(_ParentRestClient):
         :param options:
         """
 
-        return self._post('annotationsets', study=study, query_id=query_id, subcategory='create', variableSetId=variable_set_id, data=data, **options)
+        return self._post('annotationsets', study=study, query_id=query_id, subcategory='create',
+                          variableSetId=variable_set_id, data=data, **options)
 
     def annotationsets_update(self, query_id, study, annotationset_name, data, **options):
         """
@@ -186,7 +188,8 @@ class _ParentAnnotationSetRestClient(_ParentRestClient):
         :param options:
         """
 
-        return self._post('annotationsets', study=study, query_id=query_id, subcategory='update', second_query_id=annotationset_name, data=data, **options)
+        return self._post('annotationsets', study=study, query_id=query_id, subcategory='update',
+                          second_query_id=annotationset_name, data=data, **options)
 
 
 class Users(_ParentBasicCRUDClient):
@@ -209,7 +212,6 @@ class Users(_ParentBasicCRUDClient):
         data = dict(password=pwd)
 
         return self._post('login', data=data, query_id=user, **options)
-
 
     def logout(self, userId, **options):
         """
@@ -330,8 +332,8 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         :param options:
         """
 
-        return self._post('groups', query_id=studyId, subcategory='update', second_query_id=groupId, data=data, **options)
-
+        return self._post('groups', query_id=studyId, subcategory='update', second_query_id=groupId, data=data,
+                          **options)
 
     def jobs(self, studyId, **options):
         """
@@ -475,7 +477,6 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._get('content', query_id=file, **options)
 
-
     def grep(self, file, **options):
         """
 
@@ -504,7 +505,6 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
         """
 
         return self._get('refresh', query_id=fileId, **options)
-
 
     def tree(self, fileId, **options):
         """
@@ -564,7 +564,6 @@ class Individuals(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotatio
     def __init__(self, configuration, session_id=None):
         _category = "individuals"
         super(Individuals, self).__init__(configuration, _category, session_id)
-
 
     def group_by(self, fields, study, **options):
         """
@@ -782,17 +781,40 @@ class GA4GH(_ParentRestClient):
 
 
 class OpenCGAClient(object):
-
     def __init__(self, configuration, user=None, pwd=None, session_id=None):
         self.configuration = ConfigClient(configuration)
         if user and pwd:
-            self.users = Users(self.configuration)
-            self.user_id = user
-            self.session_id = self._login(user, pwd)
+            # self.users = Users(self.configuration)
+            self._login(user, pwd)
         else:
-            self.users = Users(self.configuration, session_id)
-            self.user_id = self.users
+            if not session_id:
+                raise Exception("OpenCGAClient: either user and password or session_id must be supplied")
+            self.user_id = user  # if user and session_id are supplied, we can log out
             self.session_id = session_id
+            self._create_clients()
+
+    @classmethod
+    def basic(cls, service_url, user, pwd):
+        """
+        Creates an instance of OpenCGAClient for v1 API
+        :param service_url: service URL, including host, port, and instance. Example: http://localhost:8080/opencga
+            The http:// prefix is optional
+        :param user: username for logging in
+        :param pwd: password for logging in
+        :return: an instance of OpenCGAClient
+        """
+        return OpenCGAClient(configuration={'version': 'v1',
+                                            'rest': {'hosts': [service_url]}},
+                             user=user, pwd=pwd)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.logout()
+
+    def _create_clients(self):
+        self.users = Users(self.configuration, self.session_id)
         self.projects = Projects(self.configuration, self.session_id)
         self.studies = Studies(self.configuration, self.session_id)
         self.files = Files(self.configuration, self.session_id)
@@ -805,28 +827,12 @@ class OpenCGAClient(object):
         self.analysis_variant = AnalysisVariant(self.configuration, self.session_id)
         self.ga4gh = GA4GH(self.configuration, self.session_id)
 
-    @classmethod
-    def basic(cls, service_url, user, pwd):
-        """
-        Creates an instance of OpenCGAClient for v1 API
-        :param service_url: service URL, including host, port, and instance. Example: http://localhost:8080/opencga
-            The http:// prefix is optional
-        :param user: username for logging in
-        :param pwd: password for logging in
-        :return: an instance of OpenCGAClient
-        """
-        return cls(configuration={'version': 'v1',
-                                  'rest': {'hosts': [service_url]}},
-                   user=user, pwd=pwd)
-
     def _login(self, user, pwd):
-        session_id = self.users.login(user=user, pwd=pwd).get().sessionId
-        self.users = Users(self.configuration, session_id)
-        return session_id
+        self.user_id = user
+        self.session_id = Users(self.configuration).login(user=user, pwd=pwd).get().sessionId
+        self._create_clients()  # re-create clients in case of re-login
+        return self.session_id
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def logout(self):
         if self.user_id:
             self.users.logout(userId=self.user_id)
