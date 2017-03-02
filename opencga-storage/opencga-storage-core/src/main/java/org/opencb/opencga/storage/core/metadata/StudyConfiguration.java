@@ -412,7 +412,8 @@ public class StudyConfiguration {
             LinkedHashSet<String> returnedSamples,
             Function<StudyConfiguration, BiMap<String, Integer>> getIndexedSamplesPosition) {
         LinkedHashMap<String, Integer> samplesPosition;
-        if (returnedSamples == null || returnedSamples.isEmpty()) {
+        // If null, return ALL samples
+        if (returnedSamples == null) {
             BiMap<Integer, String> unorderedSamplesPosition = getIndexedSamplesPosition(studyConfiguration).inverse();
             samplesPosition = new LinkedHashMap<>(unorderedSamplesPosition.size());
             for (int i = 0; i < unorderedSamplesPosition.size(); i++) {

@@ -39,8 +39,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.GENOTYPE;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.SAMPLES_METADATA;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
 
 /**
  * Created on 29/01/16 .
@@ -375,23 +374,29 @@ public class VariantDBAdaptorUtils {
             if (StringUtils.isNumeric(sampleStr)) {
                 sampleId = Integer.parseInt(sampleStr);
             } else {
-                if (defaultStudyConfiguration != null) {
+                if (sampleStr.contains(":")) {  //Expect to be as <study>:<sample>
+                    String[] split = sampleStr.split(":");
+                    String study = split[0];
+                    sampleStr= split[1];
+                    StudyConfiguration sc;
+                    if (defaultStudyConfiguration != null && study.equals(defaultStudyConfiguration.getStudyName())) {
+                        sc = defaultStudyConfiguration;
+                    } else {
+                        QueryResult<StudyConfiguration> queryResult = getStudyConfigurationManager().getStudyConfiguration(study, null);
+                        if (queryResult.getResult().isEmpty()) {
+                            throw VariantQueryException.studyNotFound(study);
+                        }
+                        if (!queryResult.first().getSampleIds().containsKey(sampleStr)) {
+                            throw VariantQueryException.sampleNotFound(sampleStr, study);
+                        }
+                        sc = queryResult.first();
+                    }
+                    sampleId = sc.getSampleIds().get(sampleStr);
+                } else if (defaultStudyConfiguration != null) {
                     if (!defaultStudyConfiguration.getSampleIds().containsKey(sampleStr)) {
                         throw VariantQueryException.sampleNotFound(sampleStr, defaultStudyConfiguration.getStudyName());
                     }
                     sampleId = defaultStudyConfiguration.getSampleIds().get(sampleStr);
-                } else if (sampleStr.contains(":")) {  //Expect to be as <study>:<sample>
-                    String[] split = sampleStr.split(":");
-                    String study = split[0];
-                    sampleStr= split[1];
-                    QueryResult<StudyConfiguration> queryResult = getStudyConfigurationManager().getStudyConfiguration(study, null);
-                    if (queryResult.getResult().isEmpty()) {
-                        throw VariantQueryException.studyNotFound(study);
-                    }
-                    if (!queryResult.first().getSampleIds().containsKey(sampleStr)) {
-                        throw VariantQueryException.sampleNotFound(sampleStr, study);
-                    }
-                    sampleId = queryResult.first().getSampleIds().get(sampleStr);
                 } else {
                     //Unable to identify that sample!
                     List<String> studyNames = getStudyConfigurationManager().getStudyNames(null);
@@ -403,11 +408,44 @@ public class VariantDBAdaptorUtils {
     }
 
     public List<Integer> getReturnedStudies(Query query, QueryOptions options) {
-        List<Integer> studyIds = getStudyIds(query.getAsList(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key()), options);
-        if (studyIds.isEmpty()) {
+        final List<Integer> studyIds;
+        if (isValidParam(query, RETURNED_STUDIES)) {
+            studyIds = getStudyIds(query.getAsList(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key()), options);
+        } else if (isValidParam(query, STUDIES)) {
+            studyIds = getStudyIds(query.getAsList(VariantDBAdaptor.VariantQueryParams.STUDIES.key()), options);
+        } else {
             studyIds = getStudyIds(getStudyConfigurationManager().getStudyNames(options), options);
         }
         return studyIds;
+    }
+
+    /**
+     * Get list of returned files.
+     *
+     * Null for undefined returned files. If null, return ALL files.
+     * Return NONE if empty list
+     *
+     *
+     * @param query     Query with the QueryParams
+     * @param fields    Returned fields
+     * @return          List of fileIds to return.
+     */
+    public List<Integer> getReturnedFiles(Query query, Set<VariantField> fields) {
+        final List<Integer> returnedFiles;
+        if (!fields.contains(VariantField.STUDIES_FILES)) {
+            returnedFiles = Collections.emptyList();
+        } else if (query.containsKey(RETURNED_FILES.key())) {
+            returnedFiles = query.getAsIntegerList(RETURNED_FILES.key());
+        } else if (query.containsKey(FILES.key())) {
+            returnedFiles = query.getAsStringList(FILES.key())
+                    .stream()
+                    .filter((value) -> !isNegated(value)) // Discard negated
+                    .map(Integer::parseInt)
+                    .collect(Collectors.toList());
+        } else {
+            returnedFiles = null;
+        }
+        return returnedFiles;
     }
 
     public Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
@@ -464,7 +502,7 @@ public class VariantDBAdaptorUtils {
             BiFunction<StudyConfiguration, String, T> getSample, Function<StudyConfiguration, T> getStudyId) {
 
         List<String> returnedSamples = getReturnedSamplesList(query, options);
-        LinkedHashSet<String> returnedSamplesSet = new LinkedHashSet<>(returnedSamples);
+        LinkedHashSet<String> returnedSamplesSet = returnedSamples != null ? new LinkedHashSet<>(returnedSamples) : null;
 
         Map<T, List<T>> samples = new HashMap<>(studyIds.size());
         for (Integer studyId : studyIds) {
@@ -491,19 +529,41 @@ public class VariantDBAdaptorUtils {
     }
 
     public static List<String> getReturnedSamplesList(Query query, Set<VariantField> returnedFields) {
+        List<String> samples;
         if (!returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
-            return Collections.singletonList("none");
+            samples = Collections.emptyList();
         } else {
             //Remove the studyName, if any
-            return getReturnedSamplesList(query);
+            samples = getReturnedSamplesList(query);
         }
+        return samples;
     }
 
+    /**
+     * Get list of returned samples.
+     *
+     * Null for undefined returned samples. If null, return ALL samples.
+     * Return NONE if empty list
+     *
+     *
+     * @param query     Query with the QueryParams
+     * @return          List of samples to return.
+     */
     public static List<String> getReturnedSamplesList(Query query) {
-        return query.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key())
-                .stream()
-                .map(s -> s.contains(":") ? s.split(":")[1] : s)
-                .collect(Collectors.toList());
+        List<String> samples;
+        if (isValidParam(query, RETURNED_SAMPLES)) {
+            samples = query.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
+        } else if (isValidParam(query, SAMPLES)) {
+            samples = query.getAsStringList(VariantDBAdaptor.VariantQueryParams.SAMPLES.key());
+        } else {
+            samples = null;
+        }
+        if (samples != null) {
+            samples.stream()
+                    .map(s -> s.contains(":") ? s.split(":")[1] : s)
+                    .collect(Collectors.toList());
+        }
+        return samples;
     }
 
 

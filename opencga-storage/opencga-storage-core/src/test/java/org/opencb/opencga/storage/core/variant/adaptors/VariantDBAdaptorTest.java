@@ -772,39 +772,16 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         QueryResult<Variant> result = dbAdaptor.get(query, null);
         assertEquals(0, result.getNumResults());
 
+        for (String tissue : Arrays.asList("skin", "brain")) {
 
-        query = new Query(ANNOT_EXPRESSION.key(), "skin");
-        result = dbAdaptor.get(query, null);
-        System.out.println("result.getNumResults() = " + result.getNumResults());
-        assertNotEquals(0, result.getNumResults());
-        assertNotEquals(allVariants.getNumResults(), result.getNumResults());
-        genes = dbAdaptor.getDBAdaptorUtils().getGenesByExpression(query.getAsStringList(ANNOT_EXPRESSION.key()));
-        assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
-
-        query = new Query(ANNOT_EXPRESSION.key(), "brain");
-        result = dbAdaptor.get(query, null);
-        System.out.println("result.getNumResults() = " + result.getNumResults());
-        assertNotEquals(0, result.getNumResults());
-        assertNotEquals(allVariants.getNumResults(), result.getNumResults());
-        genes = dbAdaptor.getDBAdaptorUtils().getGenesByExpression(query.getAsStringList(ANNOT_EXPRESSION.key()));
-        assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
-
-        query = new Query(ANNOT_EXPRESSION.key(), "tongue");
-        result = dbAdaptor.get(query, null);
-        System.out.println("result.getNumResults() = " + result.getNumResults());
-        assertNotEquals(0, result.getNumResults());
-        assertNotEquals(allVariants.getNumResults(), result.getNumResults());
-        genes = dbAdaptor.getDBAdaptorUtils().getGenesByExpression(query.getAsStringList(ANNOT_EXPRESSION.key()));
-        assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
-
-        query = new Query(ANNOT_EXPRESSION.key(), "pancreas");
-        result = dbAdaptor.get(query, null);
-        System.out.println("result.getNumResults() = " + result.getNumResults());
-        assertNotEquals(0, result.getNumResults());
-        assertNotEquals(allVariants.getNumResults(), result.getNumResults());
-        genes = dbAdaptor.getDBAdaptorUtils().getGenesByExpression(query.getAsStringList(ANNOT_EXPRESSION.key()));
-        assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
-
+            query = new Query(ANNOT_EXPRESSION.key(), tissue);
+            result = dbAdaptor.get(query, null);
+            System.out.println("result.getNumResults() = " + result.getNumResults());
+            assertNotEquals(0, result.getNumResults());
+            assertNotEquals(allVariants.getNumResults(), result.getNumResults());
+            genes = dbAdaptor.getDBAdaptorUtils().getGenesByExpression(query.getAsStringList(ANNOT_EXPRESSION.key()));
+            assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
+        }
     }
 
 
@@ -1266,18 +1243,20 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         checkSamplesData("NA19600,NA19685");
         checkSamplesData("NA19685,NA19600");
         checkSamplesData("NA19660,NA19661,NA19600");
-        checkSamplesData("");
+        checkSamplesData(null);
+//        checkSamplesData("all");
+//        checkSamplesData("none");
     }
 
-    public void checkSamplesData(String samples) {
+    public void checkSamplesData(String returnedSamples) {
         Query query = new Query(SAMPLES_METADATA.key(), true);
         QueryOptions options = new QueryOptions(QueryOptions.SORT, true); //no limit;
 
-        query.put(RETURNED_SAMPLES.key(), samples);
+        query.put(RETURNED_SAMPLES.key(), returnedSamples);
         VariantQueryResult<Variant> queryResult = dbAdaptor.get(query, options);
         List<String> samplesName;
-        if (samples.isEmpty()) {
-            samplesName = Collections.emptyList();
+        if (returnedSamples == null) {
+            samplesName = new ArrayList<>(StudyConfiguration.getSortedIndexedSamplesPosition(studyConfiguration).keySet());
         } else {
             samplesName = query.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
         }
@@ -1428,10 +1407,12 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     public void testGetAllVariants_samples() {
         Query query;
 
+        QueryResult<Variant> allVariants = dbAdaptor.get(new Query(RETURNED_SAMPLES.key(), "NA19600"), new QueryOptions());
         query = new Query(SAMPLES.key(), "NA19600");
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", containsString("1")))));
 
+        allVariants = dbAdaptor.get(new Query(RETURNED_SAMPLES.key(), "NA19685"), new QueryOptions());
         query = new Query(SAMPLES.key(), "NA19685");
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19685", "GT", containsString("1")))));
@@ -1440,13 +1421,14 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19685", "GT", containsString("1")))));
 
+        allVariants = dbAdaptor.get(new Query(RETURNED_SAMPLES.key(), "NA19600,NA19685"), new QueryOptions());
         query = new Query(SAMPLES.key(), "NA19600,NA19685");
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, allOf(
                 withSampleData("NA19600", "GT", containsString("1")),
                 withSampleData("NA19685", "GT", containsString("1"))))));
 
-        query = new Query(SAMPLES.key(), "NA19600").append(GENOTYPE.key(), "NA19685:0|0");
+        query = new Query(SAMPLES.key(), "NA19600").append(GENOTYPE.key(), "NA19685:0|0").append(RETURNED_SAMPLES.key(), "NA19600,NA19685");
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, allOf(
                 withSampleData("NA19600", "GT", containsString("1")),

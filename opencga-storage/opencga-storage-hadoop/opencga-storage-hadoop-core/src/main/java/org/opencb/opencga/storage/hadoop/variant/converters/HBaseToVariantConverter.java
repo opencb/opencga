@@ -68,7 +68,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     private final Map<Integer, LinkedHashMap<String, Integer>> returnedSamplesPositionMap = new HashMap<>();
     private final Logger logger = LoggerFactory.getLogger(HBaseToVariantConverter.class);
 
-    private List<String> returnedSamples = Collections.emptyList();
+    private List<String> returnedSamples = null;
 
     private static boolean failOnWrongVariants = false; //FIXME
     private boolean studyNameAsStudyId = false;
@@ -375,7 +375,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     private LinkedHashMap<String, Integer> getReturnedSamplesPosition(StudyConfiguration studyConfiguration) {
         if (!returnedSamplesPositionMap.containsKey(studyConfiguration.getStudyId())) {
             LinkedHashMap<String, Integer> samplesPosition = StudyConfiguration.getReturnedSamplesPosition(studyConfiguration,
-                    new LinkedHashSet<>(this.returnedSamples), StudyConfiguration::getIndexedSamples);
+                    returnedSamples == null ? null : new LinkedHashSet<>(returnedSamples), StudyConfiguration::getIndexedSamples);
             returnedSamplesPositionMap.put(studyConfiguration.getStudyId(), samplesPosition);
         }
         return returnedSamplesPositionMap.get(studyConfiguration.getStudyId());

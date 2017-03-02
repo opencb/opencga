@@ -102,9 +102,9 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
         return new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
     }
 
-    default void logLevelDebug() {
+    default void logLevel(String level) {
         ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
-        stderr.setThreshold(Level.toLevel("debug"));
+        stderr.setThreshold(Level.toLevel(level));
         org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
         org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
         org.apache.log4j.Logger.getLogger("org.mongodb.driver.protocol.update").setLevel(Level.WARN);

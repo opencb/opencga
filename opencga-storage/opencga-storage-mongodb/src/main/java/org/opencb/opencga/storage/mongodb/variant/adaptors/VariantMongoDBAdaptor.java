@@ -1929,14 +1929,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         samplesConverter.setReturnedSamples(getReturnedSamplesList(query, fields));
 
         DocumentToStudyVariantEntryConverter studyEntryConverter;
-        Collection<Integer> returnedFiles;
-        if (!fields.contains(VariantField.STUDIES_FILES)) {
-            returnedFiles = Collections.emptyList();
-        } else if (query.containsKey(VariantQueryParams.RETURNED_FILES.key())) {
-            returnedFiles = query.getAsIntegerList(VariantQueryParams.RETURNED_FILES.key());
-        } else {
-            returnedFiles = null;
-        }
+        Collection<Integer> returnedFiles = utils.getReturnedFiles(query, fields);
 
         studyEntryConverter = new DocumentToStudyVariantEntryConverter(false, returnedFiles, samplesConverter);
         studyEntryConverter.setStudyConfigurationManager(studyConfigurationManager);
