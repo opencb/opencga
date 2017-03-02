@@ -301,87 +301,6 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
     }
 
-//    private void queryGrpc() throws Exception {
-//        StorageVariantCommandOptions.QueryGrpCVariantsCommandOptions queryGrpcCommandOptions = variantCommandOptions.queryGrpCVariantsCommandOptions;
-//
-//        VariantDBAdaptor variantDBAdaptor = variantStorageEngine.getDBAdaptor(queryGrpcCommandOptions.dbName);
-//        List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
-//
-//        // We prepare and build the needed objects: query, queryOptions and outputStream to print results
-//        Query query = VariantQueryCommandUtils.parseQuery(queryGrpcCommandOptions, studyNames);
-//        QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(queryGrpcCommandOptions);
-//        OutputStream outputStream = VariantQueryCommandUtils.getOutputStream(queryGrpcCommandOptions);
-//        PrintStream printStream = new PrintStream(outputStream);
-//
-//        // Query object implements a Map<String, Object> while gRPC request object is a Map<String, String>,
-//        // we need to convert all parsed query fields into String, Lists are taken care of to avoid square brackets
-//        Map<String, String> queryString = new HashMap<>();
-//        query.keySet().stream().forEach(s ->  {
-//            if (query.get(s) instanceof ArrayList || query.get(s) instanceof LinkedList) {
-//                String replace = query.getString(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key())
-//                        .replace(" ", "").replace("[", "").replace("]", "");
-//                queryString.put(s, replace);
-//            } else {
-//                queryString.put(s, String.valueOf(query.get(s)));
-//            }
-//        });
-//        logger.debug("Query object: {}", queryString);
-//
-//        Map<String, String> queryOptionsString = new HashMap<>();
-//        options.keySet().stream().forEach(s -> queryOptionsString.put(s, String.valueOf(options.get(s))));
-//        logger.debug("QueryOption object: {}", queryOptionsString);
-//
-//        // Setting the storageEngine and database to execute the query, this are passed to the gRPC in the request object
-//        String storageEngine = configuration.getDefaultStorageEngineId();
-//        if (StringUtils.isNotEmpty(queryGrpcCommandOptions.commonOptions.storageEngine)) {
-//            storageEngine = queryGrpcCommandOptions.commonOptions.storageEngine;
-//        }
-//
-//        String database = configuration.getStorageEngine(storageEngine).getVariant().getOptions().getString("database.name");
-//        if (StringUtils.isNotEmpty(queryGrpcCommandOptions.dbName)) {
-//            database = queryGrpcCommandOptions.dbName;
-//        }
-//
-//        // We create the OpenCGA gRPC request object with the query, queryOptions, storageEngine and database
-//        GenericServiceModel.Request request = GenericServiceModel.Request.newBuilder()
-//                .setStorageEngine(storageEngine)
-//                .setDatabase(database)
-//                .putAllQuery(queryString)
-//                .putAllOptions(queryOptionsString)
-//                .build();
-//
-//
-//        // Connecting to the server host and port
-//        String grpcServerHost = "localhost";
-//        if (StringUtils.isNotEmpty(queryGrpcCommandOptions.host)) {
-//            grpcServerHost = queryGrpcCommandOptions.host;
-//        }
-//
-//        int grpcServerPort = configuration.getServer().getGrpc();
-//        if (queryGrpcCommandOptions.port > 0) {
-//            grpcServerPort = queryGrpcCommandOptions.port;
-//        }
-//        logger.debug("Connecting to gRPC server at '{}:{}' to database '{}:{}'", grpcServerHost, grpcServerPort, storageEngine, database);
-//
-//        // We create the gRPC channel to the specified server host and port
-//        ManagedChannel channel = ManagedChannelBuilder.forAddress(grpcServerHost, grpcServerPort)
-//                .usePlaintext(true)
-//                .build();
-//
-//
-//        // We use a blocking stub to execute the query to gRPC
-//        VariantServiceGrpc.VariantServiceBlockingStub geneServiceBlockingStub = VariantServiceGrpc.newBlockingStub(channel);
-//        Iterator<VariantProto.Variant> variantIterator = geneServiceBlockingStub.get(request);
-//        while (variantIterator.hasNext()) {
-//            VariantProto.Variant next = variantIterator.next();
-//            printStream.println(next.toString());
-//        }
-//
-//        // Close open resources
-//        printStream.close();
-//        channel.shutdown().awaitTermination(2, TimeUnit.SECONDS);
-//    }
-
     private void importData() throws URISyntaxException, StorageEngineException, IOException {
         StorageVariantCommandOptions.ImportVariantsCommandOptions importVariantsOptions = variantCommandOptions.importVariantsCommandOptions;
 
@@ -727,28 +646,28 @@ public class VariantCommandExecutor extends CommandExecutor {
             variantSearchManager.load(dbName, path);
         }
 
-        // query
-        if (querying) {
-            if (!variantSearchManager.existCore(dbName)) {
-                throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
-            }
-            int count = 0;
-            try {
-                Query query = new Query();
-                query = VariantQueryCommandUtils.parseQuery(searchOptions, query);
-                QueryOptions queryOptions = new QueryOptions(); // VariantQueryCommandUtils.parseQueryOptions(searchOptions);
-                SolrVariantSearchIterator iterator = variantSearchManager.iterator(dbName, query, queryOptions);
-                while (iterator.hasNext()) {
-                    VariantSearchModel variantSearch = iterator.next();
-                    System.out.println("Variant #" + count);
-                    System.out.println(variantSearch.toString());
-                    count++;
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            System.out.println("Num. variants: " + count);
-        }
+//        // query
+//        if (querying) {
+//            if (!variantSearchManager.existCore(dbName)) {
+//                throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
+//            }
+//            int count = 0;
+//            try {
+//                Query query = new Query();
+//                query = VariantQueryCommandUtils.parseQuery(searchOptions, query);
+//                QueryOptions queryOptions = new QueryOptions(); // VariantQueryCommandUtils.parseQueryOptions(searchOptions);
+//                SolrVariantSearchIterator iterator = variantSearchManager.iterator(dbName, query, queryOptions);
+//                while (iterator.hasNext()) {
+//                    VariantSearchModel variantSearch = iterator.next();
+//                    System.out.println("Variant #" + count);
+//                    System.out.println(variantSearch.toString());
+//                    count++;
+//                }
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//            System.out.println("Num. variants: " + count);
+//        }
     }
 
     private void executeRank(Query query, VariantDBAdaptor variantDBAdaptor,

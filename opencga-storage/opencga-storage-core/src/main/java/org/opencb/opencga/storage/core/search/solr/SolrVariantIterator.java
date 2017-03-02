@@ -10,19 +10,14 @@ import java.util.Iterator;
 /**
  * Created by jtarraga on 01/03/17.
  */
-public class SolrVariantIterator extends VariantDBIterator { //implements Iterator<Variant>, AutoCloseable {
+public class SolrVariantIterator extends VariantDBIterator {
 
-    private Iterator<VariantSearchModel> solrIterator = null;
-    private VariantSearchToVariantConverter variantSearchToVariantConverter = null;
+    private Iterator<VariantSearchModel> solrIterator;
+    private VariantSearchToVariantConverter variantSearchToVariantConverter;
 
     public SolrVariantIterator(Iterator<VariantSearchModel> solrIterator) {
         this.solrIterator = solrIterator;
         variantSearchToVariantConverter = new VariantSearchToVariantConverter();
-    }
-
-    @Override
-    public void close() throws Exception {
-        // nothing to do
     }
 
     @Override
@@ -33,5 +28,10 @@ public class SolrVariantIterator extends VariantDBIterator { //implements Iterat
     @Override
     public Variant next() {
         return variantSearchToVariantConverter.convertToDataModelType(solrIterator.next());
+    }
+
+    @Override
+    public void close() throws Exception {
+        // nothing to do
     }
 }
