@@ -23,16 +23,16 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
      */
     @Override
     public Variant convertToDataModelType(VariantSearchModel variantSearchModel) {
-        Variant variant = new Variant();
+        Variant variant = new Variant(variantSearchModel.getId());
 
         // set ID, chromosome, start, end, ref, alt, type
         variant.setId(variantSearchModel.getVariantId());
-        variant.setChromosome(variantSearchModel.getChromosome());
-        variant.setStart(variantSearchModel.getStart());
-        variant.setEnd(variantSearchModel.getEnd());
-        String[] split = variantSearchModel.getId().split(":");
-        variant.setReference(split[2]);
-        variant.setAlternate(split[3]);
+//        variant.setChromosome(variantSearchModel.getChromosome());
+//        variant.setStart(variantSearchModel.getStart());
+//        variant.setEnd(variantSearchModel.getEnd());
+//        String[] split = variantSearchModel.getId().split(":");
+//        variant.setReference(split[2]);
+//        variant.setAlternate(split[3]);
         variant.setType(VariantType.valueOf(variantSearchModel.getType()));
 
         // set studies and stats
