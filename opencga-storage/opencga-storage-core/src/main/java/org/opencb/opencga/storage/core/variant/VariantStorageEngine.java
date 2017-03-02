@@ -36,6 +36,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.search.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -52,10 +53,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by imedina on 13/08/14.
@@ -435,6 +433,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
             // then, load variants
             VariantDBAdaptor dbAdaptor = getDBAdaptor(database);
+            queryOptions = new QueryOptions();
+            queryOptions.put(QueryOptions.EXCLUDE, VariantField.STUDIES_SAMPLES_DATA);
             VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
             variantSearchManager.load(database, iterator);
         }
