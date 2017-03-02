@@ -39,6 +39,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.GENOTYPE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.SAMPLES_METADATA;
 
 /**
@@ -49,12 +50,12 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.
 public class VariantDBAdaptorUtils {
 
     public static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=?|!?=?~|==?)([^=<>~!]+.*)$");
+    private static final Pattern GENOTYPE_FILTER_PATTERN = Pattern.compile("(?<sample>[^,;]+):(?<gts>([^:;,]+,?)+)(?<op>[;,.])");
 
     public static final String OR = ",";
     public static final String AND = ";";
     public static final String IS = ":";
     public static final String STUDY_POP_FREQ_SEPARATOR = ":";
-//    public static final Map<String, String> PROJECT_FIELD_ALIAS;
 
     private static final int GENE_EXTRA_REGION = 5000;
     private static Logger logger = LoggerFactory.getLogger(VariantDBAdaptorUtils.class);
@@ -379,6 +380,18 @@ public class VariantDBAdaptorUtils {
                         throw VariantQueryException.sampleNotFound(sampleStr, defaultStudyConfiguration.getStudyName());
                     }
                     sampleId = defaultStudyConfiguration.getSampleIds().get(sampleStr);
+                } else if (sampleStr.contains(":")) {  //Expect to be as <study>:<sample>
+                    String[] split = sampleStr.split(":");
+                    String study = split[0];
+                    sampleStr= split[1];
+                    QueryResult<StudyConfiguration> queryResult = getStudyConfigurationManager().getStudyConfiguration(study, null);
+                    if (queryResult.getResult().isEmpty()) {
+                        throw VariantQueryException.studyNotFound(study);
+                    }
+                    if (!queryResult.first().getSampleIds().containsKey(sampleStr)) {
+                        throw VariantQueryException.sampleNotFound(sampleStr, study);
+                    }
+                    sampleId = queryResult.first().getSampleIds().get(sampleStr);
                 } else {
                     //Unable to identify that sample!
                     List<String> studyNames = getStudyConfigurationManager().getStudyNames(null);
@@ -401,6 +414,12 @@ public class VariantDBAdaptorUtils {
         List<Integer> returnedStudies = getReturnedStudies(query, options);
         return getReturnedSamples(query, options, returnedStudies, studyId -> getStudyConfigurationManager()
                 .getStudyConfiguration(studyId, options).first());
+    }
+
+    public Map<String, List<String>> getSamplesMetadata(Query query) {
+        List<Integer> returnedStudies = getReturnedStudies(query, null);
+        return getReturnedSamplesString(query, null, returnedStudies, studyId -> getStudyConfigurationManager()
+                .getStudyConfiguration(studyId, null).first());
     }
 
     public Map<String, List<String>> getSamplesMetadata(Query query, QueryOptions options) {
@@ -485,6 +504,43 @@ public class VariantDBAdaptorUtils {
                 .stream()
                 .map(s -> s.contains(":") ? s.split(":")[1] : s)
                 .collect(Collectors.toList());
+    }
+
+
+    /**
+     * Partes the genotype filter.
+     *
+     * @param sampleGenotypes   Genotypes filter value
+     * @param map               Initialized map to be filled with the sample to list of genotypes
+     * @return QueryOperation between samples
+     */
+    public static QueryOperation parseGenotypeFilter(String sampleGenotypes, Map<Object, List<String>> map) {
+        Matcher matcher = GENOTYPE_FILTER_PATTERN.matcher(sampleGenotypes + '.');
+
+        QueryOperation operation = null;
+        while (matcher.find()) {
+            String gts = matcher.group("gts");
+            String sample = matcher.group("sample");
+            String op = matcher.group("op");
+            map.put(sample, Arrays.asList(gts.split(",")));
+            if (AND.equals(op)) {
+                if (operation == QueryOperation.OR) {
+                    throw VariantQueryException.malformedParam(GENOTYPE, sampleGenotypes,
+                            "Unable to mix AND (" + AND + ") and OR (" + OR + ") in the same query.");
+                } else {
+                    operation = QueryOperation.AND;
+                }
+            } else if (OR.equals(op)) {
+                if (operation == QueryOperation.AND) {
+                    throw VariantQueryException.malformedParam(GENOTYPE, sampleGenotypes,
+                            "Unable to mix AND (" + AND + ") and OR (" + OR + ") in the same query.");
+                } else {
+                    operation = QueryOperation.OR;
+                }
+            }
+        }
+
+        return operation;
     }
 
     /**

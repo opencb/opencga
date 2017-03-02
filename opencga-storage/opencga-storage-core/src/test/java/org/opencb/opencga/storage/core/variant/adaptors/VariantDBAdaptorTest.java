@@ -1425,6 +1425,35 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
+    public void testGetAllVariants_samples() {
+        Query query;
+
+        query = new Query(SAMPLES.key(), "NA19600");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", containsString("1")))));
+
+        query = new Query(SAMPLES.key(), "NA19685");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19685", "GT", containsString("1")))));
+
+        query = new Query(STUDIES.key(), studyConfiguration.getStudyName()).append(SAMPLES.key(), "NA19685");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19685", "GT", containsString("1")))));
+
+        query = new Query(SAMPLES.key(), "NA19600,NA19685");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, allOf(
+                withSampleData("NA19600", "GT", containsString("1")),
+                withSampleData("NA19685", "GT", containsString("1"))))));
+
+        query = new Query(SAMPLES.key(), "NA19600").append(GENOTYPE.key(), "NA19685:0|0");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, allOf(
+                withSampleData("NA19600", "GT", containsString("1")),
+                withSampleData("NA19685", "GT", is("0|0"))))));
+    }
+
+    @Test
     public void testGetAllVariants_genotypes_wrong_values() {
         Query query = new Query(GENOTYPE.key(), "WRONG_SAMPLE:1|1");
         thrown.expect(VariantQueryException.class);

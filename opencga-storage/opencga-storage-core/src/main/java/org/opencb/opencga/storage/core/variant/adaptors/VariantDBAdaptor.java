@@ -54,6 +54,10 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
     String ALTERNATE_DESCR = "Main alternate allele";
     String STUDIES_DESCR = "";
     String RETURNED_STUDIES_DESCR = "List of studies to be returned";
+//    String SAMPLES_DESCR = "Filter variants where ALL the provided samples are mutated (not HOM_REF or missing)";
+    String SAMPLES_DESCR = "Filter variants where ALL the provided samples are mutated (HET or HOM_ALT)";
+    String GENOTYPE_DESCR = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)*"
+            + " e.g. HG0097:0/0;HG0098:0/1,1/1";
     String RETURNED_SAMPLES_DESCR = "List of samples to be returned";
     String SAMPLES_METADATA_DESCR =
             "Returns the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.";
@@ -68,8 +72,6 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
     String STATS_MGF_DESCR = "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}";
     String MISSING_ALLELES_DESCR = "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}";
     String MISSING_GENOTYPES_DESCR = "Number of missing genotypes: [{study:}]{cohort}[<|>|<=|>=]{number}";
-    String GENOTYPE_DESCR = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)*"
-            + " e.g. HG0097:0/0;HG0098:0/1,1/1";
 
     String ANNOTATION_EXISTS_DESCR = "Specify if the variant annotation must exists.";
     String ANNOT_CONSEQUENCE_TYPE_DESCR = "Consequence type SO term list. e.g. missense_variant,stop_lost or SO:0001583,SO:0001578";
@@ -109,6 +111,9 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
         //EFFECT ("TEXT_ARRAY", null, ),
         STUDIES("studies", TEXT_ARRAY, STUDIES_DESCR),
         RETURNED_STUDIES("returnedStudies", TEXT_ARRAY, RETURNED_STUDIES_DESCR),
+        SAMPLES("samples", TEXT_ARRAY, SAMPLES_DESCR),
+        //[<study>:]<sample>:<genotype>[,<genotype>]*
+        GENOTYPE("genotype", TEXT_ARRAY, GENOTYPE_DESCR),
         RETURNED_SAMPLES("returnedSamples", TEXT_ARRAY, RETURNED_SAMPLES_DESCR),
         SAMPLES_METADATA("samplesMetadata", TEXT_ARRAY, SAMPLES_METADATA_DESCR),
         FILES("files", TEXT_ARRAY, FILES_DESCR),
@@ -120,8 +125,6 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
         STATS_MGF("mgf", TEXT_ARRAY, STATS_MGF_DESCR),
         MISSING_ALLELES("missingAlleles", TEXT_ARRAY, MISSING_ALLELES_DESCR),
         MISSING_GENOTYPES("missingGenotypes", TEXT_ARRAY, MISSING_GENOTYPES_DESCR),
-        //[<study>:]<sample>:<genotype>[,<genotype>]*
-        GENOTYPE("genotype", TEXT_ARRAY, GENOTYPE_DESCR),
 
         ANNOTATION_EXISTS("annotationExists", BOOLEAN, ANNOTATION_EXISTS_DESCR),
         ANNOT_CONSEQUENCE_TYPE("annot-ct", TEXT_ARRAY, ANNOT_CONSEQUENCE_TYPE_DESCR),

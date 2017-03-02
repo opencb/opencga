@@ -3,12 +3,9 @@ package org.opencb.opencga.storage.core.manager.variant;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.FileIndex;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.storage.core.manager.CatalogUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -26,7 +23,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorU
  */
 public class VariantCatalogQueryUtils extends CatalogUtils {
 
-    public static final String SAMPLE_ANNOTATION = "sampleAnnotation";
+    public static final String FILTER_SAMPLES = "filterSamples";
 
     public VariantCatalogQueryUtils(CatalogManager catalogManager) {
         super(catalogManager);
@@ -64,8 +61,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 catalogManager.getFileId(value, defaultStudyStr, sessionId));
         // TODO: Parse returned sample filter and add genotype filter
 
-        if (StringUtils.isNotBlank(query.getString(SAMPLE_ANNOTATION))) {
-            String sampleAnnotation = query.getString(SAMPLE_ANNOTATION);
+        if (StringUtils.isNotBlank(query.getString(FILTER_SAMPLES))) {
+            String sampleAnnotation = query.getString(FILTER_SAMPLES);
             Query sampleQuery = parseSampleAnnotationQuery(sampleAnnotation, SampleDBAdaptor.QueryParams::getParam);
             sampleQuery.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), defaultStudyId);
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID);
@@ -81,26 +78,26 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 query.append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), sampleIds);
             }
 
-            Query fileQuery = new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY)
-                    .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleIds);
+//            Query fileQuery = new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY)
+//                    .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleIds);
+//
+//            List<Long> fileIds = catalogManager.getAllFiles(defaultStudyId, fileQuery, options, sessionId).getResult().stream()
+//                    .map(File::getId)
+//                    .collect(Collectors.toList());
+//
+//            if (fileIds.isEmpty()) {
+//                throw new VariantQueryException("Samples not indexed: " + sampleIds);
+//            }
+//
+//            if (!isValidParam(query, VariantDBAdaptor.VariantQueryParams.FILES)) {
+//                query.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileIds);
+//            }
+//            if (!isValidParam(query, VariantDBAdaptor.VariantQueryParams.RETURNED_FILES)) {
+//                query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), fileIds);
+//            }
 
-            List<Long> fileIds = catalogManager.getAllFiles(defaultStudyId, fileQuery, options, sessionId).getResult().stream()
-                    .map(File::getId)
-                    .collect(Collectors.toList());
-
-            if (fileIds.isEmpty()) {
-                throw new VariantQueryException("Samples not indexed: " + sampleIds);
-            }
-
-            if (!isValidParam(query, VariantDBAdaptor.VariantQueryParams.FILES)) {
-                query.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileIds);
-            }
-            if (!isValidParam(query, VariantDBAdaptor.VariantQueryParams.RETURNED_FILES)) {
-                query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), fileIds);
-            }
-
-//            String genotype = query.getString("sampleAnnotationGenotype");
-            String genotype = query.getString(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key());
+            String genotype = query.getString("sampleAnnotationGenotype");
+//            String genotype = query.getString(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key());
             if (StringUtils.isNotBlank(genotype)) {
                 StringBuilder sb = new StringBuilder();
                 for (Long sampleId : sampleIds) {
@@ -109,6 +106,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                             .append(';'); // TODO: Should this be an AND (;) or an OR (,)?
                 }
                 query.append(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), sb.toString());
+            } else {
+                query.append(VariantDBAdaptor.VariantQueryParams.SAMPLES.key(), sampleIds);
             }
         }
 

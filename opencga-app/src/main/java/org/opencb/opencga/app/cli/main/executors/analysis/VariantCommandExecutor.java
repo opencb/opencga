@@ -128,6 +128,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 //        queryOptions.put(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(),
 //                queryCommandOptions.annotationExists);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), queryCommandOptions.genericVariantQueryOptions.sampleGenotype);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.SAMPLES.key(), queryCommandOptions.genericVariantQueryOptions.samples);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), queryCommandOptions.genericVariantQueryOptions.consequenceType);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_XREF.key(), queryCommandOptions.genericVariantQueryOptions.annotXref);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_BIOTYPE.key(), queryCommandOptions.genericVariantQueryOptions.geneBiotype);
