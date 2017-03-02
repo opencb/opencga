@@ -12,6 +12,8 @@ import java.util.Iterator;
  */
 public class SolrVariantIterator extends VariantDBIterator {
 
+
+    private long numFound = 0;
     private Iterator<VariantSearchModel> solrIterator;
     private VariantSearchToVariantConverter variantSearchToVariantConverter;
 
@@ -34,4 +36,13 @@ public class SolrVariantIterator extends VariantDBIterator {
     public void close() throws Exception {
         // nothing to do
     }
+
+    public long getNumFound() {
+        return numFound;
+    }
+
+    public void setNumFound(long numFound) {
+        this.numFound = numFound;
+    }
+
 }

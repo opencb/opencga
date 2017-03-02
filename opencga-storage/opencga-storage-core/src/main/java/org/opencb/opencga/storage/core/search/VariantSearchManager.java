@@ -293,8 +293,8 @@ public class VariantSearchManager {
         while (iterator.hasNext()) {
             results.add(iterator.next());
         }
-        return new VariantQueryResult<>("", (int)stopWatch.getTime(TimeUnit.MILLISECONDS),
-                results.size(), results.size(), "Data from Solr", "", results, null);
+        return new VariantQueryResult<>("", (int) stopWatch.getTime(TimeUnit.MILLISECONDS),
+                results.size(), iterator.getNumFound(), "Data from Solr", "", results, null);
     }
 
     /**
@@ -338,7 +338,9 @@ public class VariantSearchManager {
         try {
             SolrQuery solrQuery = ParseSolrQuery.parse(query, queryOptions);
             QueryResponse response = solrClient.query(solrQuery);
-            return new SolrVariantIterator((response.getBeans(VariantSearchModel.class).iterator()));
+            SolrVariantIterator iterator = new SolrVariantIterator((response.getBeans(VariantSearchModel.class).iterator()));
+            iterator.setNumFound(response.getResults().getNumFound());
+            return iterator;
         } catch (SolrServerException e) {
             throw new VariantSearchException(e.getMessage(), e);
         }
