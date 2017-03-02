@@ -290,7 +290,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         } else {
             if (options.getBoolean("summary", false) && storageConfiguration.getSearch().getActive()
-                    && variantSearchManager.isAlive(credentials.getMongoDbName())) {
+                    && variantSearchManager != null && variantSearchManager.isAlive(credentials.getMongoDbName())) {
                 try {
                     queryResult = variantSearchManager.query(credentials.getMongoDbName(), query, options);
                 } catch (IOException | VariantSearchException e) {
@@ -449,7 +449,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
         if (options.getBoolean("summary", false) && storageConfiguration.getSearch().getActive()
-                && variantSearchManager.isAlive(credentials.getMongoDbName())) {
+                && variantSearchManager != null && variantSearchManager.isAlive(credentials.getMongoDbName())) {
             // Solr iterator
             try {
                 return variantSearchManager.iterator(credentials.getMongoDbName(), query, options);
