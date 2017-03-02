@@ -36,7 +36,7 @@ import java.util.Arrays;
 
 @Path("/{version}/panels")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Panels", position = 10, description = "Methods for working with 'panels' endpoint")
+@Api(value = "Panels", hidden = true, position = 10, description = "Methods for working with 'panels' endpoint")
 public class DiseasePanelWSServer extends OpenCGAWSServer {
 
     public DiseasePanelWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
