@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.search;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
@@ -36,6 +37,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by wasim on 09/11/16.
@@ -285,12 +287,14 @@ public class VariantSearchManager {
     public VariantQueryResult<Variant> query(String collection, Query query, QueryOptions queryOptions)
             throws IOException, VariantSearchException {
         // we don't initialize here the collection, the iterator does
+        StopWatch stopWatch = StopWatch.createStarted();
         List<Variant> results = new ArrayList<>();
         SolrVariantIterator iterator = iterator(collection, query, queryOptions);
         while (iterator.hasNext()) {
             results.add(iterator.next());
         }
-        return new VariantQueryResult<>("", 0, results.size(), results.size(), "Data from Solr", "", results, null);
+        return new VariantQueryResult<>("", (int)stopWatch.getTime(TimeUnit.MILLISECONDS),
+                results.size(), results.size(), "Data from Solr", "", results, null);
     }
 
     /**
