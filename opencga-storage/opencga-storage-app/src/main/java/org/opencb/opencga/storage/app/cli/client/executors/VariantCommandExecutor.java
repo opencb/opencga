@@ -638,12 +638,14 @@ public class VariantCommandExecutor extends CommandExecutor {
 
         // index
         if (searchOptions.index) {
-            if (!variantSearchManager.existCore(dbName)) {
-                throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
-            }
-            querying = false;
-            Path path = Paths.get(searchOptions.inputFilename);
-            variantSearchManager.load(dbName, path);
+//            if (!variantSearchManager.existCore(dbName)) {
+//                throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
+//            }
+//            querying = false;
+//            Path path = Paths.get(searchOptions.inputFilename);
+//            variantSearchManager.load(dbName, path);
+            VariantStorageEngine variantStorageEngine = StorageEngineFactory.get(configuration).getVariantStorageEngine();
+            variantStorageEngine.searchIndex(dbName);
         }
 
 //        // query
