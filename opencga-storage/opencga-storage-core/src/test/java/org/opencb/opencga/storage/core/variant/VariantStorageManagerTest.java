@@ -849,7 +849,6 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         logger.info("checkLoadedVariants time : " + (System.currentTimeMillis() - start) / 1000.0 + "s");
     }
 
-/*
     @Test
     @Ignore
     public void insertVariantIntoSolr() throws Exception {
@@ -872,10 +871,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 
 
         VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageManager.getConfiguration());
-
-        for (Variant variant:dbAdaptor) {
-            variantSearchManager.insert(variant);
-        }
+        variantSearchManager.load(variantStorageManager.getConfiguration().getSearch().getCollection(), dbAdaptor.iterator());
     }
-*/
+
 }
