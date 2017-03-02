@@ -169,16 +169,18 @@ public class VariantStorageManager extends StorageManager {
     }
 
 
-    public void searchIndex(String database) throws StorageEngineException, IOException, VariantSearchException, IllegalAccessException,
-            ClassNotFoundException, InstantiationException {
-        searchIndex(database, new Query(), new QueryOptions());
+    public void searchIndex(String study, String sessionId) throws StorageEngineException, IOException, VariantSearchException,
+            IllegalAccessException, ClassNotFoundException, InstantiationException, CatalogException {
+        searchIndex(study, new Query(), new QueryOptions(), sessionId);
     }
 
-    public void searchIndex(String database, Query query, QueryOptions queryOptions) throws StorageEngineException, IOException,
-            VariantSearchException, IllegalAccessException, InstantiationException, ClassNotFoundException {
+    public void searchIndex(String study, Query query, QueryOptions queryOptions, String sessionId) throws StorageEngineException,
+            IOException, VariantSearchException, IllegalAccessException, InstantiationException, ClassNotFoundException, CatalogException {
+        long studyId = catalogManager.getStudyId(study, sessionId);
+        QueryResult<Study> studyObj = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), sessionId);
         VariantStorageEngine variantStorageEngine =
                 storageEngineFactory.getVariantStorageEngine(storageConfiguration.getDefaultStorageEngineId());
-        variantStorageEngine.searchIndex(database, query, queryOptions);
+        variantStorageEngine.searchIndex(studyObj.first().getDataStores().get(File.Bioformat.VARIANT).getDbName(), query, queryOptions);
     }
 
 

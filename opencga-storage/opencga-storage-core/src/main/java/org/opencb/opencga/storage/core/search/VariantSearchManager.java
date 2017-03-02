@@ -42,8 +42,6 @@ import java.util.List;
  */
 public class VariantSearchManager {
 
-//    private String host;
-
     private String collection;
     private StorageConfiguration storageConfiguration;
 
@@ -56,7 +54,6 @@ public class VariantSearchManager {
 
     @Deprecated
     public VariantSearchManager(String host, String collection) {
-//        this.host = host;
 //        this.collection = collection;
 
         this.solrClient = new HttpSolrClient.Builder(host + collection).build();
@@ -65,8 +62,6 @@ public class VariantSearchManager {
     }
 
     public VariantSearchManager(StorageConfiguration storageConfiguration) {
-//        this(storageConfiguration.getSearch().getHost(), storageConfiguration.getSearch().getCollection());
-//        this.searchConfiguration = storageConfiguration.getSearch();
         this.storageConfiguration = storageConfiguration;
 
 //        this.solrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost() + collection).build();
@@ -214,26 +209,6 @@ public class VariantSearchManager {
         }
 
         return false;
-
-
-//        .getCoreStatus(coreName, solrClient);
-//        try {
-//            // if the status.response is null, catch the exception
-//            status.getInstanceDirectory();
-//        } catch (Exception e) {
-//            return false;
-//        }
-//        return true;
-//
-////        CollectionAdminResponse request = CollectionAdminRequest.getClusterStatus();
-////        System.out.println(response.getCoreStatus(collectionName).size());
-////        return (response.getCoreStatus(collectionName).size() == 1);
-//
-//
-//        CollectionAdminRequest.ClusterStatus request = new CollectionAdminRequest.ClusterStatus();
-//        request.setCollectionName(collectionName);`
-//        System.out.println(request.process(solrClient).getCollectionStatus().size());
-//        return (request.process(solrClient).getCollectionStatus().size() == 1);
     }
 
     /**
@@ -315,10 +290,6 @@ public class VariantSearchManager {
         while (iterator.hasNext()) {
             results.add(iterator.next());
         }
-//        SolrVariantSearchIterator iterator = iterator(collection, query, queryOptions);
-//        while (iterator.hasNext()) {
-//            results.add(variantSearchToVariantConverter.convertToDataModelType(iterator.next()));
-//        }
         return new VariantQueryResult<>("", 0, results.size(), results.size(), "Data from Solr", "", results, null);
     }
 
@@ -542,9 +513,4 @@ public class VariantSearchManager {
         return variantSearchFacet;
     }
 
-
-
-    public static VariantSearchToVariantConverter getVariantSearchToVariantConverter() {
-        return variantSearchToVariantConverter;
-    }
 }
