@@ -191,6 +191,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = "Group variants by: [ct, gene, ensemblGene]", required = false) @DefaultValue("") @QueryParam("groupBy") String groupBy,
                                 @ApiParam(value = "Calculate histogram. Requires one region.", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
                                 @ApiParam(value = "Histogram interval size", required = false) @DefaultValue("2000") @QueryParam("interval") int interval,
+                                @ApiParam(value = "Fetch summary data from Solr", required = false) @QueryParam("summary") boolean summary,
                                 @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge) {
 
         try {
@@ -198,6 +199,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             QueryResult queryResult;
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            queryOptions.put("summary", summary);
+            
             Query query = VariantStorageManager.getVariantQuery(queryOptions);
 
             if (count) {
