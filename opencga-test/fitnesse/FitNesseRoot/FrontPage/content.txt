@@ -1,9 +1,9 @@
 !1 OpenCGA Acceptance Tests
 
 
-OpenCga
+!1 OpenCga
 
-!3 How to Execute Tests
+!3 Notes
 User must have a working test envirnment with latest OpenCGA '''!style_code(!style_red[PUBLIC])''' installation. Change the following variables in Suite Set Up page to run tests against own installtion:
  * OPENCGA_VERSION 
  * TEST_HOST 
