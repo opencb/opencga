@@ -33,6 +33,8 @@ import java.util.zip.GZIPInputStream;
 @Ignore
 public class VariantSearchManagerTest extends GenericTest {
 
+    private String collection;
+    private String filename;
     private List<Variant> variantList;
     private JsonFactory factory;
     private InputStream variantsStream;
@@ -43,12 +45,16 @@ public class VariantSearchManagerTest extends GenericTest {
 
     @Before
     public void setUp() throws Exception {
+        filename = "/home/imedina/Downloads/variation_chr1.full.json.gz";
+
         factory = new JsonFactory();
         jsonObjectMapper = new ObjectMapper();
-        initJSONParser(new File(VariantStorageBaseTest.getResourceUri("/home/imedina/Downloads/variation_chr1.full.json.gz")));
+        initJSONParser(new File(VariantStorageBaseTest.getResourceUri(filename)));
         variantList = readNextVariantFromJSON(100);
-//        variantSearchManager = new VariantSearchManager("http://localhost:8983/solr/", "biotest_core2");
-        variantSearchManager = new VariantSearchManager("http://localhost:8983/solr/", "biotest_collection_4");
+
+//        collection = "biotest_core2";
+        collection = "biotest_collection_4";
+        variantSearchManager = new VariantSearchManager("http://localhost:8983/solr/", collection);
     }
 
     //    @Test
@@ -107,8 +113,8 @@ public class VariantSearchManagerTest extends GenericTest {
     public void conversionTest() {
 
         try {
-//            String filename = "/home/imedina/Downloads/variation_chr1.full.json.gz";
-            String filename = "/home/jtarraga/data150/vcf/variation_chr22.3.json";
+//            filename = "/home/imedina/Downloads/variation_chr1.full.json.gz";
+            filename = "/home/jtarraga/data150/vcf/variation_chr22.3.json";
             BufferedReader bufferedReader = FileUtils.newBufferedReader(Paths.get(filename));
 
             VariantSearchToVariantConverter variantSearchToVariantConverter = new VariantSearchToVariantConverter();
@@ -135,120 +141,45 @@ public class VariantSearchManagerTest extends GenericTest {
             e.printStackTrace();
         }
     }
-/*
-    @Test
+
+    //@Test
     public void loadVariantFileIntoSolrTest() {
 
         String test = "Test_Variant_Insert_";
         try {
-            variantSearchManager = new VariantSearchManager("http://localhost:8983/solr/", "biotest_1");
-
-//            String filename = "/home/imedina/Downloads/variation_chr1.full.json.gz";
-            String filename = "/home/imedina/Downloads/variation_chr1.full.json.gz";
-            BufferedReader bufferedReader = FileUtils.newBufferedReader(Paths.get(filename));
-
-            VariantSearchToVariantConverter variantSearchToVariantConverter = new VariantSearchToVariantConverter();
-            ObjectReader objectReader = jsonObjectMapper.readerFor(Variant.class);
-            String line;
-            List<Variant> variants = new ArrayList<>(10000);
-            int count = 0;
-            while ((line = bufferedReader.readLine()) != null) {
-                Variant variant = objectReader.readValue(line);
-//                VariantSearch variantSearch = variantSearchToVariantConverter.create(variant);
-                variants.add(variant);
-                if (count % 10000 == 0) {
-                    variantSearchManager.insert(variants);
-                    variants.clear();
-                    System.out.println("count = " + count);
-                }
-                count++;
-            }
-            if (variants.size() > 0) {
-                variantSearchManager.insert(variants);
-            }
-
-            System.out.println("Number of processed variants: " + count);
-
-            bufferedReader.close();
+            variantSearchManager.load(collection, Paths.get(filename));
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    @Test
-    public void insertSingleVariantIntoSolrTest() {
 
-        String test = "Test_Variant_Insert_";
-        try {
-            List<Variant> variants = modifyVariantsID(test);
-
-            variantSearchManager.insert(variants.get(0));
-            Query query = new Query();
-            query.append("dbSNP", test + "*");
-            QueryOptions queryOptions = new QueryOptions();
-            queryOptions.append(QueryOptions.LIMIT, 500);
-
-            SolrVariantSearchIterator iterator = variantSearchManager.iterator(query, queryOptions);
-            List<VariantSearchModel> results = new ArrayList<>();
-
-            iterator.forEachRemaining(results::add);
-
-            Assert.assertEquals(1, results.size());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Test
-    public void insertMultipleVariantsIntoSolrTest() {
-
-        String test = "Test_Variants_Insert_";
-        try {
-            List<Variant> variants = modifyVariantsID(test);
-
-            variantSearchManager.insert(variants);
-            Query query = new Query();
-            query.append("dbSNP", test + "*");
-            QueryOptions queryOptions = new QueryOptions();
-            queryOptions.append(QueryOptions.LIMIT, 500);
-
-            SolrVariantSearchIterator iterator = variantSearchManager.iterator(query, queryOptions);
-            List<VariantSearchModel> results = new ArrayList<>();
-
-            iterator.forEachRemaining(results::add);
-
-            Assert.assertEquals(variants.size(), results.size());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Test
+    //@Test
     public void verifyInsertedVariantTest() {
 
         String test = "Test_Variant_Verification_";
         try {
+            variantSearchManager.load(collection, Paths.get(filename));
             List<Variant> variants = modifyVariantsID(test);
 
-            variantSearchManager.insert(variants.get(0));
             Query query = new Query();
             query.append("dbSNP", test + "*");
             QueryOptions queryOptions = new QueryOptions();
             queryOptions.append(QueryOptions.LIMIT, 500);
 
-            SolrVariantSearchIterator iterator = variantSearchManager.iterator(query, queryOptions);
+            SolrVariantSearchIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
             List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);
 
-            Assert.assertEquals(1, results.size());
-            Assert.assertTrue(variants.get(0).getStart() == results.get(0).getStart());
+//            Assert.assertEquals(1, results.size());
+//            Assert.assertTrue(variants.get(0).getStart() == results.get(0).getStart());
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    @Test
+    //@Test
     public void queryNonInsertedVariantTest() {
 
         String test = "Test_Variant_Non_Inserted_";
@@ -258,7 +189,7 @@ public class VariantSearchManagerTest extends GenericTest {
             QueryOptions queryOptions = new QueryOptions();
             queryOptions.append(QueryOptions.LIMIT, 500);
 
-            SolrVariantSearchIterator iterator = variantSearchManager.iterator(query, queryOptions);
+            SolrVariantSearchIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
             List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);
@@ -269,17 +200,20 @@ public class VariantSearchManagerTest extends GenericTest {
         }
     }
 
-    @Test
+    //@Test
     public void variantToVariantSearchConversionTest() {
 
         Variant variant = variantList.get(0);
-        VariantSearchModel variantSearchModel = VariantSearchManager.getVariantSearchToVariantConverter().convertToStorageType(variant);
+        VariantSearchToVariantConverter converter = new VariantSearchToVariantConverter();
+        VariantSearchModel variantSearchModel = converter.convertToStorageType(variant);
         Assert.assertEquals(variantSearchModel.getId(), getVariantSolrID(variant));
         Assert.assertEquals(variantSearchModel.getVariantId(), variant.getId());
         Assert.assertEquals(variantSearchModel.getChromosome(), variant.getChromosome());
         Assert.assertEquals(variantSearchModel.getType().toString(), variant.getType().toString());
     }
 
+    /*
+    // Facet not supported yet !!
     @Test
     public void variantFacetFiledCountTest() {
 
@@ -373,17 +307,17 @@ public class VariantSearchManagerTest extends GenericTest {
             e.printStackTrace();
         }
     }
-
-    @Test
+*/
+//    @Test
     public void variantSolrQueryLimitTest() {
         try {
+            variantSearchManager.load(collection, Paths.get(filename));
             Query query = new Query();
             QueryOptions queryOptions = new QueryOptions();
             query.append("ids", "*");
             queryOptions.append(QueryOptions.LIMIT, 15);
-            variantSearchManager.insert(variantList);
 
-            SolrVariantSearchIterator iterator = variantSearchManager.iterator(query, queryOptions);
+            SolrVariantSearchIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
             List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);
@@ -395,18 +329,19 @@ public class VariantSearchManagerTest extends GenericTest {
 
     }
 
-    @Test
+    //@Test
     public void queryOptionSortTest() {
         try {
+            variantSearchManager.load(collection, Paths.get(filename));
+
             Query query = new Query();
             QueryOptions queryOptions = new QueryOptions();
             query.append("ids", "*");
             queryOptions.append(QueryOptions.LIMIT, 15);
             queryOptions.add(QueryOptions.SORT, "start");
             queryOptions.add(QueryOptions.ORDER, QueryOptions.DESCENDING);
-            variantSearchManager.insert(variantList);
 
-            SolrVariantSearchIterator iterator = variantSearchManager.iterator(query, queryOptions);
+            SolrVariantSearchIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
             List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);
@@ -417,7 +352,7 @@ public class VariantSearchManagerTest extends GenericTest {
         }
 
     }
-*/
+
 
     private String getVariantSolrID(Variant variant) {
         VariantAnnotation variantAnnotation = variant.getAnnotation();
