@@ -10,6 +10,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,6 +46,9 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
 
     @Override
     protected List<VariantAnnotation> annotateFiltered(List<Variant> variants) throws VariantAnnotatorException {
+        if (variants.isEmpty()) {
+            return Collections.emptyList();
+        }
         try {
             QueryResponse<VariantAnnotation> queryResponse = cellBaseClient.getVariantClient()
                     .getAnnotations(variants.stream().map(Variant::toString).collect(Collectors.toList()),
