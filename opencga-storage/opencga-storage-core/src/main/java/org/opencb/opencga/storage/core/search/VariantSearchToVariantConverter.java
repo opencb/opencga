@@ -261,12 +261,19 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 //            variant.getStudies().forEach(s -> studies.add(s.getStudyId()));
 
             for (StudyEntry studyEntry : variant.getStudies()) {
-                studies.add(studyEntry.getStudyId());
+                String studyId = studyEntry.getStudyId();
+                if (studyId.contains(":")) {
+                    String[] split = studyId.split(":");
+                    studyId = split[split.length - 1];
+                }
+                studies.add(studyId);
 
                 // We store the cohort stats with the format stats_STUDY_COHORT = value, e.g. stats_1kg_phase3_ALL=0.02
                 if (studyEntry.getStats() != null && studyEntry.getStats().size() > 0) {
-                    studyEntry.getStats().forEach((s, variantStats) ->
-                            stats.put("stats__" + studyEntry.getStudyId() + "__" + s, variantStats.getMaf()));
+                    Map<String, VariantStats> studyStats = studyEntry.getStats();
+                    for (String key: studyStats.keySet()) {
+                        stats.put("stats__" + studyId + "__" + key, studyStats.get(key).getMaf());
+                    }
                 }
             }
 
