@@ -20,9 +20,11 @@ import com.beust.jcommander.ParameterException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.app.cli.analysis.AnalysisCliOptionsParser;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
+import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfDataWriter;
 import org.slf4j.Logger;
@@ -138,9 +140,11 @@ public class VariantQueryCommandUtils {
         }
 
         addParam(query, FILES, queryVariantsOptions.genericVariantQueryOptions.file);
+        addParam(query, RETURNED_FILES, queryVariantsOptions.genericVariantQueryOptions.returnFile);
         addParam(query, FILTER, queryVariantsOptions.genericVariantQueryOptions.filter);
         addParam(query, GENOTYPE, queryVariantsOptions.genericVariantQueryOptions.sampleGenotype);
         addParam(query, SAMPLES, queryVariantsOptions.genericVariantQueryOptions.samples);
+        addParam(query, VariantCatalogQueryUtils.SAMPLE_FILTER, queryVariantsOptions.sampleFilter);
         if (queryVariantsOptions.genericVariantQueryOptions.returnSample != null) {
             if (queryVariantsOptions.genericVariantQueryOptions.returnSample.isEmpty() || queryVariantsOptions.genericVariantQueryOptions.returnSample.equals(".")) {
                 query.put(RETURNED_SAMPLES.key(), Collections.emptyList());
@@ -325,7 +329,7 @@ public class VariantQueryCommandUtils {
         return new ParameterException("Format '" + outputFormat + "' not supported");
     }
 
-    private static void addParam(Query query, VariantDBAdaptor.VariantQueryParams key, String value) {
+    private static void addParam(Query query, QueryParam key, String value) {
         if (StringUtils.isNotEmpty(value)) {
             query.put(key.key(), value);
         }

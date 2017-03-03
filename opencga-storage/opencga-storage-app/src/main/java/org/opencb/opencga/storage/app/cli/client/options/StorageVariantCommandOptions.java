@@ -289,6 +289,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--output-study"}, description = "A comma separated list of studies to be returned")
         public String returnStudy;
 
+        @Parameter(names = {"--output-file"}, description = "A comma separated list of files from the SAME study to be returned")
+        public String returnFile;
+
         @Parameter(names = {"--output-sample"}, description = "A comma separated list of samples from the SAME study to be returned")
         public String returnSample;
 

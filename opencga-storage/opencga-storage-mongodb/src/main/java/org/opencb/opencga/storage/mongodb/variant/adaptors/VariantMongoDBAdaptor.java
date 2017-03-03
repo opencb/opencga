@@ -1584,26 +1584,23 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //                    )
 //            );
 //        }
-        if (query.containsKey(VariantQueryParams.RETURNED_STUDIES.key())
-                && projection.containsKey(DocumentToVariantConverter.STUDIES_FIELD)) {
-            List<Integer> studiesIds = utils.getReturnedStudies(query, options);
-//            List<Integer> studies = query.getAsIntegerList(VariantQueryParams.RETURNED_STUDIES.key());
-            // Use elemMatch only if there is one study to return.
-            if (studiesIds.size() == 1) {
-                projection.put(
-                        DocumentToVariantConverter.STUDIES_FIELD,
-                        new Document(
-                                "$elemMatch",
-                                new Document(
-                                        DocumentToStudyVariantEntryConverter.STUDYID_FIELD,
-                                        new Document(
-                                                "$in",
-                                                studiesIds
-                                        )
-                                )
-                        )
-                );
-            }
+
+        List<Integer> studiesIds = utils.getReturnedStudies(query, options);
+        // Use elemMatch only if there is one study to return.
+        if (studiesIds.size() == 1) {
+            projection.put(
+                    DocumentToVariantConverter.STUDIES_FIELD,
+                    new Document(
+                            "$elemMatch",
+                            new Document(
+                                    DocumentToStudyVariantEntryConverter.STUDYID_FIELD,
+                                    new Document(
+                                            "$in",
+                                            studiesIds
+                                    )
+                            )
+                    )
+            );
         }
 
         logger.debug("QueryOptions: = {}", options.toJson());
