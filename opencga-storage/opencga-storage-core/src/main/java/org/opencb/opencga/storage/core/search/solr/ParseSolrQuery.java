@@ -23,6 +23,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scala.collection.mutable.StringBuilder;
 
 import java.util.ArrayList;
@@ -39,6 +41,8 @@ public class ParseSolrQuery {
 
     private static final Pattern STUDY_PATTERN = Pattern.compile("^([^=<>]+):([^=<>]+)(<=?|>=?|=?)([^=<>]+.*)$");
     private static final Pattern SCORE_PATTERN = Pattern.compile("^([^=<>]+)(<=?|>=?|=?)([^=<>]+.*)$");
+
+    protected static Logger logger = LoggerFactory.getLogger(ParseSolrQuery.class);
 
     /**
      * Create a SolrQuery object from Query and QueryOptions.
@@ -75,7 +79,8 @@ public class ParseSolrQuery {
         //-------------------------------------
         // Query processing
         //-------------------------------------
-        System.out.println("query = \n" + query.toJson() + "\n");
+        logger.debug("query = " + query.toJson() + "\n");
+        System.out.println("query = " + query.toJson() + "\n");
 
         // OR conditions
         // create a list for xrefs (without genes), genes, regions and cts
@@ -101,7 +106,8 @@ public class ParseSolrQuery {
         // consequence types (cts)
         if (query.containsKey(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key())
                 && StringUtils.isNotEmpty(query.getString(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key()))) {
-            consequenceTypes = Arrays.asList(query.getString(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key()).split("[,;]"));
+            consequenceTypes = Arrays.asList(query.getString(
+                    VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key()).split("[,;]"));
         }
 
         // goal: [((xrefs OR regions) AND cts) OR (genes AND cts)] AND ... AND ...
@@ -193,7 +199,9 @@ public class ParseSolrQuery {
 //        solrQuery.setQuery(queryString.toString());
         solrQuery.setQuery("*:*");
         filterList.forEach(filter -> { solrQuery.addFilterQuery(filter);
-                    System.out.println(filter); });
+            logger.debug("Solr fq: " + filter);
+//            System.out.println("Solr fq: " + filter);
+        });
 
         return solrQuery;
     }
@@ -537,14 +545,18 @@ public class ParseSolrQuery {
 
         // first, concatenate xrefs and genes in single list
         List<String> ids = new ArrayList<>();
-        ids.addAll(xrefs);
-        ids.addAll(genes);
+        if (xrefs != null && xrefs.size() > 0) {
+            ids.addAll(xrefs);
+        }
+        if (genes != null && genes.size() > 0) {
+            ids.addAll(genes);
+        }
         if (ids.size() > 0) {
             for (String id : ids) {
                 if (sb.length() > 0) {
                     sb.append(" OR ");
                 }
-                sb.append("xref:\"").append(id).append("\"");
+                sb.append("xrefs:\"").append(id).append("\"");
             }
         }
 

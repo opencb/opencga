@@ -114,10 +114,12 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
         // and finally, update the SO accession for each consequence type
         for (String geneToSoAcc: variantSearchModel.getGeneToSoAcc()) {
+            System.out.println("-> " + geneToSoAcc);
             String[] fields = geneToSoAcc.split("_");
             if (consequenceTypeMap.containsKey(fields[0])) {
                 SequenceOntologyTerm sequenceOntologyTerm = new SequenceOntologyTerm();
                 sequenceOntologyTerm.setAccession("SO:" + String.format("%07d", fields[1]));
+                System.out.println("---> " + sequenceOntologyTerm.getAccession());
                 if (consequenceTypeMap.get(fields[0]).getSequenceOntologyTerms() == null) {
                     consequenceTypeMap.get(fields[0]).setSequenceOntologyTerms(new ArrayList<>());
                 }
