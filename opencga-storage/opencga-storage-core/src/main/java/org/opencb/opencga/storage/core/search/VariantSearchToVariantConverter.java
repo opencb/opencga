@@ -341,17 +341,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
                     // Set sift and polyphen and also the protein id in xrefs
                     if (consequenceType.getProteinVariantAnnotation() != null) {
-                        // set protein substitution scores: sift and polyphen
-                        List<Double> proteinScores = new ArrayList();
-                        List<String> proteinDescrs = new ArrayList();
+                        // set protein substitution scores and descriptions: sift and polyphen
 //                        double[] proteinScores = getSubstitutionScores(consequenceType);
-                        getSubstitutionScores(consequenceType, proteinScores, proteinDescrs);
-                        // set scores
-                        variantSearchModel.setSift(proteinScores.get(0));
-                        variantSearchModel.setPolyphen(proteinScores.get(1));
-                        // set descriptions
-                        variantSearchModel.setSiftDescr(proteinDescrs.get(0));
-                        variantSearchModel.setPolyphenDescr(proteinDescrs.get(1));
+                        setProteinScores(consequenceType, variantSearchModel);
 
                         xrefs.add(consequenceType.getProteinVariantAnnotation().getUniprotAccession());
                     } else {
@@ -466,13 +458,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
     }
 
     /**
-     * Retrieve the protein substitution scores from a consequence type annotation: sift or polyphen.
+     * Retrieve the protein substitution scores and descriptions from a consequence
+     * type annotation: sift or polyphen, and update the variant search model.
      *
-     * @param consequenceType   Consequence type target
-     * @param scores            Max. and min. scores (output)
-     * @param descrs            Descriptions (output)
+     * @param consequenceType     Consequence type target
+     * @param variantSearchModel  Variant search model to update
      */
-    private void getSubstitutionScores(ConsequenceType consequenceType, List scores, List descrs) {
+    private void setProteinScores(ConsequenceType consequenceType, VariantSearchModel variantSearchModel) {
         double sift = 10;
         String siftDescr = "";
         double polyphen = 0;
@@ -495,13 +487,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             }
         }
 
-        scores.add(sift);
-        scores.add(polyphen);
+        // set scores
+        variantSearchModel.setSift(sift);
+        variantSearchModel.setPolyphen(polyphen);
 
-        descrs.add(siftDescr);
-        descrs.add(polyphenDescr);
-        //double[] result = new double[] {sift, polyphen};
-        //return result;
+        // set descriptions
+        variantSearchModel.setSiftDescr(siftDescr);
+        variantSearchModel.setPolyphenDescr(polyphenDescr);
     }
 }
 
