@@ -1586,7 +1586,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //        }
         if (query.containsKey(VariantQueryParams.RETURNED_STUDIES.key())
                 && projection.containsKey(DocumentToVariantConverter.STUDIES_FIELD)) {
-            List<Integer> studiesIds = utils.getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options);
+            List<Integer> studiesIds = utils.getReturnedStudies(query, options);
 //            List<Integer> studies = query.getAsIntegerList(VariantQueryParams.RETURNED_STUDIES.key());
             // Use elemMatch only if there is one study to return.
             if (studiesIds.size() == 1) {
@@ -1904,9 +1904,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private DocumentToVariantConverter getDocumentToVariantConverter(Query query, QueryOptions options) {
-        List<Integer> returnedStudies = query.containsKey(VariantQueryParams.RETURNED_STUDIES.key())
-                ? utils.getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options)
-                : null;
+        List<Integer> returnedStudies = utils.getReturnedStudies(query, options);
         DocumentToSamplesConverter samplesConverter;
         samplesConverter = new DocumentToSamplesConverter(studyConfigurationManager);
         // Fetch some StudyConfigurations that will be needed

@@ -1244,8 +1244,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         checkSamplesData("NA19685,NA19600");
         checkSamplesData("NA19660,NA19661,NA19600");
         checkSamplesData(null);
-//        checkSamplesData("all");
-//        checkSamplesData("none");
+        checkSamplesData(VariantDBAdaptorUtils.ALL);
+        checkSamplesData(VariantDBAdaptorUtils.NONE);
     }
 
     public void checkSamplesData(String returnedSamples) {
@@ -1255,8 +1255,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         query.put(RETURNED_SAMPLES.key(), returnedSamples);
         VariantQueryResult<Variant> queryResult = dbAdaptor.get(query, options);
         List<String> samplesName;
-        if (returnedSamples == null) {
+        if (returnedSamples == null || returnedSamples.equals(VariantDBAdaptorUtils.ALL)) {
             samplesName = new ArrayList<>(StudyConfiguration.getSortedIndexedSamplesPosition(studyConfiguration).keySet());
+        } else if (returnedSamples.equals(VariantDBAdaptorUtils.NONE)) {
+            samplesName = Collections.emptyList();
         } else {
             samplesName = query.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
         }
@@ -1640,13 +1642,20 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testExcludeStudies() {
-
         queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "studies"));
         assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
         for (Variant variant : queryResult.getResult()) {
             assertThat(variant.getStudies(), is(Collections.emptyList()));
         }
+    }
 
+    @Test
+    public void testReturnNoneStudies() {
+        queryResult = dbAdaptor.get(new Query(RETURNED_STUDIES.key(), VariantDBAdaptorUtils.NONE), new QueryOptions());
+        assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
+        for (Variant variant : queryResult.getResult()) {
+            assertThat(variant.getStudies(), is(Collections.emptyList()));
+        }
     }
 
     @Test
@@ -1674,6 +1683,16 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
+    public void testReturnNoneFiles() {
+        queryResult = dbAdaptor.get(new Query(RETURNED_FILES.key(), VariantDBAdaptorUtils.NONE), new QueryOptions());
+        assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
+        for (Variant variant : queryResult.getResult()) {
+            assertThat(variant.getStudies().get(0).getFiles(), is(Collections.emptyList()));
+            assertThat(new HashSet<>(variant.getStudies().get(0).getFormat()), is(FORMAT));
+        }
+    }
+
+    @Test
     public void testExcludeSamples() {
         for (String exclude : Arrays.asList("studies.samplesData", "samplesData", "samples")) {
             queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, exclude));
@@ -1682,7 +1701,15 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                 assertThat(variant.getStudies().get(0).getSamplesData(), is(Collections.emptyList()));
             }
         }
+    }
 
+    @Test
+    public void testReturnNoneSamples() {
+        queryResult = dbAdaptor.get(new Query(RETURNED_SAMPLES.key(), VariantDBAdaptorUtils.NONE), new QueryOptions());
+        assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
+        for (Variant variant : queryResult.getResult()) {
+            assertThat(variant.getStudies().get(0).getSamplesData(), is(Collections.emptyList()));
+        }
     }
 
     @Test

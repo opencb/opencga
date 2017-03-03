@@ -8,9 +8,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -85,6 +83,10 @@ public class CatalogUtils {
     protected void transformFilter(Query query, VariantQueryParams param, CatalogIdResolver toId) throws CatalogException {
         if (VariantDBAdaptorUtils.isValidParam(query, param)) {
             String valuesStr = query.getString(param.key());
+            // Do not try to transform ALL or NONE values
+            if (isNoneOrAll(valuesStr)) {
+                return;
+            }
             VariantDBAdaptorUtils.QueryOperation queryOperation = VariantDBAdaptorUtils.checkOperator(valuesStr);
             if (queryOperation == null) {
                 queryOperation = VariantDBAdaptorUtils.QueryOperation.OR;
@@ -115,6 +117,22 @@ public class CatalogUtils {
      *
      * @see VariantDBAdaptorUtils#getStudyIds(List, org.opencb.commons.datastore.core.QueryOptions)
      * @param query     Query with the values
+     * @param sessionId User's sessionId
+     * @return          List of positive studies.
+     * @throws CatalogException if there is an error with catalog
+     */
+    public Set<Long> getStudies(Query query, String sessionId) throws CatalogException {
+        List<Long> studies = getStudies(query, VariantQueryParams.STUDIES, sessionId);
+        studies.addAll(getStudies(query, VariantQueryParams.RETURNED_STUDIES, sessionId));
+        // Use a set to remove duplicated
+        return new HashSet<>(studies);
+    }
+
+    /**
+     * Get the list of studies. Discards negated studies (starting with '!').
+     *
+     * @see VariantDBAdaptorUtils#getStudyIds(List, org.opencb.commons.datastore.core.QueryOptions)
+     * @param query     Query with the values
      * @param param     Param to check. {@link VariantQueryParams#STUDIES} or {@link VariantQueryParams#RETURNED_STUDIES}
      * @param sessionId User's sessionId
      * @return          List of positive studies.
@@ -125,6 +143,9 @@ public class CatalogUtils {
         List<Long> studies = new ArrayList<>();
         if (isValidParam(query, param)) {
             String value = query.getString(param.key());
+            if (isNoneOrAll(value)) {
+                return studies;
+            }
             VariantDBAdaptorUtils.QueryOperation op = checkOperator(value);
             List<String> values = splitValue(value, op);
             for (String id : values) {

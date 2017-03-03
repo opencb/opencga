@@ -139,7 +139,9 @@ public class VariantStorageManager extends StorageManager {
 
         catalogUtils.parseQuery(query, sessionId);
         Set<Long> studies = checkSamplesPermissions(query, queryOptions, sessionId).keySet();
-
+        if (studies.isEmpty()) {
+            studies = catalogUtils.getStudies(query, sessionId);
+        }
         List<StudyInfo> studyInfos = new ArrayList<>(studies.size());
         for (Long study : studies) {
             studyInfos.add(getStudyInfo(String.valueOf(study), Collections.emptyList(), sessionId));
@@ -394,6 +396,8 @@ public class VariantStorageManager extends StorageManager {
                                 + " can't read all the requested samples");
                     }
                     samplesMap.put((long) entry.getKey(), samplesQueryResult.getResult());
+                } else {
+                    samplesMap.put((long) entry.getKey(), Collections.emptyList());
                 }
             }
         } else {
