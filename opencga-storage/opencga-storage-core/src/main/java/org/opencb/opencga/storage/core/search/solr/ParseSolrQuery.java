@@ -63,6 +63,10 @@ public class ParseSolrQuery {
             solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT));
         }
 
+        if (queryOptions.containsKey(QueryOptions.SKIP)) {
+            solrQuery.setStart(queryOptions.getInt(QueryOptions.SKIP));
+        }
+
         if (queryOptions.containsKey(QueryOptions.SORT)) {
             solrQuery.addSort(queryOptions.getString(QueryOptions.SORT), getSortOrder(queryOptions));
         }
@@ -126,7 +130,7 @@ public class ParseSolrQuery {
                 if (orXref.length() > 0) {
                     orXref.append(" OR ");
                 }
-                orXref.append("xref:\"").append(gene).append("\"");
+                orXref.append("xrefs:\"").append(gene).append("\"");
             }
             // add the OR statement to the AND filter list
             if (orXref.length() > 0) {
