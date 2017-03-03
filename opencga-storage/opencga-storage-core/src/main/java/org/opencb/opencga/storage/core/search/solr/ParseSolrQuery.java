@@ -106,8 +106,8 @@ public class ParseSolrQuery {
         // consequence types (cts)
         if (query.containsKey(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key())
                 && StringUtils.isNotEmpty(query.getString(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key()))) {
-            consequenceTypes = Arrays.asList(query.getString(
-                    VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key()).split("[,;]"));
+            consequenceTypes = Arrays.asList(query.getString(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key())
+                    .split("[,;]"));
         }
 
         // goal: [((xrefs OR regions) AND cts) OR (genes AND cts)] AND ... AND ...
