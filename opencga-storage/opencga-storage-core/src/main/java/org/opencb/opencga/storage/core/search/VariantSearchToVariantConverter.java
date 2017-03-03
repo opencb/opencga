@@ -140,7 +140,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             String[] fields = geneToSoAcc.split("_");
             if (consequenceTypeMap.containsKey(fields[0])) {
                 SequenceOntologyTerm sequenceOntologyTerm = new SequenceOntologyTerm();
-                sequenceOntologyTerm.setAccession("SO:" + String.format("%07d", fields[1]));
+                sequenceOntologyTerm.setAccession("SO:" + String.format("%07s", fields[1]));
                 if (consequenceTypeMap.get(fields[0]).getSequenceOntologyTerms() == null) {
                     consequenceTypeMap.get(fields[0]).setSequenceOntologyTerms(new ArrayList<>());
                 }
