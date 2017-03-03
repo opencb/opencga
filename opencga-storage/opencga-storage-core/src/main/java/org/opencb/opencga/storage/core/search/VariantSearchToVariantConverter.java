@@ -7,6 +7,7 @@ import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 /**
@@ -163,7 +164,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 //                System.out.println("value = " + variantSearchModel.getPopFreq().get(key));
 //                System.out.println("to float = " + Float.parseFloat(decimalFormat.format(variantSearchModel.getPopFreq().get(key))));
 //                populationFrequency.setAltAlleleFreq(Float.parseFloat(decimalFormat.format(variantSearchModel.getPopFreq().get(key))));
-                populationFrequency.setAltAlleleFreq(variantSearchModel.getPopFreq().get(key));
+                BigDecimal bigDecimal = new BigDecimal(variantSearchModel.getPopFreq().get(key));
+                populationFrequency.setAltAlleleFreq(bigDecimal.floatValue());
                 populationFrequencies.add(populationFrequency);
             }
             variantAnnotation.setPopulationFrequencies(populationFrequencies);
