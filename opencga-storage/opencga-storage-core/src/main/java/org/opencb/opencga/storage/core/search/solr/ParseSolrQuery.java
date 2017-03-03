@@ -22,6 +22,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import scala.collection.mutable.StringBuilder;
 
 import java.util.ArrayList;
@@ -79,9 +80,14 @@ public class ParseSolrQuery {
         System.out.println("query = \n" + query.toJson() + "\n");
 
         // OR conditions
-        // create a list for xrefs and another for genes, and insert the different IDs
+        // create a list for xrefs (without genes), genes, regions and cts
+        // the function classifyIds function differentiates xrefs from genes
         List<String> xrefs = new ArrayList<>();
         List<String> genes = new ArrayList<>();
+        List<Region> regions = new ArrayList<>();
+        List<String> cts = new ArrayList<>();
+
+        // xref
         classifyIds(VariantDBAdaptor.VariantQueryParams.ANNOT_XREF.key(), query, xrefs, genes);
 
         // id
@@ -99,84 +105,39 @@ public class ParseSolrQuery {
         // hpo
         classifyIds(VariantDBAdaptor.VariantQueryParams.ANNOT_HPO.key(), query, xrefs, genes);
 
-        StringBuilder orXref = new StringBuilder();
-        for (String xref: xrefs) {
-            if (orXref.length() > 0) {
-                orXref.append(" OR ");
-            }
-            orXref.append("xrefs:\"").append(xref).append("\"");
-        }
+        // regions
+        regions = Region.parseRegions(query.getString(VariantDBAdaptor.VariantQueryParams.REGION.key()));
 
-        // region, to the OR filter list
-        if (query.containsKey(VariantDBAdaptor.VariantQueryParams.REGION)) {
-            StringBuilder sb = new StringBuilder();
-            String[] regionStr = ((String) query.get(VariantDBAdaptor.VariantQueryParams.REGION)).split("[,;]");
-            for (String regStr: regionStr) {
-                Region region = new Region(regStr);
-                if (orXref.length() > 0) {
-                    orXref.append(" OR ");
-                }
-                orXref.append("(chromosome:").append(region.getChromosome())
-                        .append(" AND start:[").append(region.getStart()).append(" TO *]")
-                        .append(" AND end:[* TO ").append(region.getEnd()).append("])");
-            }
-        }
+        // consequence types (cts)
+        cts = Arrays.asList(((String) query.get(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key())).split("[,;]"));
 
-        // consequence type
-        key = VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key();
-        if (query.get(key) == null || ((String) query.get(key)).isEmpty()) {
-            // consequence type is null or empty, then we add the genes to the orStatement and then to the Solr AND filter list
-            for (String gene: genes) {
-                if (orXref.length() > 0) {
-                    orXref.append(" OR ");
+        // goal: [((xrefs OR regions) AND cts) OR (genes AND cts)] AND ... AND ...
+        if (cts.size() > 0) {
+            if (genes.size() > 0) {
+                // consequence types and genes
+                String or = buildXrefOrRegionAndConsequenceType(xrefs, regions, cts);
+                if (or.isEmpty()) {
+                    // no xrefs or regions: genes AND cts
+                    filterList.add(buildGeneAndCt(genes, cts));
+                } else {
+                    // otherwise: [((xrefs OR regions) AND cts) OR (genes AND cts)]
+                    filterList.add(or + " OR (" + buildGeneAndCt(genes, cts) + ")");
                 }
-                orXref.append("xrefs:\"").append(gene).append("\"");
-            }
-            // add the OR statement to the AND filter list
-            if (orXref.length() > 0) {
-                filterList.add(orXref.toString());
+            } else {
+                // consequence types but no genes: (xrefs OR regions) AND cts
+                // in this case, the resulting string will never be null, because there are some consequence types!!
+                filterList.add(buildXrefOrRegionAndConsequenceType(xrefs, regions, cts));
             }
         } else {
-            // we have consequence types, we have to check if there are genes too
-            List<String> cts = Arrays.asList(((String) query.get(key)).replace("SO:", "").split("[,;]"));
-            StringBuilder orCts = new StringBuilder();
-            if (orXref.length() > 0) {
-                for (String ct : cts) {
-                    if (orCts.length() > 0) {
-                        orCts.append(" OR ");
-                    }
-                    orCts.append("soAcc:").append(Integer.parseInt(ct));
-                }
-            }
-            if (genes.size() == 0) {
-                // add the OR statement to the AND filter list
-                filterList.add(orXref.toString());
-
-                // and the cts too
-                if (orCts.length() > 0) {
-                    filterList.add(orCts.toString());
-                }
-            } else if (genes.size() > 0) {
-                // special case, check geneToSoAcc from the VariantSearchModel
-                StringBuilder orGeneToCts = new StringBuilder();
-                for (String gene: genes) {
-                    for (String ct: cts) {
-                        if (orGeneToCts.length() > 0) {
-                            orGeneToCts.append(" OR ");
-                        }
-                        orGeneToCts.append("geneToSoAcc:").append(gene).append("_").append(Integer.parseInt(ct));
-                    }
-                }
-                // and the cts too
-                if (orXref.length() > 0) {
-                    filterList.add("((" + orXref + ") AND (" + orCts + ")) OR (" + orGeneToCts.toString() + ")");
-                } else {
-                    filterList.add(orGeneToCts.toString());
-                }
+            // no consequence types: (xrefs OR regions) but we must add "OR genes", i.e.: xrefs OR regions OR genes
+            // we must make an OR with xrefs, genes and regions and add it to the "AND" filter list
+            String orXrefs = buildXrefOrGeneOrRegion(xrefs, genes, regions);
+            if (!orXrefs.isEmpty()) {
+                filterList.add(orXrefs);
             }
         }
 
-        // AND conditions
+        // now we continue with the other AND conditions...
 
         // type (t)
         key = VariantDBAdaptor.VariantQueryParams.TYPE.key();
@@ -568,5 +529,104 @@ public class ParseSolrQuery {
     private static SolrQuery.ORDER getSortOrder(QueryOptions queryOptions) {
         return queryOptions.getString(QueryOptions.ORDER).equals(QueryOptions.ASCENDING)
                 ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc;
+    }
+
+    /**
+     * Build an OR-condition with all xrefs, genes and regions.
+     *
+     * @param xrefs     List of xrefs
+     * @param genes     List of genes
+     * @param regions   List of regions
+     * @return          OR-condition string
+     */
+    private static String buildXrefOrGeneOrRegion(List<String> xrefs, List<String> genes, List<Region> regions) {
+        StringBuilder sb = new StringBuilder();
+
+        // first, concatenate xrefs and genes in single list
+        List<String> ids = new ArrayList<>();
+        ids.addAll(xrefs);
+        ids.addAll(genes);
+        if (ids.size() > 0) {
+            for (String id : ids) {
+                if (sb.length() > 0) {
+                    sb.append(" OR ");
+                }
+                sb.append("xref:\"").append(id).append("\"");
+            }
+        }
+
+        // and now regions
+        for (Region region: regions) {
+            if (!region.getChromosome().isEmpty()) {
+                if (sb.length() > 0) {
+                    sb.append(" OR ");
+                }
+                sb.append("(chromosome:").append(region.getChromosome())
+                        .append(" AND start:[").append(region.getStart()).append(" TO *]")
+                        .append(" AND end:[* TO ").append(region.getEnd()).append("])");
+            }
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Build an OR-condition with all consequence types from the input list. It uses the VariantDBAdaptorUtils
+     * to parse the consequence type (accession or term) into an integer.
+     *
+     * @param cts    List of consequence types
+     * @return       OR-condition string
+     */
+    private static String buildConsequenceTypeOr(List<String> cts) {
+        StringBuilder sb = new StringBuilder();
+        for (String ct : cts) {
+            if (sb.length() > 0) {
+                sb.append(" OR ");
+            }
+            sb.append("soAcc:").append(VariantDBAdaptorUtils.parseConsequenceType(ct));
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Build the condition: (xrefs OR regions) AND cts.
+     *
+     * @param xrefs      List of xrefs
+     * @param regions    List of regions
+     * @param cts        List of consequence types
+     * @return           OR/AND condition string
+     */
+    private static String buildXrefOrRegionAndConsequenceType(List<String> xrefs, List<Region> regions, List<String> cts) {
+        String orCts = buildConsequenceTypeOr(cts);
+        String orXrefs = buildXrefOrGeneOrRegion(xrefs, null, regions);
+        if (orXrefs.isEmpty()) {
+            // consequences type but no xrefs, no genes, no regions
+            // we must make an OR with all consequences types and add it to the "AND" filter list
+            return orCts;
+        } else {
+            return orXrefs + " AND (" + orCts + ")";
+        }
+    }
+
+    /**
+     * Build the condition: genes AND cts.
+     *
+     * @param genes    List of genes
+     * @param cts      List of consequence types
+     * @return         OR/AND condition string
+     */
+    private static String buildGeneAndCt(List<String> genes, List<String> cts) {
+        // in the VariantSearchModel the (gene AND ct) is modeled in the field: geneToSoAcc:gene_ct
+        // and if there are multiple genes and consequence types, we have to build the combination of all of them in a OR expression
+        StringBuilder sb = new StringBuilder();
+        for (String gene: genes) {
+            for (String ct: cts) {
+                if (sb.length() > 0) {
+                    sb.append(" OR ");
+                }
+                sb.append("geneToSoAcc:").append(gene).append("_").append(VariantDBAdaptorUtils.parseConsequenceType(ct));
+            }
+        }
+        return sb.toString();
     }
 }
