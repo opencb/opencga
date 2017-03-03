@@ -2,7 +2,10 @@ package org.opencb.opencga.storage.core.search;
 
 import org.apache.solr.client.solrj.beans.Field;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by wasim on 09/11/16.

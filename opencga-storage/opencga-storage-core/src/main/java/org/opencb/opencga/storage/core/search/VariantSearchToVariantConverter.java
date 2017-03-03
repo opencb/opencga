@@ -7,7 +7,6 @@ import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 
-import java.math.BigDecimal;
 import java.util.*;
 
 /**
