@@ -79,8 +79,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         if (variantSearchModel.getSift() != Double.MIN_VALUE || variantSearchModel.getPolyphen() != Double.MIN_VALUE) {
             proteinAnnotation = new ProteinVariantAnnotation();
             scores = new ArrayList<>();
-            scores.add(new Score(variantSearchModel.getSift(), "sift", ""));
-            scores.add(new Score(variantSearchModel.getPolyphen(), "polyphen", ""));
+            scores.add(new Score(variantSearchModel.getSift(), "sift", variantSearchModel.getSiftDescr()));
+            scores.add(new Score(variantSearchModel.getPolyphen(), "polyphen", variantSearchModel.getPolyphenDescr()));
             proteinAnnotation.setSubstitutionScores(scores);
         }
 
@@ -158,14 +158,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 String[] fields = key.split("__");
                 populationFrequency.setStudy(fields[1]);
                 populationFrequency.setPopulation(fields[2]);
-                // TODO: find a simple way to convert double to float !!
-//                DecimalFormat decimalFormat = new DecimalFormat("#");
-//                System.out.println("value = " + variantSearchModel.getPopFreq().get(key));
-//                System.out.println("to float = " + Float.parseFloat(decimalFormat.format(variantSearchModel.getPopFreq().get(key))));
-//                populationFrequency.setAltAlleleFreq(Float.parseFloat(decimalFormat.format(variantSearchModel.getPopFreq().get(key))));
-
-//                BigDecimal bigDecimal = new BigDecimal(variantSearchModel.getPopFreq().get(key));
-                populationFrequency.setAltAlleleFreq(0.0f);
+                populationFrequency.setAltAlleleFreq(variantSearchModel.getPopFreq().get(key));
                 populationFrequencies.add(populationFrequency);
             }
             variantAnnotation.setPopulationFrequencies(populationFrequencies);
@@ -349,9 +342,16 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     // Set sift and polyphen and also the protein id in xrefs
                     if (consequenceType.getProteinVariantAnnotation() != null) {
                         // set protein substitution scores: sift and polyphen
-                        double[] proteinScores = getSubstitutionScores(consequenceType);
-                        variantSearchModel.setSift(proteinScores[0]);
-                        variantSearchModel.setPolyphen(proteinScores[1]);
+                        List<Double> proteinScores = new ArrayList();
+                        List<String> proteinDescrs = new ArrayList();
+//                        double[] proteinScores = getSubstitutionScores(consequenceType);
+                        getSubstitutionScores(consequenceType, proteinScores, proteinDescrs);
+                        // set scores
+                        variantSearchModel.setSift(proteinScores.get(0));
+                        variantSearchModel.setPolyphen(proteinScores.get(1));
+                        // set descriptions
+                        variantSearchModel.setSiftDescr(proteinDescrs.get(0));
+                        variantSearchModel.setPolyphenDescr(proteinDescrs.get(1));
 
                         xrefs.add(consequenceType.getProteinVariantAnnotation().getUniprotAccession());
                     } else {
@@ -469,11 +469,14 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
      * Retrieve the protein substitution scores from a consequence type annotation: sift or polyphen.
      *
      * @param consequenceType   Consequence type target
-     * @return                  Max. and min. scores
+     * @param scores            Max. and min. scores (output)
+     * @param descrs            Descriptions (output)
      */
-    private double[] getSubstitutionScores(ConsequenceType consequenceType) {
+    private void getSubstitutionScores(ConsequenceType consequenceType, List scores, List descrs) {
         double sift = 10;
+        String siftDescr = "";
         double polyphen = 0;
+        String polyphenDescr = "";
 
         if (consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
             for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
@@ -481,17 +484,24 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 if (source.equals("sift")) {
                     if (score.getScore() < sift) {
                         sift = score.getScore();
+                        siftDescr = score.getDescription();
                     }
                 } else if (source.equals("polyphen")) {
                     if (score.getScore() > polyphen) {
                         polyphen = score.getScore();
+                        polyphenDescr = score.getDescription();
                     }
                 }
             }
         }
 
-        double[] result = new double[] {sift, polyphen};
-        return result;
+        scores.add(sift);
+        scores.add(polyphen);
+
+        descrs.add(siftDescr);
+        descrs.add(polyphenDescr);
+        //double[] result = new double[] {sift, polyphen};
+        //return result;
     }
 }
 

@@ -76,11 +76,13 @@
     <field name="caddRaw" type="double" indexed="true" stored="true" multiValued="false"/>
     <field name="caddScaled" type="double" indexed="true" stored="true" multiValued="false"/>
     <field name="sift" type="double" indexed="true" stored="true" multiValued="false"/>
+    <field name="siftDescr" type="text_general" indexed="true" stored="true" multiValued="false"/>
     <field name="polyphen" type="double" indexed="true" stored="true" multiValued="false"/>
+    <field name="polyphenDescr" type="text_general" indexed="true" stored="true" multiValued="false"/>
     <field name="genes" type="string" indexed="false" stored="true" multiValued="true"/>
     <field name="soAcc" type="int" indexed="true" stored="true" multiValued="true"/>
     <field name="geneToSoAcc" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="traits" type="text_en" indexed="true" stored="true" multiValued="true"/>
-    <dynamicField name="stats_*" type="double" indexed="true" stored="true" multiValued="false"/>
-    <dynamicField name="popFreq_*" type="double" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="stats_*" type="float" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="popFreq_*" type="float" indexed="true" stored="true" multiValued="false"/>
 </schema>
