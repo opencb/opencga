@@ -75,8 +75,6 @@ public class ParseSolrQuery {
         //-------------------------------------
         // Query processing
         //-------------------------------------
-        String key;
-        List<String> orFilterList = new ArrayList<>();
         System.out.println("query = \n" + query.toJson() + "\n");
 
         // OR conditions
@@ -85,51 +83,43 @@ public class ParseSolrQuery {
         List<String> xrefs = new ArrayList<>();
         List<String> genes = new ArrayList<>();
         List<Region> regions = new ArrayList<>();
-        List<String> cts = new ArrayList<>();
+        List<String> consequenceTypes = new ArrayList<>();
 
         // xref
         classifyIds(VariantDBAdaptor.VariantQueryParams.ANNOT_XREF.key(), query, xrefs, genes);
-
-        // id
         classifyIds(VariantDBAdaptor.VariantQueryParams.ID.key(), query, xrefs, genes);
-
-        // gene
         classifyIds(VariantDBAdaptor.VariantQueryParams.GENE.key(), query, xrefs, genes);
-
-        // clinvar
         classifyIds(VariantDBAdaptor.VariantQueryParams.ANNOT_CLINVAR.key(), query, xrefs, genes);
-
-        // cosmic
         classifyIds(VariantDBAdaptor.VariantQueryParams.ANNOT_COSMIC.key(), query, xrefs, genes);
-
-        // hpo
         classifyIds(VariantDBAdaptor.VariantQueryParams.ANNOT_HPO.key(), query, xrefs, genes);
 
-        // regions
-        regions = Region.parseRegions(query.getString(VariantDBAdaptor.VariantQueryParams.REGION.key()));
+        // Parse regions
+        if (query.containsKey(VariantDBAdaptor.VariantQueryParams.REGION.key())) {
+            regions = Region.parseRegions(query.getString(VariantDBAdaptor.VariantQueryParams.REGION.key()));
+        }
 
         // consequence types (cts)
         if (query.containsKey(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key())
                 && StringUtils.isNotEmpty(query.getString(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key()))) {
-            cts = Arrays.asList(query.getString(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key()).split("[,;]"));
+            consequenceTypes = Arrays.asList(query.getString(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key()).split("[,;]"));
         }
 
         // goal: [((xrefs OR regions) AND cts) OR (genes AND cts)] AND ... AND ...
-        if (cts.size() > 0) {
+        if (consequenceTypes.size() > 0) {
             if (genes.size() > 0) {
                 // consequence types and genes
-                String or = buildXrefOrRegionAndConsequenceType(xrefs, regions, cts);
+                String or = buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes);
                 if (or.isEmpty()) {
                     // no xrefs or regions: genes AND cts
-                    filterList.add(buildGeneAndCt(genes, cts));
+                    filterList.add(buildGeneAndCt(genes, consequenceTypes));
                 } else {
                     // otherwise: [((xrefs OR regions) AND cts) OR (genes AND cts)]
-                    filterList.add(or + " OR (" + buildGeneAndCt(genes, cts) + ")");
+                    filterList.add(or + " OR (" + buildGeneAndCt(genes, consequenceTypes) + ")");
                 }
             } else {
                 // consequence types but no genes: (xrefs OR regions) AND cts
                 // in this case, the resulting string will never be null, because there are some consequence types!!
-                filterList.add(buildXrefOrRegionAndConsequenceType(xrefs, regions, cts));
+                filterList.add(buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes));
             }
         } else {
             // no consequence types: (xrefs OR regions) but we must add "OR genes", i.e.: xrefs OR regions OR genes
@@ -143,30 +133,30 @@ public class ParseSolrQuery {
         // now we continue with the other AND conditions...
 
         // type (t)
-        key = VariantDBAdaptor.VariantQueryParams.TYPE.key();
-        filterList.addAll(parseTermValue(key, (String) query.get(key)));
+        String key = VariantDBAdaptor.VariantQueryParams.TYPE.key();
+        filterList.addAll(parseTermValue(key, query.getString(key)));
 
         // cadd, functional score
         key = VariantDBAdaptor.VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key();
-        filterList.addAll(parseScoreValue(key, (String) query.get(key)));
+        filterList.addAll(parseScoreValue(key, query.getString(key)));
 
         // conservation
         key = VariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION.key();
-        filterList.addAll(parseScoreValue(key, (String) query.get(key)));
+        filterList.addAll(parseScoreValue(key, query.getString(key)));
 
         // protein-substitution
         key = VariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key();
-        filterList.addAll(parseScoreValue(key, (String) query.get(key)));
+        filterList.addAll(parseScoreValue(key, query.getString(key)));
 
         // alt population frequency
         // in the model: "popFreq__1kG_phase3__CLM":0.005319148767739534
         key = VariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
-        filterList.addAll(parsePopValue("popFreq", (String) query.get(key)));
+        filterList.addAll(parsePopValue("popFreq", query.getString(key)));
 
         // stats maf
         // in the model: "stats__1kg_phase3__ALL"=0.02
         key = VariantDBAdaptor.VariantQueryParams.STATS_MAF.key();
-        filterList.addAll(parsePopValue("stats", (String) query.get(key)));
+        filterList.addAll(parsePopValue("stats", query.getString(key)));
 
         //-------------------------------------
         // Facet processing
