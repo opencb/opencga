@@ -164,8 +164,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 //                System.out.println("value = " + variantSearchModel.getPopFreq().get(key));
 //                System.out.println("to float = " + Float.parseFloat(decimalFormat.format(variantSearchModel.getPopFreq().get(key))));
 //                populationFrequency.setAltAlleleFreq(Float.parseFloat(decimalFormat.format(variantSearchModel.getPopFreq().get(key))));
-                BigDecimal bigDecimal = new BigDecimal(variantSearchModel.getPopFreq().get(key));
-                populationFrequency.setAltAlleleFreq(bigDecimal.floatValue());
+
+//                BigDecimal bigDecimal = new BigDecimal(variantSearchModel.getPopFreq().get(key));
+                populationFrequency.setAltAlleleFreq(0.0f);
                 populationFrequencies.add(populationFrequency);
             }
             variantAnnotation.setPopulationFrequencies(populationFrequencies);
