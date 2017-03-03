@@ -7,7 +7,6 @@ import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 
-import java.text.DecimalFormat;
 import java.util.*;
 
 /**
@@ -70,11 +69,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         VariantAnnotation variantAnnotation = new VariantAnnotation();
 
         // consequence types
-        List<ConsequenceType> consequenceTypes = new ArrayList<>();
+
 //        String[] genes = (String[]) variantSearchModel.getGenes()
 //                .toArray(new String[variantSearchModel.getGenes().size()]);
-        String[] genes = variantSearchModel.getGenes().toArray(new String[variantSearchModel.getGenes().size()]);
-        Map<String, ConsequenceType> consequenceTypeMap = new HashMap<>();
 
         // protein substitution scores: sift and polyphen
         List<Score> scores;
@@ -87,31 +84,56 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             proteinAnnotation.setSubstitutionScores(scores);
         }
 
-        int i = 0;
-        while (i < genes.length) {
-            // in the gene list, genes are ordered: 1) one gene name, 2) one ensembl gene id,
-            // 3) one or more ensembl transcript ids, and then, repeat
-            ConsequenceType consequenceType = new ConsequenceType();
+//        String[] genes = variantSearchModel.getGenes().toArray(new String[variantSearchModel.getGenes().size()]);
+        Map<String, ConsequenceType> consequenceTypeMap = new HashMap<>();
+//        int i = 0;
+        List<ConsequenceType> consequenceTypes = new ArrayList<>();
+        String gene = null;
+        String ensGene = null;
+        for (int i = 0; i < variantSearchModel.getGenes().size(); i++) {
 
-            // gene name
-            consequenceType.setGeneName(genes[i++]);
-
-            // ensembl gene ids
-            while (i < genes.length && genes[i].startsWith("ENSG")) {
-                consequenceType.setEnsemblGeneId(genes[i++]);
+            if (!variantSearchModel.getGenes().get(i).startsWith("ENS")) {
+                gene = variantSearchModel.getGenes().get(i);
+            }
+            if (variantSearchModel.getGenes().get(i).startsWith("ENSG")) {
+                ensGene = variantSearchModel.getGenes().get(i);
             }
 
-            // ensembl transcript ids
-            while (i < genes.length && genes[i].startsWith("ENST")) {
-                consequenceType.setEnsemblTranscriptId(genes[i++]);
-            }
-
-            // for every consequence type, we set protein substitution scores
-            // (in the VariantSearchModel only scores for one single consequence type is saved)
-            if (proteinAnnotation != null) {
+            if (variantSearchModel.getGenes().get(i).startsWith("ENST")) {
+                ConsequenceType consequenceType = new ConsequenceType();
+                consequenceType.setGeneName(gene);
+                consequenceType.setEnsemblGeneId(ensGene);
+                consequenceType.setEnsemblGeneId(variantSearchModel.getGenes().get(i));
                 consequenceType.setProteinVariantAnnotation(proteinAnnotation);
+                // The key is the ENST id
+                consequenceTypeMap.put(variantSearchModel.getGenes().get(i), consequenceType);
             }
+
         }
+//        while (i < variantSearchModel.getGenes().size()) {
+//            // in the gene list, genes are ordered: 1) one gene name, 2) one ensembl gene id,
+//            // 3) one or more ensembl transcript ids, and then, repeat
+//            ConsequenceType consequenceType = new ConsequenceType();
+//
+//            // gene name
+//            consequenceType.setGeneName(genes[i++]);
+//
+//            // ensembl gene ids
+//            while (i < genes.length && genes[i].startsWith("ENSG")) {
+//                consequenceType.setEnsemblGeneId(genes[i++]);
+//            }
+//
+//            // ensembl transcript ids
+//            while (i < genes.length && genes[i].startsWith("ENST")) {
+//                consequenceType.setEnsemblTranscriptId(genes[i++]);
+//            }
+//
+//            // for every consequence type, we set protein substitution scores
+//            // (in the VariantSearchModel only scores for one single consequence type is saved)
+//            if (proteinAnnotation != null) {
+//                consequenceType.setProteinVariantAnnotation(proteinAnnotation);
+//            }
+//        }
         // and finally, update the SO accession for each consequence type
         for (String geneToSoAcc: variantSearchModel.getGeneToSoAcc()) {
             System.out.println("-> " + geneToSoAcc);
@@ -119,7 +141,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             if (consequenceTypeMap.containsKey(fields[0])) {
                 SequenceOntologyTerm sequenceOntologyTerm = new SequenceOntologyTerm();
                 sequenceOntologyTerm.setAccession("SO:" + String.format("%07d", fields[1]));
-                System.out.println("---> " + sequenceOntologyTerm.getAccession());
                 if (consequenceTypeMap.get(fields[0]).getSequenceOntologyTerms() == null) {
                     consequenceTypeMap.get(fields[0]).setSequenceOntologyTerms(new ArrayList<>());
                 }
@@ -127,7 +148,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             }
         }
         // and update the variant annotation with the consequence types
-        variantAnnotation.setConsequenceTypes(consequenceTypes);
+        variantAnnotation.setConsequenceTypes(new ArrayList<>(consequenceTypeMap.values()));
 
         // set populations
         if (variantSearchModel.getPopFreq() != null && variantSearchModel.getPopFreq().size() > 0) {
@@ -138,11 +159,11 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 populationFrequency.setStudy(fields[1]);
                 populationFrequency.setPopulation(fields[2]);
                 // TODO: find a simple way to convert double to float !!
-                DecimalFormat decimalFormat = new DecimalFormat("#");
-                System.out.println("value = " + variantSearchModel.getPopFreq().get(key));
-                System.out.println("to float = " + Float.parseFloat(decimalFormat.format(variantSearchModel.getPopFreq().get(key))));
-                populationFrequency.setAltAlleleFreq(Float.parseFloat(decimalFormat.format(variantSearchModel.getPopFreq().get(key))));
-                //populationFrequency.setAltAlleleFreq((float) variantSearchModel.getPopFreq().get(key));
+//                DecimalFormat decimalFormat = new DecimalFormat("#");
+//                System.out.println("value = " + variantSearchModel.getPopFreq().get(key));
+//                System.out.println("to float = " + Float.parseFloat(decimalFormat.format(variantSearchModel.getPopFreq().get(key))));
+//                populationFrequency.setAltAlleleFreq(Float.parseFloat(decimalFormat.format(variantSearchModel.getPopFreq().get(key))));
+                populationFrequency.setAltAlleleFreq(variantSearchModel.getPopFreq().get(key));
                 populationFrequencies.add(populationFrequency);
             }
             variantAnnotation.setPopulationFrequencies(populationFrequencies);

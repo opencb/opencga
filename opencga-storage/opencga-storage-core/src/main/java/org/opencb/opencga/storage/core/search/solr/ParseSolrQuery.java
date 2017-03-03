@@ -25,7 +25,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.collection.mutable.StringBuilder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -129,6 +128,7 @@ public class ParseSolrQuery {
             }
         } else {
             // no consequence types: (xrefs OR regions) but we must add "OR genes", i.e.: xrefs OR regions OR genes
+            // no consequence types: (xrefs OR regions) but we must add "OR genMINes", i.e.: xrefs OR regions OR genes
             // we must make an OR with xrefs, genes and regions and add it to the "AND" filter list
             String orXrefs = buildXrefOrGeneOrRegion(xrefs, genes, regions);
             if (!orXrefs.isEmpty()) {
@@ -511,7 +511,7 @@ public class ParseSolrQuery {
                 break;
             }
             case "<": {
-                sb.append(prefix).append(getScoreName(name)).append(":[* TO ").append(value)
+                sb.append(prefix).append(getScoreName(name)).append(":{").append(Double.MIN_VALUE).append(" TO ").append(value)
                         .append("}");
                 break;
             }
