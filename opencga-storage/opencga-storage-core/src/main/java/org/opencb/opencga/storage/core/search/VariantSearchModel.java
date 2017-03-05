@@ -84,14 +84,14 @@ public class VariantSearchModel {
     @Field("sift")
     private double sift;
 
-    @Field("siftDescr")
-    private String siftDescr;
+    @Field("siftDesc")
+    private String siftDesc;
 
     @Field("polyphen")
     private double polyphen;
 
-    @Field("polyphenDescr")
-    private String polyphenDescr;
+    @Field("polyphenDesc")
+    private String polyphenDesc;
 
     @Field("genes")
     private List<String> genes;
@@ -137,9 +137,9 @@ public class VariantSearchModel {
         sb.append(", caddRaw=").append(caddRaw);
         sb.append(", caddScaled=").append(caddScaled);
         sb.append(", sift=").append(sift);
-        sb.append(", siftDescr=").append(siftDescr);
+        sb.append(", siftDesc=").append(siftDesc);
         sb.append(", polyphen=").append(polyphen);
-        sb.append(", polyphenDescr=").append(polyphenDescr);
+        sb.append(", polyphenDesc=").append(polyphenDesc);
         sb.append(", genes=").append(genes);
         sb.append(", soAcc=").append(soAcc);
         sb.append(", geneToSoAcc=").append(geneToSoAcc);
@@ -276,12 +276,12 @@ public class VariantSearchModel {
         return this;
     }
 
-    public String getSiftDescr() {
-        return siftDescr;
+    public String getSiftDesc() {
+        return siftDesc;
     }
 
-    public void setSiftDescr(String siftDescr) {
-        this.siftDescr = siftDescr;
+    public void setSiftDesc(String siftDesc) {
+        this.siftDesc = siftDesc;
     }
 
     public double getPolyphen() {
@@ -293,12 +293,12 @@ public class VariantSearchModel {
         return this;
     }
 
-    public String getPolyphenDescr() {
-        return polyphenDescr;
+    public String getPolyphenDesc() {
+        return polyphenDesc;
     }
 
-    public void setPolyphenDescr(String polyphenDescr) {
-        this.polyphenDescr = polyphenDescr;
+    public void setPolyphenDesc(String polyphenDesc) {
+        this.polyphenDesc = polyphenDesc;
     }
 
     public List<String> getGenes() {

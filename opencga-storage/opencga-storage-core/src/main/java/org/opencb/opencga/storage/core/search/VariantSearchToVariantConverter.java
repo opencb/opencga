@@ -76,11 +76,11 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         // protein substitution scores: sift and polyphen
         List<Score> scores;
         ProteinVariantAnnotation proteinAnnotation = null;
-        if (variantSearchModel.getSift() != Double.MIN_VALUE || variantSearchModel.getPolyphen() != Double.MIN_VALUE) {
+        if (variantSearchModel.getSift() != -1.0 || variantSearchModel.getPolyphen() != -1.0) {
             proteinAnnotation = new ProteinVariantAnnotation();
             scores = new ArrayList<>();
-            scores.add(new Score(variantSearchModel.getSift(), "sift", variantSearchModel.getSiftDescr()));
-            scores.add(new Score(variantSearchModel.getPolyphen(), "polyphen", variantSearchModel.getPolyphenDescr()));
+            scores.add(new Score(variantSearchModel.getSift(), "sift", variantSearchModel.getSiftDesc()));
+            scores.add(new Score(variantSearchModel.getPolyphen(), "polyphen", variantSearchModel.getPolyphenDesc()));
             proteinAnnotation.setSubstitutionScores(scores);
         }
 
@@ -347,8 +347,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
                         xrefs.add(consequenceType.getProteinVariantAnnotation().getUniprotAccession());
                     } else {
-                        variantSearchModel.setSift(Double.MIN_VALUE);
-                        variantSearchModel.setPolyphen(Double.MIN_VALUE);
+                        variantSearchModel.setSift(-1.0);
+                        variantSearchModel.setPolyphen(-1.0);
+                        variantSearchModel.setSiftDesc("");
+                        variantSearchModel.setPolyphenDesc("");
                     }
                 }
 
@@ -466,9 +468,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
      */
     private void setProteinScores(ConsequenceType consequenceType, VariantSearchModel variantSearchModel) {
         double sift = 10;
-        String siftDescr = "";
-        double polyphen = 0;
-        String polyphenDescr = "";
+        String siftDesc = "";
+        double polyphen = -1.0;
+        String polyphenDesc = "";
 
         if (consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
             for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
@@ -476,15 +478,20 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 if (source.equals("sift")) {
                     if (score.getScore() < sift) {
                         sift = score.getScore();
-                        siftDescr = score.getDescription();
+                        siftDesc = score.getDescription();
                     }
                 } else if (source.equals("polyphen")) {
                     if (score.getScore() > polyphen) {
                         polyphen = score.getScore();
-                        polyphenDescr = score.getDescription();
+                        polyphenDesc = score.getDescription();
                     }
                 }
             }
+        }
+
+        // If sift not exist we set it to -1.0
+        if (sift == 10) {
+            sift = -1.0;
         }
 
         // set scores
@@ -492,8 +499,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         variantSearchModel.setPolyphen(polyphen);
 
         // set descriptions
-        variantSearchModel.setSiftDescr(siftDescr);
-        variantSearchModel.setPolyphenDescr(polyphenDescr);
+        variantSearchModel.setSiftDesc(siftDesc);
+        variantSearchModel.setPolyphenDesc(polyphenDesc);
     }
 }
 
