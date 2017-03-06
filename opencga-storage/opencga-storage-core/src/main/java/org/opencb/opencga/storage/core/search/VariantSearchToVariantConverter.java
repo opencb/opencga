@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.search;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
@@ -103,7 +104,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 ConsequenceType consequenceType = new ConsequenceType();
                 consequenceType.setGeneName(gene);
                 consequenceType.setEnsemblGeneId(ensGene);
-                consequenceType.setEnsemblGeneId(variantSearchModel.getGenes().get(i));
+                consequenceType.setEnsemblTranscriptId(variantSearchModel.getGenes().get(i));
                 consequenceType.setProteinVariantAnnotation(proteinAnnotation);
                 // The key is the ENST id
                 consequenceTypeMap.put(variantSearchModel.getGenes().get(i), consequenceType);
@@ -139,8 +140,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             System.out.println("-> " + geneToSoAcc);
             String[] fields = geneToSoAcc.split("_");
             if (consequenceTypeMap.containsKey(fields[0])) {
+                int soAcc = Integer.parseInt(fields[1]);
                 SequenceOntologyTerm sequenceOntologyTerm = new SequenceOntologyTerm();
-                sequenceOntologyTerm.setAccession("SO:" + String.format("%07d", Integer.parseInt(fields[1])));
+                sequenceOntologyTerm.setAccession("SO:" + String.format("%07d", soAcc));
+                sequenceOntologyTerm.setName(ConsequenceTypeMappings.accessionToTerm.get(soAcc));
                 if (consequenceTypeMap.get(fields[0]).getSequenceOntologyTerms() == null) {
                     consequenceTypeMap.get(fields[0]).setSequenceOntologyTerms(new ArrayList<>());
                 }
