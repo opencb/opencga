@@ -199,11 +199,11 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     }
                     case "COSMIC": {
                         // variant trait
-                        // COSMIC -- mutation id -- primary histology -- histology subtype
+                        // COSMIC -- mutation id -- primary histology   histology subtype
                         Cosmic cosmic = new Cosmic();
                         cosmic.setMutationId(fields[1]);
                         cosmic.setPrimaryHistology(fields[2]);
-                        cosmic.setHistologySubtype(fields[3]);
+//                        cosmic.setHistologySubtype(fields[3]);
                         cosmicList.add(cosmic);
                         break;
                     }
