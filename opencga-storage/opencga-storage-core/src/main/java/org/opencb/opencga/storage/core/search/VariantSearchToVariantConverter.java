@@ -23,16 +23,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
      */
     @Override
     public Variant convertToDataModelType(VariantSearchModel variantSearchModel) {
+        // set chromosome, start, end, ref, alt from ID
         Variant variant = new Variant(variantSearchModel.getId());
 
         // set ID, chromosome, start, end, ref, alt, type
         variant.setId(variantSearchModel.getVariantId());
-//        variant.setChromosome(variantSearchModel.getChromosome());
-//        variant.setStart(variantSearchModel.getStart());
-//        variant.setEnd(variantSearchModel.getEnd());
-//        String[] split = variantSearchModel.getId().split(":");
-//        variant.setReference(split[2]);
-//        variant.setAlternate(split[3]);
+
+        // set variant type
         variant.setType(VariantType.valueOf(variantSearchModel.getType()));
 
         // set studies and stats
@@ -175,11 +172,11 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     }
                     case "COSMIC": {
                         // variant trait
-                        // COSMIC -- mutation id -- primary histology   histology subtype
+                        // COSMIC -- mutation id -- primary histology -- histology subtype
                         Cosmic cosmic = new Cosmic();
                         cosmic.setMutationId(fields[1]);
                         cosmic.setPrimaryHistology(fields[2]);
-//                        cosmic.setHistologySubtype(fields[3]);
+                        cosmic.setHistologySubtype(fields[3]);
                         cosmicList.add(cosmic);
                         break;
                     }
