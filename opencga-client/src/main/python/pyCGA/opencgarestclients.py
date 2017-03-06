@@ -1,8 +1,8 @@
-import json
+import time
 
 from pyCGA.Utils.AvroSchema import AvroSchemaFile
 
-from pyCGA.commons import execute, OpenCGAResponse, OpenCGAResponseList
+from pyCGA.commons import execute, OpenCGAResponseList
 from pyCGA.opencgaconfig import ConfigClient
 
 
@@ -15,7 +15,7 @@ class _ParentRestClient(object):
         self.session_id = session_id
 
     @staticmethod
-    def _get_query_id_str(query_ids, **options):
+    def _get_query_id_str(query_ids):
         if query_ids is None:
             return None
         elif isinstance(query_ids, list):
@@ -23,40 +23,52 @@ class _ParentRestClient(object):
         else:
             return str(query_ids)
 
-    def _get(self, resource, query_id=None, subcategory=None, second_query_id=None, **options):
-        """Queries the REST service and returns the result"""
+    def _rest_retry(self, method, resource, query_id=None, subcategory=None,
+                    second_query_id=None, data=None, **options):
+        """Invokes the specified HTTP method, with retries if they are specified in the configuration
+        :return: an instance of OpenCGAResponseList"""
 
         query_ids_str = self._get_query_id_str(query_id)
-        response = execute(host=self._configuration.host,
-                           version=self._configuration.version,
-                           sid=self.session_id,
-                           category=self._category,
-                           subcategory=subcategory,
-                           method='get',
-                           query_id=query_ids_str,
-                           second_query_id=second_query_id,
-                           resource=resource,
-                           options=options)
 
-        return OpenCGAResponseList(response, query_ids_str)
+        if self._configuration.retry:
+            max_attempts = self._configuration.max_attempts
+            retry_seconds = self._configuration.min_retry_seconds
+        else:
+            max_attempts = 1
+            retry_seconds = 0
+
+        attempt_number = 1
+        while True:
+            try:
+                response = execute(host=self._configuration.host,
+                                   version=self._configuration.version,
+                                   sid=self.session_id,
+                                   category=self._category,
+                                   subcategory=subcategory,
+                                   method=method,
+                                   query_id=query_ids_str,
+                                   second_query_id=second_query_id,
+                                   resource=resource,
+                                   data=data,
+                                   options=options)
+            except Exception as e:
+                if attempt_number >= max_attempts:  # last attempt failed, propagate error:
+                    raise e
+                # TODO: log that we are retrying
+                # TODO: re-log in if logged out
+                time.sleep(retry_seconds)
+                attempt_number += 1
+                retry_seconds = min(retry_seconds * 2, self._configuration.max_retry_seconds)
+            else:
+                return OpenCGAResponseList(response, query_ids_str)
+
+    def _get(self, resource, query_id=None, subcategory=None, second_query_id=None, **options):
+        """Queries the REST service and returns the result"""
+        return self._rest_retry('get', resource, query_id, subcategory, second_query_id, **options)
 
     def _post(self, resource, data, query_id=None, subcategory=None, second_query_id=None, **options):
         """Queries the REST service and returns the result"""
-
-        query_ids_str = self._get_query_id_str(query_id, **options)
-        response = execute(host=self._configuration.host,
-                           version=self._configuration.version,
-                           sid=self.session_id,
-                           category=self._category,
-                           method='post',
-                           data=data,
-                           subcategory=subcategory,
-                           query_id=query_ids_str,
-                           second_query_id=second_query_id,
-                           resource=resource,
-                           options=options)
-
-        return OpenCGAResponseList(response, query_ids_str)
+        return self._rest_retry('post', resource, query_id, subcategory, second_query_id, data=data, **options)
 
 
 class _ParentBasicCRUDClient(_ParentRestClient):
@@ -792,20 +804,6 @@ class OpenCGAClient(object):
             self.user_id = user  # if user and session_id are supplied, we can log out
             self.session_id = session_id
             self._create_clients()
-
-    @classmethod
-    def basic(cls, service_url, user, pwd):
-        """
-        Creates an instance of OpenCGAClient for v1 API
-        :param service_url: service URL, including host, port, and instance. Example: http://localhost:8080/opencga
-            The http:// prefix is optional
-        :param user: username for logging in
-        :param pwd: password for logging in
-        :return: an instance of OpenCGAClient
-        """
-        return OpenCGAClient(configuration={'version': 'v1',
-                                            'rest': {'hosts': [service_url]}},
-                             user=user, pwd=pwd)
 
     def __enter__(self):
         return self

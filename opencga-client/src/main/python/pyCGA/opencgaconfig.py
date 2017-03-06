@@ -16,6 +16,7 @@ class ConfigClient(object):
             'host': '',
             'version': 'v1',
         }
+        self._retry = None
 
         # If config info is provided, override default config params
         if config_input is not None:
@@ -54,6 +55,13 @@ class ConfigClient(object):
                     self._config['host'] = self._get_available_host()
             if 'version' in config_dict:
                 self._config['version'] = config_dict['version']
+            if 'retry' in config_dict:
+                self._retry = dict(
+                    max_attempts=config_dict['retry']['max_attempts'],
+                    min_retry_seconds=config_dict['retry']['min_retry_seconds'],
+                    max_retry_seconds=config_dict['retry']['max_retry_seconds'],
+                )
+
         else:
             msg = 'No configuration parameters found'
             raise ValueError(msg)
@@ -78,6 +86,11 @@ class ConfigClient(object):
 
         else:
             return available_host
+
+    @staticmethod
+    def get_basic_config_dict(service_url):
+        return {'version': 'v1',
+                'rest': {'hosts': [service_url]}}
 
     @property
     def version(self):
@@ -105,3 +118,23 @@ class ConfigClient(object):
     @property
     def configuration_input(self):
         return self._configuration_input
+
+    @property
+    def retry(self):
+        return self._retry
+
+    @retry.setter
+    def retry(self, new_retry):
+        self._retry = new_retry
+
+    @property
+    def max_attempts(self):
+        return self._retry['max_attempts']
+
+    @property
+    def min_retry_seconds(self):
+        return self._retry['min_retry_seconds']
+
+    @property
+    def max_retry_seconds(self):
+        return self._retry['max_retry_seconds']
