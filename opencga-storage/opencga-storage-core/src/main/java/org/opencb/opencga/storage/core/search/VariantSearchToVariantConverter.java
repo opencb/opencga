@@ -70,27 +70,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         VariantAnnotation variantAnnotation = new VariantAnnotation();
 
         // consequence types
-
-//        String[] genes = (String[]) variantSearchModel.getGenes()
-//                .toArray(new String[variantSearchModel.getGenes().size()]);
-
-        // protein substitution scores: sift and polyphen
-        List<Score> scores;
-        ProteinVariantAnnotation proteinAnnotation = null;
-        if (variantSearchModel.getSift() != -1.0 || variantSearchModel.getPolyphen() != -1.0) {
-            proteinAnnotation = new ProteinVariantAnnotation();
-            scores = new ArrayList<>();
-            scores.add(new Score(variantSearchModel.getSift(), "sift", variantSearchModel.getSiftDesc()));
-            scores.add(new Score(variantSearchModel.getPolyphen(), "polyphen", variantSearchModel.getPolyphenDesc()));
-            proteinAnnotation.setSubstitutionScores(scores);
-        }
-
-//        String[] genes = variantSearchModel.getGenes().toArray(new String[variantSearchModel.getGenes().size()]);
-        Map<String, ConsequenceType> consequenceTypeMap = new HashMap<>();
-//        int i = 0;
-        List<ConsequenceType> consequenceTypes = new ArrayList<>();
         String gene = null;
         String ensGene = null;
+        Map<String, ConsequenceType> consequenceTypeMap = new HashMap<>();
         for (int i = 0; i < variantSearchModel.getGenes().size(); i++) {
 
             if (!variantSearchModel.getGenes().get(i).startsWith("ENS")) {
@@ -105,39 +87,27 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 consequenceType.setGeneName(gene);
                 consequenceType.setEnsemblGeneId(ensGene);
                 consequenceType.setEnsemblTranscriptId(variantSearchModel.getGenes().get(i));
-                consequenceType.setProteinVariantAnnotation(proteinAnnotation);
+                // setProteinVariantAnnotation is postponed, since it will only be set if SO accession is 1583
+
                 // The key is the ENST id
                 consequenceTypeMap.put(variantSearchModel.getGenes().get(i), consequenceType);
             }
-
         }
-//        while (i < variantSearchModel.getGenes().size()) {
-//            // in the gene list, genes are ordered: 1) one gene name, 2) one ensembl gene id,
-//            // 3) one or more ensembl transcript ids, and then, repeat
-//            ConsequenceType consequenceType = new ConsequenceType();
-//
-//            // gene name
-//            consequenceType.setGeneName(genes[i++]);
-//
-//            // ensembl gene ids
-//            while (i < genes.length && genes[i].startsWith("ENSG")) {
-//                consequenceType.setEnsemblGeneId(genes[i++]);
-//            }
-//
-//            // ensembl transcript ids
-//            while (i < genes.length && genes[i].startsWith("ENST")) {
-//                consequenceType.setEnsemblTranscriptId(genes[i++]);
-//            }
-//
-//            // for every consequence type, we set protein substitution scores
-//            // (in the VariantSearchModel only scores for one single consequence type is saved)
-//            if (proteinAnnotation != null) {
-//                consequenceType.setProteinVariantAnnotation(proteinAnnotation);
-//            }
-//        }
+
+        // prepare protein substitution scores: sift and polyphen
+        List<Score> scores;
+        ProteinVariantAnnotation proteinAnnotation = null;
+        if (variantSearchModel.getSift() != -1.0 || variantSearchModel.getPolyphen() != -1.0) {
+            proteinAnnotation = new ProteinVariantAnnotation();
+            scores = new ArrayList<>();
+            scores.add(new Score(variantSearchModel.getSift(), "sift", variantSearchModel.getSiftDesc()));
+            scores.add(new Score(variantSearchModel.getPolyphen(), "polyphen", variantSearchModel.getPolyphenDesc()));
+            proteinAnnotation.setSubstitutionScores(scores);
+        }
+
         // and finally, update the SO accession for each consequence type
+        // and setProteinVariantAnnotation if SO accession is 1583
         for (String geneToSoAcc: variantSearchModel.getGeneToSoAcc()) {
-            System.out.println("-> " + geneToSoAcc);
             String[] fields = geneToSoAcc.split("_");
             if (consequenceTypeMap.containsKey(fields[0])) {
                 int soAcc = Integer.parseInt(fields[1]);
@@ -148,6 +118,12 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     consequenceTypeMap.get(fields[0]).setSequenceOntologyTerms(new ArrayList<>());
                 }
                 consequenceTypeMap.get(fields[0]).getSequenceOntologyTerms().add(sequenceOntologyTerm);
+
+                // only set protein for that consequence type
+                // if annotated protein and SO accession is 1583 (missense_variant)
+                if (proteinAnnotation != null && soAcc == 1583) {
+                    consequenceTypeMap.get(fields[0]).setProteinVariantAnnotation(proteinAnnotation);
+                }
             }
         }
         // and update the variant annotation with the consequence types
@@ -207,7 +183,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         cosmicList.add(cosmic);
                         break;
                     }
-                    case "HP0": {
+                    case "HPO": {
                         // gene trait
                         // HPO -- hpo -- name
                         GeneTraitAssociation geneTraitAssociation = new GeneTraitAssociation();
@@ -342,20 +318,14 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         }
                     }
 
-                    // Set sift and polyphen and also the protein id in xrefs
+                    // Set uniprot accession protein id in xrefs
                     if (consequenceType.getProteinVariantAnnotation() != null) {
-                        // set protein substitution scores and descriptions: sift and polyphen
-//                        double[] proteinScores = getSubstitutionScores(consequenceType);
-                        setProteinScores(consequenceType, variantSearchModel);
-
                         xrefs.add(consequenceType.getProteinVariantAnnotation().getUniprotAccession());
-                    } else {
-                        variantSearchModel.setSift(-1.0);
-                        variantSearchModel.setPolyphen(-1.0);
-                        variantSearchModel.setSiftDesc("");
-                        variantSearchModel.setPolyphenDesc("");
                     }
                 }
+
+                // Set sift and polyphen
+                setProteinScores(consequenceTypes, variantSearchModel);
 
                 // We store the accumulated data
                 genes.forEach((s, strings) -> variantSearchModel.getGenes().addAll(strings));
@@ -433,7 +403,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             .forEach(cosm -> {
                                 xrefs.add(cosm.getMutationId());
                                 traits.add("COSMIC -- " + cosm.getMutationId() + " -- "
-                                        + cosm.getPrimaryHistology() + " " + cosm.getHistologySubtype());
+                                        + cosm.getPrimaryHistology() + " -- " + cosm.getHistologySubtype());
                             });
                 }
             }
@@ -466,27 +436,32 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
      * Retrieve the protein substitution scores and descriptions from a consequence
      * type annotation: sift or polyphen, and update the variant search model.
      *
-     * @param consequenceType     Consequence type target
+     * @param consequenceTypes    List of consequence type target
      * @param variantSearchModel  Variant search model to update
      */
-    private void setProteinScores(ConsequenceType consequenceType, VariantSearchModel variantSearchModel) {
+    private void setProteinScores(List<ConsequenceType> consequenceTypes, VariantSearchModel variantSearchModel) {
         double sift = 10;
         String siftDesc = "";
         double polyphen = -1.0;
         String polyphenDesc = "";
 
-        if (consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
-            for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
-                String source = score.getSource();
-                if (source.equals("sift")) {
-                    if (score.getScore() < sift) {
-                        sift = score.getScore();
-                        siftDesc = score.getDescription();
-                    }
-                } else if (source.equals("polyphen")) {
-                    if (score.getScore() > polyphen) {
-                        polyphen = score.getScore();
-                        polyphenDesc = score.getDescription();
+        if (consequenceTypes != null) {
+            for (ConsequenceType consequenceType : consequenceTypes) {
+                if (consequenceType.getProteinVariantAnnotation() != null
+                        && consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
+                    for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
+                        String source = score.getSource();
+                        if (source.equals("sift")) {
+                            if (score.getScore() < sift) {
+                                sift = score.getScore();
+                                siftDesc = score.getDescription();
+                            }
+                        } else if (source.equals("polyphen")) {
+                            if (score.getScore() > polyphen) {
+                                polyphen = score.getScore();
+                                polyphenDesc = score.getDescription();
+                            }
+                        }
                     }
                 }
             }
