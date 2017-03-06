@@ -77,7 +77,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         // protein substitution scores: sift and polyphen
         List<Score> scores;
         ProteinVariantAnnotation proteinAnnotation = null;
-        if (variantSearchModel.getSift() != -1.0 || variantSearchModel.getPolyphen() != -1.0) {
+        System.out.println("sift: " + variantSearchModel.getSift());
+        if (variantSearchModel.getSift() >= 0 || variantSearchModel.getPolyphen() >= 0) {
             proteinAnnotation = new ProteinVariantAnnotation();
             scores = new ArrayList<>();
             scores.add(new Score(variantSearchModel.getSift(), "sift", variantSearchModel.getSiftDesc()));
