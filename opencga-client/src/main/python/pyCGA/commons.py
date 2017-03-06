@@ -334,3 +334,7 @@ def execute(host, version, sid, category, resource, method, subcategory=None, qu
     final_response = list(itertools.chain.from_iterable(res))
 
     return final_response
+
+
+def is_not_logged_in_exception(e):
+    return "The session id does not correspond to any user" in str(e)

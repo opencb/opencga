@@ -2,17 +2,22 @@ import time
 
 from pyCGA.Utils.AvroSchema import AvroSchemaFile
 
-from pyCGA.commons import execute, OpenCGAResponseList
+from pyCGA.commons import execute, OpenCGAResponseList, is_not_logged_in_exception
 from pyCGA.opencgaconfig import ConfigClient
 
 
 class _ParentRestClient(object):
     """Queries the REST service given the different query params"""
 
-    def __init__(self, configuration, category, session_id=None):
+    def __init__(self, configuration, category, session_id=None, login_handler=None):
+        """
+        :param login_handler: a parameterless method that can log in this connector
+        and return a session id
+        """
         self._configuration = configuration
         self._category = category
         self.session_id = session_id
+        self.login_handler = login_handler
 
     @staticmethod
     def _get_query_id_str(query_ids):
@@ -52,13 +57,18 @@ class _ParentRestClient(object):
                                    data=data,
                                    options=options)
             except Exception as e:
-                if attempt_number >= max_attempts:  # last attempt failed, propagate error:
-                    raise e
-                # TODO: log that we are retrying
-                # TODO: re-log in if logged out
-                time.sleep(retry_seconds)
-                attempt_number += 1
-                retry_seconds = min(retry_seconds * 2, self._configuration.max_retry_seconds)
+                if is_not_logged_in_exception(e):
+                    if self.login_handler:
+                        self.session_id = self.login_handler()
+                    else:
+                        raise e  # there's no point in retrying if we can't log in
+                else:
+                    if attempt_number >= max_attempts:  # last attempt failed, propagate error:
+                        raise e
+                    # TODO: log that we are retrying
+                    time.sleep(retry_seconds)
+                    attempt_number += 1
+                    retry_seconds = min(retry_seconds * 2, self._configuration.max_retry_seconds)
             else:
                 return OpenCGAResponseList(response, query_ids_str)
 
@@ -209,9 +219,9 @@ class Users(_ParentBasicCRUDClient):
     This class contains method for users ws (i.e, login, logout, create new user...)
     """
 
-    def __init__(self, configuration, session_id=None):
+    def __init__(self, configuration, session_id=None, login_handler=None):
         _category = "users"
-        super(Users, self).__init__(configuration, _category, session_id)
+        super(Users, self).__init__(configuration, _category, session_id, login_handler)
 
     def login(self, user, pwd, **options):
         """
@@ -240,9 +250,9 @@ class Projects(_ParentBasicCRUDClient):
     This class contains method for projects ws (i.e, create, files, info)
     """
 
-    def __init__(self, configuration, session_id=None):
+    def __init__(self, configuration, session_id=None, login_handler=None):
         _category = "projects"
-        super(Projects, self).__init__(configuration, _category, session_id)
+        super(Projects, self).__init__(configuration, _category, session_id, login_handler)
 
     def studies(self, projectId, **options):
         """
@@ -259,9 +269,9 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
     This class contains method for studies ws (i.e, state, files, info)
     """
 
-    def __init__(self, configuration, session_id=None):
+    def __init__(self, configuration, session_id=None, login_handler=None):
         _category = 'studies'
-        super(Studies, self).__init__(configuration, _category, session_id)
+        super(Studies, self).__init__(configuration, _category, session_id, login_handler)
 
     def groups(self, studyId, **options):
         """
@@ -397,9 +407,9 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
     This class contains method for files ws (i.e, link, create)
     """
 
-    def __init__(self, configuration, session_id=None):
+    def __init__(self, configuration, session_id=None, login_handler=None):
         _category = "files"
-        super(Files, self).__init__(configuration, _category, session_id)
+        super(Files, self).__init__(configuration, _category, session_id, login_handler)
 
     def bioformats(self, **options):
         """
@@ -534,9 +544,9 @@ class Jobs(_ParentBasicCRUDClient, _ParentAclRestClient):
     This class contains method for jobs ws
     """
 
-    def __init__(self, configuration, session_id=None):
+    def __init__(self, configuration, session_id=None, login_handler=None):
         _category = "jobs"
-        super(Jobs, self).__init__(configuration, _category, session_id)
+        super(Jobs, self).__init__(configuration, _category, session_id, login_handler)
 
     def group_by(self, fields, study, **options):
         """
@@ -573,9 +583,9 @@ class Individuals(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotatio
     This class contains method for Individuals ws (i.e, update, create)
     """
 
-    def __init__(self, configuration, session_id=None):
+    def __init__(self, configuration, session_id=None, login_handler=None):
         _category = "individuals"
-        super(Individuals, self).__init__(configuration, _category, session_id)
+        super(Individuals, self).__init__(configuration, _category, session_id, login_handler)
 
     def group_by(self, fields, study, **options):
         """
@@ -601,9 +611,9 @@ class Samples(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSet
     This class contains method for Samples ws (i.e, update, create)
     """
 
-    def __init__(self, configuration, session_id=None):
+    def __init__(self, configuration, session_id=None, login_handler=None):
         _category = "samples"
-        super(Samples, self).__init__(configuration, _category, session_id)
+        super(Samples, self).__init__(configuration, _category, session_id, login_handler)
 
     def group_by(self, fields, study, **options):
         """
@@ -629,9 +639,9 @@ class Cohorts(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSet
     This class contains method for Cohorts ws (i.e, update, create)
     """
 
-    def __init__(self, configuration, session_id=None):
+    def __init__(self, configuration, session_id=None, login_handler=None):
         _category = "cohorts"
-        super(Cohorts, self).__init__(configuration, _category, session_id)
+        super(Cohorts, self).__init__(configuration, _category, session_id, login_handler)
 
     def group_by(self, fields, study, **options):
         """
@@ -663,9 +673,9 @@ class VariableSets(_ParentBasicCRUDClient, _ParentRestClient):
     This class contains method for VariableSets ws (i.e, update, create)
     """
 
-    def __init__(self, configuration, session_id=None):
+    def __init__(self, configuration, session_id=None, login_handler=None):
         _category = "variableset"
-        super(VariableSets, self).__init__(configuration, _category, session_id)
+        super(VariableSets, self).__init__(configuration, _category, session_id, login_handler)
 
     def search(self, study, **options):
         """
@@ -717,9 +727,9 @@ class AnalysisAlignment(_ParentRestClient):
     This class contains method for AnalysisAlignment ws
     """
 
-    def __init__(self, configuration, session_id=None):
+    def __init__(self, configuration, session_id=None, login_handler=None):
         _category = "analysis"
-        super(AnalysisAlignment, self).__init__(configuration, _category, session_id)
+        super(AnalysisAlignment, self).__init__(configuration, _category, session_id, login_handler)
 
     def coverage(self, file, study, **options):
         return self._get('alignment', subcategory='coverage', file=file, study=study, **options)
@@ -739,9 +749,9 @@ class AnalysisVariant(_ParentRestClient):
     This class contains method for AnalysisVariant ws
     """
 
-    def __init__(self, configuration, session_id=None):
+    def __init__(self, configuration, session_id=None, login_handler=None):
         _category = "analysis"
-        super(AnalysisVariant, self).__init__(configuration, _category, session_id)
+        super(AnalysisVariant, self).__init__(configuration, _category, session_id, login_handler)
 
     def index(self, file, study, **options):
         return self._get('variant', subcategory='index', file=file, study=study, **options)
@@ -781,9 +791,9 @@ class GA4GH(_ParentRestClient):
     This class contains method for GA4GH ws
     """
 
-    def __init__(self, configuration, session_id=None):
+    def __init__(self, configuration, session_id=None, login_handler=None):
         _category = "ga4gh"
-        super(GA4GH, self).__init__(configuration, _category, session_id)
+        super(GA4GH, self).__init__(configuration, _category, session_id, login_handler)
 
     def read_search(self, data, **options):
         return self._post('read', subcategory='search', data=data, **options)
@@ -811,24 +821,29 @@ class OpenCGAClient(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.logout()
 
-    def _create_clients(self):
-        self.users = Users(self.configuration, self.session_id)
-        self.projects = Projects(self.configuration, self.session_id)
-        self.studies = Studies(self.configuration, self.session_id)
-        self.files = Files(self.configuration, self.session_id)
-        self.samples = Samples(self.configuration, self.session_id)
-        self.cohorts = Cohorts(self.configuration, self.session_id)
-        self.jobs = Jobs(self.configuration, self.session_id)
-        self.individuals = Individuals(self.configuration, self.session_id)
-        self.variable_sets = VariableSets(self.configuration, self.session_id)
-        self.analysis_alignment = AnalysisAlignment(self.configuration, self.session_id)
-        self.analysis_variant = AnalysisVariant(self.configuration, self.session_id)
-        self.ga4gh = GA4GH(self.configuration, self.session_id)
+    def _create_clients(self, login_handler=None):
+        self.users = Users(self.configuration, self.session_id, login_handler)
+        self.projects = Projects(self.configuration, self.session_id, login_handler)
+        self.studies = Studies(self.configuration, self.session_id, login_handler)
+        self.files = Files(self.configuration, self.session_id, login_handler)
+        self.samples = Samples(self.configuration, self.session_id, login_handler)
+        self.cohorts = Cohorts(self.configuration, self.session_id, login_handler)
+        self.jobs = Jobs(self.configuration, self.session_id, login_handler)
+        self.individuals = Individuals(self.configuration, self.session_id, login_handler)
+        self.variable_sets = VariableSets(self.configuration, self.session_id, login_handler)
+        self.analysis_alignment = AnalysisAlignment(self.configuration, self.session_id, login_handler)
+        self.analysis_variant = AnalysisVariant(self.configuration, self.session_id, login_handler)
+        self.ga4gh = GA4GH(self.configuration, self.session_id, login_handler)
 
     def _login(self, user, pwd):
         self.user_id = user
         self.session_id = Users(self.configuration).login(user=user, pwd=pwd).get().sessionId
-        self._create_clients()  # re-create clients in case of re-login
+
+        def login_handler():
+            return self._login(user, pwd)
+            # for future logins. This we retain the password but it's not accessible to other code
+
+        self._create_clients(login_handler)
         return self.session_id
 
     def logout(self):
