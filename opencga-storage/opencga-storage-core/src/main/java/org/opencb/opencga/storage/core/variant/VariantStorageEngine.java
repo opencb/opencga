@@ -434,7 +434,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             // then, load variants
             VariantDBAdaptor dbAdaptor = getDBAdaptor(database);
             queryOptions = new QueryOptions();
-            queryOptions.put(QueryOptions.EXCLUDE, VariantField.STUDIES_SAMPLES_DATA);
+            queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES_DATA, VariantField.STUDIES_FILES));
             VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
             variantSearchManager.load(database, iterator);
         }

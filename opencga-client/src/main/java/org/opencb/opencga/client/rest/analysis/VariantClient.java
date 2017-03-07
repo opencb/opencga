@@ -44,9 +44,16 @@ public class VariantClient extends AbstractParentClient {
         return execute(VARIANT_URL, "query", params, GET, Variant.class);
     }
 
-    public VariantQueryResult<Variant> queryResult(ObjectMap params, QueryOptions options) throws CatalogException, IOException {
-        return ((VariantQueryResult<Variant>) query(params, options).getResponse().get(0));
+    public VariantQueryResult<Variant> query2(ObjectMap params, QueryOptions options) throws CatalogException, IOException {
+        if (options != null) {
+            params.putAll(options);
+        }
+        return executeVariantQuery(VARIANT_URL, "query", params, GET, Variant.class);
     }
+
+//    public VariantQueryResult<Variant> queryResult(ObjectMap params, QueryOptions options) throws CatalogException, IOException {
+//        return ((VariantQueryResult<Variant>) query(params, options).getResponse().get(0));
+//    }
 
     public QueryResponse<Long> count(ObjectMap params, QueryOptions options) throws CatalogException, IOException {
         if (options != null) {
