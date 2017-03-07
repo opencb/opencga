@@ -29,6 +29,7 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.core.results.VariantQueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,6 +91,12 @@ public abstract class AbstractParentClient {
                 defaultLimit = configuration.getRest().getDefaultLimit();
             }
         }
+    }
+
+    protected <T> VariantQueryResult<T> executeVariantQuery(String category, String action, Map<String, Object> params, String method,
+                                                            Class<T> clazz) throws IOException {
+        QueryResponse<T> queryResponse = execute(category, null, action, params, method, clazz);
+        return (VariantQueryResult<T>) queryResponse.first();
     }
 
     protected <T> QueryResponse<T> execute(String category, String action, Map<String, Object> params, String method, Class<T> clazz)

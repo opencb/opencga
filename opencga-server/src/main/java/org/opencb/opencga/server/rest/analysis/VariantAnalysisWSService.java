@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -196,7 +197,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
         try {
             List<QueryResult> queryResults = new LinkedList<>();
-            QueryResult queryResult;
+            QueryResult queryResult = null;
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             queryOptions.put("summary", summary);
@@ -211,6 +212,10 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 queryResult = variantManager.groupBy(groupBy, query, queryOptions, sessionId);
             } else {
                 queryResult = variantManager.get(query, queryOptions, sessionId);
+                System.out.println("queryResult = " + jsonObjectMapper.writeValueAsString(queryResult));
+
+//                VariantQueryResult variantQueryResult = variantManager.get(query, queryOptions, sessionId);
+//                queryResults.add(variantQueryResult);
             }
             queryResults.add(queryResult);
 
