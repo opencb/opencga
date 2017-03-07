@@ -315,13 +315,13 @@ public class ParseSolrQuery {
             String[] values = value.split("[,;]");
             StringBuilder filter = new StringBuilder();
             if (values.length == 1) {
-                filter.append("traits").append(":\"").append(type).append("*").append(value).append("*\"");
+                filter.append("traits").append(":\"").append(value).append("\"");
             } else {
                 filter.append("(");
-                filter.append("traits").append(":\"").append(type).append("*").append(values[0]).append("*\"");
+                filter.append("traits").append(":\"").append(values[0]).append("\"");
                 for (int i = 1; i < values.length; i++) {
                     filter.append(" OR ");
-                    filter.append("traits").append(":\"").append(type).append("*").append(values[i]).append("*\"");
+                    filter.append("traits").append(":\"").append(values[i]).append("\"");
                 }
                 filter.append(")");
             }
