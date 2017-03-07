@@ -1,5 +1,7 @@
 import time
 
+import sys
+
 from pyCGA.Utils.AvroSchema import AvroSchemaFile
 
 from pyCGA.commons import execute, OpenCGAResponseList, is_not_logged_in_exception
@@ -57,6 +59,7 @@ class _ParentRestClient(object):
                                    data=data,
                                    options=options)
             except Exception as e:
+                # TODO: detect login failure "Bad user or password" and don't retry those
                 if is_not_logged_in_exception(e):
                     if self.login_handler:
                         self.session_id = self.login_handler()
@@ -65,7 +68,16 @@ class _ParentRestClient(object):
                 else:
                     if attempt_number >= max_attempts:  # last attempt failed, propagate error:
                         raise e
-                    # TODO: log that we are retrying
+                    if self.on_retry:
+                        # notify that we are retrying
+                        exc_type, exc_val, exc_tb = sys.exc_info()
+                        self.on_retry(self, exc_type, exc_val, exc_tb, dict(
+                                          method=method, resource=resource, query_id=query_id,
+                                          category=self._category, subcategory=subcategory,
+                                          second_query_id=second_query_id, data=data,
+                                          options=options
+                                      ))
+
                     time.sleep(retry_seconds)
                     attempt_number += 1
                     retry_seconds = min(retry_seconds * 2, self._configuration.max_retry_seconds)
@@ -803,8 +815,13 @@ class GA4GH(_ParentRestClient):
 
 
 class OpenCGAClient(object):
-    def __init__(self, configuration, user=None, pwd=None, session_id=None):
+    def __init__(self, configuration, user=None, pwd=None, session_id=None, on_retry=None):
+        """
+        :param on_retry: callback to be called with client retries an operation.
+            It must accept parameters: client, exc_type, exc_val, exc_tb, call
+        """
         self.configuration = ConfigClient(configuration)
+        self.on_retry = on_retry
         if user and pwd:
             # self.users = Users(self.configuration)
             self._login(user, pwd)
@@ -823,17 +840,40 @@ class OpenCGAClient(object):
 
     def _create_clients(self, login_handler=None):
         self.users = Users(self.configuration, self.session_id, login_handler)
+        self.users.on_retry = self.on_retry
+
         self.projects = Projects(self.configuration, self.session_id, login_handler)
+        self.projects.on_retry = self.on_retry
+
         self.studies = Studies(self.configuration, self.session_id, login_handler)
+        self.studies.on_retry = self.on_retry
+
         self.files = Files(self.configuration, self.session_id, login_handler)
+        self.files.on_retry = self.on_retry
+
         self.samples = Samples(self.configuration, self.session_id, login_handler)
+        self.samples.on_retry = self.on_retry
+
         self.cohorts = Cohorts(self.configuration, self.session_id, login_handler)
+        self.cohorts.on_retry = self.on_retry
+
         self.jobs = Jobs(self.configuration, self.session_id, login_handler)
+        self.jobs.on_retry = self.on_retry
+
         self.individuals = Individuals(self.configuration, self.session_id, login_handler)
+        self.individuals.on_retry = self.on_retry
+
         self.variable_sets = VariableSets(self.configuration, self.session_id, login_handler)
+        self.variable_sets.on_retry = self.on_retry
+
         self.analysis_alignment = AnalysisAlignment(self.configuration, self.session_id, login_handler)
+        self.analysis_alignment.on_retry = self.on_retry
+
         self.analysis_variant = AnalysisVariant(self.configuration, self.session_id, login_handler)
+        self.analysis_variant.on_retry = self.on_retry
+
         self.ga4gh = GA4GH(self.configuration, self.session_id, login_handler)
+        self.ga4gh.on_retry = self.on_retry
 
     def _login(self, user, pwd):
         self.user_id = user
