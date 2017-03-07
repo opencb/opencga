@@ -39,7 +39,7 @@ import java.util.regex.Pattern;
 public class ParseSolrQuery {
 
     private static final Pattern STUDY_PATTERN = Pattern.compile("^([^=<>]+):([^=<>]+)(<=?|>=?|=?)([^=<>]+.*)$");
-    private static final Pattern SCORE_PATTERN = Pattern.compile("^([^=<>]+)(<=?|>=?|=?)([^=<>]+.*)$");
+    private static final Pattern SCORE_PATTERN = Pattern.compile("^([^=<>]+)(<=?|>=?|==?)([^=<>]+.*)$");
 
     protected static Logger logger = LoggerFactory.getLogger(ParseSolrQuery.class);
 
@@ -154,6 +154,14 @@ public class ParseSolrQuery {
         key = VariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key();
         filterList.addAll(parseScoreValue(key, query.getString(key)));
 
+        // TODO: confirm that ANNOT_SIFT and ANNOT_POLYPHEN are not used
+        // sift
+        //key = VariantDBAdaptor.VariantQueryParams.ANNOT_SIFT.key();
+        //filterList.addAll(parseTermValue("siftDesc", query.getString(key)));
+        // polyphen
+        //key = VariantDBAdaptor.VariantQueryParams.ANNOT_POLYPHEN.key();
+        //filterList.addAll(parseTermValue("polyphenDesc", query.getString(key)));
+
         // alt population frequency
         // in the model: "popFreq__1kG_phase3__CLM":0.005319148767739534
         key = VariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
@@ -199,8 +207,8 @@ public class ParseSolrQuery {
 //        solrQuery.setQuery(queryString.toString());
         solrQuery.setQuery("*:*");
         filterList.forEach(filter -> { solrQuery.addFilterQuery(filter);
-            logger.debug("Solr fq: " + filter);
-//            System.out.println("Solr fq: " + filter);
+            //logger.debug("Solr fq: " + filter);
+            System.out.println("Solr fq: " + filter);
         });
 
         return solrQuery;
@@ -356,6 +364,7 @@ public class ParseSolrQuery {
                     sb.append(getRange("", matcher.group(1), matcher.group(2), matcher.group(3)));
                 } else {
                     // error
+                    System.out.println("Invalid expresion " +  value);
                     throw new IllegalArgumentException("Invalid expresion " +  value);
                 }
             } else {
@@ -495,9 +504,27 @@ public class ParseSolrQuery {
     private static String getRange(String prefix, String name, String op, String value) {
         StringBuilder sb = new StringBuilder();
         switch (op) {
-            case "=": {
-                sb.append(prefix).append(getScoreName(name)).append(":[").append(value)
-                        .append(" TO ").append(value).append("]");
+            case "=":
+            case "==": {
+                try {
+                    Double v = Double.parseDouble(value);
+                    sb.append(prefix).append(getScoreName(name)).append(":[").append(value)
+                            .append(" TO ").append(value).append("]");
+                } catch (NumberFormatException e) {
+                    switch (name.toLowerCase()) {
+                        case "sift": {
+                            sb.append(prefix).append("siftDesc").append(":\"").append(value).append("\"");
+                            break;
+                        }
+                        case "polyphen": {
+                            sb.append(prefix).append("polyphenDesc").append(":\"").append(value).append("\"");
+                            break;
+                        }
+                        default: {
+                            sb.append(prefix).append(getScoreName(name)).append(":\"").append(value).append("\"");
+                        }
+                    }
+                }
                 break;
             }
             case ">": {
