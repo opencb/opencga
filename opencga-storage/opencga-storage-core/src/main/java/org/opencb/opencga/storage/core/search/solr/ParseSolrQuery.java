@@ -154,6 +154,10 @@ public class ParseSolrQuery {
         key = VariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key();
         filterList.addAll(parseScoreValue(key, query.getString(key)));
 
+        // traits
+        key = VariantDBAdaptor.VariantQueryParams.ANNOT_TRAITS.key();
+        filterList.addAll(parseTraitValue(key, query.getString(key)));
+
         // TODO: confirm that ANNOT_SIFT and ANNOT_POLYPHEN are not used
         // sift
         //key = VariantDBAdaptor.VariantQueryParams.ANNOT_SIFT.key();
