@@ -182,6 +182,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = "List of tissues of interest. e.g. \"tongue\"") @QueryParam("annot-expression") String expression,
                                 @ApiParam(value = "List of protein variant annotation keywords") @QueryParam("annot-protein-keywords") String proteinKeyword,
                                 @ApiParam(value = "List of drug names") @QueryParam("annot-drug") String drug,
+                                @ApiParam(value = "Perform a full-text search on a list of traits") @QueryParam("traits") String traits,
                                 @ApiParam(value = "Functional score: {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3") @QueryParam("annot-functional-score") String functional,
 
                                 @ApiParam(value = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]") @QueryParam("unknownGenotype") String unknownGenotype,

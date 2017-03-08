@@ -54,12 +54,23 @@ public class ParseSolrQueryTest {
     }
 
 
-    public void parseConsequenceType() {
+    public void parseConsequenceTypeSOTerm() {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
         query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
         query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
+
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+    public void parseConsequenceTypeSOAcc() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001792,SO:0001619");
 
         // execute
         executeQuery(query, queryOptions);
@@ -136,14 +147,46 @@ public class ParseSolrQueryTest {
         executeQuery(query, queryOptions);
     }
 
-    //@Test
+    public void parseSiftScore() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift==tolerated,polyphen==bening");
+        //query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift>0.5,polyphen==bening");
+        //query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_SIFT.key(), "tolerated");
+
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+    public void parsePopMafScore() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1kG_phase3:ALL<0.0002");
+
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+//        @Test
     public void testParsing() {
+        QueryOptions queryOptions = new QueryOptions();
+        Query query = new Query();
+//        executeQuery(query, queryOptions);
 
+    parsePopMafScore();
+
+//        parseConsequenceTypeSOAcc();
+//        parseConsequenceTypeSOTerm();
+
+/*
         parseXref();
-
-        /*
-        parseConsequenceType();
-        parseGeneAndConsequenceType();
+        parsePhylop();
+        parseConsequenceTypeSOAcc();
+        parseConsequenceTypeSOTerm();
         parseRegion();
         parseType();
         parsePhylop();
