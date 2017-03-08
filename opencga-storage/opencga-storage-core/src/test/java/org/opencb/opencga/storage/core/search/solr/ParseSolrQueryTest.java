@@ -160,13 +160,24 @@ public class ParseSolrQueryTest {
         executeQuery(query, queryOptions);
     }
 
-    //@Test
+    public void parsePopMafScore() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1kG_phase3:ALL<0.0002");
+
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+//        @Test
     public void testParsing() {
         QueryOptions queryOptions = new QueryOptions();
         Query query = new Query();
 //        executeQuery(query, queryOptions);
 
-    parseSiftScore();
+    parsePopMafScore();
 
 //        parseConsequenceTypeSOAcc();
 //        parseConsequenceTypeSOTerm();

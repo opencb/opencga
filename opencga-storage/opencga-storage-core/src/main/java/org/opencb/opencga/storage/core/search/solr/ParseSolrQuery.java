@@ -166,9 +166,10 @@ public class ParseSolrQuery {
         //key = VariantDBAdaptor.VariantQueryParams.ANNOT_POLYPHEN.key();
         //filterList.addAll(parseTermValue("polyphenDesc", query.getString(key)));
 
-        // alt population frequency
+        // maf population frequency
         // in the model: "popFreq__1kG_phase3__CLM":0.005319148767739534
-        key = VariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
+        //key = VariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
+        key = VariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key();
         filterList.addAll(parsePopValue("popFreq", query.getString(key)));
 
         // stats maf
