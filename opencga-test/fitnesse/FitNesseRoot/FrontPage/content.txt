@@ -1,10 +1,28 @@
 !1 OpenCGA Acceptance Tests
 
 
-OpenCga
+!1 OpenCga
 
-To execuate these tests, User need to prepare a working test envirnment with latest OpenCGA installation and test data.
-
+!3 Notes
+User must have a working test envirnment with latest OpenCGA '''!style_code(!style_red[PUBLIC])''' installation. Change the following variables in Suite Set Up page to run tests against own installtion:
+ * OPENCGA_VERSION 
+ * TEST_HOST 
+!4 1: Catalog Tests don't require any prepopulated data in Test System	  
+      * Cohorts 
+      * Files 
+      * GA4GH 
+      * Individuals 
+      * Jobs 
+      * OpenCGA Complete Life Cycle 
+      * Panels 
+      * Projects
+      * Samples 
+      * Studies 
+      * Users
+      * Variable Set       
+!4 2: Variant Analysis & Alignment Tests require prepopulated data in Test System
+      * Analysis Alignment
+      * Analysis Variant
 !3 Installation Guide :
 http://docs.opencb.org/display/opencga/Installation+Guide
 
