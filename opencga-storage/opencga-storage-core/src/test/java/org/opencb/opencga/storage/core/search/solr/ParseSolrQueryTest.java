@@ -213,6 +213,107 @@ public class ParseSolrQueryTest {
         executeQuery(query, queryOptions);
     }
 
+    public void parseNoPhastCons() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION.key(), "phastCons!=0.035999998450279236");
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+    public void parseExactPhastCons() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION.key(), "phastCons=0.035999998450279236");
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+    public void parseNoPopMaf() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1kG_phase3:GWD!=0.061946902");
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+
+    public void parseExactPopMaf() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1kG_phase3:GWD==0.061946902");
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+    public void parseExactSiftDesc() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift==tolerated");
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+    public void parseExactSiftDesc2() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift=tolerated");
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+    public void parseNoExactSiftDesc() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift!=tolerated");
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+    public void parseExactSift() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift==-0.3");
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+    public void parseExactSift2() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift=-0.3");
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+    public void parseNoExactSift() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift!=-0.3");
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
 //    @Test
     public void testParsing() {
         QueryOptions queryOptions = new QueryOptions();
@@ -229,6 +330,20 @@ public class ParseSolrQueryTest {
 
         parseConsequenceTypeSOAcc();
         parseConsequenceTypeSOTerm();
+
+        parseNoPhastCons();
+        parseExactPhastCons();
+
+        parseNoPopMaf();
+        parseExactPopMaf();
+
+        parseExactSiftDesc();
+        parseExactSiftDesc2();
+        parseNoExactSiftDesc();
+
+        parseExactSift();
+        parseExactSift2();
+        parseNoExactSift();
 
 /*
         parseXref();

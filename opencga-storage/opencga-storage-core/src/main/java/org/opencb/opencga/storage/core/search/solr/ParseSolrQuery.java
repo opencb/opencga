@@ -38,8 +38,8 @@ import java.util.regex.Pattern;
  */
 public class ParseSolrQuery {
 
-    private static final Pattern STUDY_PATTERN = Pattern.compile("^([^=<>]+):([^=<>]+)(<=?|>=?|<<=?|>>=?|=?)([^=<>]+.*)$");
-    private static final Pattern SCORE_PATTERN = Pattern.compile("^([^=<>]+)(<=?|>=?|<<=?|>>=?|==?)([^=<>]+.*)$");
+    private static final Pattern STUDY_PATTERN = Pattern.compile("^([^=<>!]+):([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
+    private static final Pattern SCORE_PATTERN = Pattern.compile("^([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
 
     protected static Logger logger = LoggerFactory.getLogger(ParseSolrQuery.class);
 
@@ -505,8 +505,8 @@ public class ParseSolrQuery {
             case "==": {
                 try {
                     Double v = Double.parseDouble(value);
-                    sb.append(prefix).append(getScoreName(name)).append(":[").append(value)
-                            .append(" TO ").append(value).append("]");
+                    // attention: negative values must be scaped
+                    sb.append(prefix).append(getScoreName(name)).append(":").append(v < 0 ? "\\" : "").append(value);
                 } catch (NumberFormatException e) {
                     switch (name.toLowerCase()) {
                         case "sift": {
@@ -524,6 +524,36 @@ public class ParseSolrQuery {
                 }
                 break;
             }
+
+            case "!=": {
+                    switch (name.toLowerCase()) {
+                        case "sift": {
+                            try {
+                                Double v = Double.parseDouble(value);
+                                // attention: negative values must be scaped
+                                sb.append("-").append(prefix).append("sift").append(":").append(v < 0 ? "\\" : "").append(v);
+                            } catch (NumberFormatException e) {
+                                sb.append("-").append(prefix).append("siftDesc").append(":\"").append(value).append("\"");
+                            }
+                            break;
+                        }
+                        case "polyphen": {
+                            try {
+                                Double v = Double.parseDouble(value);
+                                // attention: negative values must be scaped
+                                sb.append("-").append(prefix).append("polyphen").append(":").append(v < 0 ? "\\" : "").append(v);
+                            } catch (NumberFormatException e) {
+                                sb.append("-").append(prefix).append("polyphenDesc").append(":\"").append(value).append("\"");
+                            }
+                            break;
+                        }
+                        default: {
+                            sb.append("-").append(prefix).append(getScoreName(name)).append(":").append(value);
+                        }
+                    }
+                break;
+            }
+
             case ">": {
                 sb.append(prefix).append(getScoreName(name)).append(":{").append(value).append(" TO *]");
                 break;
@@ -544,6 +574,7 @@ public class ParseSolrQuery {
                 sb.append("(");
                 sb.append(prefix).append(getScoreName(name)).append(":{").append(value).append(" TO *]");
                 sb.append(" OR ");
+                // attention: negative values must be scaped
                 sb.append(prefix).append(getScoreName(name)).append(":").append(missingValue < 0 ? "\\" : "").append(missingValue);
                 sb.append(")");
 //                } else {
@@ -572,6 +603,7 @@ public class ParseSolrQuery {
                 sb.append("(");
                 sb.append(prefix).append(getScoreName(name)).append(":[").append(value).append(" TO *]");
                 sb.append(" OR ");
+                // attention: negative values must be scaped
                 sb.append(prefix).append(getScoreName(name)).append(":").append(missingValue < 0 ? "\\" : "").append(missingValue);
                 sb.append(")");
 //                } else {
@@ -604,6 +636,7 @@ public class ParseSolrQuery {
                 sb.append(prefix).append(getScoreName(name)).append(":[").append(getMinValueStr(name)).append(" TO ").append(value)
                         .append("}");
                 sb.append(" OR ");
+                // attention: negative values must be scaped
                 sb.append(prefix).append(getScoreName(name)).append(":").append(missingValue < 0 ? "\\" : "").append(missingValue);
                 sb.append(")");
 //                } else {
@@ -637,6 +670,7 @@ public class ParseSolrQuery {
                 sb.append(prefix).append(getScoreName(name)).append(":[").append(getMinValueStr(name)).append(" TO ").append(value)
                         .append("]");
                 sb.append(" OR ");
+                // attention: negative values must be scaped
                 sb.append(prefix).append(getScoreName(name)).append(":").append(missingValue < 0 ? "\\" : "").append(missingValue);
                 sb.append(")");
 //                } else {
