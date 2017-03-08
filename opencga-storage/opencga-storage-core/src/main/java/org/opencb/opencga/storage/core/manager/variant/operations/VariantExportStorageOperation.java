@@ -107,10 +107,9 @@ public class VariantExportStorageOperation extends StorageOperation {
 //            String outputFileName = buildOutputFileName(Collections.singletonList(study.getAlias()), regions, outputFormatStr);
             Long catalogOutDirId = getCatalogOutdirId(studyInfos.get(0).getStudyId(), options, sessionId);
 
-            // TODO: Needed?
-            for (StudyInfo studyInfo : studyInfos) {
-                StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyInfo.getStudyId(), dataStore);
-            }
+//            for (StudyInfo studyInfo : studyInfos) {
+//                StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyInfo.getStudyId(), dataStore);
+//            }
 
             VariantStorageEngine variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine());
             variantStorageEngine.exportData(outputFile, outputFormat, dataStore.getDbName(), query, new QueryOptions(options));

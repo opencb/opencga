@@ -484,9 +484,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     public void forEach(Query query, Consumer<? super Variant> action, QueryOptions options) {
         Objects.requireNonNull(action);
-        VariantDBIterator variantDBIterator = iterator(query, options);
-        while (variantDBIterator.hasNext()) {
-            action.accept(variantDBIterator.next());
+        try (VariantDBIterator variantDBIterator = iterator(query, options)) {
+            while (variantDBIterator.hasNext()) {
+                action.accept(variantDBIterator.next());
+            }
+        } catch (Exception e) {
+            Throwables.propagate(e);
         }
     }
 
@@ -1270,9 +1273,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             boolean singleStudy = studies.size() == 1;
             boolean validStudiesFilter = isValidParam(query, VariantQueryParams.STUDIES);
-            boolean validFilesFilter = isValidParam(query, VariantQueryParams.FILES);
-            boolean validFilterFilter = isValidParam(query, VariantQueryParams.FILTER);
-            boolean validGenotypeFilter = isValidParam(query, VariantQueryParams.GENOTYPE);
+            // SAMPLES filter will add a FILES filter if absent
+            boolean validFilesFilter = isValidParam(query, VariantQueryParams.FILES) || isValidParam(query, VariantQueryParams.SAMPLES);
+            boolean otherFilters =
+                       isValidParam(query, VariantQueryParams.FILES)
+                    || isValidParam(query, VariantQueryParams.GENOTYPE)
+                    || isValidParam(query, VariantQueryParams.SAMPLES)
+                    || isValidParam(query, VariantQueryParams.FILTER);
 
             // Use an elemMatch with all the study filters if there is more than one study registered,
             // or FILES and STUDIES filters are being used.
@@ -1280,7 +1287,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             boolean studyElemMatch = (!singleStudy || (validFilesFilter && validStudiesFilter));
 
             // If only studyId filter is being used, elemMatch is not needed
-            if (validStudiesFilter && !validGenotypeFilter && !validFilesFilter && !validFilterFilter) {
+            if (validStudiesFilter && !otherFilters) {
                 studyElemMatch = false;
             }
 
@@ -1360,40 +1367,48 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 }
             }
 
+            Map<Object, List<String>> genotypesFilter = new HashMap<>();
             if (isValidParam(query, VariantQueryParams.GENOTYPE)) {
-                String sampleGenotypesCSV = query.getString(VariantQueryParams.GENOTYPE.key());
-                // we may need to know the study type
-//                studyConfigurationManager.getStudyConfiguration(1, null).getResult().get(0).
-                String[] sampleGenotypesArray = sampleGenotypesCSV.split(AND);
-                for (String sampleGenotypes : sampleGenotypesArray) {
-                    String[] sampleGenotype = sampleGenotypes.split(IS);
-                    if (sampleGenotype.length != 2 && sampleGenotype.length != 3) {
-                        throw VariantQueryException.malformedParam(VariantQueryParams.GENOTYPE, sampleGenotypes);
-//                        throw new IllegalArgumentException("Malformed genotype query \"" + sampleGenotypes + "\". Expected "
-//                                + "[<study>:]<sample>:<genotype>[,<genotype>]*");
-                    }
+                String sampleGenotypes = query.getString(VariantQueryParams.GENOTYPE.key());
+                parseGenotypeFilter(sampleGenotypes, genotypesFilter);
+            }
 
-                    int sampleId;
-                    final String genotypes;
-                    if (sampleGenotype.length == 3) {  //Expect to be as <study>:<sample>
-                        String study = sampleGenotype[0];
-                        String sample = sampleGenotype[1];
-                        genotypes = sampleGenotype[2];
-                        QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(study, null);
-                        if (queryResult.getResult().isEmpty()) {
-                            throw VariantQueryException.studyNotFound(study);
-                        }
-                        if (!queryResult.first().getSampleIds().containsKey(sample)) {
-                            throw VariantQueryException.sampleNotFound(sample, study);
-                        }
-                        sampleId = queryResult.first().getSampleIds().get(sample);
-                    } else {
-                        String sample = sampleGenotype[0];
-                        genotypes = sampleGenotype[1];
-                        sampleId = utils.getSampleId(sample, defaultStudyConfiguration);
-                    }
+            if (isValidParam(query, VariantQueryParams.SAMPLES)) {
+                Set<Integer> files = new HashSet<>();
+                String samples = query.getString(VariantQueryParams.SAMPLES.key());
 
-                    String[] genotypesArray = genotypes.split(OR);
+                for (String sample : samples.split(",")) {
+                    int sampleId = utils.getSampleId(sample, defaultStudyConfiguration);
+                    genotypesFilter.put(sampleId, Arrays.asList(
+                            "1",
+                            "0/1", "0|1", "1|0",
+                            "1/1", "1|1",
+                            "1/2", "1|2", "2|1"
+                    ));
+                    if (!isValidParam(query, VariantQueryParams.FILES) && defaultStudyConfiguration != null) {
+                        for (Integer file : defaultStudyConfiguration.getIndexedFiles()) {
+                            if (defaultStudyConfiguration.getSamplesInFiles().get(file).contains(sampleId)) {
+                                files.add(file);
+                            }
+                        }
+                    }
+                }
+
+                // If there is no valid files filter, add files filter to speed up this query
+                if (!isValidParam(query, VariantQueryParams.FILES) && !files.isEmpty()) {
+                    addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
+                                    + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD, files, studyBuilder, QueryOperation.AND,
+                            f -> utils.getFileId(f, false, defaultStudyConfiguration));
+                }
+            }
+
+            if (!genotypesFilter.isEmpty()) {
+                for (Map.Entry<Object, List<String>> entry : genotypesFilter.entrySet()) {
+                    Object sample = entry.getKey();
+                    List<String> genotypes = entry.getValue();
+
+                    int sampleId = utils.getSampleId(sample, defaultStudyConfiguration);
+
                     QueryBuilder genotypesBuilder = QueryBuilder.start();
 
                     List<String> defaultGenotypes;
@@ -1402,7 +1417,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     } else {
                         defaultGenotypes = Arrays.asList("0/0", "0|0");
                     }
-                    for (String genotype : genotypesArray) {
+                    for (String genotype : genotypes) {
                         boolean negated = isNegated(genotype);
                         if (negated) {
                             genotype = genotype.substring(1);
@@ -1595,26 +1610,23 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //                    )
 //            );
 //        }
-        if (query.containsKey(VariantQueryParams.RETURNED_STUDIES.key())
-                && projection.containsKey(DocumentToVariantConverter.STUDIES_FIELD)) {
-            List<Integer> studiesIds = utils.getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options);
-//            List<Integer> studies = query.getAsIntegerList(VariantQueryParams.RETURNED_STUDIES.key());
-            // Use elemMatch only if there is one study to return.
-            if (studiesIds.size() == 1) {
-                projection.put(
-                        DocumentToVariantConverter.STUDIES_FIELD,
-                        new Document(
-                                "$elemMatch",
-                                new Document(
-                                        DocumentToStudyVariantEntryConverter.STUDYID_FIELD,
-                                        new Document(
-                                                "$in",
-                                                studiesIds
-                                        )
-                                )
-                        )
-                );
-            }
+
+        List<Integer> studiesIds = utils.getReturnedStudies(query, options);
+        // Use elemMatch only if there is one study to return.
+        if (studiesIds.size() == 1) {
+            projection.put(
+                    DocumentToVariantConverter.STUDIES_FIELD,
+                    new Document(
+                            "$elemMatch",
+                            new Document(
+                                    DocumentToStudyVariantEntryConverter.STUDYID_FIELD,
+                                    new Document(
+                                            "$in",
+                                            studiesIds
+                                    )
+                            )
+                    )
+            );
         }
 
         logger.debug("QueryOptions: = {}", options.toJson());
@@ -1915,9 +1927,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private DocumentToVariantConverter getDocumentToVariantConverter(Query query, QueryOptions options) {
-        List<Integer> returnedStudies = query.containsKey(VariantQueryParams.RETURNED_STUDIES.key())
-                ? utils.getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options)
-                : null;
+        List<Integer> returnedStudies = utils.getReturnedStudies(query, options);
         DocumentToSamplesConverter samplesConverter;
         samplesConverter = new DocumentToSamplesConverter(studyConfigurationManager);
         // Fetch some StudyConfigurations that will be needed
@@ -1940,14 +1950,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         samplesConverter.setReturnedSamples(getReturnedSamplesList(query, fields));
 
         DocumentToStudyVariantEntryConverter studyEntryConverter;
-        Collection<Integer> returnedFiles;
-        if (!fields.contains(VariantField.STUDIES_FILES)) {
-            returnedFiles = Collections.emptyList();
-        } else if (query.containsKey(VariantQueryParams.RETURNED_FILES.key())) {
-            returnedFiles = query.getAsIntegerList(VariantQueryParams.RETURNED_FILES.key());
-        } else {
-            returnedFiles = null;
-        }
+        Collection<Integer> returnedFiles = utils.getReturnedFiles(query, fields);
 
         studyEntryConverter = new DocumentToStudyVariantEntryConverter(false, returnedFiles, samplesConverter);
         studyEntryConverter.setStudyConfigurationManager(studyConfigurationManager);
@@ -1967,6 +1970,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 throw new VariantQueryException("Unable to parse int " + elem, e);
             }
         });
+    }
+
+    private <T> QueryBuilder addQueryFilter(String key, Collection<?> value, final QueryBuilder builder, QueryOperation op,
+                                            Function<String, T> map) {
+        return addQueryFilter(key, value.stream().map(Object::toString).collect(Collectors.joining(AND)), builder, op, map);
     }
 
     private <T> QueryBuilder addQueryFilter(String key, String value, final QueryBuilder builder, QueryOperation op,

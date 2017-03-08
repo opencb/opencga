@@ -24,6 +24,7 @@ import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.cellbase.core.api.GeneDBAdaptor;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
@@ -39,7 +40,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.SAMPLES_METADATA;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
 
 /**
  * Created on 29/01/16 .
@@ -49,12 +50,15 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.
 public class VariantDBAdaptorUtils {
 
     public static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=?|!?=?~|==?)([^=<>~!]+.*)$");
+    private static final Pattern GENOTYPE_FILTER_PATTERN = Pattern.compile("(?<sample>[^,;]+):(?<gts>([^:;,]+,?)+)(?<op>[;,.])");
 
     public static final String OR = ",";
     public static final String AND = ";";
     public static final String IS = ":";
     public static final String STUDY_POP_FREQ_SEPARATOR = ":";
-//    public static final Map<String, String> PROJECT_FIELD_ALIAS;
+
+    public static final String NONE = "none";
+    public static final String ALL = "all";
 
     private static final int GENE_EXTRA_REGION = 5000;
     private static Logger logger = LoggerFactory.getLogger(VariantDBAdaptorUtils.class);
@@ -94,7 +98,7 @@ public class VariantDBAdaptorUtils {
      * @param param QueryParam to check
      * @return If is valid or not
      */
-    public static boolean isValidParam(Query query, VariantDBAdaptor.VariantQueryParams param) {
+    public static boolean isValidParam(Query query, QueryParam param) {
         Object value = query.getOrDefault(param.key(), null);
         return (value != null)
                 && !(value instanceof String && ((String) value).isEmpty()
@@ -109,6 +113,10 @@ public class VariantDBAdaptorUtils {
      */
     public static boolean isNegated(String value) {
         return value.startsWith("!");
+    }
+
+    public static boolean isNoneOrAll(String value) {
+        return value.equals(NONE) || value.equals(ALL);
     }
 
     /**
@@ -374,7 +382,25 @@ public class VariantDBAdaptorUtils {
             if (StringUtils.isNumeric(sampleStr)) {
                 sampleId = Integer.parseInt(sampleStr);
             } else {
-                if (defaultStudyConfiguration != null) {
+                if (sampleStr.contains(":")) {  //Expect to be as <study>:<sample>
+                    String[] split = sampleStr.split(":");
+                    String study = split[0];
+                    sampleStr= split[1];
+                    StudyConfiguration sc;
+                    if (defaultStudyConfiguration != null && study.equals(defaultStudyConfiguration.getStudyName())) {
+                        sc = defaultStudyConfiguration;
+                    } else {
+                        QueryResult<StudyConfiguration> queryResult = getStudyConfigurationManager().getStudyConfiguration(study, null);
+                        if (queryResult.getResult().isEmpty()) {
+                            throw VariantQueryException.studyNotFound(study);
+                        }
+                        if (!queryResult.first().getSampleIds().containsKey(sampleStr)) {
+                            throw VariantQueryException.sampleNotFound(sampleStr, study);
+                        }
+                        sc = queryResult.first();
+                    }
+                    sampleId = sc.getSampleIds().get(sampleStr);
+                } else if (defaultStudyConfiguration != null) {
                     if (!defaultStudyConfiguration.getSampleIds().containsKey(sampleStr)) {
                         throw VariantQueryException.sampleNotFound(sampleStr, defaultStudyConfiguration.getStudyName());
                     }
@@ -390,17 +416,79 @@ public class VariantDBAdaptorUtils {
     }
 
     public List<Integer> getReturnedStudies(Query query, QueryOptions options) {
-        List<Integer> studyIds = getStudyIds(query.getAsList(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key()), options);
-        if (studyIds.isEmpty()) {
-            studyIds = getStudyIds(getStudyConfigurationManager().getStudyNames(options), options);
+        List<Integer> studyIds;
+        if (isValidParam(query, RETURNED_STUDIES)) {
+            String returnedStudies = query.getString(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key());
+            if (NONE.equals(returnedStudies)) {
+                studyIds = Collections.emptyList();
+            } else if (ALL.equals(returnedStudies)) {
+                studyIds = getStudyConfigurationManager().getStudyIds(options);
+            } else {
+                studyIds = getStudyIds(query.getAsList(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key()), options);
+            }
+        } else if (isValidParam(query, STUDIES)) {
+            String studies = query.getString(VariantDBAdaptor.VariantQueryParams.STUDIES.key());
+            studyIds = getStudyIds(splitValue(studies, checkOperator(studies)), options);
+            // if empty, all the studies
+            if (studyIds.isEmpty()) {
+                studyIds = null;
+            }
+        } else {
+            studyIds = getStudyConfigurationManager().getStudyIds(options);
         }
         return studyIds;
+    }
+
+    /**
+     * Get list of returned files.
+     *
+     * Null for undefined returned files. If null, return ALL files.
+     * Return NONE if empty list
+     *
+     *
+     * @param query     Query with the QueryParams
+     * @param fields    Returned fields
+     * @return          List of fileIds to return.
+     */
+    public List<Integer> getReturnedFiles(Query query, Set<VariantField> fields) {
+        List<Integer> returnedFiles;
+        if (!fields.contains(VariantField.STUDIES_FILES)) {
+            returnedFiles = Collections.emptyList();
+        } else if (query.containsKey(RETURNED_FILES.key())) {
+            String files = query.getString(RETURNED_FILES.key());
+            if (files.equals(ALL)) {
+                returnedFiles = null;
+            } else if (files.equals(NONE)) {
+                returnedFiles = Collections.emptyList();
+            } else {
+                returnedFiles = query.getAsIntegerList(RETURNED_FILES.key());
+            }
+        } else if (query.containsKey(FILES.key())) {
+            String files = query.getString(FILES.key());
+            returnedFiles = splitValue(files, checkOperator(files))
+                    .stream()
+                    .filter((value) -> !isNegated(value)) // Discard negated
+                    .map(Integer::parseInt)
+                    .collect(Collectors.toList());
+            if (returnedFiles.isEmpty()) {
+                returnedFiles = null;
+            }
+        } else {
+            returnedFiles = null;
+        }
+        return returnedFiles;
     }
 
     public Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
         List<Integer> returnedStudies = getReturnedStudies(query, options);
         return getReturnedSamples(query, options, returnedStudies, studyId -> getStudyConfigurationManager()
                 .getStudyConfiguration(studyId, options).first());
+    }
+
+    public Map<String, List<String>> getSamplesMetadata(Query query) {
+        List<Integer> returnedStudies = getReturnedStudies(query, null);
+        return getReturnedSamplesString(query, null, returnedStudies, studyId -> getStudyConfigurationManager()
+                .getStudyConfiguration(studyId, null).first());
     }
 
     public Map<String, List<String>> getSamplesMetadata(Query query, QueryOptions options) {
@@ -445,7 +533,7 @@ public class VariantDBAdaptorUtils {
             BiFunction<StudyConfiguration, String, T> getSample, Function<StudyConfiguration, T> getStudyId) {
 
         List<String> returnedSamples = getReturnedSamplesList(query, options);
-        LinkedHashSet<String> returnedSamplesSet = new LinkedHashSet<>(returnedSamples);
+        LinkedHashSet<String> returnedSamplesSet = returnedSamples != null ? new LinkedHashSet<>(returnedSamples) : null;
 
         Map<T, List<T>> samples = new HashMap<>(studyIds.size());
         for (Integer studyId : studyIds) {
@@ -472,19 +560,85 @@ public class VariantDBAdaptorUtils {
     }
 
     public static List<String> getReturnedSamplesList(Query query, Set<VariantField> returnedFields) {
+        List<String> samples;
         if (!returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
-            return Collections.singletonList("none");
+            samples = Collections.emptyList();
         } else {
             //Remove the studyName, if any
-            return getReturnedSamplesList(query);
+            samples = getReturnedSamplesList(query);
         }
+        return samples;
     }
 
+    /**
+     * Get list of returned samples.
+     *
+     * Null for undefined returned samples. If null, return ALL samples.
+     * Return NONE if empty list
+     *
+     *
+     * @param query     Query with the QueryParams
+     * @return          List of samples to return.
+     */
     public static List<String> getReturnedSamplesList(Query query) {
-        return query.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key())
-                .stream()
-                .map(s -> s.contains(":") ? s.split(":")[1] : s)
-                .collect(Collectors.toList());
+        List<String> samples;
+        if (isValidParam(query, RETURNED_SAMPLES)) {
+            String samplesString = query.getString(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
+            if (samplesString.equals(ALL)) {
+                samples = null; // Undefined. All by default
+            } else if (samplesString.equals(NONE)) {
+                samples = Collections.emptyList();
+            } else {
+                samples = query.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
+            }
+        } else if (isValidParam(query, SAMPLES)) {
+            samples = query.getAsStringList(VariantDBAdaptor.VariantQueryParams.SAMPLES.key());
+        } else {
+            samples = null;
+        }
+        if (samples != null) {
+            samples.stream()
+                    .map(s -> s.contains(":") ? s.split(":")[1] : s)
+                    .collect(Collectors.toList());
+        }
+        return samples;
+    }
+
+
+    /**
+     * Partes the genotype filter.
+     *
+     * @param sampleGenotypes   Genotypes filter value
+     * @param map               Initialized map to be filled with the sample to list of genotypes
+     * @return QueryOperation between samples
+     */
+    public static QueryOperation parseGenotypeFilter(String sampleGenotypes, Map<Object, List<String>> map) {
+        Matcher matcher = GENOTYPE_FILTER_PATTERN.matcher(sampleGenotypes + '.');
+
+        QueryOperation operation = null;
+        while (matcher.find()) {
+            String gts = matcher.group("gts");
+            String sample = matcher.group("sample");
+            String op = matcher.group("op");
+            map.put(sample, Arrays.asList(gts.split(",")));
+            if (AND.equals(op)) {
+                if (operation == QueryOperation.OR) {
+                    throw VariantQueryException.malformedParam(GENOTYPE, sampleGenotypes,
+                            "Unable to mix AND (" + AND + ") and OR (" + OR + ") in the same query.");
+                } else {
+                    operation = QueryOperation.AND;
+                }
+            } else if (OR.equals(op)) {
+                if (operation == QueryOperation.AND) {
+                    throw VariantQueryException.malformedParam(GENOTYPE, sampleGenotypes,
+                            "Unable to mix AND (" + AND + ") and OR (" + OR + ") in the same query.");
+                } else {
+                    operation = QueryOperation.OR;
+                }
+            }
+        }
+
+        return operation;
     }
 
     /**

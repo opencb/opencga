@@ -127,7 +127,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results. [PENDING]", dataType = "boolean", paramType = "query")
     })
-    public Response search(@ApiParam(value = "studyId") @QueryParam("studyId") String studyIdStr,
+    public Response search(@ApiParam(value = "studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
                                    required = true) @QueryParam("study") String studyStr,
                            @ApiParam(value = "CSV list of variablesetIds", required = false) @QueryParam("id") String id,

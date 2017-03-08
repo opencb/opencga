@@ -116,8 +116,10 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
 
     protected List<VariantAnnotation> getVariantAnnotationList(List<Variant> variants, List<QueryResult<VariantAnnotation>> queryResults) {
         List<VariantAnnotation> variantAnnotationList = new ArrayList<>(variants.size());
-        for (QueryResult<VariantAnnotation> queryResult : queryResults) {
-            variantAnnotationList.addAll(queryResult.getResult());
+        if (queryResults != null) {
+            for (QueryResult<VariantAnnotation> queryResult : queryResults) {
+                variantAnnotationList.addAll(queryResult.getResult());
+            }
         }
         return variantAnnotationList;
     }

@@ -426,7 +426,7 @@ public class OpenCGAWSServer {
     @Deprecated
     @GET
     @Path("/help")
-    @ApiOperation(value = "Help", position = 1)
+    @ApiOperation(value = "Help", hidden = true, position = 1)
     public Response help() {
         return createOkResponse("No help available");
     }

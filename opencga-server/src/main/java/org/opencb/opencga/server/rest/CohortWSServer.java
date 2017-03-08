@@ -67,10 +67,10 @@ public class CohortWSServer extends OpenCGAWSServer {
 
             long studyId = catalogManager.getStudyId(studyStr, sessionId);
             if (sampleIdsStr != null && !sampleIdsStr.isEmpty()) {
-                String userId = catalogManager.getUserManager().getId(sessionId);
-                List<Long> sampleIds = catalogManager.getSampleManager().getIds(userId, sampleIdsStr);
+                AbstractManager.MyResourceIds samples = catalogManager.getSampleManager().getIds(sampleIdsStr, Long.toString(studyId),
+                        sessionId);
                 QueryResult<Cohort> cohortQueryResult =
-                        catalogManager.createCohort(studyId, cohortName, type, cohortDescription, sampleIds, null, sessionId);
+                        catalogManager.createCohort(studyId, cohortName, type, cohortDescription, samples.getResourceIds(), null, sessionId);
                 cohorts.add(cohortQueryResult);
             } else if (variableSetId > 0) {
                 VariableSet variableSet = catalogManager.getVariableSet(variableSetId, null, sessionId).first();

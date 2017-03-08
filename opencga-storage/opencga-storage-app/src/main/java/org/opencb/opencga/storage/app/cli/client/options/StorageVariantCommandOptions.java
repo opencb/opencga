@@ -224,6 +224,9 @@ public class StorageVariantCommandOptions {
                 "NA0001:0/0,0/1;NA0002:0/1", arity = 1)
         public String sampleGenotype;
 
+        @Parameter(names = {"--samples"}, description = VariantDBAdaptor.SAMPLES_DESCR, arity = 1)
+        public String samples;
+
         @Parameter(names = {"-f", "--file"}, description = "A comma separated list of files to be used as filter", arity = 1)
         public String file;
 
@@ -307,6 +310,9 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--output-study"}, description = "A comma separated list of studies to be returned")
         public String returnStudy;
+
+        @Parameter(names = {"--output-file"}, description = "A comma separated list of files from the SAME study to be returned")
+        public String returnFile;
 
         @Parameter(names = {"--output-sample"}, description = "A comma separated list of samples from the SAME study to be returned")
         public String returnSample;

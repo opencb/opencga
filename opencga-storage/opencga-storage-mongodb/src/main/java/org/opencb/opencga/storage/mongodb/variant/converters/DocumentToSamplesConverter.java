@@ -109,7 +109,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         __studySamplesId = new HashMap<>();
         __returnedSamplesPosition = new HashMap<>();
         studyDefaultGenotypeSet = new HashMap<>();
-        returnedSamples = new LinkedHashSet<>();
+        returnedSamples = null;
         studyConfigurationManager = null;
         returnedUnknownGenotype = null;
     }
@@ -610,7 +610,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
     }
 
     public void setReturnedSamples(List<String> returnedSamples) {
-        this.returnedSamples = new LinkedHashSet<>(returnedSamples);
+        this.returnedSamples = returnedSamples == null ? null : new LinkedHashSet<>(returnedSamples);
         __studySamplesId.clear();
         __returnedSamplesPosition.clear();
     }
@@ -649,7 +649,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         if (this.__studySamplesId.get(studyId) == null) {
             StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
             sampleIds = StudyConfiguration.getIndexedSamples(studyConfiguration);
-            if (!returnedSamples.isEmpty()) {
+            if (returnedSamples != null) {
                 BiMap<String, Integer> returnedSampleIds = HashBiMap.create();
                 sampleIds.entrySet().stream()
                         //ReturnedSamples could be sampleNames or sampleIds as a string

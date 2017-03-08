@@ -32,7 +32,7 @@ import java.io.IOException;
 import java.util.Map;
 
 @Path("/{version}/test")
-@Api(value = "test", position = 12, description = "test web services")
+@Api(value = "test", hidden = true, position = 12, description = "test web services")
 public class TestWSServer extends OpenCGAWSServer {
 
     public TestWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {

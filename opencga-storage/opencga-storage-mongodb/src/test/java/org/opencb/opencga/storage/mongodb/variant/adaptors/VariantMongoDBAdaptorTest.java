@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant.adaptors;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -40,7 +41,12 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements M
 
     @Before
     public void setUpLoggers() throws Exception {
-        logLevelDebug();
+        logLevel("debug");
+    }
+
+    @After
+    public void resetLoggers() throws Exception {
+        logLevel("info");
     }
 
     @Test

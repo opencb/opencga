@@ -15,6 +15,8 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 
 import java.util.List;
 
+import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.SAMPLE_FILTER_DESC;
+
 /**
  * Created by pfurio on 23/11/16.
  */
@@ -359,6 +361,10 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
+        @Parameter(names = {"--sample-filter"}, description = SAMPLE_FILTER_DESC)
+        public String sampleFilter;
+
+        // FIXME: This param should not be in the ANALYSIS command line!
         @Parameter(names = {"--mode"}, description = "Communication mode. grpc|rest|auto.")
         public String mode = "auto";
 

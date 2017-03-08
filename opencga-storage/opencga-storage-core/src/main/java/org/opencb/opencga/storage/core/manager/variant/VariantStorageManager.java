@@ -141,7 +141,9 @@ public class VariantStorageManager extends StorageManager {
 
         catalogUtils.parseQuery(query, sessionId);
         Set<Long> studies = checkSamplesPermissions(query, queryOptions, sessionId).keySet();
-
+        if (studies.isEmpty()) {
+            studies = catalogUtils.getStudies(query, sessionId);
+        }
         List<StudyInfo> studyInfos = new ArrayList<>(studies.size());
         for (Long study : studies) {
             studyInfos.add(getStudyInfo(String.valueOf(study), Collections.emptyList(), sessionId));
@@ -399,7 +401,7 @@ public class VariantStorageManager extends StorageManager {
         if (!returnedFields.contains(VariantField.STUDIES)) {
             return Collections.emptyMap();
         }
-        if (VariantDBAdaptorUtils.isValidParam(query, VariantQueryParams.RETURNED_SAMPLES)) {
+        if (VariantDBAdaptorUtils.getReturnedSamplesList(query, returnedFields) != null) {
             Map<Integer, List<Integer>> samplesToReturn = dbAdaptor.getReturnedSamples(query, queryOptions);
             for (Map.Entry<Integer, List<Integer>> entry : samplesToReturn.entrySet()) {
                 if (!entry.getValue().isEmpty()) {
@@ -413,6 +415,8 @@ public class VariantStorageManager extends StorageManager {
                                 + " can't read all the requested samples");
                     }
                     samplesMap.put((long) entry.getKey(), samplesQueryResult.getResult());
+                } else {
+                    samplesMap.put((long) entry.getKey(), Collections.emptyList());
                 }
             }
         } else {
@@ -482,8 +486,8 @@ public class VariantStorageManager extends StorageManager {
                 query.put(queryParams.key(), queryOptions.get(queryParams.key()));
             }
         }
-        if (queryOptions.containsKey(VariantCatalogQueryUtils.SAMPLE_ANNOTATION)) {
-            query.put(VariantCatalogQueryUtils.SAMPLE_ANNOTATION, queryOptions.get(VariantCatalogQueryUtils.SAMPLE_ANNOTATION));
+        if (queryOptions.containsKey(VariantCatalogQueryUtils.SAMPLE_FILTER.key())) {
+            query.put(VariantCatalogQueryUtils.SAMPLE_FILTER.key(), queryOptions.get(VariantCatalogQueryUtils.SAMPLE_FILTER.key()));
         }
 
         return query;
