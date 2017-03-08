@@ -38,8 +38,8 @@ import java.util.regex.Pattern;
  */
 public class ParseSolrQuery {
 
-    private static final Pattern STUDY_PATTERN = Pattern.compile("^([^=<>]+):([^=<>]+)(<=?|>=?|=?)([^=<>]+.*)$");
-    private static final Pattern SCORE_PATTERN = Pattern.compile("^([^=<>]+)(<=?|>=?|==?)([^=<>]+.*)$");
+    private static final Pattern STUDY_PATTERN = Pattern.compile("^([^=<>]+):([^=<>]+)(<=?|>=?|<<=?|>>=?|=?)([^=<>]+.*)$");
+    private static final Pattern SCORE_PATTERN = Pattern.compile("^([^=<>]+)(<=?|>=?|<<=?|>>=?|==?)([^=<>]+.*)$");
 
     protected static Logger logger = LoggerFactory.getLogger(ParseSolrQuery.class);
 
@@ -158,17 +158,9 @@ public class ParseSolrQuery {
         key = VariantDBAdaptor.VariantQueryParams.ANNOT_TRAITS.key();
         filterList.addAll(parseTraitValue(key, query.getString(key)));
 
-        // TODO: confirm that ANNOT_SIFT and ANNOT_POLYPHEN are not used
-        // sift
-        //key = VariantDBAdaptor.VariantQueryParams.ANNOT_SIFT.key();
-        //filterList.addAll(parseTermValue("siftDesc", query.getString(key)));
-        // polyphen
-        //key = VariantDBAdaptor.VariantQueryParams.ANNOT_POLYPHEN.key();
-        //filterList.addAll(parseTermValue("polyphenDesc", query.getString(key)));
 
         // maf population frequency
         // in the model: "popFreq__1kG_phase3__CLM":0.005319148767739534
-        //key = VariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
         key = VariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key();
         filterList.addAll(parsePopValue("popFreq", query.getString(key)));
 
@@ -533,23 +525,124 @@ public class ParseSolrQuery {
                 break;
             }
             case ">": {
-                sb.append(prefix).append(getScoreName(name)).append(":{").append(value)
-                        .append(" TO *]");
+                sb.append(prefix).append(getScoreName(name)).append(":{").append(value).append(" TO *]");
                 break;
             }
+
+            case ">>":  {
+                if (StringUtils.isNotEmpty(prefix) && (prefix.startsWith("popFreq_") || prefix.startsWith("stats_"))) {
+                    sb.append("(");
+                    sb.append("(* -").append(prefix).append(getScoreName(name)).append(":*)");
+                    sb.append(" OR ");
+                    sb.append(prefix).append(getScoreName(name)).append(":{").append(value).append(" TO *]");
+                    sb.append(")");
+                    break;
+                }
+                double missingValue = getMissingValue(name);
+//                Double v = Double.parseDouble(value);
+//                if (missingValue <= v) {
+                sb.append("(");
+                sb.append(prefix).append(getScoreName(name)).append(":{").append(value).append(" TO *]");
+                sb.append(" OR ");
+                sb.append(prefix).append(getScoreName(name)).append(":").append(missingValue < 0 ? "\\" : "").append(missingValue);
+                sb.append(")");
+//                } else {
+//                    sb.append(prefix).append(getScoreName(name)).append(":{").append(value).append(" TO *]");
+//                }
+                break;
+            }
+
             case ">=": {
-                sb.append(prefix).append(getScoreName(name)).append(":[").append(value)
-                        .append(" TO *]");
+                sb.append(prefix).append(getScoreName(name)).append(":[").append(value).append(" TO *]");
                 break;
             }
+
+            case ">>=": {
+                if (StringUtils.isNotEmpty(prefix) && (prefix.startsWith("popFreq_") || prefix.startsWith("stats_"))) {
+                    sb.append("(");
+                    sb.append("(* -").append(prefix).append(getScoreName(name)).append(":*)");
+                    sb.append(" OR ");
+                    sb.append(prefix).append(getScoreName(name)).append(":[").append(value).append(" TO *]");
+                    sb.append(")");
+                    break;
+                }
+                double missingValue = getMissingValue(name);
+//              Double v = Double.parseDouble(value);
+//                if (missingValue < v) {
+                sb.append("(");
+                sb.append(prefix).append(getScoreName(name)).append(":[").append(value).append(" TO *]");
+                sb.append(" OR ");
+                sb.append(prefix).append(getScoreName(name)).append(":").append(missingValue < 0 ? "\\" : "").append(missingValue);
+                sb.append(")");
+//                } else {
+//                    sb.append(prefix).append(getScoreName(name)).append(":[").append(value).append(" TO *]");
+//                }
+                break;
+            }
+
             case "<": {
-                sb.append(prefix).append(getScoreName(name)).append(":{").append(Double.MIN_VALUE).append(" TO ").append(value)
+                sb.append(prefix).append(getScoreName(name)).append(":[").append(getMinValueStr(name)).append(" TO ").append(value)
                         .append("}");
                 break;
             }
+
+            case "<<":  {
+                if (StringUtils.isNotEmpty(prefix) && (prefix.startsWith("popFreq_") || prefix.startsWith("stats_"))) {
+                    sb.append("(");
+                    sb.append("(* -").append(prefix).append(getScoreName(name)).append(":*)");
+                    sb.append(" OR ");
+                    sb.append(prefix).append(getScoreName(name)).append(":[").append(getMinValueStr(name)).append(" TO ").append(value)
+                            .append("}");
+                    sb.append(")");
+                    break;
+                }
+                double missingValue = getMissingValue(name);
+//                Double v = Double.parseDouble(value);
+//                Double min = getMinValue(name);
+//                if (min >= v) {
+                sb.append("(");
+                sb.append(prefix).append(getScoreName(name)).append(":[").append(getMinValueStr(name)).append(" TO ").append(value)
+                        .append("}");
+                sb.append(" OR ");
+                sb.append(prefix).append(getScoreName(name)).append(":").append(missingValue < 0 ? "\\" : "").append(missingValue);
+                sb.append(")");
+//                } else {
+//                    sb.append(prefix).append(getScoreName(name)).append(":[").append(getMinValueStr(name)).append(" TO ").append(value)
+//                            .append("}");
+//              }
+                break;
+            }
+
             case "<=": {
-                sb.append(prefix).append(getScoreName(name)).append(":[* TO ").append(value)
+                sb.append(prefix).append(getScoreName(name)).append(":[").append(getMinValueStr(name)).append(" TO ").append(value)
                         .append("]");
+                break;
+            }
+
+            case "<<=": {
+                if (StringUtils.isNotEmpty(prefix) && (prefix.startsWith("popFreq_") || prefix.startsWith("stats_"))) {
+                    sb.append("(");
+                    sb.append("(* -").append(prefix).append(getScoreName(name)).append(":*)");
+                    sb.append(" OR ");
+                    sb.append(prefix).append(getScoreName(name)).append(":[").append(getMinValueStr(name)).append(" TO ").append(value)
+                            .append("]");
+                    sb.append(")");
+                    break;
+                }
+                double missingValue = getMissingValue(name);
+//                Double v = Double.parseDouble(value);
+//                Double min = getMinValue(name);
+//                if (min > v) {
+                sb.append("(");
+                sb.append(prefix).append(getScoreName(name)).append(":[").append(getMinValueStr(name)).append(" TO ").append(value)
+                        .append("]");
+                sb.append(" OR ");
+                sb.append(prefix).append(getScoreName(name)).append(":").append(missingValue < 0 ? "\\" : "").append(missingValue);
+                sb.append(")");
+//                } else {
+//                    sb.append(prefix).append(getScoreName(name)).append(":[").append(getMinValueStr(name)).append(" TO ").append(value)
+//                            .append("]");
+//                }
                 break;
             }
             default: {
@@ -557,6 +650,42 @@ public class ParseSolrQuery {
             }
         }
         return sb.toString();
+    }
+
+    public static String getMinValueStr(String field) {
+        switch (field.toLowerCase()) {
+            case "sift":
+            case "polyphen": {
+                return "" + Double.MIN_VALUE;
+            }
+            default: {
+                return "*";
+            }
+        }
+    }
+
+    public static double getMinValue(String field) {
+        switch (field.toLowerCase()) {
+            case "sift":
+            case "polyphen": {
+                return Double.MIN_VALUE;
+            }
+            default: {
+                return 0;
+            }
+        }
+    }
+
+    public static double getMissingValue(String field) {
+        switch (field.toLowerCase()) {
+            case "sift":
+            case "polyphen": {
+                return -1.0;
+            }
+            default: {
+                return 0;
+            }
+        }
     }
 
     private static SolrQuery.ORDER getSortOrder(QueryOptions queryOptions) {

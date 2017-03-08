@@ -165,22 +165,70 @@ public class ParseSolrQueryTest {
 
         Query query = new Query();
         query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
-        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1kG_phase3:ALL<0.0002");
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1kG_phase3:YRI<0.01");
+//        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1kG_phase3:ALL<0.0002");
 
         // execute
         executeQuery(query, queryOptions);
     }
 
-//        @Test
+    public void parsePopMafScoreMissing() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        // (* -popFreq__1kG_phase3__YRI:*) OR popFreq_1kG_phase3__YRI:[0.01 TO *]
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1kG_phase3:YRI<<0.01");
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+    public void parsePhastCons() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION.key(), "phastCons>0.02");
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+    public void parsePhastConsMissing() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION.key(), "phastCons>>0.02");
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+    public void parseSiftMissing() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<<0.01");
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+//    @Test
     public void testParsing() {
         QueryOptions queryOptions = new QueryOptions();
         Query query = new Query();
 //        executeQuery(query, queryOptions);
 
-    parsePopMafScore();
+        parseSiftMissing();
 
-//        parseConsequenceTypeSOAcc();
-//        parseConsequenceTypeSOTerm();
+        parsePhastCons();
+        parsePhastConsMissing();
+
+        parsePopMafScore();
+        parsePopMafScoreMissing();
+
+        parseConsequenceTypeSOAcc();
+        parseConsequenceTypeSOTerm();
 
 /*
         parseXref();
