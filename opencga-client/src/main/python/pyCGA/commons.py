@@ -338,3 +338,7 @@ def execute(host, version, sid, category, resource, method, subcategory=None, qu
 
 def is_not_logged_in_exception(e):
     return "The session id does not correspond to any user" in str(e)
+
+
+def is_bad_login_exception(e):
+    return "Bad user or password" in str(e)

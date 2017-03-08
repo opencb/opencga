@@ -4,7 +4,7 @@ import sys
 
 from pyCGA.Utils.AvroSchema import AvroSchemaFile
 
-from pyCGA.commons import execute, OpenCGAResponseList, is_not_logged_in_exception
+from pyCGA.commons import execute, OpenCGAResponseList, is_not_logged_in_exception, is_bad_login_exception
 from pyCGA.opencgaconfig import ConfigClient
 
 
@@ -59,12 +59,13 @@ class _ParentRestClient(object):
                                    data=data,
                                    options=options)
             except Exception as e:
-                # TODO: detect login failure "Bad user or password" and don't retry those
                 if is_not_logged_in_exception(e):
                     if self.login_handler:
                         self.session_id = self.login_handler()
                     else:
                         raise e  # there's no point in retrying if we can't log in
+                elif is_bad_login_exception(e):
+                    raise e  # no point in retrying login if we have the wrong credentials
                 else:
                     if attempt_number >= max_attempts:  # last attempt failed, propagate error:
                         raise e
