@@ -2,12 +2,12 @@ from distutils.core import setup
 
 setup(
     name='pyCGA',
-    version='1.0.3-dev',
+    version='1.0.3',
     packages=['pyCGA', 'pyCGA.Utils'],
     url='',
     license='',
-    author='antonior,dapregi',
-    author_email='antonio.rueda-martin@genomicsengland.co.uk,daniel.perez-gil@genomicsengland.co.uk',
+    author='antonior,dapregi,ernesto-ocampo',
+    author_email='antonio.rueda-martin@genomicsengland.co.uk,daniel.perez-gil@genomicsengland.co.uk,ernesto.ocampo@genomicsengland.co.uk',
     description='',
     install_requires=[
         'pip >= 7.1.2',
