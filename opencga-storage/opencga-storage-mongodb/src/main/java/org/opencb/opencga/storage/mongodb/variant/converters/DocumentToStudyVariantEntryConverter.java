@@ -125,12 +125,14 @@ public class DocumentToStudyVariantEntryConverter {
         StudyEntry study = new StudyEntry(getStudyName(studyId));
 
 //        String fileId = (String) object.get(FILEID_FIELD);
-        Document fileObject = null;
+        Document fileObject;
         if (document.containsKey(FILES_FIELD)) {
             List<FileEntry> files = new ArrayList<>(((List) document.get(FILES_FIELD)).size());
             for (Document fileDocument : (List<Document>) document.get(FILES_FIELD)) {
-                Integer fid = ((Integer) fileDocument.get(FILEID_FIELD));
-
+                Integer fid = ((Number) fileDocument.get(FILEID_FIELD)).intValue();
+                if (fid < 0) {
+                    fid = -fid;
+                }
                 if (returnedFiles != null && !returnedFiles.contains(fid)) {
                     continue;
                 }

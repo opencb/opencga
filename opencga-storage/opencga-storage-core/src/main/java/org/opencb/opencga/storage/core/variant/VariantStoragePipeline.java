@@ -680,12 +680,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                         //Add sample to StudyConfiguration
                         studyConfiguration.getSampleIds().put(sampleName, sampleId);
                     } else {
-                        if (studyConfiguration.getSampleIds().get(sampleName) == sampleId) {
-                            //throw new StorageEngineException("Sample " + sampleName + ":" + sampleId
-                            // + " was already loaded. It was in the StudyConfiguration");
-//                          logger.warn("Sample " + sampleName + ":" + sampleId + " was already loaded. It was in the StudyConfiguration");
-                            System.out.println("Empty block");
-                        } else {
+                        if (studyConfiguration.getSampleIds().get(sampleName) != sampleId) {
                             throw new StorageEngineException("Sample " + sampleName + ":" + sampleId
                                     + " was already present. It was in the StudyConfiguration with a different sampleId: "
                                     + studyConfiguration.getSampleIds().get(sampleName));
@@ -921,7 +916,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             if (studyConfiguration.getFileIds().containsKey(fileName)) {
                 fileId = studyConfiguration.getFileIds().get(fileName);
             } else {
-                fileId = studyConfiguration.getFileIds().values().stream().max(Integer::compareTo).orElse(-1) + 1;
+                fileId = studyConfiguration.getFileIds().values().stream().max(Integer::compareTo).orElse(0) + 1;
                 studyConfiguration.getFileIds().put(fileName, fileId);
             }
             //throw new StorageEngineException("Invalid fileId " + fileId + " for file " + fileName + ". FileId must be positive.");

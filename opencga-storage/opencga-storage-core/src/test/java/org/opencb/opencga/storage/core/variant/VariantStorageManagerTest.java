@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.core.variant;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Ignore;
@@ -197,10 +196,10 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         VariantStorageEngine variantStorageManager = getVariantStorageEngine();
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
         StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
-        int i = 0;
+        int i = 1;
         for (int fileId = 77; fileId <= 93; fileId++) {
             ObjectMap fileOptions = new ObjectMap();
-            fileOptions.append(VariantStorageEngine.Options.SAMPLE_IDS.key(), "NA128" + fileId + ':' + i)
+            fileOptions.append(VariantStorageEngine.Options.SAMPLE_IDS.key(), "NA128" + fileId + ':' + (i - 1))
                     .append(VariantStorageEngine.Options.FILE_ID.key(), i)
                     .putAll(options);
             runDefaultETL(getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA128" + fileId + "_S1.genome.vcf.gz"),

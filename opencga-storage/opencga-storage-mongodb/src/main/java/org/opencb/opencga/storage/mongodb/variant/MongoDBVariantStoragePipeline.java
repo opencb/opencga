@@ -657,8 +657,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", reader::countNumVariants, 200);
         progressLogger.setApproximateTotalCount(reader.countAproxNumVariants());
 
-        MongoDBVariantMerger variantMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
-                dbAdaptor.getVariantsCollection(), indexedFiles, resume);
+        MongoDBVariantMerger variantMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds, indexedFiles, resume);
         MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(dbAdaptor.getVariantsCollection(), stageCollection,
                 studyConfiguration.getStudyId(), fileIds, resume, cleanWhileLoading, progressLogger);
 
@@ -737,6 +736,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         Long count = dbAdaptor.count(new Query()
                 .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId)
                 .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())).first();
+        Long overlappedCount = dbAdaptor.count(new Query()
+                .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), -fileId)
+                .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())).first();
         long variantsToLoad = 0;
 
         long expectedSkippedVariants = 0;
@@ -769,6 +771,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         }
 
         logger.info("============================================================");
+        logger.info("Check loaded file '" + variantSource.getFileName() + "' (" + fileId + ')');
         if (expectedSkippedVariants != writeResult.getSkippedVariants()) {
             logger.error("Wrong number of skipped variants. Expected " + expectedSkippedVariants + " and got " + writeResult
                     .getSkippedVariants());
@@ -791,15 +794,17 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         }
 
         StorageEngineException exception = null;
-        if (expectedCount != count) {
-            String message = "Wrong number of loaded variants. Expected: " + expectedCount + " and got: " + count;
+        if (expectedCount != (count + overlappedCount)) {
+            String message = "Wrong number of loaded variants. Expected: " + expectedCount + " and got: " + (count + overlappedCount)
+                    + " (" + count + " from file, " + overlappedCount + " overlapped)";
             logger.error(message);
             logger.error("  * Variants to load : " + variantsToLoad);
             logger.error("  * Non Inserted (due to duplications) : " + writeResult.getNonInsertedVariants());
             logger.error("  * Overlapped variants (extra insertions) : " + writeResult.getOverlappedVariants());
 //            exception = new StorageEngineException(message);
         } else {
-            logger.info("Final number of loaded variants: " + count);
+            logger.info("Final number of loaded variants: " + count
+                    + (overlappedCount > 0 ? " + " + overlappedCount + " overlapped variants" : ""));
         }
         logger.info("============================================================");
         if (exception != null) {
