@@ -19,8 +19,6 @@ public class ParseSolrQueryTest {
     public String study = "test1";
 
     public void executeQuery(Query query, QueryOptions queryOptions) {
-        SolrQuery solrQuery = ParseSolrQuery.parse(query, queryOptions);
-
         String host = "http://localhost:8983/solr/";
         String user = "";
         String password = "";
@@ -314,7 +312,7 @@ public class ParseSolrQueryTest {
         executeQuery(query, queryOptions);
     }
 
-//    @Test
+    //    @Test
     public void testParsing() {
         QueryOptions queryOptions = new QueryOptions();
         Query query = new Query();

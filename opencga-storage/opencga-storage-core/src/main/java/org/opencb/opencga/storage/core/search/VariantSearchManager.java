@@ -11,7 +11,9 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
+import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.RangeFacet;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
@@ -19,10 +21,13 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.core.results.FacetedQueryResultItem;
+import org.opencb.opencga.core.results.VariantFacetedQueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
+import org.opencb.opencga.storage.core.search.solr.ParseSolrFacetedQuery;
 import org.opencb.opencga.storage.core.search.solr.ParseSolrQuery;
 import org.opencb.opencga.storage.core.search.solr.SolrVariantIterator;
 import org.opencb.opencga.storage.core.search.solr.SolrVariantSearchIterator;
@@ -36,6 +41,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -370,9 +376,42 @@ public class VariantSearchManager {
         } catch (SolrServerException e) {
             throw new VariantSearchException(e.getMessage(), e);
         }
-
     }
 
+    /**
+     * Return faceted data from a Solr core/collection
+     * according a given query.
+     *
+     * @param collection    Collection name
+     * @param facetedQuery  Faceted query
+     * @param query         Query
+     * @param queryOptions  Query options
+     * @return              List of Variant objects
+     * @throws IOException          IOException
+     * @throws VariantSearchException  VariantSearchException
+     */
+    public VariantFacetedQueryResult<Variant> facetedQuery(String collection, Query facetedQuery,
+                                                           Query query, QueryOptions queryOptions)
+            throws IOException, VariantSearchException {
+        // init collection if needed
+        init(collection);
+
+        StopWatch stopWatch = StopWatch.createStarted();
+        try {
+            SolrQuery solrQuery = ParseSolrFacetedQuery.parse(facetedQuery, query, queryOptions);
+            QueryResponse response = solrClient.query(solrQuery);
+            System.out.println(response);
+            List<FacetedQueryResultItem> results = toFacetedQueryResultItems(response);
+
+            return new VariantFacetedQueryResult<>("", (int) stopWatch.getTime(TimeUnit.MILLISECONDS),
+                    results.size(), "Faceted data from Solr", "", "", results);
+
+        } catch (SolrServerException e) {
+            throw new VariantSearchException(e.getMessage(), e);
+        }
+    }
+
+    @Deprecated
     public VariantSearchFacet getFacet(Query query, QueryOptions queryOptions) {
 
         SolrQuery solrQuery = ParseSolrQuery.parse(query, queryOptions);
@@ -494,11 +533,90 @@ public class VariantSearchManager {
     }
 
 
+    private List<FacetedQueryResultItem> toFacetedQueryResultItems(QueryResponse response) {
+        List<FacetedQueryResultItem> items = new LinkedList<>();
+
+        // process Solr facet fields
+        if (response.getFacetFields() != null) {
+            for (FacetField field: response.getFacetFields()) {
+                FacetedQueryResultItem item = new FacetedQueryResultItem();
+                item.setField(field.getName());
+                item.setValue(null);
+                long total = 0;
+                List<FacetedQueryResultItem> counters = new LinkedList<>();
+                for (FacetField.Count values: field.getValues()) {
+                    FacetedQueryResultItem counterItem = new FacetedQueryResultItem();
+                    counterItem.setField(field.getName());
+                    counterItem.setValue(values.getName());
+                    counterItem.setCount(values.getCount());
+                    counters.add(counterItem);
+                    total += values.getCount();
+                }
+                item.setCount(total);
+                item.setItems(counters);
+
+                // add item to the list
+                items.add(item);
+            }
+        }
+/*
+        // process Solr facet pivots
+        if (response.getFacetPivot() != null) {
+            NamedList<List<PivotField>> facetPivot = response.getFacetPivot();
+            //facetPivot.g
+            //for (FacetField field: response.getFacetPivot()) {
+            //}
+        }
+*/
+        // process Solr facet range
+        if (response.getFacetRanges() != null) {
+            for (RangeFacet range: response.getFacetRanges()) {
+                FacetedQueryResultItem item = new FacetedQueryResultItem();
+                item.setField(range.getName());
+                item.setValue(null);
+                long total = 0;
+                List<FacetedQueryResultItem> counters = new LinkedList<>();
+                for (Object count: range.getCounts()) {
+                    FacetedQueryResultItem counterItem = new FacetedQueryResultItem();
+                    counterItem.setField(range.getName());
+                    counterItem.setValue(((RangeFacet.Count)count).getValue());
+                    counterItem.setCount(((RangeFacet.Count)count).getCount());
+                    counters.add(counterItem);
+                    total += counterItem.getCount();
+                }
+                item.setCount(total);
+                item.setItems(counters);
+
+                // add item to the list
+                items.add(item);
+            }
+        }
+
+        return items;
+
+
+/*
+
+        if (response.getFacetQuery() != null) {
+            variantSearchFacet.setFacetQueries(response.getFacetQuery());
+        }
+        if (response.getFacetRanges() != null) {
+            variantSearchFacet.setFacetRanges(response.getFacetRanges());
+        }
+        if (response.getIntervalFacets() != null) {
+            variantSearchFacet.setFacetIntervales(response.getIntervalFacets());
+        }
+
+        return variantSearchFacet;
+        */
+    }
+
     /**
      *
      * @param response
      * @return
      */
+    @Deprecated
     private VariantSearchFacet getFacets(QueryResponse response) {
 
         VariantSearchFacet variantSearchFacet = new VariantSearchFacet();

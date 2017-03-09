@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -168,38 +167,6 @@ public class ParseSolrQuery {
         // in the model: "stats__1kg_phase3__ALL"=0.02
         key = VariantDBAdaptor.VariantQueryParams.STATS_MAF.key();
         filterList.addAll(parsePopValue("stats", query.getString(key)));
-
-        //-------------------------------------
-        // Facet processing
-        //-------------------------------------
-
-        if (query.containsKey("facet.field")) {
-            solrQuery.addFacetField((query.get("facet.field").toString()));
-        }
-
-        if (query.containsKey("facet.fields")) {
-            solrQuery.addFacetField((query.get("facet.fields").toString().split(",")));
-        }
-
-        if (query.containsKey("facet.query")) {
-            solrQuery.addFacetQuery(query.get("facet.query").toString());
-        }
-
-        if (query.containsKey("facet.prefix")) {
-            solrQuery.setFacetPrefix(query.get("facet.prefix").toString());
-        }
-
-        if (query.containsKey("facet.range")) {
-
-            Map<String, Map<String, Number>> rangeFields = (Map<String, Map<String, Number>>) query.get("facet.range");
-
-            for (String k : rangeFields.keySet()) {
-                Number rangeStart = rangeFields.get(k).get("facet.range.start");
-                Number rangeEnd = rangeFields.get(k).get("facet.range.end");
-                Number rangeGap = rangeFields.get(k).get("facet.range.gap");
-                solrQuery.addNumericRangeFacet(k, rangeStart, rangeEnd, rangeGap);
-            }
-        }
 
 //        solrQuery.setQuery(queryString.toString());
         solrQuery.setQuery("*:*");
