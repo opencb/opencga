@@ -95,12 +95,15 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
         // prepare protein substitution scores: sift and polyphen
         List<Score> scores;
-        ProteinVariantAnnotation proteinAnnotation = null;
-        if (variantSearchModel.getSift() != -1.0 || variantSearchModel.getPolyphen() != -1.0) {
-            proteinAnnotation = new ProteinVariantAnnotation();
+        ProteinVariantAnnotation proteinAnnotation = new ProteinVariantAnnotation();
+        if (variantSearchModel.getSift() != MISSING_VALUE || variantSearchModel.getPolyphen() != MISSING_VALUE) {
             scores = new ArrayList<>();
-            scores.add(new Score(variantSearchModel.getSift(), "sift", variantSearchModel.getSiftDesc()));
-            scores.add(new Score(variantSearchModel.getPolyphen(), "polyphen", variantSearchModel.getPolyphenDesc()));
+            if (variantSearchModel.getSift() != MISSING_VALUE) {
+                scores.add(new Score(variantSearchModel.getSift(), "sift", variantSearchModel.getSiftDesc()));
+            }
+            if (variantSearchModel.getPolyphen() != MISSING_VALUE) {
+                scores.add(new Score(variantSearchModel.getPolyphen(), "polyphen", variantSearchModel.getPolyphenDesc()));
+            }
             proteinAnnotation.setSubstitutionScores(scores);
         }
 
@@ -120,7 +123,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
                 // only set protein for that consequence type
                 // if annotated protein and SO accession is 1583 (missense_variant)
-                if (proteinAnnotation != null && soAcc == 1583) {
+                if (soAcc == 1583) {
                     consequenceTypeMap.get(fields[0]).setProteinVariantAnnotation(proteinAnnotation);
                 }
             }
@@ -142,17 +145,27 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             variantAnnotation.setPopulationFrequencies(populationFrequencies);
         }
 
-        // set conservations
+        // Set conservations scores
         scores = new ArrayList<>();
-        scores.add(new Score(variantSearchModel.getGerp(), "gerp", ""));
-        scores.add(new Score(variantSearchModel.getPhastCons(), "phastCons", ""));
-        scores.add(new Score(variantSearchModel.getPhylop(), "phylop", ""));
+        if (variantSearchModel.getPhylop() != MISSING_VALUE) {
+            scores.add(new Score(variantSearchModel.getPhylop(), "phylop", ""));
+        }
+        if (variantSearchModel.getPhastCons() != MISSING_VALUE) {
+            scores.add(new Score(variantSearchModel.getPhastCons(), "phastCons", ""));
+        }
+        if (variantSearchModel.getGerp() != MISSING_VALUE) {
+            scores.add(new Score(variantSearchModel.getGerp(), "gerp", ""));
+        }
         variantAnnotation.setConservation(scores);
 
-        // set cadd
+        // Set CADD scores
         scores = new ArrayList<>();
-        scores.add(new Score(variantSearchModel.getCaddRaw(), "cadd_raw", ""));
-        scores.add(new Score(variantSearchModel.getCaddScaled(), "cadd_scaled", ""));
+        if (variantSearchModel.getCaddRaw() != MISSING_VALUE) {
+            scores.add(new Score(variantSearchModel.getCaddRaw(), "cadd_raw", ""));
+        }
+        if (variantSearchModel.getCaddScaled() != MISSING_VALUE) {
+            scores.add(new Score(variantSearchModel.getCaddScaled(), "cadd_scaled", ""));
+        }
         variantAnnotation.setFunctionalScore(scores);
 
         // set clinvar, cosmic, hpo
