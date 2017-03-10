@@ -382,7 +382,7 @@ public class VariantStorageManager extends StorageManager {
         if (!returnedFields.contains(VariantField.STUDIES)) {
             return Collections.emptyMap();
         }
-        if (VariantDBAdaptorUtils.getReturnedSamplesList(query, returnedFields) != null) {
+        if (VariantDBAdaptorUtils.isReturnedSamplesDefined(query, returnedFields)) {
             Map<Integer, List<Integer>> samplesToReturn = dbAdaptor.getReturnedSamples(query, queryOptions);
             for (Map.Entry<Integer, List<Integer>> entry : samplesToReturn.entrySet()) {
                 if (!entry.getValue().isEmpty()) {

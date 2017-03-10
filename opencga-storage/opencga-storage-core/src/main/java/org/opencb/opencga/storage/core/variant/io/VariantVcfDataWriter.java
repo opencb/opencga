@@ -371,7 +371,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
 
     private List<String> getReturnedSamples(StudyConfiguration studyConfiguration, QueryOptions options) {
         Map<Integer, List<Integer>> returnedSamplesMap =
-                VariantDBAdaptorUtils.getReturnedSamples(new Query(options), options, studyConfiguration);
+                VariantDBAdaptorUtils.getReturnedSamples(new Query(options), options, Collections.singletonList(studyConfiguration));
         List<String> returnedSamples = returnedSamplesMap.get(studyConfiguration.getStudyId()).stream()
                 .map(sampleId -> studyConfiguration.getSampleIds().inverse().get(sampleId))
                 .collect(Collectors.toList());
