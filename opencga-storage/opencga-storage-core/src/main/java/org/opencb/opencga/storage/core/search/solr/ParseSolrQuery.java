@@ -145,15 +145,21 @@ public class ParseSolrQuery {
 
         // protein-substitution
         key = VariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key();
-        filterList.addAll(parseScoreValue(query.getString(key)));
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            filterList.add(parseScoreValue(query.getString(key)));
+        }
 
         // conservation
         key = VariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION.key();
-        filterList.addAll(parseScoreValue(query.getString(key)));
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            filterList.add(parseScoreValue(query.getString(key)));
+        }
 
         // cadd, functional score
         key = VariantDBAdaptor.VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key();
-        filterList.addAll(parseScoreValue(query.getString(key)));
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            filterList.add(parseScoreValue(query.getString(key)));
+        }
 
         // traits
         key = VariantDBAdaptor.VariantQueryParams.ANNOT_TRAITS.key();
@@ -292,13 +298,11 @@ public class ParseSolrQuery {
      * @param value        Parameter value
      * @return              A list of strings, each string represents a boolean condition
      */
-    private static List<String> parseScoreValue(String value) {
-        List<String> filters = new ArrayList<>();
-
+    private static String parseScoreValue(String value) {
         // In Solr, range queries can be inclusive or exclusive of the upper and lower bounds:
         //    - Inclusive range queries are denoted by square brackets.
         //    - Exclusive range queries are denoted by curly brackets.
-
+        StringBuilder sb = new StringBuilder();
         if (StringUtils.isNotEmpty(value)) {
             boolean or = value.contains(",");
             boolean and = value.contains(";");
@@ -308,8 +312,6 @@ public class ParseSolrQuery {
             String logicalComparator = or ? " OR " : " AND ";
 
             Matcher matcher;
-            StringBuilder sb = new StringBuilder();
-
             String[] values = value.split("[,;]");
             if (values.length == 1) {
                 matcher = SCORE_PATTERN.matcher(value);
@@ -321,32 +323,20 @@ public class ParseSolrQuery {
                     throw new IllegalArgumentException("Invalid expression " +  value);
                 }
             } else {
-                matcher = SCORE_PATTERN.matcher(values[0]);
-                if (matcher.find()) {
-                    sb.append("(");
-                    // concat expresion, e.g.: value:[0 TO 12]
-                    sb.append(getRange("", matcher.group(1), matcher.group(2), matcher.group(3)));
-                    for (int i = 1; i < values.length; i++) {
-                        matcher = SCORE_PATTERN.matcher(values[i]);
-                        if (matcher.find()) {
-                            sb.append(logicalComparator);
-                            // concat expresion, e.g.: value:[0 TO 12]
-                            sb.append(getRange("", matcher.group(1), matcher.group(2), matcher.group(3)));
-                        } else {
-                            // error
-                            throw new IllegalArgumentException("Invalid expression " +  value);
-                        }
+                List<String> list = new ArrayList<>(values.length);
+                for (String v : values) {
+                    matcher = SCORE_PATTERN.matcher(v);
+                    if (matcher.find()) {
+                        // concat expression, e.g.: value:[0 TO 12]
+                        list.add(getRange("", matcher.group(1), matcher.group(2), matcher.group(3)));
+                    } else {
+                        throw new IllegalArgumentException("Invalid expression " +  value);
                     }
-                    sb.append(")");
-                } else {
-                    // error
-                    System.err.format("Error: invalid expression %s: abort!\n", values[0]);
                 }
+                sb.append("(").append(StringUtils.join(list, logicalComparator)).append(")");
             }
-            filters.add(sb.toString());
         }
-
-        return filters;
+        return sb.toString();
     }
 
     /**
