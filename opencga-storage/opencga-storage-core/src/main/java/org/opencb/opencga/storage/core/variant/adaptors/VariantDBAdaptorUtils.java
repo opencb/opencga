@@ -416,8 +416,11 @@ public class VariantDBAdaptorUtils {
     }
 
     public List<Integer> getReturnedStudies(Query query, QueryOptions options) {
+        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
         List<Integer> studyIds;
-        if (isValidParam(query, RETURNED_STUDIES)) {
+        if (!returnedFields.contains(VariantField.STUDIES)) {
+            studyIds = Collections.emptyList();
+        } else if (isValidParam(query, RETURNED_STUDIES)) {
             String returnedStudies = query.getString(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key());
             if (NONE.equals(returnedStudies)) {
                 studyIds = Collections.emptyList();
@@ -431,7 +434,7 @@ public class VariantDBAdaptorUtils {
             studyIds = getStudyIds(splitValue(studies, checkOperator(studies)), options);
             // if empty, all the studies
             if (studyIds.isEmpty()) {
-                studyIds = null;
+                studyIds = getStudyConfigurationManager().getStudyIds(options);
             }
         } else {
             studyIds = getStudyConfigurationManager().getStudyIds(options);
