@@ -28,12 +28,15 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.search.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -50,15 +53,14 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by imedina on 13/08/14.
  */
 public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdaptor> {
+
+    protected VariantSearchManager variantSearchManager;
 
     public enum Options {
         INCLUDE_STATS("include.stats", true),              //Include existing stats on the original file.
@@ -125,20 +127,20 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     }
 
-//    protected static Logger logger;
-
+    @Deprecated
     public VariantStorageEngine() {
         logger = LoggerFactory.getLogger(VariantStorageEngine.class);
     }
 
     public VariantStorageEngine(StorageConfiguration configuration) {
-        super(configuration);
-        logger = LoggerFactory.getLogger(VariantStorageEngine.class);
-
+        this(configuration.getDefaultStorageEngineId(), configuration);
     }
 
     public VariantStorageEngine(String storageEngineId, StorageConfiguration configuration) {
         super(storageEngineId, configuration);
+
+        variantSearchManager = new VariantSearchManager(configuration);
+
         logger = LoggerFactory.getLogger(VariantStorageEngine.class);
     }
 
@@ -408,6 +410,36 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
 
+    public void searchIndex(String database) throws StorageEngineException, IOException, VariantSearchException {
+        searchIndex(database, new Query(), new QueryOptions());
+    }
+
+    public void searchIndex(String database, Query query, QueryOptions queryOptions) throws StorageEngineException, IOException,
+            VariantSearchException {
+
+        if (variantSearchManager == null) {
+            variantSearchManager = new VariantSearchManager(configuration);
+        }
+
+        if (configuration.getSearch().getActive() && variantSearchManager.isAlive(database)) {
+            // first, create the collection it it does not exist
+            if (!variantSearchManager.existCollection(database)) {
+                // by default: config=OpenCGAConfSet, shards=1, replicas=1
+                logger.info("Creating Solr collection " + database);
+                variantSearchManager.createCollection(database);
+            } else {
+                logger.info("Solr collection '" + database + "' exists.");
+            }
+
+            // then, load variants
+            VariantDBAdaptor dbAdaptor = getDBAdaptor(database);
+            queryOptions = new QueryOptions();
+            queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES_DATA, VariantField.STUDIES_FILES));
+            VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
+            variantSearchManager.load(database, iterator);
+        }
+    }
+
     /**
      * Drops a file from the Variant Storage.
      *
@@ -500,14 +532,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return VariantStoragePipeline.buildFilename(studyName, fileId);
     }
 
-    public void insertVariantIntoSolr() throws StorageEngineException {
-
-        VariantDBAdaptor dbAdaptor = getDBAdaptor();
-        VariantDBIterator variantDBIterator = dbAdaptor.iterator();
-
-        while (variantDBIterator.hasNext()) {
-            searchManager.insert(variantDBIterator.next());
-        }
+    public VariantSearchManager getVariantSearchManager() {
+        return variantSearchManager;
     }
 
+    public VariantStorageEngine setVariantSearchManager(VariantSearchManager variantSearchManager) {
+        this.variantSearchManager = variantSearchManager;
+        return this;
+    }
 }

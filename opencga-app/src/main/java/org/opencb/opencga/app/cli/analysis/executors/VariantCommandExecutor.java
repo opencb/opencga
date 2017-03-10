@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -91,6 +92,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 break;
             case "index":
                 index();
+                break;
+            case "index-search":
+                indexSearch();
                 break;
             case "stats":
                 stats();
@@ -157,6 +161,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         Map<Long, String> studyIds = getStudyIds(sessionId);
         Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds);
         QueryOptions queryOptions = VariantQueryCommandUtils.parseQueryOptions(cliOptions);
+        queryOptions.put("summary", cliOptions.genericVariantQueryOptions.summary);
 
         org.opencb.opencga.storage.core.manager.variant.VariantStorageManager variantManager =
                 new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageEngineFactory);
@@ -229,7 +234,19 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageEngineFactory);
 
         variantManager.index(cliOptions.study, cliOptions.fileId, cliOptions.outdir, queryOptions, sessionId);
+    }
 
+    private void indexSearch() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException, StorageEngineException,
+            InstantiationException, IllegalAccessException, URISyntaxException, VariantSearchException {
+        VariantCommandOptions.VariantIndexCommandOptions cliOptions = variantCommandOptions.indexVariantCommandOptions;
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.putAll(cliOptions.commonOptions.params);
+
+        org.opencb.opencga.storage.core.manager.variant.VariantStorageManager variantManager =
+                new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageEngineFactory);
+
+        variantManager.searchIndex(cliOptions.study, sessionId);
     }
 
     private void stats() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException,

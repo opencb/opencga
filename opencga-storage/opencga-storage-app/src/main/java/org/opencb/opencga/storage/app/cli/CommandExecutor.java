@@ -233,7 +233,7 @@ public abstract class CommandExecutor {
         this.configuration = configuration;
     }
 
-    protected static String getParsedSubCommand(JCommander jCommander) {
+    public static String getParsedSubCommand(JCommander jCommander) {
         String parsedCommand = jCommander.getParsedCommand();
         if (jCommander.getCommands().containsKey(parsedCommand)) {
             String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();

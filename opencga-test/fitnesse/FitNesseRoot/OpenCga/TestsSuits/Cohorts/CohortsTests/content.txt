@@ -57,6 +57,18 @@
 | setHeader|Content-Type:application/json|
 | POST | /v1/cohorts/$cohortId/update?sid=$sessionId&study=${study} |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].samples.length == '2'|
 
+!3 Get cohorts Sample
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/cohorts/$cohortId/samples?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].numResults == '2'|
+
+!3 Get cohorts Sample With Include
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/cohorts/$cohortId/samples?sid=$sessionId&include=name|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].numResults == '2' && jsonbody.response[0].results[0].name != ''|
+
+!3 Get cohorts Sample With Exclude
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/cohorts/$cohortId/samples?sid=$sessionId&exclude=name|200|  Content-Type: application/json |jsonbody.response[0].result[0].name != 'exclude'|
+
 !3 Delete Sample 
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/samples/$sampleId/delete?sid=$sessionId&study=${study}|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].errorMsg == 'The sample $sampleId is part of 1 cohorts. Please, first update or delete the cohorts'|

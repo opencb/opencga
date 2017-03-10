@@ -34,7 +34,7 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.search.SearchManager;
+import org.opencb.opencga.storage.core.search.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -849,7 +849,6 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         logger.info("checkLoadedVariants time : " + (System.currentTimeMillis() - start) / 1000.0 + "s");
     }
 
-
     @Test
     @Ignore
     public void insertVariantIntoSolr() throws Exception {
@@ -871,12 +870,8 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         VariantDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME);
 
 
-        SearchManager searchManager = new SearchManager(variantStorageManager.getConfiguration());
-
-        for (Variant variant:dbAdaptor) {
-            searchManager.insert(variant);
-        }
-
+        VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageManager.getConfiguration());
+        variantSearchManager.load(variantStorageManager.getConfiguration().getSearch().getCollection(), dbAdaptor.iterator());
     }
 
 }

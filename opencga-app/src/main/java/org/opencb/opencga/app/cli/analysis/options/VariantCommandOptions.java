@@ -24,6 +24,7 @@ import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQuer
 public class VariantCommandOptions {
 
     public VariantIndexCommandOptions indexVariantCommandOptions;
+    public VariantIndexSearchCommandOptions variantIndexSearchCommandOptions;
 //    public QueryVariantCommandOptionsOld queryVariantCommandOptionsOld;
     public VariantQueryCommandOptions queryVariantCommandOptions;
     public VariantStatsCommandOptions statsVariantCommandOptions;
@@ -45,6 +46,7 @@ public class VariantCommandOptions {
         this.jCommander = jCommander;
 
         this.indexVariantCommandOptions = new VariantIndexCommandOptions();
+        this.variantIndexSearchCommandOptions = new VariantIndexSearchCommandOptions();
 //        this.queryVariantCommandOptionsOld = new QueryVariantCommandOptionsOld();
         this.queryVariantCommandOptions = new VariantQueryCommandOptions();
         this.statsVariantCommandOptions = new VariantStatsCommandOptions();
@@ -78,6 +80,16 @@ public class VariantCommandOptions {
         public String catalogPath = null;
     }
 
+    @Parameters(commandNames = {"index-search"}, commandDescription = "Index variants file")
+    public class VariantIndexSearchCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-p", "--project-id"}, description = "Project to index.", arity = 1)
+        public String project;
+
+    }
 
     @Deprecated
     public class IndexVariantCommandOptionsOld extends GeneralCliOptions.StudyOption {

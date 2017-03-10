@@ -7,6 +7,7 @@ package org.opencb.opencga.storage.core.config;
 public class SearchConfiguration {
 
     private String host;
+    @Deprecated
     private String collection;
     private String user;
     private String password;
@@ -42,10 +43,12 @@ public class SearchConfiguration {
         return this;
     }
 
+    @Deprecated
     public String getCollection() {
         return collection;
     }
 
+    @Deprecated
     public SearchConfiguration setCollection(String collection) {
         this.collection = collection;
         return this;

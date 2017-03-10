@@ -184,6 +184,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = "List of tissues of interest. e.g. \"tongue\"") @QueryParam("annot-expression") String expression,
                                 @ApiParam(value = "List of protein variant annotation keywords") @QueryParam("annot-protein-keywords") String proteinKeyword,
                                 @ApiParam(value = "List of drug names") @QueryParam("annot-drug") String drug,
+                                @ApiParam(value = "Perform a full-text search on a list of traits") @QueryParam("traits") String traits,
                                 @ApiParam(value = "Functional score: {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3") @QueryParam("annot-functional-score") String functional,
 
                                 @ApiParam(value = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]") @QueryParam("unknownGenotype") String unknownGenotype,
@@ -194,13 +195,16 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = "Group variants by: [ct, gene, ensemblGene]", required = false) @DefaultValue("") @QueryParam("groupBy") String groupBy,
                                 @ApiParam(value = "Calculate histogram. Requires one region.", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
                                 @ApiParam(value = "Histogram interval size", required = false) @DefaultValue("2000") @QueryParam("interval") int interval,
+                                @ApiParam(value = "Fetch summary data from Solr", required = false) @QueryParam("summary") boolean summary,
                                 @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge) {
 
         try {
             List<QueryResult> queryResults = new LinkedList<>();
-            QueryResult queryResult;
+            QueryResult queryResult = null;
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            queryOptions.put("summary", summary);
+            
             Query query = VariantStorageManager.getVariantQuery(queryOptions);
 
             if (count) {
@@ -211,6 +215,10 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 queryResult = variantManager.groupBy(groupBy, query, queryOptions, sessionId);
             } else {
                 queryResult = variantManager.get(query, queryOptions, sessionId);
+                System.out.println("queryResult = " + jsonObjectMapper.writeValueAsString(queryResult));
+
+//                VariantQueryResult variantQueryResult = variantManager.get(query, queryOptions, sessionId);
+//                queryResults.add(variantQueryResult);
             }
             queryResults.add(queryResult);
 

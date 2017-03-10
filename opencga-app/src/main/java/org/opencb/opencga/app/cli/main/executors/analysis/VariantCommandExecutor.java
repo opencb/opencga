@@ -16,16 +16,26 @@
 
 package org.opencb.opencga.app.cli.main.executors.analysis;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.util.JsonFormat;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFUtils;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
 import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
+import org.opencb.biodata.tools.variant.converters.VariantContextToAvroVariantConverter;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.server.grpc.AdminServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericServiceModel;
 import org.opencb.opencga.server.grpc.VariantServiceGrpc;
@@ -34,12 +44,11 @@ import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -73,6 +82,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 logger.error("Subcommand not valid");
                 break;
         }
+
+//        ObjectMapper objectMapper = new ObjectMapper();
+//        System.out.println(objectMapper.writeValueAsString(queryResponse.getResponse()));
 
         createOutput(queryResponse);
 
@@ -167,7 +179,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         options.putIfNotEmpty(QueryOptions.EXCLUDE, queryCommandOptions.dataModelOptions.exclude);
         options.put(QueryOptions.LIMIT, queryCommandOptions.numericOptions.limit);
         options.put(QueryOptions.SKIP, queryCommandOptions.numericOptions.skip);
-        options.put("count", queryCommandOptions.numericOptions.count);
+        options.put(QueryOptions.COUNT, queryCommandOptions.numericOptions.count);
         options.putAll(variantCommandOptions.commonCommandOptions.params);
 
         params.put("samplesMetadata", queryCommandOptions.genericVariantQueryOptions.samplesMetadata);
@@ -184,7 +196,18 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                     || queryCommandOptions.genericVariantQueryOptions.histogram) {
                 return openCGAClient.getVariantClient().genericQuery(params, options);
             } else {
-                return openCGAClient.getVariantClient().query(params, options);
+                options.put(QueryOptions.SKIP_COUNT, true);
+                params.put("samplesMetadata", true);
+
+                System.err.println("queryCommandOptions.commonOptions.outputFormat = " + queryCommandOptions.commonOptions.outputFormat);
+                if (queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("vcf")
+                        || queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("text")) {
+                    VariantQueryResult<Variant> variantQueryResult = openCGAClient.getVariantClient().query2(params, options);
+                    printVcf(variantQueryResult, queryCommandOptions.study, System.out);
+                    return null;
+                } else {
+                    return openCGAClient.getVariantClient().query(params, options);
+                }
             }
         } else {
             ManagedChannel channel = getManagedChannel();
@@ -288,6 +311,58 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         } catch (RuntimeException e) {
             return e;
         }
+    }
+
+    private void printVcf(VariantQueryResult<Variant> variantQueryResult, String study, PrintStream outputStream) {
+        System.out.println(variantQueryResult.getSamples());
+
+        Map<String, List<String>> smaplePerStudy = new HashMap<>();
+        variantQueryResult.getSamples().forEach((s, strings) -> {
+            String study1 = s.split(":")[1];
+            smaplePerStudy.put(study1, strings);
+        });
+
+
+        List<String> samples = new ArrayList<>();
+        if (variantQueryResult.getSamples().size() == 1) {
+            Iterator<String> iterator = variantQueryResult.getSamples().keySet().iterator();
+            String key = iterator.next();
+            samples = variantQueryResult.getSamples().get(key);
+        } else {
+//            System.out.println("study = " + study);
+            String studyShort = study;
+            if (study.contains(":")) {
+                studyShort = study.split(":")[1];
+            }
+            samples = smaplePerStudy.get(studyShort);
+        }
+
+//        System.out.println("samples = " + samples);
+
+        List<String> cohorts = Arrays.asList("ALL");
+        List<String> annotations = Arrays.asList("gene");
+        List<String> formats = Arrays.asList("GT");
+        List<String> formatTypes = Arrays.asList("String");
+        List<String> formatDescriptions = Arrays.asList("Desc");
+
+        VCFHeader vcfHeader = VcfUtils.createVCFHeader(cohorts, annotations, formats, formatTypes, formatDescriptions, samples, null);
+        VariantContextWriter variantContextWriter = VcfUtils.createVariantContextWriter(outputStream, vcfHeader.getSequenceDictionary(),
+                null);
+
+        VariantContextToAvroVariantConverter variantContextToAvroVariantConverter = new VariantContextToAvroVariantConverter(study, samples, annotations);
+        variantContextWriter.writeHeader(vcfHeader);
+        for (Variant variant : variantQueryResult.getResult()) {
+//            outputStream.println(variant.getId());
+            VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
+//            try {
+//                System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(variantContext));
+//            } catch (JsonProcessingException e) {
+//                e.printStackTrace();
+//            }
+            variantContextWriter.add(variantContext);
+        }
+        variantContextWriter.close();
+        outputStream.close();
     }
 
 }

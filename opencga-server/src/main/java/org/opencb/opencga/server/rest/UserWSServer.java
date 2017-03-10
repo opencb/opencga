@@ -120,7 +120,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @Deprecated
     @GET
     @Path("/{user}/login")
-    @ApiOperation(value = "Get identified and gain access to the system [DEPRECATED]")
+    @ApiOperation(value = "Get identified and gain access to the system [DEPRECATED]" , hidden = true)
     public Response login(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                           @ApiParam(value = "User password", required = true) @QueryParam("password") String password) {
         sessionIp = httpServletRequest.getRemoteAddr();

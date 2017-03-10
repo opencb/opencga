@@ -18,9 +18,8 @@ package org.opencb.opencga.storage.core;
 
 import org.opencb.opencga.core.common.MemoryUsageMonitor;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.search.SearchManager;
+import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.slf4j.Logger;
 
 import java.net.URI;
@@ -34,8 +33,6 @@ public abstract class StorageEngine<DBADAPTOR> {
 
     protected String storageEngineId;
     protected StorageConfiguration configuration;
-
-    protected SearchManager searchManager;
 
     protected Logger logger;
 
@@ -54,10 +51,6 @@ public abstract class StorageEngine<DBADAPTOR> {
     public void setConfiguration(StorageConfiguration configuration, String storageEngineId) {
         this.configuration = configuration;
         this.storageEngineId = storageEngineId;
-    }
-
-    public StorageConfiguration getConfiguration() {
-        return configuration;
     }
 
     public String getStorageEngineId() {
@@ -176,4 +169,13 @@ public abstract class StorageEngine<DBADAPTOR> {
      */
     public abstract StoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException;
 
+
+    public StorageConfiguration getConfiguration() {
+        return configuration;
+    }
+
+    public StorageEngine setConfiguration(StorageConfiguration configuration) {
+        this.configuration = configuration;
+        return this;
+    }
 }
