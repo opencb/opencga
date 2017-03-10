@@ -15,6 +15,8 @@ import java.util.*;
  */
 public class VariantSearchToVariantConverter implements ComplexTypeConverter<Variant, VariantSearchModel> {
 
+    public static final double MISSING_VALUE = -100.0;
+
     /**
      * Conversion: from storage type to data model.
      *
@@ -275,7 +277,20 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             variantSearchModel.setStats(stats);
         }
 
-        // Check for annotation
+        // We init all annotation numeric values to MISSING_VALUE, this fixes two different scenarios:
+        // 1. No Variant Annotation has been found, probably because it is a SV longer than 100bp.
+        // 2. There are some conservation or CADD scores missing
+        variantSearchModel.setSift(MISSING_VALUE);
+        variantSearchModel.setPolyphen(MISSING_VALUE);
+
+        variantSearchModel.setPhastCons(MISSING_VALUE);
+        variantSearchModel.setPhylop(MISSING_VALUE);
+        variantSearchModel.setGerp(MISSING_VALUE);
+
+        variantSearchModel.setCaddRaw(MISSING_VALUE);
+        variantSearchModel.setCaddScaled(MISSING_VALUE);
+
+        // Process Variant Annotation
         VariantAnnotation variantAnnotation = variant.getAnnotation();
         if (variantAnnotation != null) {
 
@@ -321,15 +336,12 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     }
                 }
 
-                // Set sift and polyphen
+                // We process now Sift and Polyphen
                 setProteinScores(consequenceTypes, variantSearchModel);
 
                 // We store the accumulated data
                 genes.forEach((s, strings) -> variantSearchModel.getGenes().addAll(strings));
-//                for (String gene: genes.keySet()) {
-////                    variantSearchModel.getGenes().add(gene);
-//                    variantSearchModel.getGenes().addAll(genes.get(gene));
-//                }
+
                 variantSearchModel.setSoAcc(new ArrayList<>(soAccessions));
                 variantSearchModel.setGeneToSoAcc(new ArrayList<>(geneToSOAccessions));
             }
@@ -439,7 +451,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
     private void setProteinScores(List<ConsequenceType> consequenceTypes, VariantSearchModel variantSearchModel) {
         double sift = 10;
         String siftDesc = "";
-        double polyphen = -1.0;
+        double polyphen = MISSING_VALUE;
         String polyphenDesc = "";
 
         if (consequenceTypes != null) {
@@ -464,9 +476,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             }
         }
 
-        // If sift not exist we set it to -1.0
+        // If sift not exist we set it to -100.0
         if (sift == 10) {
-            sift = -1.0;
+            sift = MISSING_VALUE;
         }
 
         // set scores
