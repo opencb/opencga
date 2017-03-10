@@ -79,7 +79,6 @@ public class ParseSolrQuery {
         // Query processing
         //-------------------------------------
         logger.debug("query = " + query.toJson() + "\n");
-        System.out.println("query = " + query.toJson() + "\n");
 
         // OR conditions
         // create a list for xrefs (without genes), genes, regions and cts
@@ -140,23 +139,27 @@ public class ParseSolrQuery {
 
         // type (t)
         String key = VariantDBAdaptor.VariantQueryParams.TYPE.key();
-        filterList.addAll(parseTermValue(key, query.getString(key)));
-
-        // cadd, functional score
-        key = VariantDBAdaptor.VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key();
-        filterList.addAll(parseScoreValue(key, query.getString(key)));
-
-        // conservation
-        key = VariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION.key();
-        filterList.addAll(parseScoreValue(key, query.getString(key)));
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            filterList.add(parseCategoryTermValue(key, query.getString(key)));
+        }
 
         // protein-substitution
         key = VariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key();
-        filterList.addAll(parseScoreValue(key, query.getString(key)));
+        filterList.addAll(parseScoreValue(query.getString(key)));
+
+        // conservation
+        key = VariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION.key();
+        filterList.addAll(parseScoreValue(query.getString(key)));
+
+        // cadd, functional score
+        key = VariantDBAdaptor.VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key();
+        filterList.addAll(parseScoreValue(query.getString(key)));
 
         // traits
         key = VariantDBAdaptor.VariantQueryParams.ANNOT_TRAITS.key();
-        filterList.addAll(parseTraitValue(key, query.getString(key)));
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            filterList.add(parseCategoryTermValue("traits", query.getString(key)));
+        }
 
 
         // maf population frequency
@@ -201,11 +204,10 @@ public class ParseSolrQuery {
             }
         }
 
-//        solrQuery.setQuery(queryString.toString());
         solrQuery.setQuery("*:*");
-        filterList.forEach(filter -> { solrQuery.addFilterQuery(filter);
-            //logger.debug("Solr fq: " + filter);
-            System.out.println("Solr fq: " + filter);
+        filterList.forEach(filter -> {
+            solrQuery.addFilterQuery(filter);
+            logger.debug("Solr fq: " + filter);
         });
 
         return solrQuery;
@@ -256,71 +258,29 @@ public class ParseSolrQuery {
      *
      * Parse string values, e.g.: dbSNP, type, chromosome,... This function takes into account multiple values and
      * the separator between them can be:
-     *     "," to apply a "OR condition"
-     *     ";" to apply a "AND condition"
+     *     "," or ";" to apply a "OR condition"
      *
      * @param name         Paramenter name
      * @param value        Paramenter value
      * @return             A list of strings, each string represents a boolean condition
      */
-    private static List<String> parseTermValue(String name, String value) {
-        List<String> filters = new ArrayList<>();
-
-        if (value != null && !value.isEmpty()) {
-            boolean or = value.contains(",");
-            boolean and = value.contains(";");
-            if (or && and) {
-                throw new IllegalArgumentException("Command and semi-colon cannot be mixed: " + value);
-            }
-
+    private static String parseCategoryTermValue(String name, String value) {
+        StringBuilder filter = new StringBuilder();
+        if (StringUtils.isNotEmpty(value)) {
             String[] values = value.split("[,;]");
-            StringBuilder filter = new StringBuilder();
             if (values.length == 1) {
                 filter.append(name).append(":\"").append(value).append("\"");
             } else {
-                String logicalComparator = or ? " OR " : " AND ";
                 filter.append("(");
                 filter.append(name).append(":\"").append(values[0]).append("\"");
                 for (int i = 1; i < values.length; i++) {
-                    filter.append(logicalComparator);
+                    filter.append(" OR ");
                     filter.append(name).append(":\"").append(values[i]).append("\"");
                 }
                 filter.append(")");
             }
-            filters.add(filter.toString());
         }
-        return filters;
-    }
-
-    /**
-     *
-     * Parse trait values, i.e.: ClinVar, COSMIC or HPO. This function takes into account multiple values and
-     * an OR is applied between them.
-     *
-     * @param type         Paramenter type: ClinVar, COSMIC or HPO
-     * @param value        Paramenter value
-     * @return             A list of strings, each string represents a boolean condition
-     */
-    private static List<String> parseTraitValue(String type, String value) {
-        List<String> filters = new ArrayList<>();
-
-        if (value != null && !value.isEmpty()) {
-            String[] values = value.split("[,;]");
-            StringBuilder filter = new StringBuilder();
-            if (values.length == 1) {
-                filter.append("traits").append(":\"").append(value).append("\"");
-            } else {
-                filter.append("(");
-                filter.append("traits").append(":\"").append(values[0]).append("\"");
-                for (int i = 1; i < values.length; i++) {
-                    filter.append(" OR ");
-                    filter.append("traits").append(":\"").append(values[i]).append("\"");
-                }
-                filter.append(")");
-            }
-            filters.add(filter.toString());
-        }
-        return filters;
+        return filter.toString();
     }
 
     /**
@@ -329,19 +289,17 @@ public class ParseSolrQuery {
      *     "," to apply a "OR condition"
      *     ";" to apply a "AND condition"
      *
-     * @param name         Paramenter name
-     * @param value        Paramenter value
+     * @param value        Parameter value
      * @return              A list of strings, each string represents a boolean condition
      */
-    private static List<String> parseScoreValue(String name, String value) {
+    private static List<String> parseScoreValue(String value) {
         List<String> filters = new ArrayList<>();
 
         // In Solr, range queries can be inclusive or exclusive of the upper and lower bounds:
         //    - Inclusive range queries are denoted by square brackets.
         //    - Exclusive range queries are denoted by curly brackets.
 
-        if (value != null && !value.isEmpty()) {
-
+        if (StringUtils.isNotEmpty(value)) {
             boolean or = value.contains(",");
             boolean and = value.contains(";");
             if (or && and) {
@@ -349,20 +307,18 @@ public class ParseSolrQuery {
             }
             String logicalComparator = or ? " OR " : " AND ";
 
-            String[] values = value.split("[,;]");
-
             Matcher matcher;
             StringBuilder sb = new StringBuilder();
 
+            String[] values = value.split("[,;]");
             if (values.length == 1) {
                 matcher = SCORE_PATTERN.matcher(value);
                 if (matcher.find()) {
-                    // concat expresion, e.g.: value:[0 TO 12]
+                    // concat expression, e.g.: value:[0 TO 12]
                     sb.append(getRange("", matcher.group(1), matcher.group(2), matcher.group(3)));
                 } else {
-                    // error
-                    System.out.println("Invalid expresion " +  value);
-                    throw new IllegalArgumentException("Invalid expresion " +  value);
+                    logger.debug("Invalid expression: {}", value);
+                    throw new IllegalArgumentException("Invalid expression " +  value);
                 }
             } else {
                 matcher = SCORE_PATTERN.matcher(values[0]);
@@ -378,13 +334,13 @@ public class ParseSolrQuery {
                             sb.append(getRange("", matcher.group(1), matcher.group(2), matcher.group(3)));
                         } else {
                             // error
-                            throw new IllegalArgumentException("Invalid expresion " +  value);
+                            throw new IllegalArgumentException("Invalid expression " +  value);
                         }
                     }
                     sb.append(")");
                 } else {
                     // error
-                    System.err.format("Error: invalid expresion %s: abort!\n", values[0]);
+                    System.err.format("Error: invalid expression %s: abort!\n", values[0]);
                 }
             }
             filters.add(sb.toString());
@@ -526,31 +482,31 @@ public class ParseSolrQuery {
             }
 
             case "!=": {
-                    switch (name.toLowerCase()) {
-                        case "sift": {
-                            try {
-                                Double v = Double.parseDouble(value);
-                                // attention: negative values must be scaped
-                                sb.append("-").append(prefix).append("sift").append(":").append(v < 0 ? "\\" : "").append(v);
-                            } catch (NumberFormatException e) {
-                                sb.append("-").append(prefix).append("siftDesc").append(":\"").append(value).append("\"");
-                            }
-                            break;
+                switch (name.toLowerCase()) {
+                    case "sift": {
+                        try {
+                            Double v = Double.parseDouble(value);
+                            // attention: negative values must be scaped
+                            sb.append("-").append(prefix).append("sift").append(":").append(v < 0 ? "\\" : "").append(v);
+                        } catch (NumberFormatException e) {
+                            sb.append("-").append(prefix).append("siftDesc").append(":\"").append(value).append("\"");
                         }
-                        case "polyphen": {
-                            try {
-                                Double v = Double.parseDouble(value);
-                                // attention: negative values must be scaped
-                                sb.append("-").append(prefix).append("polyphen").append(":").append(v < 0 ? "\\" : "").append(v);
-                            } catch (NumberFormatException e) {
-                                sb.append("-").append(prefix).append("polyphenDesc").append(":\"").append(value).append("\"");
-                            }
-                            break;
-                        }
-                        default: {
-                            sb.append("-").append(prefix).append(getScoreName(name)).append(":").append(value);
-                        }
+                        break;
                     }
+                    case "polyphen": {
+                        try {
+                            Double v = Double.parseDouble(value);
+                            // attention: negative values must be scaped
+                            sb.append("-").append(prefix).append("polyphen").append(":").append(v < 0 ? "\\" : "").append(v);
+                        } catch (NumberFormatException e) {
+                            sb.append("-").append(prefix).append("polyphenDesc").append(":\"").append(value).append("\"");
+                        }
+                        break;
+                    }
+                    default: {
+                        sb.append("-").append(prefix).append(getScoreName(name)).append(":").append(value);
+                    }
+                }
                 break;
             }
 
