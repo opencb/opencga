@@ -80,6 +80,7 @@
     <field name="polyphen" type="double" indexed="true" stored="true" multiValued="false"/>
     <field name="polyphenDesc" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="genes" type="string" indexed="false" stored="true" multiValued="true"/>
+    <field name="biotypes" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="soAcc" type="int" indexed="true" stored="true" multiValued="true"/>
     <field name="geneToSoAcc" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="traits" type="text_en" indexed="true" stored="true" multiValued="true"/>

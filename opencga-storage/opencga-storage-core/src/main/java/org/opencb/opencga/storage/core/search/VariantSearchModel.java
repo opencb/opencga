@@ -33,6 +33,7 @@ import java.util.Map;
  <field name="sift" type="double" indexed="true" stored="true" multiValued="false"/>
  <field name="polyphen" type="double" indexed="true" stored="true" multiValued="false"/>
  <field name="genes" type="string" indexed="false" stored="true" multiValued="true"/>
+ <field name="biotypes" type="string" indexed="true" stored="true" multiValued="true"/>
  <field name="soAcc" type="int" indexed="true" stored="true" multiValued="true"/>
  <field name="geneToSoAcc" type="string" indexed="true" stored="true" multiValued="true"/>
  <field name="traits" type="text_en" indexed="true" stored="true" multiValued="true"/>
@@ -96,6 +97,9 @@ public class VariantSearchModel {
     @Field("genes")
     private List<String> genes;
 
+    @Field("biotypes")
+    private List<String> biotypes;
+
     @Field("soAcc")
     private List<Integer> soAcc;
 
@@ -124,7 +128,7 @@ public class VariantSearchModel {
     public String toString() {
         final StringBuilder sb = new StringBuilder("VariantSearchModel{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", dbSNP='").append(variantId).append('\'');
+        sb.append(", variantId='").append(variantId).append('\'');
         sb.append(", chromosome='").append(chromosome).append('\'');
         sb.append(", start=").append(start);
         sb.append(", end=").append(end);
@@ -137,10 +141,11 @@ public class VariantSearchModel {
         sb.append(", caddRaw=").append(caddRaw);
         sb.append(", caddScaled=").append(caddScaled);
         sb.append(", sift=").append(sift);
-        sb.append(", siftDesc=").append(siftDesc);
+        sb.append(", siftDesc='").append(siftDesc).append('\'');
         sb.append(", polyphen=").append(polyphen);
-        sb.append(", polyphenDesc=").append(polyphenDesc);
+        sb.append(", polyphenDesc='").append(polyphenDesc).append('\'');
         sb.append(", genes=").append(genes);
+        sb.append(", biotypes=").append(biotypes);
         sb.append(", soAcc=").append(soAcc);
         sb.append(", geneToSoAcc=").append(geneToSoAcc);
         sb.append(", traits=").append(traits);
@@ -280,8 +285,9 @@ public class VariantSearchModel {
         return siftDesc;
     }
 
-    public void setSiftDesc(String siftDesc) {
+    public VariantSearchModel setSiftDesc(String siftDesc) {
         this.siftDesc = siftDesc;
+        return this;
     }
 
     public double getPolyphen() {
@@ -297,8 +303,9 @@ public class VariantSearchModel {
         return polyphenDesc;
     }
 
-    public void setPolyphenDesc(String polyphenDesc) {
+    public VariantSearchModel setPolyphenDesc(String polyphenDesc) {
         this.polyphenDesc = polyphenDesc;
+        return this;
     }
 
     public List<String> getGenes() {
@@ -307,6 +314,15 @@ public class VariantSearchModel {
 
     public VariantSearchModel setGenes(List<String> genes) {
         this.genes = genes;
+        return this;
+    }
+
+    public List<String> getBiotypes() {
+        return biotypes;
+    }
+
+    public VariantSearchModel setBiotypes(List<String> biotypes) {
+        this.biotypes = biotypes;
         return this;
     }
 

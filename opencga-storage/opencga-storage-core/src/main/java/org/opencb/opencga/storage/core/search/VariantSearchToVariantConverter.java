@@ -307,16 +307,20 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         VariantAnnotation variantAnnotation = variant.getAnnotation();
         if (variantAnnotation != null) {
 
+            // This object store all info and descriptions for full-text search
+            Set<String> traits = new HashSet<>();
+
             // Set Genes and Consequence Types
             List<ConsequenceType> consequenceTypes = variantAnnotation.getConsequenceTypes();
             if (consequenceTypes != null) {
                 Map<String, Set<String>> genes = new LinkedHashMap<>();
                 Set<Integer> soAccessions = new LinkedHashSet<>();
                 Set<String> geneToSOAccessions = new LinkedHashSet<>();
+                Set<String> biotypes = new LinkedHashSet<>();
 
                 for (ConsequenceType consequenceType : consequenceTypes) {
 
-                    // Set genes if exists
+                    // Set genes and biotypes if exist
                     if (StringUtils.isNotEmpty(consequenceType.getGeneName())) {
                         if (!genes.containsKey(consequenceType.getGeneName())) {
                             genes.put(consequenceType.getGeneName(), new LinkedHashSet<>());
@@ -328,6 +332,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         xrefs.add(consequenceType.getGeneName());
                         xrefs.add(consequenceType.getEnsemblGeneId());
                         xrefs.add(consequenceType.getEnsemblTranscriptId());
+
+                        if (StringUtils.isNotEmpty(consequenceType.getBiotype())) {
+                            biotypes.add(consequenceType.getBiotype());
+                        }
                     }
 
                     // Remove 'SO:' prefix to Store SO Accessions as integers and also store the relation
@@ -343,20 +351,33 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         }
                     }
 
-                    // Set uniprot accession protein id in xrefs
+                    // Set Uniprot accession protein id in xrefs
                     if (consequenceType.getProteinVariantAnnotation() != null) {
                         xrefs.add(consequenceType.getProteinVariantAnnotation().getUniprotAccession());
+
+                        if (consequenceType.getProteinVariantAnnotation().getKeywords() != null) {
+                            for (String keyword : consequenceType.getProteinVariantAnnotation().getKeywords()) {
+                                traits.add("KW -- " + consequenceType.getProteinVariantAnnotation().getUniprotAccession()
+                                        + " -- " + keyword);
+                            }
+                        }
+
+                        if (consequenceType.getProteinVariantAnnotation().getFeatures() != null) {
+                            for (ProteinFeature proteinFeature : consequenceType.getProteinVariantAnnotation().getFeatures()) {
+                                traits.add("PD -- " + proteinFeature.getId() + " -- " + proteinFeature.getDescription());
+                            }
+                        }
                     }
                 }
 
-                // We process now Sift and Polyphen
-                setProteinScores(consequenceTypes, variantSearchModel);
-
                 // We store the accumulated data
                 genes.forEach((s, strings) -> variantSearchModel.getGenes().addAll(strings));
-
                 variantSearchModel.setSoAcc(new ArrayList<>(soAccessions));
                 variantSearchModel.setGeneToSoAcc(new ArrayList<>(geneToSOAccessions));
+                variantSearchModel.setBiotypes(new ArrayList<>(biotypes));
+
+                // We now process Sift and Polyphen
+                setProteinScores(consequenceTypes, variantSearchModel);
             }
 
             // Set Populations frequencies
@@ -411,28 +432,35 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             }
 
             // Set variant traits: ClinVar, Cosmic, HPO, ...
-            Set<String> traits = new HashSet<>();
             if (variantAnnotation.getVariantTraitAssociation() != null) {
                 if (variantAnnotation.getVariantTraitAssociation().getClinvar() != null) {
                     variantAnnotation.getVariantTraitAssociation().getClinvar()
                             .forEach(cv -> {
                                 xrefs.add(cv.getAccession());
-                                cv.getTraits().forEach(cvt -> traits.add("ClinVar" + " -- " + cv.getAccession() + " -- " + cvt));
+                                cv.getTraits().forEach(cvt -> traits.add("CV" + " -- " + cv.getAccession() + " -- " + cvt));
                             });
                 }
                 if (variantAnnotation.getVariantTraitAssociation().getCosmic() != null) {
                     variantAnnotation.getVariantTraitAssociation().getCosmic()
                             .forEach(cosm -> {
                                 xrefs.add(cosm.getMutationId());
-                                traits.add("COSMIC -- " + cosm.getMutationId() + " -- "
+                                traits.add("CM -- " + cosm.getMutationId() + " -- "
                                         + cosm.getPrimaryHistology() + " -- " + cosm.getHistologySubtype());
                             });
                 }
             }
             if (variantAnnotation.getGeneTraitAssociation() != null && variantAnnotation.getGeneTraitAssociation().size() > 0) {
                 for (GeneTraitAssociation geneTraitAssociation : variantAnnotation.getGeneTraitAssociation()) {
-                    if (geneTraitAssociation.getSource().equalsIgnoreCase("hpo")) {
-                        traits.add("HPO -- " + geneTraitAssociation.getHpo() + " -- " + geneTraitAssociation.getName());
+                    switch (geneTraitAssociation.getSource().toLowerCase()) {
+                        case "hpo":
+                            traits.add("HP -- " + geneTraitAssociation.getId() + " -- "
+                                    + geneTraitAssociation.getHpo() + " -- " + geneTraitAssociation.getName());
+                            break;
+                        case "disgenet":
+                            traits.add("DG -- " + geneTraitAssociation.getId() + " -- " + geneTraitAssociation.getName());
+                            break;
+                        default:
+                            break;
                     }
                 }
             }
