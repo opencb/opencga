@@ -260,16 +260,18 @@ public class VariantSearchManager {
             List<Variant> variantList = new ArrayList<>(DEFAULT_INSERT_SIZE);
             while (variantDBIterator.hasNext()) {
                 variantList.add(variantDBIterator.next());
-                count++;
                 if (count % DEFAULT_INSERT_SIZE == 0) {
+                    count += DEFAULT_INSERT_SIZE;
                     insert(variantList);
                     variantList.clear();
                 }
             }
             // insert the remaining variants
             if (variantList.size() > 0) {
+                count += variantList.size();
                 insert(variantList);
             }
+            logger.info("Loading done: {} variants.", count);
         }
     }
 
