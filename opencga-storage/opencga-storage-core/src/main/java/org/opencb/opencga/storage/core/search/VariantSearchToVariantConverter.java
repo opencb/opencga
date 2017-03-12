@@ -453,12 +453,12 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 for (GeneTraitAssociation geneTraitAssociation : variantAnnotation.getGeneTraitAssociation()) {
                     switch (geneTraitAssociation.getSource().toLowerCase()) {
                         case "hpo":
-                            traits.add("HP -- " + geneTraitAssociation.getId() + " -- "
-                                    + geneTraitAssociation.getHpo() + " -- " + geneTraitAssociation.getName());
+                            traits.add("HP -- " + geneTraitAssociation.getHpo() + " -- "
+                                    + geneTraitAssociation.getId() + " -- " + geneTraitAssociation.getName());
                             break;
-                        case "disgenet":
-                            traits.add("DG -- " + geneTraitAssociation.getId() + " -- " + geneTraitAssociation.getName());
-                            break;
+//                        case "disgenet":
+//                            traits.add("DG -- " + geneTraitAssociation.getId() + " -- " + geneTraitAssociation.getName());
+//                            break;
                         default:
                             break;
                     }
