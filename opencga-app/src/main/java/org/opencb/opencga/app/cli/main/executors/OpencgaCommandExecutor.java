@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli.main.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.app.cli.CliSession;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.io.*;
@@ -73,7 +74,14 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
 //            CliSession cliSession = loadCliSessionFile();
             logger.debug("sessionFile = " + cliSession);
-            if (cliSession != null) {
+            if (StringUtils.isNotEmpty(options.sessionId)) {
+                // Ignore session file. Overwrite with command line information (just sessionId)
+                cliSession = new CliSession(null, options.sessionId);
+                sessionId = options.sessionId;
+                userId = null;
+
+                openCGAClient = new OpenCGAClient(options.sessionId, clientConfiguration);
+            } else if (cliSession != null) {
                 // 'logout' field is only null or empty while no logout is executed
                 if (StringUtils.isEmpty(cliSession.getLogout())) {
                     // no timeout checks
