@@ -1,6 +1,8 @@
 package org.opencb.opencga.core.results;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -24,7 +26,18 @@ public class FacetedQueryResultItem {
             this.totalCount = totalCount;
             this.values = values;
         }
-
+/*
+        public String toString(String indent) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(indent).append("name: ").append(name).append("\n");
+            sb.append(indent).append("total count: ").append(totalCount).append("\n");
+            sb.append(indent).append("values: ").append("\n");
+            for (Count count: values.values()) {
+                sb.append(count.toString(indent));
+            }
+            return sb.toString();
+        }
+*/
         public String getName() {
             return name;
         }
@@ -62,7 +75,25 @@ public class FacetedQueryResultItem {
             this.count = count;
             this.nestedField = nestedField;
         }
+/*
+        public String toString(String indent) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(indent).append("- name: ").append(name).append("\n");
+            sb.append(indent).append("- value: ").append(value).append("\n");
+            sb.append(indent).append("- count: ").append(count).append("\n");
+            if (nestedField != null) {
+                sb.append(indent).append("- nestedField: ").append("\n");
+                sb.append(indent + "\t");
+            } else {
 
+            }
+            sb.append(indent).append("values: ").append("\n");
+            for (Count count: values.values()) {
+                sb.append(count.toString(indent));
+            }
+            return sb.toString();
+        }
+*/
         public String getName() {
             return name;
         }
@@ -102,14 +133,14 @@ public class FacetedQueryResultItem {
         private double end;
         private double gap;
         private long totalCount;
-        private Map<String, Long> counts;
+        private List<Long> counts;
 
         public Range() {
-            this("", 0.0, 0.0, 0.0, 0, new LinkedHashMap<>());
+            this("", 0.0, 0.0, 0.0, 0, new ArrayList<>());
         }
 
         public Range(String name, double start, double end, double gap,
-                     long totalCount, Map<String, Long> counts) {
+                     long totalCount, List<Long> counts) {
             this.name = name;
             this.start = start;
             this.end = end;
@@ -117,7 +148,12 @@ public class FacetedQueryResultItem {
             this.totalCount = totalCount;
             this.counts = counts;
         }
-
+/*
+        public String toString(String indent) {
+            StringBuilder sb = new StringBuilder();
+            return sb.toString();
+        }
+*/
         public String getName() {
             return name;
         }
@@ -158,11 +194,11 @@ public class FacetedQueryResultItem {
             this.totalCount = totalCount;
         }
 
-        public Map<String, Long> getCounts() {
+        public List<Long> getCounts() {
             return counts;
         }
 
-        public void setCounts(Map<String, Long> counts) {
+        public void setCounts(List<Long> counts) {
             this.counts = counts;
         }
     }
@@ -175,6 +211,47 @@ public class FacetedQueryResultItem {
                                   Map<String, FacetedQueryResultItem.Range> ranges) {
         this.fields = fields;
         this.ranges = ranges;
+    }
+
+    public Map<String, Field> getFields() {
+        return fields;
+    }
+
+    public void setFields(Map<String, Field> fields) {
+        this.fields = fields;
+    }
+
+    public Map<String, Range> getRanges() {
+        return ranges;
+    }
+
+    public void setRanges(Map<String, Range> ranges) {
+        this.ranges = ranges;
+    }
+
+    /*
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("fields: ").append("\n");
+        if (this.fields.size() > 0) {
+            for (Field field: fields.values()) {
+                sb.append(field.toString("\t"));
+            }
+        } else {
+            sb.append("\tNo fields.");
+        }
+
+        sb.append("ranges: ").append("\n");
+        if (this.ranges.size() > 0) {
+            for (Range range: ranges.values()) {
+                sb.append(range.toString("\t"));
+            }
+        } else {
+            sb.append("\tNo ranges.");
+        }
+
+        return sb.toString();
     }
 
     /*

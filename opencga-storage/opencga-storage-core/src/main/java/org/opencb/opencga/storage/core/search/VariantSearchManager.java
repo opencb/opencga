@@ -11,10 +11,8 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
-import org.apache.solr.client.solrj.response.FacetField;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.RangeFacet;
-import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.response.*;
+import org.apache.solr.common.util.NamedList;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -533,6 +531,29 @@ public class VariantSearchManager {
     }
 
 
+    private FacetedQueryResultItem.Field processSolrPivot(String name, int index, PivotField pivot, String indent) {
+        FacetedQueryResultItem.Field field = null;
+        if (pivot.getPivot() != null && pivot.getPivot().size() > 0) {
+            field = new FacetedQueryResultItem().new Field();
+            field.setName(name.split(",")[index]);
+
+            long total = 0;
+            Map<String, FacetedQueryResultItem.Count> values = new LinkedHashMap<>();
+            for (PivotField solrPivot : pivot.getPivot()) {
+                FacetedQueryResultItem.Field nestedField = processSolrPivot(name, index + 1, solrPivot, "\t");
+
+                FacetedQueryResultItem.Count count = new FacetedQueryResultItem()
+                        .new Count(field.getName(), solrPivot.getValue().toString(), solrPivot.getCount(), nestedField);
+                values.put(solrPivot.getValue().toString(), count);
+                total += solrPivot.getCount();
+            }
+            field.setTotalCount(total);
+            field.setValues(values);
+        }
+
+        return field;
+    }
+
     private FacetedQueryResultItem toFacetedQueryResultItem(QueryResponse response) {
 
         // process Solr facet fields
@@ -557,26 +578,46 @@ public class VariantSearchManager {
                 fields.put(field.getName(), field);
             }
         }
-/*
+
         // process Solr facet pivots
         if (response.getFacetPivot() != null) {
             NamedList<List<PivotField>> facetPivot = response.getFacetPivot();
-            //facetPivot.g
-            //for (FacetField field: response.getFacetPivot()) {
-            //}
+            for (int i = 0; i < facetPivot.size(); i++) {
+                List<PivotField> solrPivots = facetPivot.getVal(i);
+                if (solrPivots != null && solrPivots.size() > 0) {
+                    // init field
+                    FacetedQueryResultItem.Field field = new FacetedQueryResultItem().new Field();
+                    field.setName(facetPivot.getName(i).split(",")[0]);
+
+                    long total = 0;
+                    Map<String, FacetedQueryResultItem.Count> values = new LinkedHashMap<>();
+                    for (PivotField solrPivot : solrPivots) {
+                        FacetedQueryResultItem.Field nestedField = processSolrPivot(facetPivot.getName(i), 1, solrPivot, "\t");
+
+                        FacetedQueryResultItem.Count count = new FacetedQueryResultItem()
+                            .new Count(field.getName(), solrPivot.getValue().toString(), solrPivot.getCount(), nestedField);
+                        values.put(solrPivot.getValue().toString(), count);
+                        total += solrPivot.getCount();
+                    }
+                    // update field
+                    field.setTotalCount(total);
+                    field.setValues(values);
+
+                    fields.put(field.getName(), field);
+                }
+            }
         }
-*/
+
         // process Solr facet range
         Map<String, FacetedQueryResultItem.Range> ranges = new LinkedHashMap<>();
         if (response.getFacetRanges() != null) {
             for (RangeFacet solrRange: response.getFacetRanges()) {
-                Map<String, Long> counts = new LinkedHashMap<>();
+                List<Long> counts = new ArrayList<>();
                 long total = 0;
                 for (Object objCount: solrRange.getCounts()) {
-                    String value = ((RangeFacet.Count) objCount).getValue();
                     long count = ((RangeFacet.Count) objCount).getCount();
                     total += count;
-                    counts.put(value, count);
+                    counts.add(count);
                 }
                 ranges.put(solrRange.getName(),
                         new FacetedQueryResultItem().new Range(solrRange.getName(),

@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.search.solr;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
@@ -41,7 +42,7 @@ public class ParseSolrFacetedQueryTest {
 
             if (result.getResult() != null) {
                 for (FacetedQueryResultItem item: result.getResult()) {
-                    System.out.println(item);
+                    System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(item));
                 }
             }
         } catch (Exception e) {
@@ -49,16 +50,66 @@ public class ParseSolrFacetedQueryTest {
         }
     }
 
-    public void facetType() {
+    public void facetField() {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
+        // query for chromosome 2
         query.put("region", "22");
 
         Query facetedQuery = new Query();
-        facetedQuery.put("facet.field", "type");
-//        facetedQuery.put("facet.field", "type,studies/genes/type");
-        //facetedQuery.put("facet.range", "phylop:0:1:0.3");
+        // two facets: 1) by type, and 2) by studies
+        facetedQuery.put("facet-field", "type,studies");
+
+        // execute
+        executeFacetedQuery(facetedQuery, query, queryOptions);
+    }
+
+
+    public void facetNestedFields() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        // query for chromosome 2
+        query.put("region", "22");
+
+        Query facetedQuery = new Query();
+        // two facets: 1) by nested fields: studies and soAcc, and 2) by type
+        facetedQuery.put("facet-field", "studies:soAcc:type");
+
+        // execute
+        executeFacetedQuery(facetedQuery, query, queryOptions);
+    }
+
+
+    public void facetRanges() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        // query for chromosome 2
+        query.put("region", "22");
+
+        Query facetedQuery = new Query();
+        // two ranges: 1) phylop from 0 to 1 step 0.3, and 2) caddScaled from 0 to 30 step 5
+        facetedQuery.put("facet-range", "phylop:0:1:0.3,caddScaled:0:30:5");
+
+        // execute
+        executeFacetedQuery(facetedQuery, query, queryOptions);
+    }
+
+    public void facetFieldAndRange() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        // query for chromosome 2
+        query.put("region", "22");
+        System.out.println(query.toString());
+
+        Query facetedQuery = new Query();
+        // two facets: 1) by nested fields: studies and type, and 2) by soAcc
+        facetedQuery.put("facet-field", "studies:type,soAcc");
+        // two ranges: 1) phylop from 0 to 1 step 0.3, and 2) caddScaled from 0 to 30 step 2
+        facetedQuery.put("facet-range", "phylop:0:1:0.3,caddScaled:0:30:2");
 
         // execute
         executeFacetedQuery(facetedQuery, query, queryOptions);
@@ -66,7 +117,10 @@ public class ParseSolrFacetedQueryTest {
 
     @Test
     public void testParsing() {
-        facetType();
+        facetField();
+        facetNestedFields();
+        facetRanges();
+        facetFieldAndRange();
     }
 
 }

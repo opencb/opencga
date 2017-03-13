@@ -39,16 +39,16 @@ public class ParseSolrFacetedQuery {
         // set rows to 0, we are only interested in facet information
         solrQuery.setRows(0);
 
-        // facet fields
-        // nested faceted fields (i.e., Solr pivots) are separated by /
-        if (facetedQuery.containsKey("facet.field")) {
-            String[] fields = facetedQuery.get("facet.field").toString().split("[,;]");
+        // facet fields (query parameter: facet-field)
+        // nested faceted fields (i.e., Solr pivots) are separated by ":", e.g.: studies:type
+        if (facetedQuery.containsKey("facet-field")) {
+            String[] fields = facetedQuery.get("facet-field").toString().split("[,;]");
             for (String field: fields) {
-                String[] splits = field.split("/");
+                String[] splits = field.split(":");
                 if (splits.length == 1) {
+                    // Solr field
                     solrQuery.addFacetField(field);
                 } else {
-                    System.out.println("splits (pivot) = " + splits);
                     StringBuilder sb = new StringBuilder();
                     for (String split: splits) {
                         if (sb.length() > 0) {
@@ -56,8 +56,8 @@ public class ParseSolrFacetedQuery {
                         }
                         sb.append(split);
                     }
+                    // Solr pivots (nested fields)
                     solrQuery.addFacetPivotField(sb.toString());
-                    System.out.println("solrQuery = " + solrQuery);
                 }
             }
         }
@@ -65,17 +65,19 @@ public class ParseSolrFacetedQuery {
         // TODO: should we handle facet.query ?
         // facet query
         //if (facetedQuery.containsKey("facet.query")) {
-//            solrQuery.addFacetQuery(query.get("facet.query").toString());
-//        }
+        //    solrQuery.addFacetQuery(query.get("facet.query").toString());
+        //}
 
-        // TODO: should we handle facet.query ?
-//        if (facetedQuery.containsKey("facet.prefix")) {
-//            solrQuery.setFacetPrefix(query.get("facet.prefix").toString());
-//        }
+        // TODO: should we handle facet.prefix ?
+        //if (facetedQuery.containsKey("facet.prefix")) {
+        //    solrQuery.setFacetPrefix(query.get("facet.prefix").toString());
+        //}
 
-        // facet ranges
-        if (facetedQuery.containsKey("facet.range")) {
-            String[] ranges = facetedQuery.get("facet.range").toString().split("[,;]");
+        // facet ranges,
+        // query parameter name: facet-range
+        // query parameter value: field:start:end:gap, e.g.: sift:0:1:0.5
+        if (facetedQuery.containsKey("facet-range")) {
+            String[] ranges = facetedQuery.get("facet-range").toString().split("[,;]");
             for (String range : ranges) {
                 String[] split = range.split(":");
                 if (split.length != 4) {
@@ -85,6 +87,7 @@ public class ParseSolrFacetedQuery {
                         Double start = Double.parseDouble(split[1]);
                         Double end = Double.parseDouble(split[2]);
                         Double gap = Double.parseDouble(split[3]);
+                        // Solr ranges
                         solrQuery.addNumericRangeFacet(split[0], start, end, gap);
                     } catch (NumberFormatException e) {
                         logger.warn("Facet range '" + range + "' malformed. Range format is 'name:start:end:gap'"
