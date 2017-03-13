@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.core.search.solr;
 
 import org.apache.solr.client.solrj.SolrQuery;
-import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -19,7 +18,7 @@ public class ParseSolrQueryTest {
     public String study = "test444";
 
     public void executeQuery(Query query, QueryOptions queryOptions) {
-        SolrQuery solrQuery = ParseSolrQuery.parse(query, queryOptions);
+        SolrQuery solrQuery = SolrQueryParser.parse(query, queryOptions);
 
         String host = "http://localhost:8983/solr/";
         String user = "";

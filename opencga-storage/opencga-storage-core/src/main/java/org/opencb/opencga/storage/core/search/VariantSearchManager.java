@@ -23,7 +23,7 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.search.solr.ParseSolrQuery;
+import org.opencb.opencga.storage.core.search.solr.SolrQueryParser;
 import org.opencb.opencga.storage.core.search.solr.SolrVariantIterator;
 import org.opencb.opencga.storage.core.search.solr.SolrVariantSearchIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -337,7 +337,7 @@ public class VariantSearchManager {
         init(collection);
 
         try {
-            SolrQuery solrQuery = ParseSolrQuery.parse(query, queryOptions);
+            SolrQuery solrQuery = SolrQueryParser.parse(query, queryOptions);
             QueryResponse response = solrClient.query(solrQuery);
             SolrVariantIterator iterator = new SolrVariantIterator((response.getBeans(VariantSearchModel.class).iterator()));
             iterator.setNumFound(response.getResults().getNumFound());
@@ -365,7 +365,7 @@ public class VariantSearchManager {
         init(collection);
 
         try {
-            SolrQuery solrQuery = ParseSolrQuery.parse(query, queryOptions);
+            SolrQuery solrQuery = SolrQueryParser.parse(query, queryOptions);
             QueryResponse response = solrClient.query(solrQuery);
             return new SolrVariantSearchIterator(response.getBeans(VariantSearchModel.class).iterator());
         } catch (SolrServerException e) {
@@ -376,7 +376,7 @@ public class VariantSearchManager {
 
     public VariantSearchFacet getFacet(Query query, QueryOptions queryOptions) {
 
-        SolrQuery solrQuery = ParseSolrQuery.parse(query, queryOptions);
+        SolrQuery solrQuery = SolrQueryParser.parse(query, queryOptions);
         QueryResponse response = null;
 
         try {

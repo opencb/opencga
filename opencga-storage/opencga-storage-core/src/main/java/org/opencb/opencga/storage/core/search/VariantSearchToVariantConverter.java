@@ -168,7 +168,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
         variantAnnotation.setFunctionalScore(scores);
 
-        // set clinvar, cosmic, hpo
+        // set HPO, ClinVar and Cosmic
         Map<String, List<String>> clinVarMap = new HashMap<>();
         List<Cosmic> cosmicList = new ArrayList<>();
         List<GeneTraitAssociation> geneTraitAssociationList = new ArrayList<>();
@@ -176,43 +176,38 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             for (String trait : variantSearchModel.getTraits()) {
                 String[] fields = trait.split(" -- ");
                 switch (fields[0]) {
-                    case "ClinVar": {
-                        // variant trait
-                        // ClinVar -- accession -- trait
+                    case "HP":
+                        // Gene trait: HP -- hpo -- id -- name
+                        GeneTraitAssociation geneTraitAssociation = new GeneTraitAssociation();
+                        geneTraitAssociation.setHpo(fields[1]);
+                        geneTraitAssociation.setId(fields[2]);
+                        geneTraitAssociation.setName(fields[3]);
+                        geneTraitAssociationList.add(geneTraitAssociation);
+                        break;
+                    case "CV":
+                        // Variant trait: CV -- accession -- trait
                         if (!clinVarMap.containsKey(fields[1])) {
                             clinVarMap.put(fields[1], new ArrayList<>());
                         }
                         clinVarMap.get(fields[1]).add(fields[2]);
                         break;
-                    }
-                    case "COSMIC": {
-                        // variant trait
-                        // COSMIC -- mutation id -- primary histology -- histology subtype
+                    case "CM":
+                        // Variant trait: CM -- mutation id -- primary histology -- histology subtype
                         Cosmic cosmic = new Cosmic();
                         cosmic.setMutationId(fields[1]);
                         cosmic.setPrimaryHistology(fields[2]);
                         cosmic.setHistologySubtype(fields[3]);
                         cosmicList.add(cosmic);
                         break;
-                    }
-                    case "HPO": {
-                        // gene trait
-                        // HPO -- hpo -- name
-                        GeneTraitAssociation geneTraitAssociation = new GeneTraitAssociation();
-                        geneTraitAssociation.setHpo(fields[1]);
-                        geneTraitAssociation.setName(fields[2]);
-                        geneTraitAssociationList.add(geneTraitAssociation);
-                        break;
-                    }
                     default: {
-                        System.out.println("Unknown trait type: " + fields[0] + ", it should be ClinVar, COSMIC or HPO");
+                        System.out.println("Unknown trait type: " + fields[0] + ", it should be HPO, ClinVar or Cosmic");
                         break;
                     }
                 }
             }
         }
         VariantTraitAssociation variantTraitAssociation = new VariantTraitAssociation();
-        List<ClinVar> clinVarList = new ArrayList<>();
+        List<ClinVar> clinVarList = new ArrayList<>(clinVarMap.size());
         for (String key: clinVarMap.keySet()) {
             ClinVar clinVar = new ClinVar();
             clinVar.setAccession(key);
