@@ -576,9 +576,9 @@ public class ParseSolrQuery {
                     sb.append(" OR ");
                 }
                 sb.append("(");
-                if (region.getStart() == 0 && region.getEnd() == 2147483647) {
+                if (region.getStart() == 0 && region.getEnd() == Integer.MAX_VALUE) {
                     sb.append("chromosome:").append(region.getChromosome());
-                } else if (region.getEnd() == 2147483647) {
+                } else if (region.getEnd() == Integer.MAX_VALUE) {
                     sb.append("chromosome:").append(region.getChromosome())
                             .append(" AND start:").append(region.getStart());
                 } else {
