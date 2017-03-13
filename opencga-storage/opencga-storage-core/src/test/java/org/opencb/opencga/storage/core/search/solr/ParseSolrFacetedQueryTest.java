@@ -20,11 +20,15 @@ import static org.junit.Assert.*;
  */
 public class ParseSolrFacetedQueryTest {
 
-    public String collection = "test1";
-    public String study = "test1";
+    //public String host = "http://localhost:8983/solr/";
+    public String host = "http://bioinfo.hpc.cam.ac.uk/solr/"; //hgvav1_hgvauser_reference_grch37/select?facet=on&fq=chromosome:22&indent=on&q=*:*&rows=0&wt=json&facet.field=studies&facet.field=type
+
+    //public String collection = "test1";
+    public String collection = "hgvav1_hgvauser_reference_grch37";
+
+    public String study = collection;
 
     public void executeFacetedQuery(Query facetedQuery, Query query, QueryOptions queryOptions) {
-        String host = "http://localhost:8983/solr/";
         String user = "";
         String password = "";
         boolean active = true;
@@ -37,7 +41,7 @@ public class ParseSolrFacetedQueryTest {
 
             if (result.getResult() != null) {
                 for (FacetedQueryResultItem item: result.getResult()) {
-                    System.out.println(item.toString(""));
+                    System.out.println(item);
                 }
             }
         } catch (Exception e) {
@@ -47,17 +51,20 @@ public class ParseSolrFacetedQueryTest {
 
     public void facetType() {
         QueryOptions queryOptions = new QueryOptions();
+
         Query query = new Query();
+        query.put("region", "22");
 
         Query facetedQuery = new Query();
-        facetedQuery.put("facet.field", "type,studies/genes/type");
-        facetedQuery.put("facet.range", "phylop:0:1:0.3");
+        facetedQuery.put("facet.field", "type");
+//        facetedQuery.put("facet.field", "type,studies/genes/type");
+        //facetedQuery.put("facet.range", "phylop:0:1:0.3");
 
         // execute
         executeFacetedQuery(facetedQuery, query, queryOptions);
     }
 
-    //@Test
+    @Test
     public void testParsing() {
         facetType();
     }
