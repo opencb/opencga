@@ -15,8 +15,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
  */
 public class ParseSolrQueryTest {
 
-    public String collection = "test1";
-    public String study = "test1";
+    public String collection = "test444";
+    public String study = "test444";
 
     public void executeQuery(Query query, QueryOptions queryOptions) {
         String host = "http://localhost:8983/solr/";
@@ -312,7 +312,38 @@ public class ParseSolrQueryTest {
         executeQuery(query, queryOptions);
     }
 
-    //    @Test
+    public void parseRegionChromosome() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1,3");
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+    public void parseRegionChromosomeStart() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:66381,1:98769");
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+    public void parseRegionChromosomeStartEnd() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:66381-76381,1:98766-117987");
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+
+//    @Test
     public void testParsing() {
         QueryOptions queryOptions = new QueryOptions();
         Query query = new Query();
@@ -342,6 +373,10 @@ public class ParseSolrQueryTest {
         parseExactSift();
         parseExactSift2();
         parseNoExactSift();
+
+        parseRegionChromosome();
+        parseRegionChromosomeStart();
+        parseRegionChromosomeStartEnd();
 
 /*
         parseXref();

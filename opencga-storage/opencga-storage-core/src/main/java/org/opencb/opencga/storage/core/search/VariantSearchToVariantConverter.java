@@ -15,6 +15,8 @@ import java.util.*;
  */
 public class VariantSearchToVariantConverter implements ComplexTypeConverter<Variant, VariantSearchModel> {
 
+    public static final double MISSING_VALUE = -100.0;
+
     /**
      * Conversion: from storage type to data model.
      *
@@ -93,12 +95,15 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
         // prepare protein substitution scores: sift and polyphen
         List<Score> scores;
-        ProteinVariantAnnotation proteinAnnotation = null;
-        if (variantSearchModel.getSift() != -1.0 || variantSearchModel.getPolyphen() != -1.0) {
-            proteinAnnotation = new ProteinVariantAnnotation();
+        ProteinVariantAnnotation proteinAnnotation = new ProteinVariantAnnotation();
+        if (variantSearchModel.getSift() != MISSING_VALUE || variantSearchModel.getPolyphen() != MISSING_VALUE) {
             scores = new ArrayList<>();
-            scores.add(new Score(variantSearchModel.getSift(), "sift", variantSearchModel.getSiftDesc()));
-            scores.add(new Score(variantSearchModel.getPolyphen(), "polyphen", variantSearchModel.getPolyphenDesc()));
+            if (variantSearchModel.getSift() != MISSING_VALUE) {
+                scores.add(new Score(variantSearchModel.getSift(), "sift", variantSearchModel.getSiftDesc()));
+            }
+            if (variantSearchModel.getPolyphen() != MISSING_VALUE) {
+                scores.add(new Score(variantSearchModel.getPolyphen(), "polyphen", variantSearchModel.getPolyphenDesc()));
+            }
             proteinAnnotation.setSubstitutionScores(scores);
         }
 
@@ -118,7 +123,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
                 // only set protein for that consequence type
                 // if annotated protein and SO accession is 1583 (missense_variant)
-                if (proteinAnnotation != null && soAcc == 1583) {
+                if (soAcc == 1583) {
                     consequenceTypeMap.get(fields[0]).setProteinVariantAnnotation(proteinAnnotation);
                 }
             }
@@ -140,17 +145,27 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             variantAnnotation.setPopulationFrequencies(populationFrequencies);
         }
 
-        // set conservations
+        // Set conservations scores
         scores = new ArrayList<>();
-        scores.add(new Score(variantSearchModel.getGerp(), "gerp", ""));
-        scores.add(new Score(variantSearchModel.getPhastCons(), "phastCons", ""));
-        scores.add(new Score(variantSearchModel.getPhylop(), "phylop", ""));
+        if (variantSearchModel.getPhylop() != MISSING_VALUE) {
+            scores.add(new Score(variantSearchModel.getPhylop(), "phylop", ""));
+        }
+        if (variantSearchModel.getPhastCons() != MISSING_VALUE) {
+            scores.add(new Score(variantSearchModel.getPhastCons(), "phastCons", ""));
+        }
+        if (variantSearchModel.getGerp() != MISSING_VALUE) {
+            scores.add(new Score(variantSearchModel.getGerp(), "gerp", ""));
+        }
         variantAnnotation.setConservation(scores);
 
-        // set cadd
+        // Set CADD scores
         scores = new ArrayList<>();
-        scores.add(new Score(variantSearchModel.getCaddRaw(), "cadd_raw", ""));
-        scores.add(new Score(variantSearchModel.getCaddScaled(), "cadd_scaled", ""));
+        if (variantSearchModel.getCaddRaw() != MISSING_VALUE) {
+            scores.add(new Score(variantSearchModel.getCaddRaw(), "cadd_raw", ""));
+        }
+        if (variantSearchModel.getCaddScaled() != MISSING_VALUE) {
+            scores.add(new Score(variantSearchModel.getCaddScaled(), "cadd_scaled", ""));
+        }
         variantAnnotation.setFunctionalScore(scores);
 
         // set clinvar, cosmic, hpo
@@ -275,9 +290,25 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             variantSearchModel.setStats(stats);
         }
 
-        // Check for annotation
+        // We init all annotation numeric values to MISSING_VALUE, this fixes two different scenarios:
+        // 1. No Variant Annotation has been found, probably because it is a SV longer than 100bp.
+        // 2. There are some conservation or CADD scores missing
+        variantSearchModel.setSift(MISSING_VALUE);
+        variantSearchModel.setPolyphen(MISSING_VALUE);
+
+        variantSearchModel.setPhastCons(MISSING_VALUE);
+        variantSearchModel.setPhylop(MISSING_VALUE);
+        variantSearchModel.setGerp(MISSING_VALUE);
+
+        variantSearchModel.setCaddRaw(MISSING_VALUE);
+        variantSearchModel.setCaddScaled(MISSING_VALUE);
+
+        // Process Variant Annotation
         VariantAnnotation variantAnnotation = variant.getAnnotation();
         if (variantAnnotation != null) {
+
+            // This object store all info and descriptions for full-text search
+            Set<String> traits = new HashSet<>();
 
             // Set Genes and Consequence Types
             List<ConsequenceType> consequenceTypes = variantAnnotation.getConsequenceTypes();
@@ -285,10 +316,11 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 Map<String, Set<String>> genes = new LinkedHashMap<>();
                 Set<Integer> soAccessions = new LinkedHashSet<>();
                 Set<String> geneToSOAccessions = new LinkedHashSet<>();
+                Set<String> biotypes = new LinkedHashSet<>();
 
                 for (ConsequenceType consequenceType : consequenceTypes) {
 
-                    // Set genes if exists
+                    // Set genes and biotypes if exist
                     if (StringUtils.isNotEmpty(consequenceType.getGeneName())) {
                         if (!genes.containsKey(consequenceType.getGeneName())) {
                             genes.put(consequenceType.getGeneName(), new LinkedHashSet<>());
@@ -300,6 +332,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         xrefs.add(consequenceType.getGeneName());
                         xrefs.add(consequenceType.getEnsemblGeneId());
                         xrefs.add(consequenceType.getEnsemblTranscriptId());
+
+                        if (StringUtils.isNotEmpty(consequenceType.getBiotype())) {
+                            biotypes.add(consequenceType.getBiotype());
+                        }
                     }
 
                     // Remove 'SO:' prefix to Store SO Accessions as integers and also store the relation
@@ -315,23 +351,33 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         }
                     }
 
-                    // Set uniprot accession protein id in xrefs
+                    // Set Uniprot accession protein id in xrefs
                     if (consequenceType.getProteinVariantAnnotation() != null) {
                         xrefs.add(consequenceType.getProteinVariantAnnotation().getUniprotAccession());
+
+                        if (consequenceType.getProteinVariantAnnotation().getKeywords() != null) {
+                            for (String keyword : consequenceType.getProteinVariantAnnotation().getKeywords()) {
+                                traits.add("KW -- " + consequenceType.getProteinVariantAnnotation().getUniprotAccession()
+                                        + " -- " + keyword);
+                            }
+                        }
+
+                        if (consequenceType.getProteinVariantAnnotation().getFeatures() != null) {
+                            for (ProteinFeature proteinFeature : consequenceType.getProteinVariantAnnotation().getFeatures()) {
+                                traits.add("PD -- " + proteinFeature.getId() + " -- " + proteinFeature.getDescription());
+                            }
+                        }
                     }
                 }
 
-                // Set sift and polyphen
-                setProteinScores(consequenceTypes, variantSearchModel);
-
                 // We store the accumulated data
                 genes.forEach((s, strings) -> variantSearchModel.getGenes().addAll(strings));
-//                for (String gene: genes.keySet()) {
-////                    variantSearchModel.getGenes().add(gene);
-//                    variantSearchModel.getGenes().addAll(genes.get(gene));
-//                }
                 variantSearchModel.setSoAcc(new ArrayList<>(soAccessions));
                 variantSearchModel.setGeneToSoAcc(new ArrayList<>(geneToSOAccessions));
+                variantSearchModel.setBiotypes(new ArrayList<>(biotypes));
+
+                // We now process Sift and Polyphen
+                setProteinScores(consequenceTypes, variantSearchModel);
             }
 
             // Set Populations frequencies
@@ -386,28 +432,35 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             }
 
             // Set variant traits: ClinVar, Cosmic, HPO, ...
-            Set<String> traits = new HashSet<>();
             if (variantAnnotation.getVariantTraitAssociation() != null) {
                 if (variantAnnotation.getVariantTraitAssociation().getClinvar() != null) {
                     variantAnnotation.getVariantTraitAssociation().getClinvar()
                             .forEach(cv -> {
                                 xrefs.add(cv.getAccession());
-                                cv.getTraits().forEach(cvt -> traits.add("ClinVar" + " -- " + cv.getAccession() + " -- " + cvt));
+                                cv.getTraits().forEach(cvt -> traits.add("CV" + " -- " + cv.getAccession() + " -- " + cvt));
                             });
                 }
                 if (variantAnnotation.getVariantTraitAssociation().getCosmic() != null) {
                     variantAnnotation.getVariantTraitAssociation().getCosmic()
                             .forEach(cosm -> {
                                 xrefs.add(cosm.getMutationId());
-                                traits.add("COSMIC -- " + cosm.getMutationId() + " -- "
+                                traits.add("CM -- " + cosm.getMutationId() + " -- "
                                         + cosm.getPrimaryHistology() + " -- " + cosm.getHistologySubtype());
                             });
                 }
             }
             if (variantAnnotation.getGeneTraitAssociation() != null && variantAnnotation.getGeneTraitAssociation().size() > 0) {
                 for (GeneTraitAssociation geneTraitAssociation : variantAnnotation.getGeneTraitAssociation()) {
-                    if (geneTraitAssociation.getSource().equalsIgnoreCase("hpo")) {
-                        traits.add("HPO -- " + geneTraitAssociation.getHpo() + " -- " + geneTraitAssociation.getName());
+                    switch (geneTraitAssociation.getSource().toLowerCase()) {
+                        case "hpo":
+                            traits.add("HP -- " + geneTraitAssociation.getHpo() + " -- "
+                                    + geneTraitAssociation.getId() + " -- " + geneTraitAssociation.getName());
+                            break;
+//                        case "disgenet":
+//                            traits.add("DG -- " + geneTraitAssociation.getId() + " -- " + geneTraitAssociation.getName());
+//                            break;
+                        default:
+                            break;
                     }
                 }
             }
@@ -439,7 +492,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
     private void setProteinScores(List<ConsequenceType> consequenceTypes, VariantSearchModel variantSearchModel) {
         double sift = 10;
         String siftDesc = "";
-        double polyphen = -1.0;
+        double polyphen = MISSING_VALUE;
         String polyphenDesc = "";
 
         if (consequenceTypes != null) {
@@ -464,9 +517,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             }
         }
 
-        // If sift not exist we set it to -1.0
+        // If sift not exist we set it to -100.0
         if (sift == 10) {
-            sift = -1.0;
+            sift = MISSING_VALUE;
         }
 
         // set scores

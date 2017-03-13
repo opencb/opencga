@@ -274,6 +274,7 @@ public class VariantSearchManager {
             if (variantList.size() > 0) {
                 insert(variantList);
             }
+            logger.info("Loading done: {} variants.", count);
         }
     }
 
