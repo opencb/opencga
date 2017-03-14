@@ -146,7 +146,7 @@ public class SolrQueryParser {
             }
             System.out.println("query.getString(key) = " + query.getString(key));
             System.out.println("studies = " + studies);
-            filterList.add(parseCategoryTermValue("studies", StringUtils.join(studies, ",")));
+//            filterList.add(parseCategoryTermValue("studies", StringUtils.join(studies, ",")));
         }
 
         // type (t)
