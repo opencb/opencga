@@ -135,6 +135,11 @@ public class SolrQueryParser {
         }
 
         // now we continue with the other AND conditions...
+        // type (t)
+        String key = VariantQueryParams.STUDIES.key();
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            filterList.add(parseCategoryTermValue("studies", query.getString(key)));
+        }
 
         // type (t)
         String key = VariantQueryParams.TYPE.key();
