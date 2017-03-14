@@ -144,6 +144,8 @@ public class SolrQueryParser {
                 String[] s = study.split(":");
                 studies.add(s[s.length - 1]);
             }
+            System.out.println("query.getString(key) = " + query.getString(key));
+            System.out.println("studies = " + studies);
             filterList.add(parseCategoryTermValue("studies", StringUtils.join(studies, ",")));
         }
 
