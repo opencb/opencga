@@ -18,7 +18,8 @@ public class ParseSolrQueryTest {
     public String study = "test444";
 
     public void executeQuery(Query query, QueryOptions queryOptions) {
-        SolrQuery solrQuery = SolrQueryParser.parse(query, queryOptions);
+        SolrQueryParser solrQueryParser = new SolrQueryParser(null);
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
 
         String host = "http://localhost:8983/solr/";
         String user = "";
@@ -27,7 +28,7 @@ public class ParseSolrQueryTest {
         int rows = 10;
         StorageConfiguration config = new StorageConfiguration();
         config.setSearch(new SearchConfiguration(host, collection, user, password, active, rows));
-        VariantSearchManager searchManager = new VariantSearchManager(config);
+        VariantSearchManager searchManager = new VariantSearchManager(null, config);
         try {
             SolrVariantIterator iterator = searchManager.iterator(collection, query, queryOptions);
             System.out.println("Num. found = " + iterator.getNumFound());

@@ -334,7 +334,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
 
             if (variantSearchManager == null) {
-                variantSearchManager = new VariantSearchManager(configuration);
+                variantSearchManager = new VariantSearchManager(variantMongoDBAdaptor.getDBAdaptorUtils(), configuration);
             }
             variantMongoDBAdaptor.setVariantSearchManager(variantSearchManager);
         } catch (UnknownHostException e) {

@@ -26,24 +26,30 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.checkOperator;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.isValidParam;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.splitValue;
 
 /**
  * Created by wasim on 18/11/16.
  */
 public class SolrQueryParser {
 
+    private VariantDBAdaptorUtils variantDBAdaptorUtils;
+
     private static final Pattern STUDY_PATTERN = Pattern.compile("^([^=<>!]+):([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
     private static final Pattern SCORE_PATTERN = Pattern.compile("^([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
 
     protected static Logger logger = LoggerFactory.getLogger(SolrQueryParser.class);
+
+    public SolrQueryParser(VariantDBAdaptorUtils variantDBAdaptorUtils) {
+        this.variantDBAdaptorUtils = variantDBAdaptorUtils;
+    }
 
     /**
      * Create a SolrQuery object from Query and QueryOptions.
@@ -52,7 +58,7 @@ public class SolrQueryParser {
      * @param queryOptions  Query Options
      * @return              SolrQuery
      */
-    public static SolrQuery parse(Query query, QueryOptions queryOptions) {
+    public SolrQuery parse(Query query, QueryOptions queryOptions) {
         List<String> filterList = new ArrayList<>();
 
         SolrQuery solrQuery = new SolrQuery();
@@ -137,16 +143,25 @@ public class SolrQueryParser {
         // now we continue with the other AND conditions...
         // type (t)
         String key = VariantQueryParams.STUDIES.key();
-        if (StringUtils.isNotEmpty(query.getString(key))) {
-            String[] split = query.getString(key).split("[,;]]");
-            List<String> studies = new ArrayList<>(split.length);
-            for (String study : split) {
-                String[] s = study.split(":");
-                studies.add(s[s.length - 1]);
-            }
+        if (isValidParam(query, VariantQueryParams.STUDIES)) {
+            String value = query.getString(key);
+            VariantDBAdaptorUtils.QueryOperation op = checkOperator(value);
+            Set<Integer> studyIds = new HashSet<>(variantDBAdaptorUtils.getStudyIds(splitValue(value, op), queryOptions));
+            List<String> studyNames = new ArrayList<>(studyIds.size());
+            Map<String, Integer> map = variantDBAdaptorUtils.getStudyConfigurationManager().getStudies(null);
+            map.forEach((name, id) -> {
+                if (studyIds.contains(id)) {
+                    String[] s = name.split(":");
+                    studyNames.add(s[s.length - 1]);
+                }
+            });
             System.out.println("query.getString(key) = " + query.getString(key));
-            System.out.println("studies = " + studies);
-//            filterList.add(parseCategoryTermValue("studies", StringUtils.join(studies, ",")));
+            System.out.println("studies = " + studyNames);
+            if (op == null || op == VariantDBAdaptorUtils.QueryOperation.OR) {
+                filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ",")));
+            } else {
+                filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ";")));
+            }
         }
 
         // type (t)
@@ -260,7 +275,7 @@ public class SolrQueryParser {
      * @param xref    Target xref
      * @return        True or false
      */
-    private static boolean isGene(String xref) {
+    private boolean isGene(String xref) {
         // TODO: this function must be completed
         if (xref.isEmpty()) {
             return false;
@@ -279,7 +294,7 @@ public class SolrQueryParser {
      * @param xrefs   List to insert the xrefs (no genes)
      * @param genes   List to insert the genes
      */
-    private static void classifyIds(String key, Query query, List<String> xrefs, List<String> genes) {
+    private void classifyIds(String key, Query query, List<String> xrefs, List<String> genes) {
         String value;
         if (query.containsKey(key)) {
             value = (String) query.get(key);
@@ -306,7 +321,7 @@ public class SolrQueryParser {
      * @param value        Parameter value
      * @return             A list of strings, each string represents a boolean condition
      */
-    private static String parseCategoryTermValue(String name, String value) {
+    private String parseCategoryTermValue(String name, String value) {
         StringBuilder filter = new StringBuilder();
         if (StringUtils.isNotEmpty(value)) {
             String[] values = value.split("[,;]");
@@ -334,7 +349,7 @@ public class SolrQueryParser {
      * @param value        Parameter value
      * @return             The string with the boolean conditions
      */
-    private static String parseScoreValue(String value) {
+    private String parseScoreValue(String value) {
         // In Solr, range queries can be inclusive or exclusive of the upper and lower bounds:
         //    - Inclusive range queries are denoted by square brackets.
         //    - Exclusive range queries are denoted by curly brackets.
@@ -385,7 +400,7 @@ public class SolrQueryParser {
      * @param value        Paramenter value
      * @return             The string with the boolean conditions
      */
-    private static String parsePopValue(String name, String value) {
+    private String parsePopValue(String name, String value) {
         // In Solr, range queries can be inclusive or exclusive of the upper and lower bounds:
         //    - Inclusive range queries are denoted by square brackets.
         //    - Exclusive range queries are denoted by curly brackets.
@@ -434,7 +449,7 @@ public class SolrQueryParser {
      * @param name  Command line parameter name
      * @return      Name in the model
      */
-    private static String getSolrFieldName(String name) {
+    private String getSolrFieldName(String name) {
         switch (name) {
             case "cadd_scaled":
             case "caddScaled":
@@ -456,7 +471,7 @@ public class SolrQueryParser {
      * @param value     Parameter value, e.g.: 0.314, tolerated,...
      * @return          Solr query range
      */
-    private static String getRange(String prefix, String name, String op, String value) {
+    private String getRange(String prefix, String name, String op, String value) {
         StringBuilder sb = new StringBuilder();
         switch (op) {
             case "=":
@@ -559,7 +574,7 @@ public class SolrQueryParser {
         return sb.toString();
     }
 
-    private static SolrQuery.ORDER getSortOrder(QueryOptions queryOptions) {
+    private SolrQuery.ORDER getSortOrder(QueryOptions queryOptions) {
         return queryOptions.getString(QueryOptions.ORDER).equals(QueryOptions.ASCENDING)
                 ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc;
     }
@@ -572,7 +587,7 @@ public class SolrQueryParser {
      * @param regions   List of regions
      * @return          OR-condition string
      */
-    private static String buildXrefOrGeneOrRegion(List<String> xrefs, List<String> genes, List<Region> regions) {
+    private String buildXrefOrGeneOrRegion(List<String> xrefs, List<String> genes, List<Region> regions) {
         StringBuilder sb = new StringBuilder();
 
         // first, concatenate xrefs and genes in single list
@@ -623,7 +638,7 @@ public class SolrQueryParser {
      * @param cts    List of consequence types
      * @return       OR-condition string
      */
-    private static String buildConsequenceTypeOr(List<String> cts) {
+    private String buildConsequenceTypeOr(List<String> cts) {
         StringBuilder sb = new StringBuilder();
         for (String ct : cts) {
             if (sb.length() > 0) {
@@ -642,7 +657,7 @@ public class SolrQueryParser {
      * @param cts        List of consequence types
      * @return           OR/AND condition string
      */
-    private static String buildXrefOrRegionAndConsequenceType(List<String> xrefs, List<Region> regions, List<String> cts) {
+    private String buildXrefOrRegionAndConsequenceType(List<String> xrefs, List<Region> regions, List<String> cts) {
         String orCts = buildConsequenceTypeOr(cts);
         String orXrefs = buildXrefOrGeneOrRegion(xrefs, null, regions);
         if (orXrefs.isEmpty()) {
@@ -661,7 +676,7 @@ public class SolrQueryParser {
      * @param cts      List of consequence types
      * @return         OR/AND condition string
      */
-    private static String buildGeneAndCt(List<String> genes, List<String> cts) {
+    private String buildGeneAndCt(List<String> genes, List<String> cts) {
         // in the VariantSearchModel the (gene AND ct) is modeled in the field: geneToSoAcc:gene_ct
         // and if there are multiple genes and consequence types, we have to build the combination of all of them in a OR expression
         StringBuilder sb = new StringBuilder();
