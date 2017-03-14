@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
@@ -40,22 +39,12 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
     private final Map<String, StudyConfiguration> stringStudyConfigurationMap = new HashMap<>();
     private final Map<Integer, StudyConfiguration> intStudyConfigurationMap = new HashMap<>();
 
-    public interface LockCloseable extends AutoCloseable {
-        @Override
-        void close();
-    }
-
     public StudyConfigurationManager(ObjectMap objectMap) {
     }
 
     protected abstract QueryResult<StudyConfiguration> internalGetStudyConfiguration(String studyName, Long time, QueryOptions options);
 
     protected abstract QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options);
-
-    public LockCloseable closableLockStudy(int studyId) throws StorageEngineException {
-        long lock = lockStudy(studyId);
-        return () -> unLockStudy(studyId, lock);
-    }
 
     public long lockStudy(int studyId) throws StorageEngineException {
         try {
@@ -77,21 +66,28 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
         logger.warn("Ignoring unLock");
     }
 
-    public StudyConfiguration lockAndUpdate(String studyName, Function<StudyConfiguration, StudyConfiguration> updater)
-            throws StorageEngineException {
+    public interface UpdateStudyConfiguration<E extends Exception> {
+        StudyConfiguration update(StudyConfiguration studyConfiguration) throws E;
+    }
+
+    public <E extends Exception> StudyConfiguration lockAndUpdate(String studyName, UpdateStudyConfiguration<E> updater)
+            throws StorageEngineException, E {
         Integer studyId = getStudies(QueryOptions.empty()).get(studyName);
         return lockAndUpdate(studyId, updater);
     }
 
-    public StudyConfiguration lockAndUpdate(int studyId, Function<StudyConfiguration, StudyConfiguration> updater)
-            throws StorageEngineException {
-        try (LockCloseable lock = closableLockStudy(studyId)) {
+    public <E extends Exception> StudyConfiguration lockAndUpdate(int studyId, UpdateStudyConfiguration<E> updater)
+            throws StorageEngineException, E {
+        long lock = lockStudy(studyId);
+        try {
             StudyConfiguration sc = getStudyConfiguration(studyId, new QueryOptions(CACHED, false)).first();
 
-            sc = updater.apply(sc);
+            sc = updater.update(sc);
 
             updateStudyConfiguration(sc, QueryOptions.empty());
             return sc;
+        } finally {
+            unLockStudy(studyId, lock);
         }
     }
 

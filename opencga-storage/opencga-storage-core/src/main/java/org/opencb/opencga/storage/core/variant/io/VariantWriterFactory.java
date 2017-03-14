@@ -192,7 +192,7 @@ public class VariantWriterFactory {
                     }
 
                     VariantSourceDBAdaptor sourceDBAdaptor = dbAdaptor.getVariantSourceDBAdaptor();
-                    exporter = new VariantVcfDataWriter(studyConfiguration, sourceDBAdaptor, outputStream, queryOptions);
+                    exporter = new VariantVcfDataWriter(studyConfiguration, sourceDBAdaptor, outputStream, query, queryOptions);
                 } else {
                     throw new IllegalArgumentException("No study found named " + query.getAsStringList(RETURNED_STUDIES.key()).get(0));
                 }

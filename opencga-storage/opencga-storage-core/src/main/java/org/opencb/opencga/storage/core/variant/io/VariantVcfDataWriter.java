@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.core.variant.io;
 
-import com.google.common.collect.BiMap;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.variant.variantcontext.*;
 import htsjdk.variant.variantcontext.Genotype;
@@ -80,6 +79,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
     private final StudyConfiguration studyConfiguration;
     private final VariantSourceDBAdaptor sourceDBAdaptor;
     private final OutputStream outputStream;
+    private final Query query;
     private final QueryOptions queryOptions;
     private final AtomicReference<Function<String, String>> sampleNameConverter = new AtomicReference<>(s -> s);
     private final int studyId;
@@ -92,10 +92,11 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
     private final AtomicBoolean exportGenotype = new AtomicBoolean(true);
 
     public VariantVcfDataWriter(StudyConfiguration studyConfiguration, VariantSourceDBAdaptor sourceDBAdaptor, OutputStream outputStream,
-                                QueryOptions queryOptions) {
+                                Query query, QueryOptions queryOptions) {
         this.studyConfiguration = studyConfiguration;
         this.sourceDBAdaptor = sourceDBAdaptor;
         this.outputStream = outputStream;
+        this.query = query == null ? new Query() : query;
         this.queryOptions = queryOptions == null ? new QueryOptions() : queryOptions;
         studyId = this.studyConfiguration.getStudyId();
     }
@@ -165,7 +166,8 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
     public static int htsExport(VariantDBIterator iterator, StudyConfiguration studyConfiguration, VariantSourceDBAdaptor sourceDBAdaptor,
                                 OutputStream outputStream, QueryOptions queryOptions) {
 
-        VariantVcfDataWriter exporter = new VariantVcfDataWriter(studyConfiguration, sourceDBAdaptor, outputStream, queryOptions);
+        VariantVcfDataWriter exporter = new VariantVcfDataWriter(studyConfiguration, sourceDBAdaptor, outputStream, new Query(),
+                queryOptions);
 
         exporter.open();
         exporter.pre();
@@ -181,7 +183,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
     public boolean pre() {
         LinkedHashSet<VCFHeaderLine> meta = new LinkedHashSet<>();
         sampleNames.clear();
-        sampleNames.addAll(getSamples(queryOptions));
+        sampleNames.addAll(getSamples());
         logger.info("Use {} samples for export ... ", this.sampleNames.size());
         sampleNameMapping.putAll(
                 sampleNames.stream().collect(Collectors.toMap(s -> s, s -> sampleNameConverter.get().apply(s))));
@@ -371,47 +373,21 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
 
     private List<String> getReturnedSamples(StudyConfiguration studyConfiguration, QueryOptions options) {
         Map<Integer, List<Integer>> returnedSamplesMap =
-                VariantDBAdaptorUtils.getReturnedSamples(new Query(options), options, studyConfiguration);
+                VariantDBAdaptorUtils.getReturnedSamples(new Query(options), options, Collections.singletonList(studyConfiguration));
         List<String> returnedSamples = returnedSamplesMap.get(studyConfiguration.getStudyId()).stream()
                 .map(sampleId -> studyConfiguration.getSampleIds().inverse().get(sampleId))
                 .collect(Collectors.toList());
         return returnedSamples;
     }
 
-    protected List<String> getSamples(QueryOptions options) {
+    protected List<String> getSamples() {
         if (!this.exportGenotype.get()) {
             logger.info("Do NOT export genotype -> sample list empty!!!");
             return Collections.emptyList();
         }
         // Get Sample names from query & study configuration
-        if (options != null) {
-            if (options.get(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key()) != null) {
-                List<String> queryList = options.getAsStringList(VariantDBAdaptor.VariantQueryParams
-                        .RETURNED_SAMPLES.key());
-                return queryList.stream().map(s -> {
-                    if (StringUtils.isNumeric(s)) {
-                        int sampleId = Integer.parseInt(s);
-                        if (!studyConfiguration.getSampleIds().inverse().containsKey(sampleId)) {
-                            throw new IllegalArgumentException("Unkown sample: " + s + " for study "
-                                    + studyConfiguration.getStudyName() + " (" + studyConfiguration.getStudyId() + ")");
-                        }
-                        return studyConfiguration.getSampleIds().inverse().get(sampleId);
-                    } else {
-                        if (!studyConfiguration.getSampleIds().containsKey(s)) {
-                            throw new IllegalArgumentException("Unkown sample: " + s + " for study "
-                                    + studyConfiguration.getStudyName() + " (" + studyConfiguration.getStudyId() + ")");
-                        }
-                        return s;
-                    }
-                }).collect(Collectors.toList());
-            }
-        }
-        // Else all from study configuration
-        BiMap<Integer, String> samplesPosition = StudyConfiguration.getIndexedSamplesPosition(studyConfiguration).inverse();
-        List<String> sampleNames = new ArrayList<>(samplesPosition.size());
-        for (int i = 0; i < samplesPosition.size(); i++) {
-            sampleNames.add(samplesPosition.get(i));
-        }
+        List<String> sampleNames = VariantDBAdaptorUtils.getSamplesMetadata(query, studyConfiguration)
+                .get(studyConfiguration.getStudyName());
         return sampleNames;
     }
 

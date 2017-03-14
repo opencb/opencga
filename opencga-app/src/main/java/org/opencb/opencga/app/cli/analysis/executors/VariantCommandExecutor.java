@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.analysis.executors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -29,10 +30,12 @@ import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
+import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.analysis.VariantSampleFilter;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -41,10 +44,7 @@ import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsMan
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.LOAD;
@@ -102,6 +102,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             case "annotate":
                 annotate();
                 break;
+            case "samples":
+                samples();
+                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -157,14 +160,16 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 //        AnalysisCliOptionsParser.QueryVariantCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
         VariantCommandOptions.VariantQueryCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
 
+        if ("TEXT".equals(cliOptions.commonOptions.outputFormat)) {
+            cliOptions.commonOptions.outputFormat = "VCF";
+        }
 
         Map<Long, String> studyIds = getStudyIds(sessionId);
         Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds);
         QueryOptions queryOptions = VariantQueryCommandUtils.parseQueryOptions(cliOptions);
         queryOptions.put("summary", cliOptions.genericVariantQueryOptions.summary);
 
-        org.opencb.opencga.storage.core.manager.variant.VariantStorageManager variantManager =
-                new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageEngineFactory);
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         if (cliOptions.numericOptions.count) {
             QueryResult<Long> result = variantManager.count(query, sessionId);
@@ -192,8 +197,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantCommandOptions.VariantImportCommandOptions importVariantOptions = variantCommandOptions.importVariantCommandOptions;
 
 
-        org.opencb.opencga.storage.core.manager.variant.VariantStorageManager variantManager =
-                new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageEngineFactory);
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         variantManager.importData(UriUtils.createUri(importVariantOptions.input), importVariantOptions.study, sessionId);
 
@@ -230,8 +234,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         queryOptions.put(VariantStorageEngine.Options.RESUME.key(), cliOptions.genericVariantIndexOptions.resume);
         queryOptions.putAll(cliOptions.commonOptions.params);
 
-        org.opencb.opencga.storage.core.manager.variant.VariantStorageManager variantManager =
-                new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageEngineFactory);
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         variantManager.index(cliOptions.study, cliOptions.fileId, cliOptions.outdir, queryOptions, sessionId);
     }
@@ -243,8 +246,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putAll(cliOptions.commonOptions.params);
 
-        org.opencb.opencga.storage.core.manager.variant.VariantStorageManager variantManager =
-                new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageEngineFactory);
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         variantManager.searchIndex(cliOptions.study, sessionId);
     }
@@ -253,9 +255,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             StorageEngineException, InstantiationException, IllegalAccessException, URISyntaxException {
         VariantCommandOptions.VariantStatsCommandOptions cliOptions = variantCommandOptions.statsVariantCommandOptions;
 
-        org.opencb.opencga.storage.core.manager.variant.VariantStorageManager variantManager =
-                new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager,
-                        storageEngineFactory);
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         QueryOptions options = new QueryOptions()
                 .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, cliOptions.genericVariantStatsOptions.fileName)
@@ -285,8 +285,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             AnalysisExecutionException, IllegalAccessException, InstantiationException, ClassNotFoundException {
 
         VariantCommandOptions.VariantAnnotateCommandOptions cliOptions = variantCommandOptions.annotateVariantCommandOptions;
-        org.opencb.opencga.storage.core.manager.variant.VariantStorageManager variantManager =
-                new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageEngineFactory);
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         Query query = new Query()
                 .append(VariantDBAdaptor.VariantQueryParams.REGION.key(), cliOptions.genericVariantAnnotateOptions.filterRegion)
@@ -307,4 +306,58 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         variantManager.annotate(cliOptions.project, cliOptions.study, query, cliOptions.outdir, options, sessionId);
     }
 
+    private void samples() throws Exception {
+
+        VariantCommandOptions.VariantSamplesFilterCommandOptions cliOptions = variantCommandOptions.samplesFilterCommandOptions;
+
+//        Map<Long, String> studyIds = getStudyIds(sessionId);
+        Query query = VariantQueryCommandUtils.parseBasicVariantQuery(cliOptions.variantQueryOptions, new Query());
+
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+
+        VariantSampleFilter variantSampleFilter = new VariantSampleFilter(variantManager.iterable(sessionId));
+
+        if (StringUtils.isNotEmpty(cliOptions.samples)) {
+            query.append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), Arrays.asList(cliOptions.samples.split(",")));
+        }
+        if (StringUtils.isNotEmpty(cliOptions.study)) {
+            query.append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), cliOptions.study);
+        }
+
+        List<String> genotypes = Arrays.asList(cliOptions.genotypes.split(","));
+        if (cliOptions.all) {
+            Collection<String> samplesInAllVariants = variantSampleFilter.getSamplesInAllVariants(query, genotypes);
+            System.out.println("##Samples in ALL variants with genotypes " + genotypes);
+            for (String sample : samplesInAllVariants) {
+                System.out.println(sample);
+            }
+        } else {
+            Map<String, Set<Variant>> samplesInAnyVariants = variantSampleFilter.getSamplesInAnyVariants(query, genotypes);
+            System.out.println("##Samples in ANY variants with genotypes " + genotypes);
+            Set<Variant> variants = new TreeSet<>((v1, o2) -> v1.getStart().compareTo(o2.getStart()));
+            samplesInAnyVariants.forEach((sample, v) -> variants.addAll(v));
+
+            System.out.print(StringUtils.rightPad("#SAMPLE", 10));
+//            System.out.print("|");
+            for (Variant variant : variants) {
+                System.out.print(StringUtils.center(variant.toString(), 15));
+//                System.out.print("|");
+            }
+            System.out.println();
+            samplesInAnyVariants.forEach((sample, v) -> {
+                System.out.print(StringUtils.rightPad(sample, 10));
+//                System.out.print("|");
+                for (Variant variant : variants) {
+                    if (v.contains(variant)) {
+                        System.out.print(StringUtils.center("X", 15));
+                    } else {
+                        System.out.print(StringUtils.center("-", 15));
+                    }
+//                    System.out.print("|");
+                }
+                System.out.println();
+            });
+
+        }
+    }
 }
