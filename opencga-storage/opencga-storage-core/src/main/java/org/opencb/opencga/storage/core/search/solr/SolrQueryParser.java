@@ -94,7 +94,7 @@ public class SolrQueryParser {
         classifyIds(VariantQueryParams.GENE.key(), query, xrefs, genes);
         classifyIds(VariantQueryParams.ANNOT_CLINVAR.key(), query, xrefs, genes);
         classifyIds(VariantQueryParams.ANNOT_COSMIC.key(), query, xrefs, genes);
-        classifyIds(VariantQueryParams.ANNOT_HPO.key(), query, xrefs, genes);
+//        classifyIds(VariantQueryParams.ANNOT_HPO.key(), query, xrefs, genes);
 
         // Convert region string to region objects
         if (query.containsKey(VariantQueryParams.REGION.key())) {
@@ -311,8 +311,6 @@ public class SolrQueryParser {
         if (StringUtils.isNotEmpty(value)) {
             String[] values = value.split("[,;]");
             if (values.length == 1) {
-//                filter.append(name).append(":\"").append(value).append("\"");
-                value = value.replace(":", "\\:");
                 filter.append(name).append(":\"").append(value).append("\"");
             } else {
                 filter.append("(");
