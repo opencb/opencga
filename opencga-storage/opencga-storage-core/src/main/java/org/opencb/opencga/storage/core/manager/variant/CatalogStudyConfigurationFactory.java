@@ -237,11 +237,8 @@ public class CatalogStudyConfigurationFactory {
 
     public void updateStudyConfigurationFromCatalog(long studyId, StudyConfigurationManager studyConfigurationManager, String sessionId)
             throws CatalogException, StorageEngineException {
-        try (StudyConfigurationManager.LockCloseable lock = studyConfigurationManager.closableLockStudy((int) studyId)) {
-            StudyConfiguration studyConfiguration = getStudyConfiguration(studyId, studyConfigurationManager, new QueryOptions(),
-                    sessionId);
-            studyConfigurationManager.updateStudyConfiguration(studyConfiguration, new QueryOptions());
-        }
+        studyConfigurationManager.lockAndUpdate((int) studyId,
+                studyConfiguration -> getStudyConfiguration(studyId, studyConfigurationManager, new QueryOptions(), sessionId));
     }
 
     public void updateCatalogFromStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options, String sessionId)

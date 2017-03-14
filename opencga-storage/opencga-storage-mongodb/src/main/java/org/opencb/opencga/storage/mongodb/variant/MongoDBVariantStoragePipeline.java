@@ -42,7 +42,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
-import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBWriter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
@@ -61,6 +60,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
@@ -81,11 +81,6 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         super(configuration, storageEngineId, LoggerFactory.getLogger(MongoDBVariantStoragePipeline.class), dbAdaptor,
                 new VariantReaderUtils());
         this.dbAdaptor = dbAdaptor;
-    }
-
-    protected VariantMongoDBWriter getDBWriter(String dbName, int fileId, StudyConfiguration studyConfiguration)
-            throws StorageEngineException {
-        return new VariantMongoDBWriter(fileId, studyConfiguration, dbAdaptor, true, false);
     }
 
     public URI preLoad(URI input, URI output) throws StorageEngineException {
@@ -316,23 +311,13 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     private BatchFileOperation preStage(int fileId) throws StorageEngineException {
 
         StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
-        long lock = scm.lockStudy(getStudyId());
-        BatchFileOperation operation;
-        try {
-            StudyConfiguration studyConfiguration = getStudyConfiguration(true);
+        AtomicReference<BatchFileOperation> operation = new AtomicReference<>();
+        scm.lockAndUpdate(getStudyId(), studyConfiguration -> {
+            operation.set(securePreStage(fileId, studyConfiguration));
+            return studyConfiguration;
+        });
 
-            operation = securePreStage(fileId, studyConfiguration);
-
-            scm.updateStudyConfiguration(studyConfiguration, null);
-        } finally {
-            scm.unLockStudy(getStudyId(), lock);
-        }
-
-//        if (loadStageResume) {
-//            // TODO: Clean file from stage collection?
-//        }
-
-        return operation;
+        return operation.get();
     }
 
     private BatchFileOperation securePreStage(int fileId, StudyConfiguration studyConfiguration) throws StorageEngineException {
@@ -578,11 +563,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
     private StudyConfiguration preMerge(List<Integer> fileIds) throws StorageEngineException {
         int studyId = getStudyId();
-        StudyConfiguration studyConfiguration;
         Set<Integer> fileIdsSet = new HashSet<>(fileIds);
-        try (StudyConfigurationManager.LockCloseable lock = dbAdaptor.getStudyConfigurationManager().closableLockStudy(studyId)) {
-            studyConfiguration = getStudyConfiguration(true);
-
+        return dbAdaptor.getStudyConfigurationManager().lockAndUpdate(studyId, studyConfiguration -> {
             for (Integer fileId : fileIds) {
                 if (studyConfiguration.getIndexedFiles().contains(fileId)) {
                     throw StorageEngineException.alreadyLoaded(fileId, studyConfiguration);
@@ -640,9 +622,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 // Only set to RUNNING if it was on ERROR
                 operation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
             }
-            dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
-        }
-        return studyConfiguration;
+            return studyConfiguration;
+        });
     }
 
     private MongoDBVariantWriteResult mergeByChromosome(
