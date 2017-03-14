@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.core.search.solr;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.search.VariantSearchToVariantConverter;
@@ -32,9 +31,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.checkOperator;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.isValidParam;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.splitValue;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
 
 /**
  * Created by wasim on 18/11/16.
