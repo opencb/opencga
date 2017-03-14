@@ -109,7 +109,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         __studySamplesId = new HashMap<>();
         __returnedSamplesPosition = new HashMap<>();
         studyDefaultGenotypeSet = new HashMap<>();
-        returnedSamples = null;
+        returnedSamples = Collections.emptyMap();
         studyConfigurationManager = null;
         returnedUnknownGenotype = null;
     }
@@ -655,7 +655,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         if (this.__studySamplesId.get(studyId) == null) {
             StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
             sampleIds = StudyConfiguration.getIndexedSamples(studyConfiguration);
-            if (returnedSamples != null) {
+            if (returnedSamples != null && returnedSamples.containsKey(studyId)) {
                 BiMap<String, Integer> returnedSampleIds = HashBiMap.create();
                 sampleIds.entrySet().stream()
                         //ReturnedSamples could be sampleNames or sampleIds as a string
