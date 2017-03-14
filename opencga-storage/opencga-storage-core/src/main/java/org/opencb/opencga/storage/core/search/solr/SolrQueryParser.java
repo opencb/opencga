@@ -138,7 +138,13 @@ public class SolrQueryParser {
         // type (t)
         String key = VariantQueryParams.STUDIES.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parseCategoryTermValue("studies", query.getString(key)));
+            String[] split = query.getString(key).split("[,;]]");
+            List<String> studies = new ArrayList<>(split.length);
+            for (String study : split) {
+                String[] s = study.split(":");
+                studies.add(s[s.length - 1]);
+            }
+            filterList.add(parseCategoryTermValue("studies", StringUtils.join(studies, ",")));
         }
 
         // type (t)
