@@ -215,7 +215,9 @@ public class SolrQueryParser {
         if (StringUtils.isNotEmpty(query.getString(key))) {
             List<String> gos = Arrays.asList(query.getString(key).split(","));
             Set genesByGo = variantDBAdaptorUtils.getGenesByGo(gos);
-            filterList.add(parseCategoryTermValue("xrefs", StringUtils.join(genesByGo, ",")));
+            if (genesByGo != null && genesByGo.size() > 0) {
+                filterList.add(parseCategoryTermValue("xrefs", StringUtils.join(genesByGo, ",")));
+            }
         }
 
         // hpo
