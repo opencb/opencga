@@ -311,6 +311,8 @@ public class SolrQueryParser {
         if (StringUtils.isNotEmpty(value)) {
             String[] values = value.split("[,;]");
             if (values.length == 1) {
+//                filter.append(name).append(":\"").append(value).append("\"");
+                value = value.replace(":", "\\:");
                 filter.append(name).append(":\"").append(value).append("\"");
             } else {
                 filter.append("(");
