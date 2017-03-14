@@ -160,6 +160,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 //        AnalysisCliOptionsParser.QueryVariantCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
         VariantCommandOptions.VariantQueryCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
 
+        if ("TEXT".equals(cliOptions.commonOptions.outputFormat)) {
+            cliOptions.commonOptions.outputFormat = "VCF";
+        }
 
         Map<Long, String> studyIds = getStudyIds(sessionId);
         Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds);

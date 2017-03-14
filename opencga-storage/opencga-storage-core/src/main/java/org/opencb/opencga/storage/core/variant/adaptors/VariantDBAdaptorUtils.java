@@ -547,6 +547,12 @@ public class VariantDBAdaptorUtils {
         return getReturnedSamples(query, null, returnedStudies, studyProvider, (sc, s) -> s, StudyConfiguration::getStudyName);
     }
 
+    public static Map<String, List<String>> getSamplesMetadata(Query query, StudyConfiguration studyConfiguration) {
+        List<Integer> returnedStudies = Collections.singletonList(studyConfiguration.getStudyId());
+        Function<Integer, StudyConfiguration> studyProvider = studyId -> studyConfiguration;
+        return getReturnedSamples(query, null, returnedStudies, studyProvider, (sc, s) -> s, StudyConfiguration::getStudyName);
+    }
+
     public Map<String, List<String>> getSamplesMetadata(Query query, QueryOptions options) {
         if (query.getBoolean(SAMPLES_METADATA.key(), false)) {
             if (VariantField.getReturnedFields(options).contains(VariantField.STUDIES)) {
