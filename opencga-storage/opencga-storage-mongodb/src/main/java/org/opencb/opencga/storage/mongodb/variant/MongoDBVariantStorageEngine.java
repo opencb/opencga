@@ -332,11 +332,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             variantMongoDBAdaptor = new VariantMongoDBAdaptor(mongoDataStoreManager, credentials, variantsCollection, filesCollection,
                     studyConfigurationManager, configuration);
 
-
-            if (variantSearchManager == null) {
-                variantSearchManager = new VariantSearchManager(variantMongoDBAdaptor.getDBAdaptorUtils(), configuration);
-            }
-            variantMongoDBAdaptor.setVariantSearchManager(variantSearchManager);
         } catch (UnknownHostException e) {
             throw new IllegalArgumentException(e);
         }
