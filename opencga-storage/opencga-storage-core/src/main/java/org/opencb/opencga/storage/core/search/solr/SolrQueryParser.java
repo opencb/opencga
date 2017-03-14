@@ -142,7 +142,7 @@ public class SolrQueryParser {
         }
 
         // type (t)
-        String key = VariantQueryParams.TYPE.key();
+        key = VariantQueryParams.TYPE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parseCategoryTermValue("type", query.getString(key)));
         }
