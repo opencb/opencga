@@ -149,18 +149,19 @@ public class SolrQueryParser {
             Set<Integer> studyIds = new HashSet<>(variantDBAdaptorUtils.getStudyIds(splitValue(value, op), queryOptions));
             List<String> studyNames = new ArrayList<>(studyIds.size());
             Map<String, Integer> map = variantDBAdaptorUtils.getStudyConfigurationManager().getStudies(null);
-            map.forEach((name, id) -> {
-                if (studyIds.contains(id)) {
-                    String[] s = name.split(":");
-                    studyNames.add(s[s.length - 1]);
+            if (map != null && map.size() > 1) {
+                map.forEach((name, id) -> {
+                    if (studyIds.contains(id)) {
+                        String[] s = name.split(":");
+                        studyNames.add(s[s.length - 1]);
+                    }
+                });
+
+                if (op == null || op == VariantDBAdaptorUtils.QueryOperation.OR) {
+                    filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ",")));
+                } else {
+                    filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ";")));
                 }
-            });
-            System.out.println("query.getString(key) = " + query.getString(key));
-            System.out.println("studies = " + studyNames);
-            if (op == null || op == VariantDBAdaptorUtils.QueryOperation.OR) {
-                filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ",")));
-            } else {
-                filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ";")));
             }
         }
 
@@ -324,6 +325,13 @@ public class SolrQueryParser {
     private String parseCategoryTermValue(String name, String value) {
         StringBuilder filter = new StringBuilder();
         if (StringUtils.isNotEmpty(value)) {
+            boolean or = value.contains(",");
+            boolean and = value.contains(";");
+            if (or && and) {
+                throw new IllegalArgumentException("Command and semi-colon cannot be mixed: " + value);
+            }
+            String logicalComparator = or ? " OR " : " AND ";
+
             String[] values = value.split("[,;]");
             if (values.length == 1) {
                 filter.append(name).append(":\"").append(value).append("\"");
@@ -331,7 +339,7 @@ public class SolrQueryParser {
                 filter.append("(");
                 filter.append(name).append(":\"").append(values[0]).append("\"");
                 for (int i = 1; i < values.length; i++) {
-                    filter.append(" OR ");
+                    filter.append(logicalComparator);
                     filter.append(name).append(":\"").append(values[i]).append("\"");
                 }
                 filter.append(")");
