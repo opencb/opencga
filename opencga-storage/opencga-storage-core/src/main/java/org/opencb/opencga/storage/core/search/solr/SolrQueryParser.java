@@ -124,6 +124,14 @@ public class SolrQueryParser {
                 // in this case, the resulting string will never be null, because there are some consequence types!!
                 filterList.add(buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes));
             }
+        } else {
+            // no consequence types: (xrefs OR regions) but we must add "OR genes", i.e.: xrefs OR regions OR genes
+            // no consequence types: (xrefs OR regions) but we must add "OR genMINes", i.e.: xrefs OR regions OR genes
+            // we must make an OR with xrefs, genes and regions and add it to the "AND" filter list
+            String orXrefs = buildXrefOrGeneOrRegion(xrefs, genes, regions);
+            if (!orXrefs.isEmpty()) {
+                filterList.add(orXrefs);
+            }
         }
 
         // now we continue with the other AND conditions...
