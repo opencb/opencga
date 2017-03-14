@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.search.solr;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.search.VariantSearchToVariantConverter;
@@ -207,6 +208,14 @@ public class SolrQueryParser {
         key = VariantQueryParams.STATS_MAF.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parsePopValue("stats", query.getString(key)));
+        }
+
+        // GO
+        key = VariantQueryParams.ANNOT_GO.key();
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            List<String> gos = Arrays.asList(query.getString(key).split(","));
+            Set genesByGo = variantDBAdaptorUtils.getGenesByGo(gos);
+            filterList.add(parseCategoryTermValue("xrefs", StringUtils.join(genesByGo, ",")));
         }
 
         // hpo
