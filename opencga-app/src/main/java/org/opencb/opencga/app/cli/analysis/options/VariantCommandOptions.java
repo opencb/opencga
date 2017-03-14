@@ -32,6 +32,7 @@ public class VariantCommandOptions {
     public VariantExportStatsCommandOptions exportVariantStatsCommandOptions;
     public VariantImportCommandOptions importVariantCommandOptions;
     public VariantIbsCommandOptions ibsVariantCommandOptions;
+    public VariantSamplesFilterCommandOptions samplesFilterCommandOptions;
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
@@ -54,6 +55,7 @@ public class VariantCommandOptions {
         this.exportVariantStatsCommandOptions = new VariantExportStatsCommandOptions();
         this.importVariantCommandOptions = new VariantImportCommandOptions();
         this.ibsVariantCommandOptions = new VariantIbsCommandOptions();
+        this.samplesFilterCommandOptions = new VariantSamplesFilterCommandOptions();
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
@@ -590,5 +592,39 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+    }
+
+    @Parameters(commandNames = {"samples"}, commandDescription = "Get samples given a set of variants")
+    public class VariantSamplesFilterCommandOptions {
+
+        @ParametersDelegate
+        public StorageVariantCommandOptions.BasicVariantQueryOptions variantQueryOptions = new StorageVariantCommandOptions.BasicVariantQueryOptions();
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
+        public String study;
+
+        //TODO
+//        @Parameter(names = {"--sample-filter"}, description = SAMPLE_FILTER_DESC)
+//        public String sampleFilter;
+
+        @Parameter(names = {"--samples"}, description = "List of samples to check. By default, all samples")
+        public String samples;
+
+        @Parameter(names = {"--all"}, description = "Samples must be present in ALL variants or in ANY variant.")
+        public boolean all;
+
+        @Parameter(names = {"--genotypes"}, description = "Genotypes that the sample must have to be selected")
+        public String genotypes = "0/1,1/1";
+
+
+
+//        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
+//        public String output;
     }
 }

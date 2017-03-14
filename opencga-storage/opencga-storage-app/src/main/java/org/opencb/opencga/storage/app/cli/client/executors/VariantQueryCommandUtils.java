@@ -16,25 +16,21 @@
 
 package org.opencb.opencga.storage.app.cli.client.executors;
 
-import com.beust.jcommander.ParameterException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.zip.GZIPOutputStream;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
 
@@ -122,6 +118,15 @@ public class VariantQueryCommandUtils {
 
     public static Query parseQuery(StorageVariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions, List<String> studyNames)
             throws Exception {
+        VariantWriterFactory.VariantOutputFormat of = VariantWriterFactory.toOutputFormat(queryVariantsOptions.outputFormat, null);
+        return parseGenericVariantQuery(queryVariantsOptions, queryVariantsOptions.study, studyNames, queryVariantsOptions.commonQueryOptions.count, of);
+    }
+
+    protected static Query parseGenericVariantQuery(StorageVariantCommandOptions.GenericVariantQueryOptions queryVariantsOptions,
+                                                    String studiesFilter, Collection<String> allStudyNames, boolean count,
+                                                    VariantWriterFactory.VariantOutputFormat of)
+            throws Exception {
+
         Query query = new Query();
 
         /*
@@ -145,9 +150,9 @@ public class VariantQueryCommandUtils {
 
 
         List<String> studies = new LinkedList<>();
-        if (queryVariantsOptions.study != null && !queryVariantsOptions.study.isEmpty()) {
-            query.put(STUDIES.key(), queryVariantsOptions.study);
-            for (String study : queryVariantsOptions.study.split(",|;")) {
+        if (StringUtils.isNotEmpty(studiesFilter)) {
+            query.put(STUDIES.key(), studiesFilter);
+            for (String study : studiesFilter.split(",|;")) {
                 if (!study.startsWith("!")) {
                     studies.add(study);
                 }
@@ -250,29 +255,25 @@ public class VariantQueryCommandUtils {
         addParam(query, MISSING_GENOTYPES, queryVariantsOptions.missingGenotypeCount);
 
 
-        boolean returnVariants = !queryVariantsOptions.commonQueryOptions.count && StringUtils.isEmpty(queryVariantsOptions.groupBy)
+        boolean returnVariants = !count && StringUtils.isEmpty(queryVariantsOptions.groupBy)
                 && StringUtils.isEmpty(queryVariantsOptions.rank);
 
-
-        String outputFormat = "vcf";
-        if (StringUtils.isNotEmpty(queryVariantsOptions.outputFormat)) {
-            if (queryVariantsOptions.outputFormat.equals("json") || queryVariantsOptions.outputFormat.equals("json.gz")) {
-                outputFormat = "json";
-            }
-        }
-
-        if (returnVariants && outputFormat.equalsIgnoreCase("vcf")) {
+        if (returnVariants && !of.isMultiStudyOutput()) {
             int returnedStudiesSize = query.getAsStringList(RETURNED_STUDIES.key()).size();
             if (returnedStudiesSize == 0 && studies.size() == 1) {
                 query.put(RETURNED_STUDIES.key(), studies.get(0));
-            } else if (returnedStudiesSize == 0 && studyNames.size() != 1 //If there are no returned studies, and there are more than one
+            } else if (returnedStudiesSize == 0 && allStudyNames.size() != 1 //If there are no returned studies, and there are more than one
                     // study
                     || returnedStudiesSize > 1) {     // Or is required more than one returned study
-                throw new Exception("Only one study is allowed when returning VCF, please use '--return-study' to select the returned "
-                        + "study. Available studies: [ " + String.join(", ", studyNames) + " ]");
+
+                String availableStudies = allStudyNames == null || allStudyNames.isEmpty()
+                        ? ""
+                        : " Available studies: [ " + String.join(", ", allStudyNames) + " ]";
+                throw new Exception("Only one study is allowed when returning " + of + ", please use '--return-study' to select the returned "
+                        + "study." + availableStudies);
             } else {
                 if (returnedStudiesSize == 0) {    //If there were no returned studies, set the study existing one
-                    query.put(RETURNED_STUDIES.key(), studyNames.get(0));
+                    query.put(RETURNED_STUDIES.key(), allStudyNames.iterator().next());
                 }
             }
         }
@@ -309,51 +310,7 @@ public class VariantQueryCommandUtils {
         return queryOptions;
     }
 
-    @Deprecated
-    public static OutputStream getOutputStream(StorageVariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions) throws IOException {
-        /*
-         * Output parameters
-         */
-        boolean gzip = true;
-        if (queryVariantsOptions.outputFormat != null && !queryVariantsOptions.outputFormat.isEmpty()) {
-            switch (queryVariantsOptions.outputFormat) {
-                case "vcf":
-                    gzip = false;
-                case "vcf.gz":
-                    break;
-                case "json":
-                    gzip = false;
-                case "json.gz":
-                    break;
-                default:
-                    logger.error("Format '{}' not supported", queryVariantsOptions.outputFormat);
-                    throw new ParameterException("Format '" + queryVariantsOptions.outputFormat + "' not supported");
-            }
-        }
-
-        // output format has priority over output name
-        OutputStream outputStream;
-        if (queryVariantsOptions.commonQueryOptions.output == null || queryVariantsOptions.commonQueryOptions.output.isEmpty()) {
-            outputStream = System.out;
-        } else {
-            if (gzip && !queryVariantsOptions.commonQueryOptions.output.endsWith(".gz")) {
-                queryVariantsOptions.commonQueryOptions.output += ".gz";
-            }
-            outputStream = new FileOutputStream(queryVariantsOptions.commonQueryOptions.output);
-            logger.debug("writing to %s", queryVariantsOptions.commonQueryOptions.output);
-        }
-
-        // If compressed a GZip output stream is used
-        if (gzip) {
-            outputStream = new GZIPOutputStream(outputStream);
-        }
-
-        logger.debug("using %s output stream", gzip ? "gzipped" : "plain");
-
-        return outputStream;
-    }
-
-    private static void addParam(Query query, VariantDBAdaptor.VariantQueryParams key, String value) {
+    protected static void addParam(Query query, QueryParam key, String value) {
         if (value != null && !value.isEmpty()) {
             query.put(key.key(), value);
         }

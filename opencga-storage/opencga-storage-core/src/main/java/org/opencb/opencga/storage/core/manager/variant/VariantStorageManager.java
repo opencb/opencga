@@ -44,11 +44,8 @@ import org.opencb.opencga.storage.core.manager.StorageManager;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.manager.variant.operations.*;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 
 import java.io.IOException;
@@ -319,6 +316,16 @@ public class VariantStorageManager extends StorageManager {
             }
             return dbAdaptor.getFrequency(query, Region.parseRegion(regions[0]), interval);
         });
+    }
+
+    public VariantIterable iterable(String sessionId) throws CatalogException, StorageEngineException {
+        return (query, options) -> {
+            try {
+                return iterator(query, options, sessionId);
+            } catch (CatalogException | StorageEngineException e) {
+                throw new VariantQueryException("Error getting variant iterator", e);
+            }
+        };
     }
 
     public VariantDBIterator iterator(String sessionId) throws CatalogException, StorageEngineException {

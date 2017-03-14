@@ -82,6 +82,7 @@ public class AnalysisCliOptionsParser {
         variantSubCommands.addCommand("export-frequencies", variantCommandOptions.exportVariantStatsCommandOptions);
         variantSubCommands.addCommand("import", variantCommandOptions.importVariantCommandOptions);
         variantSubCommands.addCommand("ibs", variantCommandOptions.ibsVariantCommandOptions);
+        variantSubCommands.addCommand("samples", variantCommandOptions.samplesFilterCommandOptions);
 
         alignmentCommandOptions = new AlignmentCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("alignment", alignmentCommandOptions);

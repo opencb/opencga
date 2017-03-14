@@ -79,7 +79,6 @@ import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -474,23 +473,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
         return null;
-    }
-
-    @Override
-    public void forEach(Consumer<? super Variant> action) {
-        forEach(new Query(), action, new QueryOptions());
-    }
-
-    @Override
-    public void forEach(Query query, Consumer<? super Variant> action, QueryOptions options) {
-        Objects.requireNonNull(action);
-        try (VariantDBIterator variantDBIterator = iterator(query, options)) {
-            while (variantDBIterator.hasNext()) {
-                action.accept(variantDBIterator.next());
-            }
-        } catch (Exception e) {
-            Throwables.propagate(e);
-        }
     }
 
     @Override
