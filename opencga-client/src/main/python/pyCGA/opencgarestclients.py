@@ -475,7 +475,9 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         :param fileId: file Id
         """
-        return self._get('unlink', query_id=fileId, **options)
+        options_with_file_id = dict(fileId=fileId)
+        options_with_file_id.update(options)
+        return self._get('unlink', **options_with_file_id)
 
     def link(self, study, path, uri, **options):
         """
