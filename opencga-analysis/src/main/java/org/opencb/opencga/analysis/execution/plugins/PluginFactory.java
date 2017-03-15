@@ -112,8 +112,18 @@ public class PluginFactory {
      * @return      New instance of the plugin
      */
     public OpenCGAAnalysis getPlugin(String id) {
+        Class<? extends OpenCGAAnalysis> pluginClass = getPluginClass(id);
+        return getPlugin(pluginClass);
+    }
+
+    /**
+     * Get a new instance of a plugin given its id.
+     *
+     * @param pluginClass    Plugin class
+     * @return      New instance of the plugin
+     */
+    public OpenCGAAnalysis getPlugin(Class<? extends OpenCGAAnalysis> pluginClass) {
         try {
-            Class<? extends OpenCGAAnalysis> pluginClass = getPluginClass(id);
             if (pluginClass == null) {
                 return null;
             } else {

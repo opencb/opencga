@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.execution.plugins.ibs;
 
 import org.opencb.biodata.tools.variant.algorithm.IdentityByState;
 import org.opencb.biodata.tools.variant.algorithm.IdentityByStateClustering;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.models.tool.Manifest;
@@ -35,6 +36,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPOutputStream;
 
@@ -71,8 +73,7 @@ public class IbsAnalysis extends OpenCGAAnalysis {
     }
 
     @Override
-    public int run() throws Exception {
-
+    public int run(Map<String, Path> input, Path outdir, ObjectMap params) throws Exception {
         CatalogManager catalogManager = getCatalogManager();
         String sessionId = getSessionId();
         long studyId = getStudyId();
@@ -89,8 +90,7 @@ public class IbsAnalysis extends OpenCGAAnalysis {
         Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
 
         List<IdentityByState> identityByStateList = ibsc.countIBS(dbAdaptor.iterator(query, null), samples);
-        String outdir = getConfiguration().getString(OUTDIR);
-        Path outfile = Paths.get(outdir).resolve(String.valueOf(studyId) + ".genome.gz");
+        Path outfile = outdir.resolve(String.valueOf(studyId) + ".genome.gz");
 
         try (OutputStream outputStream = new GZIPOutputStream(new FileOutputStream(outfile.toFile()))) {
             ibsc.write(outputStream, identityByStateList, samples);

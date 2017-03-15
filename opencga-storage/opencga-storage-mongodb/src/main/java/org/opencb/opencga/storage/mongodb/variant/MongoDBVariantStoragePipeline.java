@@ -638,7 +638,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", reader::countNumVariants, 200);
         progressLogger.setApproximateTotalCount(reader.countAproxNumVariants());
 
-        boolean ignoreOverlapping = options.getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(), MERGE_IGNORE_OVERLAPPING_VARIANTS.defaultValue());
+        boolean ignoreOverlapping = options.getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(),
+                MERGE_IGNORE_OVERLAPPING_VARIANTS.defaultValue());
         MongoDBVariantMerger variantMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds, indexedFiles, resume,
                 ignoreOverlapping);
         MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(dbAdaptor.getVariantsCollection(), stageCollection,

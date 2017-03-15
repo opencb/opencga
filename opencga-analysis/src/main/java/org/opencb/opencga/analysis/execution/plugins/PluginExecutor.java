@@ -17,11 +17,15 @@
 package org.opencb.opencga.analysis.execution.plugins;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.analysis.AnalysisExecutionException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 /**
  * Created on 26/11/15
@@ -40,11 +44,25 @@ public class PluginExecutor {
         this.sessionId = sessionId;
     }
 
-    public int run(Job job) throws Exception {
+    public int execute(Job job) throws CatalogException, AnalysisExecutionException {
+        return execute(job.getToolName(), job.getExecution(), catalogManager.getStudyIdByJobId(job.getId()), job.getParams());
+    }
 
-        OpenCGAAnalysis plugin = PluginFactory.get().getPlugin(job.getToolName());
+    public int execute(String pluginId, String execution, long studyId, Map<String, String> params)
+            throws CatalogException, AnalysisExecutionException {
+        return execute(PluginFactory.get().getPlugin(pluginId), execution, studyId, params);
+    }
+
+    public <T extends OpenCGAAnalysis> int execute(Class<T> clazz, String execution, long studyId, Map<String, String> params)
+            throws CatalogException, AnalysisExecutionException {
+        return execute(PluginFactory.get().getPlugin(clazz), execution, studyId, params);
+    }
+
+    private int execute(OpenCGAAnalysis plugin, String execution, long studyId, Map<String, String> params)
+            throws CatalogException, AnalysisExecutionException {
+
         ObjectMap configuration = new ObjectMap();
-        configuration.putAll(job.getParams());
+        configuration.putAll(params);
 
         //TODO: Add file appender
         Logger logger = LoggerFactory.getLogger(plugin.getClass());
@@ -53,13 +71,13 @@ public class PluginExecutor {
         CatalogManager catalogManager = this.catalogManager;
 
         plugin.init(logger, configuration, catalogManager, StorageEngineFactory.get(),
-                catalogManager.getStudyIdByJobId(job.getId()), sessionId);
+                studyId, execution, sessionId);
 
         int result;
         try {
             result = plugin.run();
         } catch (Exception e) {
-            throw new Exception(e);    //TODO: Handle this
+            throw new AnalysisExecutionException(e);    //TODO: Handle this
         }
 
         return result;
