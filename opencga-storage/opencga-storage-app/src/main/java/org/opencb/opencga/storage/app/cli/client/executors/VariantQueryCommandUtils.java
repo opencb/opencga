@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.app.cli.client.executors;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -310,8 +311,14 @@ public class VariantQueryCommandUtils {
         return queryOptions;
     }
 
+    protected static void addParam(Query query, QueryParam key, Collection value) {
+        if (CollectionUtils.isNotEmpty(value)) {
+            query.put(key.key(), value);
+        }
+    }
+
     protected static void addParam(Query query, QueryParam key, String value) {
-        if (value != null && !value.isEmpty()) {
+        if (StringUtils.isNotEmpty(value)) {
             query.put(key.key(), value);
         }
     }

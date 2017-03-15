@@ -168,8 +168,8 @@ public class StorageVariantCommandOptions {
 
     public static class BasicVariantQueryOptions {
 
-        @Parameter(names = {"--id"}, description = VariantDBAdaptor.ID_DESCR)
-        public String id;
+        @Parameter(names = {"--id"}, description = VariantDBAdaptor.ID_DESCR, variableArity = true)
+        public List<String> id;
 
         @Parameter(names = {"-r", "--region"}, description = VariantDBAdaptor.REGION_DESCR)
         public String region;
@@ -224,7 +224,7 @@ public class StorageVariantCommandOptions {
                 "NA0001:0/0,0/1;NA0002:0/1", arity = 1)
         public String sampleGenotype;
 
-        @Parameter(names = {"--samples"}, description = VariantDBAdaptor.SAMPLES_DESCR, arity = 1)
+        @Parameter(names = {"--sample"}, description = VariantDBAdaptor.SAMPLES_DESCR, arity = 1)
         public String samples;
 
         @Parameter(names = {"-f", "--file"}, description = "A comma separated list of files to be used as filter", arity = 1)
@@ -334,7 +334,7 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--annot-xref"}, description = "XRef", arity = 1)
         public String annotXref;
 
-        @Parameter(names = {"--samples-metadata"}, description = "Returns the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.")
+        @Parameter(names = {"--sample-metadata"}, description = "Returns the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.")
         public boolean samplesMetadata;
 
         @Parameter(names = {"--summary"}, description = "Fast fetch of main variant parameters")

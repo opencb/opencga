@@ -613,7 +613,7 @@ public class VariantCommandOptions {
 //        @Parameter(names = {"--sample-filter"}, description = SAMPLE_FILTER_DESC)
 //        public String sampleFilter;
 
-        @Parameter(names = {"--samples"}, description = "List of samples to check. By default, all samples")
+        @Parameter(names = {"--sample"}, description = "List of samples to check. By default, all samples")
         public String samples;
 
         @Parameter(names = {"--all"}, description = "Samples must be present in ALL variants or in ANY variant.")
