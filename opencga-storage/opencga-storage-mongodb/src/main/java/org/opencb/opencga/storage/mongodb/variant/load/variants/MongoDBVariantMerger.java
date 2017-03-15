@@ -240,7 +240,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     private boolean resume;
 
     public MongoDBVariantMerger(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration, List<Integer> fileIds,
-                                Set<Integer> indexedFiles, boolean resume) {
+                                Set<Integer> indexedFiles, boolean resume, boolean ignoreOverlapping) {
         this.dbAdaptor = Objects.requireNonNull(dbAdaptor);
         this.studyConfiguration = Objects.requireNonNull(studyConfiguration);
         this.fileIds = Objects.requireNonNull(fileIds);
@@ -263,7 +263,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             addUnknownGenotypes = true;
         }
 
-        checkOverlappings = fileIds.size() > 1 || !indexedFiles.isEmpty();
+        checkOverlappings = !ignoreOverlapping && (fileIds.size() > 1 || !indexedFiles.isEmpty());
         DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(this.studyConfiguration);
         studyConverter = new DocumentToStudyVariantEntryConverter(false, samplesConverter);
         variantConverter = new DocumentToVariantConverter(studyConverter, null);

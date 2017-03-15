@@ -79,6 +79,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         MERGE("merge", false),
         MERGE_SKIP("merge.skip", false), // Internal use only
         MERGE_RESUME("merge.resume", false),
+        MERGE_IGNORE_OVERLAPPING_VARIANTS("merge.ignore-overlapping-variants", false),   //Do not look for overlapping variants
         MERGE_PARALLEL_WRITE("merge.parallel.write", false),
         MERGE_BATCH_SIZE("merge.batch.size", 10);          //Number of files to merge directly from first to second collection
 
