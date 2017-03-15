@@ -20,6 +20,7 @@ class _ParentRestClient(object):
         self._category = category
         self.session_id = session_id
         self.login_handler = login_handler
+        self._on_retry = None
 
     @staticmethod
     def _get_query_id_str(query_ids):
