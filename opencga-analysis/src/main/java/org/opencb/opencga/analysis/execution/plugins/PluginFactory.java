@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This class scans all the classpath using the library {@link Reflections} and find all the
@@ -39,22 +40,34 @@ public class PluginFactory {
     private Logger logger = LoggerFactory.getLogger(PluginFactory.class);
 
     private static PluginFactory pluginFactory;
-    private final Reflections reflections;
+    private Reflections reflections;
     private final Map<String, Class<? extends OpenCGAAnalysis>> pluginsIdMap = new HashMap<>();
+    private final AtomicBoolean init = new AtomicBoolean(false);
 
     private PluginFactory() {
-//        Reflections.log = null; // Uncomment to skip logs
-        reflections = new Reflections(new ConfigurationBuilder()
-                .setScanners(new SubTypesScanner()).addUrls(ClasspathHelper.forJavaClassPath())
-                .filterInputsBy(input -> input.endsWith(".class"))
-        );
-        init();
+    }
+
+    private void lazyInit() {
+        if (!init.get()) {
+            synchronized (init) {
+                if (!init.get()) {
+                    init();
+                }
+            }
+            init.set(true);
+        }
     }
 
     /**
      * Initialize the pluginsIdMap. Find all the subtypes of {@link OpenCGAAnalysis}
      */
     private void init() {
+//        Reflections.log = null; // Uncomment to skip logs
+        reflections = new Reflections(new ConfigurationBuilder()
+                .setScanners(new SubTypesScanner()).addUrls(ClasspathHelper.forJavaClassPath())
+                .filterInputsBy(input -> input.endsWith(".class"))
+        );
+
         Set<Class<? extends OpenCGAAnalysis>> plugins = reflections.getSubTypesOf(OpenCGAAnalysis.class);
         List<String> duplicatedPlugins = new LinkedList<>();
         for (Class<? extends OpenCGAAnalysis> pluginClazz : plugins) {
@@ -92,6 +105,7 @@ public class PluginFactory {
      * @return  Map between plugin id and plugin class
      */
     public Map<String, Class<? extends OpenCGAAnalysis>> getAllPlugins() {
+        lazyInit();
         return Collections.unmodifiableMap(pluginsIdMap);
     }
 
@@ -102,6 +116,7 @@ public class PluginFactory {
      * @return      Plugin class
      */
     public Class<? extends OpenCGAAnalysis> getPluginClass(String id) {
+        lazyInit();
         return pluginsIdMap.get(id);
     }
 

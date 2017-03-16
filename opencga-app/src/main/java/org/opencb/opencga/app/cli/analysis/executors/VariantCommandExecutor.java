@@ -20,10 +20,13 @@ package org.opencb.opencga.app.cli.analysis.executors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
+import org.opencb.opencga.analysis.execution.plugins.PluginExecutor;
+import org.opencb.opencga.analysis.execution.plugins.hist.VariantHistogramAnalysis;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DataStore;
@@ -104,6 +107,8 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 break;
             case "samples":
                 samples();
+            case "histogram":
+                histogram();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -359,5 +364,19 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             });
 
         }
+    }
+
+    private void histogram() throws Exception {
+        VariantCommandOptions.VariantHistogramCommandOptions cliOptions = variantCommandOptions.histogramCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+        params.put(VariantHistogramAnalysis.INTERVAL, cliOptions.interval.toString());
+        params.put(VariantHistogramAnalysis.OUTDIR, cliOptions.outdir);
+        Query query = VariantQueryCommandUtils.parseBasicVariantQuery(cliOptions.variantQueryOptions, new Query());
+        params.putAll(query);
+
+        new PluginExecutor(catalogManager, sessionId)
+                .execute(VariantHistogramAnalysis.class, "default", catalogManager.getStudyId(cliOptions.study, sessionId), params);
+
     }
 }

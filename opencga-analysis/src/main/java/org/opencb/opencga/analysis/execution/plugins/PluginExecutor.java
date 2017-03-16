@@ -53,12 +53,12 @@ public class PluginExecutor {
         return execute(PluginFactory.get().getPlugin(pluginId), execution, studyId, params);
     }
 
-    public <T extends OpenCGAAnalysis> int execute(Class<T> clazz, String execution, long studyId, Map<String, String> params)
+    public <T extends OpenCGAAnalysis> int execute(Class<T> clazz, String execution, long studyId, Map<String, ?> params)
             throws CatalogException, AnalysisExecutionException {
         return execute(PluginFactory.get().getPlugin(clazz), execution, studyId, params);
     }
 
-    private int execute(OpenCGAAnalysis plugin, String execution, long studyId, Map<String, String> params)
+    private int execute(OpenCGAAnalysis plugin, String execution, long studyId, Map<String, ?> params)
             throws CatalogException, AnalysisExecutionException {
 
         ObjectMap configuration = new ObjectMap();

@@ -53,11 +53,6 @@ public class TestAnalysis extends OpenCGAAnalysis {
                 new Execution("default", "default", "", Collections.emptyList(), Collections.emptyList(), OUTDIR, validParams, Collections.emptyList(), null, null)
         );
         manifest = new Manifest(null, "0.1.0", PLUGIN_ID, "Test plugin", "", "", "", null, Collections.emptyList(), executions, null, null);
-        try {
-            System.out.println(new ObjectMapper().writer().writeValueAsString(manifest));
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
     }
 
     @Override

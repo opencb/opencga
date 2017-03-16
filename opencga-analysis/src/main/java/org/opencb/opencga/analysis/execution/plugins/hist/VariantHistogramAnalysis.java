@@ -11,16 +11,14 @@ import org.opencb.opencga.catalog.models.tool.Execution;
 import org.opencb.opencga.catalog.models.tool.Manifest;
 import org.opencb.opencga.catalog.models.tool.Option;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static java.util.Arrays.asList;
 
@@ -78,15 +76,20 @@ public class VariantHistogramAnalysis extends OpenCGAAnalysis {
         Region region = new Region("", 0, 0);
         List<Variant> variants = new ArrayList<>();
         PrintStream out;
-        boolean stdout = StringUtils.isEmpty(fileName);
+        File file = outdir.toAbsolutePath().toFile();
+        boolean stdout = file.isDirectory() && StringUtils.isEmpty(fileName);
         if (stdout) {
             out = System.out;
         } else {
-            File output = outdir.resolve("file.txt").toFile();
-            out = new PrintStream(new BufferedOutputStream(new FileOutputStream(output)));
+            if (StringUtils.isNotEmpty(fileName)) {
+                file = outdir.resolve(fileName).toFile();
+            }
+            out = new PrintStream(new BufferedOutputStream(new FileOutputStream(file)));
         }
         try {
-            out.println("#CHR\tSTART\tEND\tNUM");
+            out.println("#CHR\tSTART\tEND\tCOUNT");
+            QueryOptions options = new QueryOptions(QueryOptions.SORT, true)
+                    .append(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES, VariantField.ANNOTATION));
             getVariantStorageManager().iterable(getSessionId()).forEach(query, variant -> {
                 if (checkVariant(variant)) {
                     if (region.overlaps(variant.getChromosome(), variant.getStart(), variant.getEnd())) {
@@ -109,7 +112,7 @@ public class VariantHistogramAnalysis extends OpenCGAAnalysis {
                         variants.add(variant);
                     }
                 }
-            }, new QueryOptions(QueryOptions.SORT, true));
+            }, options);
         } finally {
             if (!stdout) {
                 out.close();

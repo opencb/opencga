@@ -33,6 +33,7 @@ public class VariantCommandOptions {
     public VariantImportCommandOptions importVariantCommandOptions;
     public VariantIbsCommandOptions ibsVariantCommandOptions;
     public VariantSamplesFilterCommandOptions samplesFilterCommandOptions;
+    public VariantHistogramCommandOptions histogramCommandOptions;
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
@@ -56,6 +57,7 @@ public class VariantCommandOptions {
         this.importVariantCommandOptions = new VariantImportCommandOptions();
         this.ibsVariantCommandOptions = new VariantIbsCommandOptions();
         this.samplesFilterCommandOptions = new VariantSamplesFilterCommandOptions();
+        this.histogramCommandOptions = new VariantHistogramCommandOptions();
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
@@ -626,5 +628,30 @@ public class VariantCommandOptions {
 
 //        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
 //        public String output;
+    }
+
+    @Parameters(commandNames = {"histogram"}, commandDescription = "")
+    public class VariantHistogramCommandOptions {
+
+        @ParametersDelegate
+        public StorageVariantCommandOptions.BasicVariantQueryOptions variantQueryOptions = new StorageVariantCommandOptions.BasicVariantQueryOptions();
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
+        public String study;
+
+        @Parameter(names = {"--sample"}, description = "List of samples to check. By default, all samples")
+        public String samples;
+
+        @Parameter(names = {"--interval"}, description = "")
+        public Integer interval = 1000;
+
+        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
+        public String outdir;
     }
 }
