@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.execution.plugins.PluginExecutor;
 import org.opencb.opencga.analysis.execution.plugins.hist.VariantHistogramAnalysis;
+import org.opencb.opencga.analysis.execution.plugins.ibs.IbsAnalysis;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DataStore;
@@ -107,6 +108,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 break;
             case "samples":
                 samples();
+                break;
             case "histogram":
                 histogram();
                 break;
@@ -131,8 +133,17 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
     }
 
 
-    private void ibs() {
-        throw new UnsupportedOperationException();
+    private void ibs() throws CatalogException, AnalysisExecutionException {
+        VariantCommandOptions.VariantIbsCommandOptions cliOptions = variantCommandOptions.ibsVariantCommandOptions;
+
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(IbsAnalysis.SAMPLES, cliOptions.samples);
+        params.putIfNotEmpty(IbsAnalysis.OUTDIR, cliOptions.outdir);
+
+        new PluginExecutor(catalogManager, sessionId).execute(IbsAnalysis.class, "default",
+                catalogManager.getStudyId(cliOptions.study, sessionId), params);
+
+
     }
 
 

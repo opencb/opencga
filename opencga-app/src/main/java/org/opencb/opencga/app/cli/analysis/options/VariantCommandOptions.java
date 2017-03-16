@@ -589,11 +589,20 @@ public class VariantCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"ibs"}, commandDescription = "[PENDING] ")
-    public class VariantIbsCommandOptions { //extends CatalogDatabaseCommandOptions {
+    @Parameters(commandNames = {"ibs"}, commandDescription = "[EXPERIMENTAL] Identity By State Clustering")
+    public class VariantIbsCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
+        public String study;
+
+        @Parameter(names = {"--sample"}, description = "List of samples to check. By default, all samples")
+        public String samples;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir = "-";
     }
 
     @Parameters(commandNames = {"samples"}, commandDescription = "Get samples given a set of variants")

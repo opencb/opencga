@@ -16,23 +16,26 @@
 
 package org.opencb.opencga.analysis.execution.plugins.ibs;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.tools.variant.algorithm.IdentityByState;
 import org.opencb.biodata.tools.variant.algorithm.IdentityByStateClustering;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.models.tool.Manifest;
-import org.opencb.opencga.catalog.models.tool.Execution;
-import org.opencb.opencga.catalog.models.tool.Option;
 import org.opencb.opencga.analysis.execution.plugins.OpenCGAAnalysis;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.tool.Execution;
+import org.opencb.opencga.catalog.models.tool.Manifest;
+import org.opencb.opencga.catalog.models.tool.Option;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -48,18 +51,19 @@ import java.util.zip.GZIPOutputStream;
 public class IbsAnalysis extends OpenCGAAnalysis {
 
     public static final String OUTDIR = "outdir";
+    public static final String SAMPLES = "samples";
     public static final String PLUGIN_ID = "ibs_plugin";
     private final Manifest manifest;
 
     public IbsAnalysis() {
-        List<Option> validParams = Arrays.asList(
-                new Option(OUTDIR, "", true)
-        );
-        List<Execution> executions = Collections.singletonList(
-                new Execution("default", "default", "", Collections.emptyList(), Collections.emptyList(), OUTDIR, 
-                        validParams, Collections.emptyList(), null, null)
-        );
-        manifest = new Manifest(null, "0.1.0", PLUGIN_ID, "IBS plugin", "", "", "", null, Collections.emptyList(), executions, null, null);
+        manifest = new Manifest(null, "0.1.0", PLUGIN_ID, "IBS plugin", "", "", "", null, Collections.emptyList(),
+                Collections.singletonList(
+                        new Execution("default", "default", "", Collections.emptyList(), Collections.emptyList(), OUTDIR,
+                                Arrays.asList(
+                                        new Option(OUTDIR, "", true),
+                                        new Option(SAMPLES, "", false)
+                                ), Collections.emptyList(), null, null)
+                ), null, null);
     }
 
     @Override
@@ -77,23 +81,44 @@ public class IbsAnalysis extends OpenCGAAnalysis {
         CatalogManager catalogManager = getCatalogManager();
         String sessionId = getSessionId();
         long studyId = getStudyId();
-        VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(studyId);
 
         IdentityByStateClustering ibsc = new IdentityByStateClustering();
-        List<String> samples = catalogManager
-                .getAllSamples(studyId, new Query(), new QueryOptions(), sessionId)
+        List<String> samples;
+        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
+        QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, VariantField.ANNOTATION);
+
+        Query samplesQuery = new Query();
+        if (StringUtils.isNotEmpty(params.getString(SAMPLES))) {
+            List<Long> sampleIds = catalogManager.getSampleIds(params.getString(SAMPLES), sessionId);
+            samplesQuery.append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
+            query.append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), sampleIds);
+        }
+        samples = catalogManager
+                .getAllSamples(studyId, samplesQuery, new QueryOptions(), sessionId)
                 .getResult()
                 .stream()
                 .map(Sample::getName)
                 .collect(Collectors.toList());
 
-        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
 
-        List<IdentityByState> identityByStateList = ibsc.countIBS(dbAdaptor.iterator(query, null), samples);
-        Path outfile = outdir.resolve(String.valueOf(studyId) + ".genome.gz");
+        List<IdentityByState> identityByStateList;
+        try (VariantDBIterator iterator = getVariantStorageManager().iterable(sessionId).iterator(query, options)) {
+            identityByStateList = ibsc.countIBS(iterator, samples);
+        }
+        if ("-".equals(outdir.getFileName().toString())) {
+            ibsc.write(System.out, identityByStateList, samples);
+        } else {
+            Path outfile;
+            if (outdir.toAbsolutePath().toFile().isDirectory()) {
+                String alias = catalogManager.getStudy(studyId, sessionId).first().getAlias();
+                outfile = outdir.resolve(alias + ".genome.gz");
+            } else {
+                outfile = outdir;
+            }
 
-        try (OutputStream outputStream = new GZIPOutputStream(new FileOutputStream(outfile.toFile()))) {
-            ibsc.write(outputStream, identityByStateList, samples);
+            try (OutputStream outputStream = new GZIPOutputStream(new FileOutputStream(outfile.toFile()))) {
+                ibsc.write(outputStream, identityByStateList, samples);
+            }
         }
 
         return 0;
