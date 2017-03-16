@@ -888,22 +888,17 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             Query query = new Query(originalQuery);
             boolean nonGeneRegionFilter = false;
             /* VARIANT PARAMS */
+            List<Region> regions = new ArrayList<>();
             if (isValidParam(query, VariantQueryParams.CHROMOSOME)) {
                 nonGeneRegionFilter = true;
-                List<String> chromosomes = query.getAsStringList(VariantQueryParams.CHROMOSOME.key());
-                LinkedList<String> regions = new LinkedList<>(query.getAsStringList(VariantQueryParams.REGION.key()));
-                regions.addAll(chromosomes);
-                query.put(VariantQueryParams.REGION.key(), regions);
+                regions.addAll(Region.parseRegions(query.getString(VariantQueryParams.CHROMOSOME.key()), true));
             }
 
             if (isValidParam(query, VariantQueryParams.REGION)) {
                 nonGeneRegionFilter = true;
-                List<String> stringList = query.getAsStringList(VariantQueryParams.REGION.key());
-                List<Region> regions = new ArrayList<>(stringList.size());
-                for (String reg : stringList) {
-                    Region region = Region.parseRegion(reg);
-                    regions.add(region);
-                }
+                regions.addAll(Region.parseRegions(query.getString(VariantQueryParams.REGION.key()), true));
+            }
+            if (!regions.isEmpty()) {
                 getRegionFilter(regions, builder);
             }
 

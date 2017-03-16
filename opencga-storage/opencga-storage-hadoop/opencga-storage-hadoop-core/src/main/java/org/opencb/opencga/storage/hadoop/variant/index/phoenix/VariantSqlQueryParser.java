@@ -262,13 +262,13 @@ public class VariantSqlQueryParser {
 
 
         if (isValidParam(query, REGION)) {
-            List<Region> regions = Region.parseRegions(query.getString(REGION.key()));
+            List<Region> regions = Region.parseRegions(query.getString(REGION.key()), true);
             for (Region region : regions) {
                 regionFilters.add(getRegionFilter(region));
             }
         }
 
-        addQueryFilter(query, CHROMOSOME, VariantColumn.CHROMOSOME, regionFilters);
+        addQueryFilter(query, CHROMOSOME, VariantColumn.CHROMOSOME, regionFilters, Region::normalizeChromosome);
 
 //        addQueryFilter(query, ID, VariantColumn.XREFS, regionFilters);
         List<Variant> variants = new ArrayList<>();
