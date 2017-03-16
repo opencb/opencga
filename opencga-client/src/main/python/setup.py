@@ -4,6 +4,8 @@ setup(
     name='pyCGA',
     version='1.0.1',
     scripts=[],
+    packages=['pyCGA', 'pyCGA/Utils'],
+    package_dir={'pyCGA': 'pyCGA'},
     url='',
     license='',
     author='antonior,dapregi',

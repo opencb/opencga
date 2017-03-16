@@ -219,7 +219,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 queryResult = variantManager.groupBy(groupBy, query, queryOptions, sessionId);
             } else {
                 queryResult = variantManager.get(query, queryOptions, sessionId);
-                System.out.println("queryResult = " + jsonObjectMapper.writeValueAsString(queryResult));
+//                System.out.println("queryResult = " + jsonObjectMapper.writeValueAsString(queryResult));
 
 //                VariantQueryResult variantQueryResult = variantManager.get(query, queryOptions, sessionId);
 //                queryResults.add(variantQueryResult);

@@ -139,7 +139,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public VariantStorageEngine(String storageEngineId, StorageConfiguration configuration) {
         super(storageEngineId, configuration);
 
-        variantSearchManager = new VariantSearchManager(configuration);
+        variantSearchManager = new VariantSearchManager(null, configuration);
 
         logger = LoggerFactory.getLogger(VariantStorageEngine.class);
     }
@@ -417,9 +417,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public void searchIndex(String database, Query query, QueryOptions queryOptions) throws StorageEngineException, IOException,
             VariantSearchException {
 
-        if (variantSearchManager == null) {
-            variantSearchManager = new VariantSearchManager(configuration);
-        }
+        VariantDBAdaptor dbAdaptor = getDBAdaptor(database);
+        variantSearchManager = new VariantSearchManager(dbAdaptor.getDBAdaptorUtils(), configuration);
 
         if (configuration.getSearch().getActive() && variantSearchManager.isAlive(database)) {
             // first, create the collection it it does not exist
@@ -432,12 +431,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
 
             // then, load variants
-            VariantDBAdaptor dbAdaptor = getDBAdaptor(database);
             queryOptions = new QueryOptions();
             queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES_DATA, VariantField.STUDIES_FILES));
             VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
             variantSearchManager.load(database, iterator);
         }
+        dbAdaptor.close();
     }
 
     /**
