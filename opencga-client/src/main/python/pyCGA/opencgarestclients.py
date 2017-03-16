@@ -2,9 +2,10 @@ import time
 
 import sys
 
+from retry import retry
 from pyCGA.Utils.AvroSchema import AvroSchemaFile
 
-from pyCGA.commons import execute, OpenCGAResponseList, is_not_logged_in_exception, is_bad_login_exception
+from pyCGA.commons import execute, OpenCGAResponseList
 from pyCGA.opencgaconfig import ConfigClient
 
 
@@ -16,11 +17,15 @@ class _ParentRestClient(object):
         :param login_handler: a parameterless method that can log in this connector
         and return a session id
         """
-        self._configuration = configuration
+        self._cfg = configuration
         self._category = category
         self.session_id = session_id
         self.login_handler = login_handler
         self._on_retry = None
+
+    def _client_login_handler(self):
+        if self.login_handler:
+            self.session_id = self.login_handler()
 
     @staticmethod
     def _get_query_id_str(query_ids):
@@ -38,53 +43,34 @@ class _ParentRestClient(object):
 
         query_ids_str = self._get_query_id_str(query_id)
 
-        if self._configuration.retry:
-            max_attempts = self._configuration.max_attempts
-            retry_seconds = self._configuration.min_retry_seconds
-        else:
-            max_attempts = 1
-            retry_seconds = 0
+        def exec_retry():
+            return execute(host=self._cfg.host,
+                           version=self._cfg.version,
+                           sid=self.session_id,
+                           category=self._category,
+                           subcategory=subcategory,
+                           method=method,
+                           query_id=query_ids_str,
+                           second_query_id=second_query_id,
+                           resource=resource,
+                           data=data,
+                           options=options)
 
-        attempt_number = 1
-        while True:
-            try:
-                response = execute(host=self._configuration.host,
-                                   version=self._configuration.version,
-                                   sid=self.session_id,
-                                   category=self._category,
-                                   subcategory=subcategory,
-                                   method=method,
-                                   query_id=query_ids_str,
-                                   second_query_id=second_query_id,
-                                   resource=resource,
-                                   data=data,
-                                   options=options)
-            except Exception as e:
-                if is_not_logged_in_exception(e):
-                    if self.login_handler:
-                        self.session_id = self.login_handler()
-                    else:
-                        raise e  # there's no point in retrying if we can't log in
-                elif is_bad_login_exception(e):
-                    raise e  # no point in retrying login if we have the wrong credentials
-                else:
-                    if attempt_number >= max_attempts:  # last attempt failed, propagate error:
-                        raise e
-                    if self.on_retry:
-                        # notify that we are retrying
-                        exc_type, exc_val, exc_tb = sys.exc_info()
-                        self.on_retry(self, exc_type, exc_val, exc_tb, dict(
-                                          method=method, resource=resource, query_id=query_id,
-                                          category=self._category, subcategory=subcategory,
-                                          second_query_id=second_query_id, data=data,
-                                          options=options
-                                      ))
+        def notify_retry(exc_type, exc_val, exc_tb):
+            if self._on_retry:
+                self._on_retry(self, exc_type, exc_val, exc_tb, dict(
+                    method=method, resource=resource, query_id=query_id,
+                    category=self._category, subcategory=subcategory,
+                    second_query_id=second_query_id, data=data,
+                    options=options
+                ))
 
-                    time.sleep(retry_seconds)
-                    attempt_number += 1
-                    retry_seconds = min(retry_seconds * 2, self._configuration.max_retry_seconds)
-            else:
-                return OpenCGAResponseList(response, query_ids_str)
+        response = retry(
+            exec_retry, self._cfg.max_attempts, self._cfg.min_retry_secs, self._cfg.max_retry_secs,
+            login_handler=self._client_login_handler if self.login_handler else None,
+            on_retry=notify_retry)
+
+        return OpenCGAResponseList(response, query_ids_str)
 
     def _get(self, resource, query_id=None, subcategory=None, second_query_id=None, **options):
         """Queries the REST service and returns the result"""
@@ -824,17 +810,19 @@ class OpenCGAClient(object):
         :param on_retry: callback to be called with client retries an operation.
             It must accept parameters: client, exc_type, exc_val, exc_tb, call
         """
-        self.configuration = ConfigClient(configuration)
+        self.configuration = ConfigClient(configuration, on_retry)
         self.on_retry = on_retry
+        self.clients = []
+        self.user_id = user  # if user and session_id are supplied, we can log out
         if user and pwd:
-            # self.users = Users(self.configuration)
-            self._login(user, pwd)
+            self._login_handler = self._make_login_handler(user, pwd)
+            self._login()
         else:
             if not session_id:
                 raise Exception("OpenCGAClient: either user and password or session_id must be supplied")
-            self.user_id = user  # if user and session_id are supplied, we can log out
+            self._login_handler = None
             self.session_id = session_id
-            self._create_clients()
+        self._create_clients()
 
     def __enter__(self):
         return self
@@ -842,53 +830,49 @@ class OpenCGAClient(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.logout()
 
-    def _create_clients(self, login_handler=None):
-        self.users = Users(self.configuration, self.session_id, login_handler)
-        self.users.on_retry = self.on_retry
+    def _create_clients(self):
+        self.users = Users(self.configuration, self.session_id, self._login_handler)
+        self.projects = Projects(self.configuration, self.session_id, self._login_handler)
+        self.studies = Studies(self.configuration, self.session_id, self._login_handler)
+        self.files = Files(self.configuration, self.session_id, self._login_handler)
+        self.samples = Samples(self.configuration, self.session_id, self._login_handler)
+        self.cohorts = Cohorts(self.configuration, self.session_id, self._login_handler)
+        self.jobs = Jobs(self.configuration, self.session_id, self._login_handler)
+        self.individuals = Individuals(self.configuration, self.session_id, self._login_handler)
+        self.variable_sets = VariableSets(self.configuration, self.session_id, self._login_handler)
+        self.analysis_alignment = AnalysisAlignment(self.configuration, self.session_id, self._login_handler)
+        self.analysis_variant = AnalysisVariant(self.configuration, self.session_id, self._login_handler)
+        self.ga4gh = GA4GH(self.configuration, self.session_id, self._login_handler)
 
-        self.projects = Projects(self.configuration, self.session_id, login_handler)
-        self.projects.on_retry = self.on_retry
+        self.clients = [self.users, self.projects, self.studies, self.files,
+                        self.samples, self.cohorts, self.jobs, self.individuals,
+                        self.variable_sets, self.analysis_alignment, self.analysis_variant,
+                        self.ga4gh]
 
-        self.studies = Studies(self.configuration, self.session_id, login_handler)
-        self.studies.on_retry = self.on_retry
+        for client in self.clients:
+            client.on_retry = self.on_retry
 
-        self.files = Files(self.configuration, self.session_id, login_handler)
-        self.files.on_retry = self.on_retry
-
-        self.samples = Samples(self.configuration, self.session_id, login_handler)
-        self.samples.on_retry = self.on_retry
-
-        self.cohorts = Cohorts(self.configuration, self.session_id, login_handler)
-        self.cohorts.on_retry = self.on_retry
-
-        self.jobs = Jobs(self.configuration, self.session_id, login_handler)
-        self.jobs.on_retry = self.on_retry
-
-        self.individuals = Individuals(self.configuration, self.session_id, login_handler)
-        self.individuals.on_retry = self.on_retry
-
-        self.variable_sets = VariableSets(self.configuration, self.session_id, login_handler)
-        self.variable_sets.on_retry = self.on_retry
-
-        self.analysis_alignment = AnalysisAlignment(self.configuration, self.session_id, login_handler)
-        self.analysis_alignment.on_retry = self.on_retry
-
-        self.analysis_variant = AnalysisVariant(self.configuration, self.session_id, login_handler)
-        self.analysis_variant.on_retry = self.on_retry
-
-        self.ga4gh = GA4GH(self.configuration, self.session_id, login_handler)
-        self.ga4gh.on_retry = self.on_retry
-
-    def _login(self, user, pwd):
-        self.user_id = user
-        self.session_id = Users(self.configuration).login(user=user, pwd=pwd).get().sessionId
-
+    def _make_login_handler(self, user, pwd):
+        """
+        Returns a closure that performs the log-in. This will be called on retries
+        if the current session ever expires.
+        The reason for using a closure and not a normal function is that a normal
+        function would require storing the password in a field. It is more secure
+        not to do so. This way, the password stored in the closure is inaccessible
+        to other code
+        """
         def login_handler():
-            return self._login(user, pwd)
-            # for future logins. This we retain the password but it's not accessible to other code
+            self.user_id = user
+            self.session_id = Users(self.configuration).login(user=user, pwd=pwd).get().sessionId
+            for client in self.clients:
+                client.session_id = self.session_id  # renew the client's session id
+            return self.session_id
 
-        self._create_clients(login_handler)
-        return self.session_id
+        return login_handler
+
+    def _login(self):
+        assert self._login_handler, "Can't login without username and password provided"
+        self._login_handler()
 
     def logout(self):
         if self.user_id:

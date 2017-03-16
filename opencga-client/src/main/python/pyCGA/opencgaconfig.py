@@ -2,13 +2,19 @@ import requests
 import json
 import yaml
 
+from retry import retry
+
 
 class ConfigClient(object):
     """
     Configuration class shared between OpenCGA python clients
     """
 
-    def __init__(self, config_input=None):
+    def __init__(self, config_input=None, on_retry=None):
+        """
+        :param on_retry: A callback to be invoked when an operation is retried
+            It must accept parameters: client, exc_type, exc_val, exc_tb, call
+        """
         # Default config params
         self._configuration_input = config_input
         self._hosts = ['localhost:8080/opencga']
@@ -16,7 +22,8 @@ class ConfigClient(object):
             'host': '',
             'version': 'v1',
         }
-        self._retry = None
+        self._retry_config = None
+        self._on_retry = on_retry
 
         # If config info is provided, override default config params
         if config_input is not None:
@@ -49,22 +56,32 @@ class ConfigClient(object):
     def _override_config_params_from_dict(self, config_dict):
         """Overrides config params if a dict is provided"""
         if config_dict is not None:
-            if 'rest' in config_dict:
-                if 'hosts' in config_dict['rest']:
-                    self._hosts = config_dict['rest']['hosts']
-                    self._config['host'] = self._get_available_host()
-            if 'version' in config_dict:
-                self._config['version'] = config_dict['version']
             if 'retry' in config_dict:
-                self._retry = dict(
+                self._retry_config = dict(
                     max_attempts=config_dict['retry']['max_attempts'],
                     min_retry_seconds=config_dict['retry']['min_retry_seconds'],
                     max_retry_seconds=config_dict['retry']['max_retry_seconds'],
                 )
+            if 'rest' in config_dict:
+                if 'hosts' in config_dict['rest']:
+                    self._hosts = config_dict['rest']['hosts']
+                    self._config['host'] = self._get_available_host_retry()
+            if 'version' in config_dict:
+                self._config['version'] = config_dict['version']
 
         else:
             msg = 'No configuration parameters found'
             raise ValueError(msg)
+
+    def _get_available_host_retry(self):
+        def notify_retry(exc_type, exc_val, exc_tb):
+            if self._on_retry:
+                self._on_retry(self, exc_type, exc_val, exc_tb,
+                               dict(config=self._configuration_input))
+
+        return retry(
+            self._get_available_host, self.max_attempts, self.min_retry_secs,
+            self.max_retry_secs, on_retry=notify_retry)
 
     def _get_available_host(self):
         """Returns the first available host"""
@@ -107,7 +124,7 @@ class ConfigClient(object):
     @host.setter
     def host(self, new_host):
         if not (new_host.startswith('http://') or
-                    new_host.startswith('https://')):
+                new_host.startswith('https://')):
             new_host = 'http://' + new_host
         self._config['host'] = new_host
 
@@ -120,21 +137,24 @@ class ConfigClient(object):
         return self._configuration_input
 
     @property
-    def retry(self):
-        return self._retry
+    def retry_config(self):
+        return self._retry_config
 
-    @retry.setter
-    def retry(self, new_retry):
-        self._retry = new_retry
+    @retry_config.setter
+    def retry_config(self, new_retry_config):
+        self._retry_config = new_retry_config
 
     @property
     def max_attempts(self):
-        return self._retry['max_attempts']
+        """Returns configured max_attempts or 1 if not configured"""
+        return self._retry_config['max_attempts'] if self._retry_config else 1
 
     @property
-    def min_retry_seconds(self):
-        return self._retry['min_retry_seconds']
+    def min_retry_secs(self):
+        """Returns configured min_retry_seconds or 0 if not configured"""
+        return self._retry_config['min_retry_seconds'] if self._retry_config else 0
 
     @property
-    def max_retry_seconds(self):
-        return self._retry['max_retry_seconds']
+    def max_retry_secs(self):
+        """Returns configured max_retry_seconds or 0 if not configured"""
+        return self._retry_config['max_retry_seconds'] if self._retry_config else 0
