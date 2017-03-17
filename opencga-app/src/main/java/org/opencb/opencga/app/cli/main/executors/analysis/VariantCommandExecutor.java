@@ -113,6 +113,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
         VariantCommandOptions.VariantQueryCommandOptions queryCommandOptions = variantCommandOptions.queryVariantCommandOptions;
 
+        String study = resolveStudy(queryCommandOptions.study);
+
         ObjectMap params = new ObjectMap();
         params.putIfNotNull(VariantDBAdaptor.VariantQueryParams.ID.key(), queryCommandOptions.genericVariantQueryOptions.id);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.REGION.key(), queryCommandOptions.genericVariantQueryOptions.region);
@@ -125,7 +127,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), queryCommandOptions.genericVariantQueryOptions.returnStudy);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), queryCommandOptions.genericVariantQueryOptions.returnSample);
 //        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), queryCommandOptions.queryVariantsOptions.returnFile);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), queryCommandOptions.study);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.FILES.key(), queryCommandOptions.genericVariantQueryOptions.file);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), queryCommandOptions.genericVariantQueryOptions.returnFile);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.FILTER.key(), queryCommandOptions.genericVariantQueryOptions.filter);
@@ -262,9 +264,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             case "AUTO":
                 grpc = isGrpcAvailable() == null;
                 if (grpc) {
-                    logger.info("Using GRPC mode");
+                    logger.debug("Using GRPC mode");
                 } else {
-                    logger.info("Using REST mode");
+                    logger.debug("Using REST mode");
                 }
                 break;
             case "GRPC":

@@ -27,6 +27,8 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created on 27/05/16.
@@ -127,6 +129,29 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         }
     }
 
+
+    protected String resolveStudy(String study) {
+        if (StringUtils.isEmpty(study)) {
+            if (StringUtils.isNotEmpty(clientConfiguration.getDefaultStudy())) {
+                return clientConfiguration.getDefaultStudy();
+            }
+        } else {
+            // study is not empty, let's check if it is an alias
+            if (clientConfiguration.getAlias() != null && clientConfiguration.getAlias().size() > 0) {
+                String[] studies = study.split(",");
+                List<String> studyList = new ArrayList<>(studies.length);
+                for (String s : studies) {
+                    if (clientConfiguration.getAlias().containsKey(s)) {
+                        studyList.add(clientConfiguration.getAlias().get(study));
+                    } else {
+                        studyList.add(s);
+                    }
+                }
+                return StringUtils.join(studyList, ",");
+            }
+        }
+        return study;
+    }
 
     public void createOutput(QueryResponse queryResponse) {
         if (queryResponse != null) {

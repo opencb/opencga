@@ -154,7 +154,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
     private String getSingleValidStudy(String study) throws CatalogException {
         // First, check the study parameter, if is not empty we just return it, this the user's selection.
         if (StringUtils.isNotEmpty(study)) {
-            return study;
+            return resolveStudy(study);
         } else {
             // Second, check if there is a default study in the client configuration.
             if (StringUtils.isNotEmpty(clientConfiguration.getDefaultStudy())) {
