@@ -163,7 +163,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (StringUtils.isEmpty(species)) {
             species = clientConfiguration.getDefaultSpecies();
         }
-        cellBaseClient = new CellBaseClient(AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(species), assembly, clientConfiguration);
+        cellBaseClient = new CellBaseClient(AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(species), clientConfiguration);
         this.cacheManager = new CacheManager(storageConfiguration);
         this.variantSearchManager = new VariantSearchManager(utils, storageConfiguration);
         NUMBER_INSTANCES.incrementAndGet();
