@@ -4,8 +4,8 @@ logFile: null
 
 sessionDuration: 12000  # number of seconds that session remains open
 
-# Default study when -s, --study is empty
-defaultStudy: "reference_grch37:1kG_phase3"
+# Default study when -s, --study are empty, e.g. "reference_grch37:1kG_phase3"
+defaultStudy: ""
 
 # Alias to different studies, these can be fully qualified: user@project:study
 #alias:
