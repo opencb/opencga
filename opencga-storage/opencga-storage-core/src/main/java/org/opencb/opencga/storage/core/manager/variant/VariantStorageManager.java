@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.core.results.VariantFacetedQueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -391,6 +392,11 @@ public class VariantStorageManager extends StorageManager {
             return supplier.apply(dbAdaptor);
         }
     }
+    private <R> R secure(Query facetedQuery, Query query, QueryOptions queryOptions,
+                         String sessionId, Function<VariantDBAdaptor, R> supplier)
+            throws CatalogException, StorageEngineException, IOException {
+        return secure(query, queryOptions, sessionId, supplier);
+    }
 
     private Map<Long, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
@@ -503,5 +509,20 @@ public class VariantStorageManager extends StorageManager {
     @Override
     public void testConnection() throws StorageEngineException {
 
+    }
+
+    // ---------------------//
+    //   Facet methods      //
+    // ---------------------//
+
+    public VariantFacetedQueryResult<Variant> facet(Query facetedQuery, Query query, QueryOptions queryOptions, String sessionId)
+            throws CatalogException, StorageEngineException, IOException {
+        return secure(facetedQuery, query, queryOptions, sessionId, dbAdaptor -> {
+            addDefaultLimit(queryOptions);
+            logger.debug("getFacets {}, {}, {}", facetedQuery, query, queryOptions);
+            VariantFacetedQueryResult<Variant> result = dbAdaptor.facet(facetedQuery, query, queryOptions);
+            logger.debug("getFacets in {}ms", result.getDbTime());
+            return result;
+        });
     }
 }

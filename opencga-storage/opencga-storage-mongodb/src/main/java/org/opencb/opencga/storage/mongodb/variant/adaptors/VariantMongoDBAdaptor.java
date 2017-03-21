@@ -51,6 +51,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.core.results.VariantFacetedQueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.cache.CacheManager;
 import org.opencb.opencga.storage.core.config.CellBaseConfiguration;
@@ -2708,5 +2709,25 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public VariantMongoDBAdaptor setVariantSearchManager(VariantSearchManager variantSearchManager) {
         this.variantSearchManager = variantSearchManager;
         return this;
+    }
+
+    @Override
+    public VariantFacetedQueryResult<Variant> facet(Query facetedQuery, Query query, QueryOptions options) {
+
+        if (query == null) {
+            query = new Query();
+        }
+        if (options == null) {
+            options = new QueryOptions();
+        }
+
+        VariantFacetedQueryResult<Variant> queryResult;
+        try {
+            queryResult = variantSearchManager.facetedQuery(credentials.getMongoDbName(), facetedQuery, query, options);
+        } catch (IOException | VariantSearchException e) {
+            throw Throwables.propagate(e);
+        }
+
+        return queryResult;
     }
 }
