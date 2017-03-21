@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='pyCGA',
-    version='1.0.6',
+    version='1.0.7',
     packages=['pyCGA', 'pyCGA.Utils'],
     url='',
     license='',

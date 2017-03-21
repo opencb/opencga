@@ -634,7 +634,11 @@ class Samples(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSet
         :param study: study id
         :param options: Kargs where the keys are the name of the Samples properties used to search.
         """
-        return self._get('search', study=study, **options)
+        # For compatibility: catalog 0.6 fails if "study" parameter supplied
+        if study is not None:
+            options['study'] = study
+
+        return self._get('search', **options)
 
 
 class Cohorts(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient):
