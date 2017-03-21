@@ -293,7 +293,8 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         if method == 'post' and data:
             return self._post('search', data=data, **options)
         else:
-            options.update(data)
+            if data:
+                options.update(data)
             return self._get('search', **options)
 
     def files(self, studyId, **options):
