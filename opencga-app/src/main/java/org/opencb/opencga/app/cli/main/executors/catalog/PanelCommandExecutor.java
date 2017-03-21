@@ -97,7 +97,7 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(PanelDBAdaptor.QueryParams.GENES.key(), panelsCommandOptions.createCommandOptions.genes);
         params.putIfNotEmpty(PanelDBAdaptor.QueryParams.REGIONS.key(), panelsCommandOptions.createCommandOptions.regions);
         params.putIfNotEmpty(PanelDBAdaptor.QueryParams.VARIANTS.key(), panelsCommandOptions.createCommandOptions.variants);
-        return openCGAClient.getPanelClient().create(panelsCommandOptions.createCommandOptions.studyId, name, disease, params);
+        return openCGAClient.getPanelClient().create(resolveStudy(panelsCommandOptions.createCommandOptions.studyId), name, disease, params);
     }
 
     private QueryResponse<DiseasePanel> info() throws CatalogException, IOException  {

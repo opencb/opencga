@@ -3,15 +3,21 @@ package org.opencb.opencga.storage.core.search.solr;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Created by jtarraga on 09/03/17.
  */
-public class ParseSolrFacetedQuery {
+public class SolrFacetedQueryParser {
 
-    protected static Logger logger = LoggerFactory.getLogger(ParseSolrFacetedQuery.class);
+    private VariantDBAdaptorUtils variantDBAdaptorUtils;
+    protected static Logger logger = LoggerFactory.getLogger(SolrFacetedQueryParser.class);
+
+    public SolrFacetedQueryParser(VariantDBAdaptorUtils variantDBAdaptorUtils) {
+        this.variantDBAdaptorUtils = variantDBAdaptorUtils;
+    }
 
     /**
      * Create a SolrQuery object from FacetedQuery.
@@ -19,7 +25,7 @@ public class ParseSolrFacetedQuery {
      * @param facetedQuery Faceted query
      * @return SolrQuery
      */
-    public static SolrQuery parse(Query facetedQuery) {
+    public SolrQuery parse(Query facetedQuery) {
         return parse(facetedQuery, new Query(), new QueryOptions());
     }
 
@@ -31,10 +37,10 @@ public class ParseSolrFacetedQuery {
      * @param queryOptions Query Options
      * @return SolrQuery
      */
-    public static SolrQuery parse(Query facetedQuery, Query query, QueryOptions queryOptions) {
+    public SolrQuery parse(Query facetedQuery, Query query, QueryOptions queryOptions) {
 
         // create the solrQuery from query and query options
-        SolrQuery solrQuery = ParseSolrQuery.parse(query, queryOptions);
+        SolrQuery solrQuery = new SolrQueryParser(variantDBAdaptorUtils).parse(query, queryOptions);
 
         // set rows to 0, we are only interested in facet information
         solrQuery.setRows(0);

@@ -26,17 +26,16 @@ import org.opencb.opencga.core.common.MemoryUsageMonitor;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
-import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.search.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.metadata.MongoDBStudyConfigurationManager;
@@ -79,6 +78,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         MERGE("merge", false),
         MERGE_SKIP("merge.skip", false), // Internal use only
         MERGE_RESUME("merge.resume", false),
+        MERGE_IGNORE_OVERLAPPING_VARIANTS("merge.ignore-overlapping-variants", false),   //Do not look for overlapping variants
         MERGE_PARALLEL_WRITE("merge.parallel.write", false),
         MERGE_BATCH_SIZE("merge.batch.size", 10);          //Number of files to merge directly from first to second collection
 
@@ -332,11 +332,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             variantMongoDBAdaptor = new VariantMongoDBAdaptor(mongoDataStoreManager, credentials, variantsCollection, filesCollection,
                     studyConfigurationManager, configuration);
 
-
-            if (variantSearchManager == null) {
-                variantSearchManager = new VariantSearchManager(configuration);
-            }
-            variantMongoDBAdaptor.setVariantSearchManager(variantSearchManager);
         } catch (UnknownHostException e) {
             throw new IllegalArgumentException(e);
         }

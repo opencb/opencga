@@ -31,13 +31,13 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
@@ -485,7 +485,16 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 port = 60000;
                 zookeeperPath = conf.get(HConstants.ZOOKEEPER_ZNODE_PARENT);
             } else {
-                URI uri = new URI(target);
+                URI uri;
+                try {
+                    uri = new URI(target);
+                } catch (URISyntaxException e) {
+                    try {
+                        uri = new URI("hbase://" + target);
+                    } catch (URISyntaxException e1) {
+                        throw e;
+                    }
+                }
                 server = uri.getHost();
                 port = uri.getPort() > 0 ? uri.getPort() : 60000;
                 // If just an IP or host name is provided, the URI parser will return empty host, and the content as "path". Avoid that

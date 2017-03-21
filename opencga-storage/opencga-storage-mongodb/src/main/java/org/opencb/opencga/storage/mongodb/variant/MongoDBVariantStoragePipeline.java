@@ -42,7 +42,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
-import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBWriter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
@@ -61,6 +60,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
@@ -81,11 +81,6 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         super(configuration, storageEngineId, LoggerFactory.getLogger(MongoDBVariantStoragePipeline.class), dbAdaptor,
                 new VariantReaderUtils());
         this.dbAdaptor = dbAdaptor;
-    }
-
-    protected VariantMongoDBWriter getDBWriter(String dbName, int fileId, StudyConfiguration studyConfiguration)
-            throws StorageEngineException {
-        return new VariantMongoDBWriter(fileId, studyConfiguration, dbAdaptor, true, false);
     }
 
     public URI preLoad(URI input, URI output) throws StorageEngineException {
@@ -316,23 +311,13 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     private BatchFileOperation preStage(int fileId) throws StorageEngineException {
 
         StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
-        long lock = scm.lockStudy(getStudyId());
-        BatchFileOperation operation;
-        try {
-            StudyConfiguration studyConfiguration = getStudyConfiguration(true);
+        AtomicReference<BatchFileOperation> operation = new AtomicReference<>();
+        scm.lockAndUpdate(getStudyId(), studyConfiguration -> {
+            operation.set(securePreStage(fileId, studyConfiguration));
+            return studyConfiguration;
+        });
 
-            operation = securePreStage(fileId, studyConfiguration);
-
-            scm.updateStudyConfiguration(studyConfiguration, null);
-        } finally {
-            scm.unLockStudy(getStudyId(), lock);
-        }
-
-//        if (loadStageResume) {
-//            // TODO: Clean file from stage collection?
-//        }
-
-        return operation;
+        return operation.get();
     }
 
     private BatchFileOperation securePreStage(int fileId, StudyConfiguration studyConfiguration) throws StorageEngineException {
@@ -578,11 +563,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
     private StudyConfiguration preMerge(List<Integer> fileIds) throws StorageEngineException {
         int studyId = getStudyId();
-        StudyConfiguration studyConfiguration;
         Set<Integer> fileIdsSet = new HashSet<>(fileIds);
-        try (StudyConfigurationManager.LockCloseable lock = dbAdaptor.getStudyConfigurationManager().closableLockStudy(studyId)) {
-            studyConfiguration = getStudyConfiguration(true);
-
+        return dbAdaptor.getStudyConfigurationManager().lockAndUpdate(studyId, studyConfiguration -> {
             for (Integer fileId : fileIds) {
                 if (studyConfiguration.getIndexedFiles().contains(fileId)) {
                     throw StorageEngineException.alreadyLoaded(fileId, studyConfiguration);
@@ -640,9 +622,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 // Only set to RUNNING if it was on ERROR
                 operation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
             }
-            dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
-        }
-        return studyConfiguration;
+            return studyConfiguration;
+        });
     }
 
     private MongoDBVariantWriteResult mergeByChromosome(
@@ -657,8 +638,10 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", reader::countNumVariants, 200);
         progressLogger.setApproximateTotalCount(reader.countAproxNumVariants());
 
-        MongoDBVariantMerger variantMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
-                dbAdaptor.getVariantsCollection(), indexedFiles, resume);
+        boolean ignoreOverlapping = options.getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(),
+                MERGE_IGNORE_OVERLAPPING_VARIANTS.defaultValue());
+        MongoDBVariantMerger variantMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds, indexedFiles, resume,
+                ignoreOverlapping);
         MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(dbAdaptor.getVariantsCollection(), stageCollection,
                 studyConfiguration.getStudyId(), fileIds, resume, cleanWhileLoading, progressLogger);
 
@@ -737,6 +720,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         Long count = dbAdaptor.count(new Query()
                 .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId)
                 .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())).first();
+        Long overlappedCount = dbAdaptor.count(new Query()
+                .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), -fileId)
+                .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())).first();
         long variantsToLoad = 0;
 
         long expectedSkippedVariants = 0;
@@ -769,6 +755,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         }
 
         logger.info("============================================================");
+        logger.info("Check loaded file '" + variantSource.getFileName() + "' (" + fileId + ')');
         if (expectedSkippedVariants != writeResult.getSkippedVariants()) {
             logger.error("Wrong number of skipped variants. Expected " + expectedSkippedVariants + " and got " + writeResult
                     .getSkippedVariants());
@@ -791,15 +778,17 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         }
 
         StorageEngineException exception = null;
-        if (expectedCount != count) {
-            String message = "Wrong number of loaded variants. Expected: " + expectedCount + " and got: " + count;
+        if (expectedCount != (count + overlappedCount)) {
+            String message = "Wrong number of loaded variants. Expected: " + expectedCount + " and got: " + (count + overlappedCount)
+                    + " (" + count + " from file, " + overlappedCount + " overlapped)";
             logger.error(message);
             logger.error("  * Variants to load : " + variantsToLoad);
             logger.error("  * Non Inserted (due to duplications) : " + writeResult.getNonInsertedVariants());
             logger.error("  * Overlapped variants (extra insertions) : " + writeResult.getOverlappedVariants());
 //            exception = new StorageEngineException(message);
         } else {
-            logger.info("Final number of loaded variants: " + count);
+            logger.info("Final number of loaded variants: " + count
+                    + (overlappedCount > 0 ? " + " + overlappedCount + " overlapped variants" : ""));
         }
         logger.info("============================================================");
         if (exception != null) {

@@ -34,7 +34,6 @@ import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
@@ -43,7 +42,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  * @author Jacobo Coll <jacobo167@gmail.com>
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
-public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
+public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
 
     String ID_DESCR = "List of variant ids";
     String REGION_DESCR = "List of regions: {chr}:{start}-{end}, e.g.: 2,3:1000000-2000000";
@@ -294,17 +293,6 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
      * @return A QueryResult with the all the distinct values
      */
     QueryResult distinct(Query query, String field);
-
-    @Override
-    VariantDBIterator iterator();
-
-    VariantDBIterator iterator(Query query, QueryOptions options);
-
-    @Override
-    void forEach(Consumer<? super Variant> action);
-
-    void forEach(Query query, Consumer<? super Variant> action, QueryOptions options);
-
 
     /**
      * This methods calculates the number of variants at different equally-sized genome chunks. This can be renderer

@@ -129,10 +129,12 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<ReadAlignment> queryRest(AlignmentCommandOptions.QueryAlignmentCommandOptions commandOptions)
             throws CatalogException, IOException {
 
+        String study = resolveStudy(alignmentCommandOptions.queryAlignmentCommandOptions.study);
+
         String fileIds = commandOptions.fileId;
 
         ObjectMap o = new ObjectMap();
-        o.putIfNotNull("study", alignmentCommandOptions.queryAlignmentCommandOptions.study);
+        o.putIfNotNull("study", study);
         o.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), commandOptions.region);
         o.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), commandOptions.minMappingQuality);
         o.putIfNotNull("limit", commandOptions.limit);
@@ -145,10 +147,13 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 //        StopWatch watch = new StopWatch();
 //        watch.start();
         // We create the OpenCGA gRPC request object with the query, queryOptions, storageEngine and database
+
+        String study = resolveStudy(alignmentCommandOptions.queryAlignmentCommandOptions.study);
+
         Map<String, String> query = new HashMap<>();
         addParam(query, "fileId", commandOptions.fileId);
         addParam(query, "sid", commandOptions.commonOptions.sessionId);
-        addParam(query, "study", commandOptions.study);
+        addParam(query, "study", study);
         addParam(query, AlignmentDBAdaptor.QueryParams.REGION.key(), commandOptions.region);
         addParam(query, AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), commandOptions.minMappingQuality);
 

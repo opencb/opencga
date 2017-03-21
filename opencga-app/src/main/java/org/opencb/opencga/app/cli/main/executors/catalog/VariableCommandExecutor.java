@@ -97,14 +97,14 @@ public class VariableCommandExecutor extends OpencgaCommandExecutor {
 
         params.putIfNotNull(VariableSetParams.VARIABLE.key(), variables.get("variables"));
 
-        return openCGAClient.getVariableClient().create(variableCommandOptions.createCommandOptions.study, params);
+        return openCGAClient.getVariableClient().create(resolveStudy(variableCommandOptions.createCommandOptions.study), params);
     }
 
     private QueryResponse info() throws CatalogException, IOException {
         logger.debug("Getting variable information");
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty(VariableSetParams.STUDY_ID.key(), variableCommandOptions.infoCommandOptions.studyId);
+        queryOptions.putIfNotEmpty(VariableSetParams.STUDY_ID.key(), resolveStudy(variableCommandOptions.infoCommandOptions.studyId));
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, variableCommandOptions.infoCommandOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, variableCommandOptions.infoCommandOptions.exclude);
         return openCGAClient.getVariableClient().get(variableCommandOptions.infoCommandOptions.id, queryOptions);
@@ -114,7 +114,7 @@ public class VariableCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Searching variable");
 
         Query query = new Query();
-        query.put(SampleDBAdaptor.QueryParams.STUDY.key(),variableCommandOptions.searchCommandOptions.study);
+        query.put(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(variableCommandOptions.searchCommandOptions.study));
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(VariableSetParams.NAME.key(), variableCommandOptions.searchCommandOptions.name);
@@ -146,7 +146,7 @@ public class VariableCommandExecutor extends OpencgaCommandExecutor {
 //        }
 
         return openCGAClient.getVariableClient().update(variableCommandOptions.updateCommandOptions.id,
-                variableCommandOptions.updateCommandOptions.studyId, params);
+                resolveStudy(variableCommandOptions.updateCommandOptions.studyId), params);
     }
 
     private QueryResponse<VariableSet> delete() throws CatalogException, IOException {

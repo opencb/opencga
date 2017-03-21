@@ -134,10 +134,11 @@ public class TextOutputWriter extends AbstractOutputWriter {
                             for (Study study : project.getStudies()) {
                                 sb.append(String.format("    - %s\t%s\t%s\t%s\t%d\t%s\t%d\n", study.getAlias(), study.getName(),
                                         study.getType(), study.getDescription(), study.getId(),
-                                        StringUtils.join(study.getGroups().stream().map(Group::getName).collect(Collectors.toList()), ", "),
+                                        study.getGroups() == null ? ""
+                                                : study.getGroups().stream().map(Group::getName).collect(Collectors.joining(",")),
                                         study.getSize()));
 
-                                if (study.getGroups().size() > 0) {
+                                if (study.getGroups() != null && study.getGroups().size() > 0) {
                                     sb.append("       Groups:\n");
                                     for (Group group : study.getGroups()) {
                                         printGroup(group, sb, "        + ");

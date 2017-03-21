@@ -25,10 +25,13 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.search.solr.ParseSolrFacetedQuery;
-import org.opencb.opencga.storage.core.search.solr.ParseSolrQuery;
+
+import org.opencb.opencga.storage.core.search.solr.SolrFacetedQueryParser;
+import org.opencb.opencga.storage.core.search.solr.SolrQueryParser;
+
 import org.opencb.opencga.storage.core.search.solr.SolrVariantIterator;
 import org.opencb.opencga.storage.core.search.solr.SolrVariantSearchIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.Logger;
@@ -49,8 +52,12 @@ public class VariantSearchManager {
     private String collection;
     private StorageConfiguration storageConfiguration;
 
+    private SolrQueryParser solrQueryParser;
+    private SolrFacetedQueryParser solrFacetedQueryParser;
+    private VariantDBAdaptorUtils variantDBAdaptorUtils;
+
     private HttpSolrClient solrClient;
-    private static VariantSearchToVariantConverter variantSearchToVariantConverter;
+    private VariantSearchToVariantConverter variantSearchToVariantConverter;
 
     private Logger logger;
 
@@ -65,13 +72,17 @@ public class VariantSearchManager {
         variantSearchToVariantConverter = new VariantSearchToVariantConverter();
     }
 
-    public VariantSearchManager(StorageConfiguration storageConfiguration) {
+    public VariantSearchManager(VariantDBAdaptorUtils variantDBAdaptorUtils, StorageConfiguration storageConfiguration) {
+        this.variantDBAdaptorUtils = variantDBAdaptorUtils;
         this.storageConfiguration = storageConfiguration;
 
 //        this.solrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost() + collection).build();
 //        this.solrClient.setRequestWriter(new BinaryRequestWriter());
 
-        variantSearchToVariantConverter = new VariantSearchToVariantConverter();
+        this.variantSearchToVariantConverter = new VariantSearchToVariantConverter();
+        this.solrQueryParser = new SolrQueryParser(this.variantDBAdaptorUtils);
+        this.solrFacetedQueryParser = new SolrFacetedQueryParser(this.variantDBAdaptorUtils);
+
 
         logger = LoggerFactory.getLogger(VariantSearchManager.class);
     }
@@ -339,7 +350,7 @@ public class VariantSearchManager {
         init(collection);
 
         try {
-            SolrQuery solrQuery = ParseSolrQuery.parse(query, queryOptions);
+            SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
             QueryResponse response = solrClient.query(solrQuery);
             SolrVariantIterator iterator = new SolrVariantIterator((response.getBeans(VariantSearchModel.class).iterator()));
             iterator.setNumFound(response.getResults().getNumFound());
@@ -367,7 +378,7 @@ public class VariantSearchManager {
         init(collection);
 
         try {
-            SolrQuery solrQuery = ParseSolrQuery.parse(query, queryOptions);
+            SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
             QueryResponse response = solrClient.query(solrQuery);
             return new SolrVariantSearchIterator(response.getBeans(VariantSearchModel.class).iterator());
         } catch (SolrServerException e) {
@@ -395,7 +406,7 @@ public class VariantSearchManager {
 
         StopWatch stopWatch = StopWatch.createStarted();
         try {
-            SolrQuery solrQuery = ParseSolrFacetedQuery.parse(facetedQuery, query, queryOptions);
+            SolrQuery solrQuery = solrFacetedQueryParser.parse(facetedQuery, query, queryOptions);
             QueryResponse response = solrClient.query(solrQuery);
             System.out.println(response);
             List<FacetedQueryResultItem> results = new ArrayList();
@@ -412,7 +423,7 @@ public class VariantSearchManager {
     @Deprecated
     public VariantSearchFacet getFacet(Query query, QueryOptions queryOptions) {
 
-        SolrQuery solrQuery = ParseSolrQuery.parse(query, queryOptions);
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         QueryResponse response = null;
 
         try {

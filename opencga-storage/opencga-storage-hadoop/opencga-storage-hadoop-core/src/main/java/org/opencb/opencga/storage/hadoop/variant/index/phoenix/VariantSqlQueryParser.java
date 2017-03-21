@@ -262,13 +262,13 @@ public class VariantSqlQueryParser {
 
 
         if (isValidParam(query, REGION)) {
-            List<Region> regions = Region.parseRegions(query.getString(REGION.key()));
+            List<Region> regions = Region.parseRegions(query.getString(REGION.key()), true);
             for (Region region : regions) {
                 regionFilters.add(getRegionFilter(region));
             }
         }
 
-        addQueryFilter(query, CHROMOSOME, VariantColumn.CHROMOSOME, regionFilters);
+        addQueryFilter(query, CHROMOSOME, VariantColumn.CHROMOSOME, regionFilters, Region::normalizeChromosome);
 
 //        addQueryFilter(query, ID, VariantColumn.XREFS, regionFilters);
         List<Variant> variants = new ArrayList<>();
@@ -539,36 +539,33 @@ public class VariantSqlQueryParser {
             }
         }
 
-        //
-        //
-        // NA12877_01 :  0/0  ;  NA12878_01 :  0/1  ,  1/1
+        Map<Object, List<String>> genotypesMap = new HashMap<>();
         if (isValidParam(query, GENOTYPE)) {
-            for (String sampleGenotype : query.getAsStringList(GENOTYPE.key(), ";")) {
-                //[<study>:]<sample>:<genotype>[,<genotype>]*
-                String[] split = sampleGenotype.split(":");
-                final List<String> genotypes;
-                int studyId;
-                int sampleId;
-                if (split.length == 2) {
-                    if (defaultStudyConfiguration == null) {
-                        List<String> studyNames = utils.getStudyConfigurationManager().getStudyNames(null);
-                        throw VariantQueryException.missingStudyForSample(split[0], studyNames);
-                    }
-                    studyId = defaultStudyConfiguration.getStudyId();
-                    sampleId = utils.getSampleId(split[0], defaultStudyConfiguration);
-                    genotypes = Arrays.asList(split[1].split(","));
-                } else if (split.length == 3) {
-                    studyId = utils.getStudyId(split[0], null, false);
-                    sampleId = utils.getSampleId(split[1], defaultStudyConfiguration);
-                    genotypes = Arrays.asList(split[2].split(","));
-                } else {
-                    throw VariantQueryException.malformedParam(GENOTYPE, sampleGenotype);
+            // NA12877_01 :  0/0  ;  NA12878_01 :  0/1  ,  1/1
+            parseGenotypeFilter(query.getString(GENOTYPE.key()), genotypesMap);
+        }
+        if (isValidParam(query, SAMPLES)) {
+            String value = query.getString(SAMPLES.key());
+            QueryOperation op = checkOperator(value);
+            List<String> samples = splitValue(value, op);
+            for (String sample : samples) {
+                genotypesMap.put(sample, Arrays.asList(HET_REF, HOM_VAR, OTHER));
+            }
+        }
+        if (!genotypesMap.isEmpty()) {
+            for (Map.Entry<Object, List<String>> entry : genotypesMap.entrySet()) {
+                if (defaultStudyConfiguration == null) {
+                    List<String> studyNames = utils.getStudyConfigurationManager().getStudyNames(null);
+                    throw VariantQueryException.missingStudyForSample(entry.getKey().toString(), studyNames);
                 }
+                int studyId = defaultStudyConfiguration.getStudyId();
+                int sampleId = utils.getSampleId(entry.getKey(), defaultStudyConfiguration);
+                List<String> genotypes = entry.getValue();
 
                 List<String> gts = new ArrayList<>(genotypes.size());
                 for (String genotype : genotypes) {
                     boolean negated = false;
-                    if (genotype.startsWith("!")) {
+                    if (isNegated(genotype)) {
                         genotype = genotype.substring(1);
                         negated = true;
                     }
@@ -580,7 +577,6 @@ public class VariantSqlQueryParser {
                             gts.add((negated ? " NOT " : " ") + sampleId + " = ANY(\"" + buildColumnKey(studyId, genotype) + "\") ");
                             break;
                         case HOM_REF:
-                            List<String> subFilters = new ArrayList<>(4);
                             if (negated) {
                                 gts.add(" ( " + sampleId + " = ANY(\"" + buildColumnKey(studyId, HET_REF) + "\") "
                                         + " OR " + sampleId + " = ANY(\"" + buildColumnKey(studyId, HOM_VAR) + "\") "

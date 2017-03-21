@@ -214,11 +214,14 @@ public abstract class StorageOperation {
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(ProjectDBAdaptor.QueryParams.ALIAS.key(), ProjectDBAdaptor.QueryParams.DATASTORES.key()));
         Project project = catalogManager.getProjectManager().get(projectId, queryOptions, sessionId).first();
-        if (project != null && project.getDataStores() != null && project.getDataStores().containsKey(bioformat)) {
+        if (project.getDataStores() != null && project.getDataStores().containsKey(bioformat)) {
             dataStore = project.getDataStores().get(bioformat);
         } else { //get default datastore
             //Must use the UserByStudyId instead of the file owner.
             String userId = catalogManager.getProjectManager().getUserId(projectId);
+            // Replace possible dots at the userId. Usually a special character in almost all databases. See #532
+            userId = userId.replace('.', '_');
+
             String alias = project.getAlias();
 
             String prefix;

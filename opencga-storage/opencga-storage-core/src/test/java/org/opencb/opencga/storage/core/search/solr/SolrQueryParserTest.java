@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.core.search.solr;
 
 import org.apache.solr.client.solrj.SolrQuery;
-import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -13,20 +12,24 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 /**
  * Created by jtarraga on 03/03/17.
  */
-public class ParseSolrQueryTest {
+public class SolrQueryParserTest {
 
-    public String collection = "test444";
-    public String study = "test444";
+    public String host = "http://bioinfo.hpc.cam.ac.uk/solr/"; //hgvav1_hgvauser_reference_grch37/select?facet=on&fq=chromosome:22&indent=on&q=*:*&rows=0&wt=json&facet.field=studies&facet.field=type
+
+    //public String collection = "test1";
+    public String collection = "hgvav1_hgvauser_reference_grch37";
+
+    public String study = collection;
+
 
     public void executeQuery(Query query, QueryOptions queryOptions) {
-        String host = "http://localhost:8983/solr/";
         String user = "";
         String password = "";
         boolean active = true;
         int rows = 10;
         StorageConfiguration config = new StorageConfiguration();
         config.setSearch(new SearchConfiguration(host, collection, user, password, active, rows));
-        VariantSearchManager searchManager = new VariantSearchManager(config);
+        VariantSearchManager searchManager = new VariantSearchManager(null, config);
         try {
             SolrVariantIterator iterator = searchManager.iterator(collection, query, queryOptions);
             System.out.println("Num. found = " + iterator.getNumFound());
@@ -343,7 +346,7 @@ public class ParseSolrQueryTest {
     }
 
 
-//    @Test
+  //  @Test
     public void testParsing() {
         QueryOptions queryOptions = new QueryOptions();
         Query query = new Query();

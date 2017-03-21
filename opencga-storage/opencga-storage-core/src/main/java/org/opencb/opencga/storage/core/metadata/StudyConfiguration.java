@@ -409,7 +409,7 @@ public class StudyConfiguration {
 
     public static LinkedHashMap<String, Integer> getReturnedSamplesPosition(
             StudyConfiguration studyConfiguration,
-            LinkedHashSet<String> returnedSamples,
+            LinkedHashSet<?> returnedSamples,
             Function<StudyConfiguration, BiMap<String, Integer>> getIndexedSamplesPosition) {
         LinkedHashMap<String, Integer> samplesPosition;
         // If null, return ALL samples
@@ -423,9 +423,15 @@ public class StudyConfiguration {
             samplesPosition = new LinkedHashMap<>(returnedSamples.size());
             int index = 0;
             BiMap<String, Integer> indexedSamplesId = getIndexedSamplesPosition.apply(studyConfiguration);
-            for (String returnedSample : returnedSamples) {
-                if (!returnedSample.isEmpty() && StringUtils.isNumeric(returnedSample)) {
-                    returnedSample = studyConfiguration.getSampleIds().inverse().get(Integer.parseInt(returnedSample));
+            for (Object returnedSampleObj : returnedSamples) {
+                String returnedSample;
+                if (returnedSampleObj instanceof Number) {
+                    returnedSample = studyConfiguration.getSampleIds().inverse().get(((Number) returnedSampleObj).intValue());
+                } else if (returnedSampleObj instanceof String
+                        && !((String) returnedSampleObj).isEmpty() && StringUtils.isNumeric((String) returnedSampleObj)) {
+                    returnedSample = studyConfiguration.getSampleIds().inverse().get(Integer.parseInt(((String) returnedSampleObj)));
+                } else {
+                    returnedSample = returnedSampleObj.toString();
                 }
                 if (!samplesPosition.containsKey(returnedSample)) {
                     if (indexedSamplesId.containsKey(returnedSample)) {

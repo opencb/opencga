@@ -1114,6 +1114,11 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         checkRegion(new Region("1:1000000-2000000"));
         checkRegion(new Region("1:10000000-20000000"));
         checkRegion(new Region("1:14000000-160000000"));
+        checkRegion(new Region("1"), new Region("1"));
+        checkRegion(new Region("ch1"), new Region("1"));
+        checkRegion(new Region("chr1"), new Region("1"));
+        checkRegion(new Region("chrm1"), new Region("1"));
+        checkRegion(new Region("chrom1"), new Region("1"));
         checkRegion(new Region("2"));
         checkRegion(new Region("X"));
         checkRegion(new Region("30"));
@@ -1130,11 +1135,19 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         checkRegion(new Region("20:238441-7980389"));
         checkRegion(new Region("20:238442-7980390"));
         checkRegion(new Region("20:238442-7980389"));
+
+        query = new Query(CHROMOSOME.key(), "chr2");
+        queryResult = dbAdaptor.get(query, options);
+        assertThat(queryResult, everyResult(allVariants, overlaps(new Region("2"))));
     }
 
     public void checkRegion(Region region) {
-        queryResult = dbAdaptor.get(new Query(REGION.key(), region), null);
-        assertThat(queryResult, everyResult(allVariants, overlaps(region)));
+        checkRegion(region, region);
+    }
+
+    public void checkRegion(Region queryRegion, Region overlappingRegion) {
+        queryResult = dbAdaptor.get(new Query(REGION.key(), queryRegion), null);
+        assertThat(queryResult, everyResult(allVariants, overlaps(overlappingRegion)));
     }
 
     @Test

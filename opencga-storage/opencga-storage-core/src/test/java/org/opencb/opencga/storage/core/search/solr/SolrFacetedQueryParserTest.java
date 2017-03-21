@@ -19,7 +19,7 @@ import static org.junit.Assert.*;
 /**
  * Created by jtarraga on 09/03/17.
  */
-public class ParseSolrFacetedQueryTest {
+public class SolrFacetedQueryParserTest {
 
     //public String host = "http://localhost:8983/solr/";
     public String host = "http://bioinfo.hpc.cam.ac.uk/solr/"; //hgvav1_hgvauser_reference_grch37/select?facet=on&fq=chromosome:22&indent=on&q=*:*&rows=0&wt=json&facet.field=studies&facet.field=type
@@ -36,7 +36,7 @@ public class ParseSolrFacetedQueryTest {
         int rows = 10;
         StorageConfiguration config = new StorageConfiguration();
         config.setSearch(new SearchConfiguration(host, collection, user, password, active, rows));
-        VariantSearchManager searchManager = new VariantSearchManager(config);
+        VariantSearchManager searchManager = new VariantSearchManager(null, config);
         try {
             VariantFacetedQueryResult<Variant> result = searchManager.facetedQuery(collection, facetedQuery, query, queryOptions);
 

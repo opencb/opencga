@@ -492,7 +492,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stage, studyConfiguration.getStudyId(), chromosomes);
         MongoDBVariantMerger dbMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
-                variantsCollection, studyConfiguration.getIndexedFiles(), false);
+                studyConfiguration.getIndexedFiles(), false, false);
         boolean cleanWhileLoading = true;
         boolean resume = false;
         MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(variantsCollection, dbAdaptor.getStageCollection(),

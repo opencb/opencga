@@ -303,6 +303,24 @@ public class VariantMatchers {
         };
     }
 
+    public static Matcher<? super StudyEntry> withSamples(Set<String> samples) {
+        return new FeatureMatcher<StudyEntry, Set<String>>(is(equalTo(samples)), "with samples " + samples, "Samples") {
+            @Override
+            protected Set<String> featureValueOf(StudyEntry actual) {
+                return actual.getSamplesName();
+            }
+        };
+    }
+
+    public static Matcher<? super StudyEntry> withSamples(List<String> samples) {
+        return new FeatureMatcher<StudyEntry, List<String>>(is(equalTo(samples)), "with samples " + samples, "Samples") {
+            @Override
+            protected List<String> featureValueOf(StudyEntry actual) {
+                return actual.getOrderedSamplesName();
+            }
+        };
+    }
+
     public static Matcher<? super StudyEntry> withSampleData(String sampleName, String formatField, Matcher<String> subMatcher) {
         return new FeatureMatcher<StudyEntry, String>(subMatcher, "with sample " + sampleName + " with " + formatField, "SampleData") {
             @Override

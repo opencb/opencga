@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import htsjdk.variant.variantcontext.VariantContext;
+import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -35,6 +36,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
@@ -392,7 +394,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
 
         query = new Query(STUDIES.key(), studyIds).append(FILES.key(), Arrays.asList(file3, file4, file5))
                 .append(RETURNED_STUDIES.key(), VariantDBAdaptorUtils.ALL)
-                .append(RETURNED_FILES.key(), VariantDBAdaptorUtils.ALL);
+                .append(RETURNED_FILES.key(), VariantDBAdaptorUtils.ALL)
+                .append(RETURNED_SAMPLES.key(), VariantDBAdaptorUtils.ALL);
         queryResult = dbAdaptor.get(query, options);
 
         assertThat(queryResult, everyResult(allVariants,
@@ -413,7 +416,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
 
         query = new Query(STUDIES.key(), studyIds).append(FILES.key(), Arrays.asList(file3, file4))
                 .append(RETURNED_STUDIES.key(), VariantDBAdaptorUtils.ALL)
-                .append(RETURNED_FILES.key(), VariantDBAdaptorUtils.ALL);
+                .append(RETURNED_FILES.key(), VariantDBAdaptorUtils.ALL)
+                .append(RETURNED_SAMPLES.key(), VariantDBAdaptorUtils.ALL);
         queryResult = dbAdaptor.get(query, options);
 
         assertThat(queryResult, everyResult(allVariants,
@@ -425,8 +429,19 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         long count = dbAdaptor.count(new Query(STUDIES.key(), studyConfiguration1.getStudyName())).first();
 
         Query query = new Query().append(FILES.key(), Arrays.asList(file1, file2))
-                .append(RETURNED_FILES.key(), VariantDBAdaptorUtils.ALL);
+                .append(RETURNED_FILES.key(), VariantDBAdaptorUtils.ALL)
+                .append(RETURNED_SAMPLES.key(), VariantDBAdaptorUtils.ALL);
         QueryResult<Variant> queryResult = dbAdaptor.get(query, options);
+
+        assertThat(queryResult, everyResult(allVariants,
+                withStudy(studyConfiguration1.getStudyName(), withFileId(anyOf(hasItem(file1.toString()), hasItem(file2.toString()))))));
+        assertEquals(count, queryResult.getNumResults());
+
+        query = new Query().append(FILES.key(), Arrays.asList(file1, file2)).append(STUDIES.key(), studyConfiguration1.getStudyName())
+                .append(RETURNED_STUDIES.key(), VariantDBAdaptorUtils.ALL)
+                .append(RETURNED_FILES.key(), VariantDBAdaptorUtils.ALL)
+                .append(RETURNED_SAMPLES.key(), VariantDBAdaptorUtils.ALL);
+        queryResult = dbAdaptor.get(query, options);
 
         assertThat(queryResult, everyResult(allVariants,
                 withStudy(studyConfiguration1.getStudyName(), withFileId(anyOf(hasItem(file1.toString()), hasItem(file2.toString()))))));
@@ -437,10 +452,20 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
                 .append(RETURNED_FILES.key(), VariantDBAdaptorUtils.ALL);
         queryResult = dbAdaptor.get(query, options);
 
-        assertThat(queryResult, everyResult(allVariants,
-                withStudy(studyConfiguration1.getStudyName(), withFileId(anyOf(hasItem(file1.toString()), hasItem(file2.toString()))))));
-        assertEquals(count, queryResult.getNumResults());
+        List<Integer> expectedSamplesIds = new ArrayList<>(studyConfiguration1.getSamplesInFiles().get(file1));
+        expectedSamplesIds.addAll(studyConfiguration1.getSamplesInFiles().get(file2));
+        List<String> expectedSamples = Stream.concat(studyConfiguration1.getSamplesInFiles().get(file1).stream(),
+                studyConfiguration1.getSamplesInFiles().get(file2).stream())
+                .map(s -> studyConfiguration1.getSampleIds().inverse().get(s))
+                .collect(Collectors.toList());
 
+        assertThat(queryResult, everyResult(withStudy(studyConfiguration1.getStudyName(),
+                allOf(
+                        withFileId(anyOf(hasItem(file1.toString()), hasItem(file2.toString()))),
+                        withSamples(expectedSamples)
+                )
+        )));
+        assertEquals(count, queryResult.getNumResults());
     }
 
     @Test
@@ -583,6 +608,32 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         }
     }
 
+
+    @Test
+    public void testGetAllVariants_samples() {
+
+        List<String> samples = studyConfiguration1.getSamplesInFiles()
+                .get(file1)
+                .stream()
+                .map(s -> studyConfiguration1.getSampleIds().inverse().get(s))
+                .limit(5)
+                .collect(Collectors.toList());
+
+        query = new Query(STUDIES.key(), studyConfiguration1.getStudyId())
+                .append(SAMPLES.key(), samples);
+        queryResult = dbAdaptor.get(query, options);
+
+        assertThat(queryResult, everyResult(withStudy(studyConfiguration1.getStudyName(), allOf(
+                withSampleData(samples.get(0), "GT", containsString("1")),
+                withSampleData(samples.get(1), "GT", containsString("1")),
+                withSampleData(samples.get(2), "GT", containsString("1")),
+                withSampleData(samples.get(3), "GT", containsString("1")),
+                withSampleData(samples.get(4), "GT", containsString("1")),
+                withSamples(samples),
+                withFileId(is(Collections.singletonList(file1.toString())))
+        ))));
+
+    }
 
     @Test
     public void testGetAllVariants_returnedSamples() {

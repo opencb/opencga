@@ -158,9 +158,9 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Getting samples information");
 
         ObjectMap params = new ObjectMap();
+        params.putIfNotNull(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(samplesCommandOptions.infoCommandOptions.study));
         params.putIfNotEmpty(QueryOptions.INCLUDE, samplesCommandOptions.infoCommandOptions.dataModelOptions.include);
         params.putIfNotEmpty(QueryOptions.EXCLUDE, samplesCommandOptions.infoCommandOptions.dataModelOptions.exclude);
-        params.putIfNotNull(SampleDBAdaptor.QueryParams.STUDY.key(), samplesCommandOptions.infoCommandOptions.study);
         if (samplesCommandOptions.infoCommandOptions.noLazy) {
             params.put("lazy", false);
         }
@@ -171,7 +171,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Searching samples");
 
         Query query = new Query();
-        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(),samplesCommandOptions.searchCommandOptions.study);
+        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(samplesCommandOptions.searchCommandOptions.study));
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.searchCommandOptions.name);
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.searchCommandOptions.source);
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), samplesCommandOptions.searchCommandOptions.individual);
@@ -213,8 +213,10 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<ObjectMap> groupBy() throws CatalogException, IOException {
         logger.debug("Group By samples");
 
+        String study = resolveStudy(samplesCommandOptions.groupByCommandOptions.study);
+
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), samplesCommandOptions.groupByCommandOptions.study);
+        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), study);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.ID.key(), samplesCommandOptions.groupByCommandOptions.id);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.groupByCommandOptions.name);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.groupByCommandOptions.source);
@@ -225,21 +227,17 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION.key(), samplesCommandOptions.groupByCommandOptions.annotation);
 
         return openCGAClient.getSampleClient().groupBy(samplesCommandOptions.groupByCommandOptions.study,
-                samplesCommandOptions.groupByCommandOptions.fields,params);
+                samplesCommandOptions.groupByCommandOptions.fields, params);
     }
 
     private QueryResponse<Individual> getIndividuals() throws CatalogException, IOException {
         logger.debug("Getting individuals of sample(s)");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(),
-                samplesCommandOptions.individualCommandOptions.study);
+        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(samplesCommandOptions.individualCommandOptions.study));
         params.put("lazy", false); // Obtain the whole individual entity
-
-        params.putIfNotNull(QueryOptions.INCLUDE,
-                samplesCommandOptions.individualCommandOptions.dataModelOptions.include);
-        params.putIfNotNull(QueryOptions.EXCLUDE,
-                samplesCommandOptions.individualCommandOptions.dataModelOptions.exclude);
+        params.putIfNotNull(QueryOptions.INCLUDE, samplesCommandOptions.individualCommandOptions.dataModelOptions.include);
+        params.putIfNotNull(QueryOptions.EXCLUDE, samplesCommandOptions.individualCommandOptions.dataModelOptions.exclude);
 
         QueryResponse<Sample> sampleQueryResponse =
                 openCGAClient.getSampleClient().get(samplesCommandOptions.individualCommandOptions.sample, params);

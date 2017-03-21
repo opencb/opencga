@@ -141,16 +141,6 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public void forEach(Consumer<? super Variant> action) {
-
-    }
-
-    @Override
-    public void forEach(Query query, Consumer<? super Variant> action, QueryOptions options) {
-
-    }
-
-    @Override
     public QueryResult getFrequency(Query query, Region region, int regionIntervalSize) {
         return null;
     }

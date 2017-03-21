@@ -79,7 +79,6 @@ import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -166,6 +165,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
         cellBaseClient = new CellBaseClient(AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(species), assembly, clientConfiguration);
         this.cacheManager = new CacheManager(storageConfiguration);
+        this.variantSearchManager = new VariantSearchManager(utils, storageConfiguration);
         NUMBER_INSTANCES.incrementAndGet();
     }
 
@@ -474,23 +474,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
         return null;
-    }
-
-    @Override
-    public void forEach(Consumer<? super Variant> action) {
-        forEach(new Query(), action, new QueryOptions());
-    }
-
-    @Override
-    public void forEach(Query query, Consumer<? super Variant> action, QueryOptions options) {
-        Objects.requireNonNull(action);
-        try (VariantDBIterator variantDBIterator = iterator(query, options)) {
-            while (variantDBIterator.hasNext()) {
-                action.accept(variantDBIterator.next());
-            }
-        } catch (Exception e) {
-            Throwables.propagate(e);
-        }
     }
 
     @Override
@@ -905,22 +888,17 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             Query query = new Query(originalQuery);
             boolean nonGeneRegionFilter = false;
             /* VARIANT PARAMS */
+            List<Region> regions = new ArrayList<>();
             if (isValidParam(query, VariantQueryParams.CHROMOSOME)) {
                 nonGeneRegionFilter = true;
-                List<String> chromosomes = query.getAsStringList(VariantQueryParams.CHROMOSOME.key());
-                LinkedList<String> regions = new LinkedList<>(query.getAsStringList(VariantQueryParams.REGION.key()));
-                regions.addAll(chromosomes);
-                query.put(VariantQueryParams.REGION.key(), regions);
+                regions.addAll(Region.parseRegions(query.getString(VariantQueryParams.CHROMOSOME.key()), true));
             }
 
             if (isValidParam(query, VariantQueryParams.REGION)) {
                 nonGeneRegionFilter = true;
-                List<String> stringList = query.getAsStringList(VariantQueryParams.REGION.key());
-                List<Region> regions = new ArrayList<>(stringList.size());
-                for (String reg : stringList) {
-                    Region region = Region.parseRegion(reg);
-                    regions.add(region);
-                }
+                regions.addAll(Region.parseRegions(query.getString(VariantQueryParams.REGION.key()), true));
+            }
+            if (!regions.isEmpty()) {
                 getRegionFilter(regions, builder);
             }
 
@@ -1294,7 +1272,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             // If using an elemMatch for the study, keys don't need to start with "studies"
             String studyQueryPrefix = studyElemMatch ? "" : DocumentToVariantConverter.STUDIES_FIELD + '.';
             QueryBuilder studyBuilder = QueryBuilder.start();
-            final StudyConfiguration defaultStudyConfiguration;
+            final StudyConfiguration defaultStudyConfiguration = utils.getDefaultStudyConfiguration(query, null);
 
             if (isValidParam(query, VariantQueryParams.STUDIES)) {
                 String sidKey = DocumentToVariantConverter.STUDIES_FIELD + '.' + DocumentToStudyVariantEntryConverter.STUDYID_FIELD;
@@ -1323,20 +1301,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                                     studyBuilder, QueryOperation.AND);
                         } // There is only one study! We can skip this filter
                     }
-                }
-
-                if (studyIds.size() == 1) {
-                    defaultStudyConfiguration = studyConfigurationManager.getStudyConfiguration(studyIds.get(0), null).first();
-                } else {
-                    defaultStudyConfiguration = null;
-                }
-
-            } else {
-                List<String> studyNames = studyConfigurationManager.getStudyNames(null);
-                if (studyNames != null && studyNames.size() == 1) {
-                    defaultStudyConfiguration = studyConfigurationManager.getStudyConfiguration(studyNames.get(0), null).first();
-                } else {
-                    defaultStudyConfiguration = null;
                 }
             }
 
@@ -1947,10 +1911,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
         Set<VariantField> fields = VariantField.getReturnedFields(options);
-        samplesConverter.setReturnedSamples(getReturnedSamplesList(query, fields));
+        samplesConverter.setReturnedSamples(getReturnedSamples(query, options));
 
         DocumentToStudyVariantEntryConverter studyEntryConverter;
-        Collection<Integer> returnedFiles = utils.getReturnedFiles(query, fields);
+        Collection<Integer> returnedFiles = utils.getReturnedFiles(query, options, fields);
 
         studyEntryConverter = new DocumentToStudyVariantEntryConverter(false, returnedFiles, samplesConverter);
         studyEntryConverter.setStudyConfigurationManager(studyConfigurationManager);

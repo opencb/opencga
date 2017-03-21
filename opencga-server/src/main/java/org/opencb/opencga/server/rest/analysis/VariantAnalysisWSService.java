@@ -25,11 +25,14 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.analysis.VariantSampleFilter;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import javax.servlet.http.HttpServletRequest;
@@ -42,6 +45,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.*;
 
 /**
  * Created by imedina on 17/08/16.
@@ -139,11 +143,11 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @Path("/query")
     @ApiOperation(value = "Fetch variants from a VCF/gVCF file", position = 15, response = Variant[].class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = "Total number of results", dataType = "boolean", paramType = "query")
     })
     public Response getVariants(@ApiParam(value = "List of variant ids") @QueryParam("ids") String ids,
                                 @ApiParam(value = "List of regions: {chr}:{start}-{end}") @QueryParam("region") String region,
@@ -204,7 +208,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             queryOptions.put("summary", summary);
-            
+
             Query query = VariantStorageManager.getVariantQuery(queryOptions);
 
             if (count) {
@@ -215,7 +219,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 queryResult = variantManager.groupBy(groupBy, query, queryOptions, sessionId);
             } else {
                 queryResult = variantManager.get(query, queryOptions, sessionId);
-                System.out.println("queryResult = " + jsonObjectMapper.writeValueAsString(queryResult));
+//                System.out.println("queryResult = " + jsonObjectMapper.writeValueAsString(queryResult));
 
 //                VariantQueryResult variantQueryResult = variantManager.get(query, queryOptions, sessionId);
 //                queryResults.add(variantQueryResult);
@@ -333,6 +337,55 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             queryResults.add(queryResult);
 
             return createOkResponse(queryResults);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/samples")
+    @ApiOperation(value = "Get samples given a set of variants", position = 14, response = Sample.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "ids", value = ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "chromosome", value = CHROMOSOME_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "gene", value = GENE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "type", value = TYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query")
+    })
+    public Response samples(
+            @ApiParam(value = "Study where all the samples belong to") @QueryParam("study") String study,
+            @ApiParam(value = "List of samples to check. By default, all samples") @QueryParam("samples") String samples,
+            @ApiParam(value = "Genotypes that the sample must have to be selected") @QueryParam("genotypes") @DefaultValue("0/1,1/1") String genotypesStr,
+            @ApiParam(value = "Samples must be present in ALL variants or in ANY variant.") @QueryParam("all") @DefaultValue("false") boolean all
+    ) {
+        try {
+            VariantSampleFilter variantSampleFilter = new VariantSampleFilter(variantManager.iterable(sessionId));
+            List<String> genotypes = Arrays.asList(genotypesStr.split(","));
+
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            Query query = VariantStorageManager.getVariantQuery(queryOptions);
+
+            if (StringUtils.isNotEmpty(samples)) {
+                query.append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), Arrays.asList(samples.split(",")));
+                query.remove(VariantDBAdaptor.VariantQueryParams.SAMPLES.key());
+            }
+            if (StringUtils.isNotEmpty(study)) {
+                query.append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+            }
+
+            long studyId = catalogManager.getStudyId(study, sessionId);
+            Collection<String> sampleNames;
+            if (all) {
+                sampleNames = variantSampleFilter.getSamplesInAllVariants(query, genotypes);
+            } else {
+                Map<String, Set<Variant>> samplesInAnyVariants = variantSampleFilter.getSamplesInAnyVariants(query, genotypes);
+                sampleNames = samplesInAnyVariants.keySet();
+            }
+            Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.NAME.key(), String.join(",", sampleNames));
+            QueryResult<Sample> allSamples = catalogManager.getAllSamples(studyId, sampleQuery, queryOptions, sessionId);
+            return createOkResponse(allSamples);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

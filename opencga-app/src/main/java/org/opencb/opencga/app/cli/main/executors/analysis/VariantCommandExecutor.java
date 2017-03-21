@@ -16,13 +16,10 @@
 
 package org.opencb.opencga.app.cli.main.executors.analysis;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.util.JsonFormat;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFHeader;
-import htsjdk.variant.vcf.VCFUtils;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang3.StringUtils;
@@ -44,9 +41,7 @@ import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -118,8 +113,10 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
         VariantCommandOptions.VariantQueryCommandOptions queryCommandOptions = variantCommandOptions.queryVariantCommandOptions;
 
+        String study = resolveStudy(queryCommandOptions.study);
+
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ID.key(), queryCommandOptions.genericVariantQueryOptions.id);
+        params.putIfNotNull(VariantDBAdaptor.VariantQueryParams.ID.key(), queryCommandOptions.genericVariantQueryOptions.id);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.REGION.key(), queryCommandOptions.genericVariantQueryOptions.region);
 //        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(),
 //                queryCommandOptions.queryVariantsOptions.chromosome);
@@ -130,7 +127,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), queryCommandOptions.genericVariantQueryOptions.returnStudy);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), queryCommandOptions.genericVariantQueryOptions.returnSample);
 //        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), queryCommandOptions.queryVariantsOptions.returnFile);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), queryCommandOptions.study);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.FILES.key(), queryCommandOptions.genericVariantQueryOptions.file);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), queryCommandOptions.genericVariantQueryOptions.returnFile);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.FILTER.key(), queryCommandOptions.genericVariantQueryOptions.filter);
@@ -197,13 +194,14 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 return openCGAClient.getVariantClient().genericQuery(params, options);
             } else {
                 options.put(QueryOptions.SKIP_COUNT, true);
-                params.put("samplesMetadata", true);
-
-                System.err.println("queryCommandOptions.commonOptions.outputFormat = " + queryCommandOptions.commonOptions.outputFormat);
+                params.put(VariantDBAdaptor.VariantQueryParams.SAMPLES_METADATA.key(), true);
                 if (queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("vcf")
                         || queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("text")) {
                     VariantQueryResult<Variant> variantQueryResult = openCGAClient.getVariantClient().query2(params, options);
-                    printVcf(variantQueryResult, queryCommandOptions.study, System.out);
+                    List<String> annotations = queryCommandOptions.genericVariantQueryOptions.annotations == null
+                            ? Collections.singletonList("gene")
+                            : Arrays.asList(queryCommandOptions.genericVariantQueryOptions.annotations.split(","));
+                    printVcf(variantQueryResult, queryCommandOptions.study, annotations, System.out);
                     return null;
                 } else {
                     return openCGAClient.getVariantClient().query(params, options);
@@ -266,9 +264,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             case "AUTO":
                 grpc = isGrpcAvailable() == null;
                 if (grpc) {
-                    logger.info("Using GRPC mode");
+                    logger.debug("Using GRPC mode");
                 } else {
-                    logger.info("Using REST mode");
+                    logger.debug("Using REST mode");
                 }
                 break;
             case "GRPC":
@@ -313,7 +311,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         }
     }
 
-    private void printVcf(VariantQueryResult<Variant> variantQueryResult, String study, PrintStream outputStream) {
+    private void printVcf(VariantQueryResult<Variant> variantQueryResult, String study, List<String> annotations, PrintStream outputStream) {
         System.out.println(variantQueryResult.getSamples());
 
         Map<String, List<String>> smaplePerStudy = new HashMap<>();
@@ -322,12 +320,11 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             smaplePerStudy.put(study1, strings);
         });
 
-
         List<String> samples = new ArrayList<>();
         if (variantQueryResult.getSamples().size() == 1) {
             Iterator<String> iterator = variantQueryResult.getSamples().keySet().iterator();
-            String key = iterator.next();
-            samples = variantQueryResult.getSamples().get(key);
+            study = iterator.next();
+            samples = variantQueryResult.getSamples().get(study);
         } else {
 //            System.out.println("study = " + study);
             String studyShort = study;
@@ -340,7 +337,6 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 //        System.out.println("samples = " + samples);
 
         List<String> cohorts = Arrays.asList("ALL");
-        List<String> annotations = Arrays.asList("gene");
         List<String> formats = Arrays.asList("GT");
         List<String> formatTypes = Arrays.asList("String");
         List<String> formatDescriptions = Arrays.asList("Desc");
