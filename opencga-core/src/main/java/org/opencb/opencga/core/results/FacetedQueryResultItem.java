@@ -8,6 +8,7 @@ import java.util.Map;
 /**
  * Created by jtarraga on 09/03/17.
  */
+@Deprecated
 public class FacetedQueryResultItem {
     List<Field> fields;
     List<Range> ranges;

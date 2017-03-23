@@ -6,6 +6,7 @@ import java.util.List;
 /**
  * Created by jtarraga on 09/03/17.
  */
+@Deprecated
 public class FacetedQueryResult<T> {
     private String id;
     private int dbTime;

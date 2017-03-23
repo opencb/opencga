@@ -6,6 +6,7 @@ import java.util.List;
 /**
  * Created by jtarraga on 09/03/17.
  */
+@Deprecated
 public class VariantFacetedQueryResult<T> extends FacetedQueryResult<T> {
     public VariantFacetedQueryResult() {
         super("", -1, -1, "", "", "", new LinkedList<>());
