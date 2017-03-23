@@ -15,6 +15,7 @@ import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.core.results.VariantFacetedQueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -283,6 +284,11 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     @Override
     public void close() throws IOException {
         closed = true;
+    }
+
+    @Override
+    public VariantFacetedQueryResult<Variant> facet(Query facetedQuery, Query query, QueryOptions options) {
+        return null;
     }
 
 }

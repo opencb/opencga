@@ -75,7 +75,7 @@ public class SolrFacetedQueryParserTest {
 
         Query facetedQuery = new Query();
         // two facets: 1) by nested fields: studies and soAcc, and 2) by type
-        facetedQuery.put("facet-field", "studies:soAcc:type");
+        facetedQuery.put("facet-field", "studies:type");
 
         // execute
         executeFacetedQuery(facetedQuery, query, queryOptions);

@@ -9,22 +9,22 @@ import java.util.Map;
  * Created by jtarraga on 09/03/17.
  */
 public class FacetedQueryResultItem {
-    Map<String, Field> fields;
-    Map<String, Range> ranges;
+    List<Field> fields;
+    List<Range> ranges;
 
     public class Field {
         private String name;
-        private long totalCount;
-        private Map<String, Count> values;
+        private long total;
+        private List<Count> counts;
 
         public Field() {
-            this("", 0, new LinkedHashMap<>());
+            this("", 0, new ArrayList<>());
         }
 
-        public Field(String name, long totalCount, Map<String, Count> values) {
+        public Field(String name, long total, List<Count> counts) {
             this.name = name;
-            this.totalCount = totalCount;
-            this.values = values;
+            this.total = total;
+            this.counts = counts;
         }
 /*
         public String toString(String indent) {
@@ -46,31 +46,29 @@ public class FacetedQueryResultItem {
             this.name = name;
         }
 
-        public long getTotalCount() {
-            return totalCount;
+        public long getTotal() {
+            return total;
         }
 
-        public void setTotalCount(long totalCount) {
-            this.totalCount = totalCount;
+        public void setTotal(long total) {
+            this.total = total;
         }
 
-        public Map<String, Count> getValues() {
-            return values;
+        public List<Count> getCounts() {
+            return counts;
         }
 
-        public void setValues(Map<String, Count> values) {
-            this.values = values;
+        public void setCounts(List<Count> counts) {
+            this.counts = counts;
         }
     }
 
     public class Count {
-        private String name;
         private String value;
         private long count;
         private Field nestedField;
 
-        public Count(String name, String value, long count, Field nestedField) {
-            this.name = name;
+        public Count(String value, long count, Field nestedField) {
             this.value = value;
             this.count = count;
             this.nestedField = nestedField;
@@ -94,14 +92,6 @@ public class FacetedQueryResultItem {
             return sb.toString();
         }
 */
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
         public String getValue() {
             return value;
         }
@@ -203,29 +193,27 @@ public class FacetedQueryResultItem {
         }
     }
 
-    public FacetedQueryResultItem() {
-        this(new LinkedHashMap<>(), new LinkedHashMap<>());
-    }
+    public FacetedQueryResultItem() { this(new ArrayList<>(), new ArrayList<>());  }
 
-    public FacetedQueryResultItem(Map<String, FacetedQueryResultItem.Field> fields,
-                                  Map<String, FacetedQueryResultItem.Range> ranges) {
+    public FacetedQueryResultItem(List<FacetedQueryResultItem.Field> fields,
+                                  List<FacetedQueryResultItem.Range> ranges) {
         this.fields = fields;
         this.ranges = ranges;
     }
 
-    public Map<String, Field> getFields() {
+    public List<Field> getFields() {
         return fields;
     }
 
-    public void setFields(Map<String, Field> fields) {
+    public void setFields(List<Field> fields) {
         this.fields = fields;
     }
 
-    public Map<String, Range> getRanges() {
+    public List<Range> getRanges() {
         return ranges;
     }
 
-    public void setRanges(Map<String, Range> ranges) {
+    public void setRanges(List<Range> ranges) {
         this.ranges = ranges;
     }
 

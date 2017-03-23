@@ -549,17 +549,17 @@ public class VariantSearchManager {
             field.setName(name.split(",")[index]);
 
             long total = 0;
-            Map<String, FacetedQueryResultItem.Count> values = new LinkedHashMap<>();
+            List<FacetedQueryResultItem.Count> counts = new ArrayList<>();
             for (PivotField solrPivot : pivot.getPivot()) {
                 FacetedQueryResultItem.Field nestedField = processSolrPivot(name, index + 1, solrPivot, "\t");
 
                 FacetedQueryResultItem.Count count = new FacetedQueryResultItem()
-                        .new Count(field.getName(), solrPivot.getValue().toString(), solrPivot.getCount(), nestedField);
-                values.put(solrPivot.getValue().toString(), count);
+                        .new Count(solrPivot.getValue().toString(), solrPivot.getCount(), nestedField);
+                counts.add(count);
                 total += solrPivot.getCount();
             }
-            field.setTotalCount(total);
-            field.setValues(values);
+            field.setTotal(total);
+            field.setCounts(counts);
         }
 
         return field;
@@ -568,25 +568,25 @@ public class VariantSearchManager {
     private FacetedQueryResultItem toFacetedQueryResultItem(QueryResponse response) {
 
         // process Solr facet fields
-        Map<String, FacetedQueryResultItem.Field> fields = new LinkedHashMap<>();
+        List<FacetedQueryResultItem.Field> fields = new ArrayList<>();
         if (response.getFacetFields() != null) {
             for (FacetField solrField: response.getFacetFields()) {
                 FacetedQueryResultItem.Field field = new FacetedQueryResultItem().new Field();
 
                 long total = 0;
-                Map<String, FacetedQueryResultItem.Count> values = new LinkedHashMap<>();
+                List<FacetedQueryResultItem.Count> counts = new ArrayList<>();
                 for (FacetField.Count solrCount: solrField.getValues()) {
                     FacetedQueryResultItem.Count count = new FacetedQueryResultItem()
-                            .new Count(solrField.getName(), solrCount.getName(), solrCount.getCount(), null);
-                    values.put(solrCount.getName(), count);
+                            .new Count(solrCount.getName(), solrCount.getCount(), null);
+                    counts.add(count);
                     total += solrCount.getCount();
                 }
                 // initialize field
                 field.setName(solrField.getName());
-                field.setTotalCount(total);
-                field.setValues(values);
+                field.setTotal(total);
+                field.setCounts(counts);
 
-                fields.put(field.getName(), field);
+                fields.add(field);
             }
         }
 
@@ -601,26 +601,26 @@ public class VariantSearchManager {
                     field.setName(facetPivot.getName(i).split(",")[0]);
 
                     long total = 0;
-                    Map<String, FacetedQueryResultItem.Count> values = new LinkedHashMap<>();
+                    List<FacetedQueryResultItem.Count> counts = new ArrayList<>();
                     for (PivotField solrPivot : solrPivots) {
                         FacetedQueryResultItem.Field nestedField = processSolrPivot(facetPivot.getName(i), 1, solrPivot, "\t");
 
                         FacetedQueryResultItem.Count count = new FacetedQueryResultItem()
-                            .new Count(field.getName(), solrPivot.getValue().toString(), solrPivot.getCount(), nestedField);
-                        values.put(solrPivot.getValue().toString(), count);
+                            .new Count(solrPivot.getValue().toString(), solrPivot.getCount(), nestedField);
+                        counts.add(count);
                         total += solrPivot.getCount();
                     }
                     // update field
-                    field.setTotalCount(total);
-                    field.setValues(values);
+                    field.setTotal(total);
+                    field.setCounts(counts);
 
-                    fields.put(field.getName(), field);
+                    fields.add(field);
                 }
             }
         }
 
         // process Solr facet range
-        Map<String, FacetedQueryResultItem.Range> ranges = new LinkedHashMap<>();
+        List<FacetedQueryResultItem.Range> ranges = new ArrayList<>();
         if (response.getFacetRanges() != null) {
             for (RangeFacet solrRange: response.getFacetRanges()) {
                 List<Long> counts = new ArrayList<>();
@@ -630,8 +630,7 @@ public class VariantSearchManager {
                     total += count;
                     counts.add(count);
                 }
-                ranges.put(solrRange.getName(),
-                        new FacetedQueryResultItem().new Range(solrRange.getName(),
+                ranges.add(new FacetedQueryResultItem().new Range(solrRange.getName(),
                                 (Double) solrRange.getStart(), (Double) solrRange.getEnd(),
                                 (Double) solrRange.getGap(), total, counts));
             }
