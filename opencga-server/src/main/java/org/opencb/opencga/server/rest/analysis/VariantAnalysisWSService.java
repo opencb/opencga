@@ -481,7 +481,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 //                                @ApiParam(value = "Fetch summary data from Solr", required = false) @QueryParam("summary") boolean summary,
 //                                @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge
         try {
-            List<FacetedQueryResult> queryResults = new LinkedList<>();
+            //List<FacetedQueryResult> queryResults = new LinkedList<>();
 
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -494,9 +494,10 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             FacetedQueryResult queryResult = variantManager.facet(query, queryOptions, sessionId);
             //System.out.println("queryResult = " + jsonObjectMapper.writeValueAsString(queryResult));
 
-            queryResults.add(queryResult);
+            //queryResults.add(queryResult);
 
-            return createOkResponse(queryResults);
+            //return createOkResponse(queryResults);
+            return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
