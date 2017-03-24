@@ -47,11 +47,11 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.opencga.core.results.VariantFacetedQueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.cache.CacheManager;
 import org.opencb.opencga.storage.core.config.CellBaseConfiguration;
@@ -2712,7 +2712,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantFacetedQueryResult<Variant> facet(Query facetedQuery, Query query, QueryOptions options) {
+    public FacetedQueryResult facet(Query query, QueryOptions options) {
 
         if (query == null) {
             query = new Query();
@@ -2721,9 +2721,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
 
-        VariantFacetedQueryResult<Variant> queryResult;
+        FacetedQueryResult queryResult;
         try {
-            queryResult = variantSearchManager.facetedQuery(credentials.getMongoDbName(), facetedQuery, query, options);
+            queryResult = variantSearchManager.facetedQuery(credentials.getMongoDbName(), query, options);
         } catch (IOException | VariantSearchException e) {
             throw Throwables.propagate(e);
         }

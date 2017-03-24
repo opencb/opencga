@@ -144,6 +144,11 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-datastore-core</artifactId>
+            <version>3.4.2-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <build>

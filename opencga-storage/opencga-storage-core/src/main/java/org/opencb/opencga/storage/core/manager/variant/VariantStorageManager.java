@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -35,7 +36,6 @@ import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.core.results.VariantFacetedQueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -515,12 +515,12 @@ public class VariantStorageManager extends StorageManager {
     //   Facet methods      //
     // ---------------------//
 
-    public VariantFacetedQueryResult<Variant> facet(Query facetedQuery, Query query, QueryOptions queryOptions, String sessionId)
+    public FacetedQueryResult facet(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
-        return secure(facetedQuery, query, queryOptions, sessionId, dbAdaptor -> {
+        return secure(query, queryOptions, sessionId, dbAdaptor -> {
             addDefaultLimit(queryOptions);
-            logger.debug("getFacets {}, {}, {}", facetedQuery, query, queryOptions);
-            VariantFacetedQueryResult<Variant> result = dbAdaptor.facet(facetedQuery, query, queryOptions);
+            logger.debug("getFacets {}, {}", query, queryOptions);
+            FacetedQueryResult result = dbAdaptor.facet(query, queryOptions);
             logger.debug("getFacets in {}ms", result.getDbTime());
             return result;
         });

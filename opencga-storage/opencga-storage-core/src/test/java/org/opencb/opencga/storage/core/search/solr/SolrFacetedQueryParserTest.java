@@ -1,20 +1,13 @@
 package org.opencb.opencga.storage.core.search.solr;
 
-import org.apache.solr.client.solrj.SolrQuery;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Test;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.results.FacetedQueryResultItem;
-import org.opencb.opencga.core.results.VariantFacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.opencga.storage.core.config.SearchConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.search.VariantSearchManager;
-
-import java.util.List;
-
-import static org.junit.Assert.*;
 
 /**
  * Created by jtarraga on 09/03/17.
@@ -29,7 +22,7 @@ public class SolrFacetedQueryParserTest {
 
     public String study = collection;
 
-    public void executeFacetedQuery(Query facetedQuery, Query query, QueryOptions queryOptions) {
+    public void executeFacetedQuery(Query query, QueryOptions queryOptions) {
         String user = "";
         String password = "";
         boolean active = true;
@@ -38,12 +31,10 @@ public class SolrFacetedQueryParserTest {
         config.setSearch(new SearchConfiguration(host, collection, user, password, active, rows));
         VariantSearchManager searchManager = new VariantSearchManager(null, config);
         try {
-            VariantFacetedQueryResult<Variant> result = searchManager.facetedQuery(collection, facetedQuery, query, queryOptions);
+            FacetedQueryResult result = searchManager.facetedQuery(collection, query, queryOptions);
 
             if (result.getResult() != null) {
-                for (FacetedQueryResultItem item: result.getResult()) {
-                    System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(item));
-                }
+                System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.getResult()));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -52,67 +43,61 @@ public class SolrFacetedQueryParserTest {
 
     public void facetField() {
         QueryOptions queryOptions = new QueryOptions();
+        // two facets: 1) by type, and 2) by studies
+        queryOptions.put(QueryOptions.FACET, "type;studies:2:2");
 
         Query query = new Query();
         // query for chromosome 2
         query.put("region", "22");
 
-        Query facetedQuery = new Query();
-        // two facets: 1) by type, and 2) by studies
-        facetedQuery.put("facet-field", "type,studies");
 
         // execute
-        executeFacetedQuery(facetedQuery, query, queryOptions);
+        executeFacetedQuery(query, queryOptions);
     }
 
 
     public void facetNestedFields() {
         QueryOptions queryOptions = new QueryOptions();
+        // two facets: 1) by nested fields: studies and soAcc, and 2) by type
+        queryOptions.put(QueryOptions.FACET, "studies>>type");
 
         Query query = new Query();
         // query for chromosome 2
         query.put("region", "22");
 
-        Query facetedQuery = new Query();
-        // two facets: 1) by nested fields: studies and soAcc, and 2) by type
-        facetedQuery.put("facet-field", "studies:type");
 
         // execute
-        executeFacetedQuery(facetedQuery, query, queryOptions);
+        executeFacetedQuery(query, queryOptions);
     }
 
 
     public void facetRanges() {
         QueryOptions queryOptions = new QueryOptions();
+        // two ranges: 1) phylop from 0 to 1 step 0.3, and 2) caddScaled from 0 to 30 step 5
+        queryOptions.put(QueryOptions.FACET_RANGE, "phylop:0:1:0.3;caddScaled:0:30:5");
 
         Query query = new Query();
         // query for chromosome 2
         query.put("region", "22");
 
-        Query facetedQuery = new Query();
-        // two ranges: 1) phylop from 0 to 1 step 0.3, and 2) caddScaled from 0 to 30 step 5
-        facetedQuery.put("facet-range", "phylop:0:1:0.3,caddScaled:0:30:5");
-
         // execute
-        executeFacetedQuery(facetedQuery, query, queryOptions);
+        executeFacetedQuery(query, queryOptions);
     }
 
     public void facetFieldAndRange() {
         QueryOptions queryOptions = new QueryOptions();
+        // two facets: 1) by nested fields: studies and type, and 2) by soAcc
+        queryOptions.put(QueryOptions.FACET, "studies>>type;soAcc");
+        // two ranges: 1) phylop from 0 to 1 step 0.3, and 2) caddScaled from 0 to 30 step 2
+        queryOptions.put(QueryOptions.FACET_RANGE, "phylop:0:1:0.3;caddScaled:0:30:2");
 
         Query query = new Query();
         // query for chromosome 2
         query.put("region", "22");
         System.out.println(query.toString());
 
-        Query facetedQuery = new Query();
-        // two facets: 1) by nested fields: studies and type, and 2) by soAcc
-        facetedQuery.put("facet-field", "studies:type,soAcc");
-        // two ranges: 1) phylop from 0 to 1 step 0.3, and 2) caddScaled from 0 to 30 step 2
-        facetedQuery.put("facet-range", "phylop:0:1:0.3,caddScaled:0:30:2");
-
         // execute
-        executeFacetedQuery(facetedQuery, query, queryOptions);
+        executeFacetedQuery(query, queryOptions);
     }
 
     @Test

@@ -81,6 +81,27 @@ public class SolrQueryParser {
         }
 
         //-------------------------------------
+        // Facet processing
+        //-------------------------------------
+        // set rows to 0, we are only interested in facet information
+        solrQuery.setRows(0);
+
+        // facet fields (query parameter: facet)
+        // multiple faceted fields are separated by ";"
+        // nested faceted fields (i.e., Solr pivots) are separated by ">>", e.g.: studies>>type
+        if (queryOptions.containsKey(QueryOptions.FACET)) {
+            parseSolrFacetFields(queryOptions.get(QueryOptions.FACET).toString(), solrQuery);
+        }
+
+        // facet ranges,
+        // query parameter name: facetRange
+        // multiple facet ranges are separated by ";"
+        // query parameter value: field:start:end:gap, e.g.: sift:0:1:0.5
+        if (queryOptions.containsKey(QueryOptions.FACET_RANGE)) {
+            parseSolrFacetRanges(queryOptions.get(QueryOptions.FACET_RANGE).toString(), solrQuery);
+        }
+
+        //-------------------------------------
         // Query processing
         //-------------------------------------
 
@@ -233,38 +254,6 @@ public class SolrQueryParser {
         key = VariantQueryParams.ANNOT_TRAITS.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parseCategoryTermValue("traits", query.getString(key)));
-        }
-
-        //-------------------------------------
-        // Facet processing
-        //-------------------------------------
-
-        if (query.containsKey("facet.field")) {
-            solrQuery.addFacetField((query.get("facet.field").toString()));
-        }
-
-        if (query.containsKey("facet.fields")) {
-            solrQuery.addFacetField((query.get("facet.fields").toString().split(",")));
-        }
-
-        if (query.containsKey("facet.query")) {
-            solrQuery.addFacetQuery(query.get("facet.query").toString());
-        }
-
-        if (query.containsKey("facet.prefix")) {
-            solrQuery.setFacetPrefix(query.get("facet.prefix").toString());
-        }
-
-        if (query.containsKey("facet.range")) {
-
-            Map<String, Map<String, Number>> rangeFields = (Map<String, Map<String, Number>>) query.get("facet.range");
-
-            for (String k : rangeFields.keySet()) {
-                Number rangeStart = rangeFields.get(k).get("facet.range.start");
-                Number rangeEnd = rangeFields.get(k).get("facet.range.end");
-                Number rangeGap = rangeFields.get(k).get("facet.range.gap");
-                solrQuery.addNumericRangeFacet(k, rangeStart, rangeEnd, rangeGap);
-            }
         }
 
         logger.debug("query = {}\n", query.toJson());
@@ -705,5 +694,94 @@ public class SolrQueryParser {
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * Parse Solr facet fields from string containing facet definitions separated by semicolon.
+     * This format is: field_name[field_values_1,field_values_2...]:skip:limit
+     * Multiple facet fields are separated by semicolons (;)
+     * and nested fields are separated by colons (>>)
+     * E.g.:  chromosome[1,2,3,4,5];studies[1kg,exac]>>type[snv,indel]
+     *
+     * @param strFields   String containing the facet field definitions separated by semicolon
+     * @param solrQuery   Solr query
+     */
+    public void parseSolrFacetFields(String strFields, SolrQuery solrQuery) {
+        if (StringUtils.isNotEmpty(strFields) && solrQuery != null) {
+            String[] fields = strFields.split("[;]");
+            for (String field : fields) {
+                String[] splits = field.split(">>");
+                if (splits.length == 1) {
+                    // Solr field
+                    //solrQuery.addFacetField(field);
+                    parseFacetField(field, solrQuery, false);
+                } else {
+                    StringBuilder sb = new StringBuilder();
+                    for (String split : splits) {
+                        parseFacetField(split, solrQuery, true);
+                        if (sb.length() > 0) {
+                            sb.append(",");
+                        }
+                        sb.append(split);
+                    }
+                    // Solr pivots (nested fields)
+                    solrQuery.addFacetPivotField(sb.toString());
+                }
+            }
+        }
+    }
+
+    /**
+     * Parse field string.
+     * The expected format is: field_name[field_value_1,field_value_2,...]:skip:limit.
+     *
+     * @param field
+     */
+    private void parseFacetField(String field, SolrQuery solrQuery, boolean pivot) {
+        String[] splits1 = field.split("[\\[\\]]");
+        if (splits1.length == 1) {
+            String[] splits2 = field.split(":");
+            if (splits2.length >= 1 && !pivot) {
+                solrQuery.addFacetField(splits2[0]);
+            }
+            if (splits2.length >= 2) {
+                solrQuery.set("f." + splits2[0] + ".facet.offset", splits2[1]);
+            }
+            if (splits2.length >= 3) {
+                solrQuery.set("f." + splits2[0] + ".facet.limit", splits2[2]);
+            }
+        } else {
+            logger.warn("Not implemented yet!!!");
+        }
+    }
+
+
+    /**
+     * Parse Solr facet ranges from string containing facet definitions separated by semicolon.
+     * This format is: field_name:start:end:gap, e.g.: sift:0:1:0.2;gerp:-1:3:0.5
+     * Multiple facet ranges are separated by semicolons (;)
+     *
+     * @param strRanges   String containing the facet range definitions separated by semicolon
+     * @param solrQuery   Solr query
+     */
+    public void parseSolrFacetRanges(String strRanges, SolrQuery solrQuery) {
+        String[] ranges = strRanges.split("[;]");
+        for (String range : ranges) {
+            String[] split = range.split(":");
+            if (split.length != 4) {
+                logger.warn("Facet range '" + range + "' malformed. The expected range format is 'name:start:end:gap'");
+            } else {
+                try {
+                    Double start = Double.parseDouble(split[1]);
+                    Double end = Double.parseDouble(split[2]);
+                    Double gap = Double.parseDouble(split[3]);
+                    // Solr ranges
+                    solrQuery.addNumericRangeFacet(split[0], start, end, gap);
+                } catch (NumberFormatException e) {
+                    logger.warn("Facet range '" + range + "' malformed. Range format is 'name:start:end:gap'"
+                            + " where start, end and gap values are numbers.");
+                }
+            }
+        }
     }
 }

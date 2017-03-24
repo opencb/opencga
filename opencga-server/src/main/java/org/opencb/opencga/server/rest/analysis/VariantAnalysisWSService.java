@@ -25,11 +25,11 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.results.FacetedQueryResult;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -426,8 +426,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = QueryOptions.COUNT, value = "Total number of results", dataType = "boolean", paramType = "query")
     })
     */
-    public Response getFacets(@ApiParam(value = "List of facet fields separated by commas, e.g.: type. For facet nested fields use colons, e.g.: studies:biotype") @QueryParam("facet-field") String facetFields,
-                              @ApiParam(value = "List of facet ranges separated by commas. Facet range format: {field_name}:{start}:{end}:{interval}, e.g.: sift:0:1:0.2") @QueryParam("facet-range") String facetRanges,
+    public Response getFacets(@ApiParam(value = "List of facet fields separated by commas, e.g.: type. For facet nested fields use colons, e.g.: studies:biotype") @QueryParam("facet") String facet,
+                              @ApiParam(value = "List of facet ranges separated by commas. Facet range format: {field_name}:{start}:{end}:{interval}, e.g.: sift:0:1:0.2") @QueryParam("facetRange") String facetRange,
                               @ApiParam(value = "List of variant ids") @QueryParam("ids") String ids,
                                 @ApiParam(value = "List of regions: {chr}:{start}-{end}") @QueryParam("region") String region,
                                 @ApiParam(value = "List of chromosomes") @QueryParam("chromosome") String chromosome,
@@ -490,7 +490,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             queryOptions.put(QueryOptions.SKIP, 0);
 
             Query query = VariantStorageManager.getVariantQuery(queryOptions);
-            FacetedQueryResult queryResult = variantManager.facet(query, query, queryOptions, sessionId);
+
+            FacetedQueryResult queryResult = variantManager.facet(query, queryOptions, sessionId);
             //System.out.println("queryResult = " + jsonObjectMapper.writeValueAsString(queryResult));
 
             queryResults.add(queryResult);

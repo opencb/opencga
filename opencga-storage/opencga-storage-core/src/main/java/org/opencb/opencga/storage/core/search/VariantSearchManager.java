@@ -18,17 +18,14 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.datastore.core.result.FacetedQueryResultItem;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.core.results.FacetedQueryResultItem;
-import org.opencb.opencga.core.results.VariantFacetedQueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-
-import org.opencb.opencga.storage.core.search.solr.SolrFacetedQueryParser;
 import org.opencb.opencga.storage.core.search.solr.SolrQueryParser;
-
 import org.opencb.opencga.storage.core.search.solr.SolrVariantIterator;
 import org.opencb.opencga.storage.core.search.solr.SolrVariantSearchIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
@@ -41,7 +38,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -53,7 +51,6 @@ public class VariantSearchManager {
     private StorageConfiguration storageConfiguration;
 
     private SolrQueryParser solrQueryParser;
-    private SolrFacetedQueryParser solrFacetedQueryParser;
     private VariantDBAdaptorUtils variantDBAdaptorUtils;
 
     private HttpSolrClient solrClient;
@@ -81,8 +78,6 @@ public class VariantSearchManager {
 
         this.variantSearchToVariantConverter = new VariantSearchToVariantConverter();
         this.solrQueryParser = new SolrQueryParser(this.variantDBAdaptorUtils);
-        this.solrFacetedQueryParser = new SolrFacetedQueryParser(this.variantDBAdaptorUtils);
-
 
         logger = LoggerFactory.getLogger(VariantSearchManager.class);
     }
@@ -391,30 +386,25 @@ public class VariantSearchManager {
      * according a given query.
      *
      * @param collection    Collection name
-     * @param facetedQuery  Faceted query
      * @param query         Query
-     * @param queryOptions  Query options
+     * @param queryOptions  Query options (contains the facet and facetRange options)
      * @return              List of Variant objects
      * @throws IOException          IOException
      * @throws VariantSearchException  VariantSearchException
      */
-    public VariantFacetedQueryResult<Variant> facetedQuery(String collection, Query facetedQuery,
-                                                           Query query, QueryOptions queryOptions)
+    public FacetedQueryResult facetedQuery(String collection, Query query, QueryOptions queryOptions)
             throws IOException, VariantSearchException {
         // init collection if needed
         init(collection);
 
         StopWatch stopWatch = StopWatch.createStarted();
         try {
-            SolrQuery solrQuery = solrFacetedQueryParser.parse(facetedQuery, query, queryOptions);
+            SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
             QueryResponse response = solrClient.query(solrQuery);
             System.out.println(response);
-            List<FacetedQueryResultItem> results = new ArrayList();
-            results.add(toFacetedQueryResultItem(response));
-
-            return new VariantFacetedQueryResult<>("", (int) stopWatch.getTime(TimeUnit.MILLISECONDS),
-                    results.size(), "Faceted data from Solr", "", "", results);
-
+            FacetedQueryResultItem item = toFacetedQueryResultItem(response);
+            return new FacetedQueryResult("", (int) stopWatch.getTime(TimeUnit.MILLISECONDS),
+                    (int) item.size(), item.size(), "Faceted data from Solr", "", item);
         } catch (SolrServerException e) {
             throw new VariantSearchException(e.getMessage(), e);
         }
