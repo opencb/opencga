@@ -29,7 +29,7 @@ import java.io.IOException;
  */
 public class VariableSetClient extends CatalogClient<VariableSet, VariableSet> {
 
-    private static final String VARIABLES_URL = "variableSet";
+    private static final String VARIABLES_URL = "variableset";
 
     public VariableSetClient(String sessionId, ClientConfiguration configuration, String userId) {
         super(userId, sessionId, configuration);
