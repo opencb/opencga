@@ -403,7 +403,7 @@ public class VariantSearchManager {
             System.out.println(response);
             FacetedQueryResultItem item = toFacetedQueryResultItem(queryOptions, response);
             return new FacetedQueryResult("", (int) stopWatch.getTime(TimeUnit.MILLISECONDS),
-                    (int) item.size(), item.size(), "Faceted data from Solr", "", item);
+                    1, 1, "Faceted data from Solr", "", item);
         } catch (SolrServerException e) {
             throw new VariantSearchException(e.getMessage(), e);
         }
