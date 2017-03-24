@@ -746,17 +746,35 @@ public class SolrQueryParser {
             if (splits2.length >= 1) {
                 name = splits2[0];
                 if (!pivot) {
-                    solrQuery.addFacetField(splits2[0]);
+                    solrQuery.addFacetField(name);
                 }
             }
             if (splits2.length >= 2 && StringUtils.isNotEmpty(splits2[1])) {
-                solrQuery.set("f." + splits2[0] + ".facet.offset", splits2[1]);
+                solrQuery.set("f." + name + ".facet.offset", splits2[1]);
             }
             if (splits2.length >= 3 && StringUtils.isNotEmpty(splits2[2])) {
-                solrQuery.set("f." + splits2[0] + ".facet.limit", splits2[2]);
+                solrQuery.set("f." + name + ".facet.limit", splits2[2]);
             }
         } else {
-            logger.warn("Not implemented yet!!!");
+            // first, field name
+            name = splits1[0];
+            if (!pivot) {
+                solrQuery.addFacetField(name);
+            }
+
+            // second, includes
+            // nothing to do, if includes, the other ones will be removed later
+
+            // third, skip and limit
+            if (splits1.length >= 3) {
+                String[] splits2 = splits1[2].split(":");
+                if (splits2.length >= 2 && StringUtils.isNotEmpty(splits2[1])) {
+                    solrQuery.set("f." + name + ".facet.offset", splits2[1]);
+                }
+                if (splits2.length >= 3 && StringUtils.isNotEmpty(splits2[2])) {
+                    solrQuery.set("f." + name + ".facet.limit", splits2[2]);
+                }
+            }
         }
         return name;
     }

@@ -55,11 +55,25 @@ public class SolrFacetedQueryParserTest {
         executeFacetedQuery(query, queryOptions);
     }
 
+    public void facetFieldInclude() {
+        QueryOptions queryOptions = new QueryOptions();
+        // two facets: 1) by type, and 2) by studies
+        queryOptions.put(QueryOptions.FACET, "studies[EXAC,1kG_phase3]");
+
+        Query query = new Query();
+        // query for chromosome 2
+        query.put("region", "22");
+
+
+        // execute
+        executeFacetedQuery(query, queryOptions);
+    }
+
 
     public void facetNestedFields() {
         QueryOptions queryOptions = new QueryOptions();
         // two facets: 1) by nested fields: studies and soAcc, and 2) by type
-        queryOptions.put(QueryOptions.FACET, "studies:2:2>>type");
+        queryOptions.put(QueryOptions.FACET, "studies[EXAC,GONL]:2:2>>type");
 
         Query query = new Query();
         // query for chromosome 2
@@ -102,10 +116,11 @@ public class SolrFacetedQueryParserTest {
 
     @Test
     public void testParsing() {
+        facetFieldInclude();
         facetField();
         facetNestedFields();
-        //facetRanges();
-        //facetFieldAndRange();
+        facetRanges();
+        facetFieldAndRange();
     }
 
 }
