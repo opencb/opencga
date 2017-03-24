@@ -709,22 +709,22 @@ public class SolrQueryParser {
     public void parseSolrFacetFields(String strFields, SolrQuery solrQuery) {
         if (StringUtils.isNotEmpty(strFields) && solrQuery != null) {
             String[] fields = strFields.split("[;]");
-            for (String field : fields) {
+            for (String field: fields) {
                 String[] splits = field.split(">>");
                 if (splits.length == 1) {
                     // Solr field
                     //solrQuery.addFacetField(field);
                     parseFacetField(field, solrQuery, false);
                 } else {
+                    // Solr pivots (nested fields)
                     StringBuilder sb = new StringBuilder();
-                    for (String split : splits) {
-                        parseFacetField(split, solrQuery, true);
+                    for (String split: splits) {
+                        String name = parseFacetField(split, solrQuery, true);
                         if (sb.length() > 0) {
                             sb.append(",");
                         }
-                        sb.append(split);
+                        sb.append(name);
                     }
-                    // Solr pivots (nested fields)
                     solrQuery.addFacetPivotField(sb.toString());
                 }
             }
@@ -735,24 +735,30 @@ public class SolrQueryParser {
      * Parse field string.
      * The expected format is: field_name[field_value_1,field_value_2,...]:skip:limit.
      *
-     * @param field
+     * @param field    The string to parse
+     * @retrun         The field name
      */
-    private void parseFacetField(String field, SolrQuery solrQuery, boolean pivot) {
+    private String parseFacetField(String field, SolrQuery solrQuery, boolean pivot) {
+        String name = "";
         String[] splits1 = field.split("[\\[\\]]");
         if (splits1.length == 1) {
             String[] splits2 = field.split(":");
-            if (splits2.length >= 1 && !pivot) {
-                solrQuery.addFacetField(splits2[0]);
+            if (splits2.length >= 1) {
+                name = splits2[0];
+                if (!pivot) {
+                    solrQuery.addFacetField(splits2[0]);
+                }
             }
-            if (splits2.length >= 2) {
+            if (splits2.length >= 2 && StringUtils.isNotEmpty(splits2[1])) {
                 solrQuery.set("f." + splits2[0] + ".facet.offset", splits2[1]);
             }
-            if (splits2.length >= 3) {
+            if (splits2.length >= 3 && StringUtils.isNotEmpty(splits2[2])) {
                 solrQuery.set("f." + splits2[0] + ".facet.limit", splits2[2]);
             }
         } else {
             logger.warn("Not implemented yet!!!");
         }
+        return name;
     }
 
 
