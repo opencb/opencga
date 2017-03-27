@@ -25,6 +25,7 @@ import java.util.Set;
  */
 public class Variable {
 
+    private String title;
     private String name;
     private String category;
 
@@ -53,9 +54,10 @@ public class Variable {
     public Variable() {
     }
 
-    public Variable(String name, String category, VariableType type, Object defaultValue, boolean required, boolean multiValue,
-                    List<String> allowedValues, long rank, String dependsOn, String description, Set<Variable> variableSet,
-                    Map<String, Object> attributes) {
+    public Variable(String title, String name, String category, VariableType type, Object defaultValue, boolean required,
+                    boolean multiValue, List<String> allowedValues, long rank, String dependsOn, String description,
+                    Set<Variable> variableSet, Map<String, Object> attributes) {
+        this.title = title;
         this.name = name;
         this.category = category;
         this.type = type;
@@ -70,6 +72,14 @@ public class Variable {
         this.attributes = attributes;
     }
 
+    @Deprecated
+    public Variable(String name, String category, VariableType type, Object defaultValue, boolean required, boolean multiValue,
+                    List<String> allowedValues, long rank, String dependsOn, String description, Set<Variable> variableSet,
+                    Map<String, Object> attributes) {
+        this("", name, category, type, defaultValue, required, multiValue, allowedValues, rank, dependsOn, description, variableSet,
+                attributes);
+    }
+
     public enum VariableType {
         BOOLEAN,
         CATEGORICAL,
@@ -81,7 +91,8 @@ public class Variable {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Variable{");
-        sb.append("name='").append(name).append('\'');
+        sb.append("title='").append(title).append('\'');
+        sb.append(", name='").append(name).append('\'');
         sb.append(", category='").append(category).append('\'');
         sb.append(", type=").append(type);
         sb.append(", defaultValue=").append(defaultValue);
@@ -118,6 +129,15 @@ public class Variable {
     @Override
     public int hashCode() {
         return name.hashCode();
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public Variable setTitle(String title) {
+        this.title = title;
+        return this;
     }
 
     public String getName() {
