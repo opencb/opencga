@@ -698,7 +698,7 @@ public class SolrQueryParser {
      * Parse Solr facet fields from string containing facet definitions separated by semicolon.
      * This format is: field_name[field_values_1,field_values_2...]:skip:limit
      * Multiple facet fields are separated by semicolons (;)
-     * and nested fields are separated by colons (>>)
+     * and nested fields are separated by >>
      * E.g.:  chromosome[1,2,3,4,5];studies[1kg,exac]>>type[snv,indel]
      *
      * @param strFields   String containing the facet field definitions separated by semicolon
@@ -794,9 +794,16 @@ public class SolrQueryParser {
                 logger.warn("Facet range '" + range + "' malformed. The expected range format is 'name:start:end:gap'");
             } else {
                 try {
-                    Double start = Double.parseDouble(split[1]);
-                    Double end = Double.parseDouble(split[2]);
-                    Double gap = Double.parseDouble(split[3]);
+                    Number start, end, gap;
+                    if (split[0].equals("start")) {
+                        start = Integer.parseInt(split[1]);
+                        end = Integer.parseInt(split[2]);
+                        gap = Integer.parseInt(split[3]);
+                    } else {
+                        start = Double.parseDouble(split[1]);
+                        end = Double.parseDouble(split[2]);
+                        gap = Double.parseDouble(split[3]);
+                    }
                     // Solr ranges
                     solrQuery.addNumericRangeFacet(split[0], start, end, gap);
                 } catch (NumberFormatException e) {

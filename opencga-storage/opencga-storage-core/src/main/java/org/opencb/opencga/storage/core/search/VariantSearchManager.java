@@ -660,8 +660,8 @@ public class VariantSearchManager {
                     counts.add(count);
                 }
                 ranges.add(new FacetedQueryResultItem().new Range(solrRange.getName(),
-                                (Double) solrRange.getStart(), (Double) solrRange.getEnd(),
-                                (Double) solrRange.getGap(), total, counts));
+                        (Number) solrRange.getStart(), (Number) solrRange.getEnd(),
+                        (Number) solrRange.getGap(), total, counts));
             }
         }
 
