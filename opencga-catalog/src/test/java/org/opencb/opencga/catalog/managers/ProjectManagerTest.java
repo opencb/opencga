@@ -93,6 +93,7 @@ public class ProjectManagerTest extends GenericTest {
         queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(1, queryResult.getNumResults());
         assertEquals(2, queryResult.first().getStudies().size());
+        assertEquals("user2@pmp", queryResult.first().getAlias());
 
         // Add permissions to user in a study of user3
         long s3 = catalogManager.createStudy(project3, "StudyProject3", "s3", Study.Type.CONTROL_SET, "", sessionIdUser3).first().getId();

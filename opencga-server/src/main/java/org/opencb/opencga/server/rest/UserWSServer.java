@@ -233,14 +233,16 @@ public class UserWSServer extends OpenCGAWSServer {
     })
     public Response getAllProjects(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                                    @ApiParam(value = "When false, it will return only the projects and studies belonging to the user. "
-                                           + "However, if this parameter is set to true, only the projects and studies shared with the "
-                                           + "user will be shown.", defaultValue = "false") @QueryParam ("shared") boolean shared) {
+                                           + "However, if this parameter is set to true, it will also show the projects and studies " +
+                                           "shared with the user.", defaultValue = "false") @QueryParam ("shared") boolean shared) {
         try {
-            QueryResult queryResult;
-            if (!shared) {
-                queryResult = catalogManager.getAllProjects(userId, queryOptions, sessionId);
-            } else {
-                queryResult = catalogManager.getProjectManager().getSharedProjects(userId, queryOptions, sessionId);
+            QueryResult<Project> queryResult = catalogManager.getAllProjects(userId, queryOptions, sessionId);
+            if (shared) {
+                QueryResult<Project> sharedResults = catalogManager.getProjectManager().getSharedProjects(userId, queryOptions, sessionId);
+                queryResult.getResult().addAll(sharedResults.getResult());
+                queryResult.setNumTotalResults(queryResult.getNumTotalResults() + sharedResults.getNumTotalResults());
+                queryResult.setNumResults(queryResult.getNumResults() + sharedResults.getNumResults());
+                queryResult.setDbTime(queryResult.getDbTime() + sharedResults.getDbTime());
             }
             return createOkResponse(queryResult);
         } catch (Exception e) {
