@@ -426,8 +426,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = QueryOptions.COUNT, value = "Total number of results", dataType = "boolean", paramType = "query")
     })
     */
-    public Response getFacets(@ApiParam(value = "List of facet fields separated by commas, e.g.: type. For facet nested fields use colons, e.g.: studies:biotype") @QueryParam("facet") String facet,
-                              @ApiParam(value = "List of facet ranges separated by commas. Facet range format: {field_name}:{start}:{end}:{interval}, e.g.: sift:0:1:0.2") @QueryParam("facetRange") String facetRange,
+    public Response getFacets(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
+                              @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange,
                               @ApiParam(value = "List of variant ids") @QueryParam("ids") String ids,
                                 @ApiParam(value = "List of regions: {chr}:{start}-{end}") @QueryParam("region") String region,
                                 @ApiParam(value = "List of chromosomes") @QueryParam("chromosome") String chromosome,
@@ -481,25 +481,24 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 //                                @ApiParam(value = "Fetch summary data from Solr", required = false) @QueryParam("summary") boolean summary,
 //                                @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge
         try {
-            //List<FacetedQueryResult> queryResults = new LinkedList<>();
-
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            queryOptions.put(QueryOptions.COUNT, false);
             queryOptions.put(QueryOptions.LIMIT, 0);
             queryOptions.put(QueryOptions.SKIP, 0);
+            queryOptions.remove(QueryOptions.COUNT);
+            queryOptions.remove(QueryOptions.INCLUDE);
+            queryOptions.remove(QueryOptions.SORT);
 
             Query query = VariantStorageManager.getVariantQuery(queryOptions);
 
             FacetedQueryResult queryResult = variantManager.facet(query, queryOptions, sessionId);
-            //System.out.println("queryResult = " + jsonObjectMapper.writeValueAsString(queryResult));
 
-            //queryResults.add(queryResult);
-
-            //return createOkResponse(queryResults);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 }
+
+
+

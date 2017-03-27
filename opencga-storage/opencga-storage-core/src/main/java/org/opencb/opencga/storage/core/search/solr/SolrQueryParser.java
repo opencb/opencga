@@ -88,8 +88,6 @@ public class SolrQueryParser {
         // multiple faceted fields are separated by ";"
         // nested faceted fields (i.e., Solr pivots) are separated by ">>", e.g.: studies>>type
         if (queryOptions.containsKey(QueryOptions.FACET)) {
-            // set rows to 0, we are only interested in facet information
-            solrQuery.setRows(0);
             parseSolrFacetFields(queryOptions.get(QueryOptions.FACET).toString(), solrQuery);
         }
 
@@ -98,8 +96,6 @@ public class SolrQueryParser {
         // multiple facet ranges are separated by ";"
         // query parameter value: field:start:end:gap, e.g.: sift:0:1:0.5
         if (queryOptions.containsKey(QueryOptions.FACET_RANGE)) {
-            // set rows to 0, we are only interested in facet information
-            solrQuery.setRows(0);
             parseSolrFacetRanges(queryOptions.get(QueryOptions.FACET_RANGE).toString(), solrQuery);
         }
 
