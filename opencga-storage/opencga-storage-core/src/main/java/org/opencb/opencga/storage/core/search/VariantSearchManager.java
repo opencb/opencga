@@ -531,7 +531,8 @@ public class VariantSearchManager {
     }
 
 
-    private FacetedQueryResultItem.Field processSolrPivot(String name, int index, PivotField pivot, String indent) {
+    private FacetedQueryResultItem.Field processSolrPivot(String name, int index, Map<String, Set<String>> includes,
+                                                          PivotField pivot, String indent) {
         FacetedQueryResultItem.Field field = null;
         if (pivot.getPivot() != null && pivot.getPivot().size() > 0) {
             field = new FacetedQueryResultItem().new Field();
@@ -540,11 +541,17 @@ public class VariantSearchManager {
             long total = 0;
             List<FacetedQueryResultItem.Count> counts = new ArrayList<>();
             for (PivotField solrPivot : pivot.getPivot()) {
-                FacetedQueryResultItem.Field nestedField = processSolrPivot(name, index + 1, solrPivot, "\t");
+                FacetedQueryResultItem.Field nestedField = processSolrPivot(name, index + 1, includes, solrPivot, "\t");
 
-                FacetedQueryResultItem.Count count = new FacetedQueryResultItem()
-                        .new Count(solrPivot.getValue().toString(), solrPivot.getCount(), nestedField);
-                counts.add(count);
+                // check for includes
+                if (toInclude(includes, field.getName(), solrPivot.getValue().toString())) {
+//                if (includes.size() == 0 || (!includes.containsKey(field.getName()))
+//                        || (includes.containsKey(field.getName())
+//                        && includes.get(field.getName()).contains(solrPivot.getValue().toString()))) {
+                    FacetedQueryResultItem.Count count = new FacetedQueryResultItem()
+                            .new Count(solrPivot.getValue().toString(), solrPivot.getCount(), nestedField);
+                    counts.add(count);
+                }
                 total += solrPivot.getCount();
             }
             field.setTotal(total);
@@ -560,27 +567,40 @@ public class VariantSearchManager {
         if (queryOptions.containsKey(QueryOptions.FACET)) {
             String strFields = queryOptions.getString(QueryOptions.FACET);
             if (StringUtils.isNotEmpty(strFields)) {
-                String[] fields = strFields.split("[;]");
-                for (String field : fields) {
-                    String[] splits1 = field.split("[\\[\\]]");
-                    // first, name
-                    String name = splits1[0];
+                String[] fieldsBySc = strFields.split("[;]");
+                for (String fieldSc : fieldsBySc) {
+                    String[] fieldsByGt = fieldSc.split(">>");
+                    for (String fieldGt : fieldsByGt) {
+                        String[] splits1 = fieldGt.split("[\\[\\]]");
+                        // first, name
+                        String name = splits1[0];
 
-                    // second, includes
-                    if (splits1.length >= 2 && StringUtils.isNotEmpty(splits1[1])) {
-                        // we have to split by "," to get the includes
-                        String[] includes = splits1[1].split(",");
-                        for (String include : includes) {
-                            if (!includeMap.containsKey(name)) {
-                                includeMap.put(name, new HashSet<>());
+                        // second, includes
+                        if (splits1.length >= 2 && StringUtils.isNotEmpty(splits1[1])) {
+                            // we have to split by "," to get the includes
+                            String[] includes = splits1[1].split(",");
+                            for (String include : includes) {
+                                if (!includeMap.containsKey(name)) {
+                                    includeMap.put(name, new HashSet<>());
+                                }
+                                includeMap.get(name).add(include);
                             }
-                            includeMap.get(name).add(include);
                         }
                     }
                 }
             }
         }
         return includeMap;
+    }
+
+    private boolean toInclude(Map<String, Set<String>> includes, String name, String value) {
+        boolean ret = false;
+        if (includes.size() == 0
+                || !includes.containsKey(name)
+                || (includes.containsKey(name) && includes.get(name).contains(value))) {
+            ret = true;
+        }
+        return ret;
     }
 
     private FacetedQueryResultItem toFacetedQueryResultItem(QueryOptions queryOptions, QueryResponse response) {
@@ -596,9 +616,10 @@ public class VariantSearchManager {
                 List<FacetedQueryResultItem.Count> counts = new ArrayList<>();
                 for (FacetField.Count solrCount: solrField.getValues()) {
                     // check for includes
-                    if (includes.size() == 0
-                            || (includes.containsKey(solrField.getName())
-                            && includes.get(solrField.getName()).contains(solrCount.getName()))) {
+                    if (toInclude(includes, field.getName(), solrCount.getName())) {
+//                    if (includes.size() == 0 || (!includes.containsKey(field.getName()))
+//                            || (includes.containsKey(solrField.getName())
+//                            && includes.get(solrField.getName()).contains(solrCount.getName()))) {
                         FacetedQueryResultItem.Count count = new FacetedQueryResultItem()
                                 .new Count(solrCount.getName(), solrCount.getCount(), null);
                         counts.add(count);
@@ -627,12 +648,13 @@ public class VariantSearchManager {
                     long total = 0;
                     List<FacetedQueryResultItem.Count> counts = new ArrayList<>();
                     for (PivotField solrPivot : solrPivots) {
-                        FacetedQueryResultItem.Field nestedField = processSolrPivot(facetPivot.getName(i), 1, solrPivot, "\t");
+                        FacetedQueryResultItem.Field nestedField = processSolrPivot(facetPivot.getName(i), 1, includes, solrPivot, "\t");
 
                         // check for includes
-                        if (includes.size() == 0
-                                || (includes.containsKey(field.getName())
-                                && includes.get(field.getName()).contains(solrPivot.getValue().toString()))) {
+                        if (toInclude(includes, field.getName(), solrPivot.getValue().toString())) {
+//                        if (includes.size() == 0 || (!includes.containsKey(field.getName()))
+//                                || (includes.containsKey(field.getName())
+//                                && includes.get(field.getName()).contains(solrPivot.getValue().toString()))) {
                             FacetedQueryResultItem.Count count = new FacetedQueryResultItem()
                                     .new Count(solrPivot.getValue().toString(), solrPivot.getCount(), nestedField);
                             counts.add(count);

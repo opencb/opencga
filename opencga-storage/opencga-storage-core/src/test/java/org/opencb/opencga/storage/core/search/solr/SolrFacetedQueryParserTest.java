@@ -74,7 +74,9 @@ public class SolrFacetedQueryParserTest {
         QueryOptions queryOptions = new QueryOptions();
         // two facets: 1) by nested fields: studies and soAcc, and 2) by type
         //queryOptions.put(QueryOptions.FACET, "studies[EXAC,GONL]:2:2>>type");
-        queryOptions.put(QueryOptions.FACET, "studies>>type[INDEL,SNV]");
+        //queryOptions.put(QueryOptions.FACET, "studies>>type[INDEL,SNV]");
+        //queryOptions.put(QueryOptions.FACET, "studies[EXAC,GONL]>>type[INDEL,SNV]");
+        queryOptions.put(QueryOptions.FACET, "studies[EXAC,GONL]>>type[INDEL,SNV]");
 
         Query query = new Query();
         // query for chromosome 2
@@ -119,8 +121,8 @@ public class SolrFacetedQueryParserTest {
     public void testParsing() {
         //facetFieldInclude();
         //facetField();
-        //facetNestedFields();
-        facetRanges();
+        facetNestedFields();
+        //facetRanges();
         //facetFieldAndRange();
     }
 
