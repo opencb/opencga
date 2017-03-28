@@ -60,11 +60,12 @@ public class SolrFacetedQueryParserTest {
         QueryOptions queryOptions = new QueryOptions();
         // two facets: 1) by type, and 2) by studies
         //queryOptions.put(QueryOptions.FACET, "studies[EXAC,1kG_phase3]");
-        queryOptions.put(QueryOptions.FACET, "type[INDEL,SNV]");
+        //queryOptions.put(QueryOptions.FACET, "type[INDEL,SNV];genes[CNTN5,CTNNA3]");
+        queryOptions.put(QueryOptions.FACET, "genes[CNTN5,CTNNA3]");
 
         Query query = new Query();
         // query for chromosome 2
-        query.put("region", "22");
+        //query.put("region", "22");
 
 
         // execute
@@ -121,9 +122,9 @@ public class SolrFacetedQueryParserTest {
 
     @Test
     public void testParsing() {
-        //facetFieldInclude();
+        facetFieldInclude();
         //facetField();
-        facetNestedFields();
+        //facetNestedFields();
         //facetRanges();
         //facetFieldAndRange();
     }
