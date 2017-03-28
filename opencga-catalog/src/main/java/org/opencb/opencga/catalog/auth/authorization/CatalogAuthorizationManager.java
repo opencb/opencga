@@ -1643,7 +1643,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public List<QueryResult<IndividualAclEntry>> createIndividualAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
-                                                                      List<String> permissions) throws CatalogException {
+                                                                      List<String> permissions, boolean propagate) throws CatalogException {
         checkPermissions(permissions, IndividualAclEntry.IndividualPermissions::valueOf);
 
         String userId = resourceIds.getUser();
@@ -1686,21 +1686,23 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                         .append(CohortDBAdaptor.QueryParams.ID.key(), individualId);
                 individualDBAdaptor.createAcl(query, individualAclEntryList);
 
-                // Look for all the samples belonging to the individual
-                query = new Query()
-                        .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
-                QueryResult<Sample> sampleQueryResult =
-                        sampleDBAdaptor.get(query, new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()));
+                if (propagate) {
+                    // Look for all the samples belonging to the individual
+                    query = new Query().append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                            .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
 
-                // If the individual contains samples, we propagate the permissions to all the samples
-                if (sampleQueryResult != null && sampleQueryResult.getResult() != null && sampleQueryResult.getNumResults() > 0) {
-                    List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
-                    query = new Query()
-                            .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                            .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
+                    QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query,
+                            new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()));
 
-                    sampleDBAdaptor.createAcl(query, sampleAclEntryList);
+                    // If the individual contains samples, we propagate the permissions to all the samples
+                    if (sampleQueryResult != null && sampleQueryResult.getResult() != null && sampleQueryResult.getNumResults() > 0) {
+                        List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
+                        query = new Query()
+                                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId).
+                                append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
+
+                        sampleDBAdaptor.createAcl(query, sampleAclEntryList);
+                    }
                 }
 
                 QueryResult<IndividualAclEntry> aclEntryQueryResult = individualDBAdaptor.getAcl(individualId, members);
@@ -1820,7 +1822,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public QueryResult<IndividualAclEntry> updateIndividualAcl(String userId, long individualId, String member,
                                                                @Nullable String addPermissions, @Nullable String removePermissions,
-                                                               @Nullable String setPermissions) throws CatalogException {
+                                                               @Nullable String setPermissions, boolean propagate) throws CatalogException {
         checkUpdateParams(addPermissions, removePermissions, setPermissions);
 
         individualDBAdaptor.checkId(individualId);
@@ -1839,12 +1841,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                     + "yet.");
         }
 
-        // Look for all the samples belonging to the individual
-        query = new Query()
-                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
-        QueryResult<Sample> sampleQueryResult =
-                sampleDBAdaptor.get(query, new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()));
+        QueryResult<Sample> sampleQueryResult = null;
+        if (propagate) {
+            // Look for all the samples belonging to the individual
+            query = new Query()
+                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
+
+            sampleQueryResult = sampleDBAdaptor.get(query, new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()));
+        }
 
         List<String> permissions;
         if (setPermissions != null) {
@@ -1855,7 +1860,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             individualDBAdaptor.setAclsToMember(individualId, member, permissions);
 
             // If the individual contains samples, we propagate the permissions to all the samples
-            if (sampleQueryResult != null && sampleQueryResult.getResult() != null && sampleQueryResult.getNumResults() > 0) {
+            if (propagate && sampleQueryResult != null && sampleQueryResult.getResult() != null && sampleQueryResult.getNumResults() > 0) {
                 List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
                 query = new Query()
                         .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
@@ -1874,7 +1879,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 individualDBAdaptor.addAclsToMember(individualId, member, permissions);
 
                 // If the individual contains samples, we propagate the permissions to all the samples
-                if (sampleQueryResult != null && sampleQueryResult.getResult() != null && sampleQueryResult.getNumResults() > 0) {
+                if (propagate && sampleQueryResult != null && sampleQueryResult.getResult() != null
+                        && sampleQueryResult.getNumResults() > 0) {
                     List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
                     query = new Query()
                             .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
@@ -1892,7 +1898,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 individualDBAdaptor.removeAclsFromMember(individualId, member, permissions);
 
                 // If the individual contains samples, we propagate the permissions to all the samples
-                if (sampleQueryResult != null && sampleQueryResult.getResult() != null && sampleQueryResult.getNumResults() > 0) {
+                if (propagate && sampleQueryResult != null && sampleQueryResult.getResult() != null
+                        && sampleQueryResult.getNumResults() > 0) {
                     List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
                     query = new Query()
                             .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
