@@ -104,6 +104,7 @@ public class VariantSearchManager {
 
             this.solrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost() + collection).build();
             this.solrClient.setRequestWriter(new BinaryRequestWriter());
+            this.solrClient.setSoTimeout(storageConfiguration.getSearch().getTimeout()); // ms
 
             this.collection = collection;
         }

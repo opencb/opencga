@@ -26,9 +26,10 @@ public class SolrFacetedQueryParserTest {
         String user = "";
         String password = "";
         boolean active = true;
+        int timeout = SearchConfiguration.DEFAULT_TIMEOUT;
         int rows = 10;
         StorageConfiguration config = new StorageConfiguration();
-        config.setSearch(new SearchConfiguration(host, collection, user, password, active, rows));
+        config.setSearch(new SearchConfiguration(host, collection, user, password, active, timeout, rows));
         VariantSearchManager searchManager = new VariantSearchManager(null, config);
         try {
             FacetedQueryResult result = searchManager.facetedQuery(collection, query, queryOptions);

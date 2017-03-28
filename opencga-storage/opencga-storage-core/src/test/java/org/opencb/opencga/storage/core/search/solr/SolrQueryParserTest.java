@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.core.search.solr;
 
-import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -26,9 +25,10 @@ public class SolrQueryParserTest {
         String user = "";
         String password = "";
         boolean active = true;
+        int timeout = SearchConfiguration.DEFAULT_TIMEOUT;
         int rows = 10;
         StorageConfiguration config = new StorageConfiguration();
-        config.setSearch(new SearchConfiguration(host, collection, user, password, active, rows));
+        config.setSearch(new SearchConfiguration(host, collection, user, password, active, timeout, rows));
         VariantSearchManager searchManager = new VariantSearchManager(null, config);
         try {
             SolrVariantIterator iterator = searchManager.iterator(collection, query, queryOptions);
