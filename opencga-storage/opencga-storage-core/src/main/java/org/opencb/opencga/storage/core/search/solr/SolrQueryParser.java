@@ -99,6 +99,11 @@ public class SolrQueryParser {
             parseSolrFacetRanges(queryOptions.get(QueryOptions.FACET_RANGE).toString(), solrQuery);
         }
 
+        // facet intersections,
+        if (queryOptions.containsKey(QueryOptions.FACET_INTERSECTION)) {
+            parseSolrFacetIntersections(queryOptions.get(QueryOptions.FACET_INTERSECTION).toString(), solrQuery);
+        }
+
         //-------------------------------------
         // Query processing
         //-------------------------------------
@@ -810,6 +815,43 @@ public class SolrQueryParser {
                     logger.warn("Facet range '" + range + "' malformed. Range format is 'name:start:end:gap'"
                             + " where start, end and gap values are numbers.");
                 }
+            }
+        }
+    }
+
+    /**
+     * Parse Solr facet intersection from string containing facet definitions separated by semicolon.
+     * This format is: field_name:value1:value2[:value3], e.g.: studies:1kG_phase3:EXAC:ESP6500
+     * Multiple facet intersections are separated by semicolons (;)
+     *
+     * @param strIntersections   String containing the facet intersection
+     * @param solrQuery   Solr query
+     */
+    public void parseSolrFacetIntersections(String strIntersections, SolrQuery solrQuery) {
+        String[] intersections = strIntersections.split("[;]");
+        for (String intersection: intersections) {
+            String[] split = intersection.split(":");
+            if (split.length == 3) {
+                solrQuery.addFacetQuery("{!key=" + split[1] + "}" + split[0] + ":" + split[1]);
+                solrQuery.addFacetQuery("{!key=" + split[2] + "}" + split[0] + ":" + split[2]);
+                solrQuery.addFacetQuery("{!key=" + split[1] + "__" + split[2] + "}" + split[0] + ":" + split[1]
+                        + " AND " + split[0] + ":" + split[2]);
+            } else if (split.length == 4) {
+                solrQuery.addFacetQuery("{!key=" + split[1] + "}" + split[0] + ":" + split[1]);
+                solrQuery.addFacetQuery("{!key=" + split[2] + "}" + split[0] + ":" + split[2]);
+                solrQuery.addFacetQuery("{!key=" + split[3] + "}" + split[0] + ":" + split[3]);
+                solrQuery.addFacetQuery("{!key=" + split[1] + "__" + split[2] + "}" + split[0] + ":" + split[1]
+                        + " AND " + split[0] + ":" + split[2]);
+                solrQuery.addFacetQuery("{!key=" + split[1] + "__" + split[3] + "}" + split[0] + ":" + split[1]
+                        + " AND " + split[0] + ":" + split[3]);
+                solrQuery.addFacetQuery("{!key=" + split[2] + "__" + split[3] + "}" + split[0] + ":" + split[2]
+                        + " AND " + split[0] + ":" + split[3]);
+                solrQuery.addFacetQuery("{!key=" + split[1] + "__" + split[2] + "__" + split[3] + "}" + split[0]
+                        + ":" + split[1] + " AND " + split[0]
+                        + ":" + split[2] + " AND " + split[0] + ":" + split[3]);
+            } else {
+                logger.warn("Facet intersection '" + intersection + "' malformed. The expected intersection format"
+                        + " is 'name:value1:value2[:value3]', value3 is optional");
             }
         }
     }

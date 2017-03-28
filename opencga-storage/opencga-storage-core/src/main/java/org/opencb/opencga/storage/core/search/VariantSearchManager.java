@@ -688,7 +688,87 @@ public class VariantSearchManager {
             }
         }
 
-        return new FacetedQueryResultItem(fields, ranges);
+        // process Solr facet range
+        List<FacetedQueryResultItem.Intersection> intersections = new ArrayList<>();
+        Map<String, List<List<String>>> intersectionMap = getInputIntersections(queryOptions);
+        if (intersectionMap.size() > 0) {
+            if (response.getFacetQuery() != null && response.getFacetQuery().size() > 0) {
+                for (String key: intersectionMap.keySet()) {
+                    List<List<String>> intersectionLists = intersectionMap.get(key);
+                    for (List<String> list: intersectionLists) {
+                        FacetedQueryResultItem.Intersection intersection = new FacetedQueryResultItem().new Intersection();
+                        intersection.setSize(list.size());
+                        if (list.size() == 2) {
+                            Map<String, Long> counts = new LinkedHashMap<>();
+                            String name = list.get(0);
+                            counts.put(name, (long) response.getFacetQuery().get(name));
+                            name = list.get(1);
+                            counts.put(name, (long) response.getFacetQuery().get(name));
+                            name = list.get(0) + "__" + list.get(1);
+                            counts.put(name, (long) response.getFacetQuery().get(name));
+                            intersection.setCounts(counts);
+
+                            // add to the list
+                            intersections.add(intersection);
+                        } else if (list.size() == 3) {
+                            Map<String, Long> map = new LinkedHashMap<>();
+                            Map<String, Long> counts = new LinkedHashMap<>();
+                            String name = list.get(0);
+                            counts.put(name, (long) response.getFacetQuery().get(name));
+                            name = list.get(1);
+                            counts.put(name, (long) response.getFacetQuery().get(name));
+                            name = list.get(2);
+                            counts.put(name, (long) response.getFacetQuery().get(name));
+                            name = list.get(0) + "__" + list.get(1);
+                            counts.put(name, (long) response.getFacetQuery().get(name));
+                            name = list.get(0) + "__" + list.get(2);
+                            counts.put(name, (long) response.getFacetQuery().get(name));
+                            name = list.get(1) + "__" + list.get(2);
+                            counts.put(name, (long) response.getFacetQuery().get(name));
+                            name = list.get(0) + "__" + list.get(1) + "__" + list.get(2);
+                            counts.put(name, (long) response.getFacetQuery().get(name));
+                            intersection.setCounts(counts);
+
+                            // add to the list
+                            intersections.add(intersection);
+                        } else {
+                            logger.warn("Facet intersection '" + intersection + "' malformed. The expected intersection format"
+                                    + " is 'name:value1:value2[:value3]', value3 is optional");
+                        }
+                    }
+                }
+            } else {
+                logger.warn("Something wrong happened (intersection input and output mismatch).");
+            }
+        }
+
+        return new FacetedQueryResultItem(fields, ranges, intersections);
+    }
+
+    Map<String, List<List<String>>> getInputIntersections(QueryOptions queryOptions) {
+        Map<String, List<List<String>>> inputIntersections = new HashMap<>();
+        if (queryOptions.containsKey(QueryOptions.FACET_INTERSECTION)
+                && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET_INTERSECTION))) {
+            String[] intersections = queryOptions.getString(QueryOptions.FACET_INTERSECTION).split("[;]");
+
+            for (String intersection : intersections) {
+                String[] splits = intersection.split(":");
+                if (splits.length != 3 && splits.length != 4) {
+                    logger.warn("Facet intersection '" + intersection + "' malformed. The expected intersection format"
+                            + " is 'name:value1:value2[:value3]', value3 is optional");
+                } else {
+                    if (!inputIntersections.containsKey(splits[0])) {
+                        inputIntersections.put(splits[0], new LinkedList<>());
+                    }
+                    List<String> values = new LinkedList<>();
+                    for (int i = 1; i < splits.length; i++) {
+                        values.add(splits[i]);
+                    }
+                    inputIntersections.get(splits[0]).add(values);
+                }
+            }
+        }
+        return inputIntersections;
     }
 
     /**
@@ -716,5 +796,4 @@ public class VariantSearchManager {
 
         return variantSearchFacet;
     }
-
 }

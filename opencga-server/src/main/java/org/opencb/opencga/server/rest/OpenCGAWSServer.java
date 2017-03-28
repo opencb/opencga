@@ -378,6 +378,7 @@ public class OpenCGAWSServer {
                     break;
                 case QueryOptions.FACET:
                 case QueryOptions.FACET_RANGE:
+                case QueryOptions.FACET_INTERSECTION:
                     queryOptions.put(entry.getKey(), value);
                     break;
                 default:

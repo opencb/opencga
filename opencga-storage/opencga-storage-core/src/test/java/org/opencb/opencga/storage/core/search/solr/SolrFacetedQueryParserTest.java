@@ -27,11 +27,12 @@ public class SolrFacetedQueryParserTest {
         String password = "";
         boolean active = true;
         int timeout = 300 * 1000; // SearchConfiguration.DEFAULT_TIMEOUT;
-        int rows = 10;
+        int rows = 0;
         StorageConfiguration config = new StorageConfiguration();
         config.setSearch(new SearchConfiguration(host, collection, user, password, active, timeout, rows));
         VariantSearchManager searchManager = new VariantSearchManager(null, config);
         try {
+            queryOptions.put(QueryOptions.LIMIT, rows);
             FacetedQueryResult result = searchManager.facetedQuery(collection, query, queryOptions);
 
             if (result.getResult() != null) {
@@ -120,13 +121,28 @@ public class SolrFacetedQueryParserTest {
         executeFacetedQuery(query, queryOptions);
     }
 
+    public void facetIntersection() {
+        QueryOptions queryOptions = new QueryOptions();
+        // two facets: 1) by nested fields: studies and type, and 2) by soAcc
+        queryOptions.put(QueryOptions.FACET_INTERSECTION, "studies:1kG_phase3:EXAC:ESP6500;studies:MGP:GONL:EXAC");
+
+        Query query = new Query();
+        // query for chromosome 2
+        query.put("region", "22");
+        System.out.println(query.toString());
+
+        // execute
+        executeFacetedQuery(query, queryOptions);
+    }
+
     @Test
     public void testParsing() {
-        facetFieldInclude();
+        //facetFieldInclude();
         //facetField();
         //facetNestedFields();
         //facetRanges();
         //facetFieldAndRange();
+        facetIntersection();
     }
 
 }
