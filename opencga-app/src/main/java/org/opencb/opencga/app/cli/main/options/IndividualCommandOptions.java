@@ -41,10 +41,10 @@ public class IndividualCommandOptions {
     public SampleCommandOptions sampleCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
-    public AclCommandOptions.AclsCreateCommandOptions aclsCreateCommandOptions;
+    public AclsCreateCommandOptions aclsCreateCommandOptions;
     public AclCommandOptions.AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
     public AclCommandOptions.AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
-    public AclCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
+    public AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
 
     public AnnotationCommandOptions.AnnotationSetsCreateCommandOptions annotationCreateCommandOptions;
     public AnnotationCommandOptions.AnnotationSetsAllInfoCommandOptions annotationAllInfoCommandOptions;
@@ -61,8 +61,8 @@ public class IndividualCommandOptions {
     private AclCommandOptions aclCommandOptions;
     private AnnotationCommandOptions annotationCommandOptions;
 
-    public IndividualCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions, NumericOptions numericOptions,
-                                    JCommander jCommander) {
+    public IndividualCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions,
+                                    NumericOptions numericOptions, JCommander jCommander) {
 
         this.commonCommandOptions = commonCommandOptions;
         this.commonDataModelOptions = dataModelOptions;
@@ -87,10 +87,10 @@ public class IndividualCommandOptions {
 
         this.aclCommandOptions = new AclCommandOptions(commonCommandOptions);
         this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
-        this.aclsCreateCommandOptions = aclCommandOptions.getAclsCreateCommandOptions();
+        this.aclsCreateCommandOptions = new AclsCreateCommandOptions();
         this.aclsMemberDeleteCommandOptions = aclCommandOptions.getAclsMemberDeleteCommandOptions();
         this.aclsMemberInfoCommandOptions = aclCommandOptions.getAclsMemberInfoCommandOptions();
-        this.aclsMemberUpdateCommandOptions = aclCommandOptions.getAclsMemberUpdateCommandOptions();
+        this.aclsMemberUpdateCommandOptions = new AclsMemberUpdateCommandOptions();
     }
 
     public class BaseIndividualsCommand extends StudyOption {
@@ -378,6 +378,50 @@ public class IndividualCommandOptions {
 
         @Parameter(names = {"--individual"}, description = "List of individual ids or names", required = true, arity = 1)
         public String individual;
+    }
+
+    @Parameters(commandNames = {"acl"}, commandDescription = "Return the acl of the resource")
+    public class AclsCommandOptions extends StudyOption {
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--id"}, description = "Id of the resource", required = true, arity = 1)
+        public String id;
+    }
+
+    @Parameters(commandNames = {"acl-create"}, commandDescription = "Define a set of permissions for a list of users or groups")
+    public class AclsCreateCommandOptions extends AclsCommandOptions {
+        @Parameter(names = {"--members"},
+                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true, arity = 1)
+        public String members;
+
+        @Parameter(names = {"--permissions"}, description = "Comma separated list of accepted permissions for the resource", arity = 1)
+        public String permissions;
+
+        @Parameter(names = {"--propagate"}, description = "Boolean indicating whether to propagate the permissions to the samples related" +
+                " to the individuals as well", arity = 0)
+        public boolean propagate;
+    }
+
+    @Parameters(commandNames = {"acl-member-update"},
+            commandDescription = "Update the set of permissions granted for the user or group")
+    public class AclsMemberUpdateCommandOptions extends AclsCommandOptions {
+
+        @Parameter(names = {"--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
+        public String memberId;
+
+        @Parameter(names = {"--add-permissions"}, description = "Comma separated list of permissions to add", arity = 1)
+        public String addPermissions;
+
+        @Parameter(names = {"--remove-permissions"}, description = "Comma separated list of permissions to remove", arity = 1)
+        public String removePermissions;
+
+        @Parameter(names = {"--set-permissions"}, description = "Comma separated list of permissions to set", arity = 1)
+        public String setPermissions;
+
+        @Parameter(names = {"--propagate"}, description = "Boolean indicating whether to propagate the permissions to the samples related" +
+                " to the individuals as well", arity = 0)
+        public boolean propagate;
     }
 
 }

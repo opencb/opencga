@@ -1799,21 +1799,21 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         individualDBAdaptor.removeAcl(individualId, member);
 
         // Look for all the samples belonging to the individual
-        Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
-        QueryResult<Sample> sampleQueryResult =
-                sampleDBAdaptor.get(query, new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()));
-
-        // If the individual contains samples, we propagate the permissions to all the samples
-        if (sampleQueryResult != null && sampleQueryResult.getResult() != null && sampleQueryResult.getNumResults() > 0) {
-            List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
-            query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
-
-            sampleDBAdaptor.removeAclsFromMember(query, Arrays.asList(member), null);
-        }
+//        Query query = new Query()
+//                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+//                .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
+//        QueryResult<Sample> sampleQueryResult =
+//                sampleDBAdaptor.get(query, new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()));
+//
+//        // If the individual contains samples, we propagate the permissions to all the samples
+//        if (sampleQueryResult != null && sampleQueryResult.getResult() != null && sampleQueryResult.getNumResults() > 0) {
+//            List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
+//            query = new Query()
+//                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+//                    .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
+//
+//            sampleDBAdaptor.removeAclsFromMember(query, Arrays.asList(member), null);
+//        }
 
         individualDBAdaptorAcl.setId("Remove individual ACLs");
         return individualDBAdaptorAcl;
