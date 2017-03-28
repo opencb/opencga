@@ -20,7 +20,7 @@ public class SearchConfiguration {
     public static final String DEFAULT_COLLECTION = "variants";
     public static final String DEFAULT_PASSWORD = "";
     public static final String DEFAULT_USER = "";
-    public static final int DEFAULT_TIMEOUT = 30000;
+    public static final int DEFAULT_TIMEOUT = 45000;
     public static final int DEFAULT_ROWS = 100000;
 
     public SearchConfiguration() {

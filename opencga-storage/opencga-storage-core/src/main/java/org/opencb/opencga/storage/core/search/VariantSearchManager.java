@@ -612,6 +612,7 @@ public class VariantSearchManager {
         if (response.getFacetFields() != null) {
             for (FacetField solrField: response.getFacetFields()) {
                 FacetedQueryResultItem.Field field = new FacetedQueryResultItem().new Field();
+                field.setName(solrField.getName());
 
                 long total = 0;
                 List<FacetedQueryResultItem.Count> counts = new ArrayList<>();
@@ -628,7 +629,6 @@ public class VariantSearchManager {
                     total += solrCount.getCount();
                 }
                 // initialize field
-                field.setName(solrField.getName());
                 field.setTotal(total);
                 field.setCounts(counts);
 

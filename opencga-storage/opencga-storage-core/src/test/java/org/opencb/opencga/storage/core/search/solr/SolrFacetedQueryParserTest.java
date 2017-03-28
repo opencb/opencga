@@ -26,7 +26,7 @@ public class SolrFacetedQueryParserTest {
         String user = "";
         String password = "";
         boolean active = true;
-        int timeout = SearchConfiguration.DEFAULT_TIMEOUT;
+        int timeout = 300 * 1000; // SearchConfiguration.DEFAULT_TIMEOUT;
         int rows = 10;
         StorageConfiguration config = new StorageConfiguration();
         config.setSearch(new SearchConfiguration(host, collection, user, password, active, timeout, rows));
@@ -59,7 +59,8 @@ public class SolrFacetedQueryParserTest {
     public void facetFieldInclude() {
         QueryOptions queryOptions = new QueryOptions();
         // two facets: 1) by type, and 2) by studies
-        queryOptions.put(QueryOptions.FACET, "studies[EXAC,1kG_phase3]");
+        //queryOptions.put(QueryOptions.FACET, "studies[EXAC,1kG_phase3]");
+        queryOptions.put(QueryOptions.FACET, "type[INDEL,SNV]");
 
         Query query = new Query();
         // query for chromosome 2
@@ -76,8 +77,8 @@ public class SolrFacetedQueryParserTest {
         // two facets: 1) by nested fields: studies and soAcc, and 2) by type
         //queryOptions.put(QueryOptions.FACET, "studies[EXAC,GONL]:2:2>>type");
         //queryOptions.put(QueryOptions.FACET, "studies>>type[INDEL,SNV]");
-        //queryOptions.put(QueryOptions.FACET, "studies[EXAC,GONL]>>type[INDEL,SNV]");
         queryOptions.put(QueryOptions.FACET, "studies[EXAC,GONL]>>type[INDEL,SNV]");
+        //queryOptions.put(QueryOptions.FACET, "studies>>genes[BRCA2]");
 
         Query query = new Query();
         // query for chromosome 2
