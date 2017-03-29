@@ -697,6 +697,7 @@ public class VariantSearchManager {
                     List<List<String>> intersectionLists = intersectionMap.get(key);
                     for (List<String> list: intersectionLists) {
                         FacetedQueryResultItem.Intersection intersection = new FacetedQueryResultItem().new Intersection();
+                        intersection.setName(key);
                         intersection.setSize(list.size());
                         if (list.size() == 2) {
                             Map<String, Long> counts = new LinkedHashMap<>();
