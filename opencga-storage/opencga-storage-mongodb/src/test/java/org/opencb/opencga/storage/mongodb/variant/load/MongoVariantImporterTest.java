@@ -8,8 +8,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
@@ -62,7 +62,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
         System.out.println("outputFile = " + outputFile);
         List<String> samples = new LinkedList<>(studyConfiguration.getSampleIds().keySet()).subList(1, 3);
         Set<String> samplesSet = new HashSet<>(samples);
-        Query query = new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), samples);
+        Query query = new Query(VariantQueryParam.RETURNED_SAMPLES.key(), samples);
         variantStorageManager.exportData(outputFile, VariantOutputFormat.AVRO, DB_NAME, query, new QueryOptions());
 
         clearDB(DB_NAME);
@@ -98,7 +98,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
         URI outputFile = newOutputUri().resolve("export.avro");
 
         System.out.println("outputFile = " + outputFile);
-        Query query = new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), ".");
+        Query query = new Query(VariantQueryParam.RETURNED_SAMPLES.key(), ".");
         QueryOptions queryOptions = new QueryOptions();
         variantStorageManager.exportData(outputFile, VariantOutputFormat.AVRO, DB_NAME, query, queryOptions);
 

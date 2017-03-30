@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.util.*;
 
@@ -182,14 +183,14 @@ public abstract class CatalogVariantDBAdaptor implements VariantDBAdaptor {
 
     private Map<Integer, File> getFilesMap(QueryOptions options) throws CatalogException {
         String sessionId = options.getString("sessionId");
-        Object files = options.get(VariantQueryParams.FILES.key());
+        Object files = options.get(VariantQueryParam.FILES.key());
         List<Integer> fileIds = getIntegerList(files);
         return getFilesMap(fileIds, sessionId);
     }
 
     private Map<Integer, Study> getStudiesMap(QueryOptions options) throws CatalogException {
         String sessionId = options.getString("sessionId");
-        Object files = options.get(VariantQueryParams.STUDIES.key());
+        Object files = options.get(VariantQueryParam.STUDIES.key());
         List<Integer> fileIds = getIntegerList(files);
         return getStudiesMap(fileIds, sessionId);
     }

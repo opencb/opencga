@@ -30,7 +30,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
 
 /**
@@ -93,22 +93,22 @@ public class SolrQueryParser {
         List<String> consequenceTypes = new ArrayList<>();
 
         // xref
-        classifyIds(VariantQueryParams.ANNOT_XREF.key(), query, xrefs, genes);
-        classifyIds(VariantQueryParams.ID.key(), query, xrefs, genes);
-        classifyIds(VariantQueryParams.GENE.key(), query, xrefs, genes);
-        classifyIds(VariantQueryParams.ANNOT_CLINVAR.key(), query, xrefs, genes);
-        classifyIds(VariantQueryParams.ANNOT_COSMIC.key(), query, xrefs, genes);
+        classifyIds(VariantQueryParam.ANNOT_XREF.key(), query, xrefs, genes);
+        classifyIds(VariantQueryParam.ID.key(), query, xrefs, genes);
+        classifyIds(VariantQueryParam.GENE.key(), query, xrefs, genes);
+        classifyIds(VariantQueryParam.ANNOT_CLINVAR.key(), query, xrefs, genes);
+        classifyIds(VariantQueryParam.ANNOT_COSMIC.key(), query, xrefs, genes);
 //        classifyIds(VariantQueryParams.ANNOT_HPO.key(), query, xrefs, genes);
 
         // Convert region string to region objects
-        if (query.containsKey(VariantQueryParams.REGION.key())) {
-            regions = Region.parseRegions(query.getString(VariantQueryParams.REGION.key()));
+        if (query.containsKey(VariantQueryParam.REGION.key())) {
+            regions = Region.parseRegions(query.getString(VariantQueryParam.REGION.key()));
         }
 
         // consequence types (cts)
-        if (query.containsKey(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key())
-                && StringUtils.isNotEmpty(query.getString(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key()))) {
-            consequenceTypes = Arrays.asList(query.getString(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key()).split("[,;]"));
+        if (query.containsKey(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())
+                && StringUtils.isNotEmpty(query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()))) {
+            consequenceTypes = Arrays.asList(query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()).split("[,;]"));
         }
 
         // goal: [((xrefs OR regions) AND cts) OR (genes AND cts)] AND ... AND ...
@@ -140,8 +140,8 @@ public class SolrQueryParser {
 
         // now we continue with the other AND conditions...
         // type (t)
-        String key = VariantQueryParams.STUDIES.key();
-        if (isValidParam(query, VariantQueryParams.STUDIES)) {
+        String key = VariantQueryParam.STUDIES.key();
+        if (isValidParam(query, VariantQueryParam.STUDIES)) {
             String value = query.getString(key);
             VariantDBAdaptorUtils.QueryOperation op = checkOperator(value);
             Set<Integer> studyIds = new HashSet<>(variantDBAdaptorUtils.getStudyIds(splitValue(value, op), queryOptions));
@@ -164,51 +164,51 @@ public class SolrQueryParser {
         }
 
         // type (t)
-        key = VariantQueryParams.TYPE.key();
+        key = VariantQueryParam.TYPE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parseCategoryTermValue("type", query.getString(key)));
         }
 
         // Gene biotype
-        key = VariantQueryParams.ANNOT_BIOTYPE.key();
+        key = VariantQueryParam.ANNOT_BIOTYPE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parseCategoryTermValue("biotypes", query.getString(key)));
         }
 
         // protein-substitution
-        key = VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key();
+        key = VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parseScoreValue(query.getString(key)));
         }
 
         // conservation
-        key = VariantQueryParams.ANNOT_CONSERVATION.key();
+        key = VariantQueryParam.ANNOT_CONSERVATION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parseScoreValue(query.getString(key)));
         }
 
         // cadd, functional score
-        key = VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key();
+        key = VariantQueryParam.ANNOT_FUNCTIONAL_SCORE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parseScoreValue(query.getString(key)));
         }
 
         // maf population frequency
         // in the model: "popFreq__1kG_phase3__CLM":0.005319148767739534
-        key = VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key();
+        key = VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parsePopValue("popFreq", query.getString(key)));
         }
 
         // stats maf
         // in the model: "stats__1kg_phase3__ALL"=0.02
-        key = VariantQueryParams.STATS_MAF.key();
+        key = VariantQueryParam.STATS_MAF.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parsePopValue("stats", query.getString(key)));
         }
 
         // GO
-        key = VariantQueryParams.ANNOT_GO.key();
+        key = VariantQueryParam.ANNOT_GO.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             List<String> gos = Arrays.asList(query.getString(key).split(","));
             Set genesByGo = variantDBAdaptorUtils.getGenesByGo(gos);
@@ -218,19 +218,19 @@ public class SolrQueryParser {
         }
 
         // hpo
-        key = VariantQueryParams.ANNOT_HPO.key();
+        key = VariantQueryParam.ANNOT_HPO.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parseCategoryTermValue("traits", query.getString(key)));
         }
 
         // clinvar
-        key = VariantQueryParams.ANNOT_CLINVAR.key();
+        key = VariantQueryParam.ANNOT_CLINVAR.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parseCategoryTermValue("traits", query.getString(key)));
         }
 
         // traits
-        key = VariantQueryParams.ANNOT_TRAITS.key();
+        key = VariantQueryParam.ANNOT_TRAITS.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parseCategoryTermValue("traits", query.getString(key)));
         }

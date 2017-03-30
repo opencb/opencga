@@ -37,6 +37,7 @@ import org.opencb.opencga.storage.core.search.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -298,12 +299,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
                 Query annotationQuery = new Query();
                 if (!options.getBoolean(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, false)) {
-                    annotationQuery.put(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
+                    annotationQuery.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
                 }
-                annotationQuery.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(),
+                annotationQuery.put(VariantQueryParam.STUDIES.key(),
                         Collections.singletonList(studyId));    // annotate just the indexed variants
                 // annotate just the indexed variants
-                annotationQuery.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileIds);
+                annotationQuery.put(VariantQueryParam.FILES.key(), fileIds);
 
                 QueryOptions annotationOptions = new QueryOptions()
                         .append(DefaultVariantAnnotationManager.OUT_DIR, outdirUri.getPath())
@@ -338,7 +339,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      *                  {@link Options#UPDATE_STATS}
      *                  {@link Options#LOAD_THREADS}
      *                  {@link Options#LOAD_BATCH_SIZE}
-     *                  {@link VariantDBAdaptor.VariantQueryParams#REGION}
+     *                  {@link VariantQueryParam#REGION}
      *
      * @throws StorageEngineException      If there is any problem related with the StorageEngine
      * @throws IOException                  If there is any IO problem

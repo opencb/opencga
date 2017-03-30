@@ -38,7 +38,7 @@ import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
@@ -718,11 +718,11 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
 //        VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(options.getString(VariantStorageEngine.Options.DB_NAME.key()));
         Long count = dbAdaptor.count(new Query()
-                .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId)
-                .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())).first();
+                .append(VariantQueryParam.FILES.key(), fileId)
+                .append(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())).first();
         Long overlappedCount = dbAdaptor.count(new Query()
-                .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), -fileId)
-                .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())).first();
+                .append(VariantQueryParam.FILES.key(), -fileId)
+                .append(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())).first();
         long variantsToLoad = 0;
 
         long expectedSkippedVariants = 0;

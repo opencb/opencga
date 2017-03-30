@@ -37,6 +37,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.search.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
@@ -156,7 +157,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 
 
         //Check that both studies contains the same information
-        VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(),
+        VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.STUDIES.key(),
                 studyConfigurationMultiFile.getStudyId() + "," + studyConfigurationSingleFile.getStudyId()), new QueryOptions());
         int numVariants = 0;
         for (; iterator.hasNext(); ) {
@@ -472,7 +473,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
             studyEntry.getFiles().get(0).setFileId("2");
             variant.setStudies(Collections.singletonList(studyEntry));
 
-            Variant loadedVariant = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.ID.key(), variant.toString()), new QueryOptions()).first();
+            Variant loadedVariant = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), variant.toString()), new QueryOptions()).first();
 
             loadedVariant.setAnnotation(null);                                          //Remove annotation
             StudyEntry loadedStudy = loadedVariant.getStudy(STUDY_NAME);
@@ -505,7 +506,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
                         .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
         );
 
-        VariantDBIterator iterator = getVariantStorageEngine().getDBAdaptor(DB_NAME).iterator(new Query(VariantDBAdaptor.VariantQueryParams.UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions());
+        VariantDBIterator iterator = getVariantStorageEngine().getDBAdaptor(DB_NAME).iterator(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions());
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
             assertEquals("./.", variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GT"));
@@ -556,7 +557,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
             assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "TU"));
         }
 
-        VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "SAMPLE_1"), new QueryOptions());
+        VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.RETURNED_SAMPLES.key(), "SAMPLE_1"), new QueryOptions());
         iterator.forEachRemaining(variant -> {
             assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
             assertEquals(Collections.singleton("SAMPLE_1"), variant.getStudy(STUDY_NAME).getSamplesName());
@@ -565,7 +566,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 
         });
 
-        iterator = dbAdaptor.iterator(new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "SAMPLE_2"), new QueryOptions());
+        iterator = dbAdaptor.iterator(new Query(VariantQueryParam.RETURNED_SAMPLES.key(), "SAMPLE_2"), new QueryOptions());
         iterator.forEachRemaining(variant -> {
             assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
             assertEquals(Collections.singleton("SAMPLE_2"), variant.getStudy(STUDY_NAME).getSamplesName());
@@ -574,9 +575,9 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 
         });
 
-        iterator = dbAdaptor.iterator(new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "SAMPLE_2")
-                        .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), 3)
-                        .append(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), 3), new QueryOptions());
+        iterator = dbAdaptor.iterator(new Query(VariantQueryParam.RETURNED_SAMPLES.key(), "SAMPLE_2")
+                        .append(VariantQueryParam.FILES.key(), 3)
+                        .append(VariantQueryParam.RETURNED_FILES.key(), 3), new QueryOptions());
         iterator.forEachRemaining(variant -> {
             System.out.println("variant.toJson() = " + variant.toJson());
             assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());

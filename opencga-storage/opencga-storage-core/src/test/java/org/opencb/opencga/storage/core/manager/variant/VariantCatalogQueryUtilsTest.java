@@ -12,7 +12,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.STUDIES;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDIES;
 
 /**
  * Created on 28/02/17.

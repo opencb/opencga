@@ -31,10 +31,10 @@ public class VariantSampleFilter {
 
     public Map<String, Set<Variant>> getSamplesInAnyVariants(List<?> variants, String study, List<String> samples, List<String> genotypes) {
         List<String> variantsList = variants.stream().map(Object::toString).collect(Collectors.toList());
-        Query query = new Query(VariantDBAdaptor.VariantQueryParams.ID.key(), variantsList)
-                .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study)
-                .append(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), study)
-                .append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), samples);
+        Query query = new Query(VariantQueryParam.ID.key(), variantsList)
+                .append(VariantQueryParam.STUDIES.key(), study)
+                .append(VariantQueryParam.RETURNED_STUDIES.key(), study)
+                .append(VariantQueryParam.RETURNED_SAMPLES.key(), samples);
         return getSamplesInAnyVariants(query, genotypes);
     }
 
@@ -67,10 +67,10 @@ public class VariantSampleFilter {
 
     public Collection<String> getSamplesInAllVariants(List<?> variants, String study, List<String> samples, List<String> genotypes) {
         List<String> variantsList = variants.stream().map(Object::toString).collect(Collectors.toList());
-        Query query = new Query(VariantDBAdaptor.VariantQueryParams.ID.key(), variantsList)
-                .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study)
-                .append(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), study)
-                .append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), samples);
+        Query query = new Query(VariantQueryParam.ID.key(), variantsList)
+                .append(VariantQueryParam.STUDIES.key(), study)
+                .append(VariantQueryParam.RETURNED_STUDIES.key(), study)
+                .append(VariantQueryParam.RETURNED_SAMPLES.key(), samples);
         return getSamplesInAllVariants(query, genotypes);
     }
 

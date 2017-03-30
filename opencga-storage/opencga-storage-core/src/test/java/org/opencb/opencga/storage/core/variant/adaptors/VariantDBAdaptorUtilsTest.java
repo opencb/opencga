@@ -26,7 +26,7 @@ import org.opencb.commons.test.GenericTest;
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOTATION_EXISTS;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
 
 /**

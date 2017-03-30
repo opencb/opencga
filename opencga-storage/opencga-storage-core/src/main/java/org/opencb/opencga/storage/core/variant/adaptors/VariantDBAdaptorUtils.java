@@ -40,7 +40,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
  * Created on 29/01/16 .
@@ -282,8 +282,8 @@ public class VariantDBAdaptorUtils {
 
     public StudyConfiguration getDefaultStudyConfiguration(Query query, QueryOptions options) {
         final StudyConfiguration defaultStudyConfiguration;
-        if (isValidParam(query, VariantDBAdaptor.VariantQueryParams.STUDIES)) {
-            String value = query.getString(VariantDBAdaptor.VariantQueryParams.STUDIES.key());
+        if (isValidParam(query, VariantQueryParam.STUDIES)) {
+            String value = query.getString(VariantQueryParam.STUDIES.key());
 
             // Check that the study exists
             QueryOperation studiesOperation = checkOperator(value);
@@ -448,16 +448,16 @@ public class VariantDBAdaptorUtils {
         if (!returnedFields.contains(VariantField.STUDIES)) {
             studyIds = Collections.emptyList();
         } else if (isValidParam(query, RETURNED_STUDIES)) {
-            String returnedStudies = query.getString(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key());
+            String returnedStudies = query.getString(VariantQueryParam.RETURNED_STUDIES.key());
             if (NONE.equals(returnedStudies)) {
                 studyIds = Collections.emptyList();
             } else if (ALL.equals(returnedStudies)) {
                 studyIds = getStudyConfigurationManager().getStudyIds(options);
             } else {
-                studyIds = getStudyIds(query.getAsList(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key()), options);
+                studyIds = getStudyIds(query.getAsList(VariantQueryParam.RETURNED_STUDIES.key()), options);
             }
         } else if (isValidParam(query, STUDIES)) {
-            String studies = query.getString(VariantDBAdaptor.VariantQueryParams.STUDIES.key());
+            String studies = query.getString(VariantQueryParam.STUDIES.key());
             studyIds = getStudyIds(splitValue(studies, checkOperator(studies)), options);
             // if empty, all the studies
             if (studyIds.isEmpty()) {
@@ -472,9 +472,9 @@ public class VariantDBAdaptorUtils {
     /**
      * Get list of returned files.
      *
-     * Use {@link VariantDBAdaptor.VariantQueryParams#RETURNED_FILES} if defined.
-     * If missing, get non negated values from {@link VariantDBAdaptor.VariantQueryParams#FILES}
-     * If missing, get files from samples at {@link VariantDBAdaptor.VariantQueryParams#SAMPLES}
+     * Use {@link VariantQueryParam#RETURNED_FILES} if defined.
+     * If missing, get non negated values from {@link VariantQueryParam#FILES}
+     * If missing, get files from samples at {@link VariantQueryParam#SAMPLES}
      *
      * Null for undefined returned files. If null, return ALL files.
      * Return NONE if empty list
@@ -509,7 +509,7 @@ public class VariantDBAdaptorUtils {
                 returnedFiles = null;
             }
         } else {
-            List<String> sampleNames = query.getAsStringList(VariantDBAdaptor.VariantQueryParams.SAMPLES.key());
+            List<String> sampleNames = query.getAsStringList(VariantQueryParam.SAMPLES.key());
             StudyConfiguration studyConfiguration = getDefaultStudyConfiguration(query, options);
             Set<Integer> returnedFilesSet = new LinkedHashSet<>();
             for (String sample : sampleNames) {
@@ -604,7 +604,7 @@ public class VariantDBAdaptorUtils {
 
         List<String> returnedSamples = getReturnedSamplesList(query, options);
         LinkedHashSet<String> returnedSamplesSet = returnedSamples != null ? new LinkedHashSet<>(returnedSamples) : null;
-        boolean returnAllSamples = query.getString(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key()).equals(ALL);
+        boolean returnAllSamples = query.getString(VariantQueryParam.RETURNED_SAMPLES.key()).equals(ALL);
 
         Map<T, List<T>> samples = new HashMap<>(studyIds.size());
         for (Integer studyId : studyIds) {
@@ -669,16 +669,16 @@ public class VariantDBAdaptorUtils {
     public static List<String> getReturnedSamplesList(Query query) {
         List<String> samples;
         if (isValidParam(query, RETURNED_SAMPLES)) {
-            String samplesString = query.getString(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
+            String samplesString = query.getString(VariantQueryParam.RETURNED_SAMPLES.key());
             if (samplesString.equals(ALL)) {
                 samples = null; // Undefined. All by default
             } else if (samplesString.equals(NONE)) {
                 samples = Collections.emptyList();
             } else {
-                samples = query.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
+                samples = query.getAsStringList(VariantQueryParam.RETURNED_SAMPLES.key());
             }
         } else if (isValidParam(query, SAMPLES)) {
-            samples = query.getAsStringList(VariantDBAdaptor.VariantQueryParams.SAMPLES.key());
+            samples = query.getAsStringList(VariantQueryParam.SAMPLES.key());
         } else {
             samples = null;
         }
@@ -823,16 +823,16 @@ public class VariantDBAdaptorUtils {
                     soAccession = Integer.parseInt(so);
                 }
             } catch (NumberFormatException e) {
-                throw VariantQueryException.malformedParam(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE, so,
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE, so,
                         "Not a valid SO number");
             }
             if (!ConsequenceTypeMappings.accessionToTerm.containsKey(soAccession)) {
-                throw VariantQueryException.malformedParam(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE, so,
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE, so,
                         "Not a valid SO number");
             }
         } else {
             if (!ConsequenceTypeMappings.termToAccession.containsKey(so)) {
-                throw VariantQueryException.malformedParam(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE, so,
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE, so,
                         "Not a valid Accession term");
             } else {
                 soAccession = ConsequenceTypeMappings.termToAccession.get(so);

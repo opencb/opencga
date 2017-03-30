@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -80,7 +80,7 @@ public class FileRestWebService extends GenericRestWebService {
         try {
             switch (bioformat) {
                 case "vcf":
-                    queryOptions.add(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId);
+                    queryOptions.add(VariantQueryParam.FILES.key(), fileId);
                     return createOkResponse(VariantRestWebService.VariantFetcher.getVariants(storageEngine, dbName, histogram, interval,
                             queryOptions));
                 case "bam":

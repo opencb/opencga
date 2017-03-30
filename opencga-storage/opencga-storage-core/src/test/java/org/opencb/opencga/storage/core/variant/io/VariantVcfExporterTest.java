@@ -36,6 +36,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.io.*;
 import java.net.URI;
@@ -115,14 +116,14 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
         for (Integer sampleId : returnedSamplesIds) {
             returnedSamples.add(sampleIdMap.get(sampleId));
         }
-        query.append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), STUDY_NAME)
-                .append(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), 0)
-                .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), 0)
-                .append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), returnedSamples);
+        query.append(VariantQueryParam.STUDIES.key(), STUDY_NAME)
+                .append(VariantQueryParam.RETURNED_FILES.key(), 0)
+                .append(VariantQueryParam.FILES.key(), 0)
+                .append(VariantQueryParam.RETURNED_SAMPLES.key(), returnedSamples);
         Path outputVcf = getTmpRootDir().resolve("hts_sf_" + EXPORTED_FILE_NAME);
         int failedVariants = VariantVcfDataWriter.htsExport(dbAdaptor.iterator(query, new QueryOptions(QueryOptions.SORT, true)),
                 studyConfiguration, dbAdaptor.getVariantSourceDBAdaptor()
-                , new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), new QueryOptions(VariantDBAdaptor.VariantQueryParams
+                , new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), new QueryOptions(VariantQueryParam
                         .RETURNED_SAMPLES.key(), returnedSamples));
 
         assertEquals(0, failedVariants);
@@ -134,7 +135,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
     @Test
     public void testVcfHtsExportMultiFile() throws Exception {
         Query query = new Query();
-        query.append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), STUDY_NAME);
+        query.append(VariantQueryParam.STUDIES.key(), STUDY_NAME);
 //                .append(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
         Path outputVcf = getTmpRootDir().resolve("hts_mf_" + EXPORTED_FILE_NAME);
         int failedVariants = VariantVcfDataWriter.htsExport(dbAdaptor.iterator(query, new QueryOptions(QueryOptions.SORT, true)), studyConfiguration,

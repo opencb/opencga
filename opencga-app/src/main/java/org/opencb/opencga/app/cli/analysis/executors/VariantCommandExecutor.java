@@ -38,7 +38,7 @@ import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.analysis.VariantSampleFilter;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -304,10 +304,10 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         Query query = new Query()
-                .append(VariantDBAdaptor.VariantQueryParams.REGION.key(), cliOptions.genericVariantAnnotateOptions.filterRegion)
-                .append(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), cliOptions.genericVariantAnnotateOptions.filterChromosome)
-                .append(VariantDBAdaptor.VariantQueryParams.GENE.key(), cliOptions.genericVariantAnnotateOptions.filterGene)
-                .append(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), cliOptions.genericVariantAnnotateOptions.filterAnnotConsequenceType);
+                .append(VariantQueryParam.REGION.key(), cliOptions.genericVariantAnnotateOptions.filterRegion)
+                .append(VariantQueryParam.CHROMOSOME.key(), cliOptions.genericVariantAnnotateOptions.filterChromosome)
+                .append(VariantQueryParam.GENE.key(), cliOptions.genericVariantAnnotateOptions.filterGene)
+                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), cliOptions.genericVariantAnnotateOptions.filterAnnotConsequenceType);
 
         QueryOptions options = new QueryOptions();
         options.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, cliOptions.genericVariantAnnotateOptions.overwriteAnnotations);
@@ -334,10 +334,10 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantSampleFilter variantSampleFilter = new VariantSampleFilter(variantManager.iterable(sessionId));
 
         if (StringUtils.isNotEmpty(cliOptions.samples)) {
-            query.append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), Arrays.asList(cliOptions.samples.split(",")));
+            query.append(VariantQueryParam.RETURNED_SAMPLES.key(), Arrays.asList(cliOptions.samples.split(",")));
         }
         if (StringUtils.isNotEmpty(cliOptions.study)) {
-            query.append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), cliOptions.study);
+            query.append(VariantQueryParam.STUDIES.key(), cliOptions.study);
         }
 
         List<String> genotypes = Arrays.asList(cliOptions.genotypes.split(","));

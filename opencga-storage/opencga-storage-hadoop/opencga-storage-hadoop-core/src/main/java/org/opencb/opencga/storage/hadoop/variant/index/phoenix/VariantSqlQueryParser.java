@@ -41,8 +41,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper.Column;
@@ -142,10 +142,10 @@ public class VariantSqlQueryParser {
      * Select only the required columns.
      *
      * Uses the params:
-     * {@link VariantQueryParams#RETURNED_STUDIES}
-     * {@link VariantQueryParams#RETURNED_SAMPLES}
-     * {@link VariantQueryParams#RETURNED_FILES}
-     * {@link VariantQueryParams#UNKNOWN_GENOTYPE}
+     * {@link VariantQueryParam#RETURNED_STUDIES}
+     * {@link VariantQueryParam#RETURNED_SAMPLES}
+     * {@link VariantQueryParam#RETURNED_FILES}
+     * {@link VariantQueryParam#UNKNOWN_GENOTYPE}
      *
      * @param sb    SQLStringBuilder
      * @param query Query to parse
@@ -246,13 +246,13 @@ public class VariantSqlQueryParser {
      *
      * A variant will pass this filters if matches with ANY of this filters.
      *
-     * {@link VariantQueryParams#REGION}
-     * {@link VariantQueryParams#CHROMOSOME}
+     * {@link VariantQueryParam#REGION}
+     * {@link VariantQueryParam#CHROMOSOME}
      *
      * Using annotation:
-     * {@link VariantQueryParams#ID}
-     * {@link VariantQueryParams#GENE}
-     * {@link VariantQueryParams#ANNOT_XREF}
+     * {@link VariantQueryParam#ID}
+     * {@link VariantQueryParam#GENE}
+     * {@link VariantQueryParam#ANNOT_XREF}
      *
      * @param query Query to parse
      * @return List of region filters
@@ -306,7 +306,7 @@ public class VariantSqlQueryParser {
 
 //        addQueryFilter(query, ANNOT_XREF, VariantColumn.XREFS, regionFilters);
         if (isValidParam(query, ANNOT_XREF)) {
-            List<String> xrefs = query.getAsStringList(VariantQueryParams.ANNOT_XREF.key());
+            List<String> xrefs = query.getAsStringList(VariantQueryParam.ANNOT_XREF.key());
             List<String> otherXrefs = new ArrayList<>();
             for (String value : xrefs) {
                 Variant variant = toVariant(value);
@@ -387,40 +387,40 @@ public class VariantSqlQueryParser {
      * A variant will pass this filters if matches with ALL of this filters.
      *
      * Variant filters:
-     * {@link VariantQueryParams#REFERENCE}
-     * {@link VariantQueryParams#ALTERNATE}
-     * {@link VariantQueryParams#TYPE}
-     * {@link VariantQueryParams#STUDIES}
-     * {@link VariantQueryParams#FILES}
-     * {@link VariantQueryParams#COHORTS}
-     * {@link VariantQueryParams#GENOTYPE}
+     * {@link VariantQueryParam#REFERENCE}
+     * {@link VariantQueryParam#ALTERNATE}
+     * {@link VariantQueryParam#TYPE}
+     * {@link VariantQueryParam#STUDIES}
+     * {@link VariantQueryParam#FILES}
+     * {@link VariantQueryParam#COHORTS}
+     * {@link VariantQueryParam#GENOTYPE}
      *
      * Annotation filters:
-     * {@link VariantQueryParams#ANNOTATION_EXISTS}
-     * {@link VariantQueryParams#ANNOT_CONSEQUENCE_TYPE}
-     * {@link VariantQueryParams#ANNOT_BIOTYPE}
-     * {@link VariantQueryParams#ANNOT_POLYPHEN}
-     * {@link VariantQueryParams#ANNOT_SIFT}
-     * {@link VariantQueryParams#ANNOT_CONSERVATION}
-     * {@link VariantQueryParams#ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY}
-     * {@link VariantQueryParams#ANNOT_POPULATION_ALTERNATE_FREQUENCY}
-     * {@link VariantQueryParams#ANNOT_POPULATION_REFERENCE_FREQUENCY}
+     * {@link VariantQueryParam#ANNOTATION_EXISTS}
+     * {@link VariantQueryParam#ANNOT_CONSEQUENCE_TYPE}
+     * {@link VariantQueryParam#ANNOT_BIOTYPE}
+     * {@link VariantQueryParam#ANNOT_POLYPHEN}
+     * {@link VariantQueryParam#ANNOT_SIFT}
+     * {@link VariantQueryParam#ANNOT_CONSERVATION}
+     * {@link VariantQueryParam#ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY}
+     * {@link VariantQueryParam#ANNOT_POPULATION_ALTERNATE_FREQUENCY}
+     * {@link VariantQueryParam#ANNOT_POPULATION_REFERENCE_FREQUENCY}
 
-     * {@link VariantQueryParams#ANNOT_TRANSCRIPTION_FLAGS}
-     * {@link VariantQueryParams#ANNOT_GENE_TRAITS_ID}
-     * {@link VariantQueryParams#ANNOT_GENE_TRAITS_NAME}
-     * {@link VariantQueryParams#ANNOT_HPO}
-     * {@link VariantQueryParams#ANNOT_GO}
-     * {@link VariantQueryParams#ANNOT_EXPRESSION}
-     * {@link VariantQueryParams#ANNOT_PROTEIN_KEYWORDS}
-     * {@link VariantQueryParams#ANNOT_DRUG}
-     * {@link VariantQueryParams#ANNOT_FUNCTIONAL_SCORE}
+     * {@link VariantQueryParam#ANNOT_TRANSCRIPTION_FLAGS}
+     * {@link VariantQueryParam#ANNOT_GENE_TRAITS_ID}
+     * {@link VariantQueryParam#ANNOT_GENE_TRAITS_NAME}
+     * {@link VariantQueryParam#ANNOT_HPO}
+     * {@link VariantQueryParam#ANNOT_GO}
+     * {@link VariantQueryParam#ANNOT_EXPRESSION}
+     * {@link VariantQueryParam#ANNOT_PROTEIN_KEYWORDS}
+     * {@link VariantQueryParam#ANNOT_DRUG}
+     * {@link VariantQueryParam#ANNOT_FUNCTIONAL_SCORE}
      *
      * Stats filters:
-     * {@link VariantQueryParams#STATS_MAF}
-     * {@link VariantQueryParams#STATS_MGF}
-     * {@link VariantQueryParams#MISSING_ALLELES}
-     * {@link VariantQueryParams#MISSING_GENOTYPES}
+     * {@link VariantQueryParam#STATS_MAF}
+     * {@link VariantQueryParam#STATS_MGF}
+     * {@link VariantQueryParam#MISSING_ALLELES}
+     * {@link VariantQueryParam#MISSING_GENOTYPES}
      *
      * @param query     Query to parse
      * @param options   Options
@@ -604,7 +604,7 @@ public class VariantSqlQueryParser {
         return defaultStudyConfiguration;
     }
 
-    private void unsupportedFilter(Query query, VariantQueryParams param) {
+    private void unsupportedFilter(Query query, VariantQueryParam param) {
         if (isValidParam(query, param)) {
             String warn = "Unsupported filter \"" + param + "\"";
 //            warnings.add(warn);
@@ -716,7 +716,7 @@ public class VariantSqlQueryParser {
         if (isValidParam(query, ANNOT_GO)) {
             String value = query.getString(ANNOT_GO.key());
             if (checkOperator(value) == QueryOperation.AND) {
-                throw VariantQueryException.malformedParam(VariantQueryParams.ANNOT_GO, value, "Unimplemented AND operator");
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_GO, value, "Unimplemented AND operator");
             }
             List<String> goValues = splitValue(value, QueryOperation.OR);
             Set<String> genesByGo = utils.getGenesByGo(goValues);
@@ -732,7 +732,7 @@ public class VariantSqlQueryParser {
         if (isValidParam(query, ANNOT_EXPRESSION)) {
             String value = query.getString(ANNOT_EXPRESSION.key());
             if (checkOperator(value) == QueryOperation.AND) {
-                throw VariantQueryException.malformedParam(VariantQueryParams.ANNOT_EXPRESSION, value, "Unimplemented AND operator");
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_EXPRESSION, value, "Unimplemented AND operator");
             }
             List<String> expressionValues = splitValue(value, QueryOperation.OR);
             Set<String> genesByExpression = utils.getGenesByExpression(expressionValues);
@@ -795,16 +795,16 @@ public class VariantSqlQueryParser {
     }
 
 
-    private void addQueryFilter(Query query, VariantQueryParams param, Column column, List<String> filters) {
+    private void addQueryFilter(Query query, VariantQueryParam param, Column column, List<String> filters) {
         addQueryFilter(query, param, column, filters, null);
     }
 
-    private void addQueryFilter(Query query, VariantQueryParams param, Column column, List<String> filters,
+    private void addQueryFilter(Query query, VariantQueryParam param, Column column, List<String> filters,
                                 Function<String, Object> valueParser) {
         addQueryFilter(query, param, (a, s) -> column, null, valueParser, null, filters);
     }
 
-    private void addQueryFilter(Query query, VariantQueryParams param, BiFunction<String[], String, Column> columnParser,
+    private void addQueryFilter(Query query, VariantQueryParam param, BiFunction<String[], String, Column> columnParser,
                                 Function<String, Object> valueParser, List<String> filters) {
         addQueryFilter(query, param, columnParser, null, valueParser, null, filters);
     }
@@ -821,7 +821,7 @@ public class VariantSqlQueryParser {
      * @param extraFilters      Provides extra filters to be concatenated to the filter.
      * @param filters           List of filters to be modified.
      */
-    private void addQueryFilter(Query query, VariantQueryParams param,
+    private void addQueryFilter(Query query, VariantQueryParam param,
                                 BiFunction<String[], String, Column> columnParser,
                                 Function<String, String> operatorParser,
                                 Function<String, Object> valueParser, Function<String[], String> extraFilters, List<String> filters) {
@@ -841,7 +841,7 @@ public class VariantSqlQueryParser {
      * @param filters           List of filters to be modified.
      * @param arrayIdx          Array accessor index in base-1.
      */
-    private void addQueryFilter(Query query, VariantQueryParams param,
+    private void addQueryFilter(Query query, VariantQueryParam param,
                                 BiFunction<String[], String, Column> columnParser,
                                 Function<String, String> operatorParser,
                                 Function<String, Object> valueParser,
@@ -862,7 +862,7 @@ public class VariantSqlQueryParser {
      * @param filters           List of filters to be modified.
      * @param arrayIdxParser    Array accessor index in base-1.
      */
-    private void addQueryFilter(Query query, VariantQueryParams param,
+    private void addQueryFilter(Query query, VariantQueryParam param,
                                 BiFunction<String[], String, Column> columnParser,
                                 Function<String, String> operatorParser,
                                 Function<String, Object> valueParser,
@@ -935,7 +935,7 @@ public class VariantSqlQueryParser {
 
 
     private String buildFilter(Column column, String op, Object value, String negated, String extra, int idx,
-                               VariantQueryParams param, String rawValue) {
+                               VariantQueryParam param, String rawValue) {
         Object parsedValue;
         StringBuilder sb = new StringBuilder();
 
@@ -1013,7 +1013,7 @@ public class VariantSqlQueryParser {
         return sb.toString();
     }
 
-    private double parseDouble(Object value, VariantQueryParams param, String rawValue) {
+    private double parseDouble(Object value, VariantQueryParam param, String rawValue) {
         if (value instanceof Number) {
             return ((Number) value).doubleValue();
         } else {
@@ -1029,7 +1029,7 @@ public class VariantSqlQueryParser {
         }
     }
 
-    private int parseInteger(Object value, VariantQueryParams param, String rawValue) {
+    private int parseInteger(Object value, VariantQueryParam param, String rawValue) {
         if (value instanceof Number) {
             return ((Number) value).intValue();
         } else {

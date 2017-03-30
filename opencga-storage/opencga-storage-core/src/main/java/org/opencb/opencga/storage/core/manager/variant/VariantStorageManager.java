@@ -44,7 +44,7 @@ import org.opencb.opencga.storage.core.manager.variant.operations.*;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 
 import java.io.IOException;
@@ -53,9 +53,9 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.function.Function;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.ALTERNATE;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.TYPE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ALTERNATE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.TYPE;
 
 public class VariantStorageManager extends StorageManager {
 
@@ -114,8 +114,8 @@ public class VariantStorageManager extends StorageManager {
      */
     public List<URI> exportData(String outputFile, VariantOutputFormat outputFormat, String study, String sessionId)
             throws StorageEngineException, CatalogException, IOException {
-        Query query = new Query(VariantQueryParams.RETURNED_STUDIES.key(), study)
-                .append(VariantQueryParams.STUDIES.key(), study);
+        Query query = new Query(VariantQueryParam.RETURNED_STUDIES.key(), study)
+                .append(VariantQueryParam.STUDIES.key(), study);
         return exportData(outputFile, outputFormat, query, new QueryOptions(), sessionId);
     }
 
@@ -306,7 +306,7 @@ public class VariantStorageManager extends StorageManager {
 
     public VariantQueryResult<Variant> getPhased(Variant variant, String study, String sample, String sessionId, QueryOptions options)
             throws CatalogException, IOException, StorageEngineException {
-        return secure(new Query(VariantQueryParams.STUDIES.key(), study), options, sessionId,
+        return secure(new Query(VariantQueryParam.STUDIES.key(), study), options, sessionId,
                 dbAdaptor -> dbAdaptor.getPhased(variant.toString(), study, sample, options, 5000));
     }
 
@@ -354,7 +354,7 @@ public class VariantStorageManager extends StorageManager {
     public VariantQueryResult<Variant> intersect(Query query, QueryOptions queryOptions, List<String> studyIds, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
         Query intersectQuery = new Query(query);
-        intersectQuery.put(VariantQueryParams.STUDIES.key(), String.join(VariantDBAdaptorUtils.AND, studyIds));
+        intersectQuery.put(VariantQueryParam.STUDIES.key(), String.join(VariantDBAdaptorUtils.AND, studyIds));
         return get(intersectQuery, queryOptions, sessionId);
     }
 
@@ -450,7 +450,7 @@ public class VariantStorageManager extends StorageManager {
                     samplesMap.put(study.getId(), samplesQueryResult.getResult());
                     samplesQueryResult.getResult().stream().map(Sample::getId).forEach(returnedSamples::add);
                 }
-                query.append(VariantQueryParams.RETURNED_SAMPLES.key(), returnedSamples);
+                query.append(VariantQueryParam.RETURNED_SAMPLES.key(), returnedSamples);
             }
         }
         return samplesMap;
@@ -479,7 +479,7 @@ public class VariantStorageManager extends StorageManager {
 
     private String[] getRegions(Query query) {
         String[] regions;
-        String regionStr = query.getString(VariantQueryParams.REGION.key());
+        String regionStr = query.getString(VariantQueryParam.REGION.key());
         if (!StringUtils.isEmpty(regionStr)) {
             regions = regionStr.split(",");
         } else {
@@ -491,7 +491,7 @@ public class VariantStorageManager extends StorageManager {
     public static <T extends ObjectMap> Query getVariantQuery(T queryOptions) {
         Query query = new Query();
 
-        for (VariantQueryParams queryParams : VariantQueryParams.values()) {
+        for (VariantQueryParam queryParams : VariantQueryParam.values()) {
             if (queryOptions.containsKey(queryParams.key())) {
                 query.put(queryParams.key(), queryOptions.get(queryParams.key()));
             }

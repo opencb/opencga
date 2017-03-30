@@ -40,7 +40,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBWriter;
 import org.opencb.opencga.storage.mongodb.variant.load.*;
@@ -233,7 +233,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
 
         int i = 1;
         for (String chr : Arrays.asList("1", "2", "3")) {
-            Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), chr);
+            Query query = new Query(VariantQueryParam.REGION.key(), chr);
 
             assertEquals(new MongoDBVariantWriteResult(3, 0, 0, 0, 0, 0), clearTime(loadFile1(chr, i++, Collections.singletonList(chr))));
             allVariants = dbAdaptor.get(query, new QueryOptions("sort", true)).getResult();
@@ -270,7 +270,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         Map<String, int[]> mapFileIds = new HashMap<>();
         for (String chr : chromosomes) {
             mapFileIds.put(chr, new int[]{i++, i++, i++});
-            Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), chr);
+            Query query = new Query(VariantQueryParam.REGION.key(), chr);
 
             assertEquals(new MongoDBVariantWriteResult(2, 0, 0, 0, 0, 0), clearTime(loadFile2(chr, mapFileIds.get(chr)[1], Collections.singletonList(chr))));
             allVariants = dbAdaptor.get(query, new QueryOptions("sort", true)).getResult();
@@ -283,7 +283,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         }
 
         for (String chr : chromosomes) {
-            Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), chr);
+            Query query = new Query(VariantQueryParam.REGION.key(), chr);
 
             assertEquals(new MongoDBVariantWriteResult(1, 2, 0, 0, 0, 0), clearTime(loadFile1(chr, mapFileIds.get(chr)[0], Collections.singletonList(chr))));
             allVariants = dbAdaptor.get(query, new QueryOptions("sort", true)).getResult();
@@ -292,7 +292,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         }
 
         for (String chr : chromosomes) {
-            Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), chr);
+            Query query = new Query(VariantQueryParam.REGION.key(), chr);
             allVariants = dbAdaptor.get(query, new QueryOptions("sort", true)).getResult();
             checkLoadedVariants(allVariants, mapFileIds.get(chr));
         }
@@ -319,7 +319,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         Map<String, int[]> mapFileIds = new HashMap<>();
         for (String chr : chromosomes) {
             mapFileIds.put(chr, new int[]{i++, i++, i++});
-            Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), chr);
+            Query query = new Query(VariantQueryParam.REGION.key(), chr);
 
             assertEquals(new MongoDBVariantWriteResult(3, 0, 0, 0, 0, 0), clearTime(loadFile1(chr, mapFileIds.get(chr)[0], Collections.singletonList(chr))));
             allVariants = dbAdaptor.get(query, new QueryOptions("sort", true)).getResult();
@@ -328,7 +328,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         }
 
         for (String chr : chromosomes) {
-            Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), chr);
+            Query query = new Query(VariantQueryParam.REGION.key(), chr);
 
             assertEquals(new MongoDBVariantWriteResult(1, 1, 0, 0, 0, 0), clearTime(loadFile2(chr, mapFileIds.get(chr)[1], Collections.singletonList(chr))));
             allVariants = dbAdaptor.get(query, new QueryOptions("sort", true)).getResult();
@@ -340,7 +340,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         }
 
         for (String chr : chromosomes) {
-            Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), chr);
+            Query query = new Query(VariantQueryParam.REGION.key(), chr);
             allVariants = dbAdaptor.get(query, new QueryOptions("sort", true)).getResult();
             checkLoadedVariants(allVariants, mapFileIds.get(chr));
         }

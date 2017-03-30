@@ -7,7 +7,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -52,8 +52,8 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
 
         List<Sample> samples = catalogManager.getAllSamples(studyId, new Query(), new QueryOptions(), sessionId).getResult();
         List<String> someSamples = samples.stream().limit(samples.size() / 2).map(Sample::getName).collect(Collectors.toList());
-        Query query = new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), studyId)
-                .append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), someSamples);
+        Query query = new Query(VariantQueryParam.RETURNED_STUDIES.key(), studyId)
+                .append(VariantQueryParam.RETURNED_SAMPLES.key(), someSamples);
         QueryOptions queryOptions = new QueryOptions();
         variantManager.exportData(export, VariantOutputFormat.AVRO, query, queryOptions, sessionId);
 
