@@ -52,7 +52,7 @@ import org.opencb.opencga.storage.hadoop.variant.executors.ExternalMRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationManager;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 
 import java.io.IOException;
@@ -519,14 +519,14 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
 
     @Override
-    protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap options) throws StorageEngineException {
+    public StudyConfigurationManager getStudyConfigurationManager(ObjectMap options) throws StorageEngineException {
         try {
             HBaseCredentials dbCredentials = getDbCredentials();
             Configuration configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(getHadoopConfiguration(options), dbCredentials);
-            return new HBaseStudyConfigurationManager(dbCredentials.getTable(), configuration, options);
+            return new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(dbCredentials.getTable(), configuration, options));
         } catch (IOException e) {
             e.printStackTrace();
-            return super.buildStudyConfigurationManager(options);
+            return super.getStudyConfigurationManager(options);
         }
     }
 

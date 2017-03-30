@@ -39,19 +39,19 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableMapReduce;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableMapReduce;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
 import java.io.File;
@@ -65,9 +65,7 @@ import java.util.stream.IntStream;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
-import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariants;
-import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariantsFromArchiveTable;
-import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariantsFromVariantsTable;
+import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.*;
 
 /**
  * Created on 21/01/16
@@ -275,7 +273,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         }
 
         URI outputUri = newOutputUri();
-        FileStudyConfigurationManager.write(studyConfiguration, new File(outputUri.resolve("study_configuration.json").getPath()).toPath());
+        FileStudyConfigurationAdaptor.write(studyConfiguration, new File(outputUri.resolve("study_configuration.json").getPath()).toPath());
         try (FileOutputStream out = new FileOutputStream(outputUri.resolve("platinum.merged.vcf").getPath())) {
             VariantVcfDataWriter.htsExport(dbAdaptor.iterator(new Query(), new QueryOptions(QueryOptions.SORT, true)),
                     studyConfiguration, dbAdaptor.getVariantSourceDBAdaptor(), out, new QueryOptions());
@@ -292,7 +290,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
                     Collections.singletonMap(VariantTableMapperFail.SLICE_TO_FAIL, "1_000000000011"));
             fail();
         } catch (StoragePipelineException e) {
-            HBaseStudyConfigurationManager scm = (HBaseStudyConfigurationManager) dbAdaptor.getStudyConfigurationManager();
+            StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
             studyConfiguration = scm.getStudyConfiguration(STUDY_ID, new QueryOptions()).first();
             System.out.println("studyConfiguration: " + studyConfiguration);
             System.out.println(studyConfiguration.getIndexedFiles());
@@ -403,7 +401,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         Set<String> expectedVariants = new HashSet<>();
 
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME);
-        HBaseStudyConfigurationManager scm = (HBaseStudyConfigurationManager) dbAdaptor.getStudyConfigurationManager();
+        StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
 
 
         int maxFilesLoaded = 3;
@@ -462,7 +460,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         sources.add(source);
         expectedVariants.addAll(checkArchiveTableLoadedVariants(studyConfiguration, dbAdaptor, source));
 
-        HBaseStudyConfigurationManager scm = (HBaseStudyConfigurationManager) dbAdaptor.getStudyConfigurationManager();
+        StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
         studyConfiguration = scm.getStudyConfiguration(studyConfiguration.getStudyId(), new QueryOptions()).first();
 
         System.out.println("studyConfiguration = " + studyConfiguration.getAttributes().toJson());
@@ -549,7 +547,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     }
 
     protected void checkArchiveTableTimeStamp(VariantHadoopDBAdaptor dbAdaptor) throws Exception {
-        HBaseStudyConfigurationManager scm = (HBaseStudyConfigurationManager) dbAdaptor.getStudyConfigurationManager();
+        StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
         StudyConfiguration studyConfiguration = scm.getStudyConfiguration(STUDY_ID, new QueryOptions()).first();
 
         String tableName = HadoopVariantStorageEngine.getArchiveTableName(STUDY_ID, dbAdaptor.getConfiguration());

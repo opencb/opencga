@@ -28,7 +28,7 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
-import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -38,7 +38,7 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
-import org.opencb.opencga.storage.mongodb.metadata.MongoDBStudyConfigurationManager;
+import org.opencb.opencga.storage.mongodb.metadata.MongoDBStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.io.db.VariantMongoDBAnnotationDBWriter;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoVariantImporter;
@@ -359,14 +359,15 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap options) throws StorageEngineException {
-        if (options != null && !options.getString(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
-            return super.buildStudyConfigurationManager(options);
+    public StudyConfigurationManager getStudyConfigurationManager(ObjectMap options) throws StorageEngineException {
+        if (options != null && !options.getString(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
+            return super.getStudyConfigurationManager(options);
         } else {
             String dbName = options == null ? null : options.getString(VariantStorageEngine.Options.DB_NAME.key());
             String collectionName = options == null ? null : options.getString(COLLECTION_STUDIES.key(), COLLECTION_STUDIES.defaultValue());
             try {
-                return new MongoDBStudyConfigurationManager(getMongoDataStoreManager(), getMongoCredentials(dbName), collectionName);
+                return new StudyConfigurationManager(new MongoDBStudyConfigurationDBAdaptor(getMongoDataStoreManager(),
+                        getMongoCredentials(dbName), collectionName));
 //                return getDBAdaptor(dbName).getStudyConfigurationManager();
             } catch (UnknownHostException e) {
                 throw new StorageEngineException("Unable to build MongoStorageConfigurationManager", e);

@@ -17,6 +17,8 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
  */
 public final class VariantQueryParam implements QueryParam {
 
+    private static final List<VariantQueryParam> VALUES = new ArrayList<>();
+
     public static final String ID_DESCR
             = "List of variant ids";
     public static final VariantQueryParam ID
@@ -263,7 +265,6 @@ public final class VariantQueryParam implements QueryParam {
         VALUES.add(this);
     }
 
-    private static final List<VariantQueryParam> VALUES = new ArrayList<>();
     private final String key;
     private final Type type;
     private final String description;

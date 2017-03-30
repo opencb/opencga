@@ -62,7 +62,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotat
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationManager;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,7 +110,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         this.variantTable = credentials.getTable();
         ObjectMap options = configuration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getVariant().getOptions();
         this.studyConfigurationManager.set(
-                new HBaseStudyConfigurationManager(genomeHelper, credentials.getTable(), conf, options));
+                new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(genomeHelper, credentials.getTable(), conf, options)));
         this.variantSourceDBAdaptor = new HadoopVariantSourceDBAdaptor(this.genomeHelper);
 
         String species = options.getString(VariantAnnotationManager.SPECIES);

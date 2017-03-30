@@ -31,11 +31,12 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationManager;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 
 public class VariantTableMapperTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
@@ -63,10 +64,10 @@ public class VariantTableMapperTest extends VariantStorageBaseTest implements Ha
     public void tearDown() throws Exception {
     }
 
-    private HBaseStudyConfigurationManager buildStudyManager() throws IOException{
+    private StudyConfigurationManager buildStudyManager() throws IOException{
         StorageEngineConfiguration se = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId());
         ObjectMap opts = se.getVariant().getOptions();
-        return new HBaseStudyConfigurationManager(DB_NAME, configuration.get(), opts);
+        return new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(DB_NAME, configuration.get(), opts));
     }
     
     @Test

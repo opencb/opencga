@@ -47,7 +47,7 @@ import org.opencb.opencga.storage.core.manager.OpenCGATestExternalResource;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
@@ -135,7 +135,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         StorageEngineFactory factory = StorageEngineFactory.get(storageConfiguration);
         factory.unregisterVariantStorageManager(DummyVariantStorageEngine.STORAGE_ENGINE_ID);
 
-        DummyStudyConfigurationManager.clear();
+        DummyStudyConfigurationAdaptor.clear();
 
         variantManager = new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, factory);
         clearDB(dbName);
@@ -170,7 +170,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
     @After
     public void tearDown() throws Exception {
-        DummyStudyConfigurationManager.writeAndClear(opencga.getOpencgaHome());
+        DummyStudyConfigurationAdaptor.writeAndClear(opencga.getOpencgaHome());
     }
 
     protected String getStorageEngine() {

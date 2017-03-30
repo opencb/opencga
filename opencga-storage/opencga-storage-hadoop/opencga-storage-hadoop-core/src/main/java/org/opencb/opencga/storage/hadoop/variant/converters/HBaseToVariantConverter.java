@@ -38,7 +38,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationManager;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
@@ -78,8 +78,9 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     private Set<VariantField> variantFields = null;
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
-        this(variantTableHelper, new HBaseStudyConfigurationManager(variantTableHelper.getOutputTableAsString(),
-                variantTableHelper.getConf(), new ObjectMap()));
+        this(variantTableHelper, new StudyConfigurationManager(
+                new HBaseStudyConfigurationDBAdaptor(
+                        variantTableHelper.getOutputTableAsString(), variantTableHelper.getConf(), new ObjectMap())));
     }
 
     public HBaseToVariantConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm) {

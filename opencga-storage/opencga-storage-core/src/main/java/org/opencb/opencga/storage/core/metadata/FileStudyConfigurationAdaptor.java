@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.core.metadata;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.slf4j.Logger;
@@ -34,18 +33,14 @@ import java.util.Map;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class FileStudyConfigurationManager extends StudyConfigurationManager {
+public class FileStudyConfigurationAdaptor extends StudyConfigurationAdaptor {
     public static final String STUDY_CONFIGURATION_PATH = "studyConfigurationPath";
-    protected static Logger logger = LoggerFactory.getLogger(FileStudyConfigurationManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(FileStudyConfigurationAdaptor.class);
 
     private static final Map<Integer, Path> FILE_PATHS = new HashMap<>();
 
-    public FileStudyConfigurationManager(ObjectMap objectMap) {
-        super(objectMap);
-    }
-
     @Override
-    protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
+    protected QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
         Path path = getPath(studyName, options);
         QueryResult<StudyConfiguration> result = readStudyConfiguration(path);
         result.first().setStudyName(studyName);
@@ -53,7 +48,7 @@ public class FileStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     @Override
-    public QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+    public QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
         Path path = getPath(studyId, options);
         QueryResult<StudyConfiguration> result = readStudyConfiguration(path);
         result.first().setStudyId(studyId);
@@ -76,7 +71,7 @@ public class FileStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     @Override
-    protected QueryResult internalUpdateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    protected QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         long startTime = System.currentTimeMillis();
 
         Path path = getPath(studyConfiguration.getStudyId(), options);
@@ -136,8 +131,11 @@ public class FileStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     public static void write(StudyConfiguration studyConfiguration, Path path) throws IOException {
-        new ObjectMapper(new JsonFactory()).writerWithDefaultPrettyPrinter().withoutAttribute("inverseFileIds").writeValue(path.toFile(),
+        new ObjectMapper(new JsonFactory()).writerWithDefaultPrettyPrinter().writeValue(path.toFile(),
                 studyConfiguration);
     }
 
+    @Override
+    public void close() {
+    }
 }

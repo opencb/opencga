@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Consumer;
 
 /**
  * Created on 28/11/16.
@@ -262,7 +261,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public StudyConfigurationManager getStudyConfigurationManager() {
-        return new DummyStudyConfigurationManager();
+        return new StudyConfigurationManager(new DummyStudyConfigurationAdaptor());
     }
 
     @Override

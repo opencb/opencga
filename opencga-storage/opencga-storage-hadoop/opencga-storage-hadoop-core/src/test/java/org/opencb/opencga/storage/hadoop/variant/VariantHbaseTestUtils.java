@@ -40,7 +40,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -268,7 +268,7 @@ public class VariantHbaseTestUtils {
     }
 
     public static void printVariants(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws Exception {
-        FileStudyConfigurationManager.write(studyConfiguration, outDir.resolve("study_configuration.json"));
+        FileStudyConfigurationAdaptor.write(studyConfiguration, outDir.resolve("study_configuration.json"));
         printVariantsFromArchiveTable(dbAdaptor, studyConfiguration, outDir);
         printVariantsFromVariantsTable(dbAdaptor, outDir);
         printVariantsFromDBAdaptor(dbAdaptor, outDir);

@@ -30,7 +30,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.ExportMetadata;
-import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.search.VariantSearchManager;
@@ -76,7 +76,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         EXCLUDE_GENOTYPES("exclude.genotypes", false),              //Do not store genotypes from samples
 
         STUDY_CONFIGURATION("studyConfiguration", ""),      //
-        STUDY_CONFIGURATION_MANAGER_CLASS_NAME("studyConfigurationManagerClassName", ""),
 
         STUDY_TYPE("studyType", VariantStudy.StudyType.CASE_CONTROL),
         AGGREGATED_TYPE("aggregatedType", VariantSource.Aggregation.NONE),
@@ -467,53 +466,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     /**
-     * Get the StudyConfigurationManager.
-     * <p>
-     * If there is no StudyConfigurationManager, try to build by dependency injection.
-     * If can't build, call to the method "buildStudyConfigurationManager", witch could be override.
-     *
-     * @param options Map-like object with the options
-     * @return A StudyConfigurationManager object
-     * @throws StorageEngineException If object is null
-     */
-    public final StudyConfigurationManager getStudyConfigurationManager(ObjectMap options) throws StorageEngineException {
-        StudyConfigurationManager studyConfigurationManager = null;
-        String studyConfigurationManagerClassName = null;
-        if (options.containsKey(Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key())) {
-            studyConfigurationManagerClassName = options.getString(Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key());
-        } else {
-            if (configuration.getStudyMetadataManager() != null && !configuration.getStudyMetadataManager().isEmpty()) {
-                studyConfigurationManagerClassName = configuration.getStudyMetadataManager();
-            }
-        }
-
-        if (studyConfigurationManagerClassName != null && !studyConfigurationManagerClassName.isEmpty()) {
-            try {
-                studyConfigurationManager = StudyConfigurationManager.build(studyConfigurationManagerClassName, options);
-            } catch (ReflectiveOperationException e) {
-                e.printStackTrace();
-                logger.error("Error creating a StudyConfigurationManager. Creating default StudyConfigurationManager", e);
-                throw new RuntimeException(e);
-            }
-        }
-        // This method can be override in children methods
-        if (studyConfigurationManager == null) {
-            studyConfigurationManager = buildStudyConfigurationManager(options);
-        }
-
-        return studyConfigurationManager;
-    }
-
-
-    /**
      * Build the default StudyConfigurationManager. This method could be override by children classes if they want to use other class.
      *
      * @param options Map-like object with the options
      * @return A StudyConfigurationManager object
      * @throws StorageEngineException If object is null
      */
-    protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap options) throws StorageEngineException {
-        return new FileStudyConfigurationManager(options);
+    public StudyConfigurationManager getStudyConfigurationManager(ObjectMap options) throws StorageEngineException {
+        return new StudyConfigurationManager(new FileStudyConfigurationAdaptor());
     }
 
     /**

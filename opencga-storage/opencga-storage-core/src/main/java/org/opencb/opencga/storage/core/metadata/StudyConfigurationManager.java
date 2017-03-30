@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.core.metadata;
 
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -24,27 +23,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public abstract class StudyConfigurationManager implements AutoCloseable {
+public class StudyConfigurationManager implements AutoCloseable {
     public static final String CACHED = "cached";
     public static final String READ_ONLY = "ro";
     protected static Logger logger = LoggerFactory.getLogger(StudyConfigurationManager.class);
 
+    protected StudyConfigurationAdaptor adaptor;
+
     private final Map<String, StudyConfiguration> stringStudyConfigurationMap = new HashMap<>();
     private final Map<Integer, StudyConfiguration> intStudyConfigurationMap = new HashMap<>();
 
-    public StudyConfigurationManager(ObjectMap objectMap) {
+    public StudyConfigurationManager(StudyConfigurationAdaptor adaptor) {
+        this.adaptor = adaptor;
     }
-
-    protected abstract QueryResult<StudyConfiguration> internalGetStudyConfiguration(String studyName, Long time, QueryOptions options);
-
-    protected abstract QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options);
 
     public long lockStudy(int studyId) throws StorageEngineException {
         try {
@@ -58,12 +58,11 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
     }
 
     public long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException, TimeoutException {
-        logger.warn("Ignoring lock");
-        return 0;
+        return adaptor.lockStudy(studyId, lockDuration, timeout);
     }
 
     public void unLockStudy(int studyId, long lockId) {
-        logger.warn("Ignoring unLock");
+        adaptor.unLockStudy(studyId, lockId);
     }
 
     public interface UpdateStudyConfiguration<E extends Exception> {
@@ -91,8 +90,6 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
         }
     }
 
-    protected abstract QueryResult internalUpdateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
-
     public final QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, QueryOptions options) {
         QueryResult<StudyConfiguration> result;
         final boolean cached = options != null && options.getBoolean(CACHED, false);
@@ -105,7 +102,7 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
                 }
                 return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
-            result = internalGetStudyConfiguration(studyName, stringStudyConfigurationMap.get(studyName).getTimeStamp(), options);
+            result = adaptor.getStudyConfiguration(studyName, stringStudyConfigurationMap.get(studyName).getTimeStamp(), options);
             if (result.getNumTotalResults() == 0) { //No changes. Return old value
                 StudyConfiguration studyConfiguration = stringStudyConfigurationMap.get(studyName);
                 if (!readOnly) {
@@ -114,7 +111,7 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
                 return new QueryResult<>(studyName, 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
         } else {
-            result = internalGetStudyConfiguration(studyName, null, options);
+            result = adaptor.getStudyConfiguration(studyName, null, options);
         }
 
         StudyConfiguration studyConfiguration = result.first();
@@ -144,7 +141,7 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
                 }
                 return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
-            result = internalGetStudyConfiguration(studyId, intStudyConfigurationMap.get(studyId).getTimeStamp(), options);
+            result = adaptor.getStudyConfiguration(studyId, intStudyConfigurationMap.get(studyId).getTimeStamp(), options);
             if (result.getNumTotalResults() == 0) { //No changes. Return old value
                 StudyConfiguration studyConfiguration = intStudyConfigurationMap.get(studyId);
                 if (!readOnly) {
@@ -153,7 +150,7 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
                 return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
         } else {
-            result = internalGetStudyConfiguration(studyId, null, options);
+            result = adaptor.getStudyConfiguration(studyId, null, options);
         }
 
         StudyConfiguration studyConfiguration = result.first();
@@ -169,14 +166,16 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
     }
 
     public List<String> getStudyNames(QueryOptions options) {
-        return new ArrayList<>(getStudies(options).keySet());
+        return adaptor.getStudyNames(options);
     }
 
     public List<Integer> getStudyIds(QueryOptions options) {
-        return new ArrayList<>(getStudies(options).values());
+        return adaptor.getStudyIds(options);
     }
 
-    public abstract Map<String, Integer> getStudies(QueryOptions options);
+    public Map<String, Integer> getStudies(QueryOptions options) {
+        return adaptor.getStudies(options);
+    }
 
     public final QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         long timeStamp = System.currentTimeMillis();
@@ -192,27 +191,11 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
         StudyConfiguration copy = studyConfiguration.newInstance();
         stringStudyConfigurationMap.put(copy.getStudyName(), copy);
         intStudyConfigurationMap.put(copy.getStudyId(), copy);
-        return internalUpdateStudyConfiguration(copy, options);
-    }
-
-    public static StudyConfigurationManager build(String className, ObjectMap params)
-            throws ReflectiveOperationException {
-        try {
-            Class<?> clazz = Class.forName(className);
-
-            if (StudyConfigurationManager.class.isAssignableFrom(clazz)) {
-                return (StudyConfigurationManager) clazz.getConstructor(ObjectMap.class).newInstance(params);
-            } else {
-                throw new ReflectiveOperationException("Clazz " + className + " is not a subclass of StudyConfigurationManager");
-            }
-
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException
-                | InvocationTargetException e) {
-            logger.error("Unable to create StudyConfigurationManager");
-            throw e;
-        }
+        return adaptor.updateStudyConfiguration(copy, options);
     }
 
     @Override
-    public void close() throws IOException { }
+    public void close() throws IOException {
+        adaptor.close();
+    }
 }

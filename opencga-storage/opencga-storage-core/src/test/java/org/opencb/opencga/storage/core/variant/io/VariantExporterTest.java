@@ -7,7 +7,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 
@@ -45,7 +45,7 @@ public class VariantExporterTest extends VariantStorageBaseTest {
 
     @Override
     public void clearDB(String dbName) throws Exception {
-        DummyStudyConfigurationManager.clear();
+        DummyStudyConfigurationAdaptor.clear();
     }
 
     @Test

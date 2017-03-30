@@ -5,10 +5,11 @@ import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationManager;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,8 +47,9 @@ public class OpencgaMapReduceHelper {
         helper = new VariantTableHelper(context.getConfiguration());
         this.studyConfiguration = getHelper().loadMeta(); // Variant meta
 
-        HBaseStudyConfigurationManager scm = new HBaseStudyConfigurationManager(getHelper(), getHelper().getOutputTableAsString(),
-                getHelper().getConf(), new ObjectMap());
+        StudyConfigurationManager scm = new StudyConfigurationManager(
+                new HBaseStudyConfigurationDBAdaptor(getHelper(), getHelper().getOutputTableAsString(),
+                        getHelper().getConf(), new ObjectMap()));
         hbaseToVariantConverter = new HBaseToVariantConverter(getHelper(), scm)
                 .setFailOnEmptyVariants(true)
                 .setSimpleGenotypes(false);

@@ -2,13 +2,15 @@ package org.opencb.opencga.storage.core.variant.dummy;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationAdaptor;
 
-import java.io.*;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,10 +29,7 @@ import java.util.stream.Collectors;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class DummyStudyConfigurationManager extends StudyConfigurationManager {
-    public DummyStudyConfigurationManager() {
-        super(new ObjectMap());
-    }
+public class DummyStudyConfigurationAdaptor extends StudyConfigurationAdaptor {
 
     public static Map<String, StudyConfiguration> STUDY_CONFIGURATIONS_BY_NAME = new ConcurrentHashMap<>();
     public static Map<Integer, StudyConfiguration> STUDY_CONFIGURATIONS_BY_ID = new ConcurrentHashMap<>();
@@ -53,7 +52,7 @@ public class DummyStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     @Override
-    public QueryResult<StudyConfiguration> internalGetStudyConfiguration(String studyName, Long time, QueryOptions options) {
+    public QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long time, QueryOptions options) {
         if (STUDY_CONFIGURATIONS_BY_NAME.containsKey(studyName)) {
             return new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(STUDY_CONFIGURATIONS_BY_NAME.get(studyName).newInstance()));
         } else {
@@ -62,7 +61,7 @@ public class DummyStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     @Override
-    public QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+    public QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
         if (STUDY_CONFIGURATIONS_BY_ID.containsKey(studyId)) {
             return new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(STUDY_CONFIGURATIONS_BY_ID.get(studyId).newInstance()));
         } else {
@@ -71,7 +70,7 @@ public class DummyStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     @Override
-    protected QueryResult internalUpdateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    protected QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         STUDY_CONFIGURATIONS_BY_ID.put(studyConfiguration.getStudyId(), studyConfiguration.newInstance());
         STUDY_CONFIGURATIONS_BY_NAME.put(studyConfiguration.getStudyName(), studyConfiguration.newInstance());
 
@@ -97,7 +96,7 @@ public class DummyStudyConfigurationManager extends StudyConfigurationManager {
     public static synchronized void writeAndClear(Path path) {
         ObjectMapper objectMapper = new ObjectMapper(new JsonFactory());
         String prefix = "storage_configuration_" + NUM_PRINTS.incrementAndGet() + "_";
-        for (StudyConfiguration studyConfiguration : DummyStudyConfigurationManager.STUDY_CONFIGURATIONS_BY_NAME.values()) {
+        for (StudyConfiguration studyConfiguration : DummyStudyConfigurationAdaptor.STUDY_CONFIGURATIONS_BY_NAME.values()) {
             try (OutputStream os = new FileOutputStream(path.resolve(prefix + studyConfiguration.getStudyName()).toFile())) {
                 objectMapper.writerWithDefaultPrettyPrinter().writeValue(os, studyConfiguration);
             } catch (IOException e) {
@@ -113,5 +112,9 @@ public class DummyStudyConfigurationManager extends StudyConfigurationManager {
         STUDY_CONFIGURATIONS_BY_NAME.clear();
         STUDY_CONFIGURATIONS_BY_ID.clear();
         LOCK_STUDIES.clear();
+    }
+
+    @Override
+    public void close() {
     }
 }
