@@ -27,61 +27,61 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOTATION_EXISTS;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 /**
  * Created on 01/02/16
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantDBAdaptorUtilsTest extends GenericTest {
+public class VariantQueryUtilsTest extends GenericTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
     @Test
     public void testCheckOperatorAND() throws Exception {
-        assertEquals(VariantDBAdaptorUtils.QueryOperation.AND, VariantDBAdaptorUtils.checkOperator("a;b;c"));
+        assertEquals(VariantQueryUtils.QueryOperation.AND, VariantQueryUtils.checkOperator("a;b;c"));
     }
 
     @Test
     public void testCheckOperatorOR() throws Exception {
-        assertEquals(VariantDBAdaptorUtils.QueryOperation.OR, VariantDBAdaptorUtils.checkOperator("a,b,c"));
+        assertEquals(VariantQueryUtils.QueryOperation.OR, VariantQueryUtils.checkOperator("a,b,c"));
     }
 
     @Test
     public void testCheckOperatorANY() throws Exception {
-        assertNull(VariantDBAdaptorUtils.checkOperator("a"));
+        assertNull(VariantQueryUtils.checkOperator("a"));
     }
 
     @Test
     public void testCheckOperatorMix() throws Exception {
         thrown.expect(VariantQueryException.class);
-        VariantDBAdaptorUtils.checkOperator("a,b;c");
+        VariantQueryUtils.checkOperator("a,b;c");
     }
 
     @Test
     public void testSplitOperator() throws Exception {
-        assertArrayEquals(new String[]{"key", "=", "value"}, VariantDBAdaptorUtils.splitOperator("key=value"));
+        assertArrayEquals(new String[]{"key", "=", "value"}, VariantQueryUtils.splitOperator("key=value"));
     }
 
     @Test
     public void testSplitOperatorTrim() throws Exception {
-        assertArrayEquals(new String[]{"key", "=", "value"}, VariantDBAdaptorUtils.splitOperator("key = value"));
+        assertArrayEquals(new String[]{"key", "=", "value"}, VariantQueryUtils.splitOperator("key = value"));
     }
 
     @Test
     public void testSplitOperatorMissingKey() throws Exception {
-        assertArrayEquals(new String[]{"", "<", "value"}, VariantDBAdaptorUtils.splitOperator("<value"));
+        assertArrayEquals(new String[]{"", "<", "value"}, VariantQueryUtils.splitOperator("<value"));
     }
 
     @Test
     public void testSplitOperatorNoOperator() throws Exception {
-        assertArrayEquals(new String[]{null, "=", "value"}, VariantDBAdaptorUtils.splitOperator("value"));
+        assertArrayEquals(new String[]{null, "=", "value"}, VariantQueryUtils.splitOperator("value"));
     }
 
     @Test
     public void testSplitOperatorUnknownOperator() throws Exception {
-        assertArrayEquals(new String[]{null, "=", ">>>value"}, VariantDBAdaptorUtils.splitOperator(">>>value"));
+        assertArrayEquals(new String[]{null, "=", ">>>value"}, VariantQueryUtils.splitOperator(">>>value"));
     }
 
     @Test
@@ -104,7 +104,7 @@ public class VariantDBAdaptorUtilsTest extends GenericTest {
     }
 
     private void test(String key, String operator, String value) {
-        assertArrayEquals("Split " + key + operator + value, new String[]{key, operator, value}, VariantDBAdaptorUtils.splitOperator(key + operator + value));
+        assertArrayEquals("Split " + key + operator + value, new String[]{key, operator, value}, VariantQueryUtils.splitOperator(key + operator + value));
     }
 
     @Test
@@ -155,11 +155,11 @@ public class VariantDBAdaptorUtilsTest extends GenericTest {
                 .append("study1:sample4", Arrays.asList("0/0", "2/2")));
 
         HashMap<Object, List<String>> map = new HashMap<>();
-        assertEquals(VariantDBAdaptorUtils.QueryOperation.AND, parseGenotypeFilter("study:sample:1/1,2/2;sample2:0/0,2/2;sample3:0/0;study1:sample4:0/0,2/2", map));
+        assertEquals(VariantQueryUtils.QueryOperation.AND, parseGenotypeFilter("study:sample:1/1,2/2;sample2:0/0,2/2;sample3:0/0;study1:sample4:0/0,2/2", map));
         assertEquals(expected, map);
 
         map = new HashMap<>();
-        assertEquals(VariantDBAdaptorUtils.QueryOperation.OR, parseGenotypeFilter("study:sample:1/1,2/2,sample2:0/0,2/2,sample3:0/0,study1:sample4:0/0,2/2", map));
+        assertEquals(VariantQueryUtils.QueryOperation.OR, parseGenotypeFilter("study:sample:1/1,2/2,sample2:0/0,2/2,sample3:0/0,study1:sample4:0/0,2/2", map));
         assertEquals(expected, map);
 
         thrown.expect(VariantQueryException.class);

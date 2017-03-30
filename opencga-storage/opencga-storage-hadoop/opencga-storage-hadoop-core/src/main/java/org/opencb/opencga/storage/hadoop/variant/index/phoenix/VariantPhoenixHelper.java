@@ -24,7 +24,7 @@ import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.schema.types.*;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
@@ -431,7 +431,7 @@ public class VariantPhoenixHelper {
         for (Map.Entry<String, String> entry : MAPPING_POPULATION_SUDIES.entrySet()) {
             studyPopulation = studyPopulation.replace(entry.getKey(), entry.getValue());
         }
-        String studyPopFreq = studyPopulation.replace(VariantDBAdaptorUtils.STUDY_POP_FREQ_SEPARATOR, STUDY_POP_FREQ_SEPARATOR);
+        String studyPopFreq = studyPopulation.replace(VariantQueryUtils.STUDY_POP_FREQ_SEPARATOR, STUDY_POP_FREQ_SEPARATOR);
         return Column.build(POPULATION_FREQUENCY_PREFIX + studyPopFreq, PFloatArray.INSTANCE);
     }
 

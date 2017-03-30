@@ -27,6 +27,7 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
@@ -346,7 +347,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         if (StringUtils.isNumeric(study)) {
             studyId = Integer.parseInt(study);
         } else {
-            studyConfiguration = scm.getStudyConfiguration(study, null).first();
+            studyConfiguration = scm.getStudyConfiguration(study, QueryOptions.empty()).first();
             studyId = studyConfiguration.getStudyId();
         }
 

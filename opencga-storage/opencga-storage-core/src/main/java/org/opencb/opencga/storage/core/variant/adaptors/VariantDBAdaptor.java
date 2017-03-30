@@ -177,7 +177,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
     QueryResult groupBy(Query query, List<String> fields, QueryOptions options);
 
     default List<Integer> getReturnedStudies(Query query, QueryOptions options) {
-        return getDBAdaptorUtils().getReturnedStudies(query, options);
+        return VariantQueryUtils.getReturnedStudies(query, options, getStudyConfigurationManager());
     }
     /**
      * Returns all the possible samples to be returned by an specific query.
@@ -187,7 +187,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @return  Map key: StudyId, value: list of sampleIds
      */
     default Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
-        return getDBAdaptorUtils().getReturnedSamples(query, options);
+        return VariantQueryUtils.getReturnedSamples(query, options, getStudyConfigurationManager());
     }
 
     @Deprecated
@@ -228,8 +228,6 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
     void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager);
 
     CellBaseClient getCellBaseClient();
-
-    VariantDBAdaptorUtils getDBAdaptorUtils();
 
     void close() throws IOException;
 

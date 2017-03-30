@@ -275,11 +275,6 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantDBAdaptorUtils getDBAdaptorUtils() {
-        return new VariantDBAdaptorUtils(this);
-    }
-
-    @Override
     public void close() throws IOException {
         closed = true;
     }

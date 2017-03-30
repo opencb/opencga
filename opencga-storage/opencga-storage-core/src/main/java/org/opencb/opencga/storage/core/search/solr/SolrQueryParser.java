@@ -21,8 +21,10 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.search.VariantSearchToVariantConverter;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,22 +33,24 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 /**
  * Created by wasim on 18/11/16.
  */
 public class SolrQueryParser {
 
-    private VariantDBAdaptorUtils variantDBAdaptorUtils;
+    private final StudyConfigurationManager studyConfigurationManager;
+    private final CellBaseUtils cellbaseUtils;
 
     private static final Pattern STUDY_PATTERN = Pattern.compile("^([^=<>!]+):([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
     private static final Pattern SCORE_PATTERN = Pattern.compile("^([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
 
     protected static Logger logger = LoggerFactory.getLogger(SolrQueryParser.class);
 
-    public SolrQueryParser(VariantDBAdaptorUtils variantDBAdaptorUtils) {
-        this.variantDBAdaptorUtils = variantDBAdaptorUtils;
+    public SolrQueryParser(StudyConfigurationManager studyConfigurationManager, CellBaseUtils cellbaseUtils) {
+        this.studyConfigurationManager = studyConfigurationManager;
+        this.cellbaseUtils = cellbaseUtils;
     }
 
     /**
@@ -143,10 +147,10 @@ public class SolrQueryParser {
         String key = VariantQueryParam.STUDIES.key();
         if (isValidParam(query, VariantQueryParam.STUDIES)) {
             String value = query.getString(key);
-            VariantDBAdaptorUtils.QueryOperation op = checkOperator(value);
-            Set<Integer> studyIds = new HashSet<>(variantDBAdaptorUtils.getStudyIds(splitValue(value, op), queryOptions));
+            VariantQueryUtils.QueryOperation op = checkOperator(value);
+            Set<Integer> studyIds = new HashSet<>(studyConfigurationManager.getStudyIds(splitValue(value, op), queryOptions));
             List<String> studyNames = new ArrayList<>(studyIds.size());
-            Map<String, Integer> map = variantDBAdaptorUtils.getStudyConfigurationManager().getStudies(null);
+            Map<String, Integer> map = studyConfigurationManager.getStudies(null);
             if (map != null && map.size() > 1) {
                 map.forEach((name, id) -> {
                     if (studyIds.contains(id)) {
@@ -155,7 +159,7 @@ public class SolrQueryParser {
                     }
                 });
 
-                if (op == null || op == VariantDBAdaptorUtils.QueryOperation.OR) {
+                if (op == null || op == VariantQueryUtils.QueryOperation.OR) {
                     filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ",")));
                 } else {
                     filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ";")));
@@ -211,7 +215,7 @@ public class SolrQueryParser {
         key = VariantQueryParam.ANNOT_GO.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             List<String> gos = Arrays.asList(query.getString(key).split(","));
-            Set genesByGo = variantDBAdaptorUtils.getGenesByGo(gos);
+            Set genesByGo = cellbaseUtils.getGenesByGo(gos);
             if (genesByGo != null && genesByGo.size() > 0) {
                 filterList.add(parseCategoryTermValue("xrefs", StringUtils.join(genesByGo, ",")));
             }
@@ -660,7 +664,7 @@ public class SolrQueryParser {
             if (sb.length() > 0) {
                 sb.append(" OR ");
             }
-            sb.append("soAcc:").append(VariantDBAdaptorUtils.parseConsequenceType(ct));
+            sb.append("soAcc:").append(VariantQueryUtils.parseConsequenceType(ct));
         }
         return sb.toString();
     }
@@ -701,7 +705,7 @@ public class SolrQueryParser {
                 if (sb.length() > 0) {
                     sb.append(" OR ");
                 }
-                sb.append("geneToSoAcc:").append(gene).append("_").append(VariantDBAdaptorUtils.parseConsequenceType(ct));
+                sb.append("geneToSoAcc:").append(gene).append("_").append(VariantQueryUtils.parseConsequenceType(ct));
             }
         }
         return sb.toString();

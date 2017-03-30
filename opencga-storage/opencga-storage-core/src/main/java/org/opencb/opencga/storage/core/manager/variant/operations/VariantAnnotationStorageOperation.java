@@ -19,7 +19,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
@@ -170,13 +170,13 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
 
     private String buildOutputFileName(String alias, Query query) {
         List<Region> regions = new ArrayList<>();
-        if (VariantDBAdaptorUtils.isValidParam(query, VariantQueryParam.REGION)) {
+        if (VariantQueryUtils.isValidParam(query, VariantQueryParam.REGION)) {
             List<Region> c = Region.parseRegions(query.getString(VariantQueryParam.REGION.key()));
             if (c != null) {
                 regions.addAll(c);
             }
         }
-        if (VariantDBAdaptorUtils.isValidParam(query, VariantQueryParam.CHROMOSOME)) {
+        if (VariantQueryUtils.isValidParam(query, VariantQueryParam.CHROMOSOME)) {
             List<Region> c = Region.parseRegions(query.getString(VariantQueryParam.CHROMOSOME.key()));
             if (c != null) {
                 regions.addAll(c);

@@ -134,7 +134,7 @@ public final class StorageEngineFactory {
 
             // If VariantStorageEngine then we set the Solr search manager
             if (bioformat.equalsIgnoreCase("variant")) {
-                ((VariantStorageEngine)storageEngine).setVariantSearchManager(new VariantSearchManager(null, storageConfiguration));
+                ((VariantStorageEngine)storageEngine).setVariantSearchManager(new VariantSearchManager(null, null, storageConfiguration));
             }
 
             storageManagerMap.put(storageEngineName, storageEngine);

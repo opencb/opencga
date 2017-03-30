@@ -16,18 +16,19 @@
 
 package org.opencb.opencga.storage.core.metadata;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isNegated;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
@@ -192,6 +193,248 @@ public class StudyConfigurationManager implements AutoCloseable {
         stringStudyConfigurationMap.put(copy.getStudyName(), copy);
         intStudyConfigurationMap.put(copy.getStudyId(), copy);
         return adaptor.updateStudyConfiguration(copy, options);
+    }
+
+
+    /**
+     * Get studyIds from a list of studies.
+     * Replaces studyNames for studyIds.
+     * Excludes those studies that starts with '!'
+     *
+     * @param studiesNames  List of study names or study ids
+     * @param options       Options
+     * @return              List of study Ids
+     */
+    public List<Integer> getStudyIds(List studiesNames, QueryOptions options) {
+        return getStudyIds(studiesNames, getStudies(options));
+    }
+
+    /**
+     * Get studyIds from a list of studies.
+     * Replaces studyNames for studyIds.
+     * Excludes those studies that starts with '!'
+     *
+     * @param studiesNames  List of study names or study ids
+     * @param studies       Map of available studies. See {@link StudyConfigurationManager#getStudies}
+     * @return              List of study Ids
+     */
+    public List<Integer> getStudyIds(List studiesNames, Map<String, Integer> studies) {
+        List<Integer> studiesIds;
+        if (studiesNames == null) {
+            return Collections.emptyList();
+        }
+        studiesIds = new ArrayList<>(studiesNames.size());
+        for (Object studyObj : studiesNames) {
+            Integer studyId = getStudyId(studyObj, true, studies);
+            if (studyId != null) {
+                studiesIds.add(studyId);
+            }
+        }
+        return studiesIds;
+    }
+
+    public Integer getStudyId(Object studyObj, QueryOptions options) {
+        return getStudyId(studyObj, options, true);
+    }
+
+    public Integer getStudyId(Object studyObj, QueryOptions options, boolean skipNegated) {
+        if (studyObj instanceof Integer) {
+            return ((Integer) studyObj);
+        } else if (studyObj instanceof String && StringUtils.isNumeric((String) studyObj)) {
+            return Integer.parseInt((String) studyObj);
+        } else {
+            return getStudyId(studyObj, skipNegated, getStudies(options));
+        }
+    }
+
+    public Integer getStudyId(Object studyObj, boolean skipNegated, Map<String, Integer> studies) {
+        Integer studyId;
+        if (studyObj instanceof Integer) {
+            studyId = ((Integer) studyObj);
+        } else {
+            String studyName = studyObj.toString();
+            if (isNegated(studyName)) { //Skip negated studies
+                if (skipNegated) {
+                    return null;
+                } else {
+                    studyName = studyName.substring(1);
+                }
+            }
+            if (StringUtils.isNumeric(studyName)) {
+                studyId = Integer.parseInt(studyName);
+            } else {
+                Integer value = studies.get(studyName);
+                if (value == null) {
+                    throw VariantQueryException.studyNotFound(studyName, studies.keySet());
+                }
+                studyId = value;
+            }
+        }
+        if (!studies.containsValue(studyId)) {
+            throw VariantQueryException.studyNotFound(studyId, studies.keySet());
+        }
+        return studyId;
+    }
+
+    /**
+     * Given a study reference (name or id) and a default study, returns the associated StudyConfiguration.
+     *
+     * @param study     Study reference (name or id)
+     * @param defaultStudyConfiguration Default studyConfiguration
+     * @return          Assiciated StudyConfiguration
+     * @throws    VariantQueryException is the study does not exists
+     */
+    public StudyConfiguration getStudyConfiguration(String study, StudyConfiguration defaultStudyConfiguration)
+            throws VariantQueryException {
+        StudyConfiguration studyConfiguration;
+        if (StringUtils.isEmpty(study)) {
+            studyConfiguration = defaultStudyConfiguration;
+            if (studyConfiguration == null) {
+                throw VariantQueryException.studyNotFound(study, getStudyNames(null));
+            }
+        } else if (StringUtils.isNumeric(study)) {
+            int studyInt = Integer.parseInt(study);
+            if (defaultStudyConfiguration != null && studyInt == defaultStudyConfiguration.getStudyId()) {
+                studyConfiguration = defaultStudyConfiguration;
+            } else {
+                studyConfiguration = getStudyConfiguration(studyInt, null).first();
+            }
+            if (studyConfiguration == null) {
+                throw VariantQueryException.studyNotFound(studyInt, getStudyNames(null));
+            }
+        } else {
+            if (defaultStudyConfiguration != null && defaultStudyConfiguration.getStudyName().equals(study)) {
+                studyConfiguration = defaultStudyConfiguration;
+            } else {
+                studyConfiguration = getStudyConfiguration(study, new QueryOptions()).first();
+            }
+            if (studyConfiguration == null) {
+                throw VariantQueryException.studyNotFound(study, getStudyNames(null));
+            }
+        }
+        return studyConfiguration;
+    }
+
+    public List<Integer> getFileIds(List files, boolean skipNegated, StudyConfiguration defaultStudyConfiguration) {
+        List<Integer> fileIds;
+        if (files == null || files.isEmpty()) {
+            return Collections.emptyList();
+        }
+        fileIds = new ArrayList<>(files.size());
+        for (Object fileObj : files) {
+            Integer fileId = getFileId(fileObj, skipNegated, defaultStudyConfiguration);
+            if (fileId != null) {
+                fileIds.add(fileId);
+            }
+        }
+        return fileIds;
+    }
+
+    public Integer getFileId(Object fileObj, boolean skipNegated, StudyConfiguration defaultStudyConfiguration) {
+        if (fileObj == null) {
+            return null;
+        } else if (fileObj instanceof Number) {
+            return ((Number) fileObj).intValue();
+        } else {
+            String file = String.valueOf(fileObj);
+            if (isNegated(file)) { //Skip negated studies
+                if (skipNegated) {
+                    return null;
+                } else {
+                    file = file.substring(1);
+                }
+            }
+            if (file.contains(":")) {
+                String[] studyFile = file.split(":");
+                QueryResult<StudyConfiguration> queryResult = getStudyConfiguration(studyFile[0], new QueryOptions());
+                if (queryResult.getResult().isEmpty()) {
+                    throw VariantQueryException.studyNotFound(studyFile[0]);
+                }
+                return queryResult.first().getFileIds().get(studyFile[1]);
+            } else {
+                try {
+                    return Integer.parseInt(file);
+                } catch (NumberFormatException e) {
+                    if (defaultStudyConfiguration != null) {
+                        return defaultStudyConfiguration.getFileIds().get(file);
+                    } else {
+                        List<String> studyNames = getStudyNames(null);
+                        throw new VariantQueryException("Unknown file \"" + file + "\". "
+                                + "Please, specify the study belonging."
+                                + (studyNames == null ? "" : " Available studies: " + studyNames));
+                    }
+                }
+            }
+        }
+    }
+
+    public int getSampleId(Object sampleObj, StudyConfiguration defaultStudyConfiguration) {
+        int sampleId;
+        if (sampleObj instanceof Number) {
+            sampleId = ((Number) sampleObj).intValue();
+        } else {
+            String sampleStr = sampleObj.toString();
+            if (StringUtils.isNumeric(sampleStr)) {
+                sampleId = Integer.parseInt(sampleStr);
+            } else {
+                if (sampleStr.contains(":")) {  //Expect to be as <study>:<sample>
+                    String[] split = sampleStr.split(":");
+                    String study = split[0];
+                    sampleStr= split[1];
+                    StudyConfiguration sc;
+                    if (defaultStudyConfiguration != null && study.equals(defaultStudyConfiguration.getStudyName())) {
+                        sc = defaultStudyConfiguration;
+                    } else {
+                        QueryResult<StudyConfiguration> queryResult = getStudyConfiguration(study, new QueryOptions());
+                        if (queryResult.getResult().isEmpty()) {
+                            throw VariantQueryException.studyNotFound(study);
+                        }
+                        if (!queryResult.first().getSampleIds().containsKey(sampleStr)) {
+                            throw VariantQueryException.sampleNotFound(sampleStr, study);
+                        }
+                        sc = queryResult.first();
+                    }
+                    sampleId = sc.getSampleIds().get(sampleStr);
+                } else if (defaultStudyConfiguration != null) {
+                    if (!defaultStudyConfiguration.getSampleIds().containsKey(sampleStr)) {
+                        throw VariantQueryException.sampleNotFound(sampleStr, defaultStudyConfiguration.getStudyName());
+                    }
+                    sampleId = defaultStudyConfiguration.getSampleIds().get(sampleStr);
+                } else {
+                    //Unable to identify that sample!
+                    List<String> studyNames = getStudyNames(null);
+                    throw VariantQueryException.missingStudyForSample(sampleStr, studyNames);
+                }
+            }
+        }
+        return sampleId;
+    }
+
+    /**
+     * Finds the cohortId from a cohort reference.
+     *
+     * @param cohort    Cohort reference (name or id)
+     * @param studyConfiguration  Default study configuration
+     * @return  Cohort id
+     * @throws VariantQueryException if the cohort does not exist
+     */
+    public int getCohortId(String cohort, StudyConfiguration studyConfiguration) throws VariantQueryException {
+        int cohortId;
+        if (StringUtils.isNumeric(cohort)) {
+            cohortId = Integer.parseInt(cohort);
+            if (!studyConfiguration.getCohortIds().containsValue(cohortId)) {
+                throw VariantQueryException.cohortNotFound(cohortId, studyConfiguration.getStudyId(),
+                        studyConfiguration.getCohortIds().keySet());
+            }
+        } else {
+            Integer cohortIdNullable = studyConfiguration.getCohortIds().get(cohort);
+            if (cohortIdNullable == null) {
+                throw VariantQueryException.cohortNotFound(cohort, studyConfiguration.getStudyId(),
+                        studyConfiguration.getCohortIds().keySet());
+            }
+            cohortId = cohortIdNullable;
+        }
+        return cohortId;
     }
 
     @Override

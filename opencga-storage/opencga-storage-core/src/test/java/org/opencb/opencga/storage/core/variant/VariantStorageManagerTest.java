@@ -871,7 +871,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         VariantDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME);
 
 
-        VariantSearchManager variantSearchManager = new VariantSearchManager(null, variantStorageManager.getConfiguration());
+        VariantSearchManager variantSearchManager = new VariantSearchManager(null, null, variantStorageManager.getConfiguration());
         variantSearchManager.load(variantStorageManager.getConfiguration().getSearch().getCollection(), dbAdaptor.iterator());
     }
 

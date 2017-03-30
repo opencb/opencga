@@ -38,6 +38,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -139,7 +140,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public VariantStorageEngine(String storageEngineId, StorageConfiguration configuration) {
         super(storageEngineId, configuration);
 
-        variantSearchManager = new VariantSearchManager(null, configuration);
+        variantSearchManager = new VariantSearchManager(null, null, configuration);
 
         logger = LoggerFactory.getLogger(VariantStorageEngine.class);
     }
@@ -418,7 +419,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             VariantSearchException {
 
         VariantDBAdaptor dbAdaptor = getDBAdaptor(database);
-        variantSearchManager = new VariantSearchManager(dbAdaptor.getDBAdaptorUtils(), configuration);
+        variantSearchManager = new VariantSearchManager(
+                null, new CellBaseUtils(dbAdaptor.getCellBaseClient()), configuration);
 
         if (configuration.getSearch().getActive() && variantSearchManager.isAlive(database)) {
             // first, create the collection it it does not exist

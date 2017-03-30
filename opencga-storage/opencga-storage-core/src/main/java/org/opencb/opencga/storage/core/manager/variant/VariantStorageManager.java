@@ -354,7 +354,7 @@ public class VariantStorageManager extends StorageManager {
     public VariantQueryResult<Variant> intersect(Query query, QueryOptions queryOptions, List<String> studyIds, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
         Query intersectQuery = new Query(query);
-        intersectQuery.put(VariantQueryParam.STUDIES.key(), String.join(VariantDBAdaptorUtils.AND, studyIds));
+        intersectQuery.put(VariantQueryParam.STUDIES.key(), String.join(VariantQueryUtils.AND, studyIds));
         return get(intersectQuery, queryOptions, sessionId);
     }
 
@@ -411,7 +411,8 @@ public class VariantStorageManager extends StorageManager {
         if (!returnedFields.contains(VariantField.STUDIES)) {
             return Collections.emptyMap();
         }
-        if (VariantDBAdaptorUtils.isReturnedSamplesDefined(query, returnedFields)) {
+
+        if (VariantQueryUtils.isReturnedSamplesDefined(query, returnedFields)) {
             Map<Integer, List<Integer>> samplesToReturn = dbAdaptor.getReturnedSamples(query, queryOptions);
             for (Map.Entry<Integer, List<Integer>> entry : samplesToReturn.entrySet()) {
                 if (!entry.getValue().isEmpty()) {
