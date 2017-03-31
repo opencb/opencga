@@ -1314,6 +1314,93 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    public List<QueryResult<SampleAclEntry>> setSampleAcls(AbstractManager.MyResourceIds resources, List<String> members, String
+            permissions) throws CatalogException {
+        List<QueryResult<SampleAclEntry>> retQueryResultList = new ArrayList<>(resources.getResourceIds().size());
+        List<Long> sampleList = new ArrayList<>(resources.getResourceIds().size());
+        List<String> permissionList = commonSampleChecks(resources, members, permissions, retQueryResultList, sampleList);
+
+        // Remove permissions for the samples the user has permissions for
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleList)
+                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId());
+        sampleDBAdaptor.setAclsToMember(query, members, permissionList);
+
+        List<QueryResult<SampleAclEntry>> acls = sampleDBAdaptor.getAcls(query, members);
+        retQueryResultList.addAll(acls);
+
+        return retQueryResultList;
+    }
+
+    @Override
+    public List<QueryResult<SampleAclEntry>> addSampleAcls(AbstractManager.MyResourceIds resources, List<String> members,
+                                                           String permissions) throws CatalogException {
+        List<QueryResult<SampleAclEntry>> retQueryResultList = new ArrayList<>(resources.getResourceIds().size());
+        List<Long> sampleList = new ArrayList<>(resources.getResourceIds().size());
+        List<String> permissionList = commonSampleChecks(resources, members, permissions, retQueryResultList, sampleList);
+
+        // Remove permissions for the samples the user has permissions for
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleList)
+                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId());
+        sampleDBAdaptor.addAclsToMember(query, members, permissionList);
+
+        List<QueryResult<SampleAclEntry>> acls = sampleDBAdaptor.getAcls(query, members);
+        retQueryResultList.addAll(acls);
+
+        return retQueryResultList;
+    }
+
+    @Override
+    public List<QueryResult<SampleAclEntry>> removeSampleAcls(AbstractManager.MyResourceIds resources, List<String> members,
+                                                              @Nullable String permissions) throws CatalogException {
+        List<QueryResult<SampleAclEntry>> retQueryResultList = new ArrayList<>(resources.getResourceIds().size());
+        List<Long> sampleList = new ArrayList<>(resources.getResourceIds().size());
+        List<String> permissionList = commonSampleChecks(resources, members, permissions, retQueryResultList, sampleList);
+
+        // Remove permissions for the samples the user has permissions for
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleList)
+                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId());
+        sampleDBAdaptor.removeAclsFromMember(query, members, permissionList);
+
+        List<QueryResult<SampleAclEntry>> acls = sampleDBAdaptor.getAcls(query, members);
+        retQueryResultList.addAll(acls);
+
+        return retQueryResultList;
+    }
+
+    private List<String> commonSampleChecks(AbstractManager.MyResourceIds resources, List<String> members, String permissions,
+                                            List<QueryResult<SampleAclEntry>> retQueryResultList, List<Long> sampleList)
+            throws CatalogException {
+        // Check the members are valid
+        checkMembers(dbAdaptorFactory, resources.getStudyId(), members);
+
+        // Check that the permissions are valid if there is any
+        List<String> permissionList = null;
+        if (StringUtils.isNotEmpty(permissions)) {
+            permissionList = Arrays.asList(permissions.split(","));
+            checkPermissions(permissionList, SampleAclEntry.SamplePermissions::valueOf);
+        }
+
+        for (Long sampleId : resources.getResourceIds()) {
+            try {
+                // Check if the userId has proper permissions to modify the sample permissions
+                checkSamplePermission(sampleId, resources.getUser(), SampleAclEntry.SamplePermissions.SHARE);
+                sampleList.add(sampleId);
+            } catch (CatalogException e) {
+                QueryResult<SampleAclEntry> queryResult = new QueryResult<>();
+                queryResult.setErrorMsg(e.getMessage());
+                queryResult.setId(Long.toString(sampleId));
+
+                retQueryResultList.add(queryResult);
+            }
+        }
+        return permissionList;
+    }
+
+    @Deprecated
+    @Override
     public QueryResult<SampleAclEntry> removeSampleAcl(String userId, long sampleId, String member) throws CatalogException {
         sampleDBAdaptor.checkId(sampleId);
         checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.SHARE);
@@ -1352,8 +1439,17 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 .append(SampleDBAdaptor.QueryParams.ACL_MEMBER.key(), member);
         QueryResult<Long> count = sampleDBAdaptor.count(query);
         if (count == null || count.first() == 0) {
-            throw new CatalogException("Could not update ACLs for " + member + ". It seems the member does not have any permissions set "
-                    + "yet.");
+            // Find if there are any set or add permissions
+            String permissions = null;
+            permissions = setPermissions != null ? setPermissions : permissions;
+            permissions = addPermissions != null ? addPermissions : permissions;
+
+            if (permissions != null) {
+                return createSampleAcls(userId, sampleId, member, permissions);
+            } else {
+                throw new CatalogException("Could not update ACLs for " + member + ". It seems the member does not have any permissions set"
+                        + " yet.");
+            }
         }
 
         List<String> permissions;
@@ -1369,7 +1465,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 // Check if the permissions are correct
                 checkPermissions(permissions, SampleAclEntry.SamplePermissions::valueOf);
 
-                sampleDBAdaptor.addAclsToMember(sampleId, member, permissions);
+                query = new Query()
+                        .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId)
+                        .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                sampleDBAdaptor.addAclsToMember(query, Arrays.asList(member), permissions);
             }
 
             if (removePermissions != null) {
@@ -1377,6 +1476,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 // Check if the permissions are correct
                 checkPermissions(permissions, SampleAclEntry.SamplePermissions::valueOf);
 
+                query = new Query()
+                        .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId)
+                        .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
                 sampleDBAdaptor.removeAclsFromMember(sampleId, member, permissions);
             }
         }
@@ -1678,7 +1780,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 // Check if any of the members already have permissions set in the file
                 if (anyMemberHasPermissions(studyId, individualId, members, individualDBAdaptor)) {
                     throw new CatalogException("Cannot create ACL. At least one of the members already have some permissions set for this "
-                            + "particular cohort. Please, use update instead.");
+                            + "particular individual. Please, use update instead.");
                 }
 
                 Query query = new Query()
@@ -1699,7 +1801,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                         List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
                         query = new Query()
                                 .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId).
-                                append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
+                                        append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
 
                         sampleDBAdaptor.createAcl(query, sampleAclEntryList);
                     }
@@ -1837,8 +1939,21 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 .append(IndividualDBAdaptor.QueryParams.ACL_MEMBER.key(), member);
         QueryResult<Long> count = individualDBAdaptor.count(query);
         if (count == null || count.first() == 0) {
-            throw new CatalogException("Could not update ACLs for " + member + ". It seems the member does not have any permissions set "
-                    + "yet.");
+            throw new CatalogException("Could not update ACLs for " + member + ". It seems the member does not have any permissions set"
+                    + " yet.");
+            // FIXME
+            // Find if there are any set or add permissions
+//            String permissions = null;
+//            permissions = setPermissions != null ? setPermissions : permissions;
+//            permissions = addPermissions != null ? addPermissions : permissions;
+
+//            if (permissions != null) {
+//                return createIndividualAcls(userId, individualId, member, permissions);
+//            } else {
+//                throw new CatalogException("Could not update ACLs for " + member + ". It seems the member does not have any permissions
+// set"
+//                        + " yet.");
+//            }
         }
 
         QueryResult<Sample> sampleQueryResult = null;
@@ -1876,7 +1991,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 // Check if the permissions are correct
                 checkPermissions(permissions, IndividualAclEntry.IndividualPermissions::valueOf);
 
-                individualDBAdaptor.addAclsToMember(individualId, member, permissions);
+                query = new Query()
+                        .append(IndividualDBAdaptor.QueryParams.ID.key(), individualId)
+                        .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                individualDBAdaptor.addAclsToMember(query, Arrays.asList(member), permissions);
 
                 // If the individual contains samples, we propagate the permissions to all the samples
                 if (propagate && sampleQueryResult != null && sampleQueryResult.getResult() != null
@@ -1895,7 +2013,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 // Check if the permissions are correct
                 checkPermissions(permissions, IndividualAclEntry.IndividualPermissions::valueOf);
 
-                individualDBAdaptor.removeAclsFromMember(individualId, member, permissions);
+                query = new Query()
+                        .append(IndividualDBAdaptor.QueryParams.ID.key(), individualId)
+                        .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                individualDBAdaptor.removeAclsFromMember(query, Arrays.asList(member), permissions);
 
                 // If the individual contains samples, we propagate the permissions to all the samples
                 if (propagate && sampleQueryResult != null && sampleQueryResult.getResult() != null
@@ -1911,6 +2032,127 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         return individualDBAdaptor.getAcl(individualId, Arrays.asList(member));
+    }
+
+    @Override
+    public List<QueryResult<IndividualAclEntry>> updateIndividualAcl(AbstractManager.MyResourceIds resourceIds, List<String> members,
+                                                                     @Nullable String addPermissions, @Nullable String removePermissions,
+                                                                     @Nullable String setPermissions, boolean propagate)
+            throws CatalogException {
+        checkUpdateParams(addPermissions, removePermissions, setPermissions);
+
+        String userId = resourceIds.getUser();
+        long studyId = resourceIds.getStudyId();
+
+        checkMembers(dbAdaptorFactory, studyId, members);
+
+        // Check that all the members have permissions defined at the study level
+        for (String member : members) {
+            if (!member.equals("*") && !member.equals("anonymous") && !memberExists(studyId, member)) {
+                throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
+                        + "defined for that member.");
+            }
+        }
+
+        List<QueryResult<IndividualAclEntry>> retQueryResultList = new ArrayList<>(resourceIds.getResourceIds().size());
+
+        for (Long individualId : resourceIds.getResourceIds()) {
+            try {
+                // Check if the userId has proper permissions for all the files.
+                checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.SHARE);
+
+                QueryResult<Sample> sampleQueryResult = null;
+                if (propagate) {
+                    // Look for all the samples belonging to the individual
+                    Query query = new Query()
+                            .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                            .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
+
+                    sampleQueryResult = sampleDBAdaptor.get(query,
+                            new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()));
+                }
+
+                List<String> permissions;
+                if (setPermissions != null) {
+                    permissions = Arrays.asList(setPermissions.split(","));
+                    // Check if the permissions are correct
+                    checkPermissions(permissions, IndividualAclEntry.IndividualPermissions::valueOf);
+
+                    Query query = new Query()
+                            .append(IndividualDBAdaptor.QueryParams.ID.key(), individualId)
+                            .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                    individualDBAdaptor.setAclsToMember(query, members, permissions);
+
+                    // If the individual contains samples, we propagate the permissions to all the samples
+                    if (propagate && sampleQueryResult != null && sampleQueryResult.getResult() != null
+                            && sampleQueryResult.getNumResults() > 0) {
+                        List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
+                        query = new Query()
+                                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
+                        sampleDBAdaptor.setAclsToMember(query, members, permissions);
+                    }
+
+                } else {
+                    if (addPermissions != null) {
+                        permissions = Arrays.asList(addPermissions.split(","));
+                        // Check if the permissions are correct
+                        checkPermissions(permissions, IndividualAclEntry.IndividualPermissions::valueOf);
+
+                        Query query = new Query()
+                                .append(IndividualDBAdaptor.QueryParams.ID.key(), individualId)
+                                .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                        individualDBAdaptor.addAclsToMember(query, members, permissions);
+
+                        // If the individual contains samples, we propagate the permissions to all the samples
+                        if (propagate && sampleQueryResult != null && sampleQueryResult.getResult() != null
+                                && sampleQueryResult.getNumResults() > 0) {
+                            List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
+                            query = new Query()
+                                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                                    .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
+
+                            sampleDBAdaptor.addAclsToMember(query, members, permissions);
+                        }
+                    }
+
+                    if (removePermissions != null) {
+                        permissions = Arrays.asList(removePermissions.split(","));
+                        // Check if the permissions are correct
+                        checkPermissions(permissions, IndividualAclEntry.IndividualPermissions::valueOf);
+
+                        Query query = new Query()
+                                .append(IndividualDBAdaptor.QueryParams.ID.key(), individualId)
+                                .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                        individualDBAdaptor.removeAclsFromMember(query, members, permissions);
+
+                        // If the individual contains samples, we propagate the permissions to all the samples
+                        if (propagate && sampleQueryResult != null && sampleQueryResult.getResult() != null
+                                && sampleQueryResult.getNumResults() > 0) {
+                            List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
+                            query = new Query()
+                                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                                    .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
+
+                            sampleDBAdaptor.removeAclsFromMember(query, members, permissions);
+                        }
+                    }
+                }
+
+                QueryResult<IndividualAclEntry> aclQueryResult = individualDBAdaptor.getAcl(individualId, members);
+                aclQueryResult.setId("Update individual ACL");
+                retQueryResultList.add(aclQueryResult);
+
+            } catch (CatalogException e) {
+                QueryResult<IndividualAclEntry> queryResult = new QueryResult<>();
+                queryResult.setErrorMsg(e.getMessage());
+                queryResult.setId("Update individual ACL");
+
+                retQueryResultList.add(queryResult);
+            }
+        }
+
+        return retQueryResultList;
     }
 
     @Override

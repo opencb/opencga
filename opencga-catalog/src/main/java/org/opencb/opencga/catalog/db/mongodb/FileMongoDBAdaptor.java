@@ -830,6 +830,34 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     }
 
     @Override
+    public List<QueryResult<FileAclEntry>> getAcls(Query query, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+
+        QueryResult<File> fileQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> fileIds = fileQueryResult.getResult().stream().map(File::getId).collect(Collectors.toList());
+
+        if (fileIds == null || fileIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to get permissions");
+        }
+
+        List<List<FileAclEntry>> acl = aclDBAdaptor.getAcl(fileIds, members);
+        List<QueryResult<FileAclEntry>> retAclQueryResult = new ArrayList<>(acl.size());
+        if (acl.size() == fileIds.size()) {
+            for (int i = 0; i < acl.size(); i++) {
+                retAclQueryResult.add(endQuery(Long.toString(fileIds.get(i)), startTime, acl.get(i)));
+            }
+        } else {
+            logger.warn("Something strange happened. Only obtained ACLs for {} out of the {} files queried", acl.size(),
+                    fileIds.size());
+            for (List<FileAclEntry> fileAclEntries : acl) {
+                retAclQueryResult.add(endQuery("get file Acl", startTime, fileAclEntries));
+            }
+        }
+
+        return retAclQueryResult;
+    }
+
+    @Override
     public void removeAcl(long id, String member) throws CatalogDBException {
 //        CatalogMongoDBUtils.removeAcl(id, member, fileCollection);
         aclDBAdaptor.removeAcl(id, member);
@@ -840,6 +868,18 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         long startTime = startQuery();
 //        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, fileCollection);
         return endQuery("Set Acls to member", startTime, Arrays.asList(aclDBAdaptor.setAclsToMember(id, member, permissions)));
+    }
+
+    @Override
+    public void setAclsToMember(Query query, List<String> members, List<String> permissions) throws CatalogDBException {
+        QueryResult<File> fileQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> fileIds = fileQueryResult.getResult().stream().map(file -> file.getId()).collect(Collectors.toList());
+
+        if (fileIds == null || fileIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to set permissions");
+        }
+
+        aclDBAdaptor.setAclsToMembers(fileIds, members, permissions);
     }
 
     @Override

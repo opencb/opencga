@@ -38,6 +38,7 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -268,57 +269,6 @@ public class OpenCGAWSServer {
             e.printStackTrace();
         }
     }
-
-//
-//    /**
-//     * Builds the query and the queryOptions based on the query parameters.
-//     *
-//     * @param params Map of parameters.
-//     * @param getParam Method that returns the QueryParams object based on the key.
-//     * @param query Query where parameters parsing the getParam function will be inserted.
-//     * @param queryOptions QueryOptions where parameters not parsing the getParam function will be inserted.
-//     */
-//    @Deprecated
-//    protected static void parseQueryParams(Map<String, List<String>> params,
-//                                           Function<String, org.opencb.commons.datastore.core.QueryParam> getParam,
-//                                           ObjectMap query, QueryOptions queryOptions) {
-//        for (Map.Entry<String, List<String>> entry : params.entrySet()) {
-//            String param = entry.getKey();
-//            int indexOf = param.indexOf('.');
-//            param = indexOf > 0 ? param.substring(0, indexOf) : param;
-//
-//            if (getParam.apply(param) != null) {
-//                query.put(entry.getKey(), entry.getValue().get(0));
-//            } else {
-//                queryOptions.add(param, entry.getValue().get(0));
-//            }
-//
-//            // Exceptions
-//            if (param.equalsIgnoreCase("status")) {
-//                query.put("status.name", entry.getValue().get(0));
-//                query.remove("status");
-//                queryOptions.remove("status");
-//            }
-//
-//            if (param.equalsIgnoreCase("jobId")) {
-//                query.put("job.id", entry.getValue().get(0));
-//                query.remove("jobId");
-//                queryOptions.remove("jobId");
-//            }
-//
-//            if (param.equalsIgnoreCase("individualId")) {
-//                query.put("individual.id", entry.getValue().get(0));
-//                query.remove("individualId");
-//                queryOptions.remove("individualId");
-//            }
-//
-//            if (param.equalsIgnoreCase("sid")) {
-//                query.remove("sid");
-//                queryOptions.remove("sid");
-//            }
-//        }
-//        logger.debug("parseQueryParams: Query {}, queryOptions {}", query.safeToString(), queryOptions.safeToString());
-//    }
 
     private void parseParams() throws VersionException {
         // If by any reason 'version' is null we try to read it from the URI path, if not present an Exception is thrown

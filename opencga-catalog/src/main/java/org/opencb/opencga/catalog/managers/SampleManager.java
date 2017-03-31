@@ -42,6 +42,7 @@ import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.AnnotationManager;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
+import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
@@ -731,6 +732,105 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         }
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
+    }
+
+    @Override
+    public List<QueryResult<SampleAclEntry>> updateAcl(String sample, String studyStr, String memberIds,
+                                                       Sample.SampleAclParams sampleAclParams, String sessionId) throws CatalogException {
+        int count = 0;
+        count += StringUtils.isNotEmpty(sample) ? 1 : 0;
+        count += StringUtils.isNotEmpty(sampleAclParams.getIndividual()) ? 1 : 0;
+        count += StringUtils.isNotEmpty(sampleAclParams.getCohort()) ? 1 : 0;
+        count += StringUtils.isNotEmpty(sampleAclParams.getFile()) ? 1 : 0;
+
+        if (count > 1) {
+            throw new CatalogException("Update ACL: Only one of these parameters are allowed: sample, individual, file or cohort per "
+                    + "query.");
+        }
+
+        if (sampleAclParams.getAction() == null) {
+            throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
+        }
+
+        if (StringUtils.isNotEmpty(sampleAclParams.getIndividual())) {
+            // Obtain the individual ids
+            MyResourceIds ids = catalogManager.getIndividualManager().getIds(sampleAclParams.getIndividual(), studyStr, sessionId);
+
+            Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), ids.getResourceIds());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
+            QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(ids.getStudyId(), query, options, sessionId);
+
+            Set<Long> sampleSet = sampleQueryResult.getResult().stream().map(Sample::getId)
+                    .collect(Collectors.toSet());
+            sample = StringUtils.join(sampleSet, ",");
+
+            // I do this to make faster the search of the studyId when looking for the individuals
+            studyStr = Long.toString(ids.getStudyId());
+        }
+
+        if (StringUtils.isNotEmpty(sampleAclParams.getFile())) {
+            // Obtain the file ids
+            MyResourceIds ids = catalogManager.getFileManager().getIds(sampleAclParams.getFile(), studyStr, sessionId);
+
+            Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), ids.getResourceIds());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.SAMPLE_IDS.key());
+            QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(ids.getStudyId(), query, options, sessionId);
+
+            Set<Long> sampleSet = new HashSet<>();
+            for (File file : fileQueryResult.getResult()) {
+                sampleSet.addAll(file.getSampleIds());
+            }
+            sample = StringUtils.join(sampleSet, ",");
+
+            // I do this to make faster the search of the studyId when looking for the individuals
+            studyStr = Long.toString(ids.getStudyId());
+        }
+
+        if (StringUtils.isNotEmpty(sampleAclParams.getCohort())) {
+            // Obtain the cohort ids
+            MyResourceIds ids = catalogManager.getCohortManager().getIds(sampleAclParams.getCohort(), studyStr, sessionId);
+
+            Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), ids.getResourceIds());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLES.key());
+            QueryResult<Cohort> cohortQueryResult = catalogManager.getCohortManager().get(ids.getStudyId(), query, options, sessionId);
+
+            Set<Long> sampleSet = new HashSet<>();
+            for (Cohort cohort : cohortQueryResult.getResult()) {
+                sampleSet.addAll(cohort.getSamples());
+            }
+            sample = StringUtils.join(sampleSet, ",");
+
+            // I do this to make faster the search of the studyId when looking for the individuals
+            studyStr = Long.toString(ids.getStudyId());
+        }
+
+        MyResourceIds resourceIds = getIds(sample, studyStr, sessionId);
+
+        // Check the user has the permissions needed to change permissions over those samples
+        for (Long sampleId : resourceIds.getResourceIds()) {
+            authorizationManager.checkSamplePermission(sampleId, resourceIds.getUser(), SampleAclEntry.SamplePermissions.SHARE);
+        }
+
+        // Validate that the members are actually valid members
+        List<String> members;
+        if (memberIds != null && !memberIds.isEmpty()) {
+            members = Arrays.asList(memberIds.split(","));
+        } else {
+            members = Collections.emptyList();
+        }
+        CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
+
+        switch (sampleAclParams.getAction()) {
+            case SET:
+                return authorizationManager.setSampleAcls(resourceIds, members, sampleAclParams.getPermissions());
+            case ADD:
+                return authorizationManager.addSampleAcls(resourceIds, members, sampleAclParams.getPermissions());
+            case REMOVE:
+                return authorizationManager.removeSampleAcls(resourceIds, members, sampleAclParams.getPermissions());
+            case RESET:
+            default:
+                return authorizationManager.removeSampleAcls(resourceIds, members, null);
+        }
     }
 
     private long commonGetAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {

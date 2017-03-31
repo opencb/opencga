@@ -191,8 +191,6 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         return getCollection().aggregate(aggregation, getConverter(), null);
     }
 
-
-
     public QueryResult<AnnotationSet> updateAnnotationSet(long id, AnnotationSet annotationSet) throws CatalogDBException {
         long startTime = startQuery();
 

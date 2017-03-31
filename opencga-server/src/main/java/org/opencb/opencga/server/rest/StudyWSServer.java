@@ -922,7 +922,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
-    public static class MemberAclUpdate {
+    public static class MemberAclUpdateOld {
         public String add;
         public String set;
         public String remove;
@@ -935,8 +935,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
             @PathParam("study") String studyStr,
             @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
-            @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true)
-                    MemberAclUpdate params) {
+            @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true) MemberAclUpdateOld params) {
 //        if (params == null || params.isEmpty()) {
 //            return createErrorResponse(new CatalogException("At least one of the keys 'addUsers', 'setUsers' or 'removeUsers'"));
 //        }

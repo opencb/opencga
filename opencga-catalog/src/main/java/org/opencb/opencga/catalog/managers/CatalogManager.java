@@ -661,14 +661,13 @@ public class CatalogManager implements AutoCloseable {
         return authorizationManager.getSampleAcl(resourceId.getUser(), resourceId.getResourceId(), member);
     }
 
-    public QueryResult<SampleAclEntry> updateSampleAcl(String sampleIdStr, @Nullable String studyStr, String member,
-                                                       @Nullable String addPermissions, @Nullable String removePermissions,
-                                                       @Nullable String setPermissions, String sessionId) throws CatalogException {
-        AbstractManager.MyResourceId resourceId = sampleManager.getId(sampleIdStr, studyStr, sessionId);
-        return authorizationManager.updateSampleAcl(resourceId.getUser(), resourceId.getResourceId(), member, addPermissions,
-                removePermissions, setPermissions);
-
-    }
+//    public QueryResult<SampleAclEntry> updateSampleAcl(String sampleIdStr, @Nullable String studyStr, String member,
+//                                                       @Nullable String addPermissions, @Nullable String removePermissions,
+//                                                       @Nullable String setPermissions, String sessionId) throws CatalogException {
+//        AbstractManager.MyResourceId resourceId = sampleManager.getId(sampleIdStr, studyStr, sessionId);
+//        return authorizationManager.updateSampleAcl(resourceId.getUser(), resourceId.getResourceId(), member, addPermissions,
+//                removePermissions, setPermissions);
+//    }
 
     /**
      * Modify some params from the specified study.

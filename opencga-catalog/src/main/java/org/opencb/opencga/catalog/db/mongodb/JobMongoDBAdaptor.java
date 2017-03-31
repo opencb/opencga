@@ -731,6 +731,34 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
+    public List<QueryResult<JobAclEntry>> getAcls(Query query, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+
+        QueryResult<Job> jobQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> jobIds = jobQueryResult.getResult().stream().map(Job::getId).collect(Collectors.toList());
+
+        if (jobIds == null || jobIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to get permissions");
+        }
+
+        List<List<JobAclEntry>> acl = aclDBAdaptor.getAcl(jobIds, members);
+        List<QueryResult<JobAclEntry>> retAclQueryResult = new ArrayList<>(acl.size());
+        if (acl.size() == jobIds.size()) {
+            for (int i = 0; i < acl.size(); i++) {
+                retAclQueryResult.add(endQuery(Long.toString(jobIds.get(i)), startTime, acl.get(i)));
+            }
+        } else {
+            logger.warn("Something strange happened. Only obtained ACLs for {} out of the {} jobs queried", acl.size(),
+                    jobIds.size());
+            for (List<JobAclEntry> jobAclEntries : acl) {
+                retAclQueryResult.add(endQuery("get job Acl", startTime, jobAclEntries));
+            }
+        }
+
+        return retAclQueryResult;
+    }
+
+    @Override
     public void removeAcl(long id, String member) throws CatalogDBException {
 //        CatalogMongoDBUtils.removeAcl(id, member, jobCollection);
         aclDBAdaptor.removeAcl(id, member);
@@ -741,6 +769,18 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         long startTime = startQuery();
 //        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, jobCollection);
         return endQuery("Set Acls to member", startTime, Arrays.asList(aclDBAdaptor.setAclsToMember(id, member, permissions)));
+    }
+
+    @Override
+    public void setAclsToMember(Query query, List<String> members, List<String> permissions) throws CatalogDBException {
+        QueryResult<Job> jobQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> jobIds = jobQueryResult.getResult().stream().map(job -> job.getId()).collect(Collectors.toList());
+
+        if (jobIds == null || jobIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to set permissions");
+        }
+
+        aclDBAdaptor.setAclsToMembers(jobIds, members, permissions);
     }
 
     @Override

@@ -207,4 +207,6 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
         throw new NotImplementedException("Group by has to be called passing the study string");
     }
 
+    List<QueryResult<SampleAclEntry>> updateAcl(String sample, String studyStr, String memberId, Sample.SampleAclParams sampleAclParams,
+                                                String sessionId) throws CatalogException;
 }

@@ -308,6 +308,15 @@ public interface AuthorizationManager {
      */
     QueryResult<SampleAclEntry> getSampleAcl(String userId, long sampleId, String member) throws CatalogException;
 
+    List<QueryResult<SampleAclEntry>> setSampleAcls(AbstractManager.MyResourceIds resourceIds, List<String> members, String permissions)
+            throws CatalogException;
+
+    List<QueryResult<SampleAclEntry>> addSampleAcls(AbstractManager.MyResourceIds resourceIds, List<String> members, String permissions)
+            throws CatalogException;
+
+    List<QueryResult<SampleAclEntry>> removeSampleAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
+                                                       @Nullable String permissions) throws CatalogException;
+
     /**
      * Removes the ACLs defined for the member.
      *
@@ -318,6 +327,7 @@ public interface AuthorizationManager {
      * @throws CatalogException if the user asking to remove the ACLs does not have proper permissions or the member does not have any ACL
      *                          defined.
      */
+    @Deprecated
     QueryResult<SampleAclEntry> removeSampleAcl(String userId, long sampleId, String member) throws CatalogException;
 
     QueryResult<SampleAclEntry> updateSampleAcl(String userId, long sampleId, String member, @Nullable String addPermissions,
@@ -414,6 +424,9 @@ public interface AuthorizationManager {
                                                         @Nullable String removePermissions, @Nullable String setPermissions,
                                                         boolean propagate) throws CatalogException;
 
+    List<QueryResult<IndividualAclEntry>> updateIndividualAcl(AbstractManager.MyResourceIds resourceIds, List<String> members,
+                                                              @Nullable String addPermissions, @Nullable String removePermissions,
+                                                              @Nullable String setPermissions, boolean propagate) throws CatalogException;
 
     //------------------------- End of individual ACL ----------------------
 

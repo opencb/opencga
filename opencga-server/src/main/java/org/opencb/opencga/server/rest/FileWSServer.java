@@ -19,7 +19,6 @@ package org.opencb.opencga.server.rest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.core.Region;
@@ -56,16 +55,17 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.*;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 
@@ -1515,10 +1515,52 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true)
-                    StudyWSServer.MemberAclUpdate params) {
+            @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true) StudyWSServer.MemberAclUpdateOld params) {
         try {
             return createOkResponse(catalogManager.getFileManager().updateAcls(fileIdStr, studyStr, memberId, params.add, params.remove,
+                    params.set, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    public static class FileAcl extends StudyWSServer.MemberAclUpdateOld {
+        public String file;
+        public String sample;
+
+        public boolean reset;
+    }
+
+    @POST
+    @Path("/acl/{memberId}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    public Response updateAcl(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                    String studyStr,
+            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
+            @ApiParam(value="JSON containing the parameters to add ACLs", required = true) FileAcl params) {
+        try {
+            if (params.file == null && params.sample == null) {
+                return createErrorResponse("Update ACL", "Only one of these parameters are allowed: sample, "
+                        + "individual, file or cohort per query.");
+            }
+
+            if (params.sample != null) {
+                // Obtain the sample ids
+                AbstractManager.MyResourceIds ids = catalogManager.getSampleManager().getIds(params.sample, studyStr, sessionId);
+
+                Query query = new Query(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ids.getResourceIds());
+                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
+                QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(ids.getStudyId(), query, options, sessionId);
+
+                Set<Long> fileSet = fileQueryResult.getResult().stream().map(file -> file.getId()).collect(Collectors.toSet());
+                params.file = StringUtils.join(fileSet , ",");
+
+                // I do this to make faster the search of the studyId when looking for the individuals
+                studyStr = Long.toString(ids.getStudyId());
+            }
+
+            return createOkResponse(catalogManager.getFileManager().updateAcls(params.file, studyStr, memberId, params.add, params.remove,
                     params.set, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);

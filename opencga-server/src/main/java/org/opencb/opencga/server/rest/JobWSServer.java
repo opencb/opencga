@@ -322,8 +322,7 @@ public class JobWSServer extends OpenCGAWSServer {
     public Response updateAclPOST(
             @ApiParam(value = "jobId", required = true) @PathParam("jobId") String jobIdStr,
             @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
-            @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true)
-                    StudyWSServer.MemberAclUpdate params) {
+            @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true) StudyWSServer.MemberAclUpdateOld params) {
         try {
             return createOkResponse(catalogManager.updateJobAcl(jobIdStr, memberId, params.add, params.remove, params.set, sessionId));
         } catch (Exception e) {

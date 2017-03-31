@@ -54,6 +54,15 @@ public interface AclDBAdaptor<T extends AbstractAclEntry> {
     List<T> getAcl(long resourceId, List<String> members);
 
     /**
+     * Retrieve the list of Acls for the list of members in the resources given.
+     *
+     * @param resourceIds ids of the study, file, sample... where the Acl will be looked for.
+     * @param members members for whom the Acls will be obtained.
+     * @return the list of Acls defined for the members.
+     */
+    List<List<T>> getAcl(List<Long> resourceIds, List<String> members);
+
+    /**
      * Remove the existing Acl for the member.
      *
      * @param resourceId id of the study, file, sample... where the Acl will be looked for.
@@ -82,6 +91,8 @@ public interface AclDBAdaptor<T extends AbstractAclEntry> {
      */
     @Deprecated
     T setAclsToMember(long resourceId, String member, List<String> permissions) throws CatalogDBException;
+
+    void setAclsToMembers(List<Long> resourceIds, List<String> members, List<String> permissions) throws CatalogDBException;
 
     /**
      * Add new permissions for the member.

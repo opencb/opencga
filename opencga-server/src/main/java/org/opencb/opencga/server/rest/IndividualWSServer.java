@@ -19,14 +19,17 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.api.IIndividualManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -36,10 +39,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 22/06/15.
@@ -706,7 +707,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         }
     }
 
-    public static class MemberAclUpdate extends StudyWSServer.MemberAclUpdate {
+    public static class MemberAclUpdate extends StudyWSServer.MemberAclUpdateOld {
         public boolean propagate;
     }
 
@@ -722,6 +723,46 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     MemberAclUpdate params) {
         try {
             return createOkResponse(catalogManager.updateIndividualAcl(individualIdStr, studyStr, memberId, params.add,
+                    params.remove, params.set, params.propagate, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    public static class IndividualAcl extends StudyWSServer.MemberAclUpdateOld {
+        public String individual;
+        public String sample;
+
+        public boolean propagate;
+        public boolean reset;
+    }
+
+    @POST
+    @Path("/acl/{memberId}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    public Response updateAcl(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                    String studyStr,
+            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
+            @ApiParam(value="JSON containing the parameters to add ACLs", required = true) IndividualAcl params) {
+        try {
+            if (params.sample != null && params.individual == null) {
+                // Obtain the individuals corresponding to the list of samples
+                AbstractManager.MyResourceIds ids = catalogManager.getSampleManager().getIds(params.sample, studyStr, sessionId);
+
+                Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), ids.getResourceIds());
+                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
+                QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(ids.getStudyId(), query, options, sessionId);
+
+                Set<Long> individualSet = sampleQueryResult.getResult().stream().map(sample -> sample.getIndividual().getId())
+                        .collect(Collectors.toSet());
+                params.individual = StringUtils.join(individualSet, ",");
+
+                // I do this to make faster the search of the studyId when looking for the individuals
+                studyStr = Long.toString(ids.getStudyId());
+            }
+
+            return createOkResponse(catalogManager.updateIndividualAcl(params.individual, studyStr, memberId, params.add,
                     params.remove, params.set, params.propagate, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);

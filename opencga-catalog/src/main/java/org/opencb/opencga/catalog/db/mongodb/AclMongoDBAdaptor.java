@@ -198,6 +198,15 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
     }
 
     @Override
+    public List<List<T>> getAcl(List<Long> resourceIds, List<String> members) {
+        List<List<T>> retList = new ArrayList<>(resourceIds.size());
+        for (Long resourceId : resourceIds) {
+            retList.add(getAcl(resourceId, members));
+        }
+        return retList;
+    }
+
+    @Override
     public void removeAcl(long resourceId, String member) throws CatalogDBException {
         Document query = new Document()
                 .append(PRIVATE_ID, resourceId)
@@ -237,6 +246,42 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
 
         logger.debug("Set Acl for member {}: {}", member, StringUtils.join(permissions, ","));
         return getAcl(resourceId, Arrays.asList(member)).get(0);
+    }
+
+    @Override
+    public void setAclsToMembers(List<Long> resourceIds, List<String> members, List<String> permissions) throws CatalogDBException {
+        for (String member : members) {
+            logger.debug("Setting ACLs for {}", member);
+
+            Document query = new Document()
+                    .append("$isolated", 1)
+                    .append(PRIVATE_ID, new Document("$in", resourceIds))
+                    .append(QueryParams.ACL_MEMBER.key(), member);
+            Document update = new Document("$set", new Document("acl.$.permissions", permissions));
+
+            logger.debug("Set Acls (set): Query {}, Push {}",
+                    query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            QueryResult<UpdateResult> queryResult = collection.update(query, update, new QueryOptions("multi", true));
+            logger.debug("{} out of {} acls added to {}", queryResult.first().getModifiedCount(), queryResult.first().getMatchedCount(),
+                    member);
+
+            // Try to do the same but only for resources where the member was not given any permissions
+            query.put(QueryParams.ACL_MEMBER.key(), new Document("$ne", member));
+
+            // Create the ACL entry
+            Document aclEntry = new Document()
+                    .append(QueryParams.MEMBER.key(), member)
+                    .append(QueryParams.PERMISSIONS.key(), permissions);
+            update = new Document("$push", new Document(QueryParams.ACL.key(), aclEntry));
+            logger.debug("Set Acls (Push): Query {}, Push {}",
+                    query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+            queryResult = collection.update(query, update, new QueryOptions("multi", true));
+            logger.debug("{} out of {} acls created for {}", queryResult.first().getModifiedCount(), queryResult.first().getMatchedCount(),
+                    member);
+        }
     }
 
     @Override
