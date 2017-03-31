@@ -34,7 +34,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.CellBaseConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -221,18 +220,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     public static Logger getLog() {
         return logger;
-    }
-
-    @Override
-    public void setDataWriter(DataWriter dataWriter) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public QueryResult insert(List<Variant> variants, String studyName, QueryOptions options) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -536,19 +523,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         } catch (SQLException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @Override
-    public QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    @Deprecated
-    public QueryResult addAnnotations(List<org.opencb.biodata.models.variant.avro.VariantAnnotation> variantAnnotations,
-                                      QueryOptions queryOptions) {
-        return updateAnnotations(variantAnnotations, queryOptions);
     }
 
     @Override

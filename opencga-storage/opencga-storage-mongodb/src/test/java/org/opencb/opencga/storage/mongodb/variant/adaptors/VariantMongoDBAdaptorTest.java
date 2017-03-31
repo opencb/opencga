@@ -103,7 +103,7 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements M
         query = new Query(VariantQueryParam.CHROMOSOME.key(), "1");
         query.put(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId());
         long numVariantsChr1 = dbAdaptor.count(query).first();
-        dbAdaptor.deleteAnnotation("", new Query(VariantQueryParam.CHROMOSOME.key(), "1"), new QueryOptions());
+        ((VariantMongoDBAdaptor) dbAdaptor).deleteAnnotation("", new Query(VariantQueryParam.CHROMOSOME.key(), "1"), new QueryOptions());
 
         query = new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
         query.put(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId());

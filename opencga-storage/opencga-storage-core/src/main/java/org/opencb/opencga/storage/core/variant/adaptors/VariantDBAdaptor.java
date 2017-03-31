@@ -24,7 +24,6 @@ import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
@@ -42,15 +41,6 @@ import java.util.Map;
 public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
 
     /**
-     * This method sets a data writer object for data serialization. When used no data will be return in
-     * QueryResult object but written into the writer.
-     *
-     * @param dataWriter Deprecated param
-     */
-    @Deprecated
-    default void setDataWriter(DataWriter dataWriter) {}
-
-    /**
      * This method inserts Variants into the given Study. If the Study already exists then it just adds the new Sample
      * genotypes, also new variants are inserted. If it is a new Study then Sample genotypes are added to the new Study.
      *
@@ -59,7 +49,10 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param options   Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
      * @return A QueryResult with the number of inserted variants
      */
-    QueryResult insert(List<Variant> variants, String studyName, QueryOptions options);
+    @Deprecated
+    default QueryResult insert(List<Variant> variants, String studyName, QueryOptions options) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Delete all the variants from the database resulting of executing the query.
@@ -68,6 +61,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
      * @return A QueryResult with the number of deleted variants
      */
+    @Deprecated
     QueryResult delete(Query query, QueryOptions options);
 
     /**
@@ -78,6 +72,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param options     Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
      * @return A QueryResult with a list with all the samples deleted
      */
+    @Deprecated
     QueryResult deleteSamples(String studyName, List<String> sampleNames, QueryOptions options);
 
     /**
@@ -88,6 +83,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param options   Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
      * @return A QueryResult with the file deleted
      */
+    @Deprecated
     QueryResult deleteFile(String studyName, String fileName, QueryOptions options);
 
     /**
@@ -97,6 +93,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param options   Query modifiers, accepted values are: purge
      * @return A QueryResult with the study deleted
      */
+    @Deprecated
     QueryResult deleteStudy(String studyName, QueryOptions options);
 
 
@@ -201,9 +198,6 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
 
     QueryResult deleteStats(String studyName, String cohortName, QueryOptions options);
 
-    @Deprecated
-    QueryResult addAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
-
     QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
 
     /**
@@ -217,10 +211,6 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      */
     QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, QueryOptions options);
 
-    @Deprecated
-    QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions);
-
-
     VariantSourceDBAdaptor getVariantSourceDBAdaptor();
 
     StudyConfigurationManager getStudyConfigurationManager();
@@ -230,84 +220,4 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
     CellBaseClient getCellBaseClient();
 
     void close() throws IOException;
-
-
-    /**
-     * Given a genomic region, it retrieves a set of variants and, optionally, all the information
-     * about their samples, effects and statistics. These optional arguments are specified in the "options" dictionary,
-     * with the keys (values must be set to true): "samples", "effects" and "stats", respectively.
-     *
-     * @param options Optional arguments
-     * @return A QueryResult containing a set of variants and other optional information
-     */
-    @Deprecated
-    default QueryResult<Variant> getAllVariants(QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    default QueryResult<Variant> getVariantById(String id, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    default List<QueryResult<Variant>> getAllVariantsByIdList(List<String> idList, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Given a genomic region, it retrieves a set of variants and, optionally, all the information
-     * about their samples, effects and statistics. These optional arguments are specified in the "options" dictionary,
-     * with the keys (values must be set to true): "samples", "effects" and "stats", respectively.
-     *
-     * @param region  The region where variants must be searched
-     * @param options Optional arguments
-     * @return A QueryResult containing a set of variants and other optional information
-     */
-    @Deprecated
-    default QueryResult<Variant> getAllVariantsByRegion(Region region, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    default List<QueryResult<Variant>> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    default QueryResult getVariantFrequencyByRegion(Region region, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    default QueryResult groupBy(String field, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    default VariantDBIterator iterator(QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    default QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, int studyId, QueryOptions queryOptions) {
-        throw new UnsupportedOperationException();
-    }
-
-//    @Deprecated
-//    QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
-
-//    @Deprecated
-//    QueryResult getAllVariantsByRegionAndStudies(Region region, List<String> studyIds, QueryOptions options);
-//    @Deprecated
-//    QueryResult getAllVariantsByGene(String geneName, QueryOptions options);
-//    @Deprecated
-//    QueryResult getMostAffectedGenes(int numGenes, QueryOptions options);
-//    @Deprecated
-//    QueryResult getLeastAffectedGenes(int numGenes, QueryOptions options);
-//    @Deprecated
-//    QueryResult getTopConsequenceTypes(int numConsequenceTypes, QueryOptions options);
-//    @Deprecated
-//    QueryResult getBottomConsequenceTypes(int numConsequenceTypes, QueryOptions options);
-
 }

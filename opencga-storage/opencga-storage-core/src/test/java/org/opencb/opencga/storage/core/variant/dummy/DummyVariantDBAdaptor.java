@@ -184,11 +184,6 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     // Unsupported methods
 
     @Override
-    public QueryResult insert(List<Variant> variants, String studyName, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public QueryResult delete(Query query, QueryOptions options) {
         throw new UnsupportedOperationException();
     }
@@ -215,17 +210,6 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult deleteStats(String studyName, String cohortName, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    @Deprecated
-    public QueryResult addAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions) {
         throw new UnsupportedOperationException();
     }
 
