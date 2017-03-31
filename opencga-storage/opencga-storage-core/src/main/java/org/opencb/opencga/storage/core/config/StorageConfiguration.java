@@ -31,7 +31,7 @@ import java.util.List;
 /**
  * Created by imedina on 30/04/15.
  */
-@JsonIgnoreProperties("storageEngine")
+@JsonIgnoreProperties({"storageEngine", "studyMetadataManager"})
 public class StorageConfiguration {
 
     private String defaultStorageEngineId;
