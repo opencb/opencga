@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.search.solr;
 
+import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -345,13 +346,30 @@ public class SolrQueryParserTest {
         executeQuery(query, queryOptions);
     }
 
+    public void parseAnnot() {
+        QueryOptions queryOptions = new QueryOptions();
 
-  //  @Test
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_XREF.key(), "RIPK2,NCF4");
+
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+//    http://bioinfodev.hpc.cam.ac.uk/hgva-1.0.0-facet/webservices/rest/v1/analysis/variant/query?timeout=60000&summary=true&studies=reference_grch37%3A1kG_phase3&annot-xref=RIPK2%2CNCF4&annot-ct=missense_variant&exclude=studies&limit=100&skip=0
+
+
+
+    @Test
     public void testParsing() {
         QueryOptions queryOptions = new QueryOptions();
         Query query = new Query();
 //        executeQuery(query, queryOptions);
 
+        parseAnnot();
+/*
         parseSiftMissing();
 
         parsePhastCons();
@@ -380,7 +398,7 @@ public class SolrQueryParserTest {
         parseRegionChromosome();
         parseRegionChromosomeStart();
         parseRegionChromosomeStartEnd();
-
+        */
 /*
         parseXref();
         parsePhylop();
