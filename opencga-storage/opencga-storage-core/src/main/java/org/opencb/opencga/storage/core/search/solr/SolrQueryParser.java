@@ -166,24 +166,29 @@ public class SolrQueryParser {
         // type (t)
         String key = VariantQueryParams.STUDIES.key();
         if (isValidParam(query, VariantQueryParams.STUDIES)) {
-            String value = query.getString(key);
-            VariantDBAdaptorUtils.QueryOperation op = checkOperator(value);
-            Set<Integer> studyIds = new HashSet<>(variantDBAdaptorUtils.getStudyIds(splitValue(value, op), queryOptions));
-            List<String> studyNames = new ArrayList<>(studyIds.size());
-            Map<String, Integer> map = variantDBAdaptorUtils.getStudyConfigurationManager().getStudies(null);
-            if (map != null && map.size() > 1) {
-                map.forEach((name, id) -> {
-                    if (studyIds.contains(id)) {
-                        String[] s = name.split(":");
-                        studyNames.add(s[s.length - 1]);
-                    }
-                });
+            try {
+                String value = query.getString(key);
+                VariantDBAdaptorUtils.QueryOperation op = checkOperator(value);
+                Set<Integer> studyIds = new HashSet<>(variantDBAdaptorUtils.getStudyIds(splitValue(value, op), queryOptions));
+                List<String> studyNames = new ArrayList<>(studyIds.size());
+                Map<String, Integer> map = variantDBAdaptorUtils.getStudyConfigurationManager().getStudies(null);
+                if (map != null && map.size() > 1) {
+                    map.forEach((name, id) -> {
+                        if (studyIds.contains(id)) {
+                            String[] s = name.split(":");
+                            studyNames.add(s[s.length - 1]);
+                        }
+                    });
 
-                if (op == null || op == VariantDBAdaptorUtils.QueryOperation.OR) {
-                    filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ",")));
-                } else {
-                    filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ";")));
+                    if (op == null || op == VariantDBAdaptorUtils.QueryOperation.OR) {
+                        filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ",")));
+                    } else {
+                        filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ";")));
+                    }
                 }
+            } catch (NullPointerException e) {
+                logger.error(e.getMessage());
+                e.printStackTrace();
             }
         }
 
