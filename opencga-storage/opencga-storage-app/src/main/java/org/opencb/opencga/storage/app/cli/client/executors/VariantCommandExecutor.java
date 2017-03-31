@@ -46,6 +46,7 @@ import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.search.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -456,8 +457,7 @@ public class VariantCommandExecutor extends CommandExecutor {
          */
         URI outputUri = UriUtils.createUri(statsVariantsCommandOptions.fileName == null ? "" : statsVariantsCommandOptions.fileName);
         URI directoryUri = outputUri.resolve(".");
-        String filename = outputUri.equals(directoryUri) ? VariantStorageEngine.buildFilename(studyConfiguration.getStudyName(),
-                Integer.parseInt(statsVariantsCommandOptions.fileId))
+        String filename = outputUri.equals(directoryUri) ? VariantStoragePipeline.buildFilename(studyConfiguration.getStudyName(), Integer.parseInt(statsVariantsCommandOptions.fileId))
                 : Paths.get(outputUri.getPath()).getFileName().toString();
 //        assertDirectoryExists(directoryUri);
         DefaultVariantStatisticsManager variantStatisticsManager = new DefaultVariantStatisticsManager(dbAdaptor);

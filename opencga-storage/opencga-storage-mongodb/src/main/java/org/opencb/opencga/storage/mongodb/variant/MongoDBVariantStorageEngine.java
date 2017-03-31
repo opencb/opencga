@@ -16,24 +16,36 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
+import com.google.common.base.Throwables;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.log4j.Level;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.cellbase.client.config.ClientConfiguration;
+import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.core.common.MemoryUsageMonitor;
+import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
@@ -43,11 +55,17 @@ import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor
 import org.opencb.opencga.storage.mongodb.variant.io.db.VariantMongoDBAnnotationDBWriter;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoVariantImporter;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.FILES;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLES;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.checkOperator;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isValidParam;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.splitValue;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 
 /**
@@ -372,6 +390,140 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             } catch (UnknownHostException e) {
                 throw new StorageEngineException("Unable to build MongoStorageConfigurationManager", e);
             }
+        }
+    }
+
+    @Override
+    public VariantQueryResult<Variant> get(String dbName, Query query, QueryOptions options) throws StorageEngineException {
+        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
+        // TODO: Use CacheManager ?
+        if (options.getBoolean("summary")
+                || !query.containsKey(VariantQueryParam.FILES.key())
+                && !query.containsKey(VariantQueryParam.FILTER.key())
+                && !query.containsKey(VariantQueryParam.GENOTYPE.key())
+                && !query.containsKey(VariantQueryParam.SAMPLES.key())
+                && !returnedFields.contains(VariantField.STUDIES_FILES)
+                && !returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)
+                && searchActiveAndAlive(dbName)) {
+            try {
+                return variantSearchManager.query(dbName, query, options);
+            } catch (IOException | VariantSearchException e) {
+                throw Throwables.propagate(e);
+            }
+        } else {
+            VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(dbName);
+            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
+            parseQuery(query, studyConfigurationManager);
+            setDefaultTimeout(options);
+            return dbAdaptor.get(query, options);
+        }
+    }
+
+    @Override
+    public VariantDBIterator iterator(String dbName, Query query, QueryOptions options) throws StorageEngineException {
+        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
+        if (options.getBoolean("summary")
+                || !query.containsKey(VariantQueryParam.FILES.key())
+                && !query.containsKey(VariantQueryParam.FILTER.key())
+                && !query.containsKey(VariantQueryParam.GENOTYPE.key())
+                && !query.containsKey(VariantQueryParam.SAMPLES.key())
+                && !returnedFields.contains(VariantField.STUDIES_FILES)
+                && !returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)
+                && searchActiveAndAlive(dbName)) {
+            try {
+                return variantSearchManager.iterator(dbName, query, options);
+            } catch (IOException | VariantSearchException e) {
+                throw Throwables.propagate(e);
+            }
+        } else {
+            VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(dbName);
+            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
+            parseQuery(query, studyConfigurationManager);
+//            setDefaultTimeout(options);
+            return dbAdaptor.iterator(query, options);
+        }
+    }
+
+    @Override
+    public QueryResult<Long> count(String dbName, Query query) throws StorageEngineException {
+        if (query.containsKey(VariantQueryParam.FILES.key())
+                || query.containsKey(VariantQueryParam.FILTER.key())
+                || query.containsKey(VariantQueryParam.GENOTYPE.key())
+                || query.containsKey(VariantQueryParam.SAMPLES.key())
+                || !searchActiveAndAlive(dbName)) {
+            VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(dbName);
+            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
+            parseQuery(query, studyConfigurationManager);
+            return dbAdaptor.count(query);
+        } else {
+            try {
+                StopWatch watch = StopWatch.createStarted();
+                long count = variantSearchManager.query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 1)).getNumTotalResults();
+                int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
+                return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
+            } catch (IOException | VariantSearchException e) {
+                throw Throwables.propagate(e);
+            }
+        }
+    }
+
+    private boolean searchActiveAndAlive(String dbName) {
+        return configuration.getSearch().getActive() && variantSearchManager != null && variantSearchManager.isAlive(dbName);
+    }
+
+    public void parseQuery(Query query, StudyConfigurationManager studyConfigurationManager) {
+        String species = getOptions().getString(VariantAnnotationManager.SPECIES);
+        String assembly = getOptions().getString(VariantAnnotationManager.ASSEMBLY);
+        List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());
+        if (!studyNames.isEmpty()) {
+            StudyConfiguration sc = studyConfigurationManager
+                    .getStudyConfiguration(studyNames.get(0), QueryOptions.empty()).first();
+            species = sc.getAttributes().getString(VariantAnnotationManager.SPECIES, species);
+            assembly= sc.getAttributes().getString(VariantAnnotationManager.ASSEMBLY, assembly);
+        }
+        ClientConfiguration clientConfiguration = configuration.getCellbase().toClientConfiguration();
+        if (StringUtils.isEmpty(species)) {
+            species = clientConfiguration.getDefaultSpecies();
+        }
+        species = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(species);
+        CellBaseUtils cellBaseUtils = new CellBaseUtils(new CellBaseClient(species, assembly, clientConfiguration));
+
+        if (isValidParam(query, VariantQueryParam.STUDIES)
+                && studyNames.size() == 1
+                && !isValidParam(query, FILES)
+                && !isValidParam(query, SAMPLES)) {
+            query.remove(VariantQueryParam.STUDIES.key());
+        }
+
+        if (isValidParam(query, VariantQueryParam.ANNOT_GO)) {
+            String value = query.getString(VariantQueryParam.ANNOT_GO.key());
+            // Check if comma separated of semi colon separated (AND or OR)
+            VariantQueryUtils.QueryOperation queryOperation = checkOperator(value);
+            // Split by comma or semi colon
+            List<String> goValues = splitValue(value, queryOperation);
+
+            if (queryOperation == VariantQueryUtils.QueryOperation.AND) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_GO, value, "Unimplemented AND operator");
+            }
+            query.remove(VariantQueryParam.ANNOT_GO.key());
+            List<String> genes = new ArrayList<>(query.getAsStringList(VariantQueryParam.GENE.key()));
+            genes.addAll(cellBaseUtils.getGenesByGo(goValues));
+            query.put(VariantQueryParam.GENE.key(), genes);
+        }
+        if (isValidParam(query, VariantQueryParam.ANNOT_EXPRESSION)) {
+            String value = query.getString(VariantQueryParam.ANNOT_EXPRESSION.key());
+            // Check if comma separated of semi colon separated (AND or OR)
+            VariantQueryUtils.QueryOperation queryOperation = checkOperator(value);
+            // Split by comma or semi colon
+            List<String> expressionValues = splitValue(value, queryOperation);
+
+            if (queryOperation == VariantQueryUtils.QueryOperation.AND) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_EXPRESSION, value, "Unimplemented AND operator");
+            }
+            query.remove(VariantQueryParam.ANNOT_EXPRESSION.key());
+            List<String> genes = new ArrayList<>(query.getAsStringList(VariantQueryParam.GENE.key()));
+            genes.addAll(cellBaseUtils.getGenesByExpression(expressionValues));
+            query.put(VariantQueryParam.GENE.key(), genes);
         }
     }
 

@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.mongodb.variant.adaptors;
 
-import com.google.common.base.Throwables;
 import com.mongodb.BasicDBList;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.FindIterable;
@@ -43,14 +42,11 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.core.results.VariantQueryResult;
-import org.opencb.opencga.storage.core.cache.CacheManager;
 import org.opencb.opencga.storage.core.config.CellBaseConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
-import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.search.VariantSearchManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -72,8 +68,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.MULTI;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.DEFAULT_TIMEOUT;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MAX_TIMEOUT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getReturnedFiles;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getSamplesMetadata;
@@ -99,9 +93,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     private StudyConfigurationManager studyConfigurationManager;
     private final ObjectMap configuration;
-    private CacheManager cacheManager;
-
-    private VariantSearchManager variantSearchManager;
+//    private CacheManager cacheManager;
 
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBAdaptor.class);
 
@@ -146,9 +138,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
         cellBaseClient = new CellBaseClient(AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(species), assembly, clientConfiguration);
         CellBaseUtils cellBaseUtils = new CellBaseUtils(cellBaseClient);
-        queryParser = new VariantMongoDBQueryParser(studyConfigurationManager, cellBaseUtils);
-        this.cacheManager = new CacheManager(storageConfiguration);
-        this.variantSearchManager = new VariantSearchManager(studyConfigurationManager, cellBaseUtils, storageConfiguration);
+        queryParser = new VariantMongoDBQueryParser(studyConfigurationManager);
+//        this.cacheManager = new CacheManager(storageConfiguration);
         NUMBER_INSTANCES.incrementAndGet();
     }
 
@@ -226,47 +217,47 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
 
-        logger.info("******************** Summary => " + options.getBoolean("summary"));
-
-        VariantQueryResult<Variant> queryResult;
-
-        if (options.getBoolean("cache") && cacheManager.isTypeAllowed("var")) {
-            List<Integer> studyIds = studyConfigurationManager.getStudyIds(query.getAsList(STUDIES.key()), options);
-            // TODO : ONLY USING ONE STUDY ID ?
-            String key = cacheManager.createKey(studyIds.get(0).toString(), "var", query, options);
-            queryResult = new VariantQueryResult<>(cacheManager.get(key), null);
-            if (queryResult.getResult() == null || queryResult.getResult().size() == 0) {
-                queryResult = getVariantQueryResult(query, options);
-                cacheManager.set(key, query, queryResult);
-            }
-        } else {
-            if (options.getBoolean("summary", false) && storageConfiguration.getSearch().getActive()
-                    && variantSearchManager != null && variantSearchManager.isAlive(credentials.getMongoDbName())) {
-                try {
-                    queryResult = variantSearchManager.query(credentials.getMongoDbName(), query, options);
-                } catch (IOException | VariantSearchException e) {
-                    throw Throwables.propagate(e);
-                }
-            } else {
-                queryResult = getVariantQueryResult(query, options);
-            }
-        }
-        return queryResult;
-    }
-
-    private VariantQueryResult<Variant> getVariantQueryResult(Query query, QueryOptions options) {
+//        logger.info("******************** Summary => " + options.getBoolean("summary"));
+//
+//        VariantQueryResult<Variant> queryResult;
+//
+//        if (options.getBoolean("cache") && cacheManager.isTypeAllowed("var")) {
+//            List<Integer> studyIds = studyConfigurationManager.getStudyIds(query.getAsList(STUDIES.key()), options);
+//            // TODO : ONLY USING ONE STUDY ID ?
+//            String key = cacheManager.createKey(studyIds.get(0).toString(), "var", query, options);
+//            queryResult = new VariantQueryResult<>(cacheManager.get(key), null);
+//            if (queryResult.getResult() == null || queryResult.getResult().size() == 0) {
+//                queryResult = getVariantQueryResult(query, options);
+//                cacheManager.set(key, query, queryResult);
+//            }
+//        } else {
+//            if (options.getBoolean("summary", false) && storageConfiguration.getSearch().getActive()
+//                    && variantSearchManager != null && variantSearchManager.isAlive(credentials.getMongoDbName())) {
+//                try {
+//                    queryResult = variantSearchManager.query(credentials.getMongoDbName(), query, options);
+//                } catch (IOException | VariantSearchException e) {
+//                    throw Throwables.propagate(e);
+//                }
+//            } else {
+//                queryResult = getVariantQueryResult(query, options);
+//            }
+//        }
+//        return queryResult;
+//    }
+//
+//    private VariantQueryResult<Variant> getVariantQueryResult(Query query, QueryOptions options) {
         Document mongoQuery = queryParser.parseQuery(query);
         Document projection = queryParser.createProjection(query, options);
 //        logger.debug("Query to be executed: '{}'", mongoQuery.toJson(new JsonWriterSettings(JsonMode.SHELL, false)));
         options.putIfAbsent(QueryOptions.SKIP_COUNT, true);
 
-        int defaultTimeout = configuration.getInt(DEFAULT_TIMEOUT.key(), DEFAULT_TIMEOUT.defaultValue());
-        int maxTimeout = configuration.getInt(MAX_TIMEOUT.key(), MAX_TIMEOUT.defaultValue());
-        int timeout = options.getInt(QueryOptions.TIMEOUT, defaultTimeout);
-        if (timeout > maxTimeout || timeout < 0) {
-            timeout = maxTimeout;
-        }
-        options.put(QueryOptions.TIMEOUT, timeout);
+//        int defaultTimeout = configuration.getInt(DEFAULT_TIMEOUT.key(), DEFAULT_TIMEOUT.defaultValue());
+//        int maxTimeout = configuration.getInt(MAX_TIMEOUT.key(), MAX_TIMEOUT.defaultValue());
+//        int timeout = options.getInt(QueryOptions.TIMEOUT, defaultTimeout);
+//        if (timeout > maxTimeout || timeout < 0) {
+//            timeout = maxTimeout;
+//        }
+//        options.put(QueryOptions.TIMEOUT, timeout);
 
         // FIXME: MONGO_MIGRATION
 //        if (options.getBoolean("mongodb.explain", false)) {
@@ -399,32 +390,30 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             query = new Query();
         }
 
-        if (options.getBoolean("summary", false) && storageConfiguration.getSearch().getActive()
-                && variantSearchManager != null && variantSearchManager.isAlive(credentials.getMongoDbName())) {
-            // Solr iterator
-            try {
-                return variantSearchManager.iterator(credentials.getMongoDbName(), query, options);
-            } catch (VariantSearchException | IOException e) {
-                e.printStackTrace();
-            }
-            //throw new UnsupportedOperationException("Summary option (i.e., Solr search) not implemented yet!!");
-        } else {
-            Document mongoQuery = queryParser.parseQuery(query);
-            Document projection = queryParser.createProjection(query, options);
-            DocumentToVariantConverter converter = getDocumentToVariantConverter(query, options);
-            options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
+//        if (options.getBoolean("summary", false) && storageConfiguration.getSearch().getActive()
+//                && variantSearchManager != null && variantSearchManager.isAlive(credentials.getMongoDbName())) {
+//            // Solr iterator
+//            try {
+//                return variantSearchManager.iterator(credentials.getMongoDbName(), query, options);
+//            } catch (VariantSearchException | IOException e) {
+//                e.printStackTrace();
+//            }
+//            //throw new UnsupportedOperationException("Summary option (i.e., Solr search) not implemented yet!!");
+//        } else {
+        Document mongoQuery = queryParser.parseQuery(query);
+        Document projection = queryParser.createProjection(query, options);
+        DocumentToVariantConverter converter = getDocumentToVariantConverter(query, options);
+        options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
 
-            // Short unsorted queries with timeout or limit don't need the persistent cursor.
-            if (options.containsKey(QueryOptions.TIMEOUT)
-                    || options.containsKey(QueryOptions.LIMIT)
-                    || !options.containsKey(QueryOptions.SORT)) {
-                FindIterable<Document> dbCursor = variantsCollection.nativeQuery().find(mongoQuery, projection, options);
-                return new VariantMongoDBIterator(dbCursor, converter);
-            } else {
-                return VariantMongoDBIterator.persistentIterator(variantsCollection, mongoQuery, projection, options, converter);
-            }
+        // Short unsorted queries with timeout or limit don't need the persistent cursor.
+        if (options.containsKey(QueryOptions.TIMEOUT)
+                || options.containsKey(QueryOptions.LIMIT)
+                || !options.containsKey(QueryOptions.SORT)) {
+            FindIterable<Document> dbCursor = variantsCollection.nativeQuery().find(mongoQuery, projection, options);
+            return new VariantMongoDBIterator(dbCursor, converter);
+        } else {
+            return VariantMongoDBIterator.persistentIterator(variantsCollection, mongoQuery, projection, options, converter);
         }
-        return null;
     }
 
     @Override
@@ -821,7 +810,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             mongoManager.close();
         }
         studyConfigurationManager.close();
-        cacheManager.close();
         NUMBER_INSTANCES.decrementAndGet();
     }
 
@@ -1071,8 +1059,4 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return loadedSampleIds;
     }
 
-    public VariantMongoDBAdaptor setVariantSearchManager(VariantSearchManager variantSearchManager) {
-        this.variantSearchManager = variantSearchManager;
-        return this;
-    }
 }

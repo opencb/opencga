@@ -16,13 +16,17 @@
 
 package org.opencb.opencga.storage.core.variant;
 
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -54,8 +58,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
 import java.util.*;
+
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.DEFAULT_TIMEOUT;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MAX_TIMEOUT;
 
 /**
  * Created by imedina on 13/08/14.
@@ -386,7 +392,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     logger.debug("Cohort \"{}\":{} was already calculated. Just update stats.", StudyEntry.DEFAULT_COHORT, defaultCohortId);
                     statsOptions.append(Options.UPDATE_STATS.key(), true);
                 }
-                URI statsOutputUri = output.resolve(buildFilename(studyConfiguration.getStudyName(), fileIds.get(0))
+                URI statsOutputUri = output.resolve(VariantStoragePipeline.buildFilename(studyConfiguration.getStudyName(), fileIds.get(0))
                         + "." + TimeUtils.getTime());
                 statsOptions.put(DefaultVariantStatisticsManager.OUTPUT, statsOutputUri.toString());
 
@@ -478,22 +484,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return new StudyConfigurationManager(new FileStudyConfigurationAdaptor());
     }
 
-    /**
-     * @param input  Input variant file (avro, json, vcf)
-     * @param source VariantSource to fill. Can be null
-     * @return Read VariantSource
-     * @throws StorageEngineException if the format is not valid or there is an error reading
-     * @deprecated use {@link VariantReaderUtils#readVariantSource(java.net.URI)}
-     */
-    @Deprecated
-    public static VariantSource readVariantSource(Path input, VariantSource source) throws StorageEngineException {
-        return VariantReaderUtils.readVariantSource(input, source);
-    }
-
-    public static String buildFilename(String studyName, int fileId) {
-        return VariantStoragePipeline.buildFilename(studyName, fileId);
-    }
-
     public VariantSearchManager getVariantSearchManager() {
         return variantSearchManager;
     }
@@ -502,4 +492,87 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         this.variantSearchManager = variantSearchManager;
         return this;
     }
+
+    public VariantQueryResult<Variant> get(String dbName, Query query, QueryOptions options) throws StorageEngineException {
+        setDefaultTimeout(options);
+        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
+            return dbAdaptor.get(query, options);
+        } catch (IOException e) {
+            throw new StorageEngineException("Error closing dbAdaptor", e);
+        }
+    }
+
+    protected void setDefaultTimeout(QueryOptions options) {
+        int defaultTimeout = getOptions().getInt(DEFAULT_TIMEOUT.key(), DEFAULT_TIMEOUT.defaultValue());
+        int maxTimeout = getOptions().getInt(MAX_TIMEOUT.key(), MAX_TIMEOUT.defaultValue());
+        int timeout = options.getInt(QueryOptions.TIMEOUT, defaultTimeout);
+        if (timeout > maxTimeout || timeout < 0) {
+            timeout = maxTimeout;
+        }
+        options.put(QueryOptions.TIMEOUT, timeout);
+    }
+
+    public VariantDBIterator iterator(String dbName, Query query, QueryOptions options) throws StorageEngineException {
+        VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName);
+        VariantDBIterator iterator = dbAdaptor.iterator(query, options);
+        iterator.addCloseable(dbAdaptor);
+        return iterator;
+    }
+
+    public QueryResult distinct(String dbName, Query query, String field) throws StorageEngineException {
+        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
+            return dbAdaptor.distinct(query, field);
+        } catch (IOException e) {
+            throw new StorageEngineException("Error closing dbAdaptor", e);
+        }
+    }
+
+    public QueryResult rank(String dbName, Query query, String field, int numResults, boolean asc) throws StorageEngineException {
+        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
+            return dbAdaptor.rank(query, field, numResults, asc);
+        } catch (IOException e) {
+            throw new StorageEngineException("Error closing dbAdaptor", e);
+        }
+    }
+
+    public QueryResult getFrequency(String dbName, Query query, Region region, int regionIntervalSize) throws StorageEngineException {
+        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
+            return dbAdaptor.getFrequency(query, region, regionIntervalSize);
+        } catch (IOException e) {
+            throw new StorageEngineException("Error closing dbAdaptor", e);
+        }
+    }
+
+    public QueryResult groupBy(String dbName, Query query, String field, QueryOptions options) throws StorageEngineException {
+        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
+            return dbAdaptor.groupBy(query, field, options);
+        } catch (IOException e) {
+            throw new StorageEngineException("Error closing dbAdaptor", e);
+        }
+    }
+
+    public QueryResult groupBy(String dbName, Query query, List<String> fields, QueryOptions options) throws StorageEngineException {
+        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
+            return dbAdaptor.groupBy(query, fields, options);
+        } catch (IOException e) {
+            throw new StorageEngineException("Error closing dbAdaptor", e);
+        }
+    }
+
+    public QueryResult<Long> count(String dbName, Query query) throws StorageEngineException {
+        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
+            return dbAdaptor.count(query);
+        } catch (IOException e) {
+            throw new StorageEngineException("Error closing dbAdaptor", e);
+        }
+    }
+
+    public QueryResult<Long> aproxCount(String dbName, Query query, QueryOptions options) throws StorageEngineException {
+        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
+            return dbAdaptor.count(query);
+        } catch (IOException e) {
+            throw new StorageEngineException("Error closing dbAdaptor", e);
+        }
+    }
+
 }

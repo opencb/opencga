@@ -344,12 +344,10 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 
         //Check generated stats files
         assertEquals(2504, studyConfiguration.getCohorts().get(defaultCohortId).size());
-        File[] statsFile1 = getTmpRootDir().toFile().listFiles((dir, name1) ->
-                name1.startsWith(VariantStorageEngine.buildFilename(studyConfiguration.getStudyName(), 5))
-                        && name1.contains("variants"));
-        File[] statsFile2 = getTmpRootDir().toFile().listFiles((dir, name1) ->
-                name1.startsWith(VariantStorageEngine.buildFilename(studyConfiguration.getStudyName(), 6))
-                        && name1.contains("variants"));
+        File[] statsFile1 = getTmpRootDir().toFile().listFiles((dir, name1) -> name1.startsWith(VariantStoragePipeline.buildFilename(studyConfiguration.getStudyName(), 5))
+                && name1.contains("variants"));
+        File[] statsFile2 = getTmpRootDir().toFile().listFiles((dir, name1) -> name1.startsWith(VariantStoragePipeline.buildFilename(studyConfiguration.getStudyName(), 6))
+                && name1.contains("variants"));
         assertEquals(1, statsFile1.length);
         assertEquals(1, statsFile2.length);
 
