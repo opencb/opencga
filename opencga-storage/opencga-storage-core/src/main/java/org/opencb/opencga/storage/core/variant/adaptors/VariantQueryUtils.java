@@ -570,6 +570,14 @@ public class VariantQueryUtils {
         return list;
     }
 
+    /**
+     * This method split a typical key-op-value param such as 'sift<=0.2' in an array ["sift", "<=", "0.2"].
+     * In case of not having a key, first element will be empty
+     * In case of not matching with {@link #OPERATION_PATTERN}, key will be null and will use the default operator "="
+     *
+     * @param value The key-op-value parameter to be split
+     * @return An array with 3 positions for the key, operator and value
+     */
     public static String[] splitOperator(String value) {
         Matcher matcher = OPERATION_PATTERN.matcher(value);
         String key;
