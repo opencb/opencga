@@ -116,7 +116,7 @@ public class SolrQueryParser {
             if (genes.size() > 0) {
                 // consequence types and genes
                 String or = buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes);
-                if (or.isEmpty()) {
+                if (xrefs.size() == 0 && regions.size() == 0) {
                     // no xrefs or regions: genes AND cts
                     filterList.add(buildGeneAndCt(genes, consequenceTypes));
                 } else {
@@ -290,7 +290,7 @@ public class SolrQueryParser {
             return false;
         }
         if (xref.indexOf(":") == -1) {
-            return false;
+            return true;
         }
         return true;
     }
