@@ -121,7 +121,7 @@ public class SolrQueryParser {
                     filterList.add(buildGeneAndCt(genes, consequenceTypes));
                 } else {
                     // otherwise: [((xrefs OR regions) AND cts) OR (genes AND cts)]
-                    filterList.add(or + " OR (" + buildGeneAndCt(genes, consequenceTypes) + ")");
+                    filterList.add("(" + or + ") OR (" + buildGeneAndCt(genes, consequenceTypes) + ")");
                 }
             } else {
                 // consequence types but no genes: (xrefs OR regions) AND cts
@@ -675,13 +675,13 @@ public class SolrQueryParser {
      */
     private String buildXrefOrRegionAndConsequenceType(List<String> xrefs, List<Region> regions, List<String> cts) {
         String orCts = buildConsequenceTypeOr(cts);
-        String orXrefs = buildXrefOrGeneOrRegion(xrefs, null, regions);
-        if (orXrefs.isEmpty()) {
+        if (xrefs.size() == 0 && regions.size() == 0) {
             // consequences type but no xrefs, no genes, no regions
             // we must make an OR with all consequences types and add it to the "AND" filter list
             return orCts;
         } else {
-            return orXrefs + " AND (" + orCts + ")";
+            String orXrefs = buildXrefOrGeneOrRegion(xrefs, null, regions);
+            return "(" +  orXrefs + ") AND (" + orCts + ")";
         }
     }
 

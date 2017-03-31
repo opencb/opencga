@@ -350,7 +350,71 @@ public class ParseSolrQueryTest {
 
         Query query = new Query();
         query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
-        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
+        query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1,2");
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,coding_sequence_variant");
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_XREF.key(), "RIPK2,NCF4");
+
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+    public void parseAnnotCT1() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+
+        // consequence types and genes
+        // no xrefs or regions: genes AND cts
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,coding_sequence_variant");
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_XREF.key(), "RIPK2,NCF4");
+
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+    public void parseAnnotCT2() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+
+        // consequence types and genes and xrefs/regions
+        // otherwise: [((xrefs OR regions) AND cts) OR (genes AND cts)]
+
+        query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1,2");
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,coding_sequence_variant");
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_XREF.key(), "RIPK2,NCF4");
+
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+
+    public void parseAnnotCT3() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+
+        // consequence types but no genes: (xrefs OR regions) AND cts
+        // in this case, the resulting string will never be null, because there are some consequence types!!
+        query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1,2");
+        query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,coding_sequence_variant");
+
+        // execute
+        executeQuery(query, queryOptions);
+    }
+
+    public void parseAnnotCT4() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+
+        // no consequence types: (xrefs OR regions) but we must add "OR genes", i.e.: xrefs OR regions OR genes
+        // we must make an OR with xrefs, genes and regions and add it to the "AND" filter list
+        query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1,2");
         query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_XREF.key(), "RIPK2,NCF4");
 
         // execute
@@ -367,7 +431,10 @@ public class ParseSolrQueryTest {
         Query query = new Query();
 //        executeQuery(query, queryOptions);
 
-        parseAnnot();
+        parseAnnotCT1();
+        parseAnnotCT2();
+        parseAnnotCT3();
+        parseAnnotCT4();
 /*
         parseSiftMissing();
 
