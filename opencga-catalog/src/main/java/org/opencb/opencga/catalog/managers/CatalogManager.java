@@ -1110,11 +1110,12 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public List<QueryResult<IndividualAclEntry>> createIndividualAcls(String individualIdsStr, @Nullable String studyStr, String members,
-                                                                      String permissions, String sessionId) throws CatalogException {
+                                                                      String permissions, boolean propagate, String sessionId)
+            throws CatalogException {
         AbstractManager.MyResourceIds resource = individualManager.getIds(individualIdsStr, studyStr, sessionId);
 
         return authorizationManager.createIndividualAcls(resource, Arrays.asList(StringUtils.split(members, ",")),
-                Arrays.asList(StringUtils.split(permissions, ",")));
+                Arrays.asList(StringUtils.split(permissions, ",")), propagate);
     }
 
     public List<QueryResult<IndividualAclEntry>> removeIndividualAcl(String individualIdsStr, @Nullable String studyStr, String member,
@@ -1140,10 +1141,11 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<IndividualAclEntry> updateIndividualAcl(String individualIdStr, @Nullable String studyStr, String member,
                                                                @Nullable String addPermissions, @Nullable String removePermissions,
-                                                               @Nullable String setPermissions, String sessionId) throws CatalogException {
+                                                               @Nullable String setPermissions, boolean propagate, String sessionId)
+            throws CatalogException {
         AbstractManager.MyResourceId resource = individualManager.getId(individualIdStr, studyStr, sessionId);
         return authorizationManager.updateIndividualAcl(resource.getUser(), resource.getResourceId(), member, addPermissions,
-                removePermissions, setPermissions);
+                removePermissions, setPermissions, propagate);
     }
 
     /*

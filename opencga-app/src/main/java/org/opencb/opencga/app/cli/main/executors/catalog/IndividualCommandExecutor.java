@@ -31,6 +31,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
+import org.opencb.opencga.client.rest.catalog.IndividualClient;
+import org.opencb.opencga.client.rest.catalog.StudyClient;
 
 import java.io.IOException;
 
@@ -83,8 +85,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = aclCommandExecutor.acls(individualsCommandOptions.aclsCommandOptions, openCGAClient.getIndividualClient());
                 break;
             case "acl-create":
-                queryResponse = aclCommandExecutor.aclsCreate(individualsCommandOptions.aclsCreateCommandOptions,
-                        openCGAClient.getIndividualClient());
+                queryResponse = createAcl(individualsCommandOptions.aclsCreateCommandOptions, openCGAClient.getIndividualClient());
                 break;
             case "acl-member-delete":
                 queryResponse = aclCommandExecutor.aclMemberDelete(individualsCommandOptions.aclsMemberDeleteCommandOptions,
@@ -95,8 +96,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
                         openCGAClient.getIndividualClient());
                 break;
             case "acl-member-update":
-                queryResponse = aclCommandExecutor.aclMemberUpdate(individualsCommandOptions.aclsMemberUpdateCommandOptions,
-                        openCGAClient.getIndividualClient());
+                queryResponse = updateAcl(individualsCommandOptions.aclsMemberUpdateCommandOptions, openCGAClient.getIndividualClient());
                 break;
             case "annotation-sets-create":
                 queryResponse = annotationCommandExecutor.createAnnotationSet(individualsCommandOptions.annotationCreateCommandOptions,
@@ -197,7 +197,8 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Searching individuals");
 
         Query query = new Query();
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), resolveStudy(individualsCommandOptions.searchCommandOptions.study));
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(),
+                resolveStudy(individualsCommandOptions.searchCommandOptions.study));
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.searchCommandOptions.name);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.searchCommandOptions.fatherId);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.searchCommandOptions.motherId);
@@ -352,6 +353,29 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         options.putIfNotNull(QueryOptions.EXCLUDE, individualsCommandOptions.sampleCommandOptions.dataModelOptions.exclude);
 
         return openCGAClient.getSampleClient().search(query, options);
+    }
+
+    private QueryResponse createAcl(IndividualCommandOptions.AclsCreateCommandOptions aclsCreateCommandOptions,
+                                    IndividualClient individualClient) throws CatalogException, IOException {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty("study", aclsCreateCommandOptions.study);
+        params.putIfNotNull("permissions", aclsCreateCommandOptions.permissions);
+        params.put("propagate", aclsCreateCommandOptions.propagate);
+
+        return individualClient.createAcl(aclsCreateCommandOptions.id.replace("/", ":"), aclsCreateCommandOptions.members, params);
+    }
+
+    private QueryResponse updateAcl(IndividualCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions,
+                                    IndividualClient individualClient) throws CatalogException, IOException {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty("study", aclsMemberUpdateCommandOptions.study);
+        params.putIfNotNull(StudyClient.AclParams.ADD.key(), aclsMemberUpdateCommandOptions.addPermissions);
+        params.putIfNotNull(StudyClient.AclParams.REMOVE.key(), aclsMemberUpdateCommandOptions.removePermissions);
+        params.putIfNotNull(StudyClient.AclParams.SET.key(), aclsMemberUpdateCommandOptions.setPermissions);
+        params.put("propagate", aclsMemberUpdateCommandOptions.propagate);
+
+        return individualClient.updateAcl(aclsMemberUpdateCommandOptions.id.replace("/", ":"),
+                aclsMemberUpdateCommandOptions.memberId, params);
     }
 
 }

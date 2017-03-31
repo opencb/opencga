@@ -375,7 +375,7 @@ public interface AuthorizationManager {
     //------------------------- Individual ACL -----------------------------
 
     List<QueryResult<IndividualAclEntry>> createIndividualAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
-                                                              List<String> permissions) throws CatalogException;
+                                                               List<String> permissions, boolean propagate) throws CatalogException;
 
     /**
      * Return all the ACLs defined for the individual.
@@ -411,8 +411,8 @@ public interface AuthorizationManager {
     QueryResult<IndividualAclEntry> removeIndividualAcl(String userId, long individualId, String member) throws CatalogException;
 
     QueryResult<IndividualAclEntry> updateIndividualAcl(String userId, long individualId, String member, @Nullable String addPermissions,
-                                                        @Nullable String removePermissions, @Nullable String setPermissions)
-            throws CatalogException;
+                                                        @Nullable String removePermissions, @Nullable String setPermissions,
+                                                        boolean propagate) throws CatalogException;
 
 
     //------------------------- End of individual ACL ----------------------
