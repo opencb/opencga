@@ -506,6 +506,7 @@
                 <OPENCGA.STORAGE.CACHE.HOST>localhost:6379</OPENCGA.STORAGE.CACHE.HOST>
                 <OPENCGA.STORAGE.SEARCH.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.SEARCH.HOST>
                 <OPENCGA.STORAGE.STUDY_METADATA_MANAGER></OPENCGA.STORAGE.STUDY_METADATA_MANAGER>
+                <OPENCGA.STORAGE.SEARCH.HOST>http://bioinfodev.hpc.cam.ac.uk/solr/</OPENCGA.STORAGE.SEARCH.HOST>
 
                 <!-- Storage Variants general -->
                 <OPENCGA.STORAGE.VARIANT.DB.HOSTS>localhost:27017</OPENCGA.STORAGE.VARIANT.DB.HOSTS>
