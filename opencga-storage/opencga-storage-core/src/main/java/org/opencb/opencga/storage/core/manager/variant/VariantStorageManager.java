@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.manager.variant;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.converters.ga4gh.Ga4ghVariantConverter;
 import org.opencb.biodata.tools.variant.converters.ga4gh.factories.AvroGa4GhVariantFactory;
 import org.opencb.biodata.tools.variant.converters.ga4gh.factories.ProtoGa4GhVariantFactory;
@@ -31,10 +32,7 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.DataStore;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -43,6 +41,7 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.manager.StorageManager;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.manager.variant.operations.*;
+import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
@@ -53,6 +52,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.function.Function;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.ALTERNATE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.TYPE;
 
 public class VariantStorageManager extends StorageManager {
 
@@ -504,4 +507,54 @@ public class VariantStorageManager extends StorageManager {
     public void testConnection() throws StorageEngineException {
 
     }
+
+    public List<BeaconResponse> beacon(String beaconsStr, BeaconResponse.Query beaconQuery, String sessionId)
+            throws CatalogException, IOException, StorageEngineException {
+        if (beaconsStr.startsWith("[")) {
+            beaconsStr = beaconsStr.substring(1);
+        }
+        if (beaconsStr.endsWith("]")) {
+            beaconsStr = beaconsStr.substring(0, beaconsStr.length() - 1);
+        }
+
+        List<String> beaconsList = Arrays.asList(beaconsStr.split(","));
+
+        List<BeaconResponse.Beacon> beacons = new ArrayList<>(beaconsList.size());
+        for (String studyStr : beaconsList) {
+            beacons.add(new BeaconResponse.Beacon(studyStr, null, null, null));
+        }
+
+        List<BeaconResponse> responses = new ArrayList<>(beacons.size());
+
+        for (BeaconResponse.Beacon beacon : beacons) {
+            Query query = new Query();
+            query.put(STUDIES.key(), beacon.getId());
+            int position1based = beaconQuery.getPosition() + 1;
+            query.put(REGION.key(), new Region(beaconQuery.getChromosome(), position1based, position1based));
+            query.putIfNotEmpty(REFERENCE.key(), beaconQuery.getReference());
+            switch (beaconQuery.getAllele().toUpperCase()) {
+                case "D":
+                case "DEL":
+                    query.put(TYPE.key(), VariantType.DELETION);
+                    break;
+                case "I":
+                case "INS":
+                    query.put(TYPE.key(), VariantType.INSERTION);
+                    break;
+                default:
+                    query.put(ALTERNATE.key(), beaconQuery.getAllele());
+                    break;
+            }
+
+            Long count = count(query, sessionId).first();
+            if (count > 1) {
+                throw new VariantQueryException("Unexpected beacon count for query " + query + ". Got " + count + " results!");
+            }
+            BeaconResponse beaconResponse = new BeaconResponse(beacon, beaconQuery, count == 1, null);
+
+            responses.add(beaconResponse);
+        }
+        return responses;
+    }
+
 }

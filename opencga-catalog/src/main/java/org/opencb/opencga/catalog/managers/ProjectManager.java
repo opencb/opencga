@@ -536,6 +536,10 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         for (Project project : projectQueryResult.getResult()) {
             // Update with the studies shared with the user
             project.setStudies(projectStudyMap.get(project.getId()));
+
+            // Add user info to the alias
+            String ownerId = projectDBAdaptor.getOwnerId(project.getId());
+            project.setAlias(ownerId + "@" + project.getAlias());
         }
 
         projectQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));

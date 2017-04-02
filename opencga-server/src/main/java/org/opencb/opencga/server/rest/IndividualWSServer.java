@@ -643,10 +643,15 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
                                        required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
-            return createOkResponse(catalogManager.createIndividualAcls(individualIdsStr, studyStr, members, permissions, sessionId));
+            return createOkResponse(catalogManager.createIndividualAcls(individualIdsStr, studyStr, members, permissions, false,
+                    sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    public static class CreateAclCommands extends StudyWSServer.CreateAclCommands {
+        public boolean propagate;
     }
 
     @POST
@@ -655,12 +660,12 @@ public class IndividualWSServer extends OpenCGAWSServer {
     public Response createAcl(
             @ApiParam(value = "Comma separated list of individual ids", required = true) @PathParam("individuals") String individualIdsStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-            @QueryParam("study") String studyStr,
+                @QueryParam("study") String studyStr,
             @ApiParam(value="JSON containing the parameters defined in GET. Mandatory keys: 'members'", required = true)
-                    StudyWSServer.CreateAclCommands params) {
+                    CreateAclCommands params) {
         try {
             return createOkResponse(catalogManager.createIndividualAcls(individualIdsStr, studyStr, params.members, params.permissions,
-                    sessionId));
+                    params.propagate, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -695,10 +700,14 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                   @QueryParam("set") String setPermissions) {
         try {
             return createOkResponse(catalogManager.updateIndividualAcl(individualIdStr, studyStr, memberId, addPermissions,
-                    removePermissions, setPermissions, sessionId));
+                    removePermissions, setPermissions, false, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    public static class MemberAclUpdate extends StudyWSServer.MemberAclUpdate {
+        public boolean propagate;
     }
 
     @POST
@@ -710,10 +719,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     String studyStr,
             @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
             @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true)
-                    StudyWSServer.MemberAclUpdate params) {
+                    MemberAclUpdate params) {
         try {
             return createOkResponse(catalogManager.updateIndividualAcl(individualIdStr, studyStr, memberId, params.add,
-                    params.remove, params.set, sessionId));
+                    params.remove, params.set, params.propagate, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

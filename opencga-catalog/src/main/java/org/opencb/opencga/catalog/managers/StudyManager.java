@@ -1005,6 +1005,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             variable.setCategory(ParamUtils.defaultString(variable.getCategory(), ""));
             variable.setDependsOn(ParamUtils.defaultString(variable.getDependsOn(), ""));
             variable.setDescription(ParamUtils.defaultString(variable.getDescription(), ""));
+            variable.setTitle(ParamUtils.defaultString(variable.getTitle(), ""));
 //            variable.setRank(defaultString(variable.getDescription(), ""));
         }
 
