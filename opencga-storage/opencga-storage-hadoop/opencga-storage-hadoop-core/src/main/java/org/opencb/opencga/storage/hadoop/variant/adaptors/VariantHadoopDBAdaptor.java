@@ -661,5 +661,4 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         return scan.setStopRow(Bytes.toBytes(String.valueOf(GenomeHelper.METADATA_PREFIX)));
     }
 
-
 }

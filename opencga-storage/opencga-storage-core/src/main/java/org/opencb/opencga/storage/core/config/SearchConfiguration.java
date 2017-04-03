@@ -12,6 +12,7 @@ public class SearchConfiguration {
     private String user;
     private String password;
     private boolean active;
+    private int timeout;
     private int rows;
 
     public static final boolean DEFAULT_ACTVE = true;
@@ -19,18 +20,21 @@ public class SearchConfiguration {
     public static final String DEFAULT_COLLECTION = "variants";
     public static final String DEFAULT_PASSWORD = "";
     public static final String DEFAULT_USER = "";
+    public static final int DEFAULT_TIMEOUT = 45000;
     public static final int DEFAULT_ROWS = 100000;
 
     public SearchConfiguration() {
-        this(DEFAULT_HOST, DEFAULT_COLLECTION, DEFAULT_USER, DEFAULT_PASSWORD, DEFAULT_ACTVE, DEFAULT_ROWS);
+        this(DEFAULT_HOST, DEFAULT_COLLECTION, DEFAULT_USER, DEFAULT_PASSWORD, DEFAULT_ACTVE,
+                DEFAULT_TIMEOUT, DEFAULT_ROWS);
     }
 
-    public SearchConfiguration(String host, String collection, String user, String password, boolean active, int rows) {
+    public SearchConfiguration(String host, String collection, String user, String password, boolean active, int timeout, int rows) {
         this.host = host;
         this.collection = collection;
         this.user = user;
         this.password = password;
         this.active = active;
+        this.timeout = timeout;
         this.rows = rows;
     }
 
@@ -81,6 +85,14 @@ public class SearchConfiguration {
         return this;
     }
 
+    public int getTimeout() {
+        return timeout;
+    }
+
+    public void setTimeout(int timeout) {
+        this.timeout = timeout;
+    }
+
     public int getRows() {
         return rows;
     }
@@ -100,5 +112,4 @@ public class SearchConfiguration {
                 + ", rows='" + rows + '\''
                 + '}';
     }
-
 }

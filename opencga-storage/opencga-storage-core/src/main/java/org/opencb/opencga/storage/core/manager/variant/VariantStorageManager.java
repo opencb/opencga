@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -386,6 +387,11 @@ public class VariantStorageManager extends StorageManager {
         checkSamplesPermissions(query, queryOptions, variantStorageEngine.getStudyConfigurationManager(), sessionId);
         return supplier.apply(variantStorageEngine);
     }
+    private <R> R secure(Query facetedQuery, Query query, QueryOptions queryOptions,
+                         String sessionId, VariantReadOperation<R> supplier)
+            throws CatalogException, StorageEngineException, IOException {
+        return secure(query, queryOptions, sessionId, supplier);
+    }
 
     private Map<Long, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
@@ -501,6 +507,21 @@ public class VariantStorageManager extends StorageManager {
 
     }
 
+    // ---------------------//
+    //   Facet methods      //
+    // ---------------------//
+
+    public FacetedQueryResult facet(Query query, QueryOptions queryOptions, String sessionId)
+            throws CatalogException, StorageEngineException, IOException {
+        return secure(query, queryOptions, sessionId, dbAdaptor -> {
+            addDefaultLimit(queryOptions);
+            logger.debug("getFacets {}, {}", query, queryOptions);
+            FacetedQueryResult result = dbAdaptor.facet(query, queryOptions);
+            logger.debug("getFacets in {}ms", result.getDbTime());
+            return result;
+        });
+    }
+
     public List<BeaconResponse> beacon(String beaconsStr, BeaconResponse.Query beaconQuery, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
         if (beaconsStr.startsWith("[")) {
@@ -549,5 +570,4 @@ public class VariantStorageManager extends StorageManager {
         }
         return responses;
     }
-
 }

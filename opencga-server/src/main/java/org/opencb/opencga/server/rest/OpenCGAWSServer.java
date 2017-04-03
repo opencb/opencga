@@ -376,6 +376,11 @@ public class OpenCGAWSServer {
                     lazy = Boolean.parseBoolean(value);
                     queryOptions.put(entry.getKey(), lazy);
                     break;
+                case QueryOptions.FACET:
+                case QueryOptions.FACET_RANGE:
+                case QueryOptions.FACET_INTERSECTION:
+                    queryOptions.put(entry.getKey(), value);
+                    break;
                 default:
                     // Query
                     query.put(entry.getKey(), value);

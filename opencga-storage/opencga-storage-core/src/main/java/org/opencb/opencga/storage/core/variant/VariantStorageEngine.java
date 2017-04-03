@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant;
 
+import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -28,6 +29,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
@@ -569,6 +571,32 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public QueryResult<Long> aproxCount(Query query, QueryOptions options) throws StorageEngineException {
         return getDBAdaptor().count(query);
+    }
+
+    /**
+     * Fetch facet (i.e., counts) resulting of executing the query in the database.
+     *
+     * @param query          Query to be executed in the database to filter variants
+     * @param options        Query modifiers, accepted values are: facet fields and facet ranges
+     * @return               A FacetedQueryResult with the result of the query
+     */
+    public FacetedQueryResult facet(Query query, QueryOptions options) {
+
+        if (query == null) {
+            query = new Query();
+        }
+        if (options == null) {
+            options = new QueryOptions();
+        }
+
+        FacetedQueryResult queryResult;
+        try {
+            queryResult = variantSearchManager.facetedQuery(dbName, query, options);
+        } catch (IOException | VariantSearchException e) {
+            throw Throwables.propagate(e);
+        }
+
+        return queryResult;
     }
 
     @Override
