@@ -112,7 +112,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
             assertEquals(504, studyConfiguration3.getCohorts().get(studyConfiguration3.getCohortIds().get(StudyEntry.DEFAULT_COHORT))
                     .size());
 
-            dbAdaptor = variantStorageEngine.getDBAdaptor(DB_NAME);
+            dbAdaptor = variantStorageEngine.getDBAdaptor();
 
             NUM_VARIANTS -= skippedVariants();
             allVariants = dbAdaptor.get(new Query(), new QueryOptions());

@@ -70,7 +70,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
     @BeforeClass
     public static void beforeClass() throws Exception {
         HadoopVariantStorageEngine variantStorageManager = externalResource.getVariantStorageEngine();
-        externalResource.clearDB(variantStorageManager.getVariantTableName(DB_NAME));
+        externalResource.clearDB(variantStorageManager.getVariantTableName());
         externalResource.clearDB(variantStorageManager.getArchiveTableName(STUDY_ID));
 
         URI inputUri = VariantStorageBaseTest.getResourceUri("sample1.genome.vcf");
@@ -91,7 +91,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
         VariantGlobalStats stats = source.getStats();
         Assert.assertNotNull(stats);
 
-        try (VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME)) {
+        try (VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor()) {
             VariantHbaseTestUtils.printVariantsFromVariantsTable(dbAdaptor);
             VariantHbaseTestUtils.printVariantsFromArchiveTable(dbAdaptor, studyConfiguration);
         }
@@ -100,7 +100,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
     @Before
     @Override
     public void before() throws Exception {
-        dbAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getDBAdaptor(DB_NAME);
+        dbAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getDBAdaptor();
 
         if (allVariantsQueryResult == null) {
             allVariantsQueryResult = dbAdaptor.get(new Query(), new QueryOptions());

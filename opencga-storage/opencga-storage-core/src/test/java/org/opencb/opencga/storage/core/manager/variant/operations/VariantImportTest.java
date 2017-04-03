@@ -8,6 +8,7 @@ import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -37,7 +38,7 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
 
         variantManager.exportData(export, VariantOutputFormat.AVRO_GZ, String.valueOf(studyId), sessionId);
 
-        clearDB(dbName);
+        DummyStudyConfigurationAdaptor.clear();
 
         variantManager.importData(URI.create(export), String.valueOf(studyId2), sessionId);
 
@@ -57,7 +58,7 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
         QueryOptions queryOptions = new QueryOptions();
         variantManager.exportData(export, VariantOutputFormat.AVRO, query, queryOptions, sessionId);
 
-        clearDB(dbName);
+        DummyStudyConfigurationAdaptor.clear();
 
         variantManager.importData(URI.create(export), String.valueOf(studyId2), sessionId);
 

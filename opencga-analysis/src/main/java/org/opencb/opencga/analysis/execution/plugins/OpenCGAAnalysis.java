@@ -172,7 +172,7 @@ public abstract class OpenCGAAnalysis {
         String storageEngine = dataStore.getStorageEngine();
         String dbName = dataStore.getDbName();
 
-        return storageEngineFactory.getVariantStorageEngine(storageEngine).getDBAdaptor(dbName);
+        return storageEngineFactory.getVariantStorageEngine(storageEngine, dbName).getDBAdaptor();
     }
 
     //TODO: Return an AlignmentDBAdaptor which checks catalog permissions

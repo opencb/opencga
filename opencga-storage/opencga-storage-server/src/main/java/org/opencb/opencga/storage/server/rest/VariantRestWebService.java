@@ -73,7 +73,7 @@ public class VariantRestWebService extends GenericRestWebService {
 
         public static QueryResult getVariants(String storageEngine, String dbName, boolean histogram, int interval, QueryOptions options)
                 throws StorageEngineException, ClassNotFoundException, IllegalAccessException, InstantiationException {
-            VariantDBAdaptor dbAdaptor = StorageEngineFactory.get().getVariantStorageEngine(storageEngine).getDBAdaptor(dbName);
+            VariantDBAdaptor dbAdaptor = StorageEngineFactory.get().getVariantStorageEngine(storageEngine, dbName).getDBAdaptor();
 
             Query query = new Query();
             for (VariantQueryParam acceptedValue : VariantQueryParam.values()) {

@@ -55,6 +55,8 @@ import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableDrive
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -63,6 +65,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -104,7 +107,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     protected MRExecutor mrExecutor;
     private HdfsVariantReaderUtils variantReaderUtils;
     private HBaseManager hBaseManager;
-
+    private final AtomicReference<VariantHadoopDBAdaptor> dbAdaptor = new AtomicReference<>();
+    private Logger logger = LoggerFactory.getLogger(HadoopVariantStorageEngine.class);
 
     public HadoopVariantStorageEngine() {
 //        variantReaderUtils = new HdfsVariantReaderUtils(conf);
@@ -423,12 +427,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         throw new UnsupportedOperationException("Unimplemented");
     }
 
-    @Override
-    public VariantHadoopDBAdaptor getDBAdaptor(String tableName) throws StorageEngineException {
-        tableName = getVariantTableName(tableName);
-        return getDBAdaptor(buildCredentials(tableName));
-    }
-
     private HBaseCredentials getDbCredentials() throws StorageEngineException {
         String table = getVariantTableName();
         return buildCredentials(table);
@@ -436,19 +434,23 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public VariantHadoopDBAdaptor getDBAdaptor() throws StorageEngineException {
-        return getDBAdaptor(getDbCredentials());
-    }
-
-    protected VariantHadoopDBAdaptor getDBAdaptor(HBaseCredentials credentials) throws StorageEngineException {
-        try {
-            StorageEngineConfiguration storageEngine = this.configuration.getStorageEngine(STORAGE_ENGINE_ID);
-            Configuration configuration = getHadoopConfiguration(storageEngine.getVariant().getOptions());
-            configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(configuration, credentials);
-            return new VariantHadoopDBAdaptor(getHBaseManager(configuration).getConnection(), credentials,
-                    this.configuration, configuration);
-        } catch (IOException e) {
-            throw new StorageEngineException("Problems creating DB Adapter", e);
+        if (dbAdaptor.get() == null) {
+            synchronized (dbAdaptor) {
+                if (dbAdaptor.get() == null) {
+                    HBaseCredentials credentials = getDbCredentials();
+                    try {
+                        StorageEngineConfiguration storageEngine = this.configuration.getStorageEngine(STORAGE_ENGINE_ID);
+                        Configuration configuration = getHadoopConfiguration(storageEngine.getVariant().getOptions());
+                        configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(configuration, credentials);
+                        dbAdaptor.set(new VariantHadoopDBAdaptor(getHBaseManager(configuration).getConnection(), credentials,
+                                this.configuration, configuration));
+                    } catch (IOException e) {
+                        throw new StorageEngineException("Error creating DB Adapter", e);
+                    }
+                }
+            }
         }
+        return dbAdaptor.get();
     }
 
     private synchronized HBaseManager getHBaseManager(Configuration configuration) {
@@ -458,14 +460,20 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         return hBaseManager;
     }
 
+    @Override
     public void close() throws IOException {
+        super.close();
         if (hBaseManager != null) {
             hBaseManager.close();
             hBaseManager = null;
         }
+        if (dbAdaptor.get() != null) {
+            dbAdaptor.get().close();
+            dbAdaptor.set(null);
+        }
     }
 
-    public HBaseCredentials buildCredentials(String table) throws StorageEngineException {
+    private HBaseCredentials buildCredentials(String table) throws StorageEngineException {
         StorageEtlConfiguration vStore = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant();
 
         DatabaseCredentials db = vStore.getDatabase();
@@ -620,9 +628,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     public String getVariantTableName() {
-        return getVariantTableName(getOptions().getString(Options.DB_NAME.key()));
+        return getVariantTableName(dbName, getOptions());
     }
 
+    @Deprecated
     public String getVariantTableName(String table) {
         return getVariantTableName(table, getOptions());
     }

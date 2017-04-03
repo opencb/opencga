@@ -97,7 +97,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Before
     public void before() throws Exception {
 
-        dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME);
+        dbAdaptor = getVariantStorageEngine().getDBAdaptor();
         if (!fileIndexed) {
             studyConfiguration = newStudyConfiguration();
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
@@ -151,7 +151,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                 dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, QueryOptions.empty());
 
                 variantStorageEngine.calculateStats(studyConfiguration.getStudyName(),
-                        new ArrayList<>(cohortIds.keySet()), DB_NAME, options);
+                        new ArrayList<>(cohortIds.keySet()), options);
 
             }
             if (params.getBoolean(VariantStorageEngine.Options.ANNOTATE.key())) {
@@ -729,11 +729,11 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         QueryResult<Variant> result;
 
         query = new Query(ANNOT_GO.key(), "GO:XXXXXXX");
-        result = variantStorageEngine.get(DB_NAME, query, null);
+        result = variantStorageEngine.get(query, null);
         assertEquals(0, result.getNumResults());
 
         query = new Query(ANNOT_GO.key(), "GO:0006508");
-        result = variantStorageEngine.get(DB_NAME, query, null);
+        result = variantStorageEngine.get(query, null);
         System.out.println("numResults: " + result.getNumResults());
         for (Variant variant : result.getResult()) {
             System.out.println(variant);
@@ -745,7 +745,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         totalResults = result.getNumResults();
 
         query = new Query(ANNOT_GO.key(), "GO:0000050");
-        result = variantStorageEngine.get(DB_NAME, query, null);
+        result = variantStorageEngine.get(query, null);
         System.out.println("numResults: " + result.getNumResults());
         for (Variant variant : result.getResult()) {
             System.out.println(variant);
@@ -756,7 +756,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         totalResults += result.getNumResults();
 
         query = new Query(ANNOT_GO.key(), "GO:0006508,GO:0000050");
-        result = variantStorageEngine.get(DB_NAME, query, null);
+        result = variantStorageEngine.get(query, null);
         System.out.println("numResults: " + result.getNumResults());
         for (Variant variant : result.getResult()) {
             System.out.println(variant);
@@ -772,13 +772,13 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     public void testExpressionQuery() throws StorageEngineException {
         Collection<String> genes;
         Query query = new Query(ANNOT_EXPRESSION.key(), "non_existing_tissue");
-        QueryResult<Variant> result = variantStorageEngine.get(DB_NAME, query, null);
+        QueryResult<Variant> result = variantStorageEngine.get(query, null);
         assertEquals(0, result.getNumResults());
 
         for (String tissue : Arrays.asList("skin", "brain")) {
 
             query = new Query(ANNOT_EXPRESSION.key(), tissue);
-            result = variantStorageEngine.get(DB_NAME, query, null);
+            result = variantStorageEngine.get(query, null);
             System.out.println("result.getNumResults() = " + result.getNumResults());
             assertNotEquals(0, result.getNumResults());
             assertNotEquals(allVariants.getNumResults(), result.getNumResults());

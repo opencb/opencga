@@ -28,11 +28,14 @@ import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_NAME;
 
 /**
  * Created by hpccoll1 on 01/06/15.
@@ -52,7 +55,7 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
             }
             InputStream is = MongoDBVariantStorageTest.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
             StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
-            storageManager.setConfiguration(storageConfiguration, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
+            storageManager.setConfiguration(storageConfiguration, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID, DB_NAME);
             return storageManager;
         }
     }
@@ -62,13 +65,13 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
             MongoDBVariantStorageEngine storageManager = new MongoDBVariantStorageEngine();
             InputStream is = MongoDBVariantStorageTest.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
             StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
-            storageManager.setConfiguration(storageConfiguration, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
+            storageManager.setConfiguration(storageConfiguration, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID, DB_NAME);
             managers.add(storageManager);
             return storageManager;
         }
     }
 
-    default void closeConnections() {
+    default void closeConnections() throws IOException {
         System.out.println("Closing MongoDBVariantStorageEngine");
         for (MongoDBVariantStorageEngine manager : managers) {
             System.out.println("closing manager = " + manager);
@@ -81,7 +84,7 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
     }
 
     default void clearDB(String dbName) throws Exception {
-        MongoCredentials credentials = getVariantStorageEngine().getMongoCredentials(dbName);
+        MongoCredentials credentials = getVariantStorageEngine().getMongoCredentials();
         logger.info("Cleaning MongoDB {}", credentials.getMongoDbName());
         try (MongoDataStoreManager mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses())) {
             mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
@@ -98,7 +101,7 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
 
 
     default MongoDataStoreManager getMongoDataStoreManager(String dbName) throws Exception {
-        MongoCredentials credentials = getVariantStorageEngine().getMongoCredentials(dbName);
+        MongoCredentials credentials = getVariantStorageEngine().getMongoCredentials();
         return new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
     }
 

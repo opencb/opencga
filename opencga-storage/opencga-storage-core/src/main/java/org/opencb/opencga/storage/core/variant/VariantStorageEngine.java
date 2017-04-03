@@ -16,11 +16,14 @@
 
 package org.opencb.opencga.storage.core.variant;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.cellbase.client.config.ClientConfiguration;
+import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -38,14 +41,15 @@ import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.search.VariantSearchManager;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
@@ -54,6 +58,7 @@ import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -69,6 +74,9 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Optio
 public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdaptor> {
 
     protected VariantSearchManager variantSearchManager;
+    private Logger logger = LoggerFactory.getLogger(VariantStorageEngine.class);
+    private CellBaseUtils cellBaseUtils;
+
 
     public enum Options {
         INCLUDE_STATS("include.stats", true),              //Include existing stats on the original file.
@@ -97,6 +105,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         COMPRESS_METHOD("compressMethod", "gzip"),
         AGGREGATION_MAPPING_PROPERTIES("aggregationMappingFile", null),
+        @Deprecated
         DB_NAME("database.name", "opencga"),
 
         TRANSFORM_BATCH_SIZE("transform.batch.size", 200),
@@ -135,9 +144,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     @Deprecated
-    public VariantStorageEngine() {
-        logger = LoggerFactory.getLogger(VariantStorageEngine.class);
-    }
+    public VariantStorageEngine() {}
 
     public VariantStorageEngine(StorageConfiguration configuration) {
         this(configuration.getDefaultStorageEngineId(), configuration);
@@ -147,8 +154,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         super(storageEngineId, configuration);
 
         variantSearchManager = new VariantSearchManager(null, null, configuration);
-
-        logger = LoggerFactory.getLogger(VariantStorageEngine.class);
     }
 
     /**
@@ -158,16 +163,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * {@link VariantExporter#METADATA_FILE_EXTENSION}
      *
      * @param inputFile     Variants input file in avro format.
-     * @param dbName        Database name where to load the variants
      * @param options       Other options
      * @throws IOException      if there is any I/O error
      * @throws StorageEngineException  if there si any error loading the variants
      * */
-    public void importData(URI inputFile, String dbName, ObjectMap options) throws StorageEngineException, IOException {
-        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
-            VariantImporter variantImporter = newVariantImporter(dbAdaptor);
-            variantImporter.importData(inputFile);
-        }
+    public void importData(URI inputFile, ObjectMap options) throws StorageEngineException, IOException {
+        VariantDBAdaptor dbAdaptor = getDBAdaptor();
+        VariantImporter variantImporter = newVariantImporter(dbAdaptor);
+        variantImporter.importData(inputFile);
     }
 
     /**
@@ -176,18 +179,16 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param inputFile     Variants input file in avro format.
      * @param metadata      Metadata related with the data to be loaded.
      * @param studiesOldNewMap  Map from old to new StudyConfiguration, in case of name remapping
-     * @param dbName        Database name where to load the variants
      * @param options       Other options
      * @throws IOException      if there is any I/O error
      * @throws StorageEngineException  if there si any error loading the variants
      * */
     public void importData(URI inputFile, ExportMetadata metadata, Map<StudyConfiguration, StudyConfiguration> studiesOldNewMap,
-                           String dbName, ObjectMap options)
+                           ObjectMap options)
             throws StorageEngineException, IOException {
-        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
-            VariantImporter variantImporter = newVariantImporter(dbAdaptor);
-            variantImporter.importData(inputFile, metadata, studiesOldNewMap);
-        }
+        VariantDBAdaptor dbAdaptor = getDBAdaptor();
+        VariantImporter variantImporter = newVariantImporter(dbAdaptor);
+        variantImporter.importData(inputFile, metadata, studiesOldNewMap);
     }
 
     /**
@@ -206,18 +207,16 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * Exports the result of the given query and the associated metadata.
      * @param outputFile    Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
      * @param outputFormat  Variant output format
-     * @param dbName        DBName for reading the variants
      * @param query         Query with the variants to export
      * @param queryOptions  Query options
      * @throws IOException  If there is any IO error
      * @throws StorageEngineException  If there is any error exporting variants
      */
-    public void exportData(URI outputFile, VariantOutputFormat outputFormat, String dbName, Query query, QueryOptions queryOptions)
+    public void exportData(URI outputFile, VariantOutputFormat outputFormat, Query query, QueryOptions queryOptions)
             throws IOException, StorageEngineException {
-        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
-            VariantExporter exporter = newVariantExporter(dbAdaptor);
-            exporter.export(outputFile, outputFormat, query, queryOptions);
-        }
+        VariantDBAdaptor dbAdaptor = getDBAdaptor();
+        VariantExporter exporter = newVariantExporter(dbAdaptor);
+        exporter.export(outputFile, outputFormat, query, queryOptions);
     }
 
     /**
@@ -261,21 +260,18 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     /**
      * Given a dbName, calculates the annotation for all the variants that matches with a given query, and loads them into the database.
      *
-     * @param dbName    database name to annotate.
      * @param query     Query to select variants to annotate
      * @param params    Other params
      * @throws VariantAnnotatorException    If the annotation goes wrong
      * @throws StorageEngineException       If there is any problem related with the StorageEngine
      * @throws IOException                  If there is any IO problem
      */
-    public void annotate(String dbName, Query query, ObjectMap params)
+    public void annotate(Query query, ObjectMap params)
             throws VariantAnnotatorException, StorageEngineException, IOException {
-
         VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(configuration, getStorageEngineId(), params);
-        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
-            VariantAnnotationManager annotationManager = newVariantAnnotationManager(annotator, dbAdaptor);
-            annotationManager.annotate(query, params);
-        }
+        VariantDBAdaptor dbAdaptor = getDBAdaptor();
+        VariantAnnotationManager annotationManager = newVariantAnnotationManager(annotator, dbAdaptor);
+        annotationManager.annotate(query, params);
     }
 
     /**
@@ -291,8 +287,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             throws StoragePipelineException {
 
         if (!files.isEmpty() && options.getBoolean(Options.ANNOTATE.key(), Options.ANNOTATE.defaultValue())) {
-            String dbName = options.getString(Options.DB_NAME.key(), null);
-            try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
+            try {
+                VariantDBAdaptor dbAdaptor = getDBAdaptor();
                 int studyId = options.getInt(Options.STUDY_ID.key());
                 StudyConfiguration studyConfiguration = dbAdaptor.getStudyConfigurationManager()
                         .getStudyConfiguration(studyId, new QueryOptions(options)).first();
@@ -316,7 +312,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         .append(DefaultVariantAnnotationManager.OUT_DIR, outdirUri.getPath())
                         .append(DefaultVariantAnnotationManager.FILE_NAME, dbName + "." + TimeUtils.getTime());
 
-                annotate(dbName, annotationQuery, annotationOptions);
+                annotate(annotationQuery, annotationOptions);
             } catch (RuntimeException | StorageEngineException | VariantAnnotatorException | IOException e) {
                 throw new StoragePipelineException("Error annotating.", e, results);
             }
@@ -338,7 +334,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      *
      * @param study     Study
      * @param cohorts   Cohorts to calculate stats
-     * @param dbName    database name to annotate.
      * @param options   Other options
      *                  {@link Options#AGGREGATION_MAPPING_PROPERTIES}
      *                  {@link Options#OVERWRITE_STATS}
@@ -350,13 +345,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException      If there is any problem related with the StorageEngine
      * @throws IOException                  If there is any IO problem
      */
-    public void calculateStats(String study, List<String> cohorts, String dbName, QueryOptions options)
+    public void calculateStats(String study, List<String> cohorts, QueryOptions options)
             throws StorageEngineException, IOException {
-
-        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
-            VariantStatisticsManager statisticsManager = newVariantStatisticsManager(dbAdaptor);
-            statisticsManager.calculateStatistics(study, cohorts, options);
-        }
+        VariantDBAdaptor dbAdaptor = getDBAdaptor();
+        VariantStatisticsManager statisticsManager = newVariantStatisticsManager(dbAdaptor);
+        statisticsManager.calculateStatistics(study, cohorts, options);
     }
 
     /**
@@ -373,8 +366,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         if (options.getBoolean(Options.CALCULATE_STATS.key(), Options.CALCULATE_STATS.defaultValue())) {
             // TODO add filters
-            String dbName = options.getString(Options.DB_NAME.key(), null);
-            try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
+            try {
+                VariantDBAdaptor dbAdaptor = getDBAdaptor();
                 logger.debug("about to calculate stats");
 
                 int studyId = options.getInt(Options.STUDY_ID.key());
@@ -399,7 +392,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 statsOptions.remove(Options.FILE_ID.key());
 
                 List<String> cohorts = Collections.singletonList(StudyEntry.DEFAULT_COHORT);
-                calculateStats(studyConfiguration.getStudyName(), cohorts, dbName, statsOptions);
+                calculateStats(studyConfiguration.getStudyName(), cohorts, statsOptions);
             } catch (Exception e) {
                 throw new StoragePipelineException("Can't calculate stats.", e, results);
             }
@@ -417,32 +410,33 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
 
-    public void searchIndex(String database) throws StorageEngineException, IOException, VariantSearchException {
-        searchIndex(database, new Query(), new QueryOptions());
+    public void searchIndex() throws StorageEngineException, IOException, VariantSearchException {
+        searchIndex(new Query(), new QueryOptions());
     }
 
-    public void searchIndex(String database, Query query, QueryOptions queryOptions) throws StorageEngineException, IOException,
+    public void searchIndex(Query query, QueryOptions queryOptions) throws StorageEngineException, IOException,
             VariantSearchException {
 
-        VariantDBAdaptor dbAdaptor = getDBAdaptor(database);
+        VariantDBAdaptor dbAdaptor = getDBAdaptor();
+        StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager();
         variantSearchManager = new VariantSearchManager(
-                null, new CellBaseUtils(dbAdaptor.getCellBaseClient()), configuration);
+                studyConfigurationManager, getCellBaseUtils(), configuration);
 
-        if (configuration.getSearch().getActive() && variantSearchManager.isAlive(database)) {
+        if (configuration.getSearch().getActive() && variantSearchManager.isAlive(dbName)) {
             // first, create the collection it it does not exist
-            if (!variantSearchManager.existCollection(database)) {
+            if (!variantSearchManager.existCollection(dbName)) {
                 // by default: config=OpenCGAConfSet, shards=1, replicas=1
-                logger.info("Creating Solr collection " + database);
-                variantSearchManager.createCollection(database);
+                logger.info("Creating Solr collection " + dbName);
+                variantSearchManager.createCollection(dbName);
             } else {
-                logger.info("Solr collection '" + database + "' exists.");
+                logger.info("Solr collection '" + dbName + "' exists.");
             }
 
             // then, load variants
             queryOptions = new QueryOptions();
             queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES_DATA, VariantField.STUDIES_FILES));
             VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
-            variantSearchManager.load(database, iterator);
+            variantSearchManager.load(dbName, iterator);
         }
         dbAdaptor.close();
     }
@@ -459,10 +453,28 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public abstract void dropStudy(String studyName) throws StorageEngineException;
 
     @Override
-    public void testConnection() throws StorageEngineException {
-//        ObjectMap variantOptions = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
-//        logger.error("Connection to database '{}' failed", variantOptions.getString(VariantStorageEngine.Options.DB_NAME.key()));
-//        throw new StorageEngineException("Database connection test failed");
+    public void testConnection() throws StorageEngineException {}
+
+    public CellBaseUtils getCellBaseUtils() throws StorageEngineException {
+        if (cellBaseUtils == null) {
+            StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager();
+            List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());
+            String species = getOptions().getString(VariantAnnotationManager.SPECIES);
+            String assembly = getOptions().getString(VariantAnnotationManager.ASSEMBLY);
+            if (!studyNames.isEmpty()) {
+                StudyConfiguration sc = studyConfigurationManager
+                        .getStudyConfiguration(studyNames.get(0), QueryOptions.empty()).first();
+                species = sc.getAttributes().getString(VariantAnnotationManager.SPECIES, species);
+                assembly= sc.getAttributes().getString(VariantAnnotationManager.ASSEMBLY, assembly);
+            }
+            ClientConfiguration clientConfiguration = configuration.getCellbase().toClientConfiguration();
+            if (StringUtils.isEmpty(species)) {
+                species = clientConfiguration.getDefaultSpecies();
+            }
+            species = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(species);
+            cellBaseUtils = new CellBaseUtils(new CellBaseClient(species, assembly, clientConfiguration));
+        }
+        return cellBaseUtils;
     }
 
     public ObjectMap getOptions() {
@@ -471,6 +483,16 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public VariantReaderUtils getVariantReaderUtils() {
         return new VariantReaderUtils();
+    }
+
+    /**
+     * Build the default StudyConfigurationManager. This method could be override by children classes if they want to use other class.
+     *
+     * @return A StudyConfigurationManager object
+     * @throws StorageEngineException If object is null
+     */
+    public StudyConfigurationManager getStudyConfigurationManager() throws StorageEngineException {
+        return getStudyConfigurationManager(null);
     }
 
     /**
@@ -493,13 +515,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return this;
     }
 
-    public VariantQueryResult<Variant> get(String dbName, Query query, QueryOptions options) throws StorageEngineException {
+    public VariantQueryResult<Variant> get(Query query, QueryOptions options) throws StorageEngineException {
         setDefaultTimeout(options);
-        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
-            return dbAdaptor.get(query, options);
-        } catch (IOException e) {
-            throw new StorageEngineException("Error closing dbAdaptor", e);
-        }
+        return getDBAdaptor().get(query, options);
+    }
+
+    public VariantQueryResult<Variant> getPhased(String variant, String studyName, String sampleName, QueryOptions options, int windowsSize)
+            throws StorageEngineException {
+        setDefaultTimeout(options);
+        return getDBAdaptor().getPhased(variant, studyName, sampleName, options, windowsSize);
     }
 
     protected void setDefaultTimeout(QueryOptions options) {
@@ -512,67 +536,43 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         options.put(QueryOptions.TIMEOUT, timeout);
     }
 
-    public VariantDBIterator iterator(String dbName, Query query, QueryOptions options) throws StorageEngineException {
-        VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName);
+    public VariantDBIterator iterator(Query query, QueryOptions options) throws StorageEngineException {
+        VariantDBAdaptor dbAdaptor = getDBAdaptor();
         VariantDBIterator iterator = dbAdaptor.iterator(query, options);
         iterator.addCloseable(dbAdaptor);
         return iterator;
     }
 
-    public QueryResult distinct(String dbName, Query query, String field) throws StorageEngineException {
-        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
-            return dbAdaptor.distinct(query, field);
-        } catch (IOException e) {
-            throw new StorageEngineException("Error closing dbAdaptor", e);
-        }
+    public QueryResult distinct(Query query, String field) throws StorageEngineException {
+        return getDBAdaptor().distinct(query, field);
     }
 
-    public QueryResult rank(String dbName, Query query, String field, int numResults, boolean asc) throws StorageEngineException {
-        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
-            return dbAdaptor.rank(query, field, numResults, asc);
-        } catch (IOException e) {
-            throw new StorageEngineException("Error closing dbAdaptor", e);
-        }
+    public QueryResult rank(Query query, String field, int numResults, boolean asc) throws StorageEngineException {
+        return getDBAdaptor().rank(query, field, numResults, asc);
     }
 
-    public QueryResult getFrequency(String dbName, Query query, Region region, int regionIntervalSize) throws StorageEngineException {
-        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
-            return dbAdaptor.getFrequency(query, region, regionIntervalSize);
-        } catch (IOException e) {
-            throw new StorageEngineException("Error closing dbAdaptor", e);
-        }
+    public QueryResult getFrequency(Query query, Region region, int regionIntervalSize) throws StorageEngineException {
+        return getDBAdaptor().getFrequency(query, region, regionIntervalSize);
     }
 
-    public QueryResult groupBy(String dbName, Query query, String field, QueryOptions options) throws StorageEngineException {
-        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
-            return dbAdaptor.groupBy(query, field, options);
-        } catch (IOException e) {
-            throw new StorageEngineException("Error closing dbAdaptor", e);
-        }
+    public QueryResult groupBy(Query query, String field, QueryOptions options) throws StorageEngineException {
+        return getDBAdaptor().groupBy(query, field, options);
     }
 
-    public QueryResult groupBy(String dbName, Query query, List<String> fields, QueryOptions options) throws StorageEngineException {
-        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
-            return dbAdaptor.groupBy(query, fields, options);
-        } catch (IOException e) {
-            throw new StorageEngineException("Error closing dbAdaptor", e);
-        }
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws StorageEngineException {
+        return getDBAdaptor().groupBy(query, fields, options);
     }
 
-    public QueryResult<Long> count(String dbName, Query query) throws StorageEngineException {
-        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
-            return dbAdaptor.count(query);
-        } catch (IOException e) {
-            throw new StorageEngineException("Error closing dbAdaptor", e);
-        }
+    public QueryResult<Long> count(Query query) throws StorageEngineException {
+        return getDBAdaptor().count(query);
     }
 
-    public QueryResult<Long> aproxCount(String dbName, Query query, QueryOptions options) throws StorageEngineException {
-        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
-            return dbAdaptor.count(query);
-        } catch (IOException e) {
-            throw new StorageEngineException("Error closing dbAdaptor", e);
-        }
+    public QueryResult<Long> aproxCount(Query query, QueryOptions options) throws StorageEngineException {
+        return getDBAdaptor().count(query);
     }
 
+    @Override
+    public void close() throws IOException {
+        cellBaseUtils = null;
+    }
 }

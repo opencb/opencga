@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.alignment;
 
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -9,18 +10,17 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AlignmentStorageEngine extends StorageEngine<AlignmentDBAdaptor> {
 
+    private Logger logger = LoggerFactory.getLogger(AlignmentStorageEngine.class);
+
     public AlignmentStorageEngine() {
-        this.logger = LoggerFactory.getLogger(AlignmentStorageEngine.class);
     }
 
     public AlignmentStorageEngine(StorageConfiguration configuration) {
         super(configuration);
-        this.logger = LoggerFactory.getLogger(AlignmentStorageEngine.class);
     }
 
     public AlignmentStorageEngine(String storageEngineId, StorageConfiguration configuration) {
         super(storageEngineId, configuration);
-        this.logger = LoggerFactory.getLogger(AlignmentStorageEngine.class);
     }
 
 }

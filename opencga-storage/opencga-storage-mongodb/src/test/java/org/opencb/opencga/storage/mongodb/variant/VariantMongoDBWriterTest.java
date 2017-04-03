@@ -112,7 +112,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         studyConfiguration2.getFileIds().put(source3.getFileName(), fileId3);
         studyConfiguration2.getSamplesInFiles().put(fileId3, file3SampleIds);
 
-        dbAdaptor = variantStorageManager.getDBAdaptor(VariantStorageBaseTest.DB_NAME);
+        dbAdaptor = variantStorageManager.getDBAdaptor();
     }
 
 

@@ -111,8 +111,9 @@ public class VariantExportStorageOperation extends StorageOperation {
 //                StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyInfo.getStudyId(), dataStore);
 //            }
 
-            VariantStorageEngine variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine());
-            variantStorageEngine.exportData(outputFile, outputFormat, dataStore.getDbName(), query, new QueryOptions(options));
+            VariantStorageEngine variantStorageEngine =
+                    storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+            variantStorageEngine.exportData(outputFile, outputFormat, query, new QueryOptions(options));
 
             if (catalogOutDirId != null && outdir != null) {
                 copyResults(outdir, catalogOutDirId, sessionId).stream().map(File::getUri);
@@ -154,9 +155,9 @@ public class VariantExportStorageOperation extends StorageOperation {
 
         try {
             DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
-            VariantStorageEngine variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine());
-            ObjectMap options = variantStorageEngine.getOptions()
-                    .append(VariantStorageEngine.Options.DB_NAME.key(), dataStore.getDbName());
+            VariantStorageEngine variantStorageEngine =
+                    storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+            ObjectMap options = variantStorageEngine.getOptions();
             ExportMetadata exportMetadata;
             try (StudyConfigurationManager scm = variantStorageEngine.getStudyConfigurationManager(options)) {
                 exportMetadata = variantMetadataImporter.importMetaData(inputUri, scm);
@@ -165,7 +166,7 @@ public class VariantExportStorageOperation extends StorageOperation {
             StudyConfiguration newSC = exportMetadata.getStudies().get(0);
             Map<StudyConfiguration, StudyConfiguration> studiesOldNewMap = Collections.singletonMap(oldSC, newSC);
 
-            variantStorageEngine.importData(inputUri, exportMetadata, studiesOldNewMap, dataStore.getDbName(), options);
+            variantStorageEngine.importData(inputUri, exportMetadata, studiesOldNewMap, options);
 
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
             throw new StorageEngineException("Error importing data", e);

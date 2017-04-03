@@ -175,12 +175,11 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         logger.debug("Index - Number of files to be indexed: {}, list of files: {}", inputFiles.size(),
                 inputFiles.stream().map(File::getName).collect(Collectors.toList()));
 
-        options.put(VariantStorageEngine.Options.DB_NAME.key(), dataStore.getDbName());
         options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyIdByInputFileId);
 
         VariantStorageEngine variantStorageEngine;
         try {
-            variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine());
+            variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
             throw new StorageEngineException("Unable to create StorageEngine", e);
         }

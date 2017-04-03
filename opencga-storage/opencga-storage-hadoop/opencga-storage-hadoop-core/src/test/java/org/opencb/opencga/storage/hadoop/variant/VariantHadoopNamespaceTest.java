@@ -77,7 +77,7 @@ public class VariantHadoopNamespaceTest extends VariantStorageBaseTest implement
             }
         }
 
-        assertTrue(variantStorageManager.getDBAdaptor(DB_NAME).count(null).first() > 0);
+        assertTrue(variantStorageManager.getDBAdaptor().count(null).first() > 0);
     }
 
     @Test
@@ -97,7 +97,7 @@ public class VariantHadoopNamespaceTest extends VariantStorageBaseTest implement
                 System.out.println("\ttableName = " + tableName);
             }
         }
-        assertTrue(variantStorageManager.getDBAdaptor(DB_NAME).count(null).first() > 0);
+        assertTrue(variantStorageManager.getDBAdaptor().count(null).first() > 0);
     }
 
 }

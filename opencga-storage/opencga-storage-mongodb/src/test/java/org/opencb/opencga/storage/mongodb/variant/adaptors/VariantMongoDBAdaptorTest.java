@@ -28,6 +28,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
+import java.io.IOException;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -47,6 +48,12 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements M
     @After
     public void resetLoggers() throws Exception {
         logLevel("info");
+    }
+
+    @Override
+    public void after() throws IOException {
+        super.after();
+        closeConnections();
     }
 
     @Test

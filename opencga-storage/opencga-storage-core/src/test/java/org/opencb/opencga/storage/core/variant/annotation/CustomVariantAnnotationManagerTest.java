@@ -57,7 +57,7 @@ public abstract class CustomVariantAnnotationManagerTest extends VariantStorageB
 
     @Test
     public void testBedAnnotation() throws Exception {
-        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor(DB_NAME);
+        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
 
         VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(variantStorageEngine.getConfiguration(), variantStorageEngine.getStorageEngineId());
         DefaultVariantAnnotationManager annotationManager = new DefaultVariantAnnotationManager(annotator, dbAdaptor);
@@ -102,7 +102,7 @@ public abstract class CustomVariantAnnotationManagerTest extends VariantStorageB
 
     @Test
     public void testGffAnnotation() throws Exception {
-        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor(DB_NAME);
+        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
 
         VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(variantStorageEngine.getConfiguration(), variantStorageEngine.getStorageEngineId());
         DefaultVariantAnnotationManager annotationManager = new DefaultVariantAnnotationManager(annotator, dbAdaptor);
@@ -148,7 +148,7 @@ public abstract class CustomVariantAnnotationManagerTest extends VariantStorageB
 
     @Test
     public void testVcfAnnotation() throws Exception {
-        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor(DB_NAME);
+        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
 
         VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(variantStorageEngine.getConfiguration(), variantStorageEngine.getStorageEngineId());
         DefaultVariantAnnotationManager annotationManager = new DefaultVariantAnnotationManager(annotator, dbAdaptor);

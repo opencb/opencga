@@ -119,20 +119,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
     }
 
-
-    private VariantStorageEngine initVariantStorageManager(DataStore dataStore)
-            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException {
-
-        String storageEngine = dataStore.getStorageEngine();
-        if (isEmpty(storageEngine)) {
-            this.variantStorageEngine = storageEngineFactory.getVariantStorageEngine();
-        } else {
-            this.variantStorageEngine = storageEngineFactory.getVariantStorageEngine(storageEngine);
-        }
-        return variantStorageEngine;
-    }
-
-
     private void ibs() throws CatalogException, AnalysisExecutionException {
         VariantCommandOptions.VariantIbsCommandOptions cliOptions = variantCommandOptions.ibsVariantCommandOptions;
 

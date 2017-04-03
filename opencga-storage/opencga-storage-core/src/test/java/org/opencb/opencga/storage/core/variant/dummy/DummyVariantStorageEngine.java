@@ -36,7 +36,7 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public VariantDBAdaptor getDBAdaptor(String dbName) throws StorageEngineException {
+    public VariantDBAdaptor getDBAdaptor() throws StorageEngineException {
         return new DummyVariantDBAdaptor(dbName);
     }
 

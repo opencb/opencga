@@ -50,7 +50,7 @@ public class VariantExporterTest extends VariantStorageBaseTest {
 
     @Test
     public void exportStudyTest() throws Exception {
-        variantStorageEngine.exportData(null, VariantOutputFormat.VCF, DB_NAME, new Query(), new QueryOptions());
+        variantStorageEngine.exportData(null, VariantOutputFormat.VCF, new Query(), new QueryOptions());
         // It may happen that the VcfExporter closes the StandardOutput.
         // Check System.out is not closed
         System.out.println(getClass().getSimpleName() + ": System out not closed!");
@@ -59,7 +59,7 @@ public class VariantExporterTest extends VariantStorageBaseTest {
     @Test
     public void exportStudyJsonTest() throws Exception {
         URI output = newOutputUri().resolve("variant.json.gz");
-        variantStorageEngine.exportData(output, VariantOutputFormat.JSON_GZ, DB_NAME, new Query(), new QueryOptions());
+        variantStorageEngine.exportData(output, VariantOutputFormat.JSON_GZ, new Query(), new QueryOptions());
 
         System.out.println("output = " + output);
         assertTrue(Paths.get(output).toFile().exists());

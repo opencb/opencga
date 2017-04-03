@@ -348,7 +348,7 @@ public class VariantFetcher implements AutoCloseable {
             try {
                 this.variantDBAdaptor.computeIfAbsent(key, (str) -> {
                     try {
-                        return storageEngineFactory.getVariantStorageEngine(storageEngine).getDBAdaptor(dbName);
+                        return storageEngineFactory.getVariantStorageEngine(storageEngine, dbName).getDBAdaptor();
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException e) {
                         throw new IllegalStateException("Unable to get VariantDBAdaptor", e);
                     }

@@ -98,7 +98,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
                                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false));
             }
         }
-        dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME);
+        dbAdaptor = getVariantStorageEngine().getDBAdaptor();
     }
 
     @After

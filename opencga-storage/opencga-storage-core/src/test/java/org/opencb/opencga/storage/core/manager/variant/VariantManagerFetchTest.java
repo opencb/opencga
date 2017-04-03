@@ -61,12 +61,12 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
         Query query = new Query();
 
         // Without studies
-        Map<Long, List<Sample>> longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor(), sessionId);
+        Map<Long, List<Sample>> longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getStudyConfigurationManager(), sessionId);
         Assert.assertEquals(Collections.singletonMap(studyId, Collections.emptyList()), longListMap);
 
         // With studies
         query.append(VariantQueryParam.STUDIES.key(), studyId);
-        longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor(), sessionId);
+        longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getStudyConfigurationManager(), sessionId);
         Assert.assertEquals(Collections.singletonMap(studyId, Collections.emptyList()), longListMap);
     }
 
@@ -75,7 +75,7 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
         Query query = new Query(VariantQueryParam.STUDIES.key(), studyId);
         QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES);
 
-        Map<Long, List<Sample>> longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor(), sessionId);
+        Map<Long, List<Sample>> longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getStudyConfigurationManager(), sessionId);
         Assert.assertEquals(Collections.emptyMap(), longListMap);
     }
 

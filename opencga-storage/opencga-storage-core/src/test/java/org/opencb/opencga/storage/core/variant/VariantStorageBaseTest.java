@@ -216,8 +216,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
                                                boolean doTransform,
                                                boolean doLoad)
             throws IOException, FileFormatException, StorageEngineException {
-        return runETL(variantStorageManager, inputUri, outputUri, options, options, options, options, options, options, options,
-                doExtract, doTransform, doLoad);
+        return runETL(variantStorageManager, inputUri, outputUri, options, doExtract, doTransform, doLoad);
     }
 
     public static StoragePipelineResult runDefaultETL(VariantStorageEngine variantStorageManager, StudyConfiguration studyConfiguration)
@@ -246,7 +245,6 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         newParams.putIfAbsent(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), studyConfiguration.getAggregation());
         newParams.putIfAbsent(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
         newParams.putIfAbsent(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
-        newParams.putIfAbsent(VariantStorageEngine.Options.DB_NAME.key(), DB_NAME);
         newParams.putIfAbsent(VariantStorageEngine.Options.FILE_ID.key(), FILE_ID);
         // Default value is already avro
 //        newParams.putIfAbsent(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
@@ -255,10 +253,9 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         newParams.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRc37");
         newParams.putIfAbsent(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
 
-        StoragePipelineResult storagePipelineResult = runETL(variantStorageManager, inputUri, outputUri, newParams, newParams, newParams,
-                newParams, newParams, newParams, newParams, true, doTransform, doLoad);
+        StoragePipelineResult storagePipelineResult = runETL(variantStorageManager, inputUri, outputUri, newParams, true, doTransform, doLoad);
 
-        try (VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME)) {
+        try (VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor()) {
             StudyConfiguration newStudyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
             if (newStudyConfiguration != null) {
                 studyConfiguration.copy(newStudyConfiguration);
@@ -269,25 +266,6 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     }
 
     public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, URI inputUri, URI outputUri,
-                                               ObjectMap extractParams,
-                                               ObjectMap preTransformParams, ObjectMap transformParams, ObjectMap postTransformParams,
-                                               ObjectMap preLoadParams, ObjectMap loadParams, ObjectMap postLoadParams,
-                                               boolean doExtract,
-                                               boolean doTransform,
-                                               boolean doLoad)
-            throws IOException, FileFormatException, StorageEngineException {
-        ObjectMap params = new ObjectMap();
-        params.putAll(extractParams);
-        params.putAll(preTransformParams);
-        params.putAll(transformParams);
-        params.putAll(postTransformParams);
-        params.putAll(preLoadParams);
-        params.putAll(loadParams);
-        params.putAll(postLoadParams);
-        return runETL(variantStorageManager, inputUri, outputUri, params, doExtract, doTransform, doLoad);
-    }
-
-    public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, URI inputUri, URI outputUri,
                                                ObjectMap params,
                                                boolean doExtract,
                                                boolean doTransform,
@@ -295,7 +273,6 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
             throws IOException, FileFormatException, StorageEngineException {
 
 
-        params.putIfAbsent(VariantStorageEngine.Options.DB_NAME.key(), DB_NAME);
         variantStorageManager.getConfiguration()
                 .getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(params);
         StoragePipelineResult storagePipelineResult =

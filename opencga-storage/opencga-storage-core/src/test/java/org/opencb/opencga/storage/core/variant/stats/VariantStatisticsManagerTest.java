@@ -70,7 +70,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         clearDB(DB_NAME);
         runDefaultETL(inputUri, getVariantStorageEngine(), studyConfiguration,
                 new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false));
-        dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME);
+        dbAdaptor = getVariantStorageEngine().getDBAdaptor();
     }
 
     @Test
