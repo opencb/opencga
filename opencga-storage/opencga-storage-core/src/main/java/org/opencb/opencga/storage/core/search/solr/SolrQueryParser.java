@@ -116,12 +116,12 @@ public class SolrQueryParser {
             if (genes.size() > 0) {
                 // consequence types and genes
                 String or = buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes);
-                if (or.isEmpty()) {
+                if (xrefs.size() == 0 && regions.size() == 0) {
                     // no xrefs or regions: genes AND cts
                     filterList.add(buildGeneAndCt(genes, consequenceTypes));
                 } else {
                     // otherwise: [((xrefs OR regions) AND cts) OR (genes AND cts)]
-                    filterList.add(or + " OR (" + buildGeneAndCt(genes, consequenceTypes) + ")");
+                    filterList.add("(" + or + ") OR (" + buildGeneAndCt(genes, consequenceTypes) + ")");
                 }
             } else {
                 // consequence types but no genes: (xrefs OR regions) AND cts
@@ -142,24 +142,29 @@ public class SolrQueryParser {
         // type (t)
         String key = VariantQueryParams.STUDIES.key();
         if (isValidParam(query, VariantQueryParams.STUDIES)) {
-            String value = query.getString(key);
-            VariantDBAdaptorUtils.QueryOperation op = checkOperator(value);
-            Set<Integer> studyIds = new HashSet<>(variantDBAdaptorUtils.getStudyIds(splitValue(value, op), queryOptions));
-            List<String> studyNames = new ArrayList<>(studyIds.size());
-            Map<String, Integer> map = variantDBAdaptorUtils.getStudyConfigurationManager().getStudies(null);
-            if (map != null && map.size() > 1) {
-                map.forEach((name, id) -> {
-                    if (studyIds.contains(id)) {
-                        String[] s = name.split(":");
-                        studyNames.add(s[s.length - 1]);
-                    }
-                });
+            try {
+                String value = query.getString(key);
+                VariantDBAdaptorUtils.QueryOperation op = checkOperator(value);
+                Set<Integer> studyIds = new HashSet<>(variantDBAdaptorUtils.getStudyIds(splitValue(value, op), queryOptions));
+                List<String> studyNames = new ArrayList<>(studyIds.size());
+                Map<String, Integer> map = variantDBAdaptorUtils.getStudyConfigurationManager().getStudies(null);
+                if (map != null && map.size() > 1) {
+                    map.forEach((name, id) -> {
+                        if (studyIds.contains(id)) {
+                            String[] s = name.split(":");
+                            studyNames.add(s[s.length - 1]);
+                        }
+                    });
 
-                if (op == null || op == VariantDBAdaptorUtils.QueryOperation.OR) {
-                    filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ",")));
-                } else {
-                    filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ";")));
+                    if (op == null || op == VariantDBAdaptorUtils.QueryOperation.OR) {
+                        filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ",")));
+                    } else {
+                        filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ";")));
+                    }
                 }
+            } catch (NullPointerException e) {
+                logger.error(e.getMessage());
+                e.printStackTrace();
             }
         }
 
@@ -290,7 +295,7 @@ public class SolrQueryParser {
             return false;
         }
         if (xref.indexOf(":") == -1) {
-            return false;
+            return true;
         }
         return true;
     }
@@ -675,13 +680,13 @@ public class SolrQueryParser {
      */
     private String buildXrefOrRegionAndConsequenceType(List<String> xrefs, List<Region> regions, List<String> cts) {
         String orCts = buildConsequenceTypeOr(cts);
-        String orXrefs = buildXrefOrGeneOrRegion(xrefs, null, regions);
-        if (orXrefs.isEmpty()) {
+        if (xrefs.size() == 0 && regions.size() == 0) {
             // consequences type but no xrefs, no genes, no regions
             // we must make an OR with all consequences types and add it to the "AND" filter list
             return orCts;
         } else {
-            return orXrefs + " AND (" + orCts + ")";
+            String orXrefs = buildXrefOrGeneOrRegion(xrefs, null, regions);
+            return "(" +  orXrefs + ") AND (" + orCts + ")";
         }
     }
 

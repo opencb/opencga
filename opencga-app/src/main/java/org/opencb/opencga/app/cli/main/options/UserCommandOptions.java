@@ -169,7 +169,7 @@ public class UserCommandOptions {
         public NotRequiredUserParam userParam = new NotRequiredUserParam();
 
         @Parameter(names = {"--shared"}, description = "When not set, it will only return the projects and studies belonging to the user. "
-                + "However, if this parameter is set, only the projects and studies shared with the user will be shown.", arity = 0)
+                + "However, if this parameter is set, it will also show the projects and studies shared with the user.", arity = 0)
         public boolean shared;
 
     }
