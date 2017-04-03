@@ -30,7 +30,7 @@ public class SolrFacetedQueryParserTest {
         int rows = 0;
         StorageConfiguration config = new StorageConfiguration();
         config.setSearch(new SearchConfiguration(host, collection, user, password, active, timeout, rows));
-        VariantSearchManager searchManager = new VariantSearchManager(null, config);
+        VariantSearchManager searchManager = new VariantSearchManager(null, null, config);
         try {
             queryOptions.put(QueryOptions.LIMIT, rows);
             FacetedQueryResult result = searchManager.facetedQuery(collection, query, queryOptions);
