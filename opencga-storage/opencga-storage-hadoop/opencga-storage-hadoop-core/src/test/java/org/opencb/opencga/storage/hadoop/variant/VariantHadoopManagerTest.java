@@ -100,7 +100,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
     @Before
     @Override
     public void before() throws Exception {
-        dbAdaptor = ((HadoopVariantStorageEngine) variantStorageManager).getDBAdaptor(DB_NAME);
+        dbAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getDBAdaptor(DB_NAME);
 
         if (allVariantsQueryResult == null) {
             allVariantsQueryResult = dbAdaptor.get(new Query(), new QueryOptions());
@@ -114,7 +114,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
 
     @Test
     public void testConnection() throws StorageEngineException {
-        variantStorageManager.testConnection();
+        variantStorageEngine.testConnection();
     }
 
     @Test

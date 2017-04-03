@@ -65,7 +65,7 @@ public class VariantTableMapperTest extends VariantStorageBaseTest implements Ha
     }
 
     private StudyConfigurationManager buildStudyManager() throws IOException{
-        StorageEngineConfiguration se = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId());
+        StorageEngineConfiguration se = variantStorageEngine.getConfiguration().getStorageEngine(variantStorageEngine.getStorageEngineId());
         ObjectMap opts = se.getVariant().getOptions();
         return new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(DB_NAME, configuration.get(), opts));
     }

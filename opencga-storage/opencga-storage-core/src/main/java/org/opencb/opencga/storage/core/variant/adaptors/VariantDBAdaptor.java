@@ -217,6 +217,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
 
     void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager);
 
+    @Deprecated
     CellBaseClient getCellBaseClient();
 
     void close() throws IOException;

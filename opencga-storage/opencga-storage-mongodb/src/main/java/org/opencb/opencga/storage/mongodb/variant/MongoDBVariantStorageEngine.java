@@ -395,6 +395,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public VariantQueryResult<Variant> get(String dbName, Query query, QueryOptions options) throws StorageEngineException {
+        if (options == null) {
+            options = QueryOptions.empty();
+        }
         Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
         // TODO: Use CacheManager ?
         if (options.getBoolean("summary")
@@ -411,11 +414,14 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                 throw Throwables.propagate(e);
             }
         } else {
-            VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(dbName);
-            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
-            parseQuery(query, studyConfigurationManager);
-            setDefaultTimeout(options);
-            return dbAdaptor.get(query, options);
+            try (VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
+                StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
+                query = parseQuery(query, studyConfigurationManager);
+                setDefaultTimeout(options);
+                return dbAdaptor.get(query, options);
+            } catch (IOException e) {
+                throw new StorageEngineException("Error closing DBAdaptor", e);
+            }
         }
     }
 
@@ -438,7 +444,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         } else {
             VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(dbName);
             StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
-            parseQuery(query, studyConfigurationManager);
+            query = parseQuery(query, studyConfigurationManager);
 //            setDefaultTimeout(options);
             return dbAdaptor.iterator(query, options);
         }
@@ -453,7 +459,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                 || !searchActiveAndAlive(dbName)) {
             VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(dbName);
             StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
-            parseQuery(query, studyConfigurationManager);
+            query = parseQuery(query, studyConfigurationManager);
             return dbAdaptor.count(query);
         } else {
             try {
@@ -471,7 +477,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         return configuration.getSearch().getActive() && variantSearchManager != null && variantSearchManager.isAlive(dbName);
     }
 
-    public void parseQuery(Query query, StudyConfigurationManager studyConfigurationManager) {
+    public Query parseQuery(Query originalQuery, StudyConfigurationManager studyConfigurationManager) {
+        // Copy input query! Do not modify original query!
+        Query query = originalQuery == null ? new Query() : new Query(originalQuery);
         String species = getOptions().getString(VariantAnnotationManager.SPECIES);
         String assembly = getOptions().getString(VariantAnnotationManager.ASSEMBLY);
         List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());
@@ -507,7 +515,12 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             }
             query.remove(VariantQueryParam.ANNOT_GO.key());
             List<String> genes = new ArrayList<>(query.getAsStringList(VariantQueryParam.GENE.key()));
-            genes.addAll(cellBaseUtils.getGenesByGo(goValues));
+            Set<String> genesByGo = cellBaseUtils.getGenesByGo(goValues);
+            if (genesByGo.isEmpty()) {
+                genes.add("none");
+            } else {
+                genes.addAll(genesByGo);
+            }
             query.put(VariantQueryParam.GENE.key(), genes);
         }
         if (isValidParam(query, VariantQueryParam.ANNOT_EXPRESSION)) {
@@ -522,9 +535,15 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             }
             query.remove(VariantQueryParam.ANNOT_EXPRESSION.key());
             List<String> genes = new ArrayList<>(query.getAsStringList(VariantQueryParam.GENE.key()));
-            genes.addAll(cellBaseUtils.getGenesByExpression(expressionValues));
+            Set<String> genesByExpression = cellBaseUtils.getGenesByExpression(expressionValues);
+            if (genesByExpression.isEmpty()) {
+                genes.add("none");
+            } else {
+                genes.addAll(genesByExpression);
+            }
             query.put(VariantQueryParam.GENE.key(), genes);
         }
+        return query;
     }
 
     private synchronized MongoDataStoreManager getMongoDataStoreManager() {

@@ -34,7 +34,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
     @Before
     public void setUp() throws Exception {
         studyConfiguration = newStudyConfiguration();
-        runDefaultETL(smallInputUri, variantStorageManager, studyConfiguration);
+        runDefaultETL(smallInputUri, variantStorageEngine, studyConfiguration);
     }
 
 
@@ -43,13 +43,13 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
         URI outputFile = newOutputUri().resolve("export.avro");
 
         System.out.println("outputFile = " + outputFile);
-        variantStorageManager.exportData(outputFile, VariantOutputFormat.AVRO, DB_NAME, new Query(), new QueryOptions());
+        variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, DB_NAME, new Query(), new QueryOptions());
 
         clearDB(DB_NAME);
 
-        variantStorageManager.importData(outputFile, DB_NAME, new ObjectMap());
+        variantStorageEngine.importData(outputFile, DB_NAME, new ObjectMap());
 
-        for (Variant variant : variantStorageManager.getDBAdaptor(DB_NAME)) {
+        for (Variant variant : variantStorageEngine.getDBAdaptor(DB_NAME)) {
             assertEquals(4, variant.getStudies().get(0).getSamplesData().size());
         }
     }
@@ -63,13 +63,13 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
         List<String> samples = new LinkedList<>(studyConfiguration.getSampleIds().keySet()).subList(1, 3);
         Set<String> samplesSet = new HashSet<>(samples);
         Query query = new Query(VariantQueryParam.RETURNED_SAMPLES.key(), samples);
-        variantStorageManager.exportData(outputFile, VariantOutputFormat.AVRO, DB_NAME, query, new QueryOptions());
+        variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, DB_NAME, query, new QueryOptions());
 
         clearDB(DB_NAME);
 
-        variantStorageManager.importData(outputFile, DB_NAME, new ObjectMap());
+        variantStorageEngine.importData(outputFile, DB_NAME, new ObjectMap());
 
-        for (Variant variant : variantStorageManager.getDBAdaptor(DB_NAME)) {
+        for (Variant variant : variantStorageEngine.getDBAdaptor(DB_NAME)) {
             assertEquals(2, variant.getStudies().get(0).getSamplesData().size());
             assertEquals(samplesSet, variant.getStudies().get(0).getSamplesName());
         }
@@ -82,13 +82,13 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
         System.out.println("outputFile = " + outputFile);
         Query query = new Query();
         QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_SAMPLES_DATA.toString());
-        variantStorageManager.exportData(outputFile, VariantOutputFormat.AVRO, DB_NAME, query, queryOptions);
+        variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, DB_NAME, query, queryOptions);
 
         clearDB(DB_NAME);
 
-        variantStorageManager.importData(outputFile, DB_NAME, new ObjectMap());
+        variantStorageEngine.importData(outputFile, DB_NAME, new ObjectMap());
 
-        for (Variant variant : variantStorageManager.getDBAdaptor(DB_NAME)) {
+        for (Variant variant : variantStorageEngine.getDBAdaptor(DB_NAME)) {
             assertEquals(0, variant.getStudies().get(0).getSamplesData().size());
         }
     }
@@ -100,13 +100,13 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
         System.out.println("outputFile = " + outputFile);
         Query query = new Query(VariantQueryParam.RETURNED_SAMPLES.key(), ".");
         QueryOptions queryOptions = new QueryOptions();
-        variantStorageManager.exportData(outputFile, VariantOutputFormat.AVRO, DB_NAME, query, queryOptions);
+        variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, DB_NAME, query, queryOptions);
 
         clearDB(DB_NAME);
 
-        variantStorageManager.importData(outputFile, DB_NAME, new ObjectMap());
+        variantStorageEngine.importData(outputFile, DB_NAME, new ObjectMap());
 
-        for (Variant variant : variantStorageManager.getDBAdaptor(DB_NAME)) {
+        for (Variant variant : variantStorageEngine.getDBAdaptor(DB_NAME)) {
             assertEquals(0, variant.getStudies().get(0).getSamplesData().size());
         }
     }

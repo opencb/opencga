@@ -90,7 +90,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     protected static URI smallInputUri;
     protected static URI corruptedInputUri;
     protected static URI outputUri;
-    protected VariantStorageEngine variantStorageManager;
+    protected VariantStorageEngine variantStorageEngine;
     private static Logger logger = LoggerFactory.getLogger(VariantStorageBaseTest.class);
     private static Path rootDir = null;
 //    private static AtomicInteger count = new AtomicInteger(0);
@@ -197,7 +197,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     @Before
     public final void _before() throws Exception {
         printActiveThreadsNumber();
-        variantStorageManager = getVariantStorageEngine();
+        variantStorageEngine = getVariantStorageEngine();
     }
 
 

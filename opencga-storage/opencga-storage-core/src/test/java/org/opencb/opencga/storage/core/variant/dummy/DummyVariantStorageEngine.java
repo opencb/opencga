@@ -1,8 +1,10 @@
 package org.opencb.opencga.storage.core.variant.dummy;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -76,5 +78,10 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     @Override
     public void dropStudy(String studyName) throws StorageEngineException {
 
+    }
+
+    @Override
+    public StudyConfigurationManager getStudyConfigurationManager(ObjectMap options) throws StorageEngineException {
+        return new StudyConfigurationManager(new DummyStudyConfigurationAdaptor());
     }
 }

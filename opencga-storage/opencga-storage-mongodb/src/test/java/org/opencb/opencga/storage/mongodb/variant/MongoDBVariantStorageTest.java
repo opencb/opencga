@@ -57,7 +57,7 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
         }
     }
 
-    default MongoDBVariantStorageEngine newVariantStorageManager() throws Exception {
+    default MongoDBVariantStorageEngine newVariantStorageEngine() throws Exception {
         synchronized (managers) {
             MongoDBVariantStorageEngine storageManager = new MongoDBVariantStorageEngine();
             InputStream is = MongoDBVariantStorageTest.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
