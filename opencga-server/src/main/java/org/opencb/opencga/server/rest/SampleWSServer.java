@@ -110,11 +110,16 @@ public class SampleWSServer extends OpenCGAWSServer {
         }
     }
 
+    private static class IndividualParameters {
+        public long id;
+        public String name;
+    }
+
     private static class SampleParameters {
         public String name;
         public String source;
         public String description;
-        public Individual individual;
+        public IndividualParameters individual;
     }
 
     @POST
@@ -129,8 +134,15 @@ public class SampleWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            QueryResult<Sample> queryResult = sampleManager.create(studyStr, params.name, params.source, params.description,
-                    params.individual, null, null, sessionId);
+
+            Individual individual = null;
+            if (params.individual != null) {
+                individual = new Individual()
+                        .setId(params.individual.id)
+                        .setName(params.individual.name);
+            }
+            QueryResult<Sample> queryResult = sampleManager.create(studyStr, params.name, params.source, params.description, individual,
+                    null, null, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
