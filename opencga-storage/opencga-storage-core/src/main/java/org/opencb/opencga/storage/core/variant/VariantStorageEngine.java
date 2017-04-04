@@ -165,13 +165,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * {@link VariantExporter#METADATA_FILE_EXTENSION}
      *
      * @param inputFile     Variants input file in avro format.
-     * @param options       Other options
+     * @param params       Other options
      * @throws IOException      if there is any I/O error
      * @throws StorageEngineException  if there si any error loading the variants
      * */
-    public void importData(URI inputFile, ObjectMap options) throws StorageEngineException, IOException {
-        VariantDBAdaptor dbAdaptor = getDBAdaptor();
-        VariantImporter variantImporter = newVariantImporter(dbAdaptor);
+    public void importData(URI inputFile, ObjectMap params) throws StorageEngineException, IOException {
+        VariantImporter variantImporter = newVariantImporter();
         variantImporter.importData(inputFile);
     }
 
@@ -181,15 +180,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param inputFile     Variants input file in avro format.
      * @param metadata      Metadata related with the data to be loaded.
      * @param studiesOldNewMap  Map from old to new StudyConfiguration, in case of name remapping
-     * @param options       Other options
+     * @param params       Other options
      * @throws IOException      if there is any I/O error
      * @throws StorageEngineException  if there si any error loading the variants
      * */
     public void importData(URI inputFile, ExportMetadata metadata, Map<StudyConfiguration, StudyConfiguration> studiesOldNewMap,
-                           ObjectMap options)
+                           ObjectMap params)
             throws StorageEngineException, IOException {
-        VariantDBAdaptor dbAdaptor = getDBAdaptor();
-        VariantImporter variantImporter = newVariantImporter(dbAdaptor);
+        VariantImporter variantImporter = newVariantImporter();
         variantImporter.importData(inputFile, metadata, studiesOldNewMap);
     }
 
@@ -198,10 +196,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      *
      * There is no default VariantImporter.
      *
-     * @param dbAdaptor     DBAdaptor to the current database
      * @return              new VariantImporter
+     * @throws StorageEngineException  if there is an error creating the VariantImporter
      */
-    protected VariantImporter newVariantImporter(VariantDBAdaptor dbAdaptor) {
+    protected VariantImporter newVariantImporter() throws StorageEngineException {
         throw new UnsupportedOperationException();
     }
 
@@ -216,8 +214,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public void exportData(URI outputFile, VariantOutputFormat outputFormat, Query query, QueryOptions queryOptions)
             throws IOException, StorageEngineException {
-        VariantDBAdaptor dbAdaptor = getDBAdaptor();
-        VariantExporter exporter = newVariantExporter(dbAdaptor);
+        VariantExporter exporter = newVariantExporter();
         exporter.export(outputFile, outputFormat, query, queryOptions);
     }
 
@@ -225,11 +222,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * Creates a new {@link VariantExporter} for the current backend.
      * The default implementation iterates locally through the database.
      *
-     * @param dbAdaptor     DBAdaptor to the current database
      * @return              new VariantExporter
+     * @throws StorageEngineException  if there is an error creating the VariantExporter
      */
-    protected VariantExporter newVariantExporter(VariantDBAdaptor dbAdaptor) {
-        return new VariantExporter(dbAdaptor);
+    protected VariantExporter newVariantExporter() throws StorageEngineException {
+        return new VariantExporter(getDBAdaptor());
     }
 
     /**
@@ -271,8 +268,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public void annotate(Query query, ObjectMap params)
             throws VariantAnnotatorException, StorageEngineException, IOException {
         VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(configuration, getStorageEngineId(), params);
-        VariantDBAdaptor dbAdaptor = getDBAdaptor();
-        VariantAnnotationManager annotationManager = newVariantAnnotationManager(annotator, dbAdaptor);
+        VariantAnnotationManager annotationManager = newVariantAnnotationManager(annotator);
         annotationManager.annotate(query, params);
     }
 
@@ -325,11 +321,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * Provide a new VariantAnnotationManager for creating and loading annotations.
      *
      * @param annotator     VariantAnnotator to use for creating the new annotations
-     * @param dbAdaptor     VariantDBAdaptor
      * @return              A new instance of VariantAnnotationManager
+     * @throws StorageEngineException  if there is an error creating the VariantAnnotationManager
      */
-    protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator, VariantDBAdaptor dbAdaptor) {
-        return new DefaultVariantAnnotationManager(annotator, dbAdaptor);
+    protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
+        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor());
     }
 
     /**
@@ -349,8 +345,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public void calculateStats(String study, List<String> cohorts, QueryOptions options)
             throws StorageEngineException, IOException {
-        VariantDBAdaptor dbAdaptor = getDBAdaptor();
-        VariantStatisticsManager statisticsManager = newVariantStatisticsManager(dbAdaptor);
+        VariantStatisticsManager statisticsManager = newVariantStatisticsManager();
         statisticsManager.calculateStatistics(study, cohorts, options);
     }
 
@@ -404,11 +399,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     /**
      * Provide a new VariantAnnotationManager for creating and loading annotations.
      *
-     * @param dbAdaptor     VariantDBAdaptor
      * @return              A new instance of VariantAnnotationManager
+     * @throws StorageEngineException  if there is an error creating the VariantStatisticsManager
      */
-    public VariantStatisticsManager newVariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
-        return new DefaultVariantStatisticsManager(dbAdaptor);
+    public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
+        return new DefaultVariantStatisticsManager(getDBAdaptor());
     }
 
 

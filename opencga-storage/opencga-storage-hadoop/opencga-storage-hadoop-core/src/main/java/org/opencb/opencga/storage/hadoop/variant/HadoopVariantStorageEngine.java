@@ -290,13 +290,13 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator, VariantDBAdaptor dbAdaptor) {
-        return new HadoopDefaultVariantAnnotationManager(annotator, dbAdaptor);
+    protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
+        return new HadoopDefaultVariantAnnotationManager(annotator, getDBAdaptor());
     }
 
     @Override
-    public VariantStatisticsManager newVariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
-        return new HadoopDefaultVariantStatisticsManager(dbAdaptor);
+    public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
+        return new HadoopDefaultVariantStatisticsManager(getDBAdaptor());
     }
 
     public AbstractHadoopVariantStoragePipeline newStorageETL(boolean connected, Map<? extends String, ?> extraOptions)

@@ -146,9 +146,8 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    protected VariantImporter newVariantImporter(VariantDBAdaptor dbAdaptor) {
-        VariantMongoDBAdaptor mongoDBAdaptor = (VariantMongoDBAdaptor) dbAdaptor;
-        return new MongoVariantImporter(mongoDBAdaptor);
+    protected VariantImporter newVariantImporter() throws StorageEngineException {
+        return new MongoVariantImporter(getDBAdaptor());
     }
 
     @Override
@@ -158,12 +157,12 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator, VariantDBAdaptor dbAdaptor) {
-        VariantMongoDBAdaptor mongoDBAdaptor = (VariantMongoDBAdaptor) dbAdaptor;
-        return new DefaultVariantAnnotationManager(annotator, dbAdaptor) {
+    protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
+        VariantMongoDBAdaptor mongoDbAdaptor = getDBAdaptor();
+        return new DefaultVariantAnnotationManager(annotator, mongoDbAdaptor) {
             @Override
             protected VariantAnnotationDBWriter newVariantAnnotationDBWriter(VariantDBAdaptor dbAdaptor, QueryOptions options) {
-                return new VariantMongoDBAnnotationDBWriter(options, mongoDBAdaptor);
+                return new VariantMongoDBAnnotationDBWriter(options, mongoDbAdaptor);
             }
         };
     }

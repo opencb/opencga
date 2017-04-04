@@ -46,18 +46,18 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public VariantStatisticsManager newVariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
-        return super.newVariantStatisticsManager(dbAdaptor);
+    public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
+        return super.newVariantStatisticsManager();
     }
 
     @Override
-    public VariantExporter newVariantExporter(VariantDBAdaptor dbAdaptor) {
-        return super.newVariantExporter(dbAdaptor);
+    public VariantExporter newVariantExporter() throws StorageEngineException {
+        return super.newVariantExporter();
     }
 
     @Override
-    protected VariantImporter newVariantImporter(VariantDBAdaptor dbAdaptor) {
-        return new VariantImporter(dbAdaptor) {
+    protected VariantImporter newVariantImporter() throws StorageEngineException {
+        return new VariantImporter(getDBAdaptor()) {
             @Override
             public void importData(URI input, ExportMetadata metadata, Map<StudyConfiguration, StudyConfiguration> map)
                     throws StorageEngineException, IOException {
@@ -66,8 +66,8 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator, VariantDBAdaptor dbAdaptor) {
-        return super.newVariantAnnotationManager(annotator, dbAdaptor);
+    public VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
+        return super.newVariantAnnotationManager(annotator);
     }
 
     @Override
