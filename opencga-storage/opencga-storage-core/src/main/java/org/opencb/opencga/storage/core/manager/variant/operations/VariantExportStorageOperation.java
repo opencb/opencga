@@ -159,7 +159,7 @@ public class VariantExportStorageOperation extends StorageOperation {
                     storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
             ObjectMap options = variantStorageEngine.getOptions();
             ExportMetadata exportMetadata;
-            try (StudyConfigurationManager scm = variantStorageEngine.getStudyConfigurationManager(options)) {
+            try (StudyConfigurationManager scm = variantStorageEngine.getStudyConfigurationManager()) {
                 exportMetadata = variantMetadataImporter.importMetaData(inputUri, scm);
             }
             StudyConfiguration oldSC = VariantMetadataImporter.readMetadata(inputUri).getStudies().get(0);

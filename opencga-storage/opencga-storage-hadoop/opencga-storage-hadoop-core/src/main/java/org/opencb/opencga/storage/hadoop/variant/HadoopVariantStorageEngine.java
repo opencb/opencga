@@ -215,11 +215,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     if (result.getTransformError() != null) {
                         //TODO: Handle errors. Retry?
                         errors++;
-                        result.getTransformError().printStackTrace();
+                        logger.error("Error transforming file " + result.getInput(), result.getTransformError());
                     } else if (result.getLoadError() != null) {
                         //TODO: Handle errors. Retry?
                         errors++;
-                        result.getLoadError().printStackTrace();
+                        logger.error("Error loading file " + result.getInput(), result.getLoadError());
                     }
                     concurrResult.add(result);
                 }
@@ -513,15 +513,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
 
     @Override
-    public StudyConfigurationManager getStudyConfigurationManager(ObjectMap options) throws StorageEngineException {
-        try {
-            HBaseCredentials dbCredentials = getDbCredentials();
-            Configuration configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(getHadoopConfiguration(options), dbCredentials);
-            return new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(dbCredentials.getTable(), configuration, options));
-        } catch (IOException e) {
-            e.printStackTrace();
-            return super.getStudyConfigurationManager(options);
-        }
+    public StudyConfigurationManager getStudyConfigurationManager() throws StorageEngineException {
+        ObjectMap options = getOptions();
+        HBaseCredentials dbCredentials = getDbCredentials();
+        Configuration configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(getHadoopConfiguration(options), dbCredentials);
+        return new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(dbCredentials.getTable(), configuration, options));
     }
 
     private Configuration getHadoopConfiguration(ObjectMap options) throws StorageEngineException {

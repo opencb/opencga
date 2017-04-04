@@ -63,8 +63,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
     private final String tableName;
     private final HBaseLock lock;
 
-    public HBaseStudyConfigurationDBAdaptor(GenomeHelper helper, String tableName, Configuration configuration, ObjectMap options)
-            throws IOException {
+    public HBaseStudyConfigurationDBAdaptor(GenomeHelper helper, String tableName, Configuration configuration, ObjectMap options) {
         this.configuration = Objects.requireNonNull(configuration);
         this.tableName = Objects.requireNonNull(tableName);
         this.options = options;
@@ -75,8 +74,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
         lock = new HBaseLock(getHBaseManager(), this.tableName, genomeHelper.getColumnFamily(), studiesRow);
     }
 
-    public HBaseStudyConfigurationDBAdaptor(String tableName, Configuration configuration, ObjectMap options)
-            throws IOException {
+    public HBaseStudyConfigurationDBAdaptor(String tableName, Configuration configuration, ObjectMap options) {
         this(new GenomeHelper(configuration), tableName, configuration, options);
     }
 

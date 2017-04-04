@@ -81,7 +81,7 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public StudyConfigurationManager getStudyConfigurationManager(ObjectMap options) throws StorageEngineException {
+    public StudyConfigurationManager getStudyConfigurationManager() throws StorageEngineException {
         return new StudyConfigurationManager(new DummyStudyConfigurationAdaptor());
     }
 }

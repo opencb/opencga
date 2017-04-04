@@ -343,13 +343,13 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     private VariantMongoDBAdaptor newDBAdaptor() throws StorageEngineException {
         MongoCredentials credentials = getMongoCredentials();
         VariantMongoDBAdaptor variantMongoDBAdaptor;
-        ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
+        ObjectMap options = getOptions();
 
         String variantsCollection = options.getString(COLLECTION_VARIANTS.key(), COLLECTION_VARIANTS.defaultValue());
         String filesCollection = options.getString(COLLECTION_FILES.key(), COLLECTION_FILES.defaultValue());
         MongoDataStoreManager mongoDataStoreManager = getMongoDataStoreManager();
         try {
-            StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager(options);
+            StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager();
             variantMongoDBAdaptor = new VariantMongoDBAdaptor(mongoDataStoreManager, credentials, variantsCollection, filesCollection,
                     studyConfigurationManager, configuration);
 
@@ -377,13 +377,14 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public StudyConfigurationManager getStudyConfigurationManager(ObjectMap options) throws StorageEngineException {
+    public StudyConfigurationManager getStudyConfigurationManager() throws StorageEngineException {
+        ObjectMap options = getOptions();
         if (studyConfigurationManager != null) {
             return studyConfigurationManager;
-        } else if (options != null && !options.getString(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
-            return super.getStudyConfigurationManager(options);
+        } else if (!options.getString(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
+            return super.getStudyConfigurationManager();
         } else {
-            String collectionName = options == null ? null : options.getString(COLLECTION_STUDIES.key(), COLLECTION_STUDIES.defaultValue());
+            String collectionName = options.getString(COLLECTION_STUDIES.key(), COLLECTION_STUDIES.defaultValue());
             try {
                 studyConfigurationManager = new StudyConfigurationManager(new MongoDBStudyConfigurationDBAdaptor(getMongoDataStoreManager(),
                         getMongoCredentials(), collectionName));

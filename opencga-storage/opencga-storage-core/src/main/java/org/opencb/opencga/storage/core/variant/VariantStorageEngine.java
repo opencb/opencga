@@ -489,17 +489,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException If object is null
      */
     public StudyConfigurationManager getStudyConfigurationManager() throws StorageEngineException {
-        return getStudyConfigurationManager(null);
-    }
-
-    /**
-     * Build the default StudyConfigurationManager. This method could be override by children classes if they want to use other class.
-     *
-     * @param options Map-like object with the options
-     * @return A StudyConfigurationManager object
-     * @throws StorageEngineException If object is null
-     */
-    public StudyConfigurationManager getStudyConfigurationManager(ObjectMap options) throws StorageEngineException {
         return new StudyConfigurationManager(new FileStudyConfigurationAdaptor());
     }
 
