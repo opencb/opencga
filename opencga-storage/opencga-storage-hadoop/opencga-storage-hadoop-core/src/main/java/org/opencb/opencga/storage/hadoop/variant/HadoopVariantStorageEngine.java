@@ -27,7 +27,6 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
@@ -344,34 +343,23 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         // Use ETL as helper class
         AbstractHadoopVariantStoragePipeline etl = newStoragePipeline(true);
         VariantDBAdaptor dbAdaptor = etl.getDBAdaptor();
-        StudyConfiguration studyConfiguration;
         StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
         List<Integer> fileList = Collections.singletonList(fileId);
-        final int studyId;
-        if (StringUtils.isNumeric(study)) {
-            studyId = Integer.parseInt(study);
-        } else {
-            studyConfiguration = scm.getStudyConfiguration(study, QueryOptions.empty()).first();
-            studyId = studyConfiguration.getStudyId();
-        }
+        final int studyId = scm.getStudyId(study, null);
 
         // Pre delete
-        long lock = scm.lockStudy(studyId);
-        try {
-            studyConfiguration = scm.getStudyConfiguration(studyId, null).first();
-            if (!studyConfiguration.getIndexedFiles().contains(fileId)) {
-                throw StorageEngineException.unableToExecute("File not indexed.", fileId, studyConfiguration);
+        scm.lockAndUpdate(studyId, sc -> {
+            if (!sc.getIndexedFiles().contains(fileId)) {
+                throw StorageEngineException.unableToExecute("File not indexed.", fileId, sc);
             }
             boolean resume = options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue())
                     || options.getBoolean(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_RESUME, false);
             BatchFileOperation operation =
-                    etl.addBatchOperation(studyConfiguration, VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList, resume,
+                    etl.addBatchOperation(sc, VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList, resume,
                             BatchFileOperation.Type.REMOVE);
             options.put(AbstractVariantTableDriver.TIMESTAMP, operation.getTimestamp());
-            scm.updateStudyConfiguration(studyConfiguration, null);
-        } finally {
-            scm.unLockStudy(studyId, lock);
-        }
+            return sc;
+        });
 
         // Delete
         Thread hook = etl.newShutdownHook(VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList);
@@ -403,19 +391,16 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
             // Post Delete
             // If everything went fine, remove file column from Archive table and from studyconfig
-            lock = scm.lockStudy(studyId);
-            try {
-                studyConfiguration = scm.getStudyConfiguration(studyId, null).first();
-                etl.secureSetStatus(studyConfiguration, BatchFileOperation.Status.READY,
+            scm.lockAndUpdate(studyId, sc -> {
+                scm.setStatus(sc, BatchFileOperation.Status.READY,
                         VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList);
-                studyConfiguration.getIndexedFiles().remove(fileId);
-                scm.updateStudyConfiguration(studyConfiguration, null);
-            } finally {
-                scm.unLockStudy(studyId, lock);
-            }
+                sc.getIndexedFiles().remove(fileId);
+                return sc;
+            });
 
         } catch (Exception e) {
-            etl.setStatus(BatchFileOperation.Status.ERROR, VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList);
+            scm.atomicSetStatus(studyId, BatchFileOperation.Status.ERROR,
+                    VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList);
             throw e;
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);

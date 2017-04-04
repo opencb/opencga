@@ -60,7 +60,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import static org.opencb.biodata.models.variant.VariantSource.Aggregation.isAggregated;
-import static org.opencb.opencga.storage.core.variant.VariantStoragePipeline.checkStudyConfiguration;
+import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.checkStudyConfiguration;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 
 /**

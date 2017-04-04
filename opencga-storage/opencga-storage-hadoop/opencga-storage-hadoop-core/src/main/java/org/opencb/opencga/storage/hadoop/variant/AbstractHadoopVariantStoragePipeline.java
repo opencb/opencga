@@ -47,6 +47,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -433,11 +434,11 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                 Integer readFileId = Integer.parseInt(readSource.getFileId());
                 logger.debug("Found source for file id {} with registered id {} ", loadedFileId, readFileId);
                 if (!studyConfiguration.getFileIds().inverse().containsKey(readFileId)) {
-                    checkNewFile(studyConfiguration, readFileId, readSource.getFileName());
+                    StudyConfigurationManager.checkNewFile(studyConfiguration, readFileId, readSource.getFileName());
                     studyConfiguration.getFileIds().put(readSource.getFileName(), readFileId);
 //                    studyConfiguration.getHeaders().put(readFileId, readSource.getMetadata()
 //                            .get(VariantFileUtils.VARIANT_FILE_HEADER).toString());
-                    checkAndUpdateStudyConfiguration(studyConfiguration, readFileId, readSource, options);
+                    StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, readFileId, readSource, options);
                     missingFilesDetected = true;
                 }
                 if (!studyConfiguration.getIndexedFiles().contains(readFileId)) {
@@ -446,7 +447,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             }
             logger.info("Found pending in DB: " + pendingFiles);
 
-            fileId = checkNewFile(studyConfiguration, fileId, source.getFileName());
+            fileId = StudyConfigurationManager.checkNewFile(studyConfiguration, fileId, source.getFileName());
 
             if (!loadArch) {
                 //If skip archive loading, input fileId must be already in archiveTable, so "pending to be loaded"
@@ -629,9 +630,11 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                 throw new StorageEngineException("Error loading files " + pendingFiles + " into variant table \""
                         + variantsTableCredentials.getTable() + "\"");
             }
-            setStatus(BatchFileOperation.Status.DONE, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles);
+            getStudyConfigurationManager()
+                    .atomicSetStatus(getStudyId(), BatchFileOperation.Status.DONE, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles);
         } catch (Exception e) {
-            setStatus(BatchFileOperation.Status.ERROR, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles);
+            getStudyConfigurationManager()
+                    .atomicSetStatus(getStudyId(), BatchFileOperation.Status.ERROR, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles);
             throw e;
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
@@ -680,8 +683,8 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     @Override
     public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
         super.securePostLoad(fileIds, studyConfiguration);
-        BatchFileOperation.Status status = secureSetStatus(studyConfiguration, BatchFileOperation.Status.READY,
-                VariantTableDriver.JOB_OPERATION_NAME, fileIds);
+        BatchFileOperation.Status status = dbAdaptor.getStudyConfigurationManager()
+                .setStatus(studyConfiguration, BatchFileOperation.Status.READY, VariantTableDriver.JOB_OPERATION_NAME, fileIds);
         if (status != BatchFileOperation.Status.DONE) {
             logger.warn("Unexpected status " + status);
         }
