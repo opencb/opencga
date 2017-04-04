@@ -200,6 +200,11 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         variantStorageEngine = getVariantStorageEngine();
     }
 
+    @After
+    public final void _after() throws Exception {
+        close();
+    }
+
 
     /* ---------------------------------------------------- */
     /* Static methods to run a simple ETL to index Variants */

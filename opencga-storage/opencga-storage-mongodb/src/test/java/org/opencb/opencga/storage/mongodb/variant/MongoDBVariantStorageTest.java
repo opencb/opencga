@@ -92,6 +92,11 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
         }
     }
 
+    @Override
+    default void close() throws Exception {
+        closeConnections();
+    }
+
     default int getExpectedNumLoadedVariants(VariantSource source) {
         int numRecords = source.getStats().getNumRecords();
         return numRecords
