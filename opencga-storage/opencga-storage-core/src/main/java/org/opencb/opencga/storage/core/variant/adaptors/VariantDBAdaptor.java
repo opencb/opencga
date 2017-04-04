@@ -20,7 +20,6 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -216,9 +215,6 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
     StudyConfigurationManager getStudyConfigurationManager();
 
     void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager);
-
-    @Deprecated
-    CellBaseClient getCellBaseClient();
 
     void close() throws IOException;
 }

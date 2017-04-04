@@ -739,7 +739,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             System.out.println(variant);
         }
         assertNotEquals(0, result.getNumResults());
-        CellBaseUtils cellBaseUtils = new CellBaseUtils(dbAdaptor.getCellBaseClient());
+        CellBaseUtils cellBaseUtils = variantStorageEngine.getCellBaseUtils();
         genes = cellBaseUtils.getGenesByGo(query.getAsStringList(ANNOT_GO.key()));
         assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
         totalResults = result.getNumResults();
@@ -782,7 +782,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             System.out.println("result.getNumResults() = " + result.getNumResults());
             assertNotEquals(0, result.getNumResults());
             assertNotEquals(allVariants.getNumResults(), result.getNumResults());
-            genes = new CellBaseUtils(dbAdaptor.getCellBaseClient())
+            genes = variantStorageEngine.getCellBaseUtils()
                     .getGenesByExpression(query.getAsStringList(ANNOT_EXPRESSION.key()));
             assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
         }

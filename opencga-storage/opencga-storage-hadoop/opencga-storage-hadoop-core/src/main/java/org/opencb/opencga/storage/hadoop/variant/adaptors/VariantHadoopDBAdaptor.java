@@ -94,7 +94,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final AtomicReference<java.sql.Connection> phoenixCon = new AtomicReference<>();
     private final VariantSqlQueryParser queryParser;
     private final HadoopVariantSourceDBAdaptor variantSourceDBAdaptor;
-    private final CellBaseClient cellBaseClient;
     private boolean clientSideSkip;
 
     public VariantHadoopDBAdaptor(HBaseCredentials credentials, StorageConfiguration configuration,
@@ -120,11 +119,13 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         if (StringUtils.isEmpty(species)) {
             species = clientConfiguration.getDefaultSpecies();
         }
-        cellBaseClient = new CellBaseClient(AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(species), assembly, clientConfiguration);
+        species = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(species);
+
+        CellBaseUtils cellBaseUtils = new CellBaseUtils(new CellBaseClient(species, assembly, clientConfiguration));
 
         clientSideSkip = !options.getBoolean(PhoenixHelper.PHOENIX_SERVER_OFFSET_AVAILABLE, true);
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable,
-                studyConfigurationManager.get(), new CellBaseUtils(cellBaseClient), clientSideSkip);
+                studyConfigurationManager.get(), cellBaseUtils, clientSideSkip);
 
         phoenixHelper = new VariantPhoenixHelper(genomeHelper);
     }
@@ -193,11 +194,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
         this.studyConfigurationManager.set(studyConfigurationManager);
-    }
-
-    @Override
-    public CellBaseClient getCellBaseClient() {
-        return cellBaseClient;
     }
 
     @Override
@@ -306,7 +302,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             query = new Query();
         }
         long startTime = System.currentTimeMillis();
-        String sql = queryParser.parse(query, new QueryOptions(VariantSqlQueryParser.COUNT, true));
+        String sql = queryParser.parse(query, new QueryOptions(QueryOptions.COUNT, true));
         logger.info(sql);
         try (Statement statement = getJdbcConnection().createStatement();
              ResultSet resultSet = statement.executeQuery(sql)) { // Cleans up Statement and RS

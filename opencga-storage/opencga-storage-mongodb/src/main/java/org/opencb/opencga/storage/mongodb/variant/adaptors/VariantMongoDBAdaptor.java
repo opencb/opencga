@@ -22,7 +22,6 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import htsjdk.variant.vcf.VCFConstants;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -32,8 +31,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.cellbase.client.config.ClientConfiguration;
-import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -42,19 +39,15 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.core.results.VariantQueryResult;
-import org.opencb.opencga.storage.core.config.CellBaseConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
@@ -80,7 +73,6 @@ import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEn
  */
 public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
-    private final CellBaseClient cellBaseClient;
     private boolean closeConnection;
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
@@ -123,21 +115,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         collectionName = variantsCollectionName;
         variantsCollection = db.getCollection(collectionName);
         this.studyConfigurationManager = studyConfigurationManager;
-        CellBaseConfiguration cellbaseConfiguration = storageConfiguration.getCellbase();
         this.storageConfiguration = storageConfiguration;
         StorageEngineConfiguration storageEngineConfiguration =
                 storageConfiguration.getStorageEngine(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
         this.configuration = storageEngineConfiguration == null || storageEngineConfiguration.getVariant().getOptions() == null
                 ? new ObjectMap()
                 : storageEngineConfiguration.getVariant().getOptions();
-        String species = configuration.getString(VariantAnnotationManager.SPECIES);
-        String assembly = configuration.getString(VariantAnnotationManager.ASSEMBLY);
-        ClientConfiguration clientConfiguration = cellbaseConfiguration.toClientConfiguration();
-        if (StringUtils.isEmpty(species)) {
-            species = clientConfiguration.getDefaultSpecies();
-        }
-        cellBaseClient = new CellBaseClient(AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(species), assembly, clientConfiguration);
-        CellBaseUtils cellBaseUtils = new CellBaseUtils(cellBaseClient);
+
         queryParser = new VariantMongoDBQueryParser(studyConfigurationManager);
 //        this.cacheManager = new CacheManager(storageConfiguration);
         NUMBER_INSTANCES.incrementAndGet();
@@ -1039,11 +1023,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
         this.studyConfigurationManager = studyConfigurationManager;
-    }
-
-    @Override
-    public CellBaseClient getCellBaseClient() {
-        return cellBaseClient;
     }
 
     public static List<Integer> getLoadedSamples(int fileId, StudyConfiguration studyConfiguration) {
