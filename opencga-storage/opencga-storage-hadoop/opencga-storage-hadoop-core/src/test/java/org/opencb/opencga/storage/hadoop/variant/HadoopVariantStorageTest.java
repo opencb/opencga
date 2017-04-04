@@ -401,6 +401,13 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         utility.get().deleteTableIfAny(TableName.valueOf(tableName));
     }
 
+    @Override
+    default void close() throws Exception {
+        if (manager.get() != null) {
+            manager.get().close();
+        }
+    }
+
     class TestMRExecutor implements MRExecutor {
 
         private static Configuration staticConfiguration;

@@ -17,11 +17,13 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import htsjdk.variant.variantcontext.VariantContext;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantNormalizer;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -118,6 +120,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
             allVariants = dbAdaptor.get(new Query(), new QueryOptions());
             numVariants = allVariants.getNumResults();
         }
+        dbAdaptor = getVariantStorageEngine().getDBAdaptor();
     }
 
 
@@ -477,8 +480,13 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         queryResult = dbAdaptor.get(query, options);
 
         for (Variant variant : queryResult.getResult()) {
-            Set<String> returnedFileIds = variant.getStudies().stream().map(StudyEntry::getFiles).flatMap(fileEntries -> fileEntries
-                    .stream().map(FileEntry::getFileId)).collect(Collectors.toSet());
+            Set<String> returnedFileIds = variant.getStudies()
+                    .stream()
+                    .map(StudyEntry::getFiles)
+                    .flatMap(Collection::stream)
+                    .filter(fileEntry -> sameVariant(variant, fileEntry.getCall()))
+                    .map(FileEntry::getFileId)
+                    .collect(Collectors.toSet());
             assertEquals(Collections.singleton("2"), returnedFileIds);
             Set<String> returnedStudiesIds = variant.getStudies().stream().map(StudyEntry::getStudyId).collect(Collectors.toSet());
             assertTrue("Returned studies :" + returnedStudiesIds.toString(), returnedStudiesIds.contains(studyConfiguration1.getStudyName
@@ -508,7 +516,9 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
 
         // FILTER+FILE1,FILE2
         query = new Query(FILES.key(), file1 + "," + file2).append(FILTER.key(), "PASS")
-                .append(RETURNED_FILES.key(), VariantQueryUtils.ALL);
+                .append(RETURNED_STUDIES.key(), VariantQueryUtils.ALL)
+                .append(RETURNED_FILES.key(), VariantQueryUtils.ALL)
+                .append(RETURNED_SAMPLES.key(), VariantQueryUtils.ALL);
         queryResult = dbAdaptor.get(query, null);
         assertThat(queryResult, everyResult(allVariants,
                 withStudy(studyConfiguration1.getStudyName(), withFileId(anyOf(hasItem(file1.toString()), hasItem(file2.toString()))))));
@@ -518,7 +528,9 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
 
         // FILTER+FILE1;!FILE2
         query = new Query(FILES.key(), file1 + ";!" + file2).append(FILTER.key(), "PASS")
-                .append(RETURNED_FILES.key(), VariantQueryUtils.ALL);
+                .append(RETURNED_STUDIES.key(), VariantQueryUtils.ALL)
+                .append(RETURNED_FILES.key(), VariantQueryUtils.ALL)
+                .append(RETURNED_SAMPLES.key(), VariantQueryUtils.ALL);
         queryResult = dbAdaptor.get(query, null);
         assertThat(queryResult, everyResult(allVariants,
                 withStudy(studyConfiguration1.getStudyName(), withFileId(allOf(hasItem(file1.toString()), not(hasItem(file2.toString())))))));
@@ -528,7 +540,9 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
 
         // FILTER+STUDY
         query = new Query(STUDIES.key(), studyConfiguration1.getStudyId()).append(FILTER.key(), "PASS")
-                .append(RETURNED_STUDIES.key(), VariantQueryUtils.ALL);
+                .append(RETURNED_STUDIES.key(), VariantQueryUtils.ALL)
+                .append(RETURNED_FILES.key(), VariantQueryUtils.ALL)
+                .append(RETURNED_SAMPLES.key(), VariantQueryUtils.ALL);
         queryResult = dbAdaptor.get(query, null);
         assertThat(queryResult, everyResult(allVariants, withStudy(studyConfiguration1.getStudyName())));
 
@@ -579,6 +593,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
                     .stream()
                     .map(StudyEntry::getFiles)
                     .flatMap(Collection::stream)
+                    .filter(fileEntry -> sameVariant(variant, fileEntry.getCall()))
                     .map(FileEntry::getFileId)
                     .map(Integer::valueOf)
                     .collect(Collectors.toSet());
@@ -661,6 +676,24 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
                 }
             }
         }
+    }
+
+
+    private boolean sameVariant(Variant variant, String call) {
+        if (StringUtils.isEmpty(call)) {
+            return true;
+        }
+        String[] split = call.split(":", -1);
+        List<VariantNormalizer.VariantKeyFields> normalized = new VariantNormalizer()
+                .normalize(variant.getChromosome(), Integer.parseInt(split[0]), split[1], Arrays.asList(split[2].split(",")));
+        for (VariantNormalizer.VariantKeyFields variantKeyFields : normalized) {
+            if (variantKeyFields.getStart() == variant.getStart()
+                    && variantKeyFields.getReference().equals(variant.getReference())
+                    && variantKeyFields.getAlternate().equals(variant.getAlternate())) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

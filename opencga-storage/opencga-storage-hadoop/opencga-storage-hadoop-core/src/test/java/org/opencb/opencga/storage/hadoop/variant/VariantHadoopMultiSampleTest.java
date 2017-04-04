@@ -166,7 +166,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         }
 //        checkLoadedFilesS1S2(studyConfiguration, dbAdaptor);
 
-        assertThat(studyConfiguration.getIndexedFiles(), hasItems(0, 1));
+        assertThat(studyConfiguration.getIndexedFiles(), hasItems(1, 2));
     }
 
     @Test
@@ -261,8 +261,8 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         HadoopVariantSourceDBAdaptor fileMetadataManager = dbAdaptor.getVariantSourceDBAdaptor();
         Set<Integer> loadedFiles = fileMetadataManager.getLoadedFiles(studyConfiguration.getStudyId());
         System.out.println("loadedFiles = " + loadedFiles);
-        for (int fileId = 0; fileId <= 16; fileId++) {
-            assertTrue(loadedFiles.contains(fileId));
+        for (int fileId = 1; fileId <= 17; fileId++) {
+            assertThat(loadedFiles, hasItem(fileId));
         }
         for (Integer loadedFile : loadedFiles) {
             VcfMeta vcfMeta = fileMetadataManager.getVcfMeta(studyConfiguration.getStudyId(), loadedFile, null);
