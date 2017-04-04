@@ -1301,7 +1301,7 @@ public class CatalogManagerTest extends GenericTest {
     public void testModifySample() throws CatalogException {
         long studyId = catalogManager.getStudyId("user@1000G:phase1", sessionIdUser);
         long sampleId1 = catalogManager.getSampleManager()
-                .create("user@1000G:phase1", "SAMPLE_1", "", "", null, new QueryOptions(),
+                .create("user@1000G:phase1", "SAMPLE_1", "", "", null, null, new QueryOptions(),
                         sessionIdUser).first().getId();
         long individualId = catalogManager.createIndividual(studyId, "Individual1", "", 0, 0, Individual.Sex.MALE, new QueryOptions(),
                 sessionIdUser).first().getId();
@@ -1310,6 +1310,26 @@ public class CatalogManagerTest extends GenericTest {
                 .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId), null, sessionIdUser)
                 .first();
 
+        assertEquals(individualId, sample.getIndividual().getId());
+    }
+
+    @Test
+    public void testCreateSampleWithIndividual() throws CatalogException {
+        long studyId = catalogManager.getStudyId("user@1000G:phase1", sessionIdUser);
+        long individualId = catalogManager.createIndividual(studyId, "Individual1", "", 0, 0, Individual.Sex.MALE, new QueryOptions(),
+                sessionIdUser).first().getId();
+        long sampleId1 = catalogManager.getSampleManager()
+                .create("user@1000G:phase1", "SAMPLE_1", "", "", new Individual().setId(individualId), null, new QueryOptions(),
+                        sessionIdUser).first().getId();
+        Sample sample = catalogManager.getSampleManager().get(sampleId1, QueryOptions.empty(), sessionIdUser).first();
+
+        assertEquals(individualId, sample.getIndividual().getId());
+
+        // Create sample linking to individual based on the individual name
+        long sampleId2 = catalogManager.getSampleManager()
+                .create("user@1000G:phase1", "SAMPLE_2", "", "", new Individual().setName("Individual1"), null, new QueryOptions(),
+                        sessionIdUser).first().getId();
+        sample = catalogManager.getSampleManager().get(sampleId2, QueryOptions.empty(), sessionIdUser).first();
         assertEquals(individualId, sample.getIndividual().getId());
     }
 

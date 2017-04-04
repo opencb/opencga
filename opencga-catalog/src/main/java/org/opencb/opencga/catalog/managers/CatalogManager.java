@@ -1155,7 +1155,7 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Sample> createSample(long studyId, String name, String source, String description,
                                             Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
-        return sampleManager.create(Long.toString(studyId), name, source, description, attributes, options, sessionId);
+        return sampleManager.create(Long.toString(studyId), name, source, description, null, attributes, options, sessionId);
     }
 
     public long getSampleId(String sampleId, String sessionId) throws CatalogException {
