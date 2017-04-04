@@ -30,6 +30,8 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -43,6 +45,7 @@ import java.util.*;
  */
 public class VariantTableDeletionMapReduce extends AbstractVariantTableMapReduce {
 
+    private Logger logger = LoggerFactory.getLogger(VariantTableDeletionMapReduce.class);
     private Table analysisTable;
     private Table archiveTable;
 
@@ -63,11 +66,11 @@ public class VariantTableDeletionMapReduce extends AbstractVariantTableMapReduce
         List<Cell> cells = GenomeHelper.getVariantColumns(ctx.getValue().rawCells());
         List<Variant> analysisVar = parseCurrentVariantsRegion(cells, ctx.getChromosome());
         ctx.getContext().getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ANALYSIS").increment(analysisVar.size());
-        getLog().info("Loaded {} variants ... ", analysisVar.size());
+        logger.info("Loaded {} variants ... ", analysisVar.size());
         if (!analysisVar.isEmpty()) {
             Variant tmpVar = analysisVar.get(0);
-            if (getLog().isDebugEnabled()) {
-                getLog().debug("Loaded variant from analysis table: " + tmpVar.toJson());
+            if (logger.isDebugEnabled()) {
+                logger.debug("Loaded variant from analysis table: " + tmpVar.toJson());
             }
         }
 
