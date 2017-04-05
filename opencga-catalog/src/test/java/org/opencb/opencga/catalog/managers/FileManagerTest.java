@@ -34,6 +34,8 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.api.IFileManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.AclParams;
+import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.*;
@@ -1478,6 +1480,29 @@ public class FileManagerTest extends GenericTest {
 
         for (File subFile : allFilesInFolder) {
             assertTrue(subFile.getStatus().getName().equals(File.FileStatus.TRASHED));
+        }
+    }
+
+    @Test
+    public void assignPermissionsRecursively() throws Exception {
+        Path folderPath = Paths.get("data", "new", "folder");
+        catalogManager.getFileManager().createFolder(Long.toString(studyId), folderPath.toString(), null, true, null,
+                QueryOptions.empty(), sessionIdUser).first();
+
+        Path filePath = Paths.get("data", "file1.txt");
+        fileManager.create(Long.toString(studyId), File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, filePath.toString(),
+                "", "", new File.FileStatus(), 10, -1, null, -1, null, null, true,
+                "My content", null, sessionIdUser);
+
+        catalogManager.createStudyAcls(Long.toString(studyId), "user2", "", null, sessionIdUser);
+        List<QueryResult<FileAclEntry>> queryResults = fileManager.updateAcl("data/new/," + filePath.toString(),
+                Long.toString(studyId), "user2", new File.FileAclParams("VIEW", AclParams.Action.SET, null), sessionIdUser);
+
+        assertEquals(3, queryResults.size());
+        for (QueryResult<FileAclEntry> queryResult : queryResults) {
+            assertEquals("user2", queryResult.getResult().get(0).getMember());
+            assertEquals(1, queryResult.getResult().get(0).getPermissions().size());
+            assertEquals(FileAclEntry.FilePermissions.VIEW, queryResult.getResult().get(0).getPermissions().iterator().next());
         }
     }
 

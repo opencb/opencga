@@ -338,6 +338,21 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     }
 
     @Override
+    public void membersHavePermissionsInStudy(long studyId, List<String> members) throws CatalogException {
+        for (String member : members) {
+            if (!member.equals("*") && !member.equals("anonymous") && !memberExists(studyId, member)) {
+                throw new CatalogException("Cannot update ACL for " + member + ". First, a general study permission must be "
+                        + "defined for that member.");
+            }
+        }
+    }
+
+    private boolean memberExists(long studyId, String member) throws CatalogDBException {
+        QueryResult<StudyAclEntry> acl = studyDBAdaptor.getAcl(studyId, Arrays.asList(member));
+        return acl.getNumResults() > 0;
+    }
+
+    @Override
     public QueryResult<Study> get(Long studyId, QueryOptions options, String sessionId) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 

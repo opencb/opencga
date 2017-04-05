@@ -33,9 +33,10 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.api.IFileManager;
 import org.opencb.opencga.catalog.models.DataStore;
-import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.FileIndex;
 import org.opencb.opencga.catalog.models.FileTree;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
@@ -65,7 +66,6 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 
@@ -1433,6 +1433,38 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
+    // Temporal method used by deprecated methods. This will be removed at some point.
+    private File.FileAclParams getAclParams(
+            @ApiParam(value = "Comma separated list of permissions to add", required = false) @QueryParam("add") String addPermissions,
+            @ApiParam(value = "Comma separated list of permissions to remove", required = false) @QueryParam("remove") String removePermissions,
+            @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("set") String setPermissions)
+            throws CatalogException {
+        int count = 0;
+        count += StringUtils.isNotEmpty(setPermissions) ? 1 : 0;
+        count += StringUtils.isNotEmpty(addPermissions) ? 1 : 0;
+        count += StringUtils.isNotEmpty(removePermissions) ? 1 : 0;
+        if (count > 1) {
+            throw new CatalogException("Only one of add, remove or set parameters are allowed.");
+        } else if (count == 0) {
+            throw new CatalogException("One of add, remove or set parameters is expected.");
+        }
+
+        String permissions = null;
+        AclParams.Action action = null;
+        if (StringUtils.isNotEmpty(addPermissions)) {
+            permissions = addPermissions;
+            action = AclParams.Action.ADD;
+        }
+        if (StringUtils.isNotEmpty(setPermissions)) {
+            permissions = setPermissions;
+            action = AclParams.Action.SET;
+        }
+        if (StringUtils.isNotEmpty(removePermissions)) {
+            permissions = removePermissions;
+            action = AclParams.Action.REMOVE;
+        }
+        return new org.opencb.opencga.catalog.models.File.FileAclParams(permissions, action, null);
+    }
 
     @GET
     @Path("/{files}/acl/create")
@@ -1447,8 +1479,8 @@ public class FileWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
                                       required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
-            return createOkResponse(catalogManager.getFileManager().createAcls(fileIdStr, studyStr, members, permissions,
-                    sessionId));
+            File.FileAclParams aclParams = getAclParams(permissions, null, null);
+            return createOkResponse(fileManager.updateAcl(fileIdStr, studyStr, members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1456,7 +1488,9 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{files}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of users or groups", response = QueryResponse.class)
+    @ApiOperation(value = "Define a set of permissions for a list of users or groups [DEPRECATED]", response = QueryResponse.class,
+            notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
+                    + "/acl/{members}/update entrypoint.")
     public Response createAclPOST(
             @ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("files") String fileIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
@@ -1464,8 +1498,8 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value="JSON containing the parameters defined in GET. Mandatory keys: 'members'", required = true)
                     StudyWSServer.CreateAclCommands params) {
         try {
-            return createOkResponse(catalogManager.getFileManager().createAcls(fileIdStr, studyStr, params.members, params.permissions,
-                    sessionId));
+            File.FileAclParams aclParams = getAclParams(params.permissions, null, null);
+            return createOkResponse(fileManager.updateAcl(fileIdStr, studyStr, params.members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1500,8 +1534,8 @@ public class FileWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "Comma separated list of permissions to set", required = false)
                               @QueryParam("set") String setPermissions) {
         try {
-            return createOkResponse(catalogManager.getFileManager().updateAcls(fileIdStr, studyStr, memberId, addPermissions,
-                    removePermissions, setPermissions, sessionId));
+            File.FileAclParams aclParams = getAclParams(addPermissions, removePermissions, setPermissions);
+            return createOkResponse(fileManager.updateAcl(fileIdStr, studyStr, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1509,7 +1543,9 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{file}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the permissions granted for the user or group", position = 21, response = QueryResponse.class)
+    @ApiOperation(value = "Update the permissions granted for the user or group [WARNING]", position = 21, response = QueryResponse.class,
+            notes = "WARNING: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
+                    + "to also support changing permissions using queries.")
     public Response updateAclPOST(
             @ApiParam(value = "File id", required = true) @PathParam("file") String fileIdStr,
             @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
@@ -1517,18 +1553,16 @@ public class FileWSServer extends OpenCGAWSServer {
                     String studyStr,
             @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true) StudyWSServer.MemberAclUpdateOld params) {
         try {
-            return createOkResponse(catalogManager.getFileManager().updateAcls(fileIdStr, studyStr, memberId, params.add, params.remove,
-                    params.set, sessionId));
+            File.FileAclParams aclParams = getAclParams(params.add, params.remove, params.set);
+            return createOkResponse(fileManager.updateAcl(fileIdStr, studyStr, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
-    public static class FileAcl extends StudyWSServer.MemberAclUpdateOld {
+    public static class FileAcl extends AclParams {
         public String file;
         public String sample;
-
-        public boolean reset;
     }
 
     @POST
@@ -1540,28 +1574,9 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
             @ApiParam(value="JSON containing the parameters to add ACLs", required = true) FileAcl params) {
         try {
-            if (params.file == null && params.sample == null) {
-                return createErrorResponse("Update ACL", "Only one of these parameters are allowed: sample, "
-                        + "individual, file or cohort per query.");
-            }
-
-            if (params.sample != null) {
-                // Obtain the sample ids
-                AbstractManager.MyResourceIds ids = catalogManager.getSampleManager().getIds(params.sample, studyStr, sessionId);
-
-                Query query = new Query(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ids.getResourceIds());
-                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
-                QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(ids.getStudyId(), query, options, sessionId);
-
-                Set<Long> fileSet = fileQueryResult.getResult().stream().map(file -> file.getId()).collect(Collectors.toSet());
-                params.file = StringUtils.join(fileSet , ",");
-
-                // I do this to make faster the search of the studyId when looking for the individuals
-                studyStr = Long.toString(ids.getStudyId());
-            }
-
-            return createOkResponse(catalogManager.getFileManager().updateAcls(params.file, studyStr, memberId, params.add, params.remove,
-                    params.set, sessionId));
+            File.FileAclParams aclParams = new File.FileAclParams(
+                    params.getPermissions(), params.getAction(), params.sample);
+            return createOkResponse(fileManager.updateAcl(params.file, studyStr, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1569,8 +1584,10 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{files}/acl/{memberIds}/delete")
-    @ApiOperation(value = "Remove all the permissions granted for the user or group", position = 22,
-            response = QueryResponse.class)
+    @ApiOperation(value = "Remove all the permissions granted for the user or group [DEPRECATED]", position = 22,
+            response = QueryResponse.class,
+            notes = "DEPRECATED: The usage of this webservice is discouraged. A RESET action has been added to the /acl/{members}/update "
+                    + "entrypoint.")
     public Response deleteAcl(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("files")
                                       String fileIdsStr,
                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -1578,7 +1595,9 @@ public class FileWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "Comma separated list of members", required = true) @PathParam("memberIds") String
                                           members) {
         try {
-            return createOkResponse(catalogManager.getFileManager().removeFileAcls(fileIdsStr, studyStr, members, sessionId));
+            File.FileAclParams aclParams = new File.FileAclParams(
+                    null, AclParams.Action.RESET, null);
+            return createOkResponse(fileManager.updateAcl(fileIdsStr, studyStr, members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

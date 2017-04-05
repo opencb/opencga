@@ -308,15 +308,6 @@ public interface AuthorizationManager {
      */
     QueryResult<SampleAclEntry> getSampleAcl(String userId, long sampleId, String member) throws CatalogException;
 
-    List<QueryResult<SampleAclEntry>> setSampleAcls(AbstractManager.MyResourceIds resourceIds, List<String> members, String permissions)
-            throws CatalogException;
-
-    List<QueryResult<SampleAclEntry>> addSampleAcls(AbstractManager.MyResourceIds resourceIds, List<String> members, String permissions)
-            throws CatalogException;
-
-    List<QueryResult<SampleAclEntry>> removeSampleAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
-                                                       @Nullable String permissions) throws CatalogException;
-
     /**
      * Removes the ACLs defined for the member.
      *
@@ -333,7 +324,6 @@ public interface AuthorizationManager {
     QueryResult<SampleAclEntry> updateSampleAcl(String userId, long sampleId, String member, @Nullable String addPermissions,
                                                 @Nullable String removePermissions, @Nullable String setPermissions)
             throws CatalogException;
-
 
     //------------------------- End of sample ACL ----------------------
 
@@ -374,6 +364,9 @@ public interface AuthorizationManager {
      *                          defined.
      */
     List<QueryResult<FileAclEntry>> removeFileAcls(AbstractManager.MyResourceIds resourceIds, List<String> members) throws CatalogException;
+
+//    List<QueryResult<FileAclEntry>> removeFileAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
+//                                                   List<String> permissions) throws CatalogException;
 
     List<QueryResult<FileAclEntry>> updateFileAcl(AbstractManager.MyResourceIds resourceIds, String member, @Nullable String addPermissions,
                                                   @Nullable String removePermissions, @Nullable String setPermissions)
@@ -666,6 +659,23 @@ public interface AuthorizationManager {
 
 
     //------------------------- End of panel ACL ----------------------
+
+    <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(AbstractManager.MyResourceIds resources, List<String> members,
+                                                              List<String> permissions,
+                                                              org.opencb.opencga.catalog.db.api.AclDBAdaptor dbAdaptor)
+            throws CatalogException;
+
+    <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
+                                                              List<String> permissions,
+                                                              org.opencb.opencga.catalog.db.api.AclDBAdaptor dbAdaptor)
+            throws CatalogException;
+
+    <E extends AbstractAclEntry> List<QueryResult<E>> removeAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
+                                                                 @Nullable List<String> permissions,
+                                                                 org.opencb.opencga.catalog.db.api.AclDBAdaptor dbAdaptor)
+            throws CatalogException;
+
+    <E extends Enum<E>> void checkValidPermission(List<String> permissions, Class<E> enumClass) throws CatalogException;
 
     /**
      * Checks if the member belongs to one role or not.

@@ -1313,92 +1313,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return sampleDBAdaptor.getAcl(sampleId, members);
     }
 
-    @Override
-    public List<QueryResult<SampleAclEntry>> setSampleAcls(AbstractManager.MyResourceIds resources, List<String> members, String
-            permissions) throws CatalogException {
-        List<QueryResult<SampleAclEntry>> retQueryResultList = new ArrayList<>(resources.getResourceIds().size());
-        List<Long> sampleList = new ArrayList<>(resources.getResourceIds().size());
-        List<String> permissionList = commonSampleChecks(resources, members, permissions, retQueryResultList, sampleList);
-
-        // Remove permissions for the samples the user has permissions for
-        Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleList)
-                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId());
-        sampleDBAdaptor.setAclsToMember(query, members, permissionList);
-
-        List<QueryResult<SampleAclEntry>> acls = sampleDBAdaptor.getAcls(query, members);
-        retQueryResultList.addAll(acls);
-
-        return retQueryResultList;
-    }
-
-    @Override
-    public List<QueryResult<SampleAclEntry>> addSampleAcls(AbstractManager.MyResourceIds resources, List<String> members,
-                                                           String permissions) throws CatalogException {
-        List<QueryResult<SampleAclEntry>> retQueryResultList = new ArrayList<>(resources.getResourceIds().size());
-        List<Long> sampleList = new ArrayList<>(resources.getResourceIds().size());
-        List<String> permissionList = commonSampleChecks(resources, members, permissions, retQueryResultList, sampleList);
-
-        // Remove permissions for the samples the user has permissions for
-        Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleList)
-                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId());
-        sampleDBAdaptor.addAclsToMember(query, members, permissionList);
-
-        List<QueryResult<SampleAclEntry>> acls = sampleDBAdaptor.getAcls(query, members);
-        retQueryResultList.addAll(acls);
-
-        return retQueryResultList;
-    }
-
-    @Override
-    public List<QueryResult<SampleAclEntry>> removeSampleAcls(AbstractManager.MyResourceIds resources, List<String> members,
-                                                              @Nullable String permissions) throws CatalogException {
-        List<QueryResult<SampleAclEntry>> retQueryResultList = new ArrayList<>(resources.getResourceIds().size());
-        List<Long> sampleList = new ArrayList<>(resources.getResourceIds().size());
-        List<String> permissionList = commonSampleChecks(resources, members, permissions, retQueryResultList, sampleList);
-
-        // Remove permissions for the samples the user has permissions for
-        Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleList)
-                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId());
-        sampleDBAdaptor.removeAclsFromMember(query, members, permissionList);
-
-        List<QueryResult<SampleAclEntry>> acls = sampleDBAdaptor.getAcls(query, members);
-        retQueryResultList.addAll(acls);
-
-        return retQueryResultList;
-    }
-
-    private List<String> commonSampleChecks(AbstractManager.MyResourceIds resources, List<String> members, String permissions,
-                                            List<QueryResult<SampleAclEntry>> retQueryResultList, List<Long> sampleList)
-            throws CatalogException {
-        // Check the members are valid
-        checkMembers(dbAdaptorFactory, resources.getStudyId(), members);
-
-        // Check that the permissions are valid if there is any
-        List<String> permissionList = null;
-        if (StringUtils.isNotEmpty(permissions)) {
-            permissionList = Arrays.asList(permissions.split(","));
-            checkPermissions(permissionList, SampleAclEntry.SamplePermissions::valueOf);
-        }
-
-        for (Long sampleId : resources.getResourceIds()) {
-            try {
-                // Check if the userId has proper permissions to modify the sample permissions
-                checkSamplePermission(sampleId, resources.getUser(), SampleAclEntry.SamplePermissions.SHARE);
-                sampleList.add(sampleId);
-            } catch (CatalogException e) {
-                QueryResult<SampleAclEntry> queryResult = new QueryResult<>();
-                queryResult.setErrorMsg(e.getMessage());
-                queryResult.setId(Long.toString(sampleId));
-
-                retQueryResultList.add(queryResult);
-            }
-        }
-        return permissionList;
-    }
-
     @Deprecated
     @Override
     public QueryResult<SampleAclEntry> removeSampleAcl(String userId, long sampleId, String member) throws CatalogException {
@@ -1484,6 +1398,24 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         return sampleDBAdaptor.getAcl(sampleId, Arrays.asList(member));
+    }
+
+    @Override
+    public <E extends Enum<E>> void checkValidPermission(List<String> permissions, Class<E> enumClass) throws CatalogException {
+        if (permissions == null) {
+            return;
+        }
+
+        Set<String> allowedAclEntrySet = new HashSet<>();
+        for (E e : enumClass.getEnumConstants()) {
+            allowedAclEntrySet.add(e.name());
+        }
+
+        for (String permission : permissions) {
+            if (!allowedAclEntrySet.contains(permission)) {
+                throw new CatalogException(permission + " is not a valid permission");
+            }
+        }
     }
 
     @Override
@@ -2868,6 +2800,57 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         return panelDBAdaptor.getAcl(panelId, Arrays.asList(member));
+    }
+
+    @Override
+    public <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(AbstractManager.MyResourceIds resources, List<String> members,
+                                                                     List<String> permissions, AclDBAdaptor dbAdaptor)
+            throws CatalogException {
+        List<QueryResult<E>> retQueryResultList = new ArrayList<>(resources.getResourceIds().size());
+
+        Query query = new Query()
+                .append("id", resources.getResourceIds())
+                .append("studyId", resources.getStudyId());
+        dbAdaptor.setAclsToMember(query, members, permissions);
+
+        List<QueryResult<E>> acls = dbAdaptor.getAcls(query, members);
+        retQueryResultList.addAll(acls);
+
+        return retQueryResultList;
+    }
+
+    @Override
+    public <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(AbstractManager.MyResourceIds resources, List<String> members,
+                                                                     List<String> permissions, AclDBAdaptor dbAdaptor)
+            throws CatalogException {
+        List<QueryResult<E>> retQueryResultList = new ArrayList<>(resources.getResourceIds().size());
+
+        Query query = new Query()
+                .append("id", resources.getResourceIds())
+                .append("studyId", resources.getStudyId());
+        dbAdaptor.addAclsToMember(query, members, permissions);
+
+        List<QueryResult<E>> acls = dbAdaptor.getAcls(query, members);
+        retQueryResultList.addAll(acls);
+
+        return retQueryResultList;
+    }
+
+    @Override
+    public <E extends AbstractAclEntry> List<QueryResult<E>> removeAcls(AbstractManager.MyResourceIds resources, List<String> members,
+                                                                        @Nullable List<String> permissions, AclDBAdaptor dbAdaptor)
+            throws CatalogException {
+        List<QueryResult<E>> retQueryResultList = new ArrayList<>(resources.getResourceIds().size());
+
+        Query query = new Query()
+                .append("id", resources.getResourceIds())
+                .append("studyId", resources.getStudyId());
+        dbAdaptor.removeAclsFromMember(query, members, permissions);
+
+        List<QueryResult<E>> acls = dbAdaptor.getAcls(query, members);
+        retQueryResultList.addAll(acls);
+
+        return retQueryResultList;
     }
 
     @Override

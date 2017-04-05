@@ -53,6 +53,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
+
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -752,6 +754,12 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
         }
 
+        List<String> permissions = Collections.emptyList();
+        if (StringUtils.isNotEmpty(sampleAclParams.getPermissions())) {
+            permissions = Arrays.asList(sampleAclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
+            checkPermissions(permissions, SampleAclEntry.SamplePermissions::valueOf);
+        }
+
         if (StringUtils.isNotEmpty(sampleAclParams.getIndividual())) {
             // Obtain the individual ids
             MyResourceIds ids = catalogManager.getIndividualManager().getIds(sampleAclParams.getIndividual(), studyStr, sessionId);
@@ -819,17 +827,19 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             members = Collections.emptyList();
         }
         CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
+        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
         switch (sampleAclParams.getAction()) {
             case SET:
-                return authorizationManager.setSampleAcls(resourceIds, members, sampleAclParams.getPermissions());
+                return authorizationManager.setAcls(resourceIds, members, permissions, sampleDBAdaptor);
             case ADD:
-                return authorizationManager.addSampleAcls(resourceIds, members, sampleAclParams.getPermissions());
+                return authorizationManager.addAcls(resourceIds, members, permissions, sampleDBAdaptor);
             case REMOVE:
-                return authorizationManager.removeSampleAcls(resourceIds, members, sampleAclParams.getPermissions());
+                return authorizationManager.removeAcls(resourceIds, members, permissions, sampleDBAdaptor);
             case RESET:
+                return authorizationManager.removeAcls(resourceIds, members, null, sampleDBAdaptor);
             default:
-                return authorizationManager.removeSampleAcls(resourceIds, members, null);
+                throw new CatalogException("Unexpected error occurred. No valid action found.");
         }
     }
 
