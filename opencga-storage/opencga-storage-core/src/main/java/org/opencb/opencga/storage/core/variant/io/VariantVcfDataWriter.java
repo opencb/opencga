@@ -164,9 +164,9 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
 
     @Deprecated
     public static int htsExport(VariantDBIterator iterator, StudyConfiguration studyConfiguration, VariantSourceDBAdaptor sourceDBAdaptor,
-                                OutputStream outputStream, QueryOptions queryOptions) {
+                                OutputStream outputStream, Query query, QueryOptions queryOptions) {
 
-        VariantVcfDataWriter exporter = new VariantVcfDataWriter(studyConfiguration, sourceDBAdaptor, outputStream, new Query(),
+        VariantVcfDataWriter exporter = new VariantVcfDataWriter(studyConfiguration, sourceDBAdaptor, outputStream, query,
                 queryOptions);
 
         exporter.open();

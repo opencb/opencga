@@ -37,6 +37,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.io.*;
 import java.net.URI;
@@ -94,7 +95,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
             if (etlResult[i] == null) {
                 etlResult[i] = runDefaultETL(inputUri[i], getVariantStorageEngine(), studyConfiguration,
                         new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                                .append(VariantStorageEngine.Options.FILE_ID.key(), i)
+                                .append(VariantStorageEngine.Options.FILE_ID.key(), i + 1)
                                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false));
             }
         }
@@ -108,23 +109,15 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
 
     @Test
     public void testVcfHtsExportSingleFile() throws Exception {
-        Query query = new Query();
-        LinkedHashSet<Integer> returnedSamplesIds = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(STUDY_NAME, QueryOptions.empty())
-                .first().getSamplesInFiles().get(0);
-        List<String> returnedSamples = new LinkedList<>();
-        Map<Integer, String> sampleIdMap = StudyConfiguration.inverseMap(studyConfiguration.getSampleIds());
-        for (Integer sampleId : returnedSamplesIds) {
-            returnedSamples.add(sampleIdMap.get(sampleId));
-        }
-        query.append(VariantQueryParam.STUDIES.key(), STUDY_NAME)
-                .append(VariantQueryParam.RETURNED_FILES.key(), 0)
-                .append(VariantQueryParam.FILES.key(), 0)
-                .append(VariantQueryParam.RETURNED_SAMPLES.key(), returnedSamples);
+        Query query = new Query()
+                .append(VariantQueryParam.STUDIES.key(), STUDY_NAME)
+                .append(VariantQueryParam.FILES.key(), 1);
+
         Path outputVcf = getTmpRootDir().resolve("hts_sf_" + EXPORTED_FILE_NAME);
-        int failedVariants = VariantVcfDataWriter.htsExport(dbAdaptor.iterator(query, new QueryOptions(QueryOptions.SORT, true)),
+        QueryOptions options = new QueryOptions(QueryOptions.SORT, true);
+        int failedVariants = VariantVcfDataWriter.htsExport(dbAdaptor.iterator(query, options),
                 studyConfiguration, dbAdaptor.getVariantSourceDBAdaptor()
-                , new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), new QueryOptions(VariantQueryParam
-                        .RETURNED_SAMPLES.key(), returnedSamples));
+                , new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), query, options);
 
         assertEquals(0, failedVariants);
         // compare VCF_TEST_FILE_NAME and EXPORTED_FILE_NAME
@@ -140,7 +133,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
         Path outputVcf = getTmpRootDir().resolve("hts_mf_" + EXPORTED_FILE_NAME);
         int failedVariants = VariantVcfDataWriter.htsExport(dbAdaptor.iterator(query, new QueryOptions(QueryOptions.SORT, true)), studyConfiguration,
                 dbAdaptor.getVariantSourceDBAdaptor(),
-                new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), null);
+                new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), query, null);
 
         assertEquals(0, failedVariants);
         // compare VCF_TEST_FILE_NAME and EXPORTED_FILE_NAME
@@ -204,8 +197,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
             assertEquals(message, originalVariant.getEnd(), exportedVariant.getEnd());
             assertWithConflicts(originalVariant, () -> assertEquals("At variant " + originalVariant, originalVariant.getIds(), exportedVariant.getIds()));
             assertEquals(message, originalVariant.getStudies().size(), exportedVariant.getStudies().size());
-            assertEquals(message, originalVariant.getSampleNames("f", "s"), exportedVariant.getSampleNames("f",
-                    "s"));
+            assertEquals(message, originalVariant.getSampleNames("f", "s"), exportedVariant.getSampleNames("f", "s"));
             StudyEntry originalSourceEntry = originalVariant.getStudy("s");
             StudyEntry exportedSourceEntry = exportedVariant.getStudy("s");
             for (String sampleName : originalSourceEntry.getSamplesName()) {
