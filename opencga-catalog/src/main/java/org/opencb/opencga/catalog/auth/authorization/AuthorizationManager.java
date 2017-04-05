@@ -321,17 +321,10 @@ public interface AuthorizationManager {
     @Deprecated
     QueryResult<SampleAclEntry> removeSampleAcl(String userId, long sampleId, String member) throws CatalogException;
 
-    QueryResult<SampleAclEntry> updateSampleAcl(String userId, long sampleId, String member, @Nullable String addPermissions,
-                                                @Nullable String removePermissions, @Nullable String setPermissions)
-            throws CatalogException;
-
     //------------------------- End of sample ACL ----------------------
 
 
     //------------------------- File ACL -----------------------------
-
-    List<QueryResult<FileAclEntry>> createFileAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
-                                                   List<String> permissions) throws CatalogException;
 
     /**
      * Return all the ACLs defined for the file.
@@ -354,31 +347,9 @@ public interface AuthorizationManager {
      */
     QueryResult<FileAclEntry> getFileAcl(String userId, long fileId, String member) throws CatalogException;
 
-    /**
-     * Removes the ACLs defined for the members.
-     *
-     * @param resourceIds Resource object containing the list of file ids, study and user that wants to perform the action.
-     * @param members List of members.
-     * @return the list of fileAclEntries prior to the deletion.
-     * @throws CatalogException if the user asking to remove the ACLs does not have proper permissions or the member does not have any ACL
-     *                          defined.
-     */
-    List<QueryResult<FileAclEntry>> removeFileAcls(AbstractManager.MyResourceIds resourceIds, List<String> members) throws CatalogException;
-
-//    List<QueryResult<FileAclEntry>> removeFileAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
-//                                                   List<String> permissions) throws CatalogException;
-
-    List<QueryResult<FileAclEntry>> updateFileAcl(AbstractManager.MyResourceIds resourceIds, String member, @Nullable String addPermissions,
-                                                  @Nullable String removePermissions, @Nullable String setPermissions)
-            throws CatalogException;
-
-
     //------------------------- End of file ACL ----------------------
 
     //------------------------- Individual ACL -----------------------------
-
-    List<QueryResult<IndividualAclEntry>> createIndividualAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
-                                                               List<String> permissions, boolean propagate) throws CatalogException;
 
     /**
      * Return all the ACLs defined for the individual.
@@ -400,26 +371,6 @@ public interface AuthorizationManager {
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
     QueryResult<IndividualAclEntry> getIndividualAcl(String userId, long individualId, String member) throws CatalogException;
-
-    /**
-     * Removes the ACLs defined for the member.
-     *
-     * @param userId       user asking to remove the ACLs.
-     * @param individualId individual id.
-     * @param member       member whose permissions will be taken out.
-     * @return the IndividualAcl prior to the deletion.
-     * @throws CatalogException if the user asking to remove the ACLs does not have proper permissions or the member does not have any ACL
-     *                          defined.
-     */
-    QueryResult<IndividualAclEntry> removeIndividualAcl(String userId, long individualId, String member) throws CatalogException;
-
-    QueryResult<IndividualAclEntry> updateIndividualAcl(String userId, long individualId, String member, @Nullable String addPermissions,
-                                                        @Nullable String removePermissions, @Nullable String setPermissions,
-                                                        boolean propagate) throws CatalogException;
-
-    List<QueryResult<IndividualAclEntry>> updateIndividualAcl(AbstractManager.MyResourceIds resourceIds, List<String> members,
-                                                              @Nullable String addPermissions, @Nullable String removePermissions,
-                                                              @Nullable String setPermissions, boolean propagate) throws CatalogException;
 
     //------------------------- End of individual ACL ----------------------
 

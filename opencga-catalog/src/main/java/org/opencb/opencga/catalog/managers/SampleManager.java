@@ -748,6 +748,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         if (count > 1) {
             throw new CatalogException("Update ACL: Only one of these parameters are allowed: sample, individual, file or cohort per "
                     + "query.");
+        } else if (count == 0) {
+            throw new CatalogException("Update ACL: At least one of these parameters should be provided: sample, individual, file or "
+                    + "cohort");
         }
 
         if (sampleAclParams.getAction() == null) {

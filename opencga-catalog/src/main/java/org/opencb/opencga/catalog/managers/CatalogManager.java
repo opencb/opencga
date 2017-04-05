@@ -1074,25 +1074,6 @@ public class CatalogManager implements AutoCloseable {
         return individualManager.update(individualId, options, options, sessionId);
     }
 
-//    @Deprecated
-//    public QueryResult shareIndividual(String individualIds, String members, List<String> permissions, boolean override, String sessionId)
-//            throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        List<Long> individualList = individualManager.getIndividualIds(userId, individualIds);
-//        return authorizationManager.setIndividualPermissions(userId, individualList, members, permissions, override);
-//    }
-//
-//    @Deprecated
-//    public QueryResult unshareIndividual(String individualIds, String userIds, String permissions, String sessionId)
-//            throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        List<Long> individualList = individualManager.getIndividualIds(userId, individualIds);
-//        List<String> permissionList = permissions != null && !permissions.isEmpty()
-//                ? Arrays.asList(permissions.split(",")) : Collections.emptyList();
-//        authorizationManager.unsetIndividualPermissions(userId, individualList, userIds, permissionList);
-//        return new QueryResult("unshareIndividual");
-//    }
-
     public List<QueryResult<IndividualAclEntry>> getAllIndividualAcls(String individualIdsStr, @Nullable String studyStr, String sessionId)
             throws CatalogException {
         AbstractManager.MyResourceIds resource = individualManager.getIds(individualIdsStr, studyStr, sessionId);
@@ -1108,43 +1089,10 @@ public class CatalogManager implements AutoCloseable {
         return aclList;
     }
 
-    public List<QueryResult<IndividualAclEntry>> createIndividualAcls(String individualIdsStr, @Nullable String studyStr, String members,
-                                                                      String permissions, boolean propagate, String sessionId)
-            throws CatalogException {
-        AbstractManager.MyResourceIds resource = individualManager.getIds(individualIdsStr, studyStr, sessionId);
-
-        return authorizationManager.createIndividualAcls(resource, Arrays.asList(StringUtils.split(members, ",")),
-                Arrays.asList(StringUtils.split(permissions, ",")), propagate);
-    }
-
-    public List<QueryResult<IndividualAclEntry>> removeIndividualAcl(String individualIdsStr, @Nullable String studyStr, String member,
-                                                                     String sessionId) throws CatalogException {
-        AbstractManager.MyResourceIds resource = individualManager.getIds(individualIdsStr, studyStr, sessionId);
-        List<Long> individualIds = resource.getResourceIds();
-        List<QueryResult<IndividualAclEntry>> individualAclList = new ArrayList<>(individualIds.size());
-        for (int i = 0; i < individualIds.size(); i++) {
-            Long individualId = individualIds.get(i);
-            QueryResult<IndividualAclEntry> individualAcls = authorizationManager.removeIndividualAcl(resource.getUser(), individualId,
-                    member);
-            individualAcls.setId(Long.toString(individualId));
-            individualAclList.add(individualAcls);
-        }
-        return individualAclList;
-    }
-
     public QueryResult<IndividualAclEntry> getIndividualAcl(String individualIdStr, @Nullable String studyStr, String member,
                                                             String sessionId) throws CatalogException {
         AbstractManager.MyResourceId resource = individualManager.getId(individualIdStr, studyStr, sessionId);
         return authorizationManager.getIndividualAcl(resource.getUser(), resource.getResourceId(), member);
-    }
-
-    public QueryResult<IndividualAclEntry> updateIndividualAcl(String individualIdStr, @Nullable String studyStr, String member,
-                                                               @Nullable String addPermissions, @Nullable String removePermissions,
-                                                               @Nullable String setPermissions, boolean propagate, String sessionId)
-            throws CatalogException {
-        AbstractManager.MyResourceId resource = individualManager.getId(individualIdStr, studyStr, sessionId);
-        return authorizationManager.updateIndividualAcl(resource.getUser(), resource.getResourceId(), member, addPermissions,
-                removePermissions, setPermissions, propagate);
     }
 
     /*

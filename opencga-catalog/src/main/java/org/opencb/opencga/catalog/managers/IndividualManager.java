@@ -36,10 +36,12 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IIndividualManager;
 import org.opencb.opencga.catalog.managers.api.IUserManager;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.AnnotationManager;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
+import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
@@ -49,6 +51,8 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 
 /**
  * Created by hpccoll1 on 19/06/15.
@@ -705,6 +709,125 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         }
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
+    }
+
+    @Override
+    public List<QueryResult<IndividualAclEntry>> updateAcl(String individual, String studyStr, String memberIds,
+                                                           Individual.IndividualAclParams aclParams, String sessionId)
+            throws CatalogException {
+        int count = 0;
+        count += StringUtils.isNotEmpty(individual) ? 1 : 0;
+        count += StringUtils.isNotEmpty(aclParams.getSample()) ? 1 : 0;
+
+        if (count > 1) {
+            throw new CatalogException("Update ACL: Only one of these parameters are allowed: individual or sample per query.");
+        } else if (count == 0) {
+            throw new CatalogException("Update ACL: At least one of these parameters should be provided: individual or sample");
+        }
+
+        if (aclParams.getAction() == null) {
+            throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
+        }
+
+        List<String> permissions = Collections.emptyList();
+        if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
+            permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
+            checkPermissions(permissions, IndividualAclEntry.IndividualPermissions::valueOf);
+        }
+
+        if (StringUtils.isNotEmpty(aclParams.getSample())) {
+            // Obtain the sample ids
+            MyResourceIds ids = catalogManager.getSampleManager().getIds(aclParams.getSample(), studyStr, sessionId);
+
+            Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), ids.getResourceIds());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
+            QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(ids.getStudyId(), query, options, sessionId);
+
+            Set<Long> individualSet = sampleQueryResult.getResult().stream().map(sample -> sample.getIndividual().getId())
+                    .collect(Collectors.toSet());
+            individual = StringUtils.join(individualSet, ",");
+
+            studyStr = Long.toString(ids.getStudyId());
+        }
+
+        // Obtain the resource ids
+        MyResourceIds resourceIds = getIds(individual, studyStr, sessionId);
+
+        // Check the user has the permissions needed to change permissions over those individuals
+        for (Long individualId : resourceIds.getResourceIds()) {
+            authorizationManager.checkIndividualPermission(individualId, resourceIds.getUser(),
+                    IndividualAclEntry.IndividualPermissions.SHARE);
+        }
+
+        // Validate that the members are actually valid members
+        List<String> members;
+        if (memberIds != null && !memberIds.isEmpty()) {
+            members = Arrays.asList(memberIds.split(","));
+        } else {
+            members = Collections.emptyList();
+        }
+        CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
+        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
+
+        List<QueryResult<IndividualAclEntry>> queryResults;
+        switch (aclParams.getAction()) {
+            case SET:
+                queryResults = authorizationManager.setAcls(resourceIds, members, permissions, individualDBAdaptor);
+                if (aclParams.isPropagate()) {
+                    List<Long> sampleIds = getSamplesFromIndividuals(resourceIds);
+                    Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(aclParams.getPermissions(), AclParams.Action.SET,
+                            null, null, null);
+                    catalogManager.getSampleManager().updateAcl(StringUtils.join(sampleIds, ","), studyStr, memberIds,
+                            sampleAclParams, sessionId);
+                }
+                break;
+            case ADD:
+                queryResults = authorizationManager.addAcls(resourceIds, members, permissions, individualDBAdaptor);
+                if (aclParams.isPropagate()) {
+                    List<Long> sampleIds = getSamplesFromIndividuals(resourceIds);
+                    Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(aclParams.getPermissions(), AclParams.Action.ADD,
+                            null, null, null);
+                    catalogManager.getSampleManager().updateAcl(StringUtils.join(sampleIds, ","), studyStr, memberIds,
+                            sampleAclParams, sessionId);
+                }
+                break;
+            case REMOVE:
+                queryResults = authorizationManager.removeAcls(resourceIds, members, permissions, individualDBAdaptor);
+                if (aclParams.isPropagate()) {
+                    List<Long> sampleIds = getSamplesFromIndividuals(resourceIds);
+                    Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(aclParams.getPermissions(), AclParams.Action.REMOVE,
+                            null, null, null);
+                    catalogManager.getSampleManager().updateAcl(StringUtils.join(sampleIds, ","), studyStr, memberIds,
+                            sampleAclParams, sessionId);
+                }
+                break;
+            case RESET:
+                queryResults = authorizationManager.removeAcls(resourceIds, members, null, individualDBAdaptor);
+                if (aclParams.isPropagate()) {
+                    List<Long> sampleIds = getSamplesFromIndividuals(resourceIds);
+                    Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(aclParams.getPermissions(), AclParams.Action.RESET,
+                            null, null, null);
+                    catalogManager.getSampleManager().updateAcl(StringUtils.join(sampleIds, ","), studyStr, memberIds,
+                            sampleAclParams, sessionId);
+                }
+                break;
+            default:
+                throw new CatalogException("Unexpected error occurred. No valid action found.");
+        }
+
+        return queryResults;
+    }
+
+    private List<Long> getSamplesFromIndividuals(MyResourceIds resourceIds) throws CatalogDBException {
+        // Look for all the samples belonging to the individual
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
+                .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), resourceIds.getResourceIds());
+
+        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query,
+                new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()));
+
+        return sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
     }
 
     private long commonGetAllInvidualSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {

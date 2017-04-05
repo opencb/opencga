@@ -2610,6 +2610,8 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         if (count > 1) {
             throw new CatalogException("Update ACL: Only one of these parameters are allowed: file or sample per query.");
+        } else if (count == 0) {
+            throw new CatalogException("Update ACL: At least one of these parameters should be provided: file or sample");
         }
 
         if (fileAclParams.getAction() == null) {

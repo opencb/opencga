@@ -206,4 +206,7 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
         throw new NotImplementedException("Group by has to be called passing the study string");
     }
 
+    List<QueryResult<IndividualAclEntry>> updateAcl(String individual, String studyStr, String memberIds,
+                                                    Individual.IndividualAclParams aclParams, String sessionId) throws CatalogException;
+
 }
