@@ -413,7 +413,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                 && !returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)
                 && searchActiveAndAlive()) {
             try {
-                return variantSearchManager.query(dbName, query, options);
+                return getVariantSearchManager().query(dbName, query, options);
             } catch (IOException | VariantSearchException e) {
                 throw Throwables.propagate(e);
             }
@@ -438,7 +438,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                 && !returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)
                 && searchActiveAndAlive()) {
             try {
-                return variantSearchManager.iterator(dbName, query, options);
+                return getVariantSearchManager().iterator(dbName, query, options);
             } catch (IOException | VariantSearchException e) {
                 throw Throwables.propagate(e);
             }
@@ -465,17 +465,13 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         } else {
             try {
                 StopWatch watch = StopWatch.createStarted();
-                long count = variantSearchManager.query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 1)).getNumTotalResults();
+                long count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 1)).getNumTotalResults();
                 int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
                 return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
             } catch (IOException | VariantSearchException e) {
                 throw Throwables.propagate(e);
             }
         }
-    }
-
-    private boolean searchActiveAndAlive() {
-        return configuration.getSearch().getActive() && variantSearchManager != null && variantSearchManager.isAlive(dbName);
     }
 
     public Query parseQuery(Query originalQuery, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
@@ -544,10 +540,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     public synchronized void close() throws IOException {
         super.close();
-        if (mongoDataStoreManager != null) {
-            mongoDataStoreManager.close();
-            mongoDataStoreManager = null;
-        }
         if (dbAdaptor.get() != null) {
             dbAdaptor.get().close();
             dbAdaptor.set(null);
@@ -555,6 +547,10 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         if (studyConfigurationManager != null) {
             studyConfigurationManager.close();
             studyConfigurationManager = null;
+        }
+        if (mongoDataStoreManager != null) {
+            mongoDataStoreManager.close();
+            mongoDataStoreManager = null;
         }
     }
 }

@@ -66,6 +66,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.DEFAULT_TIMEOUT;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MAX_TIMEOUT;
@@ -75,7 +76,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Optio
  */
 public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdaptor> {
 
-    protected VariantSearchManager variantSearchManager;
+    private final AtomicReference<VariantSearchManager> variantSearchManager = new AtomicReference<>();
     private Logger logger = LoggerFactory.getLogger(VariantStorageEngine.class);
     private CellBaseUtils cellBaseUtils;
 
@@ -154,8 +155,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public VariantStorageEngine(String storageEngineId, StorageConfiguration configuration) {
         super(storageEngineId, configuration);
-
-        variantSearchManager = new VariantSearchManager(null, null, configuration);
     }
 
     /**
@@ -416,15 +415,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         VariantDBAdaptor dbAdaptor = getDBAdaptor();
         StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager();
-        variantSearchManager = new VariantSearchManager(
-                studyConfigurationManager, getCellBaseUtils(), configuration);
 
-        if (configuration.getSearch().getActive() && variantSearchManager.isAlive(dbName)) {
+        if (configuration.getSearch().getActive() && getVariantSearchManager().isAlive(dbName)) {
             // first, create the collection it it does not exist
-            if (!variantSearchManager.existCollection(dbName)) {
+            if (!getVariantSearchManager().existCollection(dbName)) {
                 // by default: config=OpenCGAConfSet, shards=1, replicas=1
                 logger.info("Creating Solr collection " + dbName);
-                variantSearchManager.createCollection(dbName);
+                getVariantSearchManager().createCollection(dbName);
             } else {
                 logger.info("Solr collection '" + dbName + "' exists.");
             }
@@ -433,7 +430,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             queryOptions = new QueryOptions();
             queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES_DATA, VariantField.STUDIES_FILES));
             VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
-            variantSearchManager.load(dbName, iterator);
+            getVariantSearchManager().load(dbName, iterator);
         }
         dbAdaptor.close();
     }
@@ -492,13 +489,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return new StudyConfigurationManager(new FileStudyConfigurationAdaptor());
     }
 
-    public VariantSearchManager getVariantSearchManager() {
-        return variantSearchManager;
-    }
-
-    public VariantStorageEngine setVariantSearchManager(VariantSearchManager variantSearchManager) {
-        this.variantSearchManager = variantSearchManager;
-        return this;
+    protected VariantSearchManager getVariantSearchManager() throws StorageEngineException {
+        if (variantSearchManager.get() == null) {
+            synchronized (variantSearchManager) {
+                if (variantSearchManager.get() == null) {
+                    variantSearchManager.set(new VariantSearchManager(getStudyConfigurationManager(), getCellBaseUtils(), configuration));
+                }
+            }
+        }
+        return variantSearchManager.get();
     }
 
     public VariantQueryResult<Variant> get(Query query, QueryOptions options) throws StorageEngineException {
@@ -575,12 +574,16 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         FacetedQueryResult queryResult;
         try {
-            queryResult = variantSearchManager.facetedQuery(dbName, query, options);
-        } catch (IOException | VariantSearchException e) {
+            queryResult = getVariantSearchManager().facetedQuery(dbName, query, options);
+        } catch (IOException | VariantSearchException | StorageEngineException e) {
             throw Throwables.propagate(e);
         }
 
         return queryResult;
+    }
+
+    protected boolean searchActiveAndAlive() throws StorageEngineException {
+        return configuration.getSearch().getActive() && getVariantSearchManager() != null && getVariantSearchManager().isAlive(dbName);
     }
 
     @Override

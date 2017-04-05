@@ -476,7 +476,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 //                && !returnedFields.contains(VariantField.STUDIES_FILES)
                 && searchActiveAndAlive()) {
             try {
-                return variantSearchManager.query(dbName, query, options);
+                return getVariantSearchManager().query(dbName, query, options);
             } catch (IOException | VariantSearchException e) {
                 throw Throwables.propagate(e);
             }
@@ -501,7 +501,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 //                && !returnedFields.contains(VariantField.STUDIES_FILES)
                 && searchActiveAndAlive()) {
             try {
-                return variantSearchManager.iterator(dbName, query, options);
+                return getVariantSearchManager().iterator(dbName, query, options);
             } catch (IOException | VariantSearchException e) {
                 throw Throwables.propagate(e);
             }
@@ -525,17 +525,13 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         } else {
             try {
                 StopWatch watch = StopWatch.createStarted();
-                long count = variantSearchManager.query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 1)).getNumTotalResults();
+                long count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 1)).getNumTotalResults();
                 int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
                 return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
             } catch (IOException | VariantSearchException e) {
                 throw Throwables.propagate(e);
             }
         }
-    }
-
-    private boolean searchActiveAndAlive() {
-        return configuration.getSearch().getActive() && variantSearchManager != null && variantSearchManager.isAlive(dbName);
     }
 
     public Query parseQuery(Query originalQuery, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
