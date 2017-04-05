@@ -47,6 +47,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class VariantSearchManager {
 
+    public static final String SUMMARY = "summary";
     private String collection;
     private StorageConfiguration storageConfiguration;
 

@@ -57,7 +57,7 @@ public class VariantHadoopNamespaceTest extends VariantStorageBaseTest implement
         HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
         VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor();
         Admin admin = dbAdaptor.getConnection().getAdmin();
-//        admin.createNamespace(NamespaceDescriptor.create("opencga").build());
+        admin.createNamespace(NamespaceDescriptor.create("opencga").build());
 
 
         runDefaultETL(smallInputUri, variantStorageManager, newStudyConfiguration(),

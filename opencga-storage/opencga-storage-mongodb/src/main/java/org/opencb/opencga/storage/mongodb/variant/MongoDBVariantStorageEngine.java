@@ -37,6 +37,7 @@ import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.search.VariantSearchManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
@@ -403,7 +404,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         }
         Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
         // TODO: Use CacheManager ?
-        if (options.getBoolean("summary")
+        if (options.getBoolean(VariantSearchManager.SUMMARY)
                 || !query.containsKey(VariantQueryParam.FILES.key())
                 && !query.containsKey(VariantQueryParam.FILTER.key())
                 && !query.containsKey(VariantQueryParam.GENOTYPE.key())
@@ -428,7 +429,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) throws StorageEngineException {
         Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
-        if (options.getBoolean("summary")
+        if (options.getBoolean(VariantSearchManager.SUMMARY)
                 || !query.containsKey(VariantQueryParam.FILES.key())
                 && !query.containsKey(VariantQueryParam.FILTER.key())
                 && !query.containsKey(VariantQueryParam.GENOTYPE.key())

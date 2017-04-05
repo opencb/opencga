@@ -87,4 +87,7 @@ public class CellBaseUtils {
         return genes;
     }
 
+    public CellBaseClient getCellBaseClient() {
+        return cellBaseClient;
+    }
 }
