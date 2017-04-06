@@ -941,13 +941,13 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         QueryResult<Group> group = studyDBAdaptor.getGroup(studyId, groupId, Collections.emptyList());
         group.setId("Delete group");
 
-        studyDBAdaptor.deleteGroup(studyId, groupId);
-
         // Remove the permissions the group might have had
         if (authorizationManager.memberHasPermissionsInStudy(studyId, groupId)) {
             Study.StudyAclParams aclParams = new Study.StudyAclParams(null, AclParams.Action.RESET, null);
             updateAcl(Long.toString(studyId), groupId, aclParams, sessionId);
         }
+
+        studyDBAdaptor.deleteGroup(studyId, groupId);
 
         return group;
     }

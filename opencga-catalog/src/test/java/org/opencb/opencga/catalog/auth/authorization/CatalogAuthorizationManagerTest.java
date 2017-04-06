@@ -375,19 +375,19 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         assertEquals(0, studyAcls.getNumResults());
     }
 
-    @Test
-    public void removeOwnerFromRoleAdmin() throws CatalogException {
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("not allowed");
-//        catalogManager.unshareStudy(s1, ownerUser, ownerSessionId);
-        catalogManager.removeStudyAcl(Long.toString(s1), ownerUser, ownerSessionId);
-    }
+//    @Test
+//    public void removeOwnerFromRoleAdmin() throws CatalogException {
+//        thrown.expect(CatalogException.class);
+//        thrown.expectMessage("not allowed");
+////        catalogManager.unshareStudy(s1, ownerUser, ownerSessionId);
+//        catalogManager.removeStudyAcl(Long.toString(s1), ownerUser, ownerSessionId);
+//    }
 
     @Test
     public void removeNonExistingUserFromRole() throws CatalogException {
         String userNotRegistered = "userNotRegistered";
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("did not have any ACLs defined");
+        thrown.expectMessage("does not exist");
 //        catalogManager.unshareStudy(s1, userNotRegistered, ownerSessionId);
         catalogManager.removeStudyAcl(Long.toString(s1), userNotRegistered, ownerSessionId);
     }
@@ -396,7 +396,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void removeNonExistingGroupFromRole() throws CatalogException {
         String groupNotRegistered = "@groupNotRegistered";
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("did not have any ACLs defined");
+        thrown.expectMessage("does not exist");
 //        catalogManager.unshareStudy(s1, groupNotRegistered, ownerSessionId);
         catalogManager.removeStudyAcl(Long.toString(s1), groupNotRegistered, ownerSessionId);
     }
