@@ -1263,40 +1263,10 @@ public class CatalogManager implements AutoCloseable {
         return aclList;
     }
 
-    public List<QueryResult<CohortAclEntry>> createCohortAcls(String cohortIdsStr, @Nullable String studyStr, String members,
-                                                              String permissions, String sessionId) throws CatalogException {
-        AbstractManager.MyResourceIds resource = cohortManager.getIds(cohortIdsStr, studyStr, sessionId);
-
-        return authorizationManager.createCohortAcls(resource, Arrays.asList(StringUtils.split(members, ",")),
-                Arrays.asList(StringUtils.split(permissions, ",")));
-    }
-
-    public List<QueryResult<CohortAclEntry>> removeCohortAcl(String cohortIdsStr, @Nullable String studyStr, String member,
-                                                             String sessionId) throws CatalogException {
-        AbstractManager.MyResourceIds resource = cohortManager.getIds(cohortIdsStr, studyStr, sessionId);
-        List<Long> cohortIds = resource.getResourceIds();
-        List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(cohortIds.size());
-        for (int i = 0; i < cohortIds.size(); i++) {
-            Long cohortId = cohortIds.get(i);
-            QueryResult<CohortAclEntry> cohortAcls = authorizationManager.removeCohortAcl(resource.getUser(), cohortId, member);
-            cohortAcls.setId(Long.toString(cohortId));
-            cohortAclList.add(cohortAcls);
-        }
-        return cohortAclList;
-    }
-
     public QueryResult<CohortAclEntry> getCohortAcl(String cohortIdStr, @Nullable String studyStr, String member, String sessionId)
             throws CatalogException {
         AbstractManager.MyResourceId resource = cohortManager.getId(cohortIdStr, studyStr, sessionId);
         return authorizationManager.getCohortAcl(resource.getUser(), resource.getResourceId(), member);
-    }
-
-    public QueryResult<CohortAclEntry> updateCohortAcl(String cohortIdStr, @Nullable String studyStr, String member,
-                                                       @Nullable String addPermissions, @Nullable String removePermissions,
-                                                       @Nullable String setPermissions, String sessionId) throws CatalogException {
-        AbstractManager.MyResourceId resource = cohortManager.getId(cohortIdStr, studyStr, sessionId);
-        return authorizationManager.updateCohortAcl(resource.getUser(), resource.getResourceId(), member, addPermissions, removePermissions,
-                setPermissions);
     }
 
     /*

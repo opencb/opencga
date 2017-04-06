@@ -35,9 +35,11 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.ICohortManager;
 import org.opencb.opencga.catalog.managers.api.IUserManager;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.AnnotationManager;
+import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
@@ -47,6 +49,8 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 
 /**
  * Created by pfurio on 06/07/16.
@@ -467,6 +471,55 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         }
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
+    }
+
+    @Override
+    public List<QueryResult<CohortAclEntry>> updateAcl(String cohort, String studyStr, String memberIds, AclParams aclParams,
+                                                       String sessionId) throws CatalogException {
+        if (StringUtils.isEmpty(cohort)) {
+            throw new CatalogException("Missing cohort parameter");
+        }
+
+        if (aclParams.getAction() == null) {
+            throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
+        }
+
+        List<String> permissions = Collections.emptyList();
+        if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
+            permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
+            checkPermissions(permissions, CohortAclEntry.CohortPermissions::valueOf);
+        }
+
+        // Obtain the resource ids
+        MyResourceIds resourceIds = getIds(cohort, studyStr, sessionId);
+
+        // Check the user has the permissions needed to change permissions over those files
+        for (Long cohortId : resourceIds.getResourceIds()) {
+            authorizationManager.checkCohortPermission(cohortId, resourceIds.getUser(), CohortAclEntry.CohortPermissions.SHARE);
+        }
+
+        // Validate that the members are actually valid members
+        List<String> members;
+        if (memberIds != null && !memberIds.isEmpty()) {
+            members = Arrays.asList(memberIds.split(","));
+        } else {
+            members = Collections.emptyList();
+        }
+        CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
+        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
+
+        switch (aclParams.getAction()) {
+            case SET:
+                return authorizationManager.setAcls(resourceIds, members, permissions, cohortDBAdaptor);
+            case ADD:
+                return authorizationManager.addAcls(resourceIds, members, permissions, cohortDBAdaptor);
+            case REMOVE:
+                return authorizationManager.removeAcls(resourceIds, members, permissions, cohortDBAdaptor);
+            case RESET:
+                return authorizationManager.removeAcls(resourceIds, members, null, cohortDBAdaptor);
+            default:
+                throw new CatalogException("Unexpected error occurred. No valid action found.");
+        }
     }
 
     @Override

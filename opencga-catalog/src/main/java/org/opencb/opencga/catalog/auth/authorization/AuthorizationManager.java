@@ -376,9 +376,6 @@ public interface AuthorizationManager {
 
     //------------------------- Cohort ACL -----------------------------
 
-    List<QueryResult<CohortAclEntry>> createCohortAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
-                                                   List<String> permissions) throws CatalogException;
-
     /**
      * Return all the ACLs defined for the cohort.
      *
@@ -399,22 +396,6 @@ public interface AuthorizationManager {
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
     QueryResult<CohortAclEntry> getCohortAcl(String userId, long cohortId, String member) throws CatalogException;
-
-    /**
-     * Removes the ACLs defined for the member.
-     *
-     * @param userId   user asking to remove the ACLs.
-     * @param cohortId cohort id.
-     * @param member   member whose permissions will be taken out.
-     * @return the CohortAcl prior to the deletion.
-     * @throws CatalogException if the user asking to remove the ACLs does not have proper permissions or the member does not have any ACL
-     *                          defined.
-     */
-    QueryResult<CohortAclEntry> removeCohortAcl(String userId, long cohortId, String member) throws CatalogException;
-
-    QueryResult<CohortAclEntry> updateCohortAcl(String userId, long cohortId, String member, @Nullable String addPermissions,
-                                                @Nullable String removePermissions, @Nullable String setPermissions)
-            throws CatalogException;
 
     //------------------------- End of cohort ACL ----------------------
 
