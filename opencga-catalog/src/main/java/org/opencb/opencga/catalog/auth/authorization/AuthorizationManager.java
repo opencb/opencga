@@ -466,28 +466,6 @@ public interface AuthorizationManager {
 
     //------------------------- Job ACL -----------------------------
 
-    QueryResult<JobAclEntry> createJobAcls(String userId, long jobId, List<String> members, List<String> permissions)
-            throws CatalogException;
-
-    default QueryResult<JobAclEntry> createJobAcls(String userId, long jobId, String members, String permissions) throws CatalogException {
-
-        List<String> permissionList;
-        if (permissions != null && !permissions.isEmpty()) {
-            permissionList = Arrays.asList(permissions.split(","));
-        } else {
-            permissionList = Collections.emptyList();
-        }
-
-        List<String> memberList;
-        if (members != null && !members.isEmpty()) {
-            memberList = Arrays.asList(members.split(","));
-        } else {
-            memberList = Collections.emptyList();
-        }
-
-        return createJobAcls(userId, jobId, memberList, permissionList);
-    }
-
     /**
      * Return all the ACLs defined for the job.
      *
@@ -508,22 +486,6 @@ public interface AuthorizationManager {
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
     QueryResult<JobAclEntry> getJobAcl(String userId, long jobId, String member) throws CatalogException;
-
-    /**
-     * Removes the ACLs defined for the member.
-     *
-     * @param userId user asking to remove the ACLs.
-     * @param jobId  job id.
-     * @param member member whose permissions will be taken out.
-     * @return the JobAcl prior to the deletion.
-     * @throws CatalogException if the user asking to remove the ACLs does not have proper permissions or the member does not have any ACL
-     *                          defined.
-     */
-    QueryResult<JobAclEntry> removeJobAcl(String userId, long jobId, String member) throws CatalogException;
-
-    QueryResult<JobAclEntry> updateJobAcl(String userId, long jobId, String member, @Nullable String addPermissions,
-                                          @Nullable String removePermissions, @Nullable String setPermissions) throws CatalogException;
-
 
     //------------------------- End of job ACL ----------------------
 

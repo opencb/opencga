@@ -1434,7 +1434,8 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     // Temporal method used by deprecated methods. This will be removed at some point.
-    private File.FileAclParams getAclParams(
+    @Override
+    protected File.FileAclParams getAclParams(
             @ApiParam(value = "Comma separated list of permissions to add", required = false) @QueryParam("add") String addPermissions,
             @ApiParam(value = "Comma separated list of permissions to remove", required = false) @QueryParam("remove") String removePermissions,
             @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("set") String setPermissions)

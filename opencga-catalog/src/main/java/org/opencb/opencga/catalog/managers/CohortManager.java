@@ -493,7 +493,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         // Obtain the resource ids
         MyResourceIds resourceIds = getIds(cohort, studyStr, sessionId);
 
-        // Check the user has the permissions needed to change permissions over those files
+        // Check the user has the permissions needed to change permissions
         for (Long cohortId : resourceIds.getResourceIds()) {
             authorizationManager.checkCohortPermission(cohortId, resourceIds.getUser(), CohortAclEntry.CohortPermissions.SHARE);
         }

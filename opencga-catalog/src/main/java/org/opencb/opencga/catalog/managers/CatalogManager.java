@@ -992,49 +992,10 @@ public class CatalogManager implements AutoCloseable {
         return aclList;
     }
 
-    public List<QueryResult<JobAclEntry>> createJobAcls(String jobIdsStr, String members, String permissions,
-                                                        String sessionId) throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        String[] jobNameSplit = jobIdsStr.split(",");
-        List<Long> jobIds = jobManager.getIds(userId, jobIdsStr);
-        List<QueryResult<JobAclEntry>> jobAclList = new ArrayList<>(jobIds.size());
-        for (int i = 0; i < jobIds.size(); i++) {
-            Long jobId = jobIds.get(i);
-            QueryResult<JobAclEntry> jobAcls = authorizationManager.createJobAcls(userId, jobId, members,
-                    permissions);
-            jobAcls.setId(jobNameSplit[i]);
-            jobAclList.add(jobAcls);
-        }
-        return jobAclList;
-    }
-
-    public List<QueryResult<JobAclEntry>> removeJobAcl(String jobIdsStr, String member, String sessionId)
-            throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        String[] jobNameStr = jobIdsStr.split(",");
-        List<Long> jobIds = jobManager.getIds(userId, jobIdsStr);
-        List<QueryResult<JobAclEntry>> jobAclList = new ArrayList<>(jobIds.size());
-        for (int i = 0; i < jobIds.size(); i++) {
-            Long jobId = jobIds.get(i);
-            QueryResult<JobAclEntry> jobAcls = authorizationManager.removeJobAcl(userId, jobId, member);
-            jobAcls.setId(jobNameStr[i]);
-            jobAclList.add(jobAcls);
-        }
-        return jobAclList;
-    }
-
     public QueryResult<JobAclEntry> getJobAcl(String jobIdStr, String member, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         long jobId = jobManager.getId(userId, jobIdStr);
         return authorizationManager.getJobAcl(userId, jobId, member);
-    }
-
-    public QueryResult<JobAclEntry> updateJobAcl(String jobIdStr, String member, @Nullable String addPermissions,
-                                                 @Nullable String removePermissions, @Nullable String setPermissions, String sessionId)
-            throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        long jobId = jobManager.getId(userId, jobIdStr);
-        return authorizationManager.updateJobAcl(userId, jobId, member, addPermissions, removePermissions, setPermissions);
     }
 
     /*

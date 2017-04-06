@@ -482,7 +482,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true)
                                    @DefaultValue("") @QueryParam("members") String members) {
         try {
-            Sample.SampleAclParams sampleAclParams = getSampleAclParams(permissions, null, null);
+            Sample.SampleAclParams sampleAclParams = getAclParams(permissions, null, null);
             return createOkResponse(sampleManager.updateAcl(sampleIdsStr, studyStr, members, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -501,7 +501,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value="JSON containing the parameters defined in GET. Mandatory keys: 'members'", required = true)
                     StudyWSServer.CreateAclCommands params) {
         try {
-            Sample.SampleAclParams sampleAclParams = getSampleAclParams(params.permissions, null, null);
+            Sample.SampleAclParams sampleAclParams = getAclParams(params.permissions, null, null);
             return createOkResponse(sampleManager.updateAcl(sampleIdsStr, studyStr, params.members, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -533,7 +533,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "Comma separated list of permissions to remove", required = false) @QueryParam("remove") String removePermissions,
                               @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("set") String setPermissions) {
         try {
-            Sample.SampleAclParams sampleAclParams = getSampleAclParams(addPermissions, removePermissions, setPermissions);
+            Sample.SampleAclParams sampleAclParams = getAclParams(addPermissions, removePermissions, setPermissions);
             return createOkResponse(sampleManager.updateAcl(sampleIdStr, studyStr, memberId, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -552,7 +552,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
             @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true) StudyWSServer.MemberAclUpdateOld params) {
         try {
-            Sample.SampleAclParams sampleAclParams = getSampleAclParams(params.add, params.remove, params.set);
+            Sample.SampleAclParams sampleAclParams = getAclParams(params.add, params.remove, params.set);
             return createOkResponse(sampleManager.updateAcl(sampleIdStr, studyStr, memberId, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -560,11 +560,12 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     // Temporal method used by deprecated methods. This will be removed at some point.
-    private Sample.SampleAclParams getSampleAclParams(@ApiParam(value = "Comma separated list of permissions to add", required = false)
+    @Override
+    protected Sample.SampleAclParams getAclParams(@ApiParam(value = "Comma separated list of permissions to add", required = false)
                                                       @QueryParam("add") String addPermissions,
-                                                      @ApiParam(value = "Comma separated list of permissions to remove", required = false)
+                                                @ApiParam(value = "Comma separated list of permissions to remove", required = false)
                                                       @QueryParam("remove") String removePermissions,
-                                                      @ApiParam(value = "Comma separated list of permissions to set", required = false)
+                                                @ApiParam(value = "Comma separated list of permissions to set", required = false)
                                                       @QueryParam("set") String setPermissions) throws CatalogException {
         int count = 0;
         count += StringUtils.isNotEmpty(setPermissions) ? 1 : 0;

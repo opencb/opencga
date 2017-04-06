@@ -1717,43 +1717,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return datasetDBAdaptor.getAcl(datasetId, Arrays.asList(member));
     }
 
-    @Override
-    public QueryResult<JobAclEntry> createJobAcls(String userId, long jobId, List<String> members, List<String> permissions)
-            throws CatalogException {
-        jobDBAdaptor.checkId(jobId);
-        // Check if the userId has proper permissions for all the jobs.
-        checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.SHARE);
-
-        // Check if all the members have a permission already set at the study level.
-        long studyId = jobDBAdaptor.getStudyId(jobId);
-        for (String member : members) {
-            if (!member.equals("*") && !member.equals("anonymous") && !memberExists(studyId, member)) {
-                throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
-                        + "defined for that member.");
-            }
-        }
-
-        // Check all the members exist in all the possible different studies
-        checkMembers(dbAdaptorFactory, studyId, members);
-
-        // Check if any of the members already have permissions set in the job
-        if (anyMemberHasPermissions(studyId, jobId, members, jobDBAdaptor)) {
-            throw new CatalogException("Cannot create ACL. At least one of the members already have some permissions set for this "
-                    + "particular job. Please, use update instead.");
-        }
-
-        // Set the permissions
-        int timeSpent = 0;
-        List<JobAclEntry> jobAclList = new ArrayList<>(members.size());
-        for (String member : members) {
-            JobAclEntry jobAcl = new JobAclEntry(member, permissions);
-            QueryResult<JobAclEntry> jobAclQueryResult = jobDBAdaptor.createAcl(jobId, jobAcl);
-            timeSpent += jobAclQueryResult.getDbTime();
-            jobAclList.add(jobAclQueryResult.first());
-        }
-
-        return new QueryResult<>("create job acl", timeSpent, jobAclList.size(), jobAclList.size(), "", "", jobAclList);
-    }
 
     @Override
     public QueryResult<JobAclEntry> getAllJobAcls(String userId, long jobId) throws CatalogException {
@@ -1813,77 +1776,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         return jobDBAdaptor.getAcl(jobId, members);
-    }
-
-    @Override
-    public QueryResult<JobAclEntry> removeJobAcl(String userId, long jobId, String member) throws CatalogException {
-        jobDBAdaptor.checkId(jobId);
-        checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.SHARE);
-
-        long studyId = jobDBAdaptor.getStudyId(jobId);
-        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
-
-        // Obtain the ACLs the member had
-        QueryResult<JobAclEntry> jobDBAdaptorAcl = jobDBAdaptor.getAcl(jobId, Arrays.asList(member));
-        if (jobDBAdaptorAcl == null || jobDBAdaptorAcl.getNumResults() == 0) {
-            throw new CatalogException("Could not remove the ACLs for " + member + ". It seems " + member + " did not have any ACLs "
-                    + "defined");
-        }
-
-        jobDBAdaptor.removeAcl(jobId, member);
-
-        jobDBAdaptorAcl.setId("Remove job ACLs");
-        return jobDBAdaptorAcl;
-    }
-
-    @Override
-    public QueryResult<JobAclEntry> updateJobAcl(String userId, long jobId, String member, @Nullable String addPermissions,
-                                                 @Nullable String removePermissions, @Nullable String setPermissions)
-            throws CatalogException {
-        checkUpdateParams(addPermissions, removePermissions, setPermissions);
-
-        jobDBAdaptor.checkId(jobId);
-        checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.SHARE);
-
-        long studyId = jobDBAdaptor.getStudyId(jobId);
-        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
-
-        // Check that the member has permissions
-        Query query = new Query()
-                .append(JobDBAdaptor.QueryParams.ID.key(), jobId)
-                .append(JobDBAdaptor.QueryParams.ACL_MEMBER.key(), member);
-        QueryResult<Long> count = jobDBAdaptor.count(query);
-        if (count == null || count.first() == 0) {
-            throw new CatalogException("Could not update ACLs for " + member + ". It seems the member does not have any permissions set "
-                    + "yet.");
-        }
-
-        List<String> permissions;
-        if (setPermissions != null) {
-            permissions = Arrays.asList(setPermissions.split(","));
-            // Check if the permissions are correct
-            checkPermissions(permissions, JobAclEntry.JobPermissions::valueOf);
-
-            jobDBAdaptor.setAclsToMember(jobId, member, permissions);
-        } else {
-            if (addPermissions != null) {
-                permissions = Arrays.asList(addPermissions.split(","));
-                // Check if the permissions are correct
-                checkPermissions(permissions, JobAclEntry.JobPermissions::valueOf);
-
-                jobDBAdaptor.addAclsToMember(jobId, member, permissions);
-            }
-
-            if (removePermissions != null) {
-                permissions = Arrays.asList(removePermissions.split(","));
-                // Check if the permissions are correct
-                checkPermissions(permissions, JobAclEntry.JobPermissions::valueOf);
-
-                jobDBAdaptor.removeAclsFromMember(jobId, member, permissions);
-            }
-        }
-
-        return jobDBAdaptor.getAcl(jobId, Arrays.asList(member));
     }
 
     @Override
