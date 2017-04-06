@@ -81,6 +81,30 @@ public class SolrQueryParser {
         }
 
         //-------------------------------------
+        // Facet processing
+        //-------------------------------------
+
+        // facet fields (query parameter: facet)
+        // multiple faceted fields are separated by ";"
+        // nested faceted fields (i.e., Solr pivots) are separated by ">>", e.g.: studies>>type
+        if (queryOptions.containsKey(QueryOptions.FACET)) {
+            parseSolrFacetFields(queryOptions.get(QueryOptions.FACET).toString(), solrQuery);
+        }
+
+        // facet ranges,
+        // query parameter name: facetRange
+        // multiple facet ranges are separated by ";"
+        // query parameter value: field:start:end:gap, e.g.: sift:0:1:0.5
+        if (queryOptions.containsKey(QueryOptions.FACET_RANGE)) {
+            parseSolrFacetRanges(queryOptions.get(QueryOptions.FACET_RANGE).toString(), solrQuery);
+        }
+
+        // facet intersections,
+        if (queryOptions.containsKey(QueryOptions.FACET_INTERSECTION)) {
+            parseSolrFacetIntersections(queryOptions.get(QueryOptions.FACET_INTERSECTION).toString(), solrQuery);
+        }
+
+        //-------------------------------------
         // Query processing
         //-------------------------------------
 
@@ -116,12 +140,12 @@ public class SolrQueryParser {
             if (genes.size() > 0) {
                 // consequence types and genes
                 String or = buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes);
-                if (or.isEmpty()) {
+                if (xrefs.size() == 0 && regions.size() == 0) {
                     // no xrefs or regions: genes AND cts
                     filterList.add(buildGeneAndCt(genes, consequenceTypes));
                 } else {
                     // otherwise: [((xrefs OR regions) AND cts) OR (genes AND cts)]
-                    filterList.add(or + " OR (" + buildGeneAndCt(genes, consequenceTypes) + ")");
+                    filterList.add("(" + or + ") OR (" + buildGeneAndCt(genes, consequenceTypes) + ")");
                 }
             } else {
                 // consequence types but no genes: (xrefs OR regions) AND cts
@@ -142,24 +166,29 @@ public class SolrQueryParser {
         // type (t)
         String key = VariantQueryParams.STUDIES.key();
         if (isValidParam(query, VariantQueryParams.STUDIES)) {
-            String value = query.getString(key);
-            VariantDBAdaptorUtils.QueryOperation op = checkOperator(value);
-            Set<Integer> studyIds = new HashSet<>(variantDBAdaptorUtils.getStudyIds(splitValue(value, op), queryOptions));
-            List<String> studyNames = new ArrayList<>(studyIds.size());
-            Map<String, Integer> map = variantDBAdaptorUtils.getStudyConfigurationManager().getStudies(null);
-            if (map != null && map.size() > 1) {
-                map.forEach((name, id) -> {
-                    if (studyIds.contains(id)) {
-                        String[] s = name.split(":");
-                        studyNames.add(s[s.length - 1]);
-                    }
-                });
+            try {
+                String value = query.getString(key);
+                VariantDBAdaptorUtils.QueryOperation op = checkOperator(value);
+                Set<Integer> studyIds = new HashSet<>(variantDBAdaptorUtils.getStudyIds(splitValue(value, op), queryOptions));
+                List<String> studyNames = new ArrayList<>(studyIds.size());
+                Map<String, Integer> map = variantDBAdaptorUtils.getStudyConfigurationManager().getStudies(null);
+                if (map != null && map.size() > 1) {
+                    map.forEach((name, id) -> {
+                        if (studyIds.contains(id)) {
+                            String[] s = name.split(":");
+                            studyNames.add(s[s.length - 1]);
+                        }
+                    });
 
-                if (op == null || op == VariantDBAdaptorUtils.QueryOperation.OR) {
-                    filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ",")));
-                } else {
-                    filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ";")));
+                    if (op == null || op == VariantDBAdaptorUtils.QueryOperation.OR) {
+                        filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ",")));
+                    } else {
+                        filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ";")));
+                    }
                 }
+            } catch (NullPointerException e) {
+                logger.error(e.getMessage());
+                e.printStackTrace();
             }
         }
 
@@ -235,38 +264,6 @@ public class SolrQueryParser {
             filterList.add(parseCategoryTermValue("traits", query.getString(key)));
         }
 
-        //-------------------------------------
-        // Facet processing
-        //-------------------------------------
-
-        if (query.containsKey("facet.field")) {
-            solrQuery.addFacetField((query.get("facet.field").toString()));
-        }
-
-        if (query.containsKey("facet.fields")) {
-            solrQuery.addFacetField((query.get("facet.fields").toString().split(",")));
-        }
-
-        if (query.containsKey("facet.query")) {
-            solrQuery.addFacetQuery(query.get("facet.query").toString());
-        }
-
-        if (query.containsKey("facet.prefix")) {
-            solrQuery.setFacetPrefix(query.get("facet.prefix").toString());
-        }
-
-        if (query.containsKey("facet.range")) {
-
-            Map<String, Map<String, Number>> rangeFields = (Map<String, Map<String, Number>>) query.get("facet.range");
-
-            for (String k : rangeFields.keySet()) {
-                Number rangeStart = rangeFields.get(k).get("facet.range.start");
-                Number rangeEnd = rangeFields.get(k).get("facet.range.end");
-                Number rangeGap = rangeFields.get(k).get("facet.range.gap");
-                solrQuery.addNumericRangeFacet(k, rangeStart, rangeEnd, rangeGap);
-            }
-        }
-
         logger.debug("query = {}\n", query.toJson());
 
         solrQuery.setQuery("*:*");
@@ -290,7 +287,7 @@ public class SolrQueryParser {
             return false;
         }
         if (xref.indexOf(":") == -1) {
-            return false;
+            return true;
         }
         return true;
     }
@@ -630,9 +627,9 @@ public class SolrQueryParser {
                     sb.append(" OR ");
                 }
                 sb.append("(");
-                if (region.getStart() == 0 && region.getEnd() == 2147483647) {
+                if (region.getStart() == 0 && region.getEnd() == Integer.MAX_VALUE) {
                     sb.append("chromosome:").append(region.getChromosome());
-                } else if (region.getEnd() == 2147483647) {
+                } else if (region.getEnd() == Integer.MAX_VALUE) {
                     sb.append("chromosome:").append(region.getChromosome())
                             .append(" AND start:").append(region.getStart());
                 } else {
@@ -675,13 +672,13 @@ public class SolrQueryParser {
      */
     private String buildXrefOrRegionAndConsequenceType(List<String> xrefs, List<Region> regions, List<String> cts) {
         String orCts = buildConsequenceTypeOr(cts);
-        String orXrefs = buildXrefOrGeneOrRegion(xrefs, null, regions);
-        if (orXrefs.isEmpty()) {
+        if (xrefs.size() == 0 && regions.size() == 0) {
             // consequences type but no xrefs, no genes, no regions
             // we must make an OR with all consequences types and add it to the "AND" filter list
             return orCts;
         } else {
-            return orXrefs + " AND (" + orCts + ")";
+            String orXrefs = buildXrefOrGeneOrRegion(xrefs, null, regions);
+            return "(" +  orXrefs + ") AND (" + orCts + ")";
         }
     }
 
@@ -705,5 +702,162 @@ public class SolrQueryParser {
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * Parse Solr facet fields from string containing facet definitions separated by semicolon.
+     * This format is: field_name[field_values_1,field_values_2...]:skip:limit
+     * Multiple facet fields are separated by semicolons (;)
+     * and nested fields are separated by >>
+     * E.g.:  chromosome[1,2,3,4,5];studies[1kg,exac]>>type[snv,indel]
+     *
+     * @param strFields   String containing the facet field definitions separated by semicolon
+     * @param solrQuery   Solr query
+     */
+    public void parseSolrFacetFields(String strFields, SolrQuery solrQuery) {
+        if (StringUtils.isNotEmpty(strFields) && solrQuery != null) {
+            String[] fields = strFields.split("[;]");
+            for (String field: fields) {
+                String[] splits = field.split(">>");
+                if (splits.length == 1) {
+                    // Solr field
+                    //solrQuery.addFacetField(field);
+                    parseFacetField(field, solrQuery, false);
+                } else {
+                    // Solr pivots (nested fields)
+                    StringBuilder sb = new StringBuilder();
+                    for (String split: splits) {
+                        String name = parseFacetField(split, solrQuery, true);
+                        if (sb.length() > 0) {
+                            sb.append(",");
+                        }
+                        sb.append(name);
+                    }
+                    solrQuery.addFacetPivotField(sb.toString());
+                }
+            }
+        }
+    }
+
+    /**
+     * Parse field string.
+     * The expected format is: field_name[field_value_1,field_value_2,...]:skip:limit.
+     *
+     * @param field    The string to parse
+     * @retrun         The field name
+     */
+    private String parseFacetField(String field, SolrQuery solrQuery, boolean pivot) {
+        String name = "";
+        String[] splits1 = field.split("[\\[\\]]");
+        if (splits1.length == 1) {
+            String[] splits2 = field.split(":");
+            if (splits2.length >= 1) {
+                name = splits2[0];
+                if (!pivot) {
+                    solrQuery.addFacetField(name);
+                }
+            }
+            if (splits2.length >= 2 && StringUtils.isNotEmpty(splits2[1])) {
+                solrQuery.set("f." + name + ".facet.offset", splits2[1]);
+            }
+            if (splits2.length >= 3 && StringUtils.isNotEmpty(splits2[2])) {
+                solrQuery.set("f." + name + ".facet.limit", splits2[2]);
+            }
+        } else {
+            // first, field name
+            name = splits1[0];
+            if (!pivot) {
+                solrQuery.addFacetField(name);
+            }
+
+            // second, includes
+            // nothing to do, if includes, the other ones will be removed later
+
+            // third, skip and limit
+            if (splits1.length >= 3) {
+                String[] splits2 = splits1[2].split(":");
+                if (splits2.length >= 2 && StringUtils.isNotEmpty(splits2[1])) {
+                    solrQuery.set("f." + name + ".facet.offset", splits2[1]);
+                }
+                if (splits2.length >= 3 && StringUtils.isNotEmpty(splits2[2])) {
+                    solrQuery.set("f." + name + ".facet.limit", splits2[2]);
+                }
+            }
+        }
+        return name;
+    }
+
+
+    /**
+     * Parse Solr facet ranges from string containing facet definitions separated by semicolon.
+     * This format is: field_name:start:end:gap, e.g.: sift:0:1:0.2;gerp:-1:3:0.5
+     * Multiple facet ranges are separated by semicolons (;)
+     *
+     * @param strRanges   String containing the facet range definitions separated by semicolon
+     * @param solrQuery   Solr query
+     */
+    public void parseSolrFacetRanges(String strRanges, SolrQuery solrQuery) {
+        String[] ranges = strRanges.split("[;]");
+        for (String range : ranges) {
+            String[] split = range.split(":");
+            if (split.length != 4) {
+                logger.warn("Facet range '" + range + "' malformed. The expected range format is 'name:start:end:gap'");
+            } else {
+                try {
+                    Number start, end, gap;
+                    if (split[0].equals("start")) {
+                        start = Integer.parseInt(split[1]);
+                        end = Integer.parseInt(split[2]);
+                        gap = Integer.parseInt(split[3]);
+                    } else {
+                        start = Double.parseDouble(split[1]);
+                        end = Double.parseDouble(split[2]);
+                        gap = Double.parseDouble(split[3]);
+                    }
+                    // Solr ranges
+                    solrQuery.addNumericRangeFacet(split[0], start, end, gap);
+                } catch (NumberFormatException e) {
+                    logger.warn("Facet range '" + range + "' malformed. Range format is 'name:start:end:gap'"
+                            + " where start, end and gap values are numbers.");
+                }
+            }
+        }
+    }
+
+    /**
+     * Parse Solr facet intersection from string containing facet definitions separated by semicolon.
+     * This format is: field_name:value1:value2[:value3], e.g.: studies:1kG_phase3:EXAC:ESP6500
+     * Multiple facet intersections are separated by semicolons (;)
+     *
+     * @param strIntersections   String containing the facet intersection
+     * @param solrQuery   Solr query
+     */
+    public void parseSolrFacetIntersections(String strIntersections, SolrQuery solrQuery) {
+        String[] intersections = strIntersections.split("[;]");
+        for (String intersection: intersections) {
+            String[] split = intersection.split(":");
+            if (split.length == 3) {
+                solrQuery.addFacetQuery("{!key=" + split[1] + "}" + split[0] + ":" + split[1]);
+                solrQuery.addFacetQuery("{!key=" + split[2] + "}" + split[0] + ":" + split[2]);
+                solrQuery.addFacetQuery("{!key=" + split[1] + "__" + split[2] + "}" + split[0] + ":" + split[1]
+                        + " AND " + split[0] + ":" + split[2]);
+            } else if (split.length == 4) {
+                solrQuery.addFacetQuery("{!key=" + split[1] + "}" + split[0] + ":" + split[1]);
+                solrQuery.addFacetQuery("{!key=" + split[2] + "}" + split[0] + ":" + split[2]);
+                solrQuery.addFacetQuery("{!key=" + split[3] + "}" + split[0] + ":" + split[3]);
+                solrQuery.addFacetQuery("{!key=" + split[1] + "__" + split[2] + "}" + split[0] + ":" + split[1]
+                        + " AND " + split[0] + ":" + split[2]);
+                solrQuery.addFacetQuery("{!key=" + split[1] + "__" + split[3] + "}" + split[0] + ":" + split[1]
+                        + " AND " + split[0] + ":" + split[3]);
+                solrQuery.addFacetQuery("{!key=" + split[2] + "__" + split[3] + "}" + split[0] + ":" + split[2]
+                        + " AND " + split[0] + ":" + split[3]);
+                solrQuery.addFacetQuery("{!key=" + split[1] + "__" + split[2] + "__" + split[3] + "}" + split[0]
+                        + ":" + split[1] + " AND " + split[0]
+                        + ":" + split[2] + " AND " + split[0] + ":" + split[3]);
+            } else {
+                logger.warn("Facet intersection '" + intersection + "' malformed. The expected intersection format"
+                        + " is 'name:value1:value2[:value3]', value3 is optional");
+            }
+        }
     }
 }

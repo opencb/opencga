@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -457,4 +458,12 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
 //    @Deprecated
 //    QueryResult getBottomConsequenceTypes(int numConsequenceTypes, QueryOptions options);
 
+    /**
+     * Fetch facet (i.e., counts) resulting of executing the query in the database.
+     *
+     * @param query          Query to be executed in the database to filter variants
+     * @param options        Query modifiers, accepted values are: facet fields and facet ranges
+     * @return               A FacetedQueryResult with the result of the query
+     */
+    FacetedQueryResult facet(Query query, QueryOptions options);
 }

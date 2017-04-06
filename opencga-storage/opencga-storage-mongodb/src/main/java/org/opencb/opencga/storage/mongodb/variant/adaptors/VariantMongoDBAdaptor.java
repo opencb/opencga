@@ -47,6 +47,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
@@ -2708,5 +2709,25 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public VariantMongoDBAdaptor setVariantSearchManager(VariantSearchManager variantSearchManager) {
         this.variantSearchManager = variantSearchManager;
         return this;
+    }
+
+    @Override
+    public FacetedQueryResult facet(Query query, QueryOptions options) {
+
+        if (query == null) {
+            query = new Query();
+        }
+        if (options == null) {
+            options = new QueryOptions();
+        }
+
+        FacetedQueryResult queryResult;
+        try {
+            queryResult = variantSearchManager.facetedQuery(credentials.getMongoDbName(), query, options);
+        } catch (IOException | VariantSearchException e) {
+            throw Throwables.propagate(e);
+        }
+
+        return queryResult;
     }
 }

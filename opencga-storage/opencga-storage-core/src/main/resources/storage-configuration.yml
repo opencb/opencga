@@ -46,7 +46,7 @@ cache:
 ## Search Configuration
 search:
   host: ${OPENCGA.STORAGE.SEARCH.HOST}
-  active: true
+  timeout: ${OPENCGA.STORAGE.SEARCH.TIMEOUT}
   collection: "variants"
   user: ""
   password: ""
