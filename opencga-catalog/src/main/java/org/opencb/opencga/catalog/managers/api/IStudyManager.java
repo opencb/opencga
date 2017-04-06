@@ -226,6 +226,9 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
     @Deprecated
     QueryResult<StudyAclEntry> getAcls(String studyStr, List<String> members, String sessionId) throws CatalogException;
 
+    List<QueryResult<StudyAclEntry>> updateAcl(String studyStr, String memberId, Study.StudyAclParams aclParams, String sessionId)
+            throws CatalogException;
+
     //-----------------     GROUPS         ------------------
 
     /**

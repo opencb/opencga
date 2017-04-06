@@ -35,12 +35,14 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.DiseasePanelAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.catalog.models.summaries.VariableSetSummary;
 import org.opencb.opencga.catalog.models.summaries.VariableSummary;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
+import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
@@ -51,6 +53,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -692,6 +696,92 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     }
 
     @Override
+    public List<QueryResult<StudyAclEntry>> updateAcl(String studyStr, String memberIds, Study.StudyAclParams aclParams, String sessionId)
+            throws CatalogException {
+        if (StringUtils.isEmpty(studyStr)) {
+            throw new CatalogException("Missing study parameter");
+        }
+
+        if (aclParams.getAction() == null) {
+            throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
+        }
+
+        List<String> permissions = Collections.emptyList();
+        if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
+            permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
+            checkPermissions(permissions, StudyAclEntry.StudyPermissions::valueOf);
+        }
+
+        if (StringUtils.isNotEmpty(aclParams.getTemplate())) {
+            EnumSet<StudyAclEntry.StudyPermissions> studyPermissions = null;
+            if (aclParams.getTemplate().equals(AuthorizationManager.ROLE_ADMIN)) {
+                studyPermissions = AuthorizationManager.getAdminAcls();
+            } else if (aclParams.getTemplate().equals(AuthorizationManager.ROLE_ANALYST)) {
+                studyPermissions = AuthorizationManager.getAnalystAcls();
+            } else if (aclParams.getTemplate().equals(AuthorizationManager.ROLE_VIEW_ONLY)) {
+                studyPermissions = AuthorizationManager.getViewOnlyAcls();
+            }
+
+            if (studyPermissions != null) {
+                // Merge permissions from the template with the ones written
+                Set<String> uniquePermissions = new HashSet<>();
+                uniquePermissions.addAll(permissions);
+
+                for (StudyAclEntry.StudyPermissions studyPermission : studyPermissions) {
+                    uniquePermissions.add(studyPermission.toString());
+                }
+
+                permissions = new ArrayList<>(uniquePermissions.size());
+                permissions.addAll(uniquePermissions);
+            }
+        }
+
+        String userId = catalogManager.getUserManager().getId(sessionId);
+        List<Long> studyIds = getIds(userId, studyStr);
+
+        // Check the user has the permissions needed to change permissions
+        for (Long studyId : studyIds) {
+            authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
+        }
+
+        // Validate that the members are actually valid members
+        List<String> members;
+        if (memberIds != null && !memberIds.isEmpty()) {
+            members = Arrays.asList(memberIds.split(","));
+        } else {
+            members = Collections.emptyList();
+        }
+        for (Long studyId : studyIds) {
+            CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, studyId, members);
+        }
+
+        switch (aclParams.getAction()) {
+            case SET:
+                return authorizationManager.setStudyAcls(studyIds, members, permissions);
+            case ADD:
+                return authorizationManager.addStudyAcls(studyIds, members, permissions);
+            case REMOVE:
+                return authorizationManager.removeStudyAcls(studyIds, members, permissions);
+            case RESET:
+                // TODO: Improve this way of doing things
+                for (Long studyId : studyIds) {
+                    for (String member : members) {
+                        sampleDBAdaptor.removeAclsFromStudy(studyId, member);
+                        fileDBAdaptor.removeAclsFromStudy(studyId, member);
+                        jobDBAdaptor.removeAclsFromStudy(studyId, member);
+                        datasetDBAdaptor.removeAclsFromStudy(studyId, member);
+                        individualDBAdaptor.removeAclsFromStudy(studyId, member);
+                        cohortDBAdaptor.removeAclsFromStudy(studyId, member);
+                        panelDBAdaptor.removeAclsFromStudy(studyId, member);
+                    }
+                }
+                return authorizationManager.removeStudyAcls(studyIds, members, null);
+            default:
+                throw new CatalogException("Unexpected error occurred. No valid action found.");
+        }
+    }
+
+    @Override
     public QueryResult<Group> createGroup(String studyStr, String groupId, String users, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getId(sessionId);
         long studyId = getId(userId, studyStr);
@@ -855,7 +945,8 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
         // Remove the permissions the group might have had
         if (authorizationManager.memberHasPermissionsInStudy(studyId, groupId)) {
-            authorizationManager.removeStudyAcl(userId, studyId, groupId);
+            Study.StudyAclParams aclParams = new Study.StudyAclParams(null, AclParams.Action.RESET, null);
+            updateAcl(Long.toString(studyId), groupId, aclParams, sessionId);
         }
 
         return group;

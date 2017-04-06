@@ -190,41 +190,6 @@ public interface AuthorizationManager {
     //------------------------- Study ACL -----------------------------
 
     /**
-     * Adds the list of members to the roleId specified.
-     *
-     * @param userId      User id of the user ordering the action.
-     * @param studyId     Study id under which the members will be added to the role.
-     * @param members     List of member ids (users and/or groups).
-     * @param permissions List of permissions to be added to the members. If a template is provided, the permissions present here will be
-     *                    added to the list of permissions present in the template.
-     * @param template    Template to be used to get the default permissions from. Might be null.
-     * @return a queryResult containing the complete studyAcl where the members have been added to.
-     * @throws CatalogException when the userId does not have the proper permissions or the members or the roleId do not exist.
-     */
-    QueryResult<StudyAclEntry> createStudyAcls(String userId, long studyId, List<String> members, List<String> permissions,
-                                               @Nullable String template) throws CatalogException;
-
-
-    default QueryResult<StudyAclEntry> createStudyAcls(String userId, long studyId, String members, String permissions,
-                                                       @Nullable String template) throws CatalogException {
-        List<String> permissionList;
-        if (permissions != null && !permissions.isEmpty()) {
-            permissionList = Arrays.asList(permissions.split(","));
-        } else {
-            permissionList = Collections.emptyList();
-        }
-
-        List<String> memberList;
-        if (members != null && !members.isEmpty()) {
-            memberList = Arrays.asList(members.split(","));
-        } else {
-            memberList = Collections.emptyList();
-        }
-
-        return createStudyAcls(userId, studyId, memberList, permissionList, template);
-    }
-
-    /**
      * Return all the ACLs defined in the study.
      *
      * @param userId  user id asking for the ACLs.
@@ -244,21 +209,6 @@ public interface AuthorizationManager {
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
     QueryResult<StudyAclEntry> getStudyAcl(String userId, long studyId, String member) throws CatalogException;
-
-    /**
-     * Removes the ACLs defined for the member.
-     *
-     * @param userId  user asking to remove the ACLs.
-     * @param studyId study id.
-     * @param member  member whose permissions will be taken out.
-     * @return the studyAcl prior to the deletion.
-     * @throws CatalogException if the user asking to remove the ACLs does not have proper permissions or the member does not have any ACL
-     *                          defined.
-     */
-    QueryResult<StudyAclEntry> removeStudyAcl(String userId, long studyId, String member) throws CatalogException;
-
-    QueryResult<StudyAclEntry> updateStudyAcl(String userId, long studyId, String member, @Nullable String addPermissions,
-                                              @Nullable String removePermissions, @Nullable String setPermissions) throws CatalogException;
 
     //------------------------- End of study ACL ----------------------
 
@@ -553,6 +503,16 @@ public interface AuthorizationManager {
 
 
     //------------------------- End of panel ACL ----------------------
+
+    List<QueryResult<StudyAclEntry>> setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
+            throws CatalogException;
+
+    List<QueryResult<StudyAclEntry>> addStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
+            throws CatalogException;
+
+    List<QueryResult<StudyAclEntry>> removeStudyAcls(List<Long> studyIds, List<String> members, @Nullable List<String> permissions)
+            throws CatalogException;
+
 
     <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(AbstractManager.MyResourceIds resources, List<String> members,
                                                               List<String> permissions,

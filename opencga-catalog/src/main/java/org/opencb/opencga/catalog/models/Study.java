@@ -18,6 +18,7 @@
 package org.opencb.opencga.catalog.models;
 
 import org.opencb.opencga.catalog.models.acls.AbstractAcl;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
@@ -375,6 +376,39 @@ public class Study extends AbstractAcl<StudyAclEntry> {
     public Study setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
+    }
+
+    // Acl params to communicate the WS and the sample manager
+    public static class StudyAclParams extends AclParams {
+
+        private String template;
+
+        public StudyAclParams() {
+        }
+
+        public StudyAclParams(String permissions, Action action, String template) {
+            super(permissions, action);
+            this.template = template;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("StudyAclParams{");
+            sb.append("permissions='").append(permissions).append('\'');
+            sb.append(", action=").append(action);
+            sb.append(", template='").append(template).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getTemplate() {
+            return template;
+        }
+
+        public StudyAclParams setTemplate(String template) {
+            this.template = template;
+            return this;
+        }
     }
 
 }

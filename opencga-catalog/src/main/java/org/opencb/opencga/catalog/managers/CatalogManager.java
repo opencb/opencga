@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.*;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.*;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.catalog.session.DefaultSessionManager;
@@ -569,11 +570,11 @@ public class CatalogManager implements AutoCloseable {
 //        return new QueryResult("removeUsersFromGroup");
 //    }
 
+    @Deprecated
     public QueryResult<StudyAclEntry> createStudyAcls(String studyStr, String members, String permissions, @Nullable String templateId,
                                                       String sessionId) throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        long studyId = studyManager.getId(userId, studyStr);
-        return authorizationManager.createStudyAcls(userId, studyId, members, permissions, templateId);
+        Study.StudyAclParams aclParams = new Study.StudyAclParams(permissions, AclParams.Action.ADD, templateId);
+        return studyManager.updateAcl(studyStr, members, aclParams, sessionId).get(0);
     }
 
     public QueryResult<StudyAclEntry> getAllStudyAcls(String studyStr, String sessionId) throws CatalogException {
@@ -588,19 +589,9 @@ public class CatalogManager implements AutoCloseable {
         return authorizationManager.getStudyAcl(userId, studyId, member);
     }
 
-    public QueryResult<StudyAclEntry> updateStudyAcl(String studyStr, String member, @Nullable String addPermissions,
-                                                     @Nullable String removePermissions, @Nullable String setPermissions, String sessionId)
-            throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        long studyId = studyManager.getId(userId, studyStr);
-        return authorizationManager.updateStudyAcl(userId, studyId, member, addPermissions, removePermissions, setPermissions);
-
-    }
-
     public QueryResult<StudyAclEntry> removeStudyAcl(String studyStr, String member, String sessionId) throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        long studyId = studyManager.getId(userId, studyStr);
-        return authorizationManager.removeStudyAcl(userId, studyId, member);
+        Study.StudyAclParams aclParams = new Study.StudyAclParams(null, AclParams.Action.RESET, null);
+        return studyManager.updateAcl(studyStr, member, aclParams, sessionId).get(0);
     }
 
 //    @Deprecated
