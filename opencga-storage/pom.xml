@@ -41,6 +41,7 @@
         <module>opencga-storage-mongodb</module>
         <module>opencga-storage-hadoop</module>
         <module>opencga-storage-server</module>
+        <module>opencga-storage-benchmark</module>
     </modules>
 
     <dependencyManagement>
