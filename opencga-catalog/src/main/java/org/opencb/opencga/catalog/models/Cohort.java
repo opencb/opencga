@@ -45,7 +45,6 @@ public class Cohort extends Annotable<CohortAclEntry> {
 
 
     public Cohort() {
-        this(null, null, null, null, new LinkedList<>(), new HashMap<>());
     }
 
     public Cohort(String name, Study.Type type, String creationDate, String description, List<Long> samples,

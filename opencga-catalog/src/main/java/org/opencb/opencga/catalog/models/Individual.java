@@ -67,7 +67,6 @@ public class Individual extends Annotable<IndividualAclEntry> {
     }
 
     public Individual() {
-        this(-1, null, -1, -1, null, null, null, new Species(), new Population(), new LinkedList<>(), new HashMap<>());
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Species species,

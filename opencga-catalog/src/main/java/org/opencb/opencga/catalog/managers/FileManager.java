@@ -550,9 +550,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             if (!FileIndex.IndexStatus.isValid(newStatus)) {
                 throw new CatalogException("The status " + newStatus + " is not a valid status.");
             } else {
-                index.getStatus().setName(newStatus);
-                index.getStatus().setCurrentDate();
-                index.getStatus().setMessage(message);
+                index.setStatus(new FileIndex.IndexStatus(newStatus, message));
             }
         } else {
             index = new FileIndex(userId, TimeUtils.getTime(), new FileIndex.IndexStatus(newStatus), -1, new ObjectMap());
