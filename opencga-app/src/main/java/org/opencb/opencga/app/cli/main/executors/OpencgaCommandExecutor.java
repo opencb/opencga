@@ -38,7 +38,6 @@ import java.util.List;
 public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
     protected OpenCGAClient openCGAClient;
-    protected CatalogManager catalogManager;
 
     protected AbstractOutputWriter writer;
 
@@ -112,8 +111,6 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                             if (options.sessionId == null) {
                                 options.sessionId = cliSession.getSessionId();
                             }
-                            // Some operations such as copy and link are run in the server side and need Catalog Manager
-                            catalogManager = new CatalogManager(configuration);
                         }
                     }
                 } else {
@@ -124,7 +121,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 logger.debug("No Session file");
                 openCGAClient = new OpenCGAClient(clientConfiguration);
             }
-        } catch (IOException | CatalogException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }

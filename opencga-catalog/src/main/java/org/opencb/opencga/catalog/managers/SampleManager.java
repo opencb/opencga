@@ -127,6 +127,36 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
+    public QueryResult<Sample> create(String studyStr, String name, String source, String description, Individual individual,
+                                      Map<String, Object> attributes, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkAlias(name, "name", configuration.getCatalog().getOffset());
+        source = ParamUtils.defaultString(source, "");
+        description = ParamUtils.defaultString(description, "");
+        attributes = ParamUtils.defaultObject(attributes, Collections.<String, Object>emptyMap());
+
+        String userId = userManager.getId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
+
+        if (individual != null) {
+            if (individual.getId() <= 0) {
+                individual.setId(catalogManager.getIndividualManager().getId(individual.getName(), Long.toString(studyId), sessionId)
+                        .getResourceId());
+            }
+        }
+
+        Sample sample = new Sample(-1, name, source, individual, description, Collections.emptyList(), Collections.emptyList(),
+                attributes);
+
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        QueryResult<Sample> queryResult = sampleDBAdaptor.insert(sample, studyId, options);
+//        auditManager.recordCreation(AuditRecord.Resource.sample, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+        return queryResult;
+    }
+
+    @Override
     @Deprecated
     public QueryResult<AnnotationSet> annotate(long sampleId, String annotationSetName, long variableSetId, Map<String, Object> annotations,
                                                Map<String, Object> attributes, boolean checkAnnotationSet,
@@ -228,28 +258,13 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         throw new UnsupportedOperationException();
     }
 
+
+
     @Override
     public QueryResult<Sample> create(String studyStr, String name, String source, String description,
                                       Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
-        ParamUtils.checkAlias(name, "name", configuration.getCatalog().getOffset());
-        source = ParamUtils.defaultString(source, "");
-        description = ParamUtils.defaultString(description, "");
-        attributes = ParamUtils.defaultObject(attributes, Collections.<String, Object>emptyMap());
-
-        String userId = userManager.getId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
-
-        Sample sample = new Sample(-1, name, source, new Individual(), description, Collections.emptyList(), Collections.emptyList(),
-                attributes);
-
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-        QueryResult<Sample> queryResult = sampleDBAdaptor.insert(sample, studyId, options);
-//        auditManager.recordCreation(AuditRecord.Resource.sample, queryResult.first().getId(), userId, queryResult.first(), null, null);
-        auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.Action.create, AuditRecord.Magnitude.low,
-                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
-        return queryResult;
+        return create(studyStr, name, source, description, null, attributes, options, sessionId);
     }
 
     @Override

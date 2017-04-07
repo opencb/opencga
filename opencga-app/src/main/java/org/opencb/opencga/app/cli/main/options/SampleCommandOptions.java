@@ -130,6 +130,8 @@ public class SampleCommandOptions {
         @Parameter(names = {"-d", "--description"}, description = "Description of the sample", arity = 1)
         public String description;
 
+        @Parameter(names = {"--individual"}, description = "Individual name or id to whom the sample belongs to", arity = 1)
+        public String individual;
     }
 
     @Parameters(commandNames = {"load"}, commandDescription = "Load samples from a pedigree file")

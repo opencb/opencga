@@ -533,10 +533,12 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public int motherId;
         public String family;
         public Individual.Sex sex;
-
         public String ethnicity;
         public Individual.Species species;
         public Individual.Population population;
+        public Individual.KaryotypicSex karyotypicSex;
+        public Individual.LifeStatus lifeStatus;
+        public Individual.AffectationStatus affectationStatus;
     }
 
     @POST
