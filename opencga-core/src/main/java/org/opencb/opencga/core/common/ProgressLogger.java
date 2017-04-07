@@ -28,7 +28,9 @@ import java.util.function.Supplier;
  * Created on 13/04/16
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
+ * @deprecated use {@link org.opencb.commons.ProgressLogger}
  */
+@Deprecated
 public class ProgressLogger {
 
     private static final int DEFAULT_BATCH_SIZE = 5000;
