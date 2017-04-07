@@ -1,0 +1,84 @@
+package org.opencb.opencga.storage.app.cli.server.options;
+
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
+import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
+import org.opencb.opencga.storage.benchmark.BenchmarkRunner;
+
+/**
+ * Created on 07/04/17.
+ *
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
+ */
+@Parameters(commandNames = {"benchmark"}, commandDescription = "Execute benchmark operations.")
+public class BenchmarkCommandOptions {
+
+    public final VariantBenchmarkCommandOptions variantBenchmarkCommandOptions;
+    public final AlignmentBenchmarkCommandOptions alignmentBenchmarkCommandOptions;
+    public JCommander jCommander;
+    public GeneralCliOptions.CommonOptions commonCommandOptions;
+
+    public BenchmarkCommandOptions(GeneralCliOptions.CommonOptions commonOptions, JCommander jCommander) {
+        this.jCommander = jCommander;
+        this.commonCommandOptions = commonOptions;
+
+        variantBenchmarkCommandOptions = new VariantBenchmarkCommandOptions();
+        alignmentBenchmarkCommandOptions = new AlignmentBenchmarkCommandOptions();
+    }
+
+    /**
+     * Generic benchmark options
+     */
+    public class GenericBenchmarkOptions {
+
+        @Parameter(names = {"--connector"}, description = "How to connect to the system: REST or DIRECT")
+        public BenchmarkRunner.ConnectionType connectionType = BenchmarkRunner.ConnectionType.REST;
+
+        @Parameter(names = {"--num-repetition"}, description = "Number of repetition to execute.", arity = 1)
+        public Integer repetition;
+
+        @Parameter(names = {"--concurrency"}, description = "Number of concurrent threads.", arity = 1)
+        public Integer concurrency;
+
+        @Parameter(names = {"--host"}, description = "Remote host.", arity = 1)
+        public String host;
+
+        @Parameter(names = {"--port"}, description = "Port number.", arity = 1)
+        public Integer port;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data", required = false, arity = 1)
+        public String dbName;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = false, arity = 1)
+        public String outdir;
+
+    }
+
+    /**
+     * Variant command
+     */
+    @Parameters(commandNames = {"variant"}, commandDescription = "Benchmark read operations over variants")
+    public class VariantBenchmarkCommandOptions extends GenericBenchmarkOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+    }
+
+    /**
+     * Alignment command
+     */
+    @Parameters(commandNames = {"alignment"}, commandDescription = "[PENDING]")
+    public class AlignmentBenchmarkCommandOptions extends GenericBenchmarkOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+    }
+
+    public JCommander getJCommander() {
+        return this.jCommander;
+    }
+
+
+}

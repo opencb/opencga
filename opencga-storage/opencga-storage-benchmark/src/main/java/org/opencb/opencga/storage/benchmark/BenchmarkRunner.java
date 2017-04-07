@@ -16,6 +16,7 @@ import org.apache.jmeter.threads.ThreadGroup;
 import org.apache.jmeter.threads.gui.ThreadGroupGui;
 import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jorphan.collections.HashTree;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 import java.io.File;
@@ -32,6 +33,12 @@ import java.util.List;
  */
 public class BenchmarkRunner {
 
+    public enum ConnectionType {
+        REST,
+        DIRECT,
+        GRPC,
+    }
+
     protected final StorageConfiguration storageConfiguration;
     protected final String storageEngine;
     protected Path jmeterHome;
@@ -42,6 +49,7 @@ public class BenchmarkRunner {
     protected String resultFile;
 
     public BenchmarkRunner(StorageConfiguration storageConfiguration, Path jmeterHome, Path outdir) throws IOException {
+        StorageEngineFactory.configure(storageConfiguration);
         this.storageConfiguration = storageConfiguration;
 
         storageEngine = storageConfiguration.getBenchmark().getStorageEngine();
@@ -84,7 +92,7 @@ public class BenchmarkRunner {
         }
 
         // Store execution results into a .jtl file
-        resultFile = outdir.resolve("example.jtl").toString();
+        resultFile = outdir.resolve(buildOutputFileName() + ".jtl").toString();
         ResultCollector resultCollector = new ResultCollector(summer);
         resultCollector.setFilename(resultFile);
         testPlanTree.add(testPlan, resultCollector);
@@ -122,7 +130,7 @@ public class BenchmarkRunner {
     public void run() throws IOException {
 
         // save generated test plan to JMeter's .jmx file format
-        File jmxFile = outdir.resolve("example.jmx").toFile();
+        File jmxFile = outdir.resolve(buildOutputFileName() + ".jmx").toFile();
         SaveService.saveTree(testPlanTree, new FileOutputStream(jmxFile));
 
         StandardJMeterEngine jmeter;
@@ -133,6 +141,10 @@ public class BenchmarkRunner {
 
         System.out.println("Test completed. See " + resultFile + " file for results");
         System.out.println("JMeter .jmx script is available at " + jmxFile.toPath());
+    }
+
+    private String buildOutputFileName() {
+        return dbName + "." + "benchmark";
     }
 
 }

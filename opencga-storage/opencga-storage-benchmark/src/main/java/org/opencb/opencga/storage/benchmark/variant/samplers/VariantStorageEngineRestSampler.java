@@ -49,7 +49,7 @@ public class VariantStorageEngineRestSampler extends HTTPSampler implements Vari
 
     @Override
     protected HTTPSampleResult sample(java.net.URL u, String method, boolean areFollowingRedirect, int depth) {
-        logger.info("url = " + u);
+//        logger.debug("url = {}", u);
         return super.sample(u, method, areFollowingRedirect, depth);
     }
 
@@ -94,7 +94,7 @@ public class VariantStorageEngineRestSampler extends HTTPSampler implements Vari
                 });
                 queryGenerator = (QueryGenerator) Class.forName(queryGeneratorClassName).newInstance();
                 queryGenerator.setUp(map);
-                logger.info("Using query generator " + queryGenerator.getClass());
+                logger.debug("Using query generator " + queryGenerator.getClass());
             } catch (Throwable e) {
                 logger.error("Error creating QueryGenerator!", e);
                 Throwables.propagate(e);

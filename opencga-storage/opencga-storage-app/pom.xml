@@ -43,6 +43,10 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-server</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-benchmark</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>com.beust</groupId>
@@ -165,6 +169,13 @@
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/../opencga-storage-core/target/classes/${storage.configuration.file}"/>
                                     <arg value="${build.dir}/conf"/>
+                                </exec>
+
+                                <echo>Coping configuration file</echo>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-storage-benchmark/target/classes/benchmark"/>
+                                    <arg value="${build.dir}"/>
                                 </exec>
                             </target>
                         </configuration>
