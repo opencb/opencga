@@ -37,8 +37,12 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
         ClientConfiguration clientConfiguration = storageConfiguration.getCellbase().toClientConfiguration();
         clientConfiguration.getRest().setTimeout(TIMEOUT);
         CellBaseClient cellBaseClient;
-        cellBaseClient = new CellBaseClient(species, assembly, clientConfiguration);
+        cellBaseClient = new CellBaseClient(species, clientConfiguration);
         this.cellBaseClient = cellBaseClient;
+
+        // Add assembly as QueryOption!
+        // TODO: In newer cellbase version, this parameter is given in the CellBaseClient constructor
+        queryOptions.putIfNotEmpty("assembly", assembly);
 
         logger.info("Annotating with Cellbase REST. host '{}', version '{}', species '{}', assembly '{}'",
                 cellbaseRest, cellbaseVersion, species, assembly);

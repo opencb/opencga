@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.api.ISampleManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
@@ -99,17 +100,23 @@ public class SampleWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            QueryResult<Sample> queryResult = sampleManager.create(studyStr, name, source, description, null, null, sessionId);
+            QueryResult<Sample> queryResult = sampleManager.create(studyStr, name, source, description, null, null, null, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
+    private static class IndividualParameters {
+        public long id;
+        public String name;
+    }
+
     private static class SampleParameters {
         public String name;
         public String source;
         public String description;
+        public IndividualParameters individual;
     }
 
     @POST
@@ -124,8 +131,15 @@ public class SampleWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            QueryResult<Sample> queryResult = sampleManager.create(studyStr, params.name, params.source, params.description, null, null,
-                    sessionId);
+
+            Individual individual = null;
+            if (params.individual != null) {
+                individual = new Individual()
+                        .setId(params.individual.id)
+                        .setName(params.individual.name);
+            }
+            QueryResult<Sample> queryResult = sampleManager.create(studyStr, params.name, params.source, params.description, individual,
+                    null, null, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

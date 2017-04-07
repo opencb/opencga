@@ -121,7 +121,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         if (StringUtils.isEmpty(species)) {
             species = clientConfiguration.getDefaultSpecies();
         }
-        cellBaseClient = new CellBaseClient(AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(species), assembly, clientConfiguration);
+        cellBaseClient = new CellBaseClient(AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(species), clientConfiguration);
 
         clientSideSkip = !options.getBoolean(PhoenixHelper.PHOENIX_SERVER_OFFSET_AVAILABLE, true);
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable, new VariantDBAdaptorUtils(this),
