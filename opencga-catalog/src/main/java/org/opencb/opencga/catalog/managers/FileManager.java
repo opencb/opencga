@@ -383,11 +383,11 @@ public class FileManager extends AbstractManager implements IFileManager {
             Query query = new Query()
                     .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), variantPathName)
-                    .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT)
-                    .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(
-                            FileIndex.IndexStatus.NONE, FileIndex.IndexStatus.TRANSFORMING, FileIndex.IndexStatus.INDEXING,
-                            FileIndex.IndexStatus.READY
-                    ));
+                    .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
+//                    .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(
+//                            FileIndex.IndexStatus.NONE, FileIndex.IndexStatus.TRANSFORMING, FileIndex.IndexStatus.INDEXING,
+//                            FileIndex.IndexStatus.READY
+//                    ));
 
             QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
 
@@ -398,13 +398,28 @@ public class FileManager extends AbstractManager implements IFileManager {
                 query = new Query()
                         .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                         .append(FileDBAdaptor.QueryParams.NAME.key(), variantFileName)
-                        .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT)
-                        .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(
-                                FileIndex.IndexStatus.NONE, FileIndex.IndexStatus.TRANSFORMING, FileIndex.IndexStatus.INDEXING,
-                                FileIndex.IndexStatus.READY
-                        ));
+                        .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
+//                        .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(
+//                                FileIndex.IndexStatus.NONE, FileIndex.IndexStatus.TRANSFORMING, FileIndex.IndexStatus.INDEXING,
+//                                FileIndex.IndexStatus.READY
+//                        ));
 //                        .append(CatalogFileDBAdaptor.QueryParams.INDEX_TRANSFORMED_FILE.key(), null);
                 fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
+            }
+
+            if (fileQueryResult.getNumResults() > 0) {
+                List<File> fileList = new ArrayList<>(fileQueryResult.getNumResults());
+                List<String> acceptedStatus = Arrays.asList(FileIndex.IndexStatus.NONE, FileIndex.IndexStatus.TRANSFORMING,
+                        FileIndex.IndexStatus.INDEXING, FileIndex.IndexStatus.READY);
+                // Check index status
+                for (File file : fileQueryResult.getResult()) {
+                    if (file.getIndex() == null || file.getIndex().getStatus() == null || file.getIndex().getStatus().getName() == null
+                            || acceptedStatus.contains(file.getIndex().getStatus().getName())) {
+                        fileList.add(file);
+                    }
+                }
+                fileQueryResult.setResult(fileList);
+                fileQueryResult.setNumResults(fileList.size());
             }
 
             if (fileQueryResult.getNumResults() == 0 || fileQueryResult.getNumResults() > 1) {
@@ -458,7 +473,10 @@ public class FileManager extends AbstractManager implements IFileManager {
             if (index.getTransformedFile() == null) {
                 index.setTransformedFile(new FileIndex.TransformedFile(transformedFile.getId(), json.getId()));
             }
-            String status = vcf.getIndex().getStatus().getName();
+            String status = FileIndex.IndexStatus.NONE;
+            if (vcf.getIndex() != null && vcf.getIndex().getStatus() != null && vcf.getIndex().getStatus().getName() != null) {
+                status = vcf.getIndex().getStatus().getName();
+            }
             if (FileIndex.IndexStatus.NONE.equals(status)) {
                 // If TRANSFORMED, TRANSFORMING, etc, do not modify the index status
                 index.setStatus(new FileIndex.IndexStatus(FileIndex.IndexStatus.TRANSFORMED));
@@ -1685,16 +1703,16 @@ public class FileManager extends AbstractManager implements IFileManager {
 
             // Limit the number of results and only some fields
             QueryOptions queryOptions = new QueryOptions()
-                    .append(QueryOptions.LIMIT, 100)
-                    .append(QueryOptions.INCLUDE, Arrays.asList(
-                            FileDBAdaptor.QueryParams.ID.key(),
-                            FileDBAdaptor.QueryParams.NAME.key(),
-                            FileDBAdaptor.QueryParams.TYPE.key(),
-                            FileDBAdaptor.QueryParams.PATH.key(),
-                            FileDBAdaptor.QueryParams.URI.key(),
-                            FileDBAdaptor.QueryParams.FORMAT.key(),
-                            FileDBAdaptor.QueryParams.BIOFORMAT.key()
-                    ));
+                    .append(QueryOptions.LIMIT, 100);
+//                    .append(QueryOptions.INCLUDE, Arrays.asList(
+//                            FileDBAdaptor.QueryParams.ID.key(),
+//                            FileDBAdaptor.QueryParams.NAME.key(),
+//                            FileDBAdaptor.QueryParams.TYPE.key(),
+//                            FileDBAdaptor.QueryParams.PATH.key(),
+//                            FileDBAdaptor.QueryParams.URI.key(),
+//                            FileDBAdaptor.QueryParams.FORMAT.key(),
+//                            FileDBAdaptor.QueryParams.BIOFORMAT.key()
+//                    ));
 
             return fileDBAdaptor.get(query, queryOptions);
         }
@@ -1924,16 +1942,16 @@ public class FileManager extends AbstractManager implements IFileManager {
 
             // Limit the number of results and only some fields
             QueryOptions queryOptions = new QueryOptions()
-                    .append(QueryOptions.LIMIT, 100)
-                    .append(QueryOptions.INCLUDE, Arrays.asList(
-                            FileDBAdaptor.QueryParams.ID.key(),
-                            FileDBAdaptor.QueryParams.NAME.key(),
-                            FileDBAdaptor.QueryParams.TYPE.key(),
-                            FileDBAdaptor.QueryParams.PATH.key(),
-                            FileDBAdaptor.QueryParams.URI.key(),
-                            FileDBAdaptor.QueryParams.FORMAT.key(),
-                            FileDBAdaptor.QueryParams.BIOFORMAT.key()
-                    ));
+                    .append(QueryOptions.LIMIT, 100);
+//                    .append(QueryOptions.INCLUDE, Arrays.asList(
+//                            FileDBAdaptor.QueryParams.ID.key(),
+//                            FileDBAdaptor.QueryParams.NAME.key(),
+//                            FileDBAdaptor.QueryParams.TYPE.key(),
+//                            FileDBAdaptor.QueryParams.PATH.key(),
+//                            FileDBAdaptor.QueryParams.URI.key(),
+//                            FileDBAdaptor.QueryParams.FORMAT.key(),
+//                            FileDBAdaptor.QueryParams.BIOFORMAT.key()
+//                    ));
 
             return fileDBAdaptor.get(query, queryOptions);
         }
