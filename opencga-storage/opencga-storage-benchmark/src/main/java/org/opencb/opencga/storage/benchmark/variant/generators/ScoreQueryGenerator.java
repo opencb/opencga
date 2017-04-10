@@ -5,10 +5,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by jtarraga on 07/04/17.
@@ -17,7 +14,7 @@ import java.util.Map;
  */
 public abstract class ScoreQueryGenerator extends QueryGenerator {
     protected static final List<String> NUM_OPS = Arrays.asList(">", ">=", "<", "<=");
-    private List<Score> scores;
+    private ArrayList<Score> scores;
     private List<String> ops;
     private String queryKey;
     private Logger logger = LoggerFactory.getLogger(getClass());
@@ -26,7 +23,7 @@ public abstract class ScoreQueryGenerator extends QueryGenerator {
         this(new ArrayList<>(), ops, queryKey);
     }
 
-    public ScoreQueryGenerator(List<Score> scores, List<String> ops, String queryKey) {
+    public ScoreQueryGenerator(ArrayList<Score> scores, List<String> ops, String queryKey) {
         super();
         this.scores = scores;
         this.ops = ops;
@@ -36,18 +33,30 @@ public abstract class ScoreQueryGenerator extends QueryGenerator {
     @Override
     public void setUp(Map<String, String> params) {
         super.setUp(params);
+        if (getArity() > scores.size()) {
+            logger.warn("Only " + scores.size() + " scores available for " + getClass() + ". Adjusting arity.");
+            setArity(scores.size());
+        }
     }
 
     @Override
     public Query generateQuery(Query query) {
-        Score score = scores.get(random.nextInt(scores.size()));
+        if (getArity() != scores.size()) {
+            Collections.shuffle(scores, random);
+        }
 
         StringBuilder sb = new StringBuilder();
-        sb.append(score.getName());
-        sb.append(ops.get(random.nextInt(ops.size())));
-        sb.append(random.nextDouble() * (score.getMax() - score.getMin()) + score.getMin());
-
+        for (int i = 0; i < getArity(); i++) {
+            Score score = scores.get(i);
+            if (sb.length() > 0) {
+                sb.append(',');
+            }
+            sb.append(score.getName());
+            sb.append(ops.get(random.nextInt(ops.size())));
+            sb.append(random.nextDouble() * (score.getMax() - score.getMin()) + score.getMin());
+        }
         query.append(queryKey, sb.toString());
+
         return query;
     }
 
@@ -118,8 +127,8 @@ public abstract class ScoreQueryGenerator extends QueryGenerator {
 
         public FunctionalScoreQueryGenerator() {
             super(NUM_OPS, VariantDBAdaptor.VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key());
-            addScore(new Score("caddRaw", 0, 1));
-            addScore(new Score("caddScaled", -10, 40));
+            addScore(new Score("cadd_raw", 0, 1));
+            addScore(new Score("cadd_scaled", -10, 40));
         }
     }
 }

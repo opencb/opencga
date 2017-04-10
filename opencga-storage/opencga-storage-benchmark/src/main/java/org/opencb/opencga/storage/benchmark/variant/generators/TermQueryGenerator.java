@@ -11,6 +11,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Created by jtarraga on 07/04/17.
@@ -40,7 +42,10 @@ public abstract class TermQueryGenerator extends QueryGenerator {
 
     @Override
     public Query generateQuery(Query query) {
-        query.append(queryKey, terms.get(random.nextInt(terms.size())));
+        String value = IntStream.range(0, getArity())
+                .mapToObj(i -> terms.get(random.nextInt(terms.size())))
+                .collect(Collectors.joining(","));
+        query.append(queryKey, value);
         return query;
     }
 

@@ -23,12 +23,15 @@ import java.util.function.Consumer;
  */
 public abstract class QueryGenerator {
     public static final String DATA_DIR = "dataDir";
+    public static final String ARITY = "arity";
     protected Random random;
 
     private Logger logger = LoggerFactory.getLogger(getClass());
+    private int arity;
 
     public void setUp(Map<String, String> params) {
-        random = new Random(System.currentTimeMillis());
+        random = new Random(System.nanoTime());
+        arity = Integer.parseInt(params.getOrDefault(ARITY, "1"));
     }
 
     protected void readCsvFile(Path path, Consumer<List<String>> consumer) {
@@ -50,4 +53,12 @@ public abstract class QueryGenerator {
 
     public abstract Query generateQuery(Query query);
 
+    protected int getArity() {
+        return arity;
+    }
+
+    public QueryGenerator setArity(int arity) {
+        this.arity = arity;
+        return this;
+    }
 }

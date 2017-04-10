@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.benchmark.variant.generators;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created on 10/04/17.
@@ -17,6 +20,8 @@ public class MultiQueryGenerator extends QueryGenerator {
 
     public static final String MULTI_QUERY = "multy-query";
     private List<QueryGenerator> generators;
+    // param(extraParam)
+    private Pattern pattern = Pattern.compile("(?<param>[^(]+)(\\((?<extraParam>[^)]+)\\))?");
     private Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
@@ -25,8 +30,21 @@ public class MultiQueryGenerator extends QueryGenerator {
         String query = params.get(MULTI_QUERY);
         generators = new ArrayList<>();
         for (String param : query.split(",")) {
+            String extraParam = null;
+            Integer arity = 1;
+
+            Matcher matcher = pattern.matcher(param);
+            if (matcher.find()) {
+                param = matcher.group("param");
+                extraParam = matcher.group("extraParam");
+            }
+
+            if (StringUtils.isNumeric(extraParam)) {
+                arity = Integer.parseInt(extraParam);
+            }
+
             QueryGenerator queryGenerator;
-            switch (param) {
+            switch (param.toLowerCase()) {
                 case "region":
                     queryGenerator = new RegionQueryGenerator();
                     break;
@@ -56,12 +74,14 @@ public class MultiQueryGenerator extends QueryGenerator {
                     queryGenerator = new ScoreQueryGenerator.ProteinSubstQueryGenerator();
                     break;
                 case "functional":
+                case "cadd":
                     queryGenerator = new ScoreQueryGenerator.FunctionalScoreQueryGenerator();
                     break;
                 default:
                     throw new IllegalArgumentException("Unknwon query param " + param);
             }
-            logger.debug("Using sub query generator: " + queryGenerator.getClass());
+            logger.debug("Using sub query generator: " + queryGenerator.getClass() + " , arity = " + arity);
+            params.put(ARITY, arity.toString());
             queryGenerator.setUp(params);
             generators.add(queryGenerator);
         }

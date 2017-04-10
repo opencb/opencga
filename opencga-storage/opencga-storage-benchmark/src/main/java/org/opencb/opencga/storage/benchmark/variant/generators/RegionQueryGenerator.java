@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -35,12 +36,16 @@ public class RegionQueryGenerator extends QueryGenerator {
 
     @Override
     public Query generateQuery(Query query) {
-        Region regionLimit = regionLimits.get(random.nextInt(regionLimits.size()));
-        int regionLength = random.nextInt(1000);
-        int start = random.nextInt(regionLimit.getEnd() - regionLimit.getStart() - regionLength) + regionLimit.getStart();
-        int end = start + regionLength;
-        Region region = new Region(regionLimit.getChromosome(), start, end);
-        query.append(VariantDBAdaptor.VariantQueryParams.REGION.key(), region.toString());
+        List<String> regions = new ArrayList<>(getArity());
+        for (int i = 0; i < getArity(); i++) {
+            Region regionLimit = regionLimits.get(random.nextInt(regionLimits.size()));
+            int regionLength = random.nextInt(1000);
+            int start = random.nextInt(regionLimit.getEnd() - regionLimit.getStart() - regionLength) + regionLimit.getStart();
+            int end = start + regionLength;
+            Region region = new Region(regionLimit.getChromosome(), start, end);
+            regions.add(region.toString());
+        }
+        query.append(VariantDBAdaptor.VariantQueryParams.REGION.key(), String.join(",", regions));
         return query;
     }
 }

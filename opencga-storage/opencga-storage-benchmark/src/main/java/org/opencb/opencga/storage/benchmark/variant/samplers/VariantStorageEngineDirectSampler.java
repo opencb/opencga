@@ -111,7 +111,7 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
 
             try {
                 Query query = queryGenerator.generateQuery(new Query());
-                QueryOptions queryOptions = new QueryOptions();
+                QueryOptions queryOptions = new QueryOptions(QueryOptions.LIMIT, 100);
                 result.setResponseMessage(query.toJson());
 
                 result.sampleStart();

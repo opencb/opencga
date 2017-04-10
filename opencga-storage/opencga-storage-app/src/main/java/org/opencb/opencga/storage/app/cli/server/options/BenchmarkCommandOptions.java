@@ -65,7 +65,7 @@ public class BenchmarkCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-q", "--query"}, description = " ... ", required = false, arity = 1)
+        @Parameter(names = {"-q", "--query"}, description = "Query pattern to execute. e.g. gene,ct(30);region(3)", arity = 1)
         public String query = "region";
     }
 
