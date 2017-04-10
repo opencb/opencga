@@ -814,6 +814,17 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
+    public void testCreateSampleWithDotInName() throws CatalogException {
+        long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser).first().getId();
+
+        String name = "HG007.sample";
+        QueryResult<Sample> sampleQueryResult = catalogManager.createSample(studyId, name, "IMDb", "", null, null, sessionIdUser);
+
+        assertEquals(name, sampleQueryResult.first().getName());
+    }
+
+    @Test
     public void testAnnotate() throws CatalogException {
         long studyId = catalogManager.getStudyId("user@1000G:phase1");
         Study study = catalogManager.getStudy(studyId, sessionIdUser).first();
