@@ -1,28 +1,27 @@
 package org.opencb.opencga.storage.benchmark.variant.generators;
 
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Map;
 
 /**
  * Created on 06/04/17.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class GeneQueryGenerator extends QueryGenerator {
+public class GeneQueryGenerator extends TermQueryGenerator {
 
-    private ArrayList<String> genes = new ArrayList<>();
+    //private ArrayList<String> genes = new ArrayList<>();
     private Logger logger = LoggerFactory.getLogger(getClass());
 
+    public GeneQueryGenerator() {
+        super("genes.csv", VariantDBAdaptor.VariantQueryParams.GENE.key());
+    }
+/*
     @Override
     public void setUp(Map<String, String> params) {
         super.setUp(params);
-        readCsvFile(Paths.get(params.get(DATA_DIR), "genes.csv"), strings -> genes.add(strings.get(0)));
+        readCsvFile(Paths.get(params.get(DATA_DIR), "genes.csv"), strings -> terms.add(strings.get(0)));
         genes.trimToSize();
     }
 
@@ -32,4 +31,5 @@ public class GeneQueryGenerator extends QueryGenerator {
         query.append(VariantDBAdaptor.VariantQueryParams.GENE.key(), genes.get(random.nextInt(genes.size())));
         return query;
     }
+    */
 }
