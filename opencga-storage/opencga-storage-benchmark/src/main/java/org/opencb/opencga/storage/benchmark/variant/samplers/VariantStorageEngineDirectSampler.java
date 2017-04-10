@@ -75,12 +75,11 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
             String engine = javaSamplerContext.getParameter(ENGINE);
             String dbName = javaSamplerContext.getParameter(DB_NAME);
             String queryGeneratorClazz = javaSamplerContext.getParameter(QUERY_GENERATOR);
-            logger.info("Using engine " + engine);
-            logger.info("Using dbname " + dbName);
+            logger.debug("Using engine {}", engine);
+            logger.debug("Using dbname {}", dbName);
             try {
                 variantStorageEngine = StorageEngineFactory.get().getVariantStorageEngine(engine);
                 dbAdaptor = variantStorageEngine.getDBAdaptor(dbName);
-                logger.info("dbAdaptor.count(new Query()).first() = " + dbAdaptor.count(new Query()).first());
             } catch (Throwable e) {
                 logger.error("Error creating VariantStorageEngine!", e);
                 Throwables.propagate(e);
@@ -92,12 +91,12 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
                 javaSamplerContext.getParameterNamesIterator()
                         .forEachRemaining(name -> params.put(name, javaSamplerContext.getParameter(name)));
                 queryGenerator.setUp(params);
-                logger.info("Using query generator " + queryGenerator.getClass());
+                logger.debug("Using query generator {}", queryGenerator.getClass());
             } catch (Throwable e) {
                 logger.error("Error creating QueryGenerator!", e);
                 Throwables.propagate(e);
             }
-            logger.info("Setup finished!");
+            logger.debug("Setup finished!");
 
         }
 
@@ -116,7 +115,7 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
                 result.sampleEnd();
                 result.setBytes((long) queryResult.getNumResults());
 
-                logger.info("query: " + queryResult.getNumResults());
+                logger.debug("query: {}", queryResult.getNumResults());
             } catch (Error e) {
                 logger.error("Error!", e);
                 throw e;
@@ -129,7 +128,7 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
 
         @Override
         public void teardownTest(JavaSamplerContext javaSamplerContext) {
-            logger.info("Clossing variant engine");
+            logger.debug("Closing variant engine");
             try {
                 dbAdaptor.close();
             } catch (Exception e) {

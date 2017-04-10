@@ -20,6 +20,7 @@ import com.beust.jcommander.*;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
+import org.opencb.opencga.storage.app.cli.server.options.BenchmarkCommandOptions;
 import org.opencb.opencga.storage.app.cli.server.options.ServerCommandOptions;
 
 import java.util.Map;
@@ -29,7 +30,8 @@ import java.util.Map;
  */
 public class AdminCliOptionsParser extends GeneralCliOptions {
 
-    public ServerCommandOptions serverCommandOptions;
+    public final ServerCommandOptions serverCommandOptions;
+    public final BenchmarkCommandOptions benchmarkCommandOptions;
 
     public AdminCliOptionsParser() {
 
@@ -38,6 +40,12 @@ public class AdminCliOptionsParser extends GeneralCliOptions {
         JCommander serverSubCommands = jcommander.getCommands().get("server");
         serverSubCommands.addCommand("rest", serverCommandOptions.restServerCommandOptions);
         serverSubCommands.addCommand("grpc", serverCommandOptions.grpcServerCommandOptions);
+
+        benchmarkCommandOptions = new BenchmarkCommandOptions(this.commonOptions, this.jcommander);
+        jcommander.addCommand("benchmark", benchmarkCommandOptions);
+        JCommander benchmarkSubCommands = jcommander.getCommands().get("benchmark");
+        benchmarkSubCommands.addCommand("variant", benchmarkCommandOptions.variantBenchmarkCommandOptions);
+        benchmarkSubCommands.addCommand("alignment", benchmarkCommandOptions.alignmentBenchmarkCommandOptions);
     }
 
 //    //    private final IndexSequenceCommandOptions indexSequenceCommandOptions;
@@ -122,7 +130,11 @@ public class AdminCliOptionsParser extends GeneralCliOptions {
         return serverCommandOptions;
     }
 
-//    public RestCommandOptions getRestCommandOptions() {
+    public BenchmarkCommandOptions getBenchmarkCommandOptions() {
+        return benchmarkCommandOptions;
+    }
+
+    //    public RestCommandOptions getRestCommandOptions() {
 //        return restCommandOptions;
 //    }
 //

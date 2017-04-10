@@ -48,6 +48,12 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-app</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>opencga-storage-benchmark</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -311,6 +317,14 @@
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>opencga-storage-benchmark</artifactId>
+                    <version>${opencga.version}</version>
+                </dependency>
+            </dependencies>
             <build>
                 <plugins>
                     <plugin>
@@ -326,6 +340,7 @@
                                         <exec executable="cp">
                                             <arg value="-r"/>
                                             <arg value="${project.basedir}/../opencga-storage/build/bin"/>
+                                            <arg value="${project.basedir}/../opencga-storage/build/benchmark"/>
                                             <arg value="${build.dir}"/>
                                         </exec>
                                     </target>

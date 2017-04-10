@@ -19,12 +19,6 @@ import java.util.List;
  */
 public class VariantBenchmarkRunner extends BenchmarkRunner {
 
-    public enum ConnectionType {
-        REST,
-        DIRECT,
-        GRPC,
-    }
-
     public VariantBenchmarkRunner(StorageConfiguration storageConfiguration, Path jmeterHome, Path outdir) throws IOException {
         super(storageConfiguration, jmeterHome, outdir);
     }
