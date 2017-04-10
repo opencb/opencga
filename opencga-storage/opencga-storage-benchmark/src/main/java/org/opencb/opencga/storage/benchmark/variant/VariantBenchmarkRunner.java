@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.benchmark.variant;
 
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.benchmark.BenchmarkRunner;
 import org.opencb.opencga.storage.benchmark.variant.generators.MultiQueryGenerator;
 import org.opencb.opencga.storage.benchmark.variant.generators.QueryGenerator;
@@ -24,7 +25,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
         super(storageConfiguration, jmeterHome, outdir);
     }
 
-    public void addThreadGroup(ConnectionType type, Path dataDir, String queries) {
+    public void addThreadGroup(ConnectionType type, Path dataDir, String queries, QueryOptions queryOptions) {
 
         // gene,ct;region,phylop
 
@@ -34,6 +35,8 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
 
             variantStorageSampler.setStorageEngine(storageEngine);
             variantStorageSampler.setDBName(dbName);
+            variantStorageSampler.setLimit(queryOptions.getInt(QueryOptions.LIMIT, -1));
+            variantStorageSampler.setCount(queryOptions.getBoolean(QueryOptions.COUNT, false));
             variantStorageSampler.setQueryGenerator(MultiQueryGenerator.class);
             variantStorageSampler.setQueryGeneratorConfig(MultiQueryGenerator.DATA_DIR, dataDir.toString());
             variantStorageSampler.setQueryGeneratorConfig(MultiQueryGenerator.MULTI_QUERY, query);
@@ -46,13 +49,16 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
 
     }
 
-    public void addThreadGroup(ConnectionType type, Path dataDir, List<Class<? extends QueryGenerator>> queryGenerators) {
+    public void addThreadGroup(ConnectionType type, Path dataDir, List<Class<? extends QueryGenerator>> queryGenerators,
+                               QueryOptions queryOptions) {
         List<VariantStorageEngineSampler> samplers = new ArrayList<>(queryGenerators.size());
         for (Class<? extends QueryGenerator> clazz : queryGenerators) {
             VariantStorageEngineSampler variantStorageSampler = newVariantStorageEngineSampler(type);
 
             variantStorageSampler.setStorageEngine(storageEngine);
             variantStorageSampler.setDBName(dbName);
+            variantStorageSampler.setLimit(queryOptions.getInt(QueryOptions.LIMIT, -1));
+            variantStorageSampler.setCount(queryOptions.getBoolean(QueryOptions.COUNT, false));
             variantStorageSampler.setQueryGenerator(clazz);
             variantStorageSampler.setQueryGeneratorConfig(QueryGenerator.DATA_DIR, dataDir.toString());
 

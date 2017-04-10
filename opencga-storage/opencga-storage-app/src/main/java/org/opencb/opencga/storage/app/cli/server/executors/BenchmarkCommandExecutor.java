@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.app.cli.server.executors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.app.cli.server.options.BenchmarkCommandOptions;
 import org.opencb.opencga.storage.benchmark.variant.VariantBenchmarkRunner;
@@ -63,7 +64,10 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
         VariantBenchmarkRunner variantBenchmarkRunner = new VariantBenchmarkRunner(configuration, jmeterHome, outdirPath);
 //        variantBenchmarkRunner.addThreadGroup(options.connectionType, dataDir,
 //                Arrays.asList(GeneQueryGenerator.class, RegionQueryGenerator.class));
-        variantBenchmarkRunner.addThreadGroup(options.connectionType, dataDir, options.query);
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.append(QueryOptions.LIMIT, options.limit);
+        queryOptions.append(QueryOptions.COUNT, options.count);
+        variantBenchmarkRunner.addThreadGroup(options.connectionType, dataDir, options.query, queryOptions);
 //        variantBenchmarkRunner.newThreadGroup(VariantBenchmarkRunner.ConnectionType.REST, dataDir,
 //                Arrays.asList(RegionQueryGenerator.class));
 //        variantBenchmarkRunner.newThreadGroup(VariantBenchmarkRunner.ConnectionType.REST, dataDir,

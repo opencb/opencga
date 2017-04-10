@@ -54,6 +54,18 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
     }
 
     @Override
+    public VariantStorageEngineDirectSampler setLimit(int limit) {
+        getArguments().addArgument(new Argument(QueryOptions.LIMIT, String.valueOf(limit)));
+        return this;
+    }
+
+    @Override
+    public VariantStorageEngineDirectSampler setCount(boolean count) {
+        getArguments().addArgument(new Argument(QueryOptions.COUNT, String.valueOf(count)));
+        return this;
+    }
+
+    @Override
     public VariantStorageEngineDirectSampler setQueryGenerator(Class<? extends QueryGenerator> queryGenerator) {
         getArguments().addArgument(new Argument(QUERY_GENERATOR, queryGenerator.getName()));
         return this;
@@ -111,15 +123,27 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
 
             try {
                 Query query = queryGenerator.generateQuery(new Query());
-                QueryOptions queryOptions = new QueryOptions(QueryOptions.LIMIT, 100);
+                QueryOptions queryOptions = new QueryOptions();
+                int limit = javaSamplerContext.getIntParameter(QueryOptions.LIMIT, -1);
+                boolean count = Boolean.parseBoolean(javaSamplerContext.getParameter(QueryOptions.COUNT, Boolean.FALSE.toString()));
+
+                if (limit > 0) {
+                    queryOptions.append(QueryOptions.LIMIT, limit);
+                }
+
                 result.setResponseMessage(query.toJson());
-
                 result.sampleStart();
-                VariantQueryResult<Variant> queryResult = dbAdaptor.get(query, queryOptions);
+                long numResults;
+                if (count) {
+                    numResults = dbAdaptor.count(query).first();
+                } else {
+                    VariantQueryResult<Variant> queryResult = dbAdaptor.get(query, queryOptions);
+                    numResults = queryResult.getNumResults();
+                }
                 result.sampleEnd();
-                result.setBytes((long) queryResult.getNumResults());
+                result.setBytes(numResults);
 
-                logger.debug("query: {}", queryResult.getNumResults());
+                logger.debug("query: {}", numResults);
             } catch (Error e) {
                 logger.error("Error!", e);
                 throw e;

@@ -54,6 +54,12 @@ public class BenchmarkCommandOptions {
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
 
+        @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", required = false, arity = 1)
+        public int limit;
+
+        @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", required = false, arity = 0)
+        public boolean count;
+
     }
 
     /**

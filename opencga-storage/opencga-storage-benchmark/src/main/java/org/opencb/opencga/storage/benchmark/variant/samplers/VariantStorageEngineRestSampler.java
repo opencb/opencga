@@ -5,6 +5,7 @@ import org.apache.jmeter.protocol.http.sampler.HTTPSampleResult;
 import org.apache.jmeter.protocol.http.sampler.HTTPSampler;
 import org.apache.jmeter.protocol.http.util.HTTPArgument;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.benchmark.variant.generators.QueryGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +63,18 @@ public class VariantStorageEngineRestSampler extends HTTPSampler implements Vari
     @Override
     public VariantStorageEngineRestSampler setDBName(String dbname) {
         getArguments().addArgument(new HTTPArgument("dbName", dbname, "="));
+        return this;
+    }
+
+    @Override
+    public VariantStorageEngineRestSampler setLimit(int limit) {
+        getArguments().addArgument(new HTTPArgument(QueryOptions.LIMIT, String.valueOf(limit), "="));
+        return this;
+    }
+
+    @Override
+    public VariantStorageEngineSampler setCount(boolean count) {
+        getArguments().addArgument(new HTTPArgument(QueryOptions.COUNT, String.valueOf(count), "="));
         return this;
     }
 

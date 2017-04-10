@@ -18,6 +18,10 @@ public interface VariantStorageEngineSampler extends Sampler {
 
     VariantStorageEngineSampler setDBName(String dbname);
 
+    VariantStorageEngineSampler setLimit(int limit);
+
+    VariantStorageEngineSampler setCount(boolean count);
+
     VariantStorageEngineSampler setQueryGenerator(Class<? extends QueryGenerator> queryGenerator);
 
     VariantStorageEngineSampler setQueryGeneratorConfig(String key, String value);
