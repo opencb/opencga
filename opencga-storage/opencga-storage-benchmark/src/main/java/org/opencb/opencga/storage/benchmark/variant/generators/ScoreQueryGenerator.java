@@ -1,9 +1,12 @@
 package org.opencb.opencga.storage.benchmark.variant.generators;
 
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -12,11 +15,16 @@ import java.util.Map;
  *
  * @author Joaquín Tárraga &lt;joaquintarraga@gmail.com&gt;
  */
-public class ScoreQueryGenerator extends QueryGenerator {
-    protected List<Score> scores;
+public abstract class ScoreQueryGenerator extends QueryGenerator {
+    protected static final List<String> NUM_OPS = Arrays.asList(">", ">=", "<", "<=");
+    private List<Score> scores;
     private List<String> ops;
     private String queryKey;
     private Logger logger = LoggerFactory.getLogger(getClass());
+
+    public ScoreQueryGenerator(List<String> ops, String queryKey) {
+        this(new ArrayList<>(), ops, queryKey);
+    }
 
     public ScoreQueryGenerator(List<Score> scores, List<String> ops, String queryKey) {
         super();
@@ -31,9 +39,7 @@ public class ScoreQueryGenerator extends QueryGenerator {
     }
 
     @Override
-    public Query generateQuery() {
-        Query query = new Query();
-
+    public Query generateQuery(Query query) {
         Score score = scores.get(random.nextInt(scores.size()));
 
         StringBuilder sb = new StringBuilder();
@@ -45,7 +51,15 @@ public class ScoreQueryGenerator extends QueryGenerator {
         return query;
     }
 
-    public class Score {
+    protected ScoreQueryGenerator addScore(Score score) {
+        if (scores == null) {
+            scores = new ArrayList<>();
+        }
+        scores.add(score);
+        return this;
+    }
+
+    public static class Score {
         private String name;
         private double min;
         private double max;
@@ -78,6 +92,34 @@ public class ScoreQueryGenerator extends QueryGenerator {
 
         public void setMax(double max) {
             this.max = max;
+        }
+    }
+
+    public static class ProteinSubstQueryGenerator extends ScoreQueryGenerator {
+
+        public ProteinSubstQueryGenerator() {
+            super(NUM_OPS, VariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key());
+            addScore(new Score("sift", 0, 1));
+            addScore(new Score("polyphen", 0, 1));
+        }
+    }
+
+    public static class ConservationQueryGenerator extends ScoreQueryGenerator {
+
+        public ConservationQueryGenerator() {
+            super(NUM_OPS, VariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION.key());
+            addScore(new Score("phylop", 0, 1));
+            addScore(new Score("phastCons", 0, 1));
+            addScore(new Score("gerp", 0, 1));
+        }
+    }
+
+    public static class FunctionalScoreQueryGenerator extends ScoreQueryGenerator {
+
+        public FunctionalScoreQueryGenerator() {
+            super(NUM_OPS, VariantDBAdaptor.VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key());
+            addScore(new Score("caddRaw", 0, 1));
+            addScore(new Score("caddScaled", -10, 40));
         }
     }
 }

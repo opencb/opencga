@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.benchmark.variant;
 
 import org.opencb.opencga.storage.benchmark.BenchmarkRunner;
+import org.opencb.opencga.storage.benchmark.variant.generators.MultiQueryGenerator;
 import org.opencb.opencga.storage.benchmark.variant.generators.QueryGenerator;
 import org.opencb.opencga.storage.benchmark.variant.samplers.VariantStorageEngineDirectSampler;
 import org.opencb.opencga.storage.benchmark.variant.samplers.VariantStorageEngineRestSampler;
@@ -23,6 +24,28 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
         super(storageConfiguration, jmeterHome, outdir);
     }
 
+    public void addThreadGroup(ConnectionType type, Path dataDir, String queries) {
+
+        // gene,ct;region,phylop
+
+        List<VariantStorageEngineSampler> samplers = new ArrayList<>();
+        for (String query : queries.split(";")) {
+            VariantStorageEngineSampler variantStorageSampler = newVariantStorageEngineSampler(type);
+
+            variantStorageSampler.setStorageEngine(storageEngine);
+            variantStorageSampler.setDBName(dbName);
+            variantStorageSampler.setQueryGenerator(MultiQueryGenerator.class);
+            variantStorageSampler.setQueryGeneratorConfig(MultiQueryGenerator.DATA_DIR, dataDir.toString());
+            variantStorageSampler.setQueryGeneratorConfig(MultiQueryGenerator.MULTI_QUERY, query);
+
+            samplers.add(variantStorageSampler);
+        }
+
+        addThreadGroup(samplers);
+
+
+    }
+
     public void addThreadGroup(ConnectionType type, Path dataDir, List<Class<? extends QueryGenerator>> queryGenerators) {
         List<VariantStorageEngineSampler> samplers = new ArrayList<>(queryGenerators.size());
         for (Class<? extends QueryGenerator> clazz : queryGenerators) {
@@ -31,7 +54,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
             variantStorageSampler.setStorageEngine(storageEngine);
             variantStorageSampler.setDBName(dbName);
             variantStorageSampler.setQueryGenerator(clazz);
-            variantStorageSampler.setDataDir(dataDir.toString());
+            variantStorageSampler.setQueryGeneratorConfig(QueryGenerator.DATA_DIR, dataDir.toString());
 
             samplers.add(variantStorageSampler);
         }

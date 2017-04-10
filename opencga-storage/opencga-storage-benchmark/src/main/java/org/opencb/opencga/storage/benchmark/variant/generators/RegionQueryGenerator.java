@@ -34,8 +34,7 @@ public class RegionQueryGenerator extends QueryGenerator {
     }
 
     @Override
-    public Query generateQuery() {
-        Query query = new Query();
+    public Query generateQuery(Query query) {
         Region regionLimit = regionLimits.get(random.nextInt(regionLimits.size()));
         int regionLength = random.nextInt(1000);
         int start = random.nextInt(regionLimit.getEnd() - regionLimit.getStart() - regionLength) + regionLimit.getStart();

@@ -41,23 +41,27 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
         setClassname(VariantStorageEngineJavaSamplerClient.class.getName());
     }
 
+    @Override
     public VariantStorageEngineDirectSampler setStorageEngine(String engine) {
         getArguments().addArgument(new Argument(ENGINE, engine));
         return this;
     }
 
+    @Override
     public VariantStorageEngineDirectSampler setDBName(String dbname) {
         getArguments().addArgument(new Argument(DB_NAME, dbname));
         return this;
     }
 
+    @Override
     public VariantStorageEngineDirectSampler setQueryGenerator(Class<? extends QueryGenerator> queryGenerator) {
         getArguments().addArgument(new Argument(QUERY_GENERATOR, queryGenerator.getName()));
         return this;
     }
 
-    public VariantStorageEngineDirectSampler setDataDir(String fileData) {
-        getArguments().addArgument(new Argument(QueryGenerator.DATA_DIR, fileData));
+    @Override
+    public VariantStorageEngineSampler setQueryGeneratorConfig(String key, String value) {
+        getArguments().addArgument(new Argument(key, value));
         return this;
     }
 
@@ -106,7 +110,7 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
             SampleResult result = new SampleResult();
 
             try {
-                Query query = queryGenerator.generateQuery();
+                Query query = queryGenerator.generateQuery(new Query());
                 QueryOptions queryOptions = new QueryOptions();
                 result.setResponseMessage(query.toJson());
 

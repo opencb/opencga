@@ -54,12 +54,13 @@ search:
 
 benchmark:
   storageEngine: "mongodb"
-  numRepetitions: 3
+  numRepetitions: 20
   load: false
-  queries: ["count", "distinct"]
+  queries: ["region;gene,ct"]
   databaseName: "opencga"
   table: "variants"
-  concurrency: 1
+  concurrency: 5
+  mode: REST # REST, DIRECT or GRPC
   database:   ## 'local' connection to CellBase MongoDB
       hosts:
       - "localhost:27017"

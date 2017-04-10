@@ -48,6 +48,6 @@ public abstract class QueryGenerator {
         }
     }
 
-    public abstract Query generateQuery();
+    public abstract Query generateQuery(Query query);
 
 }

@@ -20,6 +20,6 @@ public interface VariantStorageEngineSampler extends Sampler {
 
     VariantStorageEngineSampler setQueryGenerator(Class<? extends QueryGenerator> queryGenerator);
 
-    VariantStorageEngineSampler setDataDir(String fileData);
+    VariantStorageEngineSampler setQueryGeneratorConfig(String key, String value);
 
 }

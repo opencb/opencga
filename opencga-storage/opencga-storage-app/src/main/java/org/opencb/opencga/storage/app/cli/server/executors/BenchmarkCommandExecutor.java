@@ -4,13 +4,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.app.cli.server.options.BenchmarkCommandOptions;
 import org.opencb.opencga.storage.benchmark.variant.VariantBenchmarkRunner;
-import org.opencb.opencga.storage.benchmark.variant.generators.GeneQueryGenerator;
-import org.opencb.opencga.storage.benchmark.variant.generators.RegionQueryGenerator;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 
 /**
  * Created on 07/04/17.
@@ -64,8 +61,9 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
         }
 
         VariantBenchmarkRunner variantBenchmarkRunner = new VariantBenchmarkRunner(configuration, jmeterHome, outdirPath);
-        variantBenchmarkRunner.addThreadGroup(options.connectionType, dataDir,
-                Arrays.asList(GeneQueryGenerator.class, RegionQueryGenerator.class));
+//        variantBenchmarkRunner.addThreadGroup(options.connectionType, dataDir,
+//                Arrays.asList(GeneQueryGenerator.class, RegionQueryGenerator.class));
+        variantBenchmarkRunner.addThreadGroup(options.connectionType, dataDir, options.query);
 //        variantBenchmarkRunner.newThreadGroup(VariantBenchmarkRunner.ConnectionType.REST, dataDir,
 //                Arrays.asList(RegionQueryGenerator.class));
 //        variantBenchmarkRunner.newThreadGroup(VariantBenchmarkRunner.ConnectionType.REST, dataDir,

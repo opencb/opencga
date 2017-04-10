@@ -41,7 +41,7 @@ public class VariantStorageEngineRestSampler extends HTTPSampler implements Vari
             sb.append('&');
         }
 
-        Query query = getQueryGenerator().generateQuery();
+        Query query = getQueryGenerator().generateQuery(new Query());
         query.forEach((key, value) -> sb.append(key).append('=').append(value).append('&'));
 
         return sb.toString();
@@ -76,8 +76,8 @@ public class VariantStorageEngineRestSampler extends HTTPSampler implements Vari
     }
 
     @Override
-    public VariantStorageEngineRestSampler setDataDir(String fileData) {
-        setProperty(QueryGenerator.class.getName() + '.' + QueryGenerator.DATA_DIR, fileData);
+    public VariantStorageEngineSampler setQueryGeneratorConfig(String key, String value) {
+        setProperty(QueryGenerator.class.getName() + '.' + key, value);
         return this;
     }
 
