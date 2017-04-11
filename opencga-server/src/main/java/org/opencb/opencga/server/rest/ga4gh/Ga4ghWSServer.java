@@ -27,7 +27,6 @@ import org.ga4gh.methods.SearchVariantsResponse;
 import org.ga4gh.models.ReadAlignment;
 import org.ga4gh.models.Variant;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -47,8 +46,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
@@ -95,7 +92,7 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
         try {
             BeaconResponse.Query beaconQuery = new BeaconResponse.Query(chrom, pos, allele, ref);
             List<BeaconResponse> responses = variantManager.beacon(beaconsList, beaconQuery, sessionId);
-            return createOkResponse(responses);
+            return Response.ok(responses, MediaType.APPLICATION_JSON).build();
         } catch (Exception e) {
             return createErrorResponse(e);
         }
