@@ -416,7 +416,7 @@ public class OpenCGAWSServer {
     @Path("/help")
     @ApiOperation(value = "Help", hidden = true, position = 1)
     public Response help() {
-        return createOkResponse("No help available");
+        return createErrorResponse("help", "No help available");
     }
 
     protected Response createErrorResponse(Exception e) {
