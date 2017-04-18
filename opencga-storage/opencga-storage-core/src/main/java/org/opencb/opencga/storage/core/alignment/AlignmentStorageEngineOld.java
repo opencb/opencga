@@ -40,6 +40,7 @@ import org.opencb.opencga.storage.core.alignment.json.AlignmentJsonDataWriter;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
@@ -59,6 +60,7 @@ import java.util.List;
 public abstract class AlignmentStorageEngineOld extends StorageEngine<AlignmentDBAdaptor> implements StoragePipeline {
 
     protected StorageEtlConfiguration storageEtlConfiguration;
+    private Logger logger = LoggerFactory.getLogger(AlignmentStorageEngineOld.class);
 
     public enum Options {
         MEAN_COVERAGE_SIZE_LIST ("mean_coverage_size_list", Arrays.asList("200", "10000")),
@@ -369,4 +371,6 @@ public abstract class AlignmentStorageEngineOld extends StorageEngine<AlignmentD
         return storageEtlConfiguration.getOptions();
     }
 
+    @Override
+    public void close() throws StorageEngineException {}
 }

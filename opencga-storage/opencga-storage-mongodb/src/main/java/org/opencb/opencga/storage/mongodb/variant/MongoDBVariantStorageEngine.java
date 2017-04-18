@@ -16,38 +16,55 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
+import com.google.common.base.Throwables;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.log4j.Level;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.core.common.MemoryUsageMonitor;
+import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
-import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
+import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.search.VariantSearchManager;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
-import org.opencb.opencga.storage.mongodb.metadata.MongoDBStudyConfigurationManager;
+import org.opencb.opencga.storage.mongodb.metadata.MongoDBStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.io.db.VariantMongoDBAnnotationDBWriter;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoVariantImporter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.DB_NAME;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.FILES;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLES;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 
 /**
@@ -62,6 +79,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
     // Connection to MongoDB.
     private MongoDataStoreManager mongoDataStoreManager = null;
+    private final AtomicReference<VariantMongoDBAdaptor> dbAdaptor = new AtomicReference<>();
+    private Logger logger = LoggerFactory.getLogger(MongoDBVariantStorageEngine.class);
+    private StudyConfigurationManager studyConfigurationManager;
 
     public enum MongoDBVariantOptions {
         COLLECTION_VARIANTS("collection.variants", "variants"),
@@ -118,9 +138,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public void testConnection() throws StorageEngineException {
-        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
-        String dbName = options.getString(VariantStorageEngine.Options.DB_NAME.key());
-        MongoCredentials credentials = getMongoCredentials(dbName);
+        MongoCredentials credentials = getMongoCredentials();
 
         if (!credentials.check()) {
             logger.error("Connection to database '{}' failed", dbName);
@@ -129,24 +147,23 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    protected VariantImporter newVariantImporter(VariantDBAdaptor dbAdaptor) {
-        VariantMongoDBAdaptor mongoDBAdaptor = (VariantMongoDBAdaptor) dbAdaptor;
-        return new MongoVariantImporter(mongoDBAdaptor);
+    protected VariantImporter newVariantImporter() throws StorageEngineException {
+        return new MongoVariantImporter(getDBAdaptor());
     }
 
     @Override
     public MongoDBVariantStoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException {
-        VariantMongoDBAdaptor dbAdaptor = connected ? getDBAdaptor(null) : null;
+        VariantMongoDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
         return new MongoDBVariantStoragePipeline(configuration, STORAGE_ENGINE_ID, dbAdaptor);
     }
 
     @Override
-    protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator, VariantDBAdaptor dbAdaptor) {
-        VariantMongoDBAdaptor mongoDBAdaptor = (VariantMongoDBAdaptor) dbAdaptor;
-        return new DefaultVariantAnnotationManager(annotator, dbAdaptor) {
+    protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
+        VariantMongoDBAdaptor mongoDbAdaptor = getDBAdaptor();
+        return new DefaultVariantAnnotationManager(annotator, mongoDbAdaptor) {
             @Override
             protected VariantAnnotationDBWriter newVariantAnnotationDBWriter(VariantDBAdaptor dbAdaptor, QueryOptions options) {
-                return new VariantMongoDBAnnotationDBWriter(options, mongoDBAdaptor);
+                return new VariantMongoDBAnnotationDBWriter(options, mongoDbAdaptor);
             }
         };
     }
@@ -161,11 +178,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     public void dropStudy(String studyName) throws StorageEngineException {
         ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
         getDBAdaptor().deleteStudy(studyName, new QueryOptions(options));
-    }
-
-    @Override
-    public VariantMongoDBAdaptor getDBAdaptor() throws StorageEngineException {
-        return getDBAdaptor(null);
     }
 
     @Override
@@ -316,36 +328,44 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public VariantMongoDBAdaptor getDBAdaptor(String dbName) throws StorageEngineException {
-        MongoCredentials credentials = getMongoCredentials(dbName);
-        VariantMongoDBAdaptor variantMongoDBAdaptor;
-        ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
-        if (dbName != null && !dbName.isEmpty()) {
-            options.append(VariantStorageEngine.Options.DB_NAME.key(), dbName);
+    public VariantMongoDBAdaptor getDBAdaptor() throws StorageEngineException {
+        // Lazy initialization of dbAdaptor
+        if (dbAdaptor.get() == null) {
+            synchronized (dbAdaptor) {
+                if (dbAdaptor.get() == null) {
+                    VariantMongoDBAdaptor variantMongoDBAdaptor = newDBAdaptor();
+                    this.dbAdaptor.set(variantMongoDBAdaptor);
+                }
+            }
         }
+        return dbAdaptor.get();
+    }
+
+    private VariantMongoDBAdaptor newDBAdaptor() throws StorageEngineException {
+        MongoCredentials credentials = getMongoCredentials();
+        VariantMongoDBAdaptor variantMongoDBAdaptor;
+        ObjectMap options = getOptions();
 
         String variantsCollection = options.getString(COLLECTION_VARIANTS.key(), COLLECTION_VARIANTS.defaultValue());
         String filesCollection = options.getString(COLLECTION_FILES.key(), COLLECTION_FILES.defaultValue());
         MongoDataStoreManager mongoDataStoreManager = getMongoDataStoreManager();
         try {
-            StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager(options);
+            StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager();
             variantMongoDBAdaptor = new VariantMongoDBAdaptor(mongoDataStoreManager, credentials, variantsCollection, filesCollection,
                     studyConfigurationManager, configuration);
 
         } catch (UnknownHostException e) {
             throw new IllegalArgumentException(e);
         }
-
         logger.debug("getting DBAdaptor to db: {}", credentials.getMongoDbName());
         return variantMongoDBAdaptor;
     }
 
-    MongoCredentials getMongoCredentials(String dbName) {
-        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+    MongoCredentials getMongoCredentials() {
 
         // If no database name is provided, read from the configuration file
-        if (dbName == null || dbName.isEmpty()) {
-            dbName = options.getString(VariantStorageEngine.Options.DB_NAME.key(), VariantStorageEngine.Options.DB_NAME.defaultValue());
+        if (StringUtils.isEmpty(dbName)) {
+            dbName = getOptions().getString(DB_NAME.key(), DB_NAME.defaultValue());
         }
 
         DatabaseCredentials database = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase();
@@ -353,20 +373,23 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         try {
             return new MongoCredentials(database, dbName);
         } catch (IllegalOpenCGACredentialsException e) {
-            e.printStackTrace();
-            return null;
+            throw Throwables.propagate(e);
         }
     }
 
     @Override
-    protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap options) throws StorageEngineException {
-        if (options != null && !options.getString(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
-            return super.buildStudyConfigurationManager(options);
+    public StudyConfigurationManager getStudyConfigurationManager() throws StorageEngineException {
+        ObjectMap options = getOptions();
+        if (studyConfigurationManager != null) {
+            return studyConfigurationManager;
+        } else if (!options.getString(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
+            return super.getStudyConfigurationManager();
         } else {
-            String dbName = options == null ? null : options.getString(VariantStorageEngine.Options.DB_NAME.key());
-            String collectionName = options == null ? null : options.getString(COLLECTION_STUDIES.key(), COLLECTION_STUDIES.defaultValue());
+            String collectionName = options.getString(COLLECTION_STUDIES.key(), COLLECTION_STUDIES.defaultValue());
             try {
-                return new MongoDBStudyConfigurationManager(getMongoDataStoreManager(), getMongoCredentials(dbName), collectionName);
+                studyConfigurationManager = new StudyConfigurationManager(new MongoDBStudyConfigurationDBAdaptor(getMongoDataStoreManager(),
+                        getMongoCredentials(), collectionName));
+                return studyConfigurationManager;
 //                return getDBAdaptor(dbName).getStudyConfigurationManager();
             } catch (UnknownHostException e) {
                 throw new StorageEngineException("Unable to build MongoStorageConfigurationManager", e);
@@ -374,18 +397,160 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         }
     }
 
+    @Override
+    public VariantQueryResult<Variant> get(Query query, QueryOptions options) throws StorageEngineException {
+        if (options == null) {
+            options = QueryOptions.empty();
+        }
+        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
+        // TODO: Use CacheManager ?
+        if (options.getBoolean(VariantSearchManager.SUMMARY)
+                || !query.containsKey(VariantQueryParam.FILES.key())
+                && !query.containsKey(VariantQueryParam.FILTER.key())
+                && !query.containsKey(VariantQueryParam.GENOTYPE.key())
+                && !query.containsKey(VariantQueryParam.SAMPLES.key())
+                && !returnedFields.contains(VariantField.STUDIES_FILES)
+                && !returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)
+                && searchActiveAndAlive()) {
+            try {
+                return getVariantSearchManager().query(dbName, query, options);
+            } catch (IOException | VariantSearchException e) {
+                throw Throwables.propagate(e);
+            }
+        } else {
+            VariantMongoDBAdaptor dbAdaptor = getDBAdaptor();
+            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
+            query = parseQuery(query, studyConfigurationManager);
+            setDefaultTimeout(options);
+            return dbAdaptor.get(query, options);
+        }
+    }
+
+    @Override
+    public VariantDBIterator iterator(Query query, QueryOptions options) throws StorageEngineException {
+        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
+        if (options.getBoolean(VariantSearchManager.SUMMARY)
+                || !query.containsKey(VariantQueryParam.FILES.key())
+                && !query.containsKey(VariantQueryParam.FILTER.key())
+                && !query.containsKey(VariantQueryParam.GENOTYPE.key())
+                && !query.containsKey(VariantQueryParam.SAMPLES.key())
+                && !returnedFields.contains(VariantField.STUDIES_FILES)
+                && !returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)
+                && searchActiveAndAlive()) {
+            try {
+                return getVariantSearchManager().iterator(dbName, query, options);
+            } catch (IOException | VariantSearchException e) {
+                throw Throwables.propagate(e);
+            }
+        } else {
+            VariantMongoDBAdaptor dbAdaptor = getDBAdaptor();
+            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
+            query = parseQuery(query, studyConfigurationManager);
+//            setDefaultTimeout(options);
+            return dbAdaptor.iterator(query, options);
+        }
+    }
+
+    @Override
+    public QueryResult<Long> count(Query query) throws StorageEngineException {
+        if (query.containsKey(VariantQueryParam.FILES.key())
+                || query.containsKey(VariantQueryParam.FILTER.key())
+                || query.containsKey(VariantQueryParam.GENOTYPE.key())
+                || query.containsKey(VariantQueryParam.SAMPLES.key())
+                || !searchActiveAndAlive()) {
+            VariantMongoDBAdaptor dbAdaptor = getDBAdaptor();
+            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
+            query = parseQuery(query, studyConfigurationManager);
+            return dbAdaptor.count(query);
+        } else {
+            try {
+                StopWatch watch = StopWatch.createStarted();
+                long count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 1)).getNumTotalResults();
+                int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
+                return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
+            } catch (IOException | VariantSearchException e) {
+                throw Throwables.propagate(e);
+            }
+        }
+    }
+
+    public Query parseQuery(Query originalQuery, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
+        // Copy input query! Do not modify original query!
+        Query query = originalQuery == null ? new Query() : new Query(originalQuery);
+        List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());
+        CellBaseUtils cellBaseUtils = getCellBaseUtils();
+
+        if (isValidParam(query, VariantQueryParam.STUDIES)
+                && studyNames.size() == 1
+                && !isValidParam(query, FILES)
+                && !isValidParam(query, SAMPLES)) {
+            query.remove(VariantQueryParam.STUDIES.key());
+        }
+
+        if (isValidParam(query, VariantQueryParam.ANNOT_GO)) {
+            String value = query.getString(VariantQueryParam.ANNOT_GO.key());
+            // Check if comma separated of semi colon separated (AND or OR)
+            VariantQueryUtils.QueryOperation queryOperation = checkOperator(value);
+            // Split by comma or semi colon
+            List<String> goValues = splitValue(value, queryOperation);
+
+            if (queryOperation == VariantQueryUtils.QueryOperation.AND) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_GO, value, "Unimplemented AND operator");
+            }
+            query.remove(VariantQueryParam.ANNOT_GO.key());
+            List<String> genes = new ArrayList<>(query.getAsStringList(VariantQueryParam.GENE.key()));
+            Set<String> genesByGo = cellBaseUtils.getGenesByGo(goValues);
+            if (genesByGo.isEmpty()) {
+                genes.add("none");
+            } else {
+                genes.addAll(genesByGo);
+            }
+            query.put(VariantQueryParam.GENE.key(), genes);
+        }
+        if (isValidParam(query, VariantQueryParam.ANNOT_EXPRESSION)) {
+            String value = query.getString(VariantQueryParam.ANNOT_EXPRESSION.key());
+            // Check if comma separated of semi colon separated (AND or OR)
+            VariantQueryUtils.QueryOperation queryOperation = checkOperator(value);
+            // Split by comma or semi colon
+            List<String> expressionValues = splitValue(value, queryOperation);
+
+            if (queryOperation == VariantQueryUtils.QueryOperation.AND) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_EXPRESSION, value, "Unimplemented AND operator");
+            }
+            query.remove(VariantQueryParam.ANNOT_EXPRESSION.key());
+            List<String> genes = new ArrayList<>(query.getAsStringList(VariantQueryParam.GENE.key()));
+            Set<String> genesByExpression = cellBaseUtils.getGenesByExpression(expressionValues);
+            if (genesByExpression.isEmpty()) {
+                genes.add("none");
+            } else {
+                genes.addAll(genesByExpression);
+            }
+            query.put(VariantQueryParam.GENE.key(), genes);
+        }
+        return query;
+    }
+
     private synchronized MongoDataStoreManager getMongoDataStoreManager() {
         if (mongoDataStoreManager == null) {
-            mongoDataStoreManager = new MongoDataStoreManager(getMongoCredentials(null).getDataStoreServerAddresses());
+            mongoDataStoreManager = new MongoDataStoreManager(getMongoCredentials().getDataStoreServerAddresses());
         }
         return mongoDataStoreManager;
     }
 
-    public synchronized void close() {
+    @Override
+    public synchronized void close() throws IOException {
+        super.close();
+        if (dbAdaptor.get() != null) {
+            dbAdaptor.get().close();
+            dbAdaptor.set(null);
+        }
+        if (studyConfigurationManager != null) {
+            studyConfigurationManager.close();
+            studyConfigurationManager = null;
+        }
         if (mongoDataStoreManager != null) {
             mongoDataStoreManager.close();
             mongoDataStoreManager = null;
         }
     }
-
 }

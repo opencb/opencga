@@ -31,7 +31,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationAdaptor;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.utils.MongoLock;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyConfigurationConverter;
@@ -50,7 +50,7 @@ import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class MongoDBStudyConfigurationManager extends StudyConfigurationManager {
+public class MongoDBStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor {
 
     private final MongoDataStoreManager mongoManager;
     private final boolean closeConnection;
@@ -59,20 +59,19 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
     private final MongoLock mongoLock;
     private final MongoDBCollection collection;
 
-    public MongoDBStudyConfigurationManager(MongoCredentials credentials, String collectionName)
+    public MongoDBStudyConfigurationDBAdaptor(MongoCredentials credentials, String collectionName)
             throws UnknownHostException {
         this(new MongoDataStoreManager(credentials.getDataStoreServerAddresses()), true, credentials, collectionName);
     }
 
-    public MongoDBStudyConfigurationManager(MongoDataStoreManager mongoManager, MongoCredentials credentials, String collectionName)
+    public MongoDBStudyConfigurationDBAdaptor(MongoDataStoreManager mongoManager, MongoCredentials credentials, String collectionName)
             throws UnknownHostException {
         this(mongoManager, false, credentials, collectionName);
     }
 
-    private MongoDBStudyConfigurationManager(MongoDataStoreManager mongoManager, boolean closeConnection,
-                                             MongoCredentials credentials, String collectionName)
+    private MongoDBStudyConfigurationDBAdaptor(MongoDataStoreManager mongoManager, boolean closeConnection,
+                                               MongoCredentials credentials, String collectionName)
             throws UnknownHostException {
-        super(null);
         // Mongo configuration
         this.mongoManager = mongoManager;
         this.closeConnection = closeConnection;
@@ -84,13 +83,13 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
     }
 
     @Override
-    protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
-        return internalGetStudyConfiguration(null, studyName, timeStamp, options);
+    protected QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
+        return getStudyConfiguration(null, studyName, timeStamp, options);
     }
 
     @Override
-    protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
-        return internalGetStudyConfiguration(studyId, null, timeStamp, options);
+    protected QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+        return getStudyConfiguration(studyId, null, timeStamp, options);
     }
 
     @Override
@@ -116,8 +115,8 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
         mongoLock.unlock(studyId, lockId);
     }
 
-    private QueryResult<StudyConfiguration> internalGetStudyConfiguration(Integer studyId, String studyName, Long timeStamp,
-                                                                          QueryOptions options) {
+    private QueryResult<StudyConfiguration> getStudyConfiguration(Integer studyId, String studyName, Long timeStamp,
+                                                                  QueryOptions options) {
         long start = System.currentTimeMillis();
         StudyConfiguration studyConfiguration;
 
@@ -153,7 +152,7 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
     }
 
     @Override
-    public QueryResult internalUpdateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    public QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         Document studyMongo = new DocumentToStudyConfigurationConverter().convertToStorageType(studyConfiguration);
 
         // Update field by field, instead of replacing the whole object to preserve existing fields like "_lock"
@@ -169,7 +168,6 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
     @Override
     public List<String> getStudyNames(QueryOptions options) {
         List<String> studyNames = collection.distinct("studyName", null).getResult();
-
         return studyNames.stream().map(Object::toString).collect(Collectors.toList());
     }
 

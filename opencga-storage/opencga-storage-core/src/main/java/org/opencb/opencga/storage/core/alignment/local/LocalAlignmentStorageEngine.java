@@ -20,7 +20,7 @@ public class LocalAlignmentStorageEngine extends AlignmentStorageEngine {
     }
 
     @Override
-    public AlignmentDBAdaptor getDBAdaptor(String dbName) throws StorageEngineException {
+    public AlignmentDBAdaptor getDBAdaptor() throws StorageEngineException {
         return dbAdaptor;
     }
 

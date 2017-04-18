@@ -37,7 +37,7 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
@@ -164,9 +164,9 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
 
     @Deprecated
     public static int htsExport(VariantDBIterator iterator, StudyConfiguration studyConfiguration, VariantSourceDBAdaptor sourceDBAdaptor,
-                                OutputStream outputStream, QueryOptions queryOptions) {
+                                OutputStream outputStream, Query query, QueryOptions queryOptions) {
 
-        VariantVcfDataWriter exporter = new VariantVcfDataWriter(studyConfiguration, sourceDBAdaptor, outputStream, new Query(),
+        VariantVcfDataWriter exporter = new VariantVcfDataWriter(studyConfiguration, sourceDBAdaptor, outputStream, query,
                 queryOptions);
 
         exporter.open();
@@ -373,7 +373,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
 
     private List<String> getReturnedSamples(StudyConfiguration studyConfiguration, QueryOptions options) {
         Map<Integer, List<Integer>> returnedSamplesMap =
-                VariantDBAdaptorUtils.getReturnedSamples(new Query(options), options, Collections.singletonList(studyConfiguration));
+                VariantQueryUtils.getReturnedSamples(new Query(options), options, Collections.singletonList(studyConfiguration));
         List<String> returnedSamples = returnedSamplesMap.get(studyConfiguration.getStudyId()).stream()
                 .map(sampleId -> studyConfiguration.getSampleIds().inverse().get(sampleId))
                 .collect(Collectors.toList());
@@ -386,7 +386,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
             return Collections.emptyList();
         }
         // Get Sample names from query & study configuration
-        List<String> sampleNames = VariantDBAdaptorUtils.getSamplesMetadata(query, studyConfiguration)
+        List<String> sampleNames = VariantQueryUtils.getSamplesMetadata(query, studyConfiguration)
                 .get(studyConfiguration.getStudyName());
         return sampleNames;
     }

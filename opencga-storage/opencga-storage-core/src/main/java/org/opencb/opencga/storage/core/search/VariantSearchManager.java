@@ -25,11 +25,12 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.search.solr.SolrQueryParser;
 import org.opencb.opencga.storage.core.search.solr.SolrVariantIterator;
 import org.opencb.opencga.storage.core.search.solr.SolrVariantSearchIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,11 +47,11 @@ import java.util.concurrent.TimeUnit;
  */
 public class VariantSearchManager {
 
+    public static final String SUMMARY = "summary";
     private String collection;
     private StorageConfiguration storageConfiguration;
 
     private SolrQueryParser solrQueryParser;
-    private VariantDBAdaptorUtils variantDBAdaptorUtils;
 
     private HttpSolrClient solrClient;
     private VariantSearchToVariantConverter variantSearchToVariantConverter;
@@ -68,15 +69,15 @@ public class VariantSearchManager {
         variantSearchToVariantConverter = new VariantSearchToVariantConverter();
     }
 
-    public VariantSearchManager(VariantDBAdaptorUtils variantDBAdaptorUtils, StorageConfiguration storageConfiguration) {
-        this.variantDBAdaptorUtils = variantDBAdaptorUtils;
+    public VariantSearchManager(StudyConfigurationManager studyConfigurationManager, CellBaseUtils cellbaseUtils,
+                                StorageConfiguration storageConfiguration) {
         this.storageConfiguration = storageConfiguration;
 
 //        this.solrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost() + collection).build();
 //        this.solrClient.setRequestWriter(new BinaryRequestWriter());
 
         this.variantSearchToVariantConverter = new VariantSearchToVariantConverter();
-        this.solrQueryParser = new SolrQueryParser(this.variantDBAdaptorUtils);
+        this.solrQueryParser = new SolrQueryParser(studyConfigurationManager, cellbaseUtils);
 
         logger = LoggerFactory.getLogger(VariantSearchManager.class);
     }

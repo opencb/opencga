@@ -42,14 +42,14 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.search.VariantSearchManager;
-import org.opencb.opencga.storage.core.search.VariantSearchModel;
-import org.opencb.opencga.storage.core.search.solr.SolrVariantSearchIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -82,7 +82,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         this.variantCommandOptions = variantCommandOptions;
     }
 
-    private void configure(GeneralCliOptions.CommonOptions commonOptions) throws Exception {
+    private void configure(GeneralCliOptions.CommonOptions commonOptions, String dbName) throws Exception {
 
         this.logFile = commonOptions.logFile;
 
@@ -101,9 +101,9 @@ public class VariantCommandExecutor extends CommandExecutor {
         // TODO: Start passing catalogManager
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(configuration);
         if (storageEngine == null || storageEngine.isEmpty()) {
-            this.variantStorageEngine = storageEngineFactory.getVariantStorageEngine();
+            this.variantStorageEngine = storageEngineFactory.getVariantStorageEngine(null, dbName);
         } else {
-            this.variantStorageEngine = storageEngineFactory.getVariantStorageEngine(storageEngine);
+            this.variantStorageEngine = storageEngineFactory.getVariantStorageEngine(storageEngine, dbName);
         }
     }
 
@@ -116,11 +116,13 @@ public class VariantCommandExecutor extends CommandExecutor {
         String subCommandString = getParsedSubCommand(variantCommandOptions.jCommander);
         switch (subCommandString) {
             case "index":
-                configure(variantCommandOptions.indexVariantsCommandOptions.commonOptions);
+                configure(variantCommandOptions.indexVariantsCommandOptions.commonOptions,
+                        variantCommandOptions.indexVariantsCommandOptions.commonIndexOptions.dbName);
                 index();
                 break;
             case "query":
-                configure(variantCommandOptions.variantQueryCommandOptions.commonOptions);
+                configure(variantCommandOptions.variantQueryCommandOptions.commonOptions,
+                        variantCommandOptions.variantQueryCommandOptions.commonQueryOptions.dbName);
                 query();
                 break;
 //            case "query-grpc":
@@ -128,23 +130,28 @@ public class VariantCommandExecutor extends CommandExecutor {
 //                queryGrpc();
 //                break;
             case "import":
-                configure(variantCommandOptions.importVariantsCommandOptions.commonOptions);
+                configure(variantCommandOptions.importVariantsCommandOptions.commonOptions,
+                        variantCommandOptions.importVariantsCommandOptions.dbName);
                 importData();
                 break;
             case "annotate":
-                configure(variantCommandOptions.annotateVariantsCommandOptions.commonOptions);
+                configure(variantCommandOptions.annotateVariantsCommandOptions.commonOptions,
+                        variantCommandOptions.annotateVariantsCommandOptions.dbName);
                 annotation();
                 break;
             case "stats":
-                configure(variantCommandOptions.statsVariantsCommandOptions.commonOptions);
+                configure(variantCommandOptions.statsVariantsCommandOptions.commonOptions,
+                        variantCommandOptions.statsVariantsCommandOptions.dbName);
                 stats();
                 break;
             case "export":
-                configure(variantCommandOptions.exportVariantsCommandOptions.queryOptions.commonOptions);
+                configure(variantCommandOptions.exportVariantsCommandOptions.queryOptions.commonOptions,
+                        variantCommandOptions.exportVariantsCommandOptions.queryOptions.commonQueryOptions.dbName);
                 export();
                 break;
             case "search":
-                configure(variantCommandOptions.searchVariantsCommandOptions.commonOptions);
+                configure(variantCommandOptions.searchVariantsCommandOptions.commonOptions,
+                        variantCommandOptions.searchVariantsCommandOptions.dbName);
                 search();
                 break;
 //            case "benchmark":
@@ -204,15 +211,13 @@ public class VariantCommandExecutor extends CommandExecutor {
 //        variantOptions.put(VariantStorageEngine.Options.COMPRESS_GENOTYPES.key(), indexVariantsCommandOptions.compressGenotypes);
         params.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), indexVariantsCommandOptions.aggregated);
 
-        params.putIfNotEmpty(VariantStorageEngine.Options.DB_NAME.key(), indexVariantsCommandOptions.commonIndexOptions.dbName);
-
         params.put(VariantStorageEngine.Options.ANNOTATE.key(), indexVariantsCommandOptions.annotate);
         if (indexVariantsCommandOptions.annotator != null) {
             params.put(VariantAnnotationManager.ANNOTATION_SOURCE, indexVariantsCommandOptions.annotator);
         }
         params.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, indexVariantsCommandOptions.overwriteAnnotations);
         if (indexVariantsCommandOptions.studyConfigurationFile != null && !indexVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
-            params.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, indexVariantsCommandOptions.studyConfigurationFile);
+            params.put(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, indexVariantsCommandOptions.studyConfigurationFile);
         }
         params.put(VariantStorageEngine.Options.RESUME.key(), indexVariantsCommandOptions.resume);
 
@@ -252,7 +257,7 @@ public class VariantCommandExecutor extends CommandExecutor {
             variantStorageEngine.index(inputUris, outdirUri, doExtract, doTransform, doLoad);
         } else {
             try {
-                variantStorageEngine.searchIndex(indexVariantsCommandOptions.commonIndexOptions.dbName);
+                variantStorageEngine.searchIndex();
             } catch (VariantSearchException e) {
                 e.printStackTrace();
             }
@@ -271,21 +276,20 @@ public class VariantCommandExecutor extends CommandExecutor {
 
         storageConfiguration.getVariant().getOptions().putAll(variantQueryCommandOptions.commonOptions.params);
 
-        VariantDBAdaptor variantDBAdaptor = variantStorageEngine.getDBAdaptor(variantQueryCommandOptions.commonQueryOptions.dbName);
-        List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
+        List<String> studyNames = variantStorageEngine.getStudyConfigurationManager().getStudyNames(new QueryOptions());
 
         Query query = VariantQueryCommandUtils.parseQuery(variantQueryCommandOptions, studyNames);
         QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(variantQueryCommandOptions);
         options.put("summary", variantQueryCommandOptions.summary);
 
         if (variantQueryCommandOptions.commonQueryOptions.count) {
-            QueryResult<Long> result = variantDBAdaptor.count(query);
+            QueryResult<Long> result = variantStorageEngine.count(query);
             System.out.println("Num. results\t" + result.getResult().get(0));
         } else if (StringUtils.isNotEmpty(variantQueryCommandOptions.rank)) {
-            executeRank(query, variantDBAdaptor, variantQueryCommandOptions);
+            executeRank(query, variantStorageEngine, variantQueryCommandOptions);
         } else if (StringUtils.isNotEmpty(variantQueryCommandOptions.groupBy)) {
             ObjectMapper objectMapper = new ObjectMapper();
-            QueryResult groupBy = variantDBAdaptor.groupBy(query, variantQueryCommandOptions.groupBy, options);
+            QueryResult groupBy = variantStorageEngine.groupBy(query, variantQueryCommandOptions.groupBy, options);
             System.out.println("groupBy = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(groupBy));
         } else {
             URI uri = StringUtils.isEmpty(variantQueryCommandOptions.commonQueryOptions.output)
@@ -297,7 +301,7 @@ public class VariantCommandExecutor extends CommandExecutor {
             }
             VariantWriterFactory.VariantOutputFormat of = VariantWriterFactory
                     .toOutputFormat(variantQueryCommandOptions.outputFormat, variantQueryCommandOptions.commonQueryOptions.output);
-            variantStorageEngine.exportData(uri, of, variantQueryCommandOptions.commonQueryOptions.dbName, query, options);
+            variantStorageEngine.exportData(uri, of, query, options);
         }
     }
 
@@ -307,7 +311,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         URI uri = UriUtils.createUri(importVariantsOptions.input);
         ObjectMap options = new ObjectMap();
         options.putAll(importVariantsOptions.commonOptions.params);
-        variantStorageEngine.importData(uri, importVariantsOptions.dbName, options);
+        variantStorageEngine.importData(uri, options);
 
     }
 
@@ -315,7 +319,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         StorageVariantCommandOptions.VariantAnnotateCommandOptions annotateVariantsCommandOptions
                 = variantCommandOptions.annotateVariantsCommandOptions;
 
-        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor(annotateVariantsCommandOptions.dbName);
+        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
 
         /*
          * Create Annotator
@@ -345,20 +349,20 @@ public class VariantCommandExecutor extends CommandExecutor {
          */
         Query query = new Query();
         if (annotateVariantsCommandOptions.filterRegion != null) {
-            query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), annotateVariantsCommandOptions.filterRegion);
+            query.put(VariantQueryParam.REGION.key(), annotateVariantsCommandOptions.filterRegion);
         }
         if (annotateVariantsCommandOptions.filterChromosome != null) {
-            query.put(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), annotateVariantsCommandOptions.filterChromosome);
+            query.put(VariantQueryParam.CHROMOSOME.key(), annotateVariantsCommandOptions.filterChromosome);
         }
         if (annotateVariantsCommandOptions.filterGene != null) {
-            query.put(VariantDBAdaptor.VariantQueryParams.GENE.key(), annotateVariantsCommandOptions.filterGene);
+            query.put(VariantQueryParam.GENE.key(), annotateVariantsCommandOptions.filterGene);
         }
         if (annotateVariantsCommandOptions.filterAnnotConsequenceType != null) {
-            query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(),
+            query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(),
                     annotateVariantsCommandOptions.filterAnnotConsequenceType);
         }
         if (!annotateVariantsCommandOptions.overwriteAnnotations) {
-            query.put(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
+            query.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
         }
         URI outputUri = UriUtils.createUri(annotateVariantsCommandOptions.outdir == null ? "." : annotateVariantsCommandOptions.outdir);
         Path outDir = Paths.get(outputUri.resolve(".").getPath());
@@ -400,15 +404,12 @@ public class VariantCommandExecutor extends CommandExecutor {
         StorageVariantCommandOptions.VariantStatsCommandOptions statsVariantsCommandOptions = variantCommandOptions.statsVariantsCommandOptions;
 
         ObjectMap options = storageConfiguration.getVariant().getOptions();
-        if (statsVariantsCommandOptions.dbName != null && !statsVariantsCommandOptions.dbName.isEmpty()) {
-            options.put(VariantStorageEngine.Options.DB_NAME.key(), statsVariantsCommandOptions.dbName);
-        }
         options.put(VariantStorageEngine.Options.OVERWRITE_STATS.key(), statsVariantsCommandOptions.overwriteStats);
         options.put(VariantStorageEngine.Options.UPDATE_STATS.key(), statsVariantsCommandOptions.updateStats);
         options.putIfNotEmpty(VariantStorageEngine.Options.FILE_ID.key(), statsVariantsCommandOptions.fileId);
         options.put(VariantStorageEngine.Options.STUDY_ID.key(), statsVariantsCommandOptions.studyId);
         if (statsVariantsCommandOptions.studyConfigurationFile != null && !statsVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
-            options.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, statsVariantsCommandOptions.studyConfigurationFile);
+            options.put(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, statsVariantsCommandOptions.studyConfigurationFile);
         }
         options.put(VariantStorageEngine.Options.RESUME.key(), statsVariantsCommandOptions.resume);
 
@@ -444,10 +445,10 @@ public class VariantCommandExecutor extends CommandExecutor {
         /**
          * Create DBAdaptor
          */
-        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor(options.getString(VariantStorageEngine.Options.DB_NAME.key()));
+        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
 //        dbAdaptor.setConstantSamples(Integer.toString(statsVariantsCommandOptions.fileId));    // TODO jmmut: change to studyId when we
 // remove fileId
-        StudyConfiguration studyConfiguration = dbAdaptor.getStudyConfigurationManager()
+        StudyConfiguration studyConfiguration = variantStorageEngine.getStudyConfigurationManager()
                 .getStudyConfiguration(statsVariantsCommandOptions.studyId, new QueryOptions(options)).first();
         if (studyConfiguration == null) {
             studyConfiguration = new StudyConfiguration(Integer.parseInt(statsVariantsCommandOptions.studyId), statsVariantsCommandOptions.dbName);
@@ -457,8 +458,7 @@ public class VariantCommandExecutor extends CommandExecutor {
          */
         URI outputUri = UriUtils.createUri(statsVariantsCommandOptions.fileName == null ? "" : statsVariantsCommandOptions.fileName);
         URI directoryUri = outputUri.resolve(".");
-        String filename = outputUri.equals(directoryUri) ? VariantStorageEngine.buildFilename(studyConfiguration.getStudyName(),
-                Integer.parseInt(statsVariantsCommandOptions.fileId))
+        String filename = outputUri.equals(directoryUri) ? VariantStoragePipeline.buildFilename(studyConfiguration.getStudyName(), Integer.parseInt(statsVariantsCommandOptions.fileId))
                 : Paths.get(outputUri.getPath()).getFileName().toString();
 //        assertDirectoryExists(directoryUri);
         DefaultVariantStatisticsManager variantStatisticsManager = new DefaultVariantStatisticsManager(dbAdaptor);
@@ -543,8 +543,8 @@ public class VariantCommandExecutor extends CommandExecutor {
 
 //        storageConfiguration.getVariant().getOptions().putAll(exportVariantsCommandOptions.commonOptions.params);
 
-        VariantDBAdaptor variantDBAdaptor = variantStorageEngine.getDBAdaptor(exportVariantsCommandOptions.queryOptions.commonQueryOptions.dbName);
-        List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
+
+        List<String> studyNames = variantStorageEngine.getStudyConfigurationManager().getStudyNames(new QueryOptions());
 
 
         // TODO: JT
@@ -576,7 +576,7 @@ public class VariantCommandExecutor extends CommandExecutor {
             // TODO: get study id/name
             VariantContextToAvroVariantConverter variantContextToAvroVariantConverter =
                     new VariantContextToAvroVariantConverter(0, Collections.emptyList(), Collections.emptyList());
-            VariantDBIterator iterator = variantDBAdaptor.iterator(query, options);
+            VariantDBIterator iterator = variantStorageEngine.iterator(query, options);
             while (iterator.hasNext()) {
                 Variant variant = iterator.next();
                 VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
@@ -644,8 +644,8 @@ public class VariantCommandExecutor extends CommandExecutor {
 //            querying = false;
 //            Path path = Paths.get(searchOptions.inputFilename);
 //            variantSearchManager.load(dbName, path);
-            VariantStorageEngine variantStorageEngine = StorageEngineFactory.get(configuration).getVariantStorageEngine();
-            variantStorageEngine.searchIndex(dbName);
+            VariantStorageEngine variantStorageEngine = StorageEngineFactory.get(configuration).getVariantStorageEngine(null, dbName);
+            variantStorageEngine.searchIndex();
         }
 
 //        // query
@@ -672,8 +672,9 @@ public class VariantCommandExecutor extends CommandExecutor {
 //        }
     }
 
-    private void executeRank(Query query, VariantDBAdaptor variantDBAdaptor,
-                             StorageVariantCommandOptions.VariantQueryCommandOptions variantQueryCommandOptions) throws JsonProcessingException {
+    private void executeRank(Query query, VariantStorageEngine variantStorageEngine,
+                             StorageVariantCommandOptions.VariantQueryCommandOptions variantQueryCommandOptions)
+            throws JsonProcessingException, StorageEngineException {
         ObjectMapper objectMapper = new ObjectMapper();
         String field = variantQueryCommandOptions.rank;
         boolean asc = false;
@@ -688,7 +689,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (variantQueryCommandOptions.commonQueryOptions.limit > 0) {
             limit = variantQueryCommandOptions.commonQueryOptions.limit;
         }
-        QueryResult rank = variantDBAdaptor.rank(query, field, limit, asc);
+        QueryResult rank = variantStorageEngine.rank(query, field, limit, asc);
         System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rank));
     }
 

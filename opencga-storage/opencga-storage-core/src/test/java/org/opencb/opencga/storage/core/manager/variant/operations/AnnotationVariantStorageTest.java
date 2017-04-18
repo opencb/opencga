@@ -28,7 +28,7 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantDBAdaptor;
 import org.slf4j.Logger;
@@ -80,11 +80,11 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
     @Test
     public void testAnnotateRegion() throws Exception {
 
-        annotate(new Query(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "22"), new QueryOptions());
+        annotate(new Query(VariantQueryParam.CHROMOSOME.key(), "22"), new QueryOptions());
 
         checkAnnotation(v -> v.getChromosome().equals("22"));
 
-        annotate(new Query(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "1"), new QueryOptions());
+        annotate(new Query(VariantQueryParam.CHROMOSOME.key(), "1"), new QueryOptions());
 
         checkAnnotation(v -> v.getChromosome().equals("22") || v.getChromosome().equals("1"));
     }

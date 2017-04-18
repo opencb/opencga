@@ -28,15 +28,20 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationAdaptor;
+import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
-import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -44,7 +49,9 @@ import java.util.concurrent.TimeoutException;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
+public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor {
+
+    private static Logger logger = LoggerFactory.getLogger(HBaseStudyConfigurationDBAdaptor.class);
 
     private final byte[] studiesRow;
     private final byte[] studiesSummaryColumn;
@@ -56,9 +63,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     private final String tableName;
     private final HBaseLock lock;
 
-    public HBaseStudyConfigurationManager(GenomeHelper helper, String tableName, Configuration configuration, ObjectMap options)
-            throws IOException {
-        super(options);
+    public HBaseStudyConfigurationDBAdaptor(GenomeHelper helper, String tableName, Configuration configuration, ObjectMap options) {
         this.configuration = Objects.requireNonNull(configuration);
         this.tableName = Objects.requireNonNull(tableName);
         this.options = options;
@@ -69,15 +74,14 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         lock = new HBaseLock(getHBaseManager(), this.tableName, genomeHelper.getColumnFamily(), studiesRow);
     }
 
-    public HBaseStudyConfigurationManager(String tableName, Configuration configuration, ObjectMap options)
-            throws IOException {
+    public HBaseStudyConfigurationDBAdaptor(String tableName, Configuration configuration, ObjectMap options) {
         this(new GenomeHelper(configuration), tableName, configuration, options);
     }
 
     @Override
-    protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+    protected QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
         logger.debug("Get StudyConfiguration " + studyId + " from DB " + tableName);
-        return internalGetStudyConfiguration(getStudies(options).inverse().get(studyId), timeStamp, options);
+        return getStudyConfiguration(getStudies(options).inverse().get(studyId), timeStamp, options);
     }
 
     @Override
@@ -108,7 +112,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     @Override
-    protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
+    protected QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
         long startTime = System.currentTimeMillis();
         String error = null;
         List<StudyConfiguration> studyConfigurationList = Collections.emptyList();
@@ -150,7 +154,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     @Override
-    protected QueryResult internalUpdateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    protected QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         long startTime = System.currentTimeMillis();
         String error = "";
         logger.info("Update StudyConfiguration {}", studyConfiguration.getStudyName());

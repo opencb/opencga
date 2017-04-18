@@ -79,6 +79,7 @@ import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
@@ -331,7 +332,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 .getOptions()
                 .putAll(getOtherStorageConfigurationOptions());
 
-        manager.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
+        manager.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID, VariantStorageBaseTest.DB_NAME);
         manager.mrExecutor = new TestMRExecutor(conf);
         manager.conf = conf;
         return manager;
@@ -398,6 +399,13 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
             }
         }
         utility.get().deleteTableIfAny(TableName.valueOf(tableName));
+    }
+
+    @Override
+    default void close() throws Exception {
+        if (manager.get() != null) {
+            manager.get().close();
+        }
     }
 
     class TestMRExecutor implements MRExecutor {

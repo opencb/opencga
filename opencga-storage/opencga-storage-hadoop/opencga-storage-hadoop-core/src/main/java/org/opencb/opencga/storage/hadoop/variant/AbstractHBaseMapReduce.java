@@ -8,8 +8,6 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
@@ -19,7 +17,6 @@ import java.util.concurrent.atomic.AtomicReference;
  * Created by mh719 on 06/12/2016.
  */
 public abstract class AbstractHBaseMapReduce<KEYOUT, VALUEOUT> extends TableMapper<KEYOUT, VALUEOUT> {
-    private Logger LOG = LoggerFactory.getLogger(this.getClass());
     private final AtomicReference<OpencgaMapReduceHelper> mrHelper = new AtomicReference<>();
 
     @Override
@@ -37,10 +34,6 @@ public abstract class AbstractHBaseMapReduce<KEYOUT, VALUEOUT> extends TableMapp
             this.getHelper().close();
         }
         getMrHelper().cleanup();
-    }
-
-    protected Logger getLog() {
-        return LOG;
     }
 
     public OpencgaMapReduceHelper getMrHelper() {

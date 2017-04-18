@@ -28,7 +28,8 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,10 +112,11 @@ public class CatalogStudyConfigurationFactoryTest {
 
         Study study = catalogManager.getStudy(studyId, sessionId).first();
 
-        DummyStudyConfigurationManager scm = spy(new DummyStudyConfigurationManager());
+        DummyStudyConfigurationAdaptor scAdaptor = spy(new DummyStudyConfigurationAdaptor());
         doReturn(new QueryResult<StudyConfiguration>("", 0, 0, 0, "", "", Collections.emptyList()))
-                .when(scm).internalGetStudyConfiguration(anyInt(), any(), any());
+                .when(scAdaptor).getStudyConfiguration(anyInt(), any(), any());
 
+        StudyConfigurationManager scm = new StudyConfigurationManager(scAdaptor);
         StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, scm, new QueryOptions(), sessionId);
 
         checkStudyConfiguration(study, studyConfiguration);
@@ -136,13 +138,14 @@ public class CatalogStudyConfigurationFactoryTest {
 
         Study study = catalogManager.getStudy(studyId, sessionId).first();
 
-        DummyStudyConfigurationManager scm = spy(new DummyStudyConfigurationManager());
+        DummyStudyConfigurationAdaptor scAdaptor = spy(new DummyStudyConfigurationAdaptor());
         StudyConfiguration studyConfigurationToReturn = new StudyConfiguration((int) study.getId(), "user@p1:s1");
         studyConfigurationToReturn.setIndexedFiles(indexedFiles);
         doReturn(new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(studyConfigurationToReturn)))
-                .when(scm).internalGetStudyConfiguration(anyInt(), any(), any());
+                .when(scAdaptor).getStudyConfiguration(anyInt(), any(), any());
 
 
+        StudyConfigurationManager scm = new StudyConfigurationManager(scAdaptor);
         StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, scm, new QueryOptions(), sessionId);
 
         checkStudyConfiguration(study, studyConfiguration);
@@ -160,15 +163,16 @@ public class CatalogStudyConfigurationFactoryTest {
             assertEquals(file.getName(), entry.getKey());
             int id = (int) file.getId();
             assertEquals(file.getSampleIds().stream().map(Long::intValue).collect(Collectors.toSet()), studyConfiguration.getSamplesInFiles().get((id)));
-            if (file.getIndex() != null && file.getIndex().getStatus() != null && file.getIndex().getStatus().getName() != null
-                    && file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
-//                assertTrue(studyConfiguration.getIndexedFiles().contains(id));
-//                assertTrue("Missing header for file " + file.getId(), studyConfiguration.getHeaders().containsKey(id));
-//                assertTrue("Missing header for file " + file.getId(), !studyConfiguration.getHeaders().get(id).isEmpty());
-            } else {
+            if (file.getIndex() == null || file.getIndex().getStatus() == null || file.getIndex().getStatus().getName() == null
+                    || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
                 assertFalse(studyConfiguration.getIndexedFiles().contains(id));
 //                assertFalse("Should not contain header for file " + file.getId(), studyConfiguration.getHeaders().containsKey(id));
             }
+//            else {
+//                assertTrue(studyConfiguration.getIndexedFiles().contains(id));
+//                assertTrue("Missing header for file " + file.getId(), studyConfiguration.getHeaders().containsKey(id));
+//                assertTrue("Missing header for file " + file.getId(), !studyConfiguration.getHeaders().get(id).isEmpty());
+//            }
         }
     }
 

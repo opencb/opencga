@@ -32,7 +32,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -113,10 +112,9 @@ public abstract class StorageOperation {
             throws IOException, CatalogException, StorageEngineException {
 
         CatalogStudyConfigurationFactory studyConfigurationFactory = new CatalogStudyConfigurationFactory(catalogManager);
-        try (VariantDBAdaptor dbAdaptor = StorageEngineFactory.get().getVariantStorageEngine(dataStore.getStorageEngine())
-                .getDBAdaptor(dataStore.getDbName());
-             StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager()) {
-
+        try {
+            StudyConfigurationManager studyConfigurationManager = StorageEngineFactory.get()
+                    .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName()).getStudyConfigurationManager();
             // Update StudyConfiguration. Add new elements and so
             studyConfigurationFactory.updateStudyConfigurationFromCatalog(studyId, studyConfigurationManager, sessionId);
             StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration((int) studyId, null).first();
@@ -222,21 +220,25 @@ public abstract class StorageOperation {
             // Replace possible dots at the userId. Usually a special character in almost all databases. See #532
             userId = userId.replace('.', '_');
 
-            String alias = project.getAlias();
+            String databasePrefix = catalogManager.getConfiguration().getDatabasePrefix();
 
-            String prefix;
-            if (StringUtils.isNotEmpty(catalogManager.getConfiguration().getDatabasePrefix())) {
-                prefix = catalogManager.getConfiguration().getDatabasePrefix();
-                if (!prefix.endsWith("_")) {
-                    prefix += "_";
-                }
-            } else {
-                prefix = "opencga_";
-            }
-
-            String dbName = prefix + userId + '_' + alias;
+            String dbName = buildDatabaseName(databasePrefix, userId, project.getAlias());
             dataStore = new DataStore(StorageEngineFactory.get().getDefaultStorageManagerName(), dbName);
         }
         return dataStore;
+    }
+
+    public static String buildDatabaseName(String databasePrefix, String userId, String alias) {
+        String prefix;
+        if (StringUtils.isNotEmpty(databasePrefix)) {
+            prefix = databasePrefix;
+            if (!prefix.endsWith("_")) {
+                prefix += "_";
+            }
+        } else {
+            prefix = "opencga_";
+        }
+
+        return prefix + userId + '_' + alias;
     }
 }

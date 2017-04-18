@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +61,7 @@ public class PlatinumFileIndexerTest extends AbstractVariantStorageOperationTest
         }
 
 
-        variantManager.iterator(new Query(VariantQueryParams.STUDIES.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
+        variantManager.iterator(new Query(VariantQueryParam.STUDIES.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
             System.out.println("variant = " + variant);
         });
     }
@@ -75,7 +75,7 @@ public class PlatinumFileIndexerTest extends AbstractVariantStorageOperationTest
         }
         indexFiles(files, new QueryOptions(), outputId);
 
-        variantManager.iterator(new Query(VariantQueryParams.STUDIES.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
+        variantManager.iterator(new Query(VariantQueryParam.STUDIES.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
             System.out.println("variant = " + variant);
         });
     }
@@ -90,7 +90,7 @@ public class PlatinumFileIndexerTest extends AbstractVariantStorageOperationTest
         }
         loadFiles(files, new QueryOptions(), outputId);
 
-        variantManager.iterator(new Query(VariantQueryParams.STUDIES.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
+        variantManager.iterator(new Query(VariantQueryParam.STUDIES.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
             System.out.println("variant = " + variant);
         });
     }

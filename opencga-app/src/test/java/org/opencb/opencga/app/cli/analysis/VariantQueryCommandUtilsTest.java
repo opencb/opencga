@@ -20,7 +20,7 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.app.cli.analysis.executors.VariantQueryCommandUtils;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.util.Collections;
 import java.util.Map;
@@ -47,7 +47,7 @@ public class VariantQueryCommandUtilsTest {
         Query query = VariantQueryCommandUtils.parseQuery(queryVariantsOptions, studyIds);
 
 //        System.out.println("query = " + query.toJson());
-        assertEquals("HP:0002812", query.get(VariantDBAdaptor.VariantQueryParams.ANNOT_HPO.key()));
+        assertEquals("HP:0002812", query.get(VariantQueryParam.ANNOT_HPO.key()));
     }
 
 }

@@ -35,7 +35,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.ANNOT_CUSTOM;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_CUSTOM;
 import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.CUSTOM_ANNOTATION_KEY;
 
 /**
@@ -51,15 +51,15 @@ public abstract class CustomVariantAnnotationManagerTest extends VariantStorageB
         clearDB(DB_NAME);
         ObjectMap params = new ObjectMap(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
-        runDefaultETL(inputUri, variantStorageManager, newStudyConfiguration(), params);
+        runDefaultETL(inputUri, variantStorageEngine, newStudyConfiguration(), params);
     }
 
 
     @Test
     public void testBedAnnotation() throws Exception {
-        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
+        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
 
-        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(variantStorageManager.getConfiguration(), variantStorageManager.getStorageEngineId());
+        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(variantStorageEngine.getConfiguration(), variantStorageEngine.getStorageEngineId());
         DefaultVariantAnnotationManager annotationManager = new DefaultVariantAnnotationManager(annotator, dbAdaptor);
 
 
@@ -102,9 +102,9 @@ public abstract class CustomVariantAnnotationManagerTest extends VariantStorageB
 
     @Test
     public void testGffAnnotation() throws Exception {
-        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
+        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
 
-        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(variantStorageManager.getConfiguration(), variantStorageManager.getStorageEngineId());
+        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(variantStorageEngine.getConfiguration(), variantStorageEngine.getStorageEngineId());
         DefaultVariantAnnotationManager annotationManager = new DefaultVariantAnnotationManager(annotator, dbAdaptor);
 
 
@@ -148,9 +148,9 @@ public abstract class CustomVariantAnnotationManagerTest extends VariantStorageB
 
     @Test
     public void testVcfAnnotation() throws Exception {
-        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
+        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
 
-        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(variantStorageManager.getConfiguration(), variantStorageManager.getStorageEngineId());
+        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(variantStorageEngine.getConfiguration(), variantStorageEngine.getStorageEngineId());
         DefaultVariantAnnotationManager annotationManager = new DefaultVariantAnnotationManager(annotator, dbAdaptor);
 
         String annotKey = "VCFAnnotation";

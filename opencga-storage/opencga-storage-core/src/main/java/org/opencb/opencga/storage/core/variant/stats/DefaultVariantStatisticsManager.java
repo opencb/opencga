@@ -39,6 +39,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.opencb.opencga.storage.core.variant.io.db.VariantStatsDBWriter;
 import org.opencb.opencga.storage.core.io.json.JsonDataReader;
@@ -59,7 +60,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import static org.opencb.biodata.models.variant.VariantSource.Aggregation.isAggregated;
-import static org.opencb.opencga.storage.core.variant.VariantStoragePipeline.checkStudyConfiguration;
+import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.checkStudyConfiguration;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 
 /**
@@ -207,18 +208,18 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
 
 
         // reader, tasks and writer
-        Query readerQuery = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())
-                .append(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), studyConfiguration.getStudyId());
+        Query readerQuery = new Query(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())
+                .append(VariantQueryParam.RETURNED_STUDIES.key(), studyConfiguration.getStudyId());
         if (options.containsKey(Options.FILE_ID.key())) {
-            readerQuery.append(VariantDBAdaptor.VariantQueryParams.FILES.key(), options.get(Options.FILE_ID.key()));
+            readerQuery.append(VariantQueryParam.FILES.key(), options.get(Options.FILE_ID.key()));
         }
-        if (options.containsKey(VariantDBAdaptor.VariantQueryParams.REGION.key())) {
-            Object region = options.get(VariantDBAdaptor.VariantQueryParams.REGION.key());
-            readerQuery.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
+        if (options.containsKey(VariantQueryParam.REGION.key())) {
+            Object region = options.get(VariantQueryParam.REGION.key());
+            readerQuery.put(VariantQueryParam.REGION.key(), region);
         }
         if (updateStats) {
             //Get all variants that not contain any of the required cohorts
-            readerQuery.append(VariantDBAdaptor.VariantQueryParams.COHORTS.key(),
+            readerQuery.append(VariantQueryParam.COHORTS.key(),
                     cohorts.keySet().stream().map((cohort) -> "!" + studyConfiguration.getStudyName() + ":" + cohort).collect(Collectors
                             .joining(";")));
         }

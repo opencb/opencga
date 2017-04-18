@@ -49,9 +49,9 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
         logger.info("Loading file " + input);
         List<Integer> fileIds = getOptions().getAsIntegerList(VariantStorageEngine.Options.FILE_ID.key());
         if (getOptions().getBoolean(VARIANTS_LOAD_FAIL)) {
-            setStatus(BatchFileOperation.Status.ERROR, "load", fileIds);
+            getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileOperation.Status.ERROR, "load", fileIds);
         } else {
-            setStatus(BatchFileOperation.Status.DONE, "load", fileIds);
+            getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileOperation.Status.DONE, "load", fileIds);
         }
         return input;
     }
@@ -65,7 +65,8 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
     @Override
     public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
         super.securePostLoad(fileIds, studyConfiguration);
-        BatchFileOperation.Status status = secureSetStatus(studyConfiguration, BatchFileOperation.Status.READY, "load", fileIds);
+        BatchFileOperation.Status status = dbAdaptor.getStudyConfigurationManager()
+                .setStatus(studyConfiguration, BatchFileOperation.Status.READY, "load", fileIds);
         if (status != BatchFileOperation.Status.DONE) {
             logger.warn("Unexpected status " + status);
         }

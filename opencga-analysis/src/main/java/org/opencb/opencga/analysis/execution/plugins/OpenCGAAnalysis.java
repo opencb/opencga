@@ -160,21 +160,6 @@ public abstract class OpenCGAAnalysis {
         return variantStorageManager;
     }
 
-    //TODO: Return a VariantDBAdaptor which checks catalog permissions
-    @Deprecated
-    protected final VariantDBAdaptor getVariantDBAdaptor(long studyId)
-            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException,
-            StorageEngineException {
-
-        StorageEngineFactory storageEngineFactory = this.storageEngineFactory;
-        
-        DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
-        String storageEngine = dataStore.getStorageEngine();
-        String dbName = dataStore.getDbName();
-
-        return storageEngineFactory.getVariantStorageEngine(storageEngine).getDBAdaptor(dbName);
-    }
-
     //TODO: Return an AlignmentDBAdaptor which checks catalog permissions
     protected final AlignmentDBAdaptor getAlignmentDBAdaptor(long studyId) {
         throw new UnsupportedOperationException();

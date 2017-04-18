@@ -6,7 +6,7 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -91,7 +91,7 @@ public class VariantMetadataImporter {
                 studyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
             }
 
-            returnedSamples = VariantDBAdaptorUtils.getReturnedSamples(exportMetadata.getQuery(), exportMetadata.getQueryOptions(),
+            returnedSamples = VariantQueryUtils.getReturnedSamples(exportMetadata.getQuery(), exportMetadata.getQueryOptions(),
                     studyConfigurationMap.keySet(), studyConfigurationMap::get);
         } else {
             returnedSamples = null;

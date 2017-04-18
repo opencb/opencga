@@ -37,8 +37,8 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
@@ -70,7 +70,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
     @BeforeClass
     public static void beforeClass() throws Exception {
         HadoopVariantStorageEngine variantStorageManager = externalResource.getVariantStorageEngine();
-        externalResource.clearDB(variantStorageManager.getVariantTableName(DB_NAME));
+        externalResource.clearDB(variantStorageManager.getVariantTableName());
         externalResource.clearDB(variantStorageManager.getArchiveTableName(STUDY_ID));
 
         URI inputUri = VariantStorageBaseTest.getResourceUri("sample1.genome.vcf");
@@ -91,7 +91,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
         VariantGlobalStats stats = source.getStats();
         Assert.assertNotNull(stats);
 
-        try (VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME)) {
+        try (VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor()) {
             VariantHbaseTestUtils.printVariantsFromVariantsTable(dbAdaptor);
             VariantHbaseTestUtils.printVariantsFromArchiveTable(dbAdaptor, studyConfiguration);
         }
@@ -100,7 +100,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
     @Before
     @Override
     public void before() throws Exception {
-        dbAdaptor = ((HadoopVariantStorageEngine) variantStorageManager).getDBAdaptor(DB_NAME);
+        dbAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getDBAdaptor();
 
         if (allVariantsQueryResult == null) {
             allVariantsQueryResult = dbAdaptor.get(new Query(), new QueryOptions());
@@ -114,14 +114,14 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
 
     @Test
     public void testConnection() throws StorageEngineException {
-        variantStorageManager.testConnection();
+        variantStorageEngine.testConnection();
     }
 
     @Test
     public void queryVariantTable() {
         System.out.println("Query from Variant table");
         VariantDBIterator iterator = dbAdaptor.iterator(
-                new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId()),
+                new Query(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId()),
                 new QueryOptions());
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
@@ -133,8 +133,8 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
     @Test
     public void countVariants() {
         long totalCount = dbAdaptor.count(new Query()).first();
-        long partialCount1 = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:1-15030")).first();
-        long partialCount2 = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:15030-60000")).first();
+        long partialCount1 = dbAdaptor.count(new Query(VariantQueryParam.REGION.key(), "1:1-15030")).first();
+        long partialCount2 = dbAdaptor.count(new Query(VariantQueryParam.REGION.key(), "1:15030-60000")).first();
 
 
         long count = Arrays.stream(VariantTableMapper.getTargetVariantType())
@@ -172,7 +172,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
         //Count for each gene
         for (Map.Entry<String, Long> entry : genesCount.entrySet()) {
             System.out.println("Gene " + entry.getKey() + " in " + entry.getValue() + " variants");
-            QueryResult<Long> queryResult = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.GENE.key(), entry.getKey()));
+            QueryResult<Long> queryResult = dbAdaptor.count(new Query(VariantQueryParam.GENE.key(), entry.getKey()));
             System.out.println("queryResult.getDbTime() = " + queryResult.getDbTime());
             long count = queryResult.first();
             assertEquals(entry.getValue().longValue(), count);
@@ -187,8 +187,8 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
         System.out.println("Query from Archive table");
         dbAdaptor.iterator(
                 new Query()
-                        .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())
-                        .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), FILE_ID),
+                        .append(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())
+                        .append(VariantQueryParam.FILES.key(), FILE_ID),
                 new QueryOptions("archive", true)).forEachRemaining(variant -> {
             System.out.println("Variant from archive = " + variant.toJson());
             numVariants[0]++;

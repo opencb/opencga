@@ -12,6 +12,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.slf4j.Logger;
@@ -131,7 +132,8 @@ public class VariantExporter {
     protected void exportMetaData(Query query, QueryOptions queryOptions, List studies, String output) throws IOException {
         StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
 
-        Map<Integer, List<Integer>> returnedSamples = dbAdaptor.getDBAdaptorUtils().getReturnedSamples(query, queryOptions);
+        Map<Integer, List<Integer>> returnedSamples = VariantQueryUtils.getReturnedSamples(query, queryOptions,
+                dbAdaptor.getStudyConfigurationManager());
         List<StudyConfiguration> studyConfigurations = new ArrayList<>(returnedSamples.size());
         returnedSamples.forEach((studyId, samplesList) -> {
             StudyConfiguration sc = scm.getStudyConfiguration(studyId, QueryOptions.empty()).first();

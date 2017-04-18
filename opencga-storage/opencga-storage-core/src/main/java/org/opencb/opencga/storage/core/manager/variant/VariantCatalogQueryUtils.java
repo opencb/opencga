@@ -9,13 +9,13 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.storage.core.manager.CatalogUtils;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 /**
  * Created on 28/02/17.
@@ -45,7 +45,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             // Nothing to do!
             return null;
         }
-        List<Long> studies = getStudies(query, VariantDBAdaptor.VariantQueryParams.STUDIES, sessionId);
+        List<Long> studies = getStudies(query, VariantQueryParam.STUDIES, sessionId);
         String defaultStudyStr;
         long defaultStudyId = -1;
         if (studies.size() == 1) {
@@ -55,13 +55,13 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             defaultStudyStr = null;
         }
 
-        transformFilter(query, VariantDBAdaptor.VariantQueryParams.STUDIES, value -> catalogManager.getStudyId(value, sessionId));
-        transformFilter(query, VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES, value -> catalogManager.getStudyId(value, sessionId));
-        transformFilter(query, VariantDBAdaptor.VariantQueryParams.COHORTS, value ->
+        transformFilter(query, VariantQueryParam.STUDIES, value -> catalogManager.getStudyId(value, sessionId));
+        transformFilter(query, VariantQueryParam.RETURNED_STUDIES, value -> catalogManager.getStudyId(value, sessionId));
+        transformFilter(query, VariantQueryParam.COHORTS, value ->
                 catalogManager.getCohortManager().getId(value, defaultStudyStr, sessionId).getResourceId());
-        transformFilter(query, VariantDBAdaptor.VariantQueryParams.FILES, value ->
+        transformFilter(query, VariantQueryParam.FILES, value ->
                 catalogManager.getFileId(value, defaultStudyStr, sessionId));
-        transformFilter(query, VariantDBAdaptor.VariantQueryParams.RETURNED_FILES, value ->
+        transformFilter(query, VariantQueryParam.RETURNED_FILES, value ->
                 catalogManager.getFileId(value, defaultStudyStr, sessionId));
         // TODO: Parse returned sample filter and add genotype filter
 
@@ -87,12 +87,12 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                             .append(genotype)
                             .append(AND); // TODO: Should this be an AND (;) or an OR (,)?
                 }
-                query.append(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), sb.toString());
-                if (!isValidParam(query, VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES)) {
-                    query.append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), sampleIds);
+                query.append(VariantQueryParam.GENOTYPE.key(), sb.toString());
+                if (!isValidParam(query, VariantQueryParam.RETURNED_SAMPLES)) {
+                    query.append(VariantQueryParam.RETURNED_SAMPLES.key(), sampleIds);
                 }
             } else {
-                query.append(VariantDBAdaptor.VariantQueryParams.SAMPLES.key(), sampleIds);
+                query.append(VariantQueryParam.SAMPLES.key(), sampleIds);
             }
         }
 

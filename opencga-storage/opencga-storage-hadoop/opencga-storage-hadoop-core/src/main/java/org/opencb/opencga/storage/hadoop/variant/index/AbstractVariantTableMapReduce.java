@@ -34,6 +34,8 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -50,6 +52,7 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
     public static final String COUNTER_GROUP_NAME = "OPENCGA.HBASE";
     public static final String SPECIFIC_PUT = "opencga.storage.hadoop.hbase.merge.use_specific_put";
     public static final String ARCHIVE_GET_BATCH_SIZE = "opencga.storage.hadoop.hbase.merge.archive.scan.batchsize";
+    private Logger logger = LoggerFactory.getLogger(AbstractVariantTableMapReduce.class);
 
     protected ArchiveResultToVariantConverter resultConverter;
     protected VariantMerger variantMerger;
@@ -168,10 +171,10 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
 
     protected void updateArchiveTable(byte[] rowKey, Context context, List<VariantTableStudyRow> tableStudyRows) {
         if (tableStudyRows.isEmpty()) {
-            getLog().info("No new data - tableStudyRows emtpy");
+            logger.info("No new data - tableStudyRows emtpy");
             return;
         }
-        getLog().info("Store variants: " + tableStudyRows.size());
+        logger.info("Store variants: " + tableStudyRows.size());
         Put put = new Put(rowKey);
         for (VariantTableStudyRow row : tableStudyRows) {
             byte[] value = VariantTableStudyRow.toProto(Collections.singletonList(row), getTimestamp()).toByteArray();
@@ -229,7 +232,7 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
 
     @Override
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
-        getLog().info("Start mapping key: " + Bytes.toString(key.get()));
+        logger.info("Start mapping key: " + Bytes.toString(key.get()));
         startTime();
         if (value.isEmpty()) {
             context.getCounter(COUNTER_GROUP_NAME, "VCF_RESULT_EMPTY").increment(1);
@@ -252,8 +255,8 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
         long nextStartPos = h.getStartPositionFromSlice(sliceReg + 1);
 
         Set<Integer> fileIds = extractFileIds(value);
-        if (getLog().isDebugEnabled()) {
-            getLog().debug("Results contain file IDs : " + StringUtils.join(fileIds, ','));
+        if (logger.isDebugEnabled()) {
+            logger.debug("Results contain file IDs : " + StringUtils.join(fileIds, ','));
         }
         Set<Integer> sampleIds = new HashSet<>();
         for (Integer fid : fileIds) {
@@ -261,7 +264,7 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
             sampleIds.addAll(sids);
         }
 
-        getLog().debug("Processing slice {}", sliceKey);
+        logger.debug("Processing slice {}", sliceKey);
 
 
         VariantMapReduceContext ctx = new VariantMapReduceContext(currRowKey, context, value, fileIds,
@@ -279,7 +282,7 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
             context.getCounter(COUNTER_GROUP_NAME, "VCF_TIMER_" + entry.getKey().replace(' ', '_')).increment(entry.getValue());
         }
         this.getTimes().clear();
-        getLog().info("Finished mapping key: " + Bytes.toString(key.get()));
+        logger.info("Finished mapping key: " + Bytes.toString(key.get()));
     }
 
     abstract void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException;

@@ -35,6 +35,7 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
@@ -938,9 +939,9 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         while (queryResult == null) {
             try {
                 queryResult = dbAdaptor.get(new Query()
-                                .append(VariantDBAdaptor.VariantQueryParams.ID.key(), variant.toString())
-                                .append(VariantDBAdaptor.VariantQueryParams.UNKNOWN_GENOTYPE.key(), ".")
-                                .append(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), studyId),
+                                .append(VariantQueryParam.ID.key(), variant.toString())
+                                .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), ".")
+                                .append(VariantQueryParam.RETURNED_STUDIES.key(), studyId),
                         new QueryOptions(QueryOptions.TIMEOUT, 30_000));
             } catch (MongoExecutionTimeoutException e) {
                 fails++;
