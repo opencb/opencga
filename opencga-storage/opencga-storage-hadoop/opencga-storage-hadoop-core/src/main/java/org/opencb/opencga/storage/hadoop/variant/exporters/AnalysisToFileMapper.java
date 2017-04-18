@@ -9,6 +9,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.AbstractHBaseMapReduce;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableMapReduce;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,6 +26,7 @@ import static org.opencb.opencga.storage.hadoop.variant.exporters.VariantTableEx
  */
 public class AnalysisToFileMapper extends AbstractHBaseMapReduce<Object, Object> {
 
+    private Logger logger = LoggerFactory.getLogger(AnalysisToFileMapper.class);
     private byte[] studiesRow;
     private VariantTableExportDriver.ExportType type;
 
@@ -40,7 +43,7 @@ public class AnalysisToFileMapper extends AbstractHBaseMapReduce<Object, Object>
         if (withGenotype) {
             returnedSamples = new ArrayList<>(this.getIndexedSamples().keySet());
         }
-        getLog().info("Export Genotype [{}] of {} samples ... ", withGenotype, returnedSamples.size());
+        logger.info("Export Genotype [{}] of {} samples ... ", withGenotype, returnedSamples.size());
         getHbaseToVariantConverter().setReturnedSamples(returnedSamples);
         getHbaseToVariantConverter().setStudyNameAsStudyId(true);
 

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
@@ -40,7 +41,6 @@ public class Sample extends Annotable<SampleAclEntry> {
 
 
     public Sample() {
-        this(-1, null, null, new Individual(), null);
     }
 
     public Sample(long id, String name, String source, Individual individual, String description) {
@@ -162,6 +162,63 @@ public class Sample extends Annotable<SampleAclEntry> {
     public Sample setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
+    }
+
+    // Acl params to communicate the WS and the sample manager
+    public static class SampleAclParams extends AclParams {
+
+        private String individual;
+        private String file;
+        private String cohort;
+
+        public SampleAclParams() {
+        }
+
+        public SampleAclParams(String permissions, Action action, String individual, String file, String cohort) {
+            super(permissions, action);
+            this.individual = individual;
+            this.file = file;
+            this.cohort = cohort;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("SampleAclParams{");
+            sb.append("permissions='").append(permissions).append('\'');
+            sb.append(", action=").append(action);
+            sb.append(", individual='").append(individual).append('\'');
+            sb.append(", file='").append(file).append('\'');
+            sb.append(", cohort='").append(cohort).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getIndividual() {
+            return individual;
+        }
+
+        public SampleAclParams setIndividual(String individual) {
+            this.individual = individual;
+            return this;
+        }
+
+        public String getFile() {
+            return file;
+        }
+
+        public SampleAclParams setFile(String file) {
+            this.file = file;
+            return this;
+        }
+
+        public String getCohort() {
+            return cohort;
+        }
+
+        public SampleAclParams setCohort(String cohort) {
+            this.cohort = cohort;
+            return this;
+        }
     }
 
 }

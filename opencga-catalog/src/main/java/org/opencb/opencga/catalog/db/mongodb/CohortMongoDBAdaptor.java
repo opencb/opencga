@@ -744,6 +744,34 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
     }
 
     @Override
+    public List<QueryResult<CohortAclEntry>> getAcls(Query query, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+
+        QueryResult<Cohort> cohortQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> cohortIds = cohortQueryResult.getResult().stream().map(Cohort::getId).collect(Collectors.toList());
+
+        if (cohortIds == null || cohortIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to get permissions");
+        }
+
+        List<List<CohortAclEntry>> acl = aclDBAdaptor.getAcl(cohortIds, members);
+        List<QueryResult<CohortAclEntry>> retAclQueryResult = new ArrayList<>(acl.size());
+        if (acl.size() == cohortIds.size()) {
+            for (int i = 0; i < acl.size(); i++) {
+                retAclQueryResult.add(endQuery(Long.toString(cohortIds.get(i)), startTime, acl.get(i)));
+            }
+        } else {
+            logger.warn("Something strange happened. Only obtained ACLs for {} out of the {} cohorts queried", acl.size(),
+                    cohortIds.size());
+            for (List<CohortAclEntry> cohortAclEntries : acl) {
+                retAclQueryResult.add(endQuery("get cohort Acl", startTime, cohortAclEntries));
+            }
+        }
+
+        return retAclQueryResult;
+    }
+
+    @Override
     public void removeAcl(long id, String member) throws CatalogDBException {
         aclDBAdaptor.removeAcl(id, member);
 //        CatalogMongoDBUtils.removeAcl(id, member, cohortCollection);
@@ -754,6 +782,18 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
         long startTime = startQuery();
 //        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, cohortCollection);
         return endQuery("Set Acls to member", startTime, Arrays.asList(aclDBAdaptor.setAclsToMember(id, member, permissions)));
+    }
+
+    @Override
+    public void setAclsToMember(Query query, List<String> members, List<String> permissions) throws CatalogDBException {
+        QueryResult<Cohort> cohortQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> cohortIds = cohortQueryResult.getResult().stream().map(cohort -> cohort.getId()).collect(Collectors.toList());
+
+        if (cohortIds == null || cohortIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to set permissions");
+        }
+
+        aclDBAdaptor.setAclsToMembers(cohortIds, members, permissions);
     }
 
     @Override

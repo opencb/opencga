@@ -86,7 +86,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertFalse(user.first().getProjects().isEmpty());
 
         user = catalogUserDBAdaptor.get(user3.getId(), new QueryOptions("exclude", Arrays.asList("projects")), null);
-        assertEquals(0, user.first().getProjects().size());
+        assertEquals(null, user.first().getProjects());
 
         user = catalogUserDBAdaptor.get(user3.getId(), null, user.first().getLastModified());
         assertTrue(user.getResult().isEmpty());

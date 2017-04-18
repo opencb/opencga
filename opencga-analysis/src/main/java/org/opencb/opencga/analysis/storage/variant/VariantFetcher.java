@@ -36,6 +36,7 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,7 +131,7 @@ public class VariantFetcher implements AutoCloseable {
 
     public QueryResult getVariantsPerStudy(long studyId, String regionStr, boolean histogram, String groupBy, int interval, Long fileIdNum, String sessionId, QueryOptions queryOptions)
             throws Exception {
-        queryOptions.add(VariantDBAdaptor.VariantQueryParams.REGION.key(), regionStr);
+        queryOptions.add(VariantQueryParam.REGION.key(), regionStr);
         return getVariantsPerStudy(studyId, getVariantQuery(queryOptions), queryOptions, histogram, groupBy, null, interval, fileIdNum, sessionId);
     }
 
@@ -143,10 +144,10 @@ public class VariantFetcher implements AutoCloseable {
         //TODO: Check files and studies exists
 
         if (fileIdNum != null) {
-            query.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileIdNum);
+            query.put(VariantQueryParam.FILES.key(), fileIdNum);
         }
-        if (!query.containsKey(VariantDBAdaptor.VariantQueryParams.STUDIES.key())) {
-            query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
+        if (!query.containsKey(VariantQueryParam.STUDIES.key())) {
+            query.put(VariantQueryParam.STUDIES.key(), studyId);
         }
 
         // TODO: Check returned files
@@ -205,18 +206,18 @@ public class VariantFetcher implements AutoCloseable {
 
     public QueryResult<Long> countByFile(long fileId, QueryOptions params, String sessionId) throws CatalogException, StorageEngineException, IOException {
         Query query = getVariantQuery(params);
-        if (getMainStudyId(query, VariantDBAdaptor.VariantQueryParams.STUDIES.key(), sessionId) == null) {
+        if (getMainStudyId(query, VariantQueryParam.STUDIES.key(), sessionId) == null) {
             long studyId = catalogManager.getStudyIdByFileId(fileId);
-            query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
+            query.put(VariantQueryParam.STUDIES.key(), studyId);
         }
-        query.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId);
+        query.put(VariantQueryParam.FILES.key(), fileId);
         return count(query, sessionId);
     }
 
     public QueryResult<Long> count(long studyId, QueryOptions params, String sessionId) throws CatalogException, StorageEngineException, IOException {
         Query query = getVariantQuery(params);
-        if (getMainStudyId(query, VariantDBAdaptor.VariantQueryParams.STUDIES.key(), sessionId) == null) {
-            query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
+        if (getMainStudyId(query, VariantQueryParam.STUDIES.key(), sessionId) == null) {
+            query.put(VariantQueryParam.STUDIES.key(), studyId);
         }
         return count(query, sessionId);
     }
@@ -248,7 +249,7 @@ public class VariantFetcher implements AutoCloseable {
 
     protected String[] getRegions(Query query) {
         String[] regions;
-        String regionStr = query.getString(VariantDBAdaptor.VariantQueryParams.REGION.key());
+        String regionStr = query.getString(VariantQueryParam.REGION.key());
         if (!StringUtils.isEmpty(regionStr)) {
             regions = regionStr.split(",");
         } else {
@@ -258,9 +259,9 @@ public class VariantFetcher implements AutoCloseable {
     }
 
     public Long getMainStudyId(Query query, String sessionId) throws CatalogException {
-        Long id = getMainStudyId(query, VariantDBAdaptor.VariantQueryParams.STUDIES.key(), sessionId);
+        Long id = getMainStudyId(query, VariantQueryParam.STUDIES.key(), sessionId);
         if (id == null) {
-            id = getMainStudyId(query, VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), sessionId);
+            id = getMainStudyId(query, VariantQueryParam.RETURNED_STUDIES.key(), sessionId);
         }
         if (id != null) {
             return id;
@@ -283,7 +284,7 @@ public class VariantFetcher implements AutoCloseable {
 
     protected Map<Long, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, VariantDBAdaptor dbAdaptor, String sessionId) throws CatalogException {
         final Map<Long, List<Sample>> samplesMap;
-        if (query.containsKey(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key())) {
+        if (query.containsKey(VariantQueryParam.RETURNED_SAMPLES.key())) {
             Map<Integer, List<Integer>> samplesToReturn = dbAdaptor.getReturnedSamples(query, queryOptions);
             samplesMap = new HashMap<>();
             for (Map.Entry<Integer, List<Integer>> entry : samplesToReturn.entrySet()) {
@@ -317,7 +318,7 @@ public class VariantFetcher implements AutoCloseable {
                 samplesMap.put(study.getId(), samplesQueryResult.getResult());
                 samplesQueryResult.getResult().stream().map(Sample::getId).forEach(returnedSamples::add);
             }
-            query.append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), returnedSamples);
+            query.append(VariantQueryParam.RETURNED_SAMPLES.key(), returnedSamples);
         }
         return samplesMap;
     }
@@ -347,7 +348,7 @@ public class VariantFetcher implements AutoCloseable {
             try {
                 this.variantDBAdaptor.computeIfAbsent(key, (str) -> {
                     try {
-                        return storageEngineFactory.getVariantStorageEngine(storageEngine).getDBAdaptor(dbName);
+                        return storageEngineFactory.getVariantStorageEngine(storageEngine, dbName).getDBAdaptor();
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException e) {
                         throw new IllegalStateException("Unable to get VariantDBAdaptor", e);
                     }
@@ -369,7 +370,7 @@ public class VariantFetcher implements AutoCloseable {
     public static Query getVariantQuery(QueryOptions queryOptions) {
         Query query = new Query();
 
-        for (VariantDBAdaptor.VariantQueryParams queryParams : VariantDBAdaptor.VariantQueryParams.values()) {
+        for (VariantQueryParam queryParams : VariantQueryParam.values()) {
             if (queryOptions.containsKey(queryParams.key())) {
                 query.put(queryParams.key(), queryOptions.get(queryParams.key()));
             }

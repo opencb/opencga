@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.models;
 
 import org.opencb.opencga.catalog.models.acls.AbstractAcl;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
@@ -76,7 +77,6 @@ public class File extends AbstractAcl<FileAclEntry> {
 
 
     public File() {
-        this(null, null, null, null, null, null, new FileStatus(), -1);
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status,
@@ -485,6 +485,39 @@ public class File extends AbstractAcl<FileAclEntry> {
     public File setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
+    }
+
+    // Acl params to communicate the WS and the sample manager
+    public static class FileAclParams extends AclParams {
+
+        private String sample;
+
+        public FileAclParams() {
+        }
+
+        public FileAclParams(String permissions, Action action, String sample) {
+            super(permissions, action);
+            this.sample = sample;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("FileAclParams{");
+            sb.append("permissions='").append(permissions).append('\'');
+            sb.append(", action=").append(action);
+            sb.append(", sample='").append(sample).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getSample() {
+            return sample;
+        }
+
+        public FileAclParams setSample(String sample) {
+            this.sample = sample;
+            return this;
+        }
     }
 
 }

@@ -383,6 +383,34 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
+    public List<QueryResult<DiseasePanelAclEntry>> getAcls(Query query, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+
+        QueryResult<DiseasePanel> panelQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> panelIds = panelQueryResult.getResult().stream().map(DiseasePanel::getId).collect(Collectors.toList());
+
+        if (panelIds == null || panelIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to get permissions");
+        }
+
+        List<List<DiseasePanelAclEntry>> acl = aclDBAdaptor.getAcl(panelIds, members);
+        List<QueryResult<DiseasePanelAclEntry>> retAclQueryResult = new ArrayList<>(acl.size());
+        if (acl.size() == panelIds.size()) {
+            for (int i = 0; i < acl.size(); i++) {
+                retAclQueryResult.add(endQuery(Long.toString(panelIds.get(i)), startTime, acl.get(i)));
+            }
+        } else {
+            logger.warn("Something strange happened. Only obtained ACLs for {} out of the {} panels queried", acl.size(),
+                    panelIds.size());
+            for (List<DiseasePanelAclEntry> panelAclEntries : acl) {
+                retAclQueryResult.add(endQuery("get panel Acl", startTime, panelAclEntries));
+            }
+        }
+
+        return retAclQueryResult;
+    }
+
+    @Override
     public void removeAcl(long id, String member) throws CatalogDBException {
 //        CatalogMongoDBUtils.removeAcl(id, member, panelCollection);
         aclDBAdaptor.removeAcl(id, member);
@@ -393,6 +421,18 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         long startTime = startQuery();
 //        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, panelCollection);
         return endQuery("Set Acls to member", startTime, Arrays.asList(aclDBAdaptor.setAclsToMember(id, member, permissions)));
+    }
+
+    @Override
+    public void setAclsToMember(Query query, List<String> members, List<String> permissions) throws CatalogDBException {
+        QueryResult<DiseasePanel> panelQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> panelIds = panelQueryResult.getResult().stream().map(panel -> panel.getId()).collect(Collectors.toList());
+
+        if (panelIds == null || panelIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to set permissions");
+        }
+
+        aclDBAdaptor.setAclsToMembers(panelIds, members, permissions);
     }
 
     @Override

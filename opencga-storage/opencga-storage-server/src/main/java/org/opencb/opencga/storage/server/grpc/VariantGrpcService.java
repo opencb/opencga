@@ -23,14 +23,13 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.IOException;
 import java.util.Iterator;
 
 import static org.opencb.opencga.storage.server.grpc.GenericServiceModel.*;
-import static org.opencb.opencga.storage.server.grpc.VariantProto.*;
+import static org.opencb.opencga.storage.server.grpc.VariantProto.Variant;
 
 
 /**
@@ -144,9 +143,8 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
         }
 
         // Creating the VariantDBAdaptor to the parsed storageEngine and database
-        long start = System.currentTimeMillis();
-        VariantStorageEngine variantStorageEngine = genericGrpcService.storageEngineFactory.getVariantStorageEngine(storageEngine);
-        VariantDBAdaptor variantDBAdaptor = variantStorageEngine.getDBAdaptor(database);
+        VariantDBAdaptor variantDBAdaptor = GenericGrpcService.storageEngineFactory
+                .getVariantStorageEngine(storageEngine, database).getDBAdaptor();
 //        logger.debug("Connection to {}:{} in {}ms", storageEngine, database, System.currentTimeMillis() - start);
 
         return variantDBAdaptor;

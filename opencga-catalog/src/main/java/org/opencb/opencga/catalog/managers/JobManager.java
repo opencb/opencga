@@ -41,10 +41,12 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.ToolAclEntry;
+import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +57,8 @@ import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -595,6 +599,55 @@ public class JobManager extends AbstractManager implements IJobManager {
         auditManager.recordAction(AuditRecord.Resource.job, AuditRecord.Action.create, AuditRecord.Magnitude.low,
                 queryResult.first().getId(), userId, null, queryResult.first(), null, null);
         return queryResult;
+    }
+
+    @Override
+    public List<QueryResult<JobAclEntry>> updateAcl(String job, String studyStr, String memberIds, AclParams aclParams, String sessionId)
+            throws CatalogException {
+        if (StringUtils.isEmpty(job)) {
+            throw new CatalogException("Missing job parameter");
+        }
+
+        if (aclParams.getAction() == null) {
+            throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
+        }
+
+        List<String> permissions = Collections.emptyList();
+        if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
+            permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
+            checkPermissions(permissions, JobAclEntry.JobPermissions::valueOf);
+        }
+
+        // Obtain the resource ids
+        MyResourceIds resourceIds = getIds(job, studyStr, sessionId);
+
+        // Check the user has the permissions needed to change permissions
+        for (Long jobId : resourceIds.getResourceIds()) {
+            authorizationManager.checkJobPermission(jobId, resourceIds.getUser(), JobAclEntry.JobPermissions.SHARE);
+        }
+
+        // Validate that the members are actually valid members
+        List<String> members;
+        if (memberIds != null && !memberIds.isEmpty()) {
+            members = Arrays.asList(memberIds.split(","));
+        } else {
+            members = Collections.emptyList();
+        }
+        CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
+        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
+
+        switch (aclParams.getAction()) {
+            case SET:
+                return authorizationManager.setAcls(resourceIds, members, permissions, jobDBAdaptor);
+            case ADD:
+                return authorizationManager.addAcls(resourceIds, members, permissions, jobDBAdaptor);
+            case REMOVE:
+                return authorizationManager.removeAcls(resourceIds, members, permissions, jobDBAdaptor);
+            case RESET:
+                return authorizationManager.removeAcls(resourceIds, members, null, jobDBAdaptor);
+            default:
+                throw new CatalogException("Unexpected error occurred. No valid action found.");
+        }
     }
 
     @Override

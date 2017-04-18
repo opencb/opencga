@@ -264,7 +264,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         DummyVariantStorageEngine vsm = mockVariantStorageManager();
         String message = "Error";
-        doThrow(new StorageEngineException(message)).when(vsm).calculateStats(any(), any(), any(), any());
+        doThrow(new StorageEngineException(message)).when(vsm).calculateStats(any(), any(), any());
 
         try {
             calculateStats(coh[1]);
@@ -444,7 +444,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
     }
 
     public static void checkCalculatedStats(Map<String, Cohort> cohorts, CatalogManager catalogManager, String dbName, String sessionId) throws Exception {
-        VariantDBAdaptor dbAdaptor = StorageEngineFactory.get().getVariantStorageEngine().getDBAdaptor(dbName);
+        VariantDBAdaptor dbAdaptor = StorageEngineFactory.get().getVariantStorageEngine(null, dbName).getDBAdaptor();
 
         for (Variant variant : dbAdaptor) {
             for (StudyEntry sourceEntry : variant.getStudies()) {
@@ -466,7 +466,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
     }
 
     public static void checkCalculatedAggregatedStats(Set<String> cohortNames, String dbName) throws Exception {
-        VariantDBAdaptor dbAdaptor = StorageEngineFactory.get().getVariantStorageEngine().getDBAdaptor(dbName);
+        VariantDBAdaptor dbAdaptor = StorageEngineFactory.get().getVariantStorageEngine(null, dbName).getDBAdaptor();
 
         for (Variant variant : dbAdaptor) {
             for (StudyEntry sourceEntry : variant.getStudies()) {

@@ -58,6 +58,8 @@ public interface AclDBAdaptor<T, U> extends DBAdaptor<T> {
      */
     QueryResult<U> getAcl(long id, List<String> members) throws CatalogDBException;
 
+    List<QueryResult<U>> getAcls(Query query, List<String> members) throws CatalogDBException;
+
     /**
      * Removes the Acl of the member.
      *
@@ -77,6 +79,8 @@ public interface AclDBAdaptor<T, U> extends DBAdaptor<T> {
      * @throws CatalogDBException when there is an internal error.
      */
     QueryResult<U> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException;
+
+    void setAclsToMember(Query query, List<String> members, List<String> permissions) throws CatalogDBException;
 
     /**
      * Adds new permissions to the former list of permissions the member had.

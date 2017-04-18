@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
@@ -66,7 +67,6 @@ public class Individual extends Annotable<IndividualAclEntry> {
     }
 
     public Individual() {
-        this(-1, null, -1, -1, null, null, null, new Species(), new Population(), new LinkedList<>(), new HashMap<>());
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Species species,
@@ -549,6 +549,52 @@ public class Individual extends Annotable<IndividualAclEntry> {
     public Individual setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
+    }
+
+    // Acl params to communicate the WS and the sample manager
+    public static class IndividualAclParams extends AclParams {
+
+        private String sample;
+        private boolean propagate;
+
+        public IndividualAclParams() {
+
+        }
+
+        public IndividualAclParams(String permissions, Action action, String sample, boolean propagate) {
+            super(permissions, action);
+            this.sample = sample;
+            this.propagate = propagate;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("IndividualAclParams{");
+            sb.append("permissions='").append(permissions).append('\'');
+            sb.append(", action=").append(action);
+            sb.append(", sample='").append(sample).append('\'');
+            sb.append(", propagate=").append(propagate);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getSample() {
+            return sample;
+        }
+
+        public IndividualAclParams setSample(String sample) {
+            this.sample = sample;
+            return this;
+        }
+
+        public boolean isPropagate() {
+            return propagate;
+        }
+
+        public IndividualAclParams setPropagate(boolean propagate) {
+            this.propagate = propagate;
+            return this;
+        }
     }
 
 }

@@ -16,10 +16,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationManager;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +41,7 @@ import static org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTab
 public abstract class AbstractAnalysisTableDriver extends Configured implements Tool {
     protected final Logger LOG = LoggerFactory.getLogger(this.getClass());
     private VariantTableHelper variantTablehelper;
-    private HBaseStudyConfigurationManager scm;
+    private StudyConfigurationManager scm;
 
     public AbstractAnalysisTableDriver() { /* nothing */ }
 
@@ -198,7 +199,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
     }
 
     protected StudyConfiguration loadStudyConfiguration() throws IOException {
-        HBaseStudyConfigurationManager scm = getStudyConfigurationManager();
+        StudyConfigurationManager scm = getStudyConfigurationManager();
         int studyId = getHelper().getStudyId();
         QueryResult<StudyConfiguration> res = scm.getStudyConfiguration(studyId, new QueryOptions());
         if (res.getResult().size() != 1) {
@@ -207,10 +208,10 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         return res.first();
     }
 
-    protected HBaseStudyConfigurationManager getStudyConfigurationManager() throws IOException {
+    protected StudyConfigurationManager getStudyConfigurationManager() throws IOException {
         if (scm == null) {
             byte[] outTable = getHelper().getOutputTable();
-            scm = new HBaseStudyConfigurationManager(Bytes.toString(outTable), getConf(), null);
+            scm = new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(Bytes.toString(outTable), getConf(), null));
         }
         return scm;
     }

@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.variant.dummy;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -34,7 +35,7 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public VariantDBAdaptor getDBAdaptor(String dbName) throws StorageEngineException {
+    public VariantDBAdaptor getDBAdaptor() throws StorageEngineException {
         return new DummyVariantDBAdaptor(dbName);
     }
 
@@ -44,18 +45,18 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public VariantStatisticsManager newVariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
-        return super.newVariantStatisticsManager(dbAdaptor);
+    public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
+        return super.newVariantStatisticsManager();
     }
 
     @Override
-    public VariantExporter newVariantExporter(VariantDBAdaptor dbAdaptor) {
-        return super.newVariantExporter(dbAdaptor);
+    public VariantExporter newVariantExporter() throws StorageEngineException {
+        return super.newVariantExporter();
     }
 
     @Override
-    protected VariantImporter newVariantImporter(VariantDBAdaptor dbAdaptor) {
-        return new VariantImporter(dbAdaptor) {
+    protected VariantImporter newVariantImporter() throws StorageEngineException {
+        return new VariantImporter(getDBAdaptor()) {
             @Override
             public void importData(URI input, ExportMetadata metadata, Map<StudyConfiguration, StudyConfiguration> map)
                     throws StorageEngineException, IOException {
@@ -64,8 +65,8 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator, VariantDBAdaptor dbAdaptor) {
-        return super.newVariantAnnotationManager(annotator, dbAdaptor);
+    public VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
+        return super.newVariantAnnotationManager(annotator);
     }
 
     @Override
@@ -76,5 +77,10 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     @Override
     public void dropStudy(String studyName) throws StorageEngineException {
 
+    }
+
+    @Override
+    public StudyConfigurationManager getStudyConfigurationManager() throws StorageEngineException {
+        return new StudyConfigurationManager(new DummyStudyConfigurationAdaptor());
     }
 }

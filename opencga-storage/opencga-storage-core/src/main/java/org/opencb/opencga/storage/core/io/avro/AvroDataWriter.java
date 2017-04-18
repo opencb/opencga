@@ -35,7 +35,9 @@ import java.util.List;
  * Created on 09/11/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
+ * @deprecated Use {@link org.opencb.commons.io.avro.AvroDataWriter}
  */
+@Deprecated
 public class AvroDataWriter<T extends GenericRecord> implements DataWriter<T> {
 
     private Path outputPath;

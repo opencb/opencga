@@ -31,14 +31,14 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.opencga.core.common.ProgressLogger;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
@@ -403,15 +403,18 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
     public void stageError() throws StorageEngineException {
         int fileId = options.getInt(Options.FILE_ID.key());
-        setStatus(BatchFileOperation.Status.ERROR, STAGE.key(), Collections.singletonList(fileId));
+        getStudyConfigurationManager()
+                .atomicSetStatus(getStudyId(), BatchFileOperation.Status.ERROR, STAGE.key(), Collections.singletonList(fileId));
     }
 
     public void stageSuccess(VariantSource source) throws StorageEngineException {
         // Stage loading finished. Save VariantSource and update BatchOperation
-        source.setFileId(options.getString(Options.FILE_ID.key()));
-        source.setStudyId(options.getString(Options.STUDY_ID.key()));
+        int fileId = options.getInt(Options.FILE_ID.key());
+        source.setFileId(String.valueOf(fileId));
+        source.setStudyId(String.valueOf(getStudyId()));
 
-        setStatus(BatchFileOperation.Status.READY, STAGE.key(), Collections.singletonList(options.getInt(Options.FILE_ID.key())));
+        getStudyConfigurationManager()
+                .atomicSetStatus(getStudyId(), BatchFileOperation.Status.READY, STAGE.key(), Collections.singletonList(fileId));
         dbAdaptor.getVariantSourceDBAdaptor().updateVariantSource(source);
 
     }
@@ -499,7 +502,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             Thread hook = new Thread(() -> {
                 try {
                     logger.error("Merge shutdown hook!");
-                    setStatus(BatchFileOperation.Status.ERROR, MERGE.key(), fileIds);
+                    getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileOperation.Status.ERROR, MERGE.key(), fileIds);
                 } catch (StorageEngineException e) {
                     logger.error("Failed setting status '" + MERGE.key() + "' operation over files " + fileIds
                             + " to '" + BatchFileOperation.Status.ERROR + '\'', e);
@@ -530,12 +533,12 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     }
                 }
             } catch (Exception e) {
-                setStatus(BatchFileOperation.Status.ERROR, MERGE.key(), fileIds);
+                getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileOperation.Status.ERROR, MERGE.key(), fileIds);
                 throw e;
             } finally {
                 Runtime.getRuntime().removeShutdownHook(hook);
             }
-            setStatus(BatchFileOperation.Status.DONE, MERGE.key(), fileIds);
+            getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileOperation.Status.DONE, MERGE.key(), fileIds);
         }
 
         if (!options.getBoolean(STAGE_CLEAN_WHILE_LOAD.key(), STAGE_CLEAN_WHILE_LOAD.defaultValue())) {
@@ -689,7 +692,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     @Override
     public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
         super.securePostLoad(fileIds, studyConfiguration);
-        BatchFileOperation.Status status = secureSetStatus(studyConfiguration, BatchFileOperation.Status.READY, MERGE.key(), fileIds);
+        BatchFileOperation.Status status = dbAdaptor.getStudyConfigurationManager()
+                .setStatus(studyConfiguration, BatchFileOperation.Status.READY, MERGE.key(), fileIds);
         if (status != BatchFileOperation.Status.DONE) {
             logger.warn("Unexpected status " + status);
         }
@@ -718,11 +722,11 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
 //        VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(options.getString(VariantStorageEngine.Options.DB_NAME.key()));
         Long count = dbAdaptor.count(new Query()
-                .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId)
-                .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())).first();
+                .append(VariantQueryParam.FILES.key(), fileId)
+                .append(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())).first();
         Long overlappedCount = dbAdaptor.count(new Query()
-                .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), -fileId)
-                .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())).first();
+                .append(VariantQueryParam.FILES.key(), -fileId)
+                .append(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())).first();
         long variantsToLoad = 0;
 
         long expectedSkippedVariants = 0;
@@ -804,7 +808,6 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
     /**
      * Check if the samples from the selected file can be loaded.
-     * Check if the samples from the selected file can be loaded.
      * <p>
      * MongoDB storage plugin is not able to load batches of samples in a unordered way.
      * A batch of samples is a group of samples of any size. It may be composed of one or several VCF files, depending
@@ -862,52 +865,4 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         return true; // This is a new batch of samples
     }
 
-    //    @Override
-//    public void checkStudyConfiguration(StudyConfiguration studyConfiguration, VariantDBAdaptor dbAdaptor) throws
-// StorageEngineException {
-//        super.checkStudyConfiguration(studyConfiguration, dbAdaptor);
-//        if (dbAdaptor == null) {
-//            logger.debug("Do not check StudyConfiguration against the loaded in MongoDB");
-//        } else {
-//            if (dbAdaptor instanceof VariantMongoDBAdaptor) {
-//                VariantMongoDBAdaptor mongoDBAdaptor = (VariantMongoDBAdaptor) dbAdaptor;
-//                StudyConfigurationManager studyConfigurationDBAdaptor = mongoDBAdaptor.getStudyConfigurationManager();
-//                StudyConfiguration studyConfigurationFromMongo = studyConfigurationDBAdaptor.getStudyConfiguration(studyConfiguration
-// .getStudyId(), null).first();
-//
-//                //Check that the provided StudyConfiguration has the same or more information that the stored in MongoDB.
-//                for (Map.Entry<String, Integer> entry : studyConfigurationFromMongo.getFileIds().entrySet()) {
-//                    if (!studyConfiguration.getFileIds().containsKey(entry.getKey())) {
-//                        throw new StorageEngineException("StudyConfiguration do not have the file " + entry.getKey());
-//                    }
-//                    if (!studyConfiguration.getFileIds().get(entry.getKey()).equals(entry.getValue())) {
-//                        throw new StorageEngineException("StudyConfiguration changes the fileId of '" + entry.getKey() + "' from " +
-// entry.getValue() + " to " + studyConfiguration.getFileIds().get(entry.getKey()));
-//                    }
-//                }
-//                for (Map.Entry<String, Integer> entry : studyConfigurationFromMongo.getCohortIds().entrySet()) {
-//                    if (!studyConfiguration.getCohortIds().containsKey(entry.getKey())) {
-//                        throw new StorageEngineException("StudyConfiguration do not have the cohort " + entry.getKey());
-//                    }
-//                    if (!studyConfiguration.getCohortIds().get(entry.getKey()).equals(entry.getValue())) {
-//                        throw new StorageEngineException("StudyConfiguration changes the cohortId of '" + entry.getKey() + "' from " +
-// entry.getValue() + " to " + studyConfiguration.getCohortIds().get(entry.getKey()));
-//                    }
-//                }
-//                for (Map.Entry<String, Integer> entry : studyConfigurationFromMongo.getSampleIds().entrySet()) {
-//                    if (!studyConfiguration.getSampleIds().containsKey(entry.getKey())) {
-//                        throw new StorageEngineException("StudyConfiguration do not have the sample " + entry.getKey());
-//                    }
-//                    if (!studyConfiguration.getSampleIds().get(entry.getKey()).equals(entry.getValue())) {
-//                        throw new StorageEngineException("StudyConfiguration changes the sampleId of '" + entry.getKey() + "' from " +
-// entry.getValue() + " to " + studyConfiguration.getSampleIds().get(entry.getKey()));
-//                    }
-//                }
-//                studyConfigurationDBAdaptor.updateStudyConfiguration(studyConfiguration, null);
-//            } else {
-//                throw new StorageEngineException("Unknown VariantDBAdaptor '" + dbAdaptor.getClass().toString() + "'. Expected '" +
-// VariantMongoDBAdaptor.class + "'");
-//            }
-//        }
-//    }
 }

@@ -232,9 +232,13 @@ public class TextOutputWriter extends AbstractOutputWriter {
     private void printFiles(List<File> files, StringBuilder sb, String format) {
         // # name	type	format	bioformat	description	path	id	status	size	index status	related files   samples
         for (File file : files) {
+            String indexStatus = "NA";
+            if (file.getIndex() != null && file.getIndex().getStatus() != null && file.getIndex().getStatus().getName() != null) {
+                indexStatus = file.getIndex().getStatus().getName();
+            }
             sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%d\t%s\t%s\t%s\n", format, file.getName(), file.getType(),
                     file.getFormat(), file.getBioformat(), file.getDescription(), file.getPath(), file.getUri(), file.getId(),
-                    file.getStatus().getName(), file.getSize(), file.getIndex() != null ? file.getIndex().getStatus().getName() : "NA",
+                    file.getStatus().getName(), file.getSize(), indexStatus,
                     StringUtils.join(file.getRelatedFiles().stream().map(File.RelatedFile::getFileId).collect(Collectors.toList()), ", "),
                     StringUtils.join(file.getSampleIds().stream().collect(Collectors.toList()), ", ")));
         }

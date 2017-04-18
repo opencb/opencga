@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.api.IIndividualManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -532,10 +533,12 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public int motherId;
         public String family;
         public Individual.Sex sex;
-
         public String ethnicity;
         public Individual.Species species;
         public Individual.Population population;
+        public Individual.KaryotypicSex karyotypicSex;
+        public Individual.LifeStatus lifeStatus;
+        public Individual.AffectationStatus affectationStatus;
     }
 
     @POST
@@ -630,7 +633,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
         }
     }
 
-
     @GET
     @Path("/{individuals}/acl/create")
     @ApiOperation(value = "Define a set of permissions for a list of members", hidden = true, position = 19)
@@ -643,8 +645,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
                                        required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
-            return createOkResponse(catalogManager.createIndividualAcls(individualIdsStr, studyStr, members, permissions, false,
-                    sessionId));
+            Individual.IndividualAclParams aclParams = getAclParams(permissions, null, null);
+            return createOkResponse(individualManager.updateAcl(individualIdsStr, studyStr, members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -654,9 +656,45 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public boolean propagate;
     }
 
+    // Temporal method used by deprecated methods. This will be removed at some point.
+    @Override
+    protected Individual.IndividualAclParams getAclParams(
+            @ApiParam(value = "Comma separated list of permissions to add", required = false) @QueryParam("add") String addPermissions,
+            @ApiParam(value = "Comma separated list of permissions to remove", required = false) @QueryParam("remove") String removePermissions,
+            @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("set") String setPermissions)
+            throws CatalogException {
+        int count = 0;
+        count += StringUtils.isNotEmpty(setPermissions) ? 1 : 0;
+        count += StringUtils.isNotEmpty(addPermissions) ? 1 : 0;
+        count += StringUtils.isNotEmpty(removePermissions) ? 1 : 0;
+        if (count > 1) {
+            throw new CatalogException("Only one of add, remove or set parameters are allowed.");
+        } else if (count == 0) {
+            throw new CatalogException("One of add, remove or set parameters is expected.");
+        }
+
+        String permissions = null;
+        AclParams.Action action = null;
+        if (StringUtils.isNotEmpty(addPermissions)) {
+            permissions = addPermissions;
+            action = AclParams.Action.ADD;
+        }
+        if (StringUtils.isNotEmpty(setPermissions)) {
+            permissions = setPermissions;
+            action = AclParams.Action.SET;
+        }
+        if (StringUtils.isNotEmpty(removePermissions)) {
+            permissions = removePermissions;
+            action = AclParams.Action.REMOVE;
+        }
+        return new Individual.IndividualAclParams(permissions, action, null, false);
+    }
+
     @POST
     @Path("/{individuals}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of members", position = 19)
+    @ApiOperation(value = "Define a set of permissions for a list of members [DEPRECATED]", position = 19,
+            notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
+                    + "/acl/{members}/update entrypoint.")
     public Response createAcl(
             @ApiParam(value = "Comma separated list of individual ids", required = true) @PathParam("individuals") String individualIdsStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -664,8 +702,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value="JSON containing the parameters defined in GET. Mandatory keys: 'members'", required = true)
                     CreateAclCommands params) {
         try {
-            return createOkResponse(catalogManager.createIndividualAcls(individualIdsStr, studyStr, params.members, params.permissions,
-                    params.propagate, sessionId));
+            Individual.IndividualAclParams aclParams = getAclParams(params.permissions, null, null);
+            return createOkResponse(individualManager.updateAcl(individualIdsStr, studyStr, params.members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -699,20 +737,22 @@ public class IndividualWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "Comma separated list of permissions to set", required = false)
                                   @QueryParam("set") String setPermissions) {
         try {
-            return createOkResponse(catalogManager.updateIndividualAcl(individualIdStr, studyStr, memberId, addPermissions,
-                    removePermissions, setPermissions, false, sessionId));
+            Individual.IndividualAclParams aclParams = getAclParams(addPermissions, removePermissions, setPermissions);
+            return createOkResponse(individualManager.updateAcl(individualIdStr, studyStr, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
-    public static class MemberAclUpdate extends StudyWSServer.MemberAclUpdate {
+    public static class MemberAclUpdate extends StudyWSServer.MemberAclUpdateOld {
         public boolean propagate;
     }
 
     @POST
     @Path("/{individual}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    @ApiOperation(value = "Update the set of permissions granted for the member [WARNING]", position = 21,
+            notes = "WARNING: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
+                    + "to also support changing permissions using queries.")
     public Response updateAcl(
             @ApiParam(value = "individualId", required = true) @PathParam("individual") String individualIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
@@ -721,8 +761,32 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true)
                     MemberAclUpdate params) {
         try {
-            return createOkResponse(catalogManager.updateIndividualAcl(individualIdStr, studyStr, memberId, params.add,
-                    params.remove, params.set, params.propagate, sessionId));
+            Individual.IndividualAclParams aclParams = getAclParams(params.add, params.remove, params.set);
+            return createOkResponse(individualManager.updateAcl(individualIdStr, studyStr, memberId, aclParams, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    public static class IndividualAcl extends AclParams {
+        public String individual;
+        public String sample;
+
+        public boolean propagate;
+    }
+
+    @POST
+    @Path("/acl/{memberId}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    public Response updateAcl(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                    String studyStr,
+            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
+            @ApiParam(value="JSON containing the parameters to add ACLs", required = true) IndividualAcl params) {
+        try {
+            Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(params.getPermissions(), params.getAction(),
+                    params.sample, params.propagate);
+            return createOkResponse(individualManager.updateAcl(params.individual, studyStr, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -730,14 +794,17 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individuals}/acl/{memberId}/delete")
-    @ApiOperation(value = "Remove all the permissions granted for the member", position = 22)
+    @ApiOperation(value = "Remove all the permissions granted for the member [DEPRECATED]", position = 22,
+            notes = "DEPRECATED: The usage of this webservice is discouraged. A RESET action has been added to the /acl/{members}/update "
+                    + "entrypoint.")
     public Response deleteAcl(@ApiParam(value = "Comma separated list of individual ids", required = true) @PathParam("individuals")
                                           String individualIdsStr,
                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                     @QueryParam("study") String studyStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(catalogManager.removeIndividualAcl(individualIdsStr, studyStr, memberId, sessionId));
+            Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(null, AclParams.Action.RESET, null, false);
+            return createOkResponse(individualManager.updateAcl(individualIdsStr, studyStr, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

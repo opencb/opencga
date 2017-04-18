@@ -19,7 +19,7 @@ package org.opencb.opencga.storage.core.variant.io.avro;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
-import org.opencb.opencga.storage.core.io.avro.AvroDataReader;
+import org.opencb.commons.io.avro.AvroDataReader;
 import org.opencb.opencga.storage.core.variant.io.AbstractVariantReader;
 
 import java.io.File;

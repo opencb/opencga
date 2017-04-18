@@ -256,6 +256,9 @@ public class FileCommandOptions {
         @Parameter(names = {"--nattributes"}, description = "numerical attributes", required = false, arity = 1)
         public String nattributes;
 
+        @Parameter(names = {"--no-lazy"}, description = "Obtain the entire related job and experiment objects", arity = 0)
+        public boolean noLazy;
+
     }
 
     @Parameters(commandNames = {"list"}, commandDescription = "List files in folder")

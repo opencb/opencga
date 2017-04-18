@@ -96,7 +96,6 @@ public class Job extends AbstractAcl<JobAclEntry> {
 
 
     public Job() {
-        this(null, null, null, null, null, -1, new LinkedList<>());
     }
 
     public Job(String name, String userId, String executable, Type type, List<Long> input, List<Long> output, long outDirId,

@@ -110,6 +110,7 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
     @Deprecated
     QueryResult<Study> share(long studyId, AclEntry acl) throws CatalogException;
 
+    void membersHavePermissionsInStudy(long studyId, List<String> members) throws CatalogException;
 
     /*---------------------*/
     /* VariableSet METHODS */
@@ -224,6 +225,9 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      */
     @Deprecated
     QueryResult<StudyAclEntry> getAcls(String studyStr, List<String> members, String sessionId) throws CatalogException;
+
+    List<QueryResult<StudyAclEntry>> updateAcl(String studyStr, String memberId, Study.StudyAclParams aclParams, String sessionId)
+            throws CatalogException;
 
     //-----------------     GROUPS         ------------------
 

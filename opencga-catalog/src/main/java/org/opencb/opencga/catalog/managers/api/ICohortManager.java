@@ -30,6 +30,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.acls.AclParams;
+import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -166,5 +168,8 @@ public interface ICohortManager extends ResourceManager<Long, Cohort>, IAnnotati
         }
         return rank(studyId, query, field, numResults, asc, sessionId);
     }
+
+    List<QueryResult<CohortAclEntry>> updateAcl(String cohort, String studyStr, String memberId, AclParams aclParams, String sessionId)
+            throws CatalogException;
 
 }

@@ -26,9 +26,10 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationManager;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -66,8 +67,8 @@ public class VariantTableHelper extends GenomeHelper {
     }
 
     public StudyConfiguration loadMeta() throws IOException {
-        HBaseStudyConfigurationManager scm = new HBaseStudyConfigurationManager(this,
-                Bytes.toString(outtable.get()), this.hBaseManager.getConf(), null);
+        StudyConfigurationManager scm = new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(this,
+                Bytes.toString(outtable.get()), this.hBaseManager.getConf(), null));
         QueryResult<StudyConfiguration> query = scm.getStudyConfiguration(getStudyId(), new QueryOptions());
         if (query.getResult().size() != 1) {
             throw new IllegalStateException("Only one study configuration expected for study");

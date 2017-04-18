@@ -22,7 +22,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 
 import java.util.HashMap;
@@ -168,16 +168,16 @@ public class StorageVariantCommandOptions {
 
     public static class BasicVariantQueryOptions {
 
-        @Parameter(names = {"--id"}, description = VariantDBAdaptor.ID_DESCR, variableArity = true)
+        @Parameter(names = {"--id"}, description = VariantQueryParam.ID_DESCR, variableArity = true)
         public List<String> id;
 
-        @Parameter(names = {"-r", "--region"}, description = VariantDBAdaptor.REGION_DESCR)
+        @Parameter(names = {"-r", "--region"}, description = VariantQueryParam.REGION_DESCR)
         public String region;
 
         @Parameter(names = {"--region-file"}, description = "GFF File with regions")
         public String regionFile;
 
-        @Parameter(names = {"-g", "--gene"}, description = VariantDBAdaptor.GENE_DESCR)
+        @Parameter(names = {"-g", "--gene"}, description = VariantQueryParam.GENE_DESCR)
         public String gene;
 
         @Parameter(names = {"-t", "--type"}, description = "Whether the variant is a: SNV, INDEL or SV")
@@ -224,13 +224,13 @@ public class StorageVariantCommandOptions {
                 "NA0001:0/0,0/1;NA0002:0/1", arity = 1)
         public String sampleGenotype;
 
-        @Parameter(names = {"--sample"}, description = VariantDBAdaptor.SAMPLES_DESCR, arity = 1)
+        @Parameter(names = {"--sample"}, description = VariantQueryParam.SAMPLES_DESCR, arity = 1)
         public String samples;
 
         @Parameter(names = {"-f", "--file"}, description = "A comma separated list of files to be used as filter", arity = 1)
         public String file;
 
-        @Parameter(names = {"--filter"}, description = VariantDBAdaptor.FILTER_DESCR, arity = 1)
+        @Parameter(names = {"--filter"}, description = VariantQueryParam.FILTER_DESCR, arity = 1)
         public String filter;
 
         @Parameter(names = {"--gene-biotype"}, description = "Biotype CSV", arity = 1)

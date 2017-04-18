@@ -253,6 +253,26 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
+    public List<QueryResult<StudyAclEntry>> getAcls(Query query, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+
+        QueryResult<Study> studyQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> studyIds = studyQueryResult.getResult().stream().map(Study::getId).collect(Collectors.toList());
+
+        if (studyIds == null || studyIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to get permissions");
+        }
+
+        List<List<StudyAclEntry>> acl = aclDBAdaptor.getAcl(studyIds, members);
+        List<QueryResult<StudyAclEntry>> retAclQueryResult = new ArrayList<>(acl.size());
+        for (List<StudyAclEntry> studyAclEntries : acl) {
+            retAclQueryResult.add(endQuery("get study Acl", startTime, studyAclEntries));
+        }
+
+        return retAclQueryResult;
+    }
+
+    @Override
     public QueryResult<Group> createGroup(long studyId, String groupId, List<String> userIds) throws CatalogDBException {
         long startTime = startQuery();
 
@@ -610,6 +630,18 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         long startTime = startQuery();
 //        CatalogMongoDBUtils.setAclsToMember(studyId, member, permissions, studyCollection);
         return endQuery("Set Acls to member", startTime, Arrays.asList(aclDBAdaptor.setAclsToMember(studyId, member, permissions)));
+    }
+
+    @Override
+    public void setAclsToMember(Query query, List<String> members, List<String> permissions) throws CatalogDBException {
+        QueryResult<Study> studyQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> studyIds = studyQueryResult.getResult().stream().map(study -> study.getId()).collect(Collectors.toList());
+
+        if (studyIds == null || studyIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to set permissions");
+        }
+
+        aclDBAdaptor.setAclsToMembers(studyIds, members, permissions);
     }
 
     @Override

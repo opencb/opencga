@@ -72,6 +72,10 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
     @Deprecated
     Long getId(String fileId) throws CatalogException;
 
+    QueryResult<Sample> create(String studyStr, String name, String source, String description, Individual individual,
+                               Map<String, Object> attributes, QueryOptions options, String sessionId) throws CatalogException;
+
+    @Deprecated
     QueryResult<Sample> create(String studyStr, String name, String source, String description, Map<String, Object> attributes,
                                QueryOptions options, String sessionId) throws CatalogException;
 
@@ -207,4 +211,6 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
         throw new NotImplementedException("Group by has to be called passing the study string");
     }
 
+    List<QueryResult<SampleAclEntry>> updateAcl(String sample, String studyStr, String memberId, Sample.SampleAclParams sampleAclParams,
+                                                String sessionId) throws CatalogException;
 }

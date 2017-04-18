@@ -216,6 +216,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.put(QueryOptions.LIMIT, filesCommandOptions.searchCommandOptions.numericOptions.limit);
         queryOptions.put(QueryOptions.SKIP, filesCommandOptions.searchCommandOptions.numericOptions.skip);
         queryOptions.put("count", filesCommandOptions.searchCommandOptions.numericOptions.count);
+        queryOptions.put("lazy", !filesCommandOptions.infoCommandOptions.noLazy);
 
         return openCGAClient.getFileClient().search(query,queryOptions);
     }

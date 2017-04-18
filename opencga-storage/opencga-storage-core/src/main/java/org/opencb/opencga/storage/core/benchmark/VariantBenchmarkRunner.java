@@ -23,7 +23,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -54,8 +54,9 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
     private void init(String storageEngine)
             throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
-        VariantStorageEngine variantStorageEngine = storageEngineFactory.getVariantStorageEngine(storageEngine);
-        variantDBAdaptor = variantStorageEngine.getDBAdaptor(storageConfiguration.getBenchmark().getDatabaseName());
+        VariantStorageEngine variantStorageEngine = storageEngineFactory.getVariantStorageEngine(storageEngine,
+                storageConfiguration.getBenchmark().getDatabaseName());
+        variantDBAdaptor = variantStorageEngine.getDBAdaptor();
     }
 
 
@@ -108,35 +109,35 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
 //                                queryParams).getResult().size());
                         break;
                     case "queryById":
-                        query.put(VariantDBAdaptor.VariantQueryParams.ID.key(), queryParams);
+                        query.put(VariantQueryParam.ID.key(), queryParams);
                         executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));
                         break;
                     case "queryByRegion":
-                        query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), queryParams);
+                        query.put(VariantQueryParam.REGION.key(), queryParams);
                         executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));
                         break;
                     case "queryByChromosome":
-                        query.put(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), queryParams);
+                        query.put(VariantQueryParam.CHROMOSOME.key(), queryParams);
                         executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));
                         break;
                     case "queryByGene":
-                        query.put(VariantDBAdaptor.VariantQueryParams.GENE.key(), queryParams);
+                        query.put(VariantQueryParam.GENE.key(), queryParams);
                         executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));
                         break;
                     case "queryByType":
-                        query.put(VariantDBAdaptor.VariantQueryParams.TYPE.key(), queryParams);
+                        query.put(VariantQueryParam.TYPE.key(), queryParams);
                         executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));
                         break;
                     case "queryByReference":
-                        query.put(VariantDBAdaptor.VariantQueryParams.REFERENCE.key(), queryParams);
+                        query.put(VariantQueryParam.REFERENCE.key(), queryParams);
                         executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));
                         break;
                     case "queryByAlternate":
-                        query.put(VariantDBAdaptor.VariantQueryParams.ALTERNATE.key(), queryParams);
+                        query.put(VariantQueryParam.ALTERNATE.key(), queryParams);
                         executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));
                         break;
                     case "queryByStudies":
-                        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), queryParams);
+                        query.put(VariantQueryParam.STUDIES.key(), queryParams);
                         executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));
                         break;
                     default:

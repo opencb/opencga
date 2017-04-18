@@ -40,11 +40,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
@@ -233,8 +233,8 @@ public class VariantHbaseTestUtils {
                                                            StudyConfiguration studyConfiguration, int fileId, OutputStream os) throws Exception {
         VariantHadoopArchiveDBIterator archive = (VariantHadoopArchiveDBIterator) dbAdaptor.iterator(
                 new Query()
-                        .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())
-                        .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId),
+                        .append(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())
+                        .append(VariantQueryParam.FILES.key(), fileId),
                 new QueryOptions("archive", true));
 
         ArchiveHelper archiveHelper = dbAdaptor.getArchiveHelper(studyConfiguration.getStudyId(), fileId);
@@ -268,7 +268,7 @@ public class VariantHbaseTestUtils {
     }
 
     public static void printVariants(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws Exception {
-        FileStudyConfigurationManager.write(studyConfiguration, outDir.resolve("study_configuration.json"));
+        FileStudyConfigurationAdaptor.write(studyConfiguration, outDir.resolve("study_configuration.json"));
         printVariantsFromArchiveTable(dbAdaptor, studyConfiguration, outDir);
         printVariantsFromVariantsTable(dbAdaptor, outDir);
         printVariantsFromDBAdaptor(dbAdaptor, outDir);

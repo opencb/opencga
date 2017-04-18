@@ -18,7 +18,7 @@ import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantMetadataImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
@@ -77,7 +77,7 @@ public class VariantExportStorageOperation extends StorageOperation {
                 } catch (URISyntaxException e) {
                     throw new IllegalArgumentException(e);
                 }
-                List<Region> regions = Region.parseRegions(query.getString(VariantDBAdaptor.VariantQueryParams.REGION.key()));
+                List<Region> regions = Region.parseRegions(query.getString(VariantQueryParam.REGION.key()));
                 outputFileName = buildOutputFileName(studyInfos.stream().map(StudyInfo::getStudyAlias).collect(Collectors.toList()),
                         regions);
             }
@@ -111,8 +111,9 @@ public class VariantExportStorageOperation extends StorageOperation {
 //                StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyInfo.getStudyId(), dataStore);
 //            }
 
-            VariantStorageEngine variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine());
-            variantStorageEngine.exportData(outputFile, outputFormat, dataStore.getDbName(), query, new QueryOptions(options));
+            VariantStorageEngine variantStorageEngine =
+                    storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+            variantStorageEngine.exportData(outputFile, outputFormat, query, new QueryOptions(options));
 
             if (catalogOutDirId != null && outdir != null) {
                 copyResults(outdir, catalogOutDirId, sessionId).stream().map(File::getUri);
@@ -154,18 +155,18 @@ public class VariantExportStorageOperation extends StorageOperation {
 
         try {
             DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
-            VariantStorageEngine variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine());
-            ObjectMap options = variantStorageEngine.getOptions()
-                    .append(VariantStorageEngine.Options.DB_NAME.key(), dataStore.getDbName());
+            VariantStorageEngine variantStorageEngine =
+                    storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+            ObjectMap options = variantStorageEngine.getOptions();
             ExportMetadata exportMetadata;
-            try (StudyConfigurationManager scm = variantStorageEngine.getStudyConfigurationManager(options)) {
+            try (StudyConfigurationManager scm = variantStorageEngine.getStudyConfigurationManager()) {
                 exportMetadata = variantMetadataImporter.importMetaData(inputUri, scm);
             }
             StudyConfiguration oldSC = VariantMetadataImporter.readMetadata(inputUri).getStudies().get(0);
             StudyConfiguration newSC = exportMetadata.getStudies().get(0);
             Map<StudyConfiguration, StudyConfiguration> studiesOldNewMap = Collections.singletonMap(oldSC, newSC);
 
-            variantStorageEngine.importData(inputUri, exportMetadata, studiesOldNewMap, dataStore.getDbName(), options);
+            variantStorageEngine.importData(inputUri, exportMetadata, studiesOldNewMap, options);
 
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
             throw new StorageEngineException("Error importing data", e);

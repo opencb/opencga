@@ -22,14 +22,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.config.Catalog;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.api.ISampleManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.core.exception.VersionException;
 
@@ -40,10 +41,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by jacobo on 15/12/14.
@@ -102,17 +100,23 @@ public class SampleWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            QueryResult<Sample> queryResult = sampleManager.create(studyStr, name, source, description, null, null, sessionId);
+            QueryResult<Sample> queryResult = sampleManager.create(studyStr, name, source, description, null, null, null, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
+    private static class IndividualParameters {
+        public long id;
+        public String name;
+    }
+
     private static class SampleParameters {
         public String name;
         public String source;
         public String description;
+        public IndividualParameters individual;
     }
 
     @POST
@@ -127,8 +131,15 @@ public class SampleWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            QueryResult<Sample> queryResult = sampleManager.create(studyStr, params.name, params.source, params.description, null, null,
-                    sessionId);
+
+            Individual individual = null;
+            if (params.individual != null) {
+                individual = new Individual()
+                        .setId(params.individual.id)
+                        .setName(params.individual.name);
+            }
+            QueryResult<Sample> queryResult = sampleManager.create(studyStr, params.name, params.source, params.description, individual,
+                    null, null, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -485,7 +496,8 @@ public class SampleWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true)
                                    @DefaultValue("") @QueryParam("members") String members) {
         try {
-            return createOkResponse(catalogManager.createSampleAcls(sampleIdsStr, studyStr, members, permissions, sessionId));
+            Sample.SampleAclParams sampleAclParams = getAclParams(permissions, null, null);
+            return createOkResponse(sampleManager.updateAcl(sampleIdsStr, studyStr, members, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -493,7 +505,9 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{samples}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of members", position = 19)
+    @ApiOperation(value = "Define a set of permissions for a list of members [DEPRECATED]", position = 19,
+            notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
+                    + "/acl/{members}/update entrypoint.")
     public Response createRolePOST(
             @ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("samples") String sampleIdsStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
@@ -501,7 +515,8 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value="JSON containing the parameters defined in GET. Mandatory keys: 'members'", required = true)
                     StudyWSServer.CreateAclCommands params) {
         try {
-            return createOkResponse(catalogManager.createSampleAcls(sampleIdsStr, studyStr, params.members, params.permissions, sessionId));
+            Sample.SampleAclParams sampleAclParams = getAclParams(params.permissions, null, null);
+            return createOkResponse(sampleManager.updateAcl(sampleIdsStr, studyStr, params.members, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -532,8 +547,8 @@ public class SampleWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "Comma separated list of permissions to remove", required = false) @QueryParam("remove") String removePermissions,
                               @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("set") String setPermissions) {
         try {
-            return createOkResponse(catalogManager.updateSampleAcl(sampleIdStr, studyStr, memberId, addPermissions, removePermissions,
-                    setPermissions, sessionId));
+            Sample.SampleAclParams sampleAclParams = getAclParams(addPermissions, removePermissions, setPermissions);
+            return createOkResponse(sampleManager.updateAcl(sampleIdStr, studyStr, memberId, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -541,17 +556,77 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{sample}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    @ApiOperation(value = "Update the set of permissions granted for the member [WARNING]", position = 21,
+            notes = "WARNING: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
+                    + "to also support changing permissions using queries.")
     public Response updateAclPOST(
             @ApiParam(value = "Sample id or name", required = true) @PathParam("sample") String sampleIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
-            @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true)
-                    StudyWSServer.MemberAclUpdate params) {
+            @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true) StudyWSServer.MemberAclUpdateOld params) {
         try {
-            return createOkResponse(catalogManager.updateSampleAcl(sampleIdStr, studyStr, memberId, params.add, params.remove, params.set,
-                    sessionId));
+            Sample.SampleAclParams sampleAclParams = getAclParams(params.add, params.remove, params.set);
+            return createOkResponse(sampleManager.updateAcl(sampleIdStr, studyStr, memberId, sampleAclParams, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    // Temporal method used by deprecated methods. This will be removed at some point.
+    @Override
+    protected Sample.SampleAclParams getAclParams(@ApiParam(value = "Comma separated list of permissions to add", required = false)
+                                                      @QueryParam("add") String addPermissions,
+                                                @ApiParam(value = "Comma separated list of permissions to remove", required = false)
+                                                      @QueryParam("remove") String removePermissions,
+                                                @ApiParam(value = "Comma separated list of permissions to set", required = false)
+                                                      @QueryParam("set") String setPermissions) throws CatalogException {
+        int count = 0;
+        count += StringUtils.isNotEmpty(setPermissions) ? 1 : 0;
+        count += StringUtils.isNotEmpty(addPermissions) ? 1 : 0;
+        count += StringUtils.isNotEmpty(removePermissions) ? 1 : 0;
+        if (count > 1) {
+            throw new CatalogException("Only one of add, remove or set parameters are allowed.");
+        } else if (count == 0) {
+            throw new CatalogException("One of add, remove or set parameters is expected.");
+        }
+
+        String permissions = null;
+        AclParams.Action action = null;
+        if (StringUtils.isNotEmpty(addPermissions)) {
+            permissions = addPermissions;
+            action = AclParams.Action.ADD;
+        }
+        if (StringUtils.isNotEmpty(setPermissions)) {
+            permissions = setPermissions;
+            action = AclParams.Action.SET;
+        }
+        if (StringUtils.isNotEmpty(removePermissions)) {
+            permissions = removePermissions;
+            action = AclParams.Action.REMOVE;
+        }
+        return new Sample.SampleAclParams(permissions, action, null, null, null);
+    }
+
+    public static class SampleAcl extends AclParams {
+        public String sample;
+        public String individual;
+        public String file;
+        public String cohort;
+    }
+
+    @POST
+    @Path("/acl/{memberId}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    public Response updateAcl(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                    String studyStr,
+            @ApiParam(value = "Comma separated list of member ids", required = true) @PathParam("memberId") String memberId,
+            @ApiParam(value="JSON containing the parameters to add ACLs", required = true) SampleAcl params) {
+        try {
+            Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(
+                    params.getPermissions(), params.getAction(), params.individual, params.file, params.cohort);
+            return createOkResponse(sampleManager.updateAcl(params.sample, studyStr, memberId, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -559,13 +634,17 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{samples}/acl/{memberId}/delete")
-    @ApiOperation(value = "Remove all the permissions granted for the member", position = 22)
-    public Response deleteAcl(@ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("samples") String sampleIdsStr,
+    @ApiOperation(value = "Remove all the permissions granted for the member [DEPRECATED]", position = 22,
+            notes = "DEPRECATED: The usage of this webservice is discouraged. A RESET action has been added to the /acl/{members}/update "
+                    + "entrypoint.")
+    public Response deleteAcl(@ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("samples")
+                                          String sampleIdsStr,
                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                              @QueryParam("study") String studyStr,
+                                  @QueryParam("study") String studyStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(catalogManager.removeSampleAcl(sampleIdsStr, studyStr, memberId, sessionId));
+            Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(null, AclParams.Action.RESET, null, null, null);
+            return createOkResponse(sampleManager.updateAcl(sampleIdsStr, studyStr, memberId, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

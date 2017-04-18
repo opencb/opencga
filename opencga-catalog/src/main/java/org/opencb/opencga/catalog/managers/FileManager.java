@@ -47,6 +47,7 @@ import org.opencb.opencga.catalog.models.acls.permissions.DatasetAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
+import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -67,6 +68,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_STATS;
 
 /**
@@ -381,11 +383,11 @@ public class FileManager extends AbstractManager implements IFileManager {
             Query query = new Query()
                     .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), variantPathName)
-                    .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT)
-                    .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(
-                            FileIndex.IndexStatus.NONE, FileIndex.IndexStatus.TRANSFORMING, FileIndex.IndexStatus.INDEXING,
-                            FileIndex.IndexStatus.READY
-                    ));
+                    .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
+//                    .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(
+//                            FileIndex.IndexStatus.NONE, FileIndex.IndexStatus.TRANSFORMING, FileIndex.IndexStatus.INDEXING,
+//                            FileIndex.IndexStatus.READY
+//                    ));
 
             QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
 
@@ -396,13 +398,28 @@ public class FileManager extends AbstractManager implements IFileManager {
                 query = new Query()
                         .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                         .append(FileDBAdaptor.QueryParams.NAME.key(), variantFileName)
-                        .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT)
-                        .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(
-                                FileIndex.IndexStatus.NONE, FileIndex.IndexStatus.TRANSFORMING, FileIndex.IndexStatus.INDEXING,
-                                FileIndex.IndexStatus.READY
-                        ));
+                        .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
+//                        .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(
+//                                FileIndex.IndexStatus.NONE, FileIndex.IndexStatus.TRANSFORMING, FileIndex.IndexStatus.INDEXING,
+//                                FileIndex.IndexStatus.READY
+//                        ));
 //                        .append(CatalogFileDBAdaptor.QueryParams.INDEX_TRANSFORMED_FILE.key(), null);
                 fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
+            }
+
+            if (fileQueryResult.getNumResults() > 0) {
+                List<File> fileList = new ArrayList<>(fileQueryResult.getNumResults());
+                List<String> acceptedStatus = Arrays.asList(FileIndex.IndexStatus.NONE, FileIndex.IndexStatus.TRANSFORMING,
+                        FileIndex.IndexStatus.INDEXING, FileIndex.IndexStatus.READY);
+                // Check index status
+                for (File file : fileQueryResult.getResult()) {
+                    if (file.getIndex() == null || file.getIndex().getStatus() == null || file.getIndex().getStatus().getName() == null
+                            || acceptedStatus.contains(file.getIndex().getStatus().getName())) {
+                        fileList.add(file);
+                    }
+                }
+                fileQueryResult.setResult(fileList);
+                fileQueryResult.setNumResults(fileList.size());
             }
 
             if (fileQueryResult.getNumResults() == 0 || fileQueryResult.getNumResults() > 1) {
@@ -456,7 +473,10 @@ public class FileManager extends AbstractManager implements IFileManager {
             if (index.getTransformedFile() == null) {
                 index.setTransformedFile(new FileIndex.TransformedFile(transformedFile.getId(), json.getId()));
             }
-            String status = vcf.getIndex().getStatus().getName();
+            String status = FileIndex.IndexStatus.NONE;
+            if (vcf.getIndex() != null && vcf.getIndex().getStatus() != null && vcf.getIndex().getStatus().getName() != null) {
+                status = vcf.getIndex().getStatus().getName();
+            }
             if (FileIndex.IndexStatus.NONE.equals(status)) {
                 // If TRANSFORMED, TRANSFORMING, etc, do not modify the index status
                 index.setStatus(new FileIndex.IndexStatus(FileIndex.IndexStatus.TRANSFORMED));
@@ -548,9 +568,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             if (!FileIndex.IndexStatus.isValid(newStatus)) {
                 throw new CatalogException("The status " + newStatus + " is not a valid status.");
             } else {
-                index.getStatus().setName(newStatus);
-                index.getStatus().setCurrentDate();
-                index.getStatus().setMessage(message);
+                index.setStatus(new FileIndex.IndexStatus(newStatus, message));
             }
         } else {
             index = new FileIndex(userId, TimeUtils.getTime(), new FileIndex.IndexStatus(newStatus), -1, new ObjectMap());
@@ -1685,16 +1703,16 @@ public class FileManager extends AbstractManager implements IFileManager {
 
             // Limit the number of results and only some fields
             QueryOptions queryOptions = new QueryOptions()
-                    .append(QueryOptions.LIMIT, 100)
-                    .append(QueryOptions.INCLUDE, Arrays.asList(
-                            FileDBAdaptor.QueryParams.ID.key(),
-                            FileDBAdaptor.QueryParams.NAME.key(),
-                            FileDBAdaptor.QueryParams.TYPE.key(),
-                            FileDBAdaptor.QueryParams.PATH.key(),
-                            FileDBAdaptor.QueryParams.URI.key(),
-                            FileDBAdaptor.QueryParams.FORMAT.key(),
-                            FileDBAdaptor.QueryParams.BIOFORMAT.key()
-                    ));
+                    .append(QueryOptions.LIMIT, 100);
+//                    .append(QueryOptions.INCLUDE, Arrays.asList(
+//                            FileDBAdaptor.QueryParams.ID.key(),
+//                            FileDBAdaptor.QueryParams.NAME.key(),
+//                            FileDBAdaptor.QueryParams.TYPE.key(),
+//                            FileDBAdaptor.QueryParams.PATH.key(),
+//                            FileDBAdaptor.QueryParams.URI.key(),
+//                            FileDBAdaptor.QueryParams.FORMAT.key(),
+//                            FileDBAdaptor.QueryParams.BIOFORMAT.key()
+//                    ));
 
             return fileDBAdaptor.get(query, queryOptions);
         }
@@ -1924,16 +1942,16 @@ public class FileManager extends AbstractManager implements IFileManager {
 
             // Limit the number of results and only some fields
             QueryOptions queryOptions = new QueryOptions()
-                    .append(QueryOptions.LIMIT, 100)
-                    .append(QueryOptions.INCLUDE, Arrays.asList(
-                            FileDBAdaptor.QueryParams.ID.key(),
-                            FileDBAdaptor.QueryParams.NAME.key(),
-                            FileDBAdaptor.QueryParams.TYPE.key(),
-                            FileDBAdaptor.QueryParams.PATH.key(),
-                            FileDBAdaptor.QueryParams.URI.key(),
-                            FileDBAdaptor.QueryParams.FORMAT.key(),
-                            FileDBAdaptor.QueryParams.BIOFORMAT.key()
-                    ));
+                    .append(QueryOptions.LIMIT, 100);
+//                    .append(QueryOptions.INCLUDE, Arrays.asList(
+//                            FileDBAdaptor.QueryParams.ID.key(),
+//                            FileDBAdaptor.QueryParams.NAME.key(),
+//                            FileDBAdaptor.QueryParams.TYPE.key(),
+//                            FileDBAdaptor.QueryParams.PATH.key(),
+//                            FileDBAdaptor.QueryParams.URI.key(),
+//                            FileDBAdaptor.QueryParams.FORMAT.key(),
+//                            FileDBAdaptor.QueryParams.BIOFORMAT.key()
+//                    ));
 
             return fileDBAdaptor.get(query, queryOptions);
         }
@@ -2600,29 +2618,119 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public List<QueryResult<FileAclEntry>> createAcls(String fileIdsStr, @Nullable String studyStr, String membersStr,
-                                                      String permissionsStr, String sessionId) throws CatalogException {
-        AbstractManager.MyResourceIds resourceIds = getIds(fileIdsStr, studyStr, sessionId);
-        ParamUtils.checkParameter(membersStr, "members");
-        return authorizationManager.createFileAcls(resourceIds, Arrays.asList(StringUtils.split(membersStr, ",")),
-                Arrays.asList(StringUtils.split(permissionsStr, ",")));
+    public List<QueryResult<FileAclEntry>> updateAcl(String file, String studyStr, String memberIds, File.FileAclParams fileAclParams,
+                                                     String sessionId) throws CatalogException {
+        int count = 0;
+        count += StringUtils.isNotEmpty(file) ? 1 : 0;
+        count += StringUtils.isNotEmpty(fileAclParams.getSample()) ? 1 : 0;
+
+        if (count > 1) {
+            throw new CatalogException("Update ACL: Only one of these parameters are allowed: file or sample per query.");
+        } else if (count == 0) {
+            throw new CatalogException("Update ACL: At least one of these parameters should be provided: file or sample");
+        }
+
+        if (fileAclParams.getAction() == null) {
+            throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
+        }
+
+        List<String> permissions = Collections.emptyList();
+        if (StringUtils.isNotEmpty(fileAclParams.getPermissions())) {
+            permissions = Arrays.asList(fileAclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
+            checkPermissions(permissions, FileAclEntry.FilePermissions::valueOf);
+        }
+
+        if (StringUtils.isNotEmpty(fileAclParams.getSample())) {
+            // Obtain the sample ids
+            MyResourceIds ids = catalogManager.getSampleManager().getIds(fileAclParams.getSample(), studyStr, sessionId);
+
+            Query query = new Query(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ids.getResourceIds());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
+            QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(ids.getStudyId(), query, options, sessionId);
+
+            Set<Long> fileSet = fileQueryResult.getResult().stream().map(File::getId).collect(Collectors.toSet());
+            file = StringUtils.join(fileSet, ",");
+
+            studyStr = Long.toString(ids.getStudyId());
+        }
+
+        // Obtain the resource ids
+        MyResourceIds resourceIds = getIds(file, studyStr, sessionId);
+        // Increase the list with the files/folders within the list of ids that correspond with folders
+        resourceIds = getRecursiveFilesAndFolders(resourceIds);
+
+        // Check the user has the permissions needed to change permissions over those files
+        for (Long fileId : resourceIds.getResourceIds()) {
+            authorizationManager.checkFilePermission(fileId, resourceIds.getUser(), FileAclEntry.FilePermissions.SHARE);
+        }
+
+        // Validate that the members are actually valid members
+        List<String> members;
+        if (memberIds != null && !memberIds.isEmpty()) {
+            members = Arrays.asList(memberIds.split(","));
+        } else {
+            members = Collections.emptyList();
+        }
+        CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
+        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
+
+        switch (fileAclParams.getAction()) {
+            case SET:
+                return authorizationManager.setAcls(resourceIds, members, permissions, fileDBAdaptor);
+            case ADD:
+                return authorizationManager.addAcls(resourceIds, members, permissions, fileDBAdaptor);
+            case REMOVE:
+                return authorizationManager.removeAcls(resourceIds, members, permissions, fileDBAdaptor);
+            case RESET:
+                return authorizationManager.removeAcls(resourceIds, members, null, fileDBAdaptor);
+            default:
+                throw new CatalogException("Unexpected error occurred. No valid action found.");
+        }
     }
 
-    @Override
-    public List<QueryResult<FileAclEntry>> updateAcls(String fileIdsStr, @Nullable String studyStr, String member,
-                                                      @Nullable String addPermissions, @Nullable String removePermissions,
-                                                      @Nullable String setPermissions, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(member, "member");
-        AbstractManager.MyResourceIds resources = getIds(fileIdsStr, studyStr, sessionId);
-        return authorizationManager.updateFileAcl(resources, member, addPermissions, removePermissions, setPermissions);
-    }
+    /**
+     * Fetch all the recursive files and folders within the list of file ids given.
+     *
+     * @param resourceIds ResourceId object containing the list of file ids, studyId and userId.
+     * @return a new ResourceId object
+     */
+    private MyResourceIds getRecursiveFilesAndFolders(MyResourceIds resourceIds) throws CatalogException {
+        Set<Long> fileIdSet = new HashSet<>();
+        fileIdSet.addAll(resourceIds.getResourceIds());
 
-    @Override
-    public List<QueryResult<FileAclEntry>> removeFileAcls(String fileIdsStr, @Nullable String studyStr, String members, String sessionId)
-            throws CatalogException {
-        AbstractManager.MyResourceIds resources = getIds(fileIdsStr, studyStr, sessionId);
-        ParamUtils.checkParameter(members, "members");
-        return authorizationManager.removeFileAcls(resources, Arrays.asList(StringUtils.split(members, ",")));
+        // Get info of the files to see if they are files or folders
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
+                .append(FileDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds());
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.TYPE.key()));
+
+        QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options);
+        if (fileQueryResult.getNumResults() != resourceIds.getResourceIds().size()) {
+            logger.error("Some files were not found for query {}", query.safeToString());
+            throw new CatalogException("Internal error. Some files were not found.");
+        }
+
+        List<String> pathList = new ArrayList<>();
+        for (File file : fileQueryResult.getResult()) {
+            if (file.getType().equals(File.Type.DIRECTORY)) {
+                pathList.add("~^" + file.getPath());
+            }
+        }
+
+        options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
+        if (pathList.size() > 0) {
+            // Search for all the files within the list of paths
+            query = new Query()
+                    .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
+                    .append(FileDBAdaptor.QueryParams.PATH.key(), pathList);
+            QueryResult<File> fileQueryResult1 = fileDBAdaptor.get(query, options);
+            fileIdSet.addAll(fileQueryResult1.getResult().stream().map(File::getId).collect(Collectors.toSet()));
+        }
+
+        List<Long> fileIdList = new ArrayList<>(fileIdSet.size());
+        fileIdList.addAll(fileIdSet);
+        return new MyResourceIds(resourceIds.getUser(), resourceIds.getStudyId(), fileIdList);
     }
 
 }

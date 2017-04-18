@@ -175,12 +175,11 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         logger.debug("Index - Number of files to be indexed: {}, list of files: {}", inputFiles.size(),
                 inputFiles.stream().map(File::getName).collect(Collectors.toList()));
 
-        options.put(VariantStorageEngine.Options.DB_NAME.key(), dataStore.getDbName());
         options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyIdByInputFileId);
 
         VariantStorageEngine variantStorageEngine;
         try {
-            variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine());
+            variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
             throw new StorageEngineException("Unable to create StorageEngine", e);
         }
@@ -631,7 +630,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         for (File file : fileList) {
             if (file.getStatus().getName().equals(File.FileStatus.READY)
                     && file.getFormat().equals(File.Format.VCF)) {
-                if (file.getIndex() != null) {
+                if (file.getIndex() != null && file.getIndex().getStatus() != null && file.getIndex().getStatus().getName() != null) {
                     switch (file.getIndex().getStatus().getName()) {
                         case FileIndex.IndexStatus.NONE:
                             filteredFiles.add(file);

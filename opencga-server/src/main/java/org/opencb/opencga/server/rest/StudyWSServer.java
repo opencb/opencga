@@ -29,7 +29,9 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
+import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.exception.VersionException;
@@ -38,7 +40,7 @@ import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -57,8 +59,11 @@ import java.util.stream.Collectors;
 @Api(value = "Studies", position = 3, description = "Methods for working with 'studies' endpoint")
 public class StudyWSServer extends OpenCGAWSServer {
 
+    private IStudyManager studyManager;
+
     public StudyWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(uriInfo, httpServletRequest);
+        studyManager = catalogManager.getStudyManager();
     }
 
     @GET
@@ -412,7 +417,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "List of samples to be returned") @QueryParam("returnedSamples") String returnedSamples,
                                 @ApiParam(value = "List of files to be returned.") @QueryParam("returnedFiles") String returnedFiles,
                                 @ApiParam(value = "Variants in specific files") @QueryParam("files") String files,
-                                @ApiParam(value = VariantDBAdaptor.FILTER_DESCR) @QueryParam("filter") String filter,
+                                @ApiParam(value = VariantQueryParam.FILTER_DESCR) @QueryParam("filter") String filter,
                                 @ApiParam(value = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}")
                                     @QueryParam("maf") String maf,
                                 @ApiParam(value = "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}")
@@ -426,7 +431,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Samples with a specific genotype: "
                                         + "{samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1")
                                     @QueryParam("genotype") String genotype,
-                                @ApiParam(value = VariantDBAdaptor.SAMPLES_DESCR) @QueryParam("samples") String samples,
+                                @ApiParam(value = VariantQueryParam.SAMPLES_DESCR) @QueryParam("samples") String samples,
                                 @ApiParam(value = "Consequence type SO term list. e.g. missense_variant,stop_lost or SO:0001583,SO:0001578")
                                     @QueryParam("annot-ct") String annot_ct,
                                 @ApiParam(value = "XRef") @QueryParam("annot-xref") String annot_xref,
@@ -490,7 +495,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                 // Get all query options
                 QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
                 Query query = VariantStorageManager.getVariantQuery(queryOptions);
-                query.putIfAbsent(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
+                query.putIfAbsent(VariantQueryParam.STUDIES.key(), studyId);
                 if (count) {
                     queryResult = variantManager.count(query, sessionId);
                 } else if (histogram) {
@@ -539,7 +544,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                       @QueryParam("histogram") boolean histogram,
                                   @ApiParam(value = "interval", required = false) @DefaultValue("2000")
                                       @QueryParam("interval") int interval) {
-        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyStr);
+        query.put(VariantQueryParam.STUDIES.key(), studyStr);
         List<Region> regions = Region.parseRegions(region);
 
         List<QueryResult> results = new ArrayList<>();
@@ -618,8 +623,8 @@ public class StudyWSServer extends OpenCGAWSServer {
             AlignmentDBAdaptor dbAdaptor;
             try {
 
-                AlignmentStorageEngine alignmentStorageManager = storageEngineFactory.getAlignmentStorageEngine(storageEngine);
-                dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName);
+                AlignmentStorageEngine alignmentStorageManager = storageEngineFactory.getAlignmentStorageEngine(storageEngine, dbName);
+                dbAdaptor = alignmentStorageManager.getDBAdaptor();
             } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException e) {
                 return createErrorResponse(e);
             }
@@ -852,6 +857,42 @@ public class StudyWSServer extends OpenCGAWSServer {
         public String templateId;
     }
 
+    // Temporal method used by deprecated methods. This will be removed at some point.
+    private Study.StudyAclParams getAclParams(
+            @ApiParam(value = "Comma separated list of permissions to add", required = false) @QueryParam("add") String addPermissions,
+            @ApiParam(value = "Comma separated list of permissions to remove", required = false) @QueryParam("remove") String removePermissions,
+            @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("set") String setPermissions,
+            @ApiParam(value = "Template of permissions (only to create)", required = false) @QueryParam("template") String template)
+            throws CatalogException {
+        int count = 0;
+        count += StringUtils.isNotEmpty(setPermissions) ? 1 : 0;
+        count += StringUtils.isNotEmpty(addPermissions) ? 1 : 0;
+        count += StringUtils.isNotEmpty(removePermissions) ? 1 : 0;
+        if (count > 1) {
+            throw new CatalogException("Only one of add, remove or set parameters are allowed.");
+        } else if (count == 0) {
+            if (StringUtils.isNotEmpty(template)) {
+                throw new CatalogException("One of add, remove or set parameters is expected.");
+            }
+        }
+
+        String permissions = null;
+        AclParams.Action action = null;
+        if (StringUtils.isNotEmpty(addPermissions) || StringUtils.isNotEmpty(template)) {
+            permissions = addPermissions;
+            action = AclParams.Action.ADD;
+        }
+        if (StringUtils.isNotEmpty(setPermissions)) {
+            permissions = setPermissions;
+            action = AclParams.Action.SET;
+        }
+        if (StringUtils.isNotEmpty(removePermissions)) {
+            permissions = removePermissions;
+            action = AclParams.Action.REMOVE;
+        }
+        return new Study.StudyAclParams(permissions, action, template);
+    }
+
     @GET
     @Path("/{study}/acl/create")
     @ApiOperation(value = "Define a set of permissions for a list of users or groups", hidden = true)
@@ -864,7 +905,8 @@ public class StudyWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "Template of permissions to be used (admin, analyst or view_only)")
                                @QueryParam("templateId") String templateId) {
         try {
-            return createOkResponse(catalogManager.createStudyAcls(studyStr, members, permissions, templateId, sessionId));
+            Study.StudyAclParams aclParams = getAclParams(permissions, null, null, templateId);
+            return createOkResponse(studyManager.updateAcl(studyStr, members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -872,18 +914,17 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{study}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of users or groups")
+    @ApiOperation(value = "Define a set of permissions for a list of users or groups [DEPRECATED]",
+            notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
+                    + "/acl/{members}/update entrypoint.")
     public Response createRolePOST(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
             @PathParam("study") String studyStr,
             @ApiParam(value="JSON containing the parameters defined in GET. Mandatory keys: 'members'", required = true)
                     CreateAclCommandsTemplate params) {
-        if (params == null || StringUtils.isEmpty(params.members)) {
-            return createErrorResponse(new CatalogException("members parameter not found"));
-        }
         try {
-            return createOkResponse(catalogManager.createStudyAcls(studyStr, params.members, params.permissions, params.templateId,
-                    sessionId));
+            Study.StudyAclParams aclParams = getAclParams(params.permissions, null, null, params.templateId);
+            return createOkResponse(studyManager.updateAcl(studyStr, params.members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -915,14 +956,14 @@ public class StudyWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "Comma separated list of permissions to set")
                                   @QueryParam("set") String setPermissions) {
         try {
-            return createOkResponse(catalogManager.updateStudyAcl(studyStr, memberId, addPermissions, removePermissions, setPermissions,
-                    sessionId));
+            Study.StudyAclParams aclParams = getAclParams(addPermissions, removePermissions, setPermissions, null);
+            return createOkResponse(studyManager.updateAcl(studyStr, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
-    public static class MemberAclUpdate {
+    public static class MemberAclUpdateOld {
         public String add;
         public String set;
         public String remove;
@@ -930,18 +971,39 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{study}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the user or group", position = 21)
+    @ApiOperation(value = "Update the set of permissions granted for the user or group [WARNING]", position = 21,
+            notes = "WARNING: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
+                    + "to also support changing permissions using queries.")
     public Response updateAcl(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
             @PathParam("study") String studyStr,
             @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
-            @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true)
-                    MemberAclUpdate params) {
+            @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true) MemberAclUpdateOld params) {
 //        if (params == null || params.isEmpty()) {
 //            return createErrorResponse(new CatalogException("At least one of the keys 'addUsers', 'setUsers' or 'removeUsers'"));
 //        }
         try {
-            return createOkResponse(catalogManager.updateStudyAcl(studyStr, memberId, params.add, params.remove, params.set, sessionId));
+            Study.StudyAclParams aclParams = getAclParams(params.add, params.remove, params.set, null);
+            return createOkResponse(studyManager.updateAcl(studyStr, memberId, aclParams, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    public static class StudyAcl extends AclParams {
+        public String study;
+        public String template;
+    }
+
+    @POST
+    @Path("/acl/{memberId}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    public Response updateAcl(
+            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
+            @ApiParam(value="JSON containing the parameters to add ACLs", required = true) StudyAcl params) {
+        try {
+            Study.StudyAclParams aclParams = new Study.StudyAclParams(params.getPermissions(), params.getAction(), params.template);
+            return createOkResponse(studyManager.updateAcl(params.study, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -949,12 +1011,15 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/acl/{memberId}/delete")
-    @ApiOperation(value = "Delete all the permissions granted for the user or group", position = 22)
+    @ApiOperation(value = "Delete all the permissions granted for the user or group [DEPRECATED]", position = 22,
+            notes = "DEPRECATED: The usage of this webservice is discouraged. A RESET action has been added to the /acl/{members}/update "
+                    + "entrypoint.")
     public Response deleteAcl(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
                                       required = true) @PathParam("study") String studyStr,
                               @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(catalogManager.removeStudyAcl(studyStr, memberId, sessionId));
+            Study.StudyAclParams aclParams = new Study.StudyAclParams(null, AclParams.Action.RESET, null);
+            return createOkResponse(studyManager.updateAcl(studyStr, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

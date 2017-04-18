@@ -23,7 +23,7 @@ public interface VariantStatisticsManager {
      *                  {@link org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options#UPDATE_STATS}
      *                  {@link org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options#LOAD_THREADS}
      *                  {@link org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options#LOAD_BATCH_SIZE}
-     *                  {@link org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams#REGION}
+     *                  {@link org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam#REGION}
      *
      * @throws StorageEngineException      If there is any problem related with the StorageEngine
      * @throws IOException                  If there is any IO problem

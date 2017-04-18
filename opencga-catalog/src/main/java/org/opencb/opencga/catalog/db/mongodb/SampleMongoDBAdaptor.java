@@ -787,6 +787,34 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     }
 
     @Override
+    public List<QueryResult<SampleAclEntry>> getAcls(Query query, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+
+        QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
+
+        if (sampleIds == null || sampleIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to get permissions");
+        }
+
+        List<List<SampleAclEntry>> acl = aclDBAdaptor.getAcl(sampleIds, members);
+        List<QueryResult<SampleAclEntry>> retAclQueryResult = new ArrayList<>(acl.size());
+        if (acl.size() == sampleIds.size()) {
+            for (int i = 0; i < acl.size(); i++) {
+                retAclQueryResult.add(endQuery(Long.toString(sampleIds.get(i)), startTime, acl.get(i)));
+            }
+        } else {
+            logger.warn("Something strange happened. Only obtained ACLs for {} out of the {} samples queried", acl.size(),
+                    sampleIds.size());
+            for (List<SampleAclEntry> sampleAclEntries : acl) {
+                retAclQueryResult.add(endQuery("get sample Acl", startTime, sampleAclEntries));
+            }
+        }
+
+        return retAclQueryResult;
+    }
+
+    @Override
     public void removeAcl(long id, String member) throws CatalogDBException {
 //        CatalogMongoDBUtils.removeAcl(id, member, sampleCollection);
         aclDBAdaptor.removeAcl(id, member);
@@ -797,6 +825,18 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         long startTime = startQuery();
 //        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, sampleCollection);
         return endQuery("Set Acls to member", startTime, Arrays.asList(aclDBAdaptor.setAclsToMember(id, member, permissions)));
+    }
+
+    @Override
+    public void setAclsToMember(Query query, List<String> members, List<String> permissions) throws CatalogDBException {
+        QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
+
+        if (sampleIds == null || sampleIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to set permissions");
+        }
+
+        aclDBAdaptor.setAclsToMembers(sampleIds, members, permissions);
     }
 
     @Deprecated

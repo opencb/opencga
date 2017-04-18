@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 
 import javax.annotation.Nullable;
@@ -199,4 +200,6 @@ public interface IJobManager extends ResourceManager<Long, Job> {
                            List<Long> input, List<Long> output, long outDirId, String userId, Map<String, Object> attributes)
             throws CatalogException;
 
+    List<QueryResult<JobAclEntry>> updateAcl(String job, String studyStr, String memberId, AclParams aclParams, String sessionId)
+            throws CatalogException;
 }
