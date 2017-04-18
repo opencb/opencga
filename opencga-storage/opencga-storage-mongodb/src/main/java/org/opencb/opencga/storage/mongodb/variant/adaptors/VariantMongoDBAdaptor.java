@@ -202,6 +202,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
 //        logger.info("******************** Summary => " + options.getBoolean("summary"));
+
 //
 //        VariantQueryResult<Variant> queryResult;
 //
