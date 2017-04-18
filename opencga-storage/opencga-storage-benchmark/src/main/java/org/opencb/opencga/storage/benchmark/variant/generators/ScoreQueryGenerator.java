@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.benchmark.variant.generators;
 
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,7 +107,7 @@ public abstract class ScoreQueryGenerator extends QueryGenerator {
     public static class ProteinSubstQueryGenerator extends ScoreQueryGenerator {
 
         public ProteinSubstQueryGenerator() {
-            super(NUM_OPS, VariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key());
+            super(NUM_OPS, VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key());
             addScore(new Score("sift", 0, 1));
             addScore(new Score("polyphen", 0, 1));
         }
@@ -116,7 +116,7 @@ public abstract class ScoreQueryGenerator extends QueryGenerator {
     public static class ConservationQueryGenerator extends ScoreQueryGenerator {
 
         public ConservationQueryGenerator() {
-            super(NUM_OPS, VariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION.key());
+            super(NUM_OPS, VariantQueryParam.ANNOT_CONSERVATION.key());
             addScore(new Score("phylop", 0, 1));
             addScore(new Score("phastCons", 0, 1));
             addScore(new Score("gerp", 0, 1));
@@ -126,7 +126,7 @@ public abstract class ScoreQueryGenerator extends QueryGenerator {
     public static class FunctionalScoreQueryGenerator extends ScoreQueryGenerator {
 
         public FunctionalScoreQueryGenerator() {
-            super(NUM_OPS, VariantDBAdaptor.VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key());
+            super(NUM_OPS, VariantQueryParam.ANNOT_FUNCTIONAL_SCORE.key());
             addScore(new Score("cadd_raw", 0, 1));
             addScore(new Score("cadd_scaled", -10, 40));
         }

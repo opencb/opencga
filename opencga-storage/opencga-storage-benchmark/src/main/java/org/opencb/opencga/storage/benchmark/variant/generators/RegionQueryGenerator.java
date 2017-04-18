@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.benchmark.variant.generators;
 
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +45,7 @@ public class RegionQueryGenerator extends QueryGenerator {
             Region region = new Region(regionLimit.getChromosome(), start, end);
             regions.add(region.toString());
         }
-        query.append(VariantDBAdaptor.VariantQueryParams.REGION.key(), String.join(",", regions));
+        query.append(VariantQueryParam.REGION.key(), String.join(",", regions));
         return query;
     }
 }

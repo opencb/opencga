@@ -12,8 +12,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.benchmark.variant.generators.QueryGenerator;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +80,6 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
     protected static class VariantStorageEngineJavaSamplerClient extends AbstractJavaSamplerClient {
         private Logger logger = LoggerFactory.getLogger(getClass());
         private VariantStorageEngine variantStorageEngine;
-        private VariantDBAdaptor dbAdaptor;
         private QueryGenerator queryGenerator;
 
         public VariantStorageEngineJavaSamplerClient() {
@@ -94,8 +93,7 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
             logger.debug("Using engine {}", engine);
             logger.debug("Using dbname {}", dbName);
             try {
-                variantStorageEngine = StorageEngineFactory.get().getVariantStorageEngine(engine);
-                dbAdaptor = variantStorageEngine.getDBAdaptor(dbName);
+                variantStorageEngine = StorageEngineFactory.get().getVariantStorageEngine(engine, dbName);
             } catch (Throwable e) {
                 logger.error("Error creating VariantStorageEngine!", e);
                 Throwables.propagate(e);
@@ -135,9 +133,9 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
                 result.sampleStart();
                 long numResults;
                 if (count) {
-                    numResults = dbAdaptor.count(query).first();
+                    numResults = variantStorageEngine.count(query).first();
                 } else {
-                    VariantQueryResult<Variant> queryResult = dbAdaptor.get(query, queryOptions);
+                    VariantQueryResult<Variant> queryResult = variantStorageEngine.get(query, queryOptions);
                     numResults = queryResult.getNumResults();
                 }
                 result.sampleEnd();
@@ -147,7 +145,7 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
             } catch (Error e) {
                 logger.error("Error!", e);
                 throw e;
-            } catch (RuntimeException e) {
+            } catch (StorageEngineException | RuntimeException e) {
                 logger.error("Error!", e);
                 result.setErrorCount(1);
             }
@@ -158,7 +156,7 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
         public void teardownTest(JavaSamplerContext javaSamplerContext) {
             logger.debug("Closing variant engine");
             try {
-                dbAdaptor.close();
+                variantStorageEngine.close();
             } catch (Exception e) {
                 Throwables.propagate(e);
             }

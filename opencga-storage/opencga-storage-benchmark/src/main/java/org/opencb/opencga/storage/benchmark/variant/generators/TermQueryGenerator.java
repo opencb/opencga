@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.benchmark.variant.generators;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +52,7 @@ public abstract class TermQueryGenerator extends QueryGenerator {
     public static class XrefQueryGenerator extends TermQueryGenerator {
 
         public XrefQueryGenerator() {
-            super("xrefs.csv", VariantDBAdaptor.VariantQueryParams.ANNOT_XREF.key());
+            super("xrefs.csv", VariantQueryParam.ANNOT_XREF.key());
         }
     }
 
@@ -60,14 +60,14 @@ public abstract class TermQueryGenerator extends QueryGenerator {
         private Logger logger = LoggerFactory.getLogger(getClass());
 
         public BiotypeQueryGenerator() {
-            super("biotypes.csv", VariantDBAdaptor.VariantQueryParams.ANNOT_BIOTYPE.key());
+            super("biotypes.csv", VariantQueryParam.ANNOT_BIOTYPE.key());
         }
     }
 
     public static class GeneQueryGenerator extends TermQueryGenerator {
 
         public GeneQueryGenerator() {
-            super("genes.csv", VariantDBAdaptor.VariantQueryParams.GENE.key());
+            super("genes.csv", VariantQueryParam.GENE.key());
         }
 
     }
@@ -75,14 +75,14 @@ public abstract class TermQueryGenerator extends QueryGenerator {
     public static class StudyQueryGenerator extends TermQueryGenerator {
 
         public StudyQueryGenerator() {
-            super("studies.csv", VariantDBAdaptor.VariantQueryParams.STUDIES.key());
+            super("studies.csv", VariantQueryParam.STUDIES.key());
         }
     }
 
     public static class TypeQueryGenerator extends TermQueryGenerator {
 
         public TypeQueryGenerator() {
-            super("types.csv", VariantDBAdaptor.VariantQueryParams.TYPE.key());
+            super("types.csv", VariantQueryParam.TYPE.key());
         }
 
         @Override
@@ -101,7 +101,7 @@ public abstract class TermQueryGenerator extends QueryGenerator {
         private Logger logger = LoggerFactory.getLogger(getClass());
 
         public ConsequenceTypeQueryGenerator() {
-            super("consequence_types.csv", VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key());
+            super("consequence_types.csv", VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key());
         }
 
         @Override
