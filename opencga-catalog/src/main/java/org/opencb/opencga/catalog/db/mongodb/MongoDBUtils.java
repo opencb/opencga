@@ -447,6 +447,14 @@ class MongoDBUtils {
         }
     }
 
+    static void filterStringListParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams) {
+        for (String s : acceptedParams) {
+            if (parameters.containsKey(s)) {
+                filteredParams.put(s, parameters.getAsStringList(s));
+            }
+        }
+    }
+
     static void filterEnumParams(ObjectMap parameters, Map<String, Object> filteredParams, Map<String, Class<? extends Enum>>
             acceptedParams) throws CatalogDBException {
         for (Map.Entry<String, Class<? extends Enum>> e : acceptedParams.entrySet()) {

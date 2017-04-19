@@ -17,10 +17,7 @@
 package org.opencb.opencga.catalog;
 
 import com.mongodb.BasicDBObject;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -30,16 +27,20 @@ import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.*;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.summaries.FeatureCount;
 import org.opencb.opencga.catalog.models.summaries.VariableSetSummary;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
+import org.opencb.opencga.core.results.LdapImportResult;
 
-import java.io.*;
+import javax.naming.NamingException;
+import java.io.DataOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
@@ -372,6 +373,53 @@ public class CatalogManagerTest extends GenericTest {
 
     }
 
+    @Ignore
+    @Test
+    public void importLdapUsers() throws CatalogException, NamingException {
+        // Action only for admins
+        ObjectMap params = new ObjectMap()
+                .append("users", "pfurio,imedina");
+
+        LdapImportResult ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin("ldap", Account.GUEST, params,
+                "admin");
+
+        assertEquals(2, ldapImportResult.getResult().getUserSummary().getTotal());
+    }
+
+    @Ignore
+    @Test
+    public void importLdapGroups() throws CatalogException, NamingException, IOException {
+        // Action only for admins
+        ObjectMap params = new ObjectMap()
+                .append("group", "bio")
+                .append("study", "user@1000G:phase1")
+                .append("study-group", "test");
+        catalogManager.getUserManager().importFromExternalAuthOrigin("ldap", Account.GUEST, params, "admin");
+
+        QueryResult<Group> test = catalogManager.getStudyManager().getGroup("user@1000G:phase1", "test", sessionIdUser);
+        assertEquals(1, test.getNumResults());
+        assertEquals("@test", test.first().getName());
+        assertTrue(test.first().getUserIds().size() > 0);
+
+        params.put("study-group", "test1");
+        try {
+            catalogManager.getUserManager().importFromExternalAuthOrigin("ldap", Account.GUEST, params, "admin");
+            fail("Should not be possible creating another group containing the same users that belong to a different group");
+        } catch (CatalogException e) {
+            System.out.println(e.getMessage());
+        }
+
+        params = new ObjectMap()
+                .append("group", "bioo")
+                .append("study", "user@1000G:phase1")
+                .append("study-group", "test2");
+        catalogManager.getUserManager().importFromExternalAuthOrigin("ldap", Account.GUEST, params, "admin");
+
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("not exist");
+        catalogManager.getStudyManager().getGroup("user@1000G:phase1", "test2", sessionIdUser);
+    }
+
     /**
      * Project methods
      * ***************************
@@ -589,6 +637,22 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals(1, ids.size());
         assertEquals(study.first().getId(), (long) ids.get(0));
     }
+
+    @Test
+    public void testUpdateGroupInfo() throws CatalogException {
+        IStudyManager studyManager = catalogManager.getStudyManager();
+
+        studyManager.createGroup(Long.toString(studyId), "group1", "", sessionIdUser);
+        studyManager.createGroup(Long.toString(studyId), "group2", "", sessionIdUser);
+
+        Group.Sync syncFrom = new Group.Sync("auth", "aaa");
+        studyManager.syncGroupWith(Long.toString(studyId), "group2", syncFrom, sessionIdUser);
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Cannot modify already existing sync information");
+        studyManager.syncGroupWith(Long.toString(studyId), "group2", syncFrom, sessionIdUser);
+    }
+
 
     /**
      * Job methods

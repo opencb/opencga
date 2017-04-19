@@ -237,6 +237,16 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     }
 
     @Override
+    public void logout(String sessionId) throws CatalogDBException {
+        Bson query = new Document("_id", "METADATA");
+        Bson update = new Document("$pull", new Document("admin.sessions", new Document("id", sessionId)));
+        QueryResult<UpdateResult> updateQueryResult = metaCollection.update(query, update, null);
+        if (updateQueryResult.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("Internal error: Could not remove closed session for admin");
+        }
+    }
+
+    @Override
     public String getAdminPassword() throws CatalogDBException {
         Bson query = Filters.eq(PRIVATE_ID, "METADATA");
         QueryResult<Document> queryResult = metaCollection.find(query, new QueryOptions(QueryOptions.INCLUDE, "admin"));

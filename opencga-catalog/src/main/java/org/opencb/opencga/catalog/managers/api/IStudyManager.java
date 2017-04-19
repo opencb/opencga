@@ -280,6 +280,18 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
                                    @Nullable String setUsers, String sessionId) throws CatalogException;
 
     /**
+     * Update the parameters of a group.
+     *
+     * @param studyStr study.
+     * @param groupId group id.
+     * @param syncFrom Sync object that will be set.
+     * @param sessionId session id of the user that wants to perform this action.
+     * @return the group after the update action.
+     * @throws CatalogException catalogException.
+     */
+    QueryResult<Group> syncGroupWith(String studyStr, String groupId, Group.Sync syncFrom, String sessionId) throws CatalogException;
+
+    /**
      * Delete the group.
      *
      * @param studyStr study.

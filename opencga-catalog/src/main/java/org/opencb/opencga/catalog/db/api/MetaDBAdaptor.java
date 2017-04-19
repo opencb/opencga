@@ -33,6 +33,8 @@ public interface MetaDBAdaptor {
 
     QueryResult<Session> addAdminSession(Session session) throws CatalogDBException;
 
+    void logout(String sessionId) throws CatalogDBException;
+
     String getAdminPassword() throws CatalogDBException;
 
     boolean checkValidAdminSession(String id);

@@ -49,6 +49,9 @@ acl:                 # Do not touch the acl configuration. If this is not proper
   - "WRITE_FILES"
   - "VIEW_JOBS"
   - "WRITE_JOBS"
+  - "VIEW_STUDY"
+  - "UPDATE_STUDY"
+  - "SHARE_STUDY"
 
 catalog:
   # offset: Starting point for the catalog internal ids. Use a big offset number (1000000 for instance) if you plan to use numerical ids

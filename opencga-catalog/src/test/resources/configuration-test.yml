@@ -49,6 +49,9 @@ acl:
   - "WRITE_FILES"
   - "VIEW_JOBS"
   - "WRITE_JOBS"
+  - "VIEW_STUDY"
+  - "UPDATE_STUDY"
+  - "SHARE_STUDY"
 
 catalog:
   # offset: Starting point for the catalog internal ids. Use a big offset number (1000000 for instance) if you plan to use numerical ids
@@ -61,6 +64,15 @@ catalog:
     password: ""
     options:
       authenticationDatabase: ""
+
+#LDAP configuration example
+authenticationOrigins:
+- id: ldap            # Any id
+  type: LDAP          # At the moment, we only support LDAP
+  host: ldap://localhost:9000
+  options:
+    usersSearch: dc=ge,dc=co,dc=uk # Base search to look for the users
+    groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for the groups
 
 server:
   rest:

@@ -926,6 +926,47 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     }
 
     @Override
+    public QueryResult<Group> syncGroupWith(String studyStr, String groupId, Group.Sync syncedFrom, String sessionId)
+            throws CatalogException {
+        String userId = catalogManager.getUserManager().getId(sessionId);
+        long studyId = getId(userId, studyStr);
+        studyDBAdaptor.checkId(studyId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPDATE_STUDY);
+
+        if (StringUtils.isEmpty(groupId)) {
+            throw new CatalogException("Missing group name parameter");
+        }
+
+        if (syncedFrom == null) {
+            throw new CatalogException("Missing sync object");
+        }
+
+        // Fix the groupId
+        if (!groupId.startsWith("@")) {
+            groupId = "@" + groupId;
+        }
+
+        QueryResult<Group> group = studyDBAdaptor.getGroup(studyId, groupId, Collections.emptyList());
+        if (group.first().getSyncedFrom() != null && StringUtils.isNotEmpty(group.first().getSyncedFrom().getAuthOrigin())
+                && StringUtils.isNotEmpty(group.first().getSyncedFrom().getRemoteGroup())) {
+            throw new CatalogException("Cannot modify already existing sync information.");
+        }
+
+        // Check the group exists
+        Query query = new Query()
+                .append(StudyDBAdaptor.QueryParams.ID.key(), studyId)
+                .append(StudyDBAdaptor.QueryParams.GROUP_NAME.key(), groupId);
+        if (studyDBAdaptor.count(query).first() == 0) {
+            throw new CatalogException("The group " + groupId + " does not exist.");
+        }
+
+        studyDBAdaptor.updateSyncFromGroup(studyId, groupId, syncedFrom);
+
+        return studyDBAdaptor.getGroup(studyId, groupId, Collections.emptyList());
+    }
+
+    @Override
     public QueryResult<Group> deleteGroup(String studyStr, String groupId, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getId(sessionId);
         long studyId = getId(userId, studyStr);

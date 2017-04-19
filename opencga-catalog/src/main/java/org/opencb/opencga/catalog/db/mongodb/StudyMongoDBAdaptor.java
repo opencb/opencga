@@ -553,6 +553,18 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throw new CatalogDBException("Could not remove the group " + groupId);
         }
     }
+
+    @Override
+    public void updateSyncFromGroup(long studyId, String groupId, Group.Sync syncedFrom) throws CatalogDBException {
+        Document mongoDBDocument = getMongoDBDocument(syncedFrom, "Group.Sync");
+
+        Query query = new Query()
+                .append(QueryParams.ID.key(), studyId)
+                .append(QueryParams.GROUP_NAME.key(), groupId);
+
+        Document updates = new Document("$set", new Document("groups.$.syncedFrom", mongoDBDocument));
+        studyCollection.update(parseQuery(query, true), updates, null);
+    }
 //
 //    @Override
 //    @Deprecated

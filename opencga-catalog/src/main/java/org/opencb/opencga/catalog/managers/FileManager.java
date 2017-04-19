@@ -1598,6 +1598,10 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
         String stringPath = path.toString();
+        if (stringPath.equals("/")) {
+            return;
+        }
+
         logger.info("Path: {}", stringPath);
 
         if (stringPath.startsWith("/")) {

@@ -35,6 +35,11 @@ public class Group {
      */
     private List<String> userIds;
 
+    /**
+     * Group has been synchronised from an external authorization.
+     */
+    private Sync syncedFrom;
+
     public Group() {
     }
 
@@ -43,12 +48,12 @@ public class Group {
         this.userIds = userIds;
     }
 
-
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Group{");
         sb.append("name='").append(name).append('\'');
         sb.append(", userIds=").append(userIds);
+        sb.append(", syncedFrom=").append(syncedFrom);
         sb.append('}');
         return sb.toString();
     }
@@ -69,6 +74,56 @@ public class Group {
     public Group setUserIds(List<String> userIds) {
         this.userIds = userIds;
         return this;
+    }
+
+    public Sync getSyncedFrom() {
+        return syncedFrom;
+    }
+
+    public Group setSyncedFrom(Sync syncedFrom) {
+        this.syncedFrom = syncedFrom;
+        return this;
+    }
+
+    public static class Sync {
+
+        private String authOrigin;
+        private String remoteGroup;
+
+        public Sync() {
+        }
+
+        public Sync(String authOrigin, String remoteGroup) {
+            this.authOrigin = authOrigin;
+            this.remoteGroup = remoteGroup;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("Sync{");
+            sb.append("authOrigin='").append(authOrigin).append('\'');
+            sb.append(", remoteGroup='").append(remoteGroup).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getAuthOrigin() {
+            return authOrigin;
+        }
+
+        public Sync setAuthOrigin(String authOrigin) {
+            this.authOrigin = authOrigin;
+            return this;
+        }
+
+        public String getRemoteGroup() {
+            return remoteGroup;
+        }
+
+        public Sync setRemoteGroup(String remoteGroup) {
+            this.remoteGroup = remoteGroup;
+            return this;
+        }
     }
 
 }
