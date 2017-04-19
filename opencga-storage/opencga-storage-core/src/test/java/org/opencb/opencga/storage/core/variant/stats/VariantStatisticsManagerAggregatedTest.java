@@ -63,7 +63,7 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
         runDefaultETL(inputUri, getVariantStorageEngine(), studyConfiguration,
                 new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
                         .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false));
-        dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME);
+        dbAdaptor = getVariantStorageEngine().getDBAdaptor();
     }
 
     protected URI getInputUri() throws IOException {

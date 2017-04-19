@@ -55,7 +55,7 @@ public class AlignmentCommandExecutor extends CommandExecutor {
         this.alignmentCommandOptions = alignmentCommandOptions;
     }
 
-    private void configure(CliOptionsParser.CommonOptions commonOptions) throws Exception {
+    private void configure(CliOptionsParser.CommonOptions commonOptions, String dbName) throws Exception {
 
         this.logFile = commonOptions.logFile;
 
@@ -74,9 +74,9 @@ public class AlignmentCommandExecutor extends CommandExecutor {
         // TODO: Start passing catalogManager
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(configuration);
         if (storageEngine == null || storageEngine.isEmpty()) {
-            this.alignmentStorageManager = storageEngineFactory.getAlignmentStorageEngine();
+            this.alignmentStorageManager = storageEngineFactory.getAlignmentStorageEngine(null, dbName);
         } else {
-            this.alignmentStorageManager = storageEngineFactory.getAlignmentStorageEngine(storageEngine);
+            this.alignmentStorageManager = storageEngineFactory.getAlignmentStorageEngine(storageEngine, dbName);
         }
     }
 
@@ -89,11 +89,11 @@ public class AlignmentCommandExecutor extends CommandExecutor {
         String subCommandString = getParsedSubCommand(alignmentCommandOptions.jCommander);
         switch (subCommandString) {
             case "index":
-                configure(alignmentCommandOptions.indexAlignmentsCommandOptions.commonOptions);
+                configure(alignmentCommandOptions.indexAlignmentsCommandOptions.commonOptions, alignmentCommandOptions.indexAlignmentsCommandOptions.commonIndexOptions.dbName);
                 index();
                 break;
             case "query":
-                configure(alignmentCommandOptions.queryAlignmentsCommandOptions.commonOptions);
+                configure(alignmentCommandOptions.queryAlignmentsCommandOptions.commonOptions, alignmentCommandOptions.queryAlignmentsCommandOptions.commonQueryOptions.dbName);
                 query();
                 break;
             default:
@@ -184,7 +184,7 @@ public class AlignmentCommandExecutor extends CommandExecutor {
 
     private void query() throws StorageEngineException, FileFormatException {
         StorageAlignmentCommandOptions.QueryAlignmentsCommandOptions queryAlignmentsCommandOptions = alignmentCommandOptions.queryAlignmentsCommandOptions;
-        AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor(queryAlignmentsCommandOptions.commonQueryOptions.dbName);
+        AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor();
 
         /**
          * Parse Regions

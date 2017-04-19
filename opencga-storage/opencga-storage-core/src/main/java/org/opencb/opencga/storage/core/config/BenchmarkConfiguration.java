@@ -29,7 +29,9 @@ public class BenchmarkConfiguration {
     private List<String> queries;
 
     private String databaseName;
+    @Deprecated
     private String table;
+    private String mode;
     private DatabaseCredentials database;
     private int concurrency;
 
@@ -42,6 +44,7 @@ public class BenchmarkConfiguration {
         sb.append(", queries=").append(queries);
         sb.append(", databaseName='").append(databaseName).append('\'');
         sb.append(", table='").append(table).append('\'');
+        sb.append(", mode='").append(mode).append('\'');
         sb.append(", database=").append(database);
         sb.append(", concurrency=").append(concurrency);
         sb.append('}');
@@ -94,6 +97,15 @@ public class BenchmarkConfiguration {
 
     public void setTable(String table) {
         this.table = table;
+    }
+
+    public String getMode() {
+        return mode;
+    }
+
+    public BenchmarkConfiguration setMode(String mode) {
+        this.mode = mode;
+        return this;
     }
 
     public DatabaseCredentials getDatabase() {

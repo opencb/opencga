@@ -15,6 +15,8 @@ import org.opencb.opencga.storage.hadoop.variant.AbstractHBaseMapReduce;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableMapReduce;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -28,6 +30,7 @@ import java.util.stream.Collectors;
  */
 public class AnalysisStatsMapper extends AbstractHBaseMapReduce<ImmutableBytesWritable, Put> {
 
+    private Logger logger = LoggerFactory.getLogger(AnalysisStatsMapper.class);
     private VariantStatisticsCalculator variantStatisticsCalculator;
     private String studyId;
     private byte[] studiesRow;
@@ -50,7 +53,7 @@ public class AnalysisStatsMapper extends AbstractHBaseMapReduce<ImmutableBytesWr
                 .map(p -> new MutablePair<>(p.getKey(),
                         p.getValue().stream().map(i -> sampleIds.get(i)).collect(Collectors.toSet())))
                 .collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));
-        this.samples.forEach((k, v) -> getLog().info("Calculate {} stats for cohort {} with {}", studyId, k, StringUtils.join(v, ",")));
+        this.samples.forEach((k, v) -> logger.info("Calculate {} stats for cohort {} with {}", studyId, k, StringUtils.join(v, ",")));
     }
 
     @Override

@@ -17,22 +17,16 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.core.Gene;
-import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
-import org.opencb.cellbase.core.api.GeneDBAdaptor;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -40,14 +34,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
  * Created on 29/01/16 .
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantDBAdaptorUtils {
+public class VariantQueryUtils {
 
     public static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=?|!?=?~|==?)([^=<>~!]+.*)$");
     private static final Pattern GENOTYPE_FILTER_PATTERN = Pattern.compile("(?<sample>[^,;]+):(?<gts>([^:;,]+,?)+)(?<op>[;,.])");
@@ -60,14 +54,11 @@ public class VariantDBAdaptorUtils {
     public static final String NONE = "none";
     public static final String ALL = "all";
 
-    private static final int GENE_EXTRA_REGION = 5000;
-    private static Logger logger = LoggerFactory.getLogger(VariantDBAdaptorUtils.class);
-
-    private VariantDBAdaptor adaptor;
+    private static Logger logger = LoggerFactory.getLogger(VariantQueryUtils.class);
 
     public enum QueryOperation {
-        AND(VariantDBAdaptorUtils.AND),
-        OR(VariantDBAdaptorUtils.OR);
+        AND(VariantQueryUtils.AND),
+        OR(VariantQueryUtils.OR);
 
         private final String separator;
 
@@ -80,8 +71,7 @@ public class VariantDBAdaptorUtils {
         }
     }
 
-    public VariantDBAdaptorUtils(VariantDBAdaptor variantDBAdaptor) {
-        adaptor = variantDBAdaptor;
+    public VariantQueryUtils() {
     }
 
     /**
@@ -192,115 +182,28 @@ public class VariantDBAdaptorUtils {
         return variant;
     }
 
-    public StudyConfigurationManager getStudyConfigurationManager() {
-        return adaptor.getStudyConfigurationManager();
-    }
-
-    public List<Integer> getStudyIds(QueryOptions options) {
-        return getStudyConfigurationManager().getStudyIds(options);
-    }
-
-    /**
-     * Get studyIds from a list of studies.
-     * Replaces studyNames for studyIds.
-     * Excludes those studies that starts with '!'
-     *
-     * @param studiesNames  List of study names or study ids
-     * @param options       Options
-     * @return              List of study Ids
-     */
-    public List<Integer> getStudyIds(List studiesNames, QueryOptions options) {
-        return getStudyIds(studiesNames, getStudyConfigurationManager().getStudies(options));
-    }
-
-    /**
-     * Get studyIds from a list of studies.
-     * Replaces studyNames for studyIds.
-     * Excludes those studies that starts with '!'
-     *
-     * @param studiesNames  List of study names or study ids
-     * @param studies       Map of available studies. See {@link StudyConfigurationManager#getStudies}
-     * @return              List of study Ids
-     */
-    public List<Integer> getStudyIds(List studiesNames, Map<String, Integer> studies) {
-        List<Integer> studiesIds;
-        if (studiesNames == null) {
-            return Collections.emptyList();
-        }
-        studiesIds = new ArrayList<>(studiesNames.size());
-        for (Object studyObj : studiesNames) {
-            Integer studyId = getStudyId(studyObj, true, studies);
-            if (studyId != null) {
-                studiesIds.add(studyId);
-            }
-        }
-        return studiesIds;
-    }
-
-    public Integer getStudyId(Object studyObj, QueryOptions options) {
-        return getStudyId(studyObj, options, true);
-    }
-
-    public Integer getStudyId(Object studyObj, QueryOptions options, boolean skipNegated) {
-        if (studyObj instanceof Integer) {
-            return ((Integer) studyObj);
-        } else if (studyObj instanceof String && StringUtils.isNumeric((String) studyObj)) {
-            return Integer.parseInt((String) studyObj);
-        } else {
-            return getStudyId(studyObj, skipNegated, getStudyConfigurationManager().getStudies(options));
-        }
-    }
-
-    public Integer getStudyId(Object studyObj, boolean skipNegated, Map<String, Integer> studies) {
-        Integer studyId;
-        if (studyObj instanceof Integer) {
-            studyId = ((Integer) studyObj);
-        } else {
-            String studyName = studyObj.toString();
-            if (isNegated(studyName)) { //Skip negated studies
-                if (skipNegated) {
-                    return null;
-                } else {
-                    studyName = studyName.substring(1);
-                }
-            }
-            if (StringUtils.isNumeric(studyName)) {
-                studyId = Integer.parseInt(studyName);
-            } else {
-                Integer value = studies.get(studyName);
-                if (value == null) {
-                    throw VariantQueryException.studyNotFound(studyName, studies.keySet());
-                }
-                studyId = value;
-            }
-        }
-        if (!studies.containsValue(studyId)) {
-            throw VariantQueryException.studyNotFound(studyId, studies.keySet());
-        }
-        return studyId;
-    }
-
-    public StudyConfiguration getDefaultStudyConfiguration(Query query, QueryOptions options) {
+    public static StudyConfiguration getDefaultStudyConfiguration(Query query, QueryOptions options,
+                                                                  StudyConfigurationManager studyConfigurationManager) {
         final StudyConfiguration defaultStudyConfiguration;
-        if (isValidParam(query, VariantDBAdaptor.VariantQueryParams.STUDIES)) {
-            String value = query.getString(VariantDBAdaptor.VariantQueryParams.STUDIES.key());
+        if (isValidParam(query, VariantQueryParam.STUDIES)) {
+            String value = query.getString(VariantQueryParam.STUDIES.key());
 
             // Check that the study exists
-            QueryOperation studiesOperation = checkOperator(value);
+            VariantQueryUtils.QueryOperation studiesOperation = checkOperator(value);
             List<String> studiesNames = splitValue(value, studiesOperation);
-            List<Integer> studyIds = getStudyIds(studiesNames, options); // Non negated studyIds
+            List<Integer> studyIds = studyConfigurationManager.getStudyIds(studiesNames, options); // Non negated studyIds
 
 
             if (studyIds.size() == 1) {
-                defaultStudyConfiguration = getStudyConfigurationManager().getStudyConfiguration(studyIds.get(0), null).first();
+                defaultStudyConfiguration = studyConfigurationManager.getStudyConfiguration(studyIds.get(0), null).first();
             } else {
                 defaultStudyConfiguration = null;
             }
 
         } else {
-            List<String> studyNames = getStudyConfigurationManager().getStudyNames(null);
+            List<String> studyNames = studyConfigurationManager.getStudyNames(null);
             if (studyNames != null && studyNames.size() == 1) {
-                defaultStudyConfiguration = getStudyConfigurationManager().getStudyConfiguration(studyNames.get(0), null).first();
+                defaultStudyConfiguration = studyConfigurationManager.getStudyConfiguration(studyNames.get(0), new QueryOptions()).first();
             } else {
                 defaultStudyConfiguration = null;
             }
@@ -308,163 +211,29 @@ public class VariantDBAdaptorUtils {
         return defaultStudyConfiguration;
     }
 
-    /**
-     * Given a study reference (name or id) and a default study, returns the associated StudyConfiguration.
-     *
-     * @param study     Study reference (name or id)
-     * @param defaultStudyConfiguration Default studyConfiguration
-     * @return          Assiciated StudyConfiguration
-     * @throws    VariantQueryException is the study does not exists
-     */
-    public StudyConfiguration getStudyConfiguration(String study, StudyConfiguration defaultStudyConfiguration)
-            throws VariantQueryException {
-        StudyConfiguration studyConfiguration;
-        if (StringUtils.isEmpty(study)) {
-            studyConfiguration = defaultStudyConfiguration;
-            if (studyConfiguration == null) {
-                throw VariantQueryException.studyNotFound(study, getStudyConfigurationManager().getStudyNames(null));
-            }
-        } else if (StringUtils.isNumeric(study)) {
-            int studyInt = Integer.parseInt(study);
-            if (defaultStudyConfiguration != null && studyInt == defaultStudyConfiguration.getStudyId()) {
-                studyConfiguration = defaultStudyConfiguration;
-            } else {
-                studyConfiguration = getStudyConfigurationManager().getStudyConfiguration(studyInt, null).first();
-            }
-            if (studyConfiguration == null) {
-                throw VariantQueryException.studyNotFound(studyInt, getStudyConfigurationManager().getStudyNames(null));
-            }
-        } else {
-            if (defaultStudyConfiguration != null && defaultStudyConfiguration.getStudyName().equals(study)) {
-                studyConfiguration = defaultStudyConfiguration;
-            } else {
-                studyConfiguration = getStudyConfigurationManager().getStudyConfiguration(study, null).first();
-            }
-            if (studyConfiguration == null) {
-                throw VariantQueryException.studyNotFound(study, getStudyConfigurationManager().getStudyNames(null));
-            }
-        }
-        return studyConfiguration;
-    }
-
-    public List<Integer> getFileIds(List files, boolean skipNegated, StudyConfiguration defaultStudyConfiguration) {
-        List<Integer> fileIds;
-        if (files == null || files.isEmpty()) {
-            return Collections.emptyList();
-        }
-        fileIds = new ArrayList<>(files.size());
-        for (Object fileObj : files) {
-            Integer fileId = getFileId(fileObj, skipNegated, defaultStudyConfiguration);
-            if (fileId != null) {
-                fileIds.add(fileId);
-            }
-        }
-        return fileIds;
-    }
-
-    public Integer getFileId(Object fileObj, boolean skipNegated, StudyConfiguration defaultStudyConfiguration) {
-        if (fileObj == null) {
-            return null;
-        } else if (fileObj instanceof Number) {
-            return ((Number) fileObj).intValue();
-        } else {
-            String file = String.valueOf(fileObj);
-            if (isNegated(file)) { //Skip negated studies
-                if (skipNegated) {
-                    return null;
-                } else {
-                    file = file.substring(1);
-                }
-            }
-            if (file.contains(":")) {
-                String[] studyFile = file.split(":");
-                QueryResult<StudyConfiguration> queryResult = getStudyConfigurationManager().getStudyConfiguration(studyFile[0], null);
-                if (queryResult.getResult().isEmpty()) {
-                    throw VariantQueryException.studyNotFound(studyFile[0]);
-                }
-                return queryResult.first().getFileIds().get(studyFile[1]);
-            } else {
-                try {
-                    return Integer.parseInt(file);
-                } catch (NumberFormatException e) {
-                    if (defaultStudyConfiguration != null) {
-                        return defaultStudyConfiguration.getFileIds().get(file);
-                    } else {
-                        List<String> studyNames = getStudyConfigurationManager().getStudyNames(null);
-                        throw new VariantQueryException("Unknown file \"" + file + "\". "
-                                + "Please, specify the study belonging."
-                                + (studyNames == null ? "" : " Available studies: " + studyNames));
-                    }
-                }
-            }
-        }
-    }
-
-    public int getSampleId(Object sampleObj, StudyConfiguration defaultStudyConfiguration) {
-        int sampleId;
-        if (sampleObj instanceof Number) {
-            sampleId = ((Number) sampleObj).intValue();
-        } else {
-            String sampleStr = sampleObj.toString();
-            if (StringUtils.isNumeric(sampleStr)) {
-                sampleId = Integer.parseInt(sampleStr);
-            } else {
-                if (sampleStr.contains(":")) {  //Expect to be as <study>:<sample>
-                    String[] split = sampleStr.split(":");
-                    String study = split[0];
-                    sampleStr= split[1];
-                    StudyConfiguration sc;
-                    if (defaultStudyConfiguration != null && study.equals(defaultStudyConfiguration.getStudyName())) {
-                        sc = defaultStudyConfiguration;
-                    } else {
-                        QueryResult<StudyConfiguration> queryResult = getStudyConfigurationManager().getStudyConfiguration(study, null);
-                        if (queryResult.getResult().isEmpty()) {
-                            throw VariantQueryException.studyNotFound(study);
-                        }
-                        if (!queryResult.first().getSampleIds().containsKey(sampleStr)) {
-                            throw VariantQueryException.sampleNotFound(sampleStr, study);
-                        }
-                        sc = queryResult.first();
-                    }
-                    sampleId = sc.getSampleIds().get(sampleStr);
-                } else if (defaultStudyConfiguration != null) {
-                    if (!defaultStudyConfiguration.getSampleIds().containsKey(sampleStr)) {
-                        throw VariantQueryException.sampleNotFound(sampleStr, defaultStudyConfiguration.getStudyName());
-                    }
-                    sampleId = defaultStudyConfiguration.getSampleIds().get(sampleStr);
-                } else {
-                    //Unable to identify that sample!
-                    List<String> studyNames = getStudyConfigurationManager().getStudyNames(null);
-                    throw VariantQueryException.missingStudyForSample(sampleStr, studyNames);
-                }
-            }
-        }
-        return sampleId;
-    }
-
-    public List<Integer> getReturnedStudies(Query query, QueryOptions options) {
+    public static List<Integer> getReturnedStudies(Query query, QueryOptions options, StudyConfigurationManager studyConfigurationManager) {
         Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
         List<Integer> studyIds;
         if (!returnedFields.contains(VariantField.STUDIES)) {
             studyIds = Collections.emptyList();
         } else if (isValidParam(query, RETURNED_STUDIES)) {
-            String returnedStudies = query.getString(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key());
+            String returnedStudies = query.getString(VariantQueryParam.RETURNED_STUDIES.key());
             if (NONE.equals(returnedStudies)) {
                 studyIds = Collections.emptyList();
             } else if (ALL.equals(returnedStudies)) {
-                studyIds = getStudyConfigurationManager().getStudyIds(options);
+                studyIds = studyConfigurationManager.getStudyIds(options);
             } else {
-                studyIds = getStudyIds(query.getAsList(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key()), options);
+                studyIds = studyConfigurationManager.getStudyIds(query.getAsList(VariantQueryParam.RETURNED_STUDIES.key()), options);
             }
         } else if (isValidParam(query, STUDIES)) {
-            String studies = query.getString(VariantDBAdaptor.VariantQueryParams.STUDIES.key());
-            studyIds = getStudyIds(splitValue(studies, checkOperator(studies)), options);
+            String studies = query.getString(VariantQueryParam.STUDIES.key());
+            studyIds = studyConfigurationManager.getStudyIds(splitValue(studies, checkOperator(studies)), options);
             // if empty, all the studies
             if (studyIds.isEmpty()) {
-                studyIds = getStudyConfigurationManager().getStudyIds(options);
+                studyIds = studyConfigurationManager.getStudyIds(options);
             }
         } else {
-            studyIds = getStudyConfigurationManager().getStudyIds(options);
+            studyIds = studyConfigurationManager.getStudyIds(options);
         }
         return studyIds;
     }
@@ -472,9 +241,9 @@ public class VariantDBAdaptorUtils {
     /**
      * Get list of returned files.
      *
-     * Use {@link VariantDBAdaptor.VariantQueryParams#RETURNED_FILES} if defined.
-     * If missing, get non negated values from {@link VariantDBAdaptor.VariantQueryParams#FILES}
-     * If missing, get files from samples at {@link VariantDBAdaptor.VariantQueryParams#SAMPLES}
+     * Use {@link VariantQueryParam#RETURNED_FILES} if defined.
+     * If missing, get non negated values from {@link VariantQueryParam#FILES}
+     * If missing, get files from samples at {@link VariantQueryParam#SAMPLES}
      *
      * Null for undefined returned files. If null, return ALL files.
      * Return NONE if empty list
@@ -483,9 +252,11 @@ public class VariantDBAdaptorUtils {
      * @param query     Query with the QueryParams
      * @param options   Query options
      * @param fields    Returned fields
+     * @param studyConfigurationManager    StudyConfigurationManager
      * @return          List of fileIds to return.
      */
-    public List<Integer> getReturnedFiles(Query query, QueryOptions options, Set<VariantField> fields) {
+    public static List<Integer> getReturnedFiles(Query query, QueryOptions options, Set<VariantField> fields,
+                                          StudyConfigurationManager studyConfigurationManager) {
         List<Integer> returnedFiles;
         if (!fields.contains(VariantField.STUDIES_FILES)) {
             returnedFiles = Collections.emptyList();
@@ -509,11 +280,11 @@ public class VariantDBAdaptorUtils {
                 returnedFiles = null;
             }
         } else {
-            List<String> sampleNames = query.getAsStringList(VariantDBAdaptor.VariantQueryParams.SAMPLES.key());
-            StudyConfiguration studyConfiguration = getDefaultStudyConfiguration(query, options);
+            List<String> sampleNames = query.getAsStringList(VariantQueryParam.SAMPLES.key());
+            StudyConfiguration studyConfiguration = getDefaultStudyConfiguration(query, options, studyConfigurationManager);
             Set<Integer> returnedFilesSet = new LinkedHashSet<>();
             for (String sample : sampleNames) {
-                Integer sampleId = getSampleId(sample, studyConfiguration);
+                Integer sampleId = studyConfigurationManager.getSampleId(sample, studyConfiguration);
                 studyConfiguration.getSamplesInFiles().forEach((fileId, samples) -> {
                     if (samples.contains(sampleId)) {
                         returnedFilesSet.add(fileId);
@@ -540,10 +311,10 @@ public class VariantDBAdaptorUtils {
         return false;
     }
 
-    public Map<String, List<String>> getSamplesMetadata(Query query) {
-        List<Integer> returnedStudies = getReturnedStudies(query, null);
-        Function<Integer, StudyConfiguration> studyProvider = studyId -> getStudyConfigurationManager()
-                .getStudyConfiguration(studyId, null).first();
+    public static Map<String, List<String>> getSamplesMetadata(Query query, StudyConfigurationManager studyConfigurationManager) {
+        List<Integer> returnedStudies = getReturnedStudies(query, null, studyConfigurationManager);
+        Function<Integer, StudyConfiguration> studyProvider = studyId ->
+                studyConfigurationManager.getStudyConfiguration(studyId, null).first();
         return getReturnedSamples(query, null, returnedStudies, studyProvider, (sc, s) -> s, StudyConfiguration::getStudyName);
     }
 
@@ -553,12 +324,13 @@ public class VariantDBAdaptorUtils {
         return getReturnedSamples(query, null, returnedStudies, studyProvider, (sc, s) -> s, StudyConfiguration::getStudyName);
     }
 
-    public Map<String, List<String>> getSamplesMetadata(Query query, QueryOptions options) {
+    public static Map<String, List<String>> getSamplesMetadata(Query query, QueryOptions options,
+                                                        StudyConfigurationManager studyConfigurationManager) {
         if (query.getBoolean(SAMPLES_METADATA.key(), false)) {
             if (VariantField.getReturnedFields(options).contains(VariantField.STUDIES)) {
-                List<Integer> returnedStudies = getReturnedStudies(query, options);
-                Function<Integer, StudyConfiguration> studyProvider = studyId -> getStudyConfigurationManager()
-                        .getStudyConfiguration(studyId, options).first();
+                List<Integer> returnedStudies = getReturnedStudies(query, options, studyConfigurationManager);
+                Function<Integer, StudyConfiguration> studyProvider = studyId ->
+                        studyConfigurationManager.getStudyConfiguration(studyId, options).first();
                 return getReturnedSamples(query, options, returnedStudies, studyProvider, (sc, s) -> s, StudyConfiguration::getStudyName);
             } else {
                 return Collections.emptyMap();
@@ -568,10 +340,11 @@ public class VariantDBAdaptorUtils {
         }
     }
 
-    public Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
-        List<Integer> returnedStudies = getReturnedStudies(query, options);
-        return getReturnedSamples(query, options, returnedStudies, studyId -> getStudyConfigurationManager()
-                .getStudyConfiguration(studyId, options).first());
+    public static Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options,
+                                                          StudyConfigurationManager studyConfigurationManager) {
+        List<Integer> returnedStudies = getReturnedStudies(query, options, studyConfigurationManager);
+        return getReturnedSamples(query, options, returnedStudies, studyId ->
+                studyConfigurationManager.getStudyConfiguration(studyId, options).first());
     }
 
     public static Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options,
@@ -582,7 +355,7 @@ public class VariantDBAdaptorUtils {
     }
 
     public static Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options, Collection<Integer> studyIds,
-                                                                               Function<Integer, StudyConfiguration> studyProvider) {
+                                                                 Function<Integer, StudyConfiguration> studyProvider) {
         return getReturnedSamples(query, options, studyIds, studyProvider, (sc, s) -> sc.getSampleIds().get(s),
                 StudyConfiguration::getStudyId);
     }
@@ -604,7 +377,7 @@ public class VariantDBAdaptorUtils {
 
         List<String> returnedSamples = getReturnedSamplesList(query, options);
         LinkedHashSet<String> returnedSamplesSet = returnedSamples != null ? new LinkedHashSet<>(returnedSamples) : null;
-        boolean returnAllSamples = query.getString(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key()).equals(ALL);
+        boolean returnAllSamples = query.getString(VariantQueryParam.RETURNED_SAMPLES.key()).equals(ALL);
 
         Map<T, List<T>> samples = new HashMap<>(studyIds.size());
         for (Integer studyId : studyIds) {
@@ -669,16 +442,16 @@ public class VariantDBAdaptorUtils {
     public static List<String> getReturnedSamplesList(Query query) {
         List<String> samples;
         if (isValidParam(query, RETURNED_SAMPLES)) {
-            String samplesString = query.getString(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
+            String samplesString = query.getString(VariantQueryParam.RETURNED_SAMPLES.key());
             if (samplesString.equals(ALL)) {
                 samples = null; // Undefined. All by default
             } else if (samplesString.equals(NONE)) {
                 samples = Collections.emptyList();
             } else {
-                samples = query.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
+                samples = query.getAsStringList(VariantQueryParam.RETURNED_SAMPLES.key());
             }
         } else if (isValidParam(query, SAMPLES)) {
-            samples = query.getAsStringList(VariantDBAdaptor.VariantQueryParams.SAMPLES.key());
+            samples = query.getAsStringList(VariantQueryParam.SAMPLES.key());
         } else {
             samples = null;
         }
@@ -689,7 +462,6 @@ public class VariantDBAdaptorUtils {
         }
         return samples;
     }
-
 
     /**
      * Partes the genotype filter.
@@ -727,91 +499,6 @@ public class VariantDBAdaptorUtils {
         return operation;
     }
 
-    /**
-     * Finds the cohortId from a cohort reference.
-     *
-     * @param cohort    Cohort reference (name or id)
-     * @param studyConfiguration  Default study configuration
-     * @return  Cohort id
-     * @throws VariantQueryException if the cohort does not exist
-     */
-    public int getCohortId(String cohort, StudyConfiguration studyConfiguration) throws VariantQueryException {
-        int cohortId;
-        if (StringUtils.isNumeric(cohort)) {
-            cohortId = Integer.parseInt(cohort);
-            if (!studyConfiguration.getCohortIds().containsValue(cohortId)) {
-                throw VariantQueryException.cohortNotFound(cohortId, studyConfiguration.getStudyId(),
-                        studyConfiguration.getCohortIds().keySet());
-            }
-        } else {
-            Integer cohortIdNullable = studyConfiguration.getCohortIds().get(cohort);
-            if (cohortIdNullable == null) {
-                throw VariantQueryException.cohortNotFound(cohort, studyConfiguration.getStudyId(),
-                        studyConfiguration.getCohortIds().keySet());
-            }
-            cohortId = cohortIdNullable;
-        }
-        return cohortId;
-    }
-
-    public Region getGeneRegion(String geneStr) {
-        QueryOptions params = new QueryOptions(QueryOptions.INCLUDE, "name,chromosome,start,end");
-        try {
-            Gene gene = adaptor.getCellBaseClient().getGeneClient().get(Collections.singletonList(geneStr), params).firstResult();
-            if (gene != null) {
-                int start = Math.max(0, gene.getStart() - GENE_EXTRA_REGION);
-                int end = gene.getEnd() + GENE_EXTRA_REGION;
-                return new Region(gene.getChromosome(), start, end);
-            } else {
-                return null;
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    public Set<String> getGenesByGo(List<String> goValues) {
-        Set<String> genes = new HashSet<>();
-        QueryOptions params = new QueryOptions(QueryOptions.INCLUDE, "name,chromosome,start,end");
-        try {
-            List<QueryResult<Gene>> responses = adaptor.getCellBaseClient().getGeneClient().get(goValues, params)
-                    .getResponse();
-            for (QueryResult<Gene> response : responses) {
-                for (Gene gene : response.getResult()) {
-                    genes.add(gene.getName());
-                }
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        return genes;
-    }
-
-    public Set<String> getGenesByExpression(List<String> expressionValues) {
-        Set<String> genes = new HashSet<>();
-        QueryOptions params = new QueryOptions(QueryOptions.INCLUDE, "name,chromosome,start,end");
-
-        // The number of results for each expression value may be huge. Query one by one
-        for (String expressionValue : expressionValues) {
-            try {
-                String[] split = expressionValue.split(":");
-                expressionValue = split[0];
-                // TODO: Add expression value {UP, DOWN}. See https://github.com/opencb/cellbase/issues/245
-                Query cellbaseQuery = new Query(GeneDBAdaptor.QueryParams.ANNOTATION_EXPRESSION_TISSUE.key(), expressionValue);
-                List<QueryResult<Gene>> responses = adaptor.getCellBaseClient().getGeneClient().search(cellbaseQuery, params)
-                        .getResponse();
-                for (QueryResult<Gene> response : responses) {
-                    for (Gene gene : response.getResult()) {
-                        genes.add(gene.getName());
-                    }
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-        return genes;
-    }
-
     public static int parseConsequenceType(String so) {
         int soAccession;
         boolean startsWithSO = so.toUpperCase().startsWith("SO:");
@@ -823,16 +510,16 @@ public class VariantDBAdaptorUtils {
                     soAccession = Integer.parseInt(so);
                 }
             } catch (NumberFormatException e) {
-                throw VariantQueryException.malformedParam(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE, so,
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE, so,
                         "Not a valid SO number");
             }
             if (!ConsequenceTypeMappings.accessionToTerm.containsKey(soAccession)) {
-                throw VariantQueryException.malformedParam(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE, so,
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE, so,
                         "Not a valid SO number");
             }
         } else {
             if (!ConsequenceTypeMappings.termToAccession.containsKey(so)) {
-                throw VariantQueryException.malformedParam(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE, so,
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE, so,
                         "Not a valid Accession term");
             } else {
                 soAccession = ConsequenceTypeMappings.termToAccession.get(so);
@@ -883,6 +570,14 @@ public class VariantDBAdaptorUtils {
         return list;
     }
 
+    /**
+     * This method split a typical key-op-value param such as 'sift<=0.2' in an array ["sift", "<=", "0.2"].
+     * In case of not having a key, first element will be empty
+     * In case of not matching with {@link #OPERATION_PATTERN}, key will be null and will use the default operator "="
+     *
+     * @param value The key-op-value parameter to be split
+     * @return An array with 3 positions for the key, operator and value
+     */
     public static String[] splitOperator(String value) {
         Matcher matcher = OPERATION_PATTERN.matcher(value);
         String key;

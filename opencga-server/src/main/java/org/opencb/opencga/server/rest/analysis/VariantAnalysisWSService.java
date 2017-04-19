@@ -32,7 +32,7 @@ import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.analysis.VariantSampleFilter;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
@@ -46,7 +46,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
  * Created by imedina on 17/08/16.
@@ -162,14 +162,14 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = "List of samples to be returned") @QueryParam("returnedSamples") String returnedSamples,
                                 @ApiParam(value = "List of files to be returned.") @QueryParam("returnedFiles") String returnedFiles,
                                 @ApiParam(value = "Variants in specific files") @QueryParam("files") String files,
-                                @ApiParam(value = VariantDBAdaptor.FILTER_DESCR) @QueryParam("filter") String filter,
+                                @ApiParam(value = FILTER_DESCR) @QueryParam("filter") String filter,
                                 @ApiParam(value = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("maf") String maf,
                                 @ApiParam(value = "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("mgf") String mgf,
                                 @ApiParam(value = "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("missingAlleles") String missingAlleles,
                                 @ApiParam(value = "Number of missing genotypes: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("missingGenotypes") String missingGenotypes,
                                 @ApiParam(value = "Specify if the variant annotation must exists.") @QueryParam("annotationExists") boolean annotationExists,
                                 @ApiParam(value = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1") @QueryParam("genotype") String genotype,
-                                @ApiParam(value = VariantDBAdaptor.SAMPLES_DESCR) @QueryParam("samples") String samples,
+                                @ApiParam(value = SAMPLES_DESCR) @QueryParam("samples") String samples,
                                 @ApiParam(value = VariantCatalogQueryUtils.SAMPLE_FILTER_DESC) @QueryParam("sampleFilter") String sampleFilter,
                                 @ApiParam(value = "Consequence type SO term list. e.g. missense_variant,stop_lost or SO:0001583,SO:0001578") @QueryParam("annot-ct") String annot_ct,
                                 @ApiParam(value = "XRef") @QueryParam("annot-xref") String annot_xref,
@@ -369,11 +369,11 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             Query query = VariantStorageManager.getVariantQuery(queryOptions);
 
             if (StringUtils.isNotEmpty(samples)) {
-                query.append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), Arrays.asList(samples.split(",")));
-                query.remove(VariantDBAdaptor.VariantQueryParams.SAMPLES.key());
+                query.append(RETURNED_SAMPLES.key(), Arrays.asList(samples.split(",")));
+                query.remove(SAMPLES.key());
             }
             if (StringUtils.isNotEmpty(study)) {
-                query.append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+                query.append(STUDIES.key(), study);
             }
 
             long studyId = catalogManager.getStudyId(study, sessionId);
@@ -441,14 +441,14 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 //                                @ApiParam(value = "List of samples to be returned") @QueryParam("returnedSamples") String returnedSamples,
 //                                @ApiParam(value = "List of files to be returned.") @QueryParam("returnedFiles") String returnedFiles,
                                 @ApiParam(value = "Variants in specific files") @QueryParam("files") String files,
-                                @ApiParam(value = VariantDBAdaptor.FILTER_DESCR) @QueryParam("filter") String filter,
+                                @ApiParam(value = VariantQueryParam.FILTER_DESCR) @QueryParam("filter") String filter,
                                 @ApiParam(value = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("maf") String maf,
                                 @ApiParam(value = "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("mgf") String mgf,
                                 @ApiParam(value = "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("missingAlleles") String missingAlleles,
                                 @ApiParam(value = "Number of missing genotypes: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("missingGenotypes") String missingGenotypes,
                                 @ApiParam(value = "Specify if the variant annotation must exists.") @QueryParam("annotationExists") boolean annotationExists,
                                 @ApiParam(value = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1") @QueryParam("genotype") String genotype,
-                                @ApiParam(value = VariantDBAdaptor.SAMPLES_DESCR) @QueryParam("samples") String samples,
+                                @ApiParam(value = VariantQueryParam.SAMPLES_DESCR) @QueryParam("samples") String samples,
                                 @ApiParam(value = VariantCatalogQueryUtils.SAMPLE_FILTER_DESC) @QueryParam("sampleFilter") String sampleFilter,
                                 @ApiParam(value = "Consequence type SO term list. e.g. missense_variant,stop_lost or SO:0001583,SO:0001578") @QueryParam("annot-ct") String annot_ct,
                                 @ApiParam(value = "XRef") @QueryParam("annot-xref") String annot_xref,

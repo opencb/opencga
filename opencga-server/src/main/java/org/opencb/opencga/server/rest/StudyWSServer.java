@@ -40,7 +40,7 @@ import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -417,7 +417,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "List of samples to be returned") @QueryParam("returnedSamples") String returnedSamples,
                                 @ApiParam(value = "List of files to be returned.") @QueryParam("returnedFiles") String returnedFiles,
                                 @ApiParam(value = "Variants in specific files") @QueryParam("files") String files,
-                                @ApiParam(value = VariantDBAdaptor.FILTER_DESCR) @QueryParam("filter") String filter,
+                                @ApiParam(value = VariantQueryParam.FILTER_DESCR) @QueryParam("filter") String filter,
                                 @ApiParam(value = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}")
                                     @QueryParam("maf") String maf,
                                 @ApiParam(value = "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}")
@@ -431,7 +431,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Samples with a specific genotype: "
                                         + "{samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1")
                                     @QueryParam("genotype") String genotype,
-                                @ApiParam(value = VariantDBAdaptor.SAMPLES_DESCR) @QueryParam("samples") String samples,
+                                @ApiParam(value = VariantQueryParam.SAMPLES_DESCR) @QueryParam("samples") String samples,
                                 @ApiParam(value = "Consequence type SO term list. e.g. missense_variant,stop_lost or SO:0001583,SO:0001578")
                                     @QueryParam("annot-ct") String annot_ct,
                                 @ApiParam(value = "XRef") @QueryParam("annot-xref") String annot_xref,
@@ -495,7 +495,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                 // Get all query options
                 QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
                 Query query = VariantStorageManager.getVariantQuery(queryOptions);
-                query.putIfAbsent(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
+                query.putIfAbsent(VariantQueryParam.STUDIES.key(), studyId);
                 if (count) {
                     queryResult = variantManager.count(query, sessionId);
                 } else if (histogram) {
@@ -544,7 +544,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                       @QueryParam("histogram") boolean histogram,
                                   @ApiParam(value = "interval", required = false) @DefaultValue("2000")
                                       @QueryParam("interval") int interval) {
-        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyStr);
+        query.put(VariantQueryParam.STUDIES.key(), studyStr);
         List<Region> regions = Region.parseRegions(region);
 
         List<QueryResult> results = new ArrayList<>();
@@ -623,8 +623,8 @@ public class StudyWSServer extends OpenCGAWSServer {
             AlignmentDBAdaptor dbAdaptor;
             try {
 
-                AlignmentStorageEngine alignmentStorageManager = storageEngineFactory.getAlignmentStorageEngine(storageEngine);
-                dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName);
+                AlignmentStorageEngine alignmentStorageManager = storageEngineFactory.getAlignmentStorageEngine(storageEngine, dbName);
+                dbAdaptor = alignmentStorageManager.getDBAdaptor();
             } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException e) {
                 return createErrorResponse(e);
             }

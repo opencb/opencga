@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
+import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
@@ -25,20 +27,28 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.search.VariantSearchManager;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -52,8 +62,10 @@ import org.opencb.opencga.storage.hadoop.variant.executors.ExternalMRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationManager;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -62,7 +74,12 @@ import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPInputStream;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.checkOperator;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isValidParam;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.splitValue;
 
 /**
  * Created by mh719 on 16/06/15.
@@ -103,7 +120,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     protected MRExecutor mrExecutor;
     private HdfsVariantReaderUtils variantReaderUtils;
     private HBaseManager hBaseManager;
-
+    private final AtomicReference<VariantHadoopDBAdaptor> dbAdaptor = new AtomicReference<>();
+    private Logger logger = LoggerFactory.getLogger(HadoopVariantStorageEngine.class);
 
     public HadoopVariantStorageEngine() {
 //        variantReaderUtils = new HdfsVariantReaderUtils(conf);
@@ -211,11 +229,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     if (result.getTransformError() != null) {
                         //TODO: Handle errors. Retry?
                         errors++;
-                        result.getTransformError().printStackTrace();
+                        logger.error("Error transforming file " + result.getInput(), result.getTransformError());
                     } else if (result.getLoadError() != null) {
                         //TODO: Handle errors. Retry?
                         errors++;
-                        result.getLoadError().printStackTrace();
+                        logger.error("Error loading file " + result.getInput(), result.getLoadError());
                     }
                     concurrResult.add(result);
                 }
@@ -286,13 +304,13 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator, VariantDBAdaptor dbAdaptor) {
-        return new HadoopDefaultVariantAnnotationManager(annotator, dbAdaptor);
+    protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
+        return new HadoopDefaultVariantAnnotationManager(annotator, getDBAdaptor());
     }
 
     @Override
-    public VariantStatisticsManager newVariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
-        return new HadoopDefaultVariantStatisticsManager(dbAdaptor);
+    public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
+        return new HadoopDefaultVariantStatisticsManager(getDBAdaptor());
     }
 
     public AbstractHadoopVariantStoragePipeline newStorageETL(boolean connected, Map<? extends String, ?> extraOptions)
@@ -339,34 +357,23 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         // Use ETL as helper class
         AbstractHadoopVariantStoragePipeline etl = newStoragePipeline(true);
         VariantDBAdaptor dbAdaptor = etl.getDBAdaptor();
-        StudyConfiguration studyConfiguration;
         StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
         List<Integer> fileList = Collections.singletonList(fileId);
-        final int studyId;
-        if (StringUtils.isNumeric(study)) {
-            studyId = Integer.parseInt(study);
-        } else {
-            studyConfiguration = scm.getStudyConfiguration(study, null).first();
-            studyId = studyConfiguration.getStudyId();
-        }
+        final int studyId = scm.getStudyId(study, null);
 
         // Pre delete
-        long lock = scm.lockStudy(studyId);
-        try {
-            studyConfiguration = scm.getStudyConfiguration(studyId, null).first();
-            if (!studyConfiguration.getIndexedFiles().contains(fileId)) {
-                throw StorageEngineException.unableToExecute("File not indexed.", fileId, studyConfiguration);
+        scm.lockAndUpdate(studyId, sc -> {
+            if (!sc.getIndexedFiles().contains(fileId)) {
+                throw StorageEngineException.unableToExecute("File not indexed.", fileId, sc);
             }
             boolean resume = options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue())
                     || options.getBoolean(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_RESUME, false);
             BatchFileOperation operation =
-                    etl.addBatchOperation(studyConfiguration, VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList, resume,
+                    etl.addBatchOperation(sc, VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList, resume,
                             BatchFileOperation.Type.REMOVE);
             options.put(AbstractVariantTableDriver.TIMESTAMP, operation.getTimestamp());
-            scm.updateStudyConfiguration(studyConfiguration, null);
-        } finally {
-            scm.unLockStudy(studyId, lock);
-        }
+            return sc;
+        });
 
         // Delete
         Thread hook = etl.newShutdownHook(VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList);
@@ -398,19 +405,16 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
             // Post Delete
             // If everything went fine, remove file column from Archive table and from studyconfig
-            lock = scm.lockStudy(studyId);
-            try {
-                studyConfiguration = scm.getStudyConfiguration(studyId, null).first();
-                etl.secureSetStatus(studyConfiguration, BatchFileOperation.Status.READY,
+            scm.lockAndUpdate(studyId, sc -> {
+                scm.setStatus(sc, BatchFileOperation.Status.READY,
                         VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList);
-                studyConfiguration.getIndexedFiles().remove(fileId);
-                scm.updateStudyConfiguration(studyConfiguration, null);
-            } finally {
-                scm.unLockStudy(studyId, lock);
-            }
+                sc.getIndexedFiles().remove(fileId);
+                return sc;
+            });
 
         } catch (Exception e) {
-            etl.setStatus(BatchFileOperation.Status.ERROR, VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList);
+            scm.atomicSetStatus(studyId, BatchFileOperation.Status.ERROR,
+                    VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList);
             throw e;
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
@@ -422,12 +426,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         throw new UnsupportedOperationException("Unimplemented");
     }
 
-    @Override
-    public VariantHadoopDBAdaptor getDBAdaptor(String tableName) throws StorageEngineException {
-        tableName = getVariantTableName(tableName);
-        return getDBAdaptor(buildCredentials(tableName));
-    }
-
     private HBaseCredentials getDbCredentials() throws StorageEngineException {
         String table = getVariantTableName();
         return buildCredentials(table);
@@ -435,19 +433,23 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public VariantHadoopDBAdaptor getDBAdaptor() throws StorageEngineException {
-        return getDBAdaptor(getDbCredentials());
-    }
-
-    protected VariantHadoopDBAdaptor getDBAdaptor(HBaseCredentials credentials) throws StorageEngineException {
-        try {
-            StorageEngineConfiguration storageEngine = this.configuration.getStorageEngine(STORAGE_ENGINE_ID);
-            Configuration configuration = getHadoopConfiguration(storageEngine.getVariant().getOptions());
-            configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(configuration, credentials);
-            return new VariantHadoopDBAdaptor(getHBaseManager(configuration).getConnection(), credentials,
-                    this.configuration, configuration);
-        } catch (IOException e) {
-            throw new StorageEngineException("Problems creating DB Adapter", e);
+        if (dbAdaptor.get() == null) {
+            synchronized (dbAdaptor) {
+                if (dbAdaptor.get() == null) {
+                    HBaseCredentials credentials = getDbCredentials();
+                    try {
+                        StorageEngineConfiguration storageEngine = this.configuration.getStorageEngine(STORAGE_ENGINE_ID);
+                        Configuration configuration = getHadoopConfiguration(storageEngine.getVariant().getOptions());
+                        configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(configuration, credentials);
+                        dbAdaptor.set(new VariantHadoopDBAdaptor(getHBaseManager(configuration).getConnection(), credentials,
+                                this.configuration, configuration, getCellBaseUtils()));
+                    } catch (IOException e) {
+                        throw new StorageEngineException("Error creating DB Adapter", e);
+                    }
+                }
+            }
         }
+        return dbAdaptor.get();
     }
 
     private synchronized HBaseManager getHBaseManager(Configuration configuration) {
@@ -457,14 +459,149 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         return hBaseManager;
     }
 
+
+    @Override
+    public VariantQueryResult<Variant> get(Query query, QueryOptions options) throws StorageEngineException {
+        if (options == null) {
+            options = QueryOptions.empty();
+        }
+        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
+        // TODO: Use CacheManager ?
+        if (options.getBoolean(VariantSearchManager.SUMMARY)
+                || !query.containsKey(VariantQueryParam.GENOTYPE.key())
+                && !query.containsKey(VariantQueryParam.SAMPLES.key())
+//                && !query.containsKey(VariantQueryParam.FILES.key())
+//                && !query.containsKey(VariantQueryParam.FILTER.key())
+                && !returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)
+//                && !returnedFields.contains(VariantField.STUDIES_FILES)
+                && searchActiveAndAlive()) {
+            try {
+                return getVariantSearchManager().query(dbName, query, options);
+            } catch (IOException | VariantSearchException e) {
+                throw Throwables.propagate(e);
+            }
+        } else {
+            VariantDBAdaptor dbAdaptor = getDBAdaptor();
+            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
+            query = parseQuery(query, studyConfigurationManager);
+            setDefaultTimeout(options);
+            return dbAdaptor.get(query, options);
+        }
+    }
+
+    @Override
+    public VariantDBIterator iterator(Query query, QueryOptions options) throws StorageEngineException {
+        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
+        if (options.getBoolean(VariantSearchManager.SUMMARY)
+                || !query.containsKey(VariantQueryParam.GENOTYPE.key())
+                && !query.containsKey(VariantQueryParam.SAMPLES.key())
+//                && !query.containsKey(VariantQueryParam.FILES.key())
+//                && !query.containsKey(VariantQueryParam.FILTER.key())
+                && !returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)
+//                && !returnedFields.contains(VariantField.STUDIES_FILES)
+                && searchActiveAndAlive()) {
+            try {
+                return getVariantSearchManager().iterator(dbName, query, options);
+            } catch (IOException | VariantSearchException e) {
+                throw Throwables.propagate(e);
+            }
+        } else {
+            VariantDBAdaptor dbAdaptor = getDBAdaptor();
+            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
+            query = parseQuery(query, studyConfigurationManager);
+            return dbAdaptor.iterator(query, options);
+        }
+    }
+
+    @Override
+    public QueryResult<Long> count(Query query) throws StorageEngineException {
+        if (query.containsKey(VariantQueryParam.GENOTYPE.key())
+                || query.containsKey(VariantQueryParam.SAMPLES.key())
+                || !searchActiveAndAlive()) {
+            VariantDBAdaptor dbAdaptor = getDBAdaptor();
+            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
+            query = parseQuery(query, studyConfigurationManager);
+            return dbAdaptor.count(query);
+        } else {
+            try {
+                StopWatch watch = StopWatch.createStarted();
+                long count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 1)).getNumTotalResults();
+                int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
+                return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
+            } catch (IOException | VariantSearchException e) {
+                throw Throwables.propagate(e);
+            }
+        }
+    }
+
+    public Query parseQuery(Query originalQuery, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
+        // Copy input query! Do not modify original query!
+        Query query = originalQuery == null ? new Query() : new Query(originalQuery);
+        List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());
+        CellBaseUtils cellBaseUtils = getCellBaseUtils();
+
+        if (isValidParam(query, VariantQueryParam.STUDIES) && studyNames.size() == 1) {
+            query.remove(VariantQueryParam.STUDIES.key());
+        }
+
+        if (isValidParam(query, VariantQueryParam.ANNOT_GO)) {
+            String value = query.getString(VariantQueryParam.ANNOT_GO.key());
+            // Check if comma separated of semi colon separated (AND or OR)
+            VariantQueryUtils.QueryOperation queryOperation = checkOperator(value);
+            // Split by comma or semi colon
+            List<String> goValues = splitValue(value, queryOperation);
+
+            if (queryOperation == VariantQueryUtils.QueryOperation.AND) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_GO, value, "Unimplemented AND operator");
+            }
+            query.remove(VariantQueryParam.ANNOT_GO.key());
+            List<String> genes = new ArrayList<>(query.getAsStringList(VariantQueryParam.GENE.key()));
+            Set<String> genesByGo = cellBaseUtils.getGenesByGo(goValues);
+            if (genesByGo.isEmpty()) {
+                genes.add("none");
+            } else {
+                genes.addAll(genesByGo);
+            }
+            query.put(VariantQueryParam.GENE.key(), genes);
+        }
+
+        if (isValidParam(query, VariantQueryParam.ANNOT_EXPRESSION)) {
+            String value = query.getString(VariantQueryParam.ANNOT_EXPRESSION.key());
+            // Check if comma separated of semi colon separated (AND or OR)
+            VariantQueryUtils.QueryOperation queryOperation = checkOperator(value);
+            // Split by comma or semi colon
+            List<String> expressionValues = splitValue(value, queryOperation);
+
+            if (queryOperation == VariantQueryUtils.QueryOperation.AND) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_EXPRESSION, value, "Unimplemented AND operator");
+            }
+            query.remove(VariantQueryParam.ANNOT_EXPRESSION.key());
+            List<String> genes = new ArrayList<>(query.getAsStringList(VariantQueryParam.GENE.key()));
+            Set<String> genesByExpression = cellBaseUtils.getGenesByExpression(expressionValues);
+            if (genesByExpression.isEmpty()) {
+                genes.add("none");
+            } else {
+                genes.addAll(genesByExpression);
+            }
+            query.put(VariantQueryParam.GENE.key(), genes);
+        }
+        return query;
+    }
+
+    @Override
     public void close() throws IOException {
+        super.close();
         if (hBaseManager != null) {
             hBaseManager.close();
             hBaseManager = null;
         }
+        if (dbAdaptor.get() != null) {
+            dbAdaptor.get().close();
+            dbAdaptor.set(null);
+        }
     }
 
-    public HBaseCredentials buildCredentials(String table) throws StorageEngineException {
+    private HBaseCredentials buildCredentials(String table) throws StorageEngineException {
         StorageEtlConfiguration vStore = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant();
 
         DatabaseCredentials db = vStore.getDatabase();
@@ -519,15 +656,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
 
     @Override
-    protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap options) throws StorageEngineException {
-        try {
-            HBaseCredentials dbCredentials = getDbCredentials();
-            Configuration configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(getHadoopConfiguration(options), dbCredentials);
-            return new HBaseStudyConfigurationManager(dbCredentials.getTable(), configuration, options);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return super.buildStudyConfigurationManager(options);
-        }
+    public StudyConfigurationManager getStudyConfigurationManager() throws StorageEngineException {
+        ObjectMap options = getOptions();
+        HBaseCredentials dbCredentials = getDbCredentials();
+        Configuration configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(getHadoopConfiguration(options), dbCredentials);
+        return new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(dbCredentials.getTable(), configuration, options));
     }
 
     private Configuration getHadoopConfiguration(ObjectMap options) throws StorageEngineException {
@@ -547,7 +680,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         return conf;
     }
 
-    public MRExecutor getMRExecutor(ObjectMap options) {
+    private MRExecutor getMRExecutor(ObjectMap options) {
         if (options.containsKey(EXTERNAL_MR_EXECUTOR)) {
             Class<? extends MRExecutor> aClass;
             if (options.get(EXTERNAL_MR_EXECUTOR) instanceof Class) {
@@ -619,11 +752,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     public String getVariantTableName() {
-        return getVariantTableName(getOptions().getString(Options.DB_NAME.key()));
-    }
-
-    public String getVariantTableName(String table) {
-        return getVariantTableName(table, getOptions());
+        return getVariantTableName(dbName, getOptions());
     }
 
     public static String getVariantTableName(String table, ObjectMap options) {
@@ -700,7 +829,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             ) {
                 source = VariantReaderUtils.readVariantSource(inputStream);
             } catch (IOException e) {
-                e.printStackTrace();
                 throw new StorageEngineException("Unable to read VariantSource", e);
             }
             return source;

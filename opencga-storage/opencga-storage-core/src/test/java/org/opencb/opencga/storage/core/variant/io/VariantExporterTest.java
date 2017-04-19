@@ -7,7 +7,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 
@@ -30,7 +30,7 @@ public class VariantExporterTest extends VariantStorageBaseTest {
 
     @Before
     public void setUp() throws Exception {
-        runDefaultETL(smallInputUri, variantStorageManager, newStudyConfiguration());
+        runDefaultETL(smallInputUri, variantStorageEngine, newStudyConfiguration());
     }
 
     @Override
@@ -45,12 +45,12 @@ public class VariantExporterTest extends VariantStorageBaseTest {
 
     @Override
     public void clearDB(String dbName) throws Exception {
-        DummyStudyConfigurationManager.clear();
+        DummyStudyConfigurationAdaptor.clear();
     }
 
     @Test
     public void exportStudyTest() throws Exception {
-        variantStorageManager.exportData(null, VariantOutputFormat.VCF, DB_NAME, new Query(), new QueryOptions());
+        variantStorageEngine.exportData(null, VariantOutputFormat.VCF, new Query(), new QueryOptions());
         // It may happen that the VcfExporter closes the StandardOutput.
         // Check System.out is not closed
         System.out.println(getClass().getSimpleName() + ": System out not closed!");
@@ -59,7 +59,7 @@ public class VariantExporterTest extends VariantStorageBaseTest {
     @Test
     public void exportStudyJsonTest() throws Exception {
         URI output = newOutputUri().resolve("variant.json.gz");
-        variantStorageManager.exportData(output, VariantOutputFormat.JSON_GZ, DB_NAME, new Query(), new QueryOptions());
+        variantStorageEngine.exportData(output, VariantOutputFormat.JSON_GZ, new Query(), new QueryOptions());
 
         System.out.println("output = " + output);
         assertTrue(Paths.get(output).toFile().exists());

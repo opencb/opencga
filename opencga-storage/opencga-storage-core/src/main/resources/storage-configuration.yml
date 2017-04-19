@@ -3,9 +3,6 @@ defaultStorageEngineId: "${OPENCGA.STORAGE.DEFAULT_ENGINE}"
 logLevel: "info"
 logFile: ""
 
-## This value can be set up using maven profiles in your .m2/settings.xml
-studyMetadataManager: "${OPENCGA.STORAGE.STUDY_METADATA_MANAGER}"
-
 ## CellBase client configuration, this is used mainly when annotating variants
 ## This can be set up using maven profiles in your .m2/settings.xml
 cellbase:
@@ -54,12 +51,13 @@ search:
 
 benchmark:
   storageEngine: "mongodb"
-  numRepetitions: 3
+  numRepetitions: 20
   load: false
-  queries: ["count", "distinct"]
+  queries: ["region;gene,ct"]
   databaseName: "opencga"
   table: "variants"
-  concurrency: 1
+  concurrency: 5
+  mode: REST # REST, DIRECT or GRPC
   database:   ## 'local' connection to CellBase MongoDB
       hosts:
       - "localhost:27017"

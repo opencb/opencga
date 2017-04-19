@@ -24,10 +24,11 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
+import java.io.IOException;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -47,6 +48,12 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements M
     @After
     public void resetLoggers() throws Exception {
         logLevel("info");
+    }
+
+    @Override
+    public void after() throws IOException {
+        super.after();
+        closeConnections();
     }
 
     @Test
@@ -94,19 +101,19 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements M
     @Test
     public void deleteAnnotationTest() throws Exception {
         fileIndexed = false;
-        Query query = new Query(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), true);
-        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
+        Query query = new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), true);
+        query.put(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId());
         long numAnnotatedVariants = dbAdaptor.count(query).first();
 
         assertEquals("All variants should be annotated", NUM_VARIANTS, numAnnotatedVariants);
 
-        query = new Query(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "1");
-        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
+        query = new Query(VariantQueryParam.CHROMOSOME.key(), "1");
+        query.put(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId());
         long numVariantsChr1 = dbAdaptor.count(query).first();
-        dbAdaptor.deleteAnnotation("", new Query(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "1"), new QueryOptions());
+        ((VariantMongoDBAdaptor) dbAdaptor).deleteAnnotation("", new Query(VariantQueryParam.CHROMOSOME.key(), "1"), new QueryOptions());
 
-        query = new Query(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
-        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
+        query = new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
+        query.put(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId());
         long numVariantsNoAnnotation = dbAdaptor.count(query).first();
 
         assertNotEquals(numVariantsChr1, NUM_VARIANTS);

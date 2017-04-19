@@ -41,6 +41,7 @@
         <module>opencga-storage-mongodb</module>
         <module>opencga-storage-hadoop</module>
         <module>opencga-storage-server</module>
+        <module>opencga-storage-benchmark</module>
     </modules>
 
     <dependencyManagement>
@@ -53,6 +54,11 @@
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-server</artifactId>
+                <version>${opencga.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-benchmark</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
 
@@ -136,6 +142,9 @@
                                 org/opencb/opencga/storage/datamanagers/**,
                                 org/opencb/opencga/storage/app/service/OptionParser.java
                             </excludes>
+                            <resourceExcludes>
+                                benchmark/jmeter/**
+                            </resourceExcludes>
                         </configuration>
                         <goals>
                             <goal>check</goal>

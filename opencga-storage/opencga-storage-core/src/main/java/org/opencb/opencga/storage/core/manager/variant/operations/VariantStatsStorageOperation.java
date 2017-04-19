@@ -34,7 +34,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +81,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         Map<Long, Cohort> cohortsMap = checkCanCalculateCohorts(studyId, cohortIds, updateStats, resume, sessionId);
 
 
-        String region = options.getString(VariantDBAdaptor.VariantQueryParams.REGION.key());
+        String region = options.getString(VariantQueryParam.REGION.key());
         String outputFileName = buildOutputFileName(cohortIds, options, cohortsMap, region);
 
         Long catalogOutDirId = getCatalogOutdirId(studyId, options, sessionId);
@@ -93,7 +93,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
                 .append(Options.UPDATE_STATS.key(), updateStats)
                 .append(Options.RESUME.key(), resume);
         calculateStatsOptions.putIfNotNull(Options.FILE_ID.key(), fileId);
-        calculateStatsOptions.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
+        calculateStatsOptions.putIfNotEmpty(VariantQueryParam.REGION.key(), region);
 
         // if the study is aggregated and a mapping file is provided, pass it to storage
         // and create in catalog the cohorts described in the mapping file
@@ -116,9 +116,9 @@ public class VariantStatsStorageOperation extends StorageOperation {
 
             calculateStatsOptions.put(DefaultVariantStatisticsManager.OUTPUT, outdirUri.resolve(outputFileName));
             VariantStorageEngine variantStorageEngine
-                    = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine());
+                    = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
             List<String> cohortsName = cohortsMap.values().stream().map(Cohort::getName).collect(Collectors.toList());
-            variantStorageEngine.calculateStats(studyConfiguration.getStudyName(), cohortsName, dataStore.getDbName(),
+            variantStorageEngine.calculateStats(studyConfiguration.getStudyName(), cohortsName,
                     calculateStatsOptions);
 
 //            DefaultVariantStatisticsManager variantStatisticsManager = new DefaultVariantStatisticsManager(dbAdaptor);

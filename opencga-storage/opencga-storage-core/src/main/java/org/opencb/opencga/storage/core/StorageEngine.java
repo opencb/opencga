@@ -21,6 +21,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -29,12 +30,13 @@ import java.util.List;
 /**
  * This class manages all the operations with storage and provides a DBAdaptor.
  */
-public abstract class StorageEngine<DBADAPTOR> {
+public abstract class StorageEngine<DBADAPTOR> implements AutoCloseable {
 
     protected String storageEngineId;
     protected StorageConfiguration configuration;
+    protected String dbName;
 
-    protected Logger logger;
+    private Logger logger = LoggerFactory.getLogger(StorageEngine.class);
 
     public StorageEngine() {
     }
@@ -48,9 +50,15 @@ public abstract class StorageEngine<DBADAPTOR> {
         setConfiguration(configuration, storageEngineId);
     }
 
+    @Deprecated
     public void setConfiguration(StorageConfiguration configuration, String storageEngineId) {
+        setConfiguration(configuration, storageEngineId, "");
+    }
+
+    public void setConfiguration(StorageConfiguration configuration, String storageEngineId, String dbName) {
         this.configuration = configuration;
         this.storageEngineId = storageEngineId;
+        this.dbName = dbName;
     }
 
     public String getStorageEngineId() {
@@ -150,11 +158,7 @@ public abstract class StorageEngine<DBADAPTOR> {
         return inputFileUri;
     }
 
-    public DBADAPTOR getDBAdaptor() throws StorageEngineException {
-        return getDBAdaptor("");
-    }
-
-    public abstract DBADAPTOR getDBAdaptor(String dbName) throws StorageEngineException;
+    public abstract DBADAPTOR getDBAdaptor() throws StorageEngineException;
 
     public abstract void testConnection() throws StorageEngineException;
 
@@ -174,8 +178,8 @@ public abstract class StorageEngine<DBADAPTOR> {
         return configuration;
     }
 
-    public StorageEngine setConfiguration(StorageConfiguration configuration) {
-        this.configuration = configuration;
-        return this;
+    @Override
+    public void close() throws Exception {
     }
+
 }

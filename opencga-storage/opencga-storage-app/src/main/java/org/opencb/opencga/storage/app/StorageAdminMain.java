@@ -20,6 +20,7 @@ import com.beust.jcommander.ParameterException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.app.cli.server.AdminCliOptionsParser;
+import org.opencb.opencga.storage.app.cli.server.executors.BenchmarkCommandExecutor;
 import org.opencb.opencga.storage.app.cli.server.executors.ServerCommandExecutor;
 
 import java.io.IOException;
@@ -70,13 +71,14 @@ public class StorageAdminMain {
                 } else {
                     switch (parsedCommand) {
                         case "server":
-
-                            commandExecutor = new ServerCommandExecutor(
-                                    adminCliOptionsParser.getServerCommandOptions());
+                            commandExecutor = new ServerCommandExecutor(adminCliOptionsParser.getServerCommandOptions());
                             break;
 //                        case "grpc":
 //                            commandExecutor = new GrpcCommandExecutor(adminCliOptionsParser.getGrpcCommandOptions());
 //                            break;
+                        case "benchmark":
+                            commandExecutor = new BenchmarkCommandExecutor(adminCliOptionsParser.getBenchmarkCommandOptions());
+                            break;
                         default:
                             System.out.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
                             break;

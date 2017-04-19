@@ -29,9 +29,9 @@ import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.tool.Execution;
 import org.opencb.opencga.catalog.models.tool.Manifest;
 import org.opencb.opencga.catalog.models.tool.Option;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.io.FileOutputStream;
 import java.io.OutputStream;
@@ -84,14 +84,14 @@ public class IbsAnalysis extends OpenCGAAnalysis {
 
         IdentityByStateClustering ibsc = new IdentityByStateClustering();
         List<String> samples;
-        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
+        Query query = new Query(VariantQueryParam.STUDIES.key(), studyId);
         QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, VariantField.ANNOTATION);
 
         Query samplesQuery = new Query();
         if (StringUtils.isNotEmpty(params.getString(SAMPLES))) {
             List<Long> sampleIds = catalogManager.getSampleIds(params.getString(SAMPLES), sessionId);
             samplesQuery.append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
-            query.append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), sampleIds);
+            query.append(VariantQueryParam.RETURNED_SAMPLES.key(), sampleIds);
         }
         samples = catalogManager
                 .getAllSamples(studyId, samplesQuery, new QueryOptions(), sessionId)

@@ -40,9 +40,10 @@ import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationManager;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
@@ -77,7 +78,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
 
     private VariantTableHelper variantTablehelper;
 
-    protected HBaseStudyConfigurationManager scm;
+    protected StudyConfigurationManager scm;
     protected StudyConfiguration studyConfiguration;
 
     public AbstractVariantTableDriver() { /* nothing */ }
@@ -268,7 +269,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
     }
 
     protected StudyConfiguration loadStudyConfiguration() throws IOException {
-        HBaseStudyConfigurationManager scm = getStudyConfigurationManager();
+        StudyConfigurationManager scm = getStudyConfigurationManager();
         int studyId = getHelper().getStudyId();
         QueryResult<StudyConfiguration> res = scm.getStudyConfiguration(studyId, new QueryOptions());
         if (res.getResult().size() != 1) {
@@ -277,10 +278,10 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         return res.first();
     }
 
-    protected HBaseStudyConfigurationManager getStudyConfigurationManager() throws IOException {
+    protected StudyConfigurationManager getStudyConfigurationManager() throws IOException {
         if (scm == null) {
             byte[] outTable = getHelper().getOutputTable();
-            scm = new HBaseStudyConfigurationManager(Bytes.toString(outTable), getConf(), null);
+            scm = new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(Bytes.toString(outTable), getConf(), null));
         }
         return scm;
     }

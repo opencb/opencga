@@ -20,15 +20,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
-import org.opencb.opencga.storage.core.search.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -51,6 +47,10 @@ public final class StorageEngineFactory {
 
     public static void configure(StorageConfiguration configuration) {
         storageConfigurationDefault = configuration;
+    }
+
+    private enum Type {
+        VARIANT, ALIGNMENT
     }
 
     @Deprecated
@@ -90,22 +90,26 @@ public final class StorageEngineFactory {
 
     public AlignmentStorageEngine getAlignmentStorageEngine(String storageEngineName)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-        return getStorageManager("ALIGNMENT", storageEngineName, alignmentStorageManagerMap);
+        return getAlignmentStorageEngine(storageEngineName, "");
     }
 
+    public AlignmentStorageEngine getAlignmentStorageEngine(String storageEngineName, String dbName)
+            throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+        return getStorageManager(Type.ALIGNMENT, storageEngineName, alignmentStorageManagerMap, dbName);
+    }
 
     public VariantStorageEngine getVariantStorageEngine()
             throws IllegalAccessException, InstantiationException, ClassNotFoundException {
-        return getVariantStorageEngine(null);
+        return getVariantStorageEngine(null, "");
     }
 
-    public VariantStorageEngine getVariantStorageEngine(String storageEngineName)
+    public VariantStorageEngine getVariantStorageEngine(String storageEngineName, String dbName)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-        return getStorageManager("VARIANT", storageEngineName, variantStorageManagerMap);
+        return getStorageManager(Type.VARIANT, storageEngineName, variantStorageManagerMap, dbName);
     }
 
-
-    private <T extends StorageEngine> T getStorageManager(String bioformat, String storageEngineName, Map<String, T> storageManagerMap)
+    private <T extends StorageEngine> T getStorageManager(Type type, String storageEngineName, Map<String, T> storageManagerMap,
+                                                          String dbName)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         /*
          * This new block of code use new StorageConfiguration system, it must replace older one
@@ -116,77 +120,76 @@ public final class StorageEngineFactory {
         if (StringUtils.isEmpty(storageEngineName)) {
             storageEngineName = getDefaultStorageManagerName();
         }
-        if (!storageManagerMap.containsKey(storageEngineName)) {
-            String clazz = null;
-            switch (bioformat.toUpperCase()) {
-                case "ALIGNMENT":
+        if (dbName == null) {
+            dbName = "";
+        }
+        String key = buildStorageEngineKey(storageEngineName, dbName);
+        if (!storageManagerMap.containsKey(key)) {
+            String clazz;
+            switch (type) {
+                case ALIGNMENT:
                     clazz = this.storageConfiguration.getStorageEngine(storageEngineName).getAlignment().getManager();
                     break;
-                case "VARIANT":
+                case VARIANT:
                     clazz = this.storageConfiguration.getStorageEngine(storageEngineName).getVariant().getManager();
                     break;
                 default:
-                    break;
+                    throw new IllegalArgumentException("Unknown type " + type);
             }
 
             T storageEngine = (T) Class.forName(clazz).newInstance();
-            storageEngine.setConfiguration(this.storageConfiguration, storageEngineName);
+            storageEngine.setConfiguration(this.storageConfiguration, storageEngineName, dbName);
 
-            // If VariantStorageEngine then we set the Solr search manager
-            if (bioformat.equalsIgnoreCase("variant")) {
-                ((VariantStorageEngine)storageEngine).setVariantSearchManager(new VariantSearchManager(null, storageConfiguration));
-            }
-
-            storageManagerMap.put(storageEngineName, storageEngine);
+            storageManagerMap.put(key, storageEngine);
+            return storageEngine;
+        } else {
+            return storageManagerMap.get(key);
         }
-        return storageManagerMap.get(storageEngineName);
+    }
+
+    private String buildStorageEngineKey(String storageEngineName, String dbName) {
+        return storageEngineName + '_' + dbName;
     }
 
     public String getDefaultStorageManagerName() {
         return storageConfiguration.getDefaultStorageEngineId();
-//        String[] storageEngineNames = Config.getStorageProperties().getProperty("OPENCGA.STORAGE.ENGINES").split(",");
-//        return storageEngineNames[0].toUpperCase();
     }
 
     public List<String> getDefaultStorageManagerNames() {
         return storageConfiguration.getStorageEngines().stream()
                 .map(StorageEngineConfiguration::getId)
                 .collect(Collectors.<String>toList());
-//        return Config.getStorageProperties().getProperty("OPENCGA.STORAGE.ENGINES").split(",");
     }
 
     public StorageConfiguration getStorageConfiguration() {
         return storageConfiguration;
     }
 
-    //    private static String parseStorageEngineName(String storageEngineName) {
-//        String[] storageEngineNames = Config.getStorageProperties().getProperty("OPENCGA.STORAGE.ENGINES").split(",");
-//        if(storageEngineName == null || storageEngineName.isEmpty()) {
-//            return storageEngineNames[0].toUpperCase();
-//        } else {
-//            storageEngineName = storageEngineName.toUpperCase();
-//            for (String engineName : storageEngineNames) {
-//                if(engineName.toUpperCase().equals(storageEngineName)) {
-//                    return storageEngineName.toUpperCase();
-//                }
-//            }
-//            return null;
-//        }
-//    }
-
     public void registerStorageManager(VariantStorageEngine variantStorageEngine) {
-        variantStorageManagerMap.put(variantStorageEngine.getStorageEngineId(), variantStorageEngine);
+        String key = buildStorageEngineKey(variantStorageEngine.getStorageEngineId(), variantStorageEngine.dbName);
+        variantStorageManagerMap.put(key, variantStorageEngine);
     }
 
-    public VariantStorageEngine unregisterVariantStorageManager(String storageEngineId) {
-        return variantStorageManagerMap.remove(storageEngineId);
+    public void unregisterVariantStorageManager(String storageEngineId) {
+        Map<String, VariantStorageEngine> map = this.variantStorageManagerMap;
+        unregister(storageEngineId, map);
     }
 
     public void registerStorageManager(AlignmentStorageEngine alignmentStorageEngine) {
-        alignmentStorageManagerMap.put(alignmentStorageEngine.getStorageEngineId(), alignmentStorageEngine);
+        String key = buildStorageEngineKey(alignmentStorageEngine.getStorageEngineId(), alignmentStorageEngine.dbName);
+        alignmentStorageManagerMap.put(key, alignmentStorageEngine);
     }
 
-    public AlignmentStorageEngine unregisterAlignmentStorageManager(String storageEngineId) {
-        return alignmentStorageManagerMap.remove(storageEngineId);
+    public void unregisterAlignmentStorageManager(String storageEngineId) {
+        unregister(storageEngineId, alignmentStorageManagerMap);
+    }
+
+    private <T extends StorageEngine> void unregister(String storageEngineId, Map<String, T> map) {
+        for (Iterator<Map.Entry<String, T>> iterator = map.entrySet().iterator(); iterator.hasNext();) {
+            Map.Entry<String, T> entry = iterator.next();
+            if (entry.getKey().startsWith(storageEngineId + '_')) {
+                iterator.remove();
+            }
+        }
     }
 }

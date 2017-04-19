@@ -23,27 +23,20 @@ import org.bson.Document;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.biodata.formats.variant.io.VariantReader;
-import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.commons.io.DataWriter;
-import org.opencb.commons.run.Runner;
-import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
-import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBWriter;
-import org.opencb.opencga.storage.mongodb.variant.load.*;
+import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageConverterTask;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageReader;
@@ -51,15 +44,11 @@ import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBOperation
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantMergeLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantMerger;
 
-import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter.UNKNOWN_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter.UNKNOWN_GENOTYPE;
 
@@ -123,36 +112,12 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         studyConfiguration2.getFileIds().put(source3.getFileName(), fileId3);
         studyConfiguration2.getSamplesInFiles().put(fileId3, file3SampleIds);
 
-        dbAdaptor = variantStorageManager.getDBAdaptor(VariantStorageBaseTest.DB_NAME);
+        dbAdaptor = variantStorageManager.getDBAdaptor();
     }
 
 
     @After
     public void shutdown() throws Exception {
-    }
-
-    @Test
-    public void test() throws IOException, StorageEngineException {
-
-
-        VariantReader reader = new VariantVcfReader(source1, inputFile);
-
-        List<Task<Variant>> taskList = new SortedList<>();
-        List<DataWriter<Variant>> writers = new ArrayList<>();
-
-
-        writers.add(new VariantMongoDBWriter(fileId1, studyConfiguration, dbAdaptor, true, false));
-
-//        studyConfiguration.getCohorts().put(cohortId, new HashSet<>(Arrays.asList(1, 2, 3, 4)));
-//        studyConfiguration.getCohortIds().put(VariantSourceEntry.DEFAULT_COHORT, cohortId);
-//        for (VariantWriter vw : writers) {
-//            vw.includeStats(true);
-//        }
-//        taskList.add(new VariantStatsTask(reader, study1));
-
-        Runner<Variant> vr = new Runner<>(reader, writers, taskList, 200);
-        vr.run();
-
     }
 
     /**
@@ -233,7 +198,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
 
         int i = 1;
         for (String chr : Arrays.asList("1", "2", "3")) {
-            Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), chr);
+            Query query = new Query(VariantQueryParam.REGION.key(), chr);
 
             assertEquals(new MongoDBVariantWriteResult(3, 0, 0, 0, 0, 0), clearTime(loadFile1(chr, i++, Collections.singletonList(chr))));
             allVariants = dbAdaptor.get(query, new QueryOptions("sort", true)).getResult();
@@ -270,7 +235,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         Map<String, int[]> mapFileIds = new HashMap<>();
         for (String chr : chromosomes) {
             mapFileIds.put(chr, new int[]{i++, i++, i++});
-            Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), chr);
+            Query query = new Query(VariantQueryParam.REGION.key(), chr);
 
             assertEquals(new MongoDBVariantWriteResult(2, 0, 0, 0, 0, 0), clearTime(loadFile2(chr, mapFileIds.get(chr)[1], Collections.singletonList(chr))));
             allVariants = dbAdaptor.get(query, new QueryOptions("sort", true)).getResult();
@@ -283,7 +248,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         }
 
         for (String chr : chromosomes) {
-            Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), chr);
+            Query query = new Query(VariantQueryParam.REGION.key(), chr);
 
             assertEquals(new MongoDBVariantWriteResult(1, 2, 0, 0, 0, 0), clearTime(loadFile1(chr, mapFileIds.get(chr)[0], Collections.singletonList(chr))));
             allVariants = dbAdaptor.get(query, new QueryOptions("sort", true)).getResult();
@@ -292,7 +257,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         }
 
         for (String chr : chromosomes) {
-            Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), chr);
+            Query query = new Query(VariantQueryParam.REGION.key(), chr);
             allVariants = dbAdaptor.get(query, new QueryOptions("sort", true)).getResult();
             checkLoadedVariants(allVariants, mapFileIds.get(chr));
         }
@@ -319,7 +284,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         Map<String, int[]> mapFileIds = new HashMap<>();
         for (String chr : chromosomes) {
             mapFileIds.put(chr, new int[]{i++, i++, i++});
-            Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), chr);
+            Query query = new Query(VariantQueryParam.REGION.key(), chr);
 
             assertEquals(new MongoDBVariantWriteResult(3, 0, 0, 0, 0, 0), clearTime(loadFile1(chr, mapFileIds.get(chr)[0], Collections.singletonList(chr))));
             allVariants = dbAdaptor.get(query, new QueryOptions("sort", true)).getResult();
@@ -328,7 +293,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         }
 
         for (String chr : chromosomes) {
-            Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), chr);
+            Query query = new Query(VariantQueryParam.REGION.key(), chr);
 
             assertEquals(new MongoDBVariantWriteResult(1, 1, 0, 0, 0, 0), clearTime(loadFile2(chr, mapFileIds.get(chr)[1], Collections.singletonList(chr))));
             allVariants = dbAdaptor.get(query, new QueryOptions("sort", true)).getResult();
@@ -340,7 +305,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         }
 
         for (String chr : chromosomes) {
-            Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), chr);
+            Query query = new Query(VariantQueryParam.REGION.key(), chr);
             allVariants = dbAdaptor.get(query, new QueryOptions("sort", true)).getResult();
             checkLoadedVariants(allVariants, mapFileIds.get(chr));
         }
@@ -451,23 +416,6 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
 //        return loadFileOld(studyConfiguration, variants, fileId);
         MongoDBVariantWriteResult stageWriteResult = stageVariants(studyConfiguration, variants, fileId);
         return mergeVariants(studyConfiguration, Collections.singletonList(fileId), stageWriteResult, chromosomes);
-    }
-
-    public MongoDBVariantWriteResult loadFileOld(StudyConfiguration studyConfiguration, List<Variant> variants, int fileId)
-            throws StorageEngineException {
-        VariantMongoDBWriter mongoDBWriter;
-        mongoDBWriter = new VariantMongoDBWriter(fileId, studyConfiguration, dbAdaptor, true, false);
-        mongoDBWriter.setThreadSynchronizationBoolean(new AtomicBoolean(false));
-        mongoDBWriter.open();
-        mongoDBWriter.pre();
-
-        variants.forEach(mongoDBWriter::write);
-
-        mongoDBWriter.post();
-        mongoDBWriter.close();
-        studyConfiguration.getIndexedFiles().add(fileId);
-
-        return mongoDBWriter.getWriteResult();
     }
 
     public MongoDBVariantWriteResult stageVariants(StudyConfiguration studyConfiguration, List<Variant> variants, int fileId) {

@@ -41,6 +41,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.commons.io.avro.AvroDataReader;
 import org.opencb.commons.io.avro.AvroDataWriter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
@@ -296,7 +297,7 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
                         gffList -> {
                             for (Gff gff : gffList) {
                                 Region region = new Region(normalizeChromosome(gff.getSequenceName()), gff.getStart(), gff.getEnd());
-                                Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
+                                Query query = new Query(VariantQueryParam.REGION.key(), region);
                                 dbAdaptor.updateCustomAnnotations(
                                         query, key, new AdditionalAttribute(Collections.singletonMap("feature", gff.getFeature())),
                                         QueryOptions.empty());
@@ -320,7 +321,7 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
                         bedList -> {
                             for (Bed bed: bedList) {
                                 Region region = new Region(normalizeChromosome(bed.getChromosome()), bed.getStart(), bed.getEnd());
-                                Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
+                                Query query = new Query(VariantQueryParam.REGION.key(), region);
                                 Map<String, String> annotation = new HashMap<>(3);
                                 annotation.put("name", bed.getName());
                                 annotation.put(("score"), String.valueOf(bed.getScore()));
@@ -348,7 +349,7 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
                     variantList -> {
                         for (Variant variant : variantList) {
                             Region region = new Region(normalizeChromosome(variant.getChromosome()), variant.getStart(), variant.getEnd());
-                            Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
+                            Query query = new Query(VariantQueryParam.REGION.key(), region);
                             Map<String, String> info = variant.getStudies().get(0).getFiles().get(0).getAttributes();
                             AdditionalAttribute attribute = new AdditionalAttribute(info);
                             dbAdaptor.updateCustomAnnotations(query, key, attribute, new QueryOptions());

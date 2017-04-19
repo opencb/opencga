@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -73,10 +73,10 @@ public class VariantRestWebService extends GenericRestWebService {
 
         public static QueryResult getVariants(String storageEngine, String dbName, boolean histogram, int interval, QueryOptions options)
                 throws StorageEngineException, ClassNotFoundException, IllegalAccessException, InstantiationException {
-            VariantDBAdaptor dbAdaptor = StorageEngineFactory.get().getVariantStorageEngine(storageEngine).getDBAdaptor(dbName);
+            VariantDBAdaptor dbAdaptor = StorageEngineFactory.get().getVariantStorageEngine(storageEngine, dbName).getDBAdaptor();
 
             Query query = new Query();
-            for (VariantQueryParams acceptedValue : VariantQueryParams.values()) {
+            for (VariantQueryParam acceptedValue : VariantQueryParam.values()) {
                 if (options.get(acceptedValue.key()) != null) {
                     query.put(acceptedValue.key(), options.get(acceptedValue.key()));
                 }
@@ -92,7 +92,7 @@ public class VariantRestWebService extends GenericRestWebService {
 
             // Parse the provided regions. The total size of all regions together
             // can't excede 1 million positions
-            List<Region> regions = Region.parseRegions(options.getString(VariantQueryParams.REGION.key()));
+            List<Region> regions = Region.parseRegions(options.getString(VariantQueryParam.REGION.key()));
             regions = regions == null ? Collections.emptyList() : regions;
             int regionsSize = regions.stream().reduce(0, (size, r) -> size += r.getEnd() - r.getStart(), (a, b) -> a + b);
 

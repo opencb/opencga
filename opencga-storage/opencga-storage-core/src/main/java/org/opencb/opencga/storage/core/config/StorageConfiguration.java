@@ -31,13 +31,12 @@ import java.util.List;
 /**
  * Created by imedina on 30/04/15.
  */
-@JsonIgnoreProperties("storageEngine")
+@JsonIgnoreProperties({"storageEngine", "studyMetadataManager"})
 public class StorageConfiguration {
 
     private String defaultStorageEngineId;
     private String logLevel;
     private String logFile;
-    private String studyMetadataManager;
 
     private CellBaseConfiguration cellbase;
     private ServerConfiguration server;
@@ -166,7 +165,6 @@ public class StorageConfiguration {
         sb.append("defaultStorageEngineId='").append(defaultStorageEngineId).append('\'');
         sb.append(", logLevel='").append(logLevel).append('\'');
         sb.append(", logFile='").append(logFile).append('\'');
-        sb.append(", studyMetadataManager='").append(studyMetadataManager).append('\'');
         sb.append(", cellbase=").append(cellbase);
         sb.append(", server=").append(server);
         sb.append(", cache=").append(cache);
@@ -198,14 +196,6 @@ public class StorageConfiguration {
 
     public void setLogFile(String logFile) {
         this.logFile = logFile;
-    }
-
-    public String getStudyMetadataManager() {
-        return studyMetadataManager;
-    }
-
-    public void setStudyMetadataManager(String studyMetadataManager) {
-        this.studyMetadataManager = studyMetadataManager;
     }
 
     public CellBaseConfiguration getCellbase() {

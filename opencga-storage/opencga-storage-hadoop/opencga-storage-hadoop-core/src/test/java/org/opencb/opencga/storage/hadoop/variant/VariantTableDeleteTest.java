@@ -84,7 +84,7 @@ public class VariantTableDeleteTest extends VariantStorageBaseTest implements Ha
         assertEquals("0/1", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s1", "GT"));
         assertEquals("0/0", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));
 
-        VariantHbaseTestUtils.printVariantsFromVariantsTable(getVariantStorageEngine().getDBAdaptor(DB_NAME));
+        VariantHbaseTestUtils.printVariantsFromVariantsTable(getVariantStorageEngine().getDBAdaptor());
         // delete
         removeFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
         variants = buildVariantsIdx();
@@ -114,11 +114,11 @@ public class VariantTableDeleteTest extends VariantStorageBaseTest implements Ha
         assertTrue(variants.containsKey("1:10013:T:C"));
         assertEquals("0/1", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s1", "GT"));
 
-        VariantHbaseTestUtils.printVariantsFromVariantsTable(getVariantStorageEngine().getDBAdaptor(DB_NAME));
+        VariantHbaseTestUtils.printVariantsFromVariantsTable(getVariantStorageEngine().getDBAdaptor());
         // delete
         removeFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
 
-        VariantHbaseTestUtils.printVariantsFromVariantsTable(getVariantStorageEngine().getDBAdaptor(DB_NAME));
+        VariantHbaseTestUtils.printVariantsFromVariantsTable(getVariantStorageEngine().getDBAdaptor());
 
         System.out.println("studyConfiguration = " + studyConfiguration);
         System.out.println("studyConfiguration.getAttributes().toJson() = " + studyConfiguration.getAttributes().toJson());
@@ -129,7 +129,7 @@ public class VariantTableDeleteTest extends VariantStorageBaseTest implements Ha
     }
 
     private Map<String, Variant> buildVariantsIdx() throws Exception {
-        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME);
+        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
         Map<String, Variant> variants = new HashMap<>();
         System.out.println("Build Variant map");
         for (Variant variant : dbAdaptor) {

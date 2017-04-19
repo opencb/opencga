@@ -3,9 +3,6 @@ defaultStorageEngineId: "mongodb"
 logLevel: "info"
 logFile: ""
 
-## This value can be set up using maven profiles in your .m2/settings.xml
-studyMetadataManager: "${OPENCGA.STORAGE.STUDY.METADATA.MANAGER}"
-
 ## CellBase client configuration, this is used mainly when annotating variants
 ## This can be set up using maven profiles in your .m2/settings.xml
 cellbase:

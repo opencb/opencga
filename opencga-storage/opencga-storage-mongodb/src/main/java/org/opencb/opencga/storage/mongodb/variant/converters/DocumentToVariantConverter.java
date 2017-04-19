@@ -23,7 +23,7 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBWriter;
+import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 
 import java.util.*;
 
@@ -290,10 +290,10 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
 
         // Two different chunk sizes are calculated for different resolution levels: 1k and 10k
         List<String> chunkIds = new LinkedList<>();
-        String chunkSmall = variant.getChromosome() + "_" + variant.getStart() / VariantMongoDBWriter.CHUNK_SIZE_SMALL + "_"
-                + VariantMongoDBWriter.CHUNK_SIZE_SMALL / 1000 + "k";
-        String chunkBig = variant.getChromosome() + "_" + variant.getStart() / VariantMongoDBWriter.CHUNK_SIZE_BIG + "_"
-                + VariantMongoDBWriter.CHUNK_SIZE_BIG / 1000 + "k";
+        String chunkSmall = variant.getChromosome() + "_" + variant.getStart() / VariantMongoDBAdaptor.CHUNK_SIZE_SMALL + "_"
+                + VariantMongoDBAdaptor.CHUNK_SIZE_SMALL / 1000 + "k";
+        String chunkBig = variant.getChromosome() + "_" + variant.getStart() / VariantMongoDBAdaptor.CHUNK_SIZE_BIG + "_"
+                + VariantMongoDBAdaptor.CHUNK_SIZE_BIG / 1000 + "k";
         chunkIds.add(chunkSmall);
         chunkIds.add(chunkBig);
         at.append(CHUNK_IDS_FIELD, chunkIds);
