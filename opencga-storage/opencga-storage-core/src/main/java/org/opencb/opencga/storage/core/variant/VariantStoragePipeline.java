@@ -86,7 +86,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     protected final ObjectMap options;
     protected final VariantDBAdaptor dbAdaptor;
     protected final VariantReaderUtils variantReaderUtils;
-    private final Logger logger;
+    private final Logger logger = LoggerFactory.getLogger(VariantStoragePipeline.class);
     protected final ObjectMap transformStats = new ObjectMap();
 
 
@@ -107,7 +107,6 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                                   VariantReaderUtils variantReaderUtils, ObjectMap options) {
         this.configuration = configuration;
         this.storageEngineId = storageEngineId;
-        this.logger = LoggerFactory.getLogger(getClass());
         this.dbAdaptor = dbAdaptor;
         this.variantReaderUtils = variantReaderUtils;
         this.options = options;

@@ -54,8 +54,8 @@ public class VariantTableDeletionMapReduce extends AbstractVariantTableMapReduce
             InterruptedException {
         super.setup(context);
         Connection connection = getHelper().getHBaseManager().getConnection();
-        this.analysisTable = connection.getTable(TableName.valueOf(getHelper().getOutputTable()));
-        this.archiveTable = connection.getTable(TableName.valueOf(getHelper().getIntputTable()));
+        this.analysisTable = connection.getTable(TableName.valueOf(getHelper().getAnalysisTable()));
+        this.archiveTable = connection.getTable(TableName.valueOf(getHelper().getAtchiveTable()));
     }
 
     @Override
@@ -118,7 +118,7 @@ public class VariantTableDeletionMapReduce extends AbstractVariantTableMapReduce
             VariantTableStudyRow row = new VariantTableStudyRow(variant, studyId, idMapping);
             Delete delete = row.createDelete(getHelper());
 //            this.analysisTable.delete(delete);
-            context.write(new ImmutableBytesWritable(getHelper().getOutputTable()), delete);
+            context.write(new ImmutableBytesWritable(getHelper().getAnalysisTable()), delete);
             context.getCounter(COUNTER_GROUP_NAME, "ANALYSIS_TABLE_ROW-DELETE").increment(1);
         }
     }

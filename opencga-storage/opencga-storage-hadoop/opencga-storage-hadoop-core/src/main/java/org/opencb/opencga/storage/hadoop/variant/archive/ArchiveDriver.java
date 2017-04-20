@@ -44,6 +44,7 @@ import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.avro.VariantFileMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantToVcfSliceMapper;
@@ -209,19 +210,8 @@ public class ArchiveDriver extends Configured implements Tool {
                 .append(outputTable).append(' ')
                 .append(studyId).append(' ')
                 .append(fileId);
-        addOtherParams(other, stringBuilder);
+        AbstractAnalysisTableDriver.addOtherParams(other, stringBuilder);
         return stringBuilder.toString();
-    }
-
-    public static void addOtherParams(Map<String, Object> other, StringBuilder stringBuilder) {
-        for (Map.Entry<String, Object> entry : other.entrySet()) {
-            Object value = entry.getValue();
-            if (value != null && (value instanceof Number
-                    || value instanceof Boolean
-                    || value instanceof String && !((String) value).contains(" ") && !((String) value).isEmpty())) {
-                stringBuilder.append(' ').append(entry.getKey()).append(' ').append(value);
-            }
-        }
     }
 
     public static void main(String[] args) throws Exception {

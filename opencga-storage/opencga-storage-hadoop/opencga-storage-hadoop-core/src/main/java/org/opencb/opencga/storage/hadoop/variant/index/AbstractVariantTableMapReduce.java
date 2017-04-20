@@ -29,6 +29,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.AbstractHBaseMapReduce;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
@@ -145,7 +146,7 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
                 put = row.createPut(getHelper());
             }
             if (put != null) {
-                context.write(new ImmutableBytesWritable(getHelper().getOutputTable()), put);
+                context.write(new ImmutableBytesWritable(getHelper().getAnalysisTable()), put);
                 context.getCounter(COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
             }
             return row;
@@ -160,7 +161,7 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
             Put put = variant.createPut(getHelper());
             if (put != null) {
                 try {
-                    context.write(new ImmutableBytesWritable(getHelper().getOutputTable()), put);
+                    context.write(new ImmutableBytesWritable(getHelper().getAnalysisTable()), put);
                 } catch (IOException | InterruptedException e) {
                     throw new IllegalStateException(e);
                 }
@@ -182,7 +183,7 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
             put.addColumn(getHelper().getColumnFamily(), Bytes.toBytes(column), value);
         }
         try {
-            context.write(new ImmutableBytesWritable(getHelper().getIntputTable()), put);
+            context.write(new ImmutableBytesWritable(getHelper().getAtchiveTable()), put);
         } catch (IOException | InterruptedException e) {
             throw new IllegalStateException(e);
         }
@@ -202,10 +203,10 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
         variantMerger = new VariantMerger(true);
         variantMerger.setStudyId(Integer.toString(studyId));
 
-        String[] toIdxFileIds = context.getConfiguration().getStrings(AbstractVariantTableDriver.CONFIG_VARIANT_FILE_IDS, new String[0]);
+        String[] toIdxFileIds = context.getConfiguration().getStrings(AbstractAnalysisTableDriver.CONFIG_VARIANT_FILE_IDS, new String[0]);
         if (toIdxFileIds.length == 0) {
             throw new IllegalStateException(
-                    "File IDs to be indexed not found in configuration: " + AbstractVariantTableDriver.CONFIG_VARIANT_FILE_IDS);
+                    "File IDs to be indexed not found in configuration: " + AbstractAnalysisTableDriver.CONFIG_VARIANT_FILE_IDS);
         }
         Set<String> toIndexSampleNames = new HashSet<>();
         Set<Integer> toIndexFileIdSet = Arrays.stream(toIdxFileIds).map(id -> Integer.valueOf(id)).collect(Collectors.toSet());

@@ -7,7 +7,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.slf4j.Logger;
@@ -54,7 +53,7 @@ public class OpencgaMapReduceHelper {
                 .setFailOnEmptyVariants(true)
                 .setSimpleGenotypes(false);
         this.indexedSamples = StudyConfiguration.getIndexedSamples(this.studyConfiguration);
-        timestamp = context.getConfiguration().getLong(AbstractVariantTableDriver.TIMESTAMP, -1);
+        timestamp = context.getConfiguration().getLong(AbstractAnalysisTableDriver.TIMESTAMP, -1);
         if (timestamp == -1) {
             throw new IllegalArgumentException("Missing TimeStamp");
         }

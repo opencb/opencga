@@ -54,7 +54,7 @@ import java.util.zip.GZIPInputStream;
  */
 public class HadoopDirectVariantStoragePipeline extends AbstractHadoopVariantStoragePipeline {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(HadoopDirectVariantStoragePipeline.class);
 
     /**
      * @param configuration      {@link StorageConfiguration}

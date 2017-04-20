@@ -62,7 +62,6 @@ import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbaseTransformTask;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
@@ -94,7 +93,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     protected final HBaseCredentials archiveTableCredentials;
     protected final HBaseCredentials variantsTableCredentials;
     protected MRExecutor mrExecutor = null;
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(AbstractHadoopVariantStoragePipeline.class);
 
     // Do not create phoenix indexes. Testing purposes only
     public static final String SKIP_CREATE_PHOENIX_INDEXES = "skip.create.phoenix.indexes";
@@ -486,7 +485,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             BatchFileOperation op = addBatchOperation(studyConfiguration, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles, resume,
                     BatchFileOperation.Type.LOAD);
             options.put(HADOOP_LOAD_VARIANT_STATUS, op.currentStatus());
-            options.put(AbstractVariantTableDriver.TIMESTAMP, op.getTimestamp());
+            options.put(AbstractAnalysisTableDriver.TIMESTAMP, op.getTimestamp());
 
         }
     }

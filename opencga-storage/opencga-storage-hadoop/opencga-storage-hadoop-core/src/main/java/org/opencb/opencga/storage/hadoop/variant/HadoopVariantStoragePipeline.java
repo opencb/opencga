@@ -40,7 +40,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Optio
  */
 public class HadoopVariantStoragePipeline extends AbstractHadoopVariantStoragePipeline {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(HadoopVariantStoragePipeline.class);
 
     public HadoopVariantStoragePipeline(
             StorageConfiguration configuration, String storageEngineId,

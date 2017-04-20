@@ -41,8 +41,8 @@ public class VariantTableHelper extends GenomeHelper {
 
     public static final String OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_OUTPUT = "opencga.storage.hadoop.vcf.transform.table.output";
     public static final String OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT = "opencga.storage.hadoop.vcf.transform.table.input";
-    private final AtomicReference<byte[]> outtable = new AtomicReference<>();
-    private final AtomicReference<byte[]> intable = new AtomicReference<>();
+    private final AtomicReference<byte[]> analysisTable = new AtomicReference<>();
+    private final AtomicReference<byte[]> archiveTable = new AtomicReference<>();
 
     public VariantTableHelper(Configuration conf) {
         this(conf, null);
@@ -54,21 +54,21 @@ public class VariantTableHelper extends GenomeHelper {
     }
 
 
-    public VariantTableHelper(Configuration conf, String intable, String outTable, Connection con) {
+    public VariantTableHelper(Configuration conf, String archiveTable, String analysisTable, Connection con) {
         super(conf, con);
-        if (StringUtils.isEmpty(outTable)) {
-            throw new IllegalArgumentException("Property for Output Table name missing or empty!!!");
+        if (StringUtils.isEmpty(analysisTable)) {
+            throw new IllegalArgumentException("Property for Analysis Table name missing or empty!!!");
         }
-        if (StringUtils.isEmpty(intable)) {
-            throw new IllegalArgumentException("Property for Input Table name missing or empty!!!");
+        if (StringUtils.isEmpty(archiveTable)) {
+            throw new IllegalArgumentException("Property for Archive Table name missing or empty!!!");
         }
-        setOutputTable(outTable);
-        setInputTable(intable);
+        setAnalysisTable(analysisTable);
+        setArchiveTable(archiveTable);
     }
 
     public StudyConfiguration loadMeta() throws IOException {
         StudyConfigurationManager scm = new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(this,
-                Bytes.toString(outtable.get()), this.hBaseManager.getConf(), null));
+                Bytes.toString(analysisTable.get()), this.hBaseManager.getConf(), null));
         QueryResult<StudyConfiguration> query = scm.getStudyConfiguration(getStudyId(), new QueryOptions());
         if (query.getResult().size() != 1) {
             throw new IllegalStateException("Only one study configuration expected for study");
@@ -76,16 +76,16 @@ public class VariantTableHelper extends GenomeHelper {
         return query.first();
     }
 
-    public byte[] getOutputTable() {
-        return outtable.get();
+    public byte[] getAnalysisTable() {
+        return analysisTable.get();
     }
 
-    public byte[] getIntputTable() {
-        return intable.get();
+    public byte[] getAtchiveTable() {
+        return archiveTable.get();
     }
 
     public void act(Connection con, HBaseManager.HBaseTableConsumer func) throws IOException {
-        hBaseManager.act(con, getOutputTable(), func);
+        hBaseManager.act(con, getAnalysisTable(), func);
     }
 
     public <T> T actOnTable(Connection con, HBaseManager.HBaseTableAdminFunction<T> func) throws IOException {
@@ -93,23 +93,23 @@ public class VariantTableHelper extends GenomeHelper {
     }
 
     public String getOutputTableAsString() {
-        return Bytes.toString(getOutputTable());
+        return Bytes.toString(getAnalysisTable());
     }
 
-    private void setOutputTable(String tableName) {
-        this.outtable.set(Bytes.toBytes(tableName));
+    private void setAnalysisTable(String tableName) {
+        this.analysisTable.set(Bytes.toBytes(tableName));
     }
 
-    private void setInputTable(String tableName) {
-        this.intable.set(Bytes.toBytes(tableName));
+    private void setArchiveTable(String tableName) {
+        this.archiveTable.set(Bytes.toBytes(tableName));
     }
 
-    public static void setOutputTableName(Configuration conf, String outTable) {
-        conf.set(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_OUTPUT, outTable);
+    public static void setAnalysisTable(Configuration conf, String analysisTable) {
+        conf.set(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_OUTPUT, analysisTable);
     }
 
-    public static void setInputTableName(Configuration conf, String inTable) {
-        conf.set(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT, inTable);
+    public static void setArchiveTable(Configuration conf, String archiveTable) {
+        conf.set(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT, archiveTable);
     }
 
 }

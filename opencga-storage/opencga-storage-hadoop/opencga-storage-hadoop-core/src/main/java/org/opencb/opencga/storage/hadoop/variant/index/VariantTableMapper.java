@@ -586,7 +586,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
             byte[] cf = getHelper().getColumnFamily();
             batch.forEach(e -> get.addColumn(cf, Bytes.toBytes(e)));
             Set<Integer> batchIds = batch.stream().map(e -> Integer.valueOf(e)).collect(Collectors.toSet());
-            Result res = getHelper().getHBaseManager().act(getHelper().getIntputTable(), table -> table.get(get));
+            Result res = getHelper().getHBaseManager().act(getHelper().getAtchiveTable(), table -> table.get(get));
             registerRuntime("9a Load archive slice from hbase", System.nanoTime() - startTime);
             if (res.isEmpty()) {
                 logger.warn("No data found in archive table!!!");
