@@ -11,6 +11,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -24,9 +25,10 @@ import java.util.List;
 public class DummyVariantStoragePipeline extends VariantStoragePipeline {
 
     public static final String VARIANTS_LOAD_FAIL = "dummy.variants.load.fail";
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     public DummyVariantStoragePipeline(StorageConfiguration configuration, String storageEngineId, Logger logger, VariantDBAdaptor dbAdaptor, VariantReaderUtils variantReaderUtils) {
-        super(configuration, storageEngineId, logger, dbAdaptor, variantReaderUtils);
+        super(configuration, storageEngineId, dbAdaptor, variantReaderUtils);
     }
 
     public void init(ObjectMap options) {

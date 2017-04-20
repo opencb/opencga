@@ -51,6 +51,7 @@ import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStage
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBOperations;
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantMergeLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantMerger;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -75,10 +76,11 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
     private final VariantMongoDBAdaptor dbAdaptor;
     private final ObjectMap loadStats = new ObjectMap();
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     public MongoDBVariantStoragePipeline(StorageConfiguration configuration, String storageEngineId,
                                          VariantMongoDBAdaptor dbAdaptor) {
-        super(configuration, storageEngineId, LoggerFactory.getLogger(MongoDBVariantStoragePipeline.class), dbAdaptor,
+        super(configuration, storageEngineId, dbAdaptor,
                 new VariantReaderUtils());
         this.dbAdaptor = dbAdaptor;
     }
