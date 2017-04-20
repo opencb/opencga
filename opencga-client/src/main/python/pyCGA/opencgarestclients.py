@@ -21,7 +21,7 @@ class _ParentRestClient(object):
         self._category = category
         self.session_id = session_id
         self.login_handler = login_handler
-        self._on_retry = None
+        self.on_retry = None
 
     def _client_login_handler(self):
         if self.login_handler:
@@ -57,8 +57,8 @@ class _ParentRestClient(object):
                            options=options)
 
         def notify_retry(exc_type, exc_val, exc_tb):
-            if self._on_retry:
-                self._on_retry(self, exc_type, exc_val, exc_tb, dict(
+            if self.on_retry:
+                self.on_retry(self, exc_type, exc_val, exc_tb, dict(
                     method=method, resource=resource, query_id=query_id,
                     category=self._category, subcategory=subcategory,
                     second_query_id=second_query_id, data=data,
