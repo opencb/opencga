@@ -454,24 +454,25 @@ public class AdminCliOptionsParser {
 
     }
 
-    @Parameters(commandNames = {"import"}, commandDescription = "Import users and/or groups from an authentication origin into "
-            + "catalog")
+    @Parameters(commandNames = {"import"}, commandDescription = "Import users and/or groups from an authentication origin into Catalog")
     public class ImportCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"-u", "--users"}, description = "Comma separated list of user ids to be imported from the authenticated " +
-                "origin", required = false, arity = 1)
-        public String users;
+        @Parameter(names = {"-u", "--user"}, description = "Comma separated list of user ids to be imported from the authenticated origin", arity = 1)
+        public String user;
 
-        @Parameter(names = {"--group"}, description = "Group defined in the authenthicated origin that will be used to import all "
-                + "the users belonging to it", required = false, arity = 1)
-        public String authGroup;
+        @Parameter(names = {"-g", "--group"}, description = "Group defined in the authenticated origin from which users will be imported", arity = 1)
+        public String group;
+
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where the users or group will be associated to."
+                + " Parameter --study-group is needed to perform this action.", arity = 1)
+        public String study;
 
         @Parameter(names = {"--study-group"}, description = "Group that will be created in catalog containing the list of imported "
-                + "users. --study parameter is needed to perform this action.", arity = 1)
-        public String group;
+                + "users. Parameter --study is needed to perform this action.", arity = 1)
+        public String studyGroup;
 
         @Parameter(names = {"--auth-origin"}, description = "Authentication id (as defined in the catalog configuration file) of the origin"
                 + " to be used to import users from.", arity = 1, required = true)
@@ -480,51 +481,45 @@ public class AdminCliOptionsParser {
         @Parameter(names = {"--type"}, description = "User account type of the users to be imported (guest or full).", arity = 1)
         public String type = Account.GUEST;
 
-        @Parameter(names = {"--expiration-date"}, description = "Expiration date (DD/MM/YYYY). By default, 1 year starting from the "
+        @Parameter(names = {"--expiration-date"}, description = "Expiration date (DD/MM/YYYY). By default, one year starting from the "
                 + "import day", arity = 1)
         public String expDate;
-
-        @Parameter(names = {"--study"}, description = "Study where the list of users will be associated to."
-                + " --study-group is needed to perform this action.", arity = 1)
-        public String study;
     }
 
-    @Parameters(commandNames = {"sync"}, commandDescription = "Sync a group of users from an authentication origin with a group in a study "
-            + "from catalog")
+    @Parameters(commandNames = {"sync"}, commandDescription = "Sync a group of users from an authentication origin with a group in a study from catalog")
     public class SyncCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"--from"}, description = "Group defined in the authenthicated origin to be synchronised", required = false,
-                arity = 1)
+        @Parameter(names = {"--from"}, description = "Group defined in the authenticated origin to be synchronised", arity = 1)
         public String from;
 
-        @Parameter(names = {"--to"}, description = "Group in a study that will be synchronised", required = false, arity = 1)
+        @Parameter(names = {"--to"}, description = "Group in a study that will be synchronised", arity = 1)
         public String to;
+
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where the list of users will be associated to.", required = true, arity = 1)
+        public String study;
 
         @Parameter(names = {"--auth-origin"}, description = "Authentication id (as defined in the catalog configuration file) of the origin"
                 + " to be used to sync groups from", arity = 1, required = true)
         public String authOrigin;
 
+        @Parameter(names = {"--sync-all"}, description = "Flag indicating whether to synchronise all the groups present in the study with"
+                + " their corresponding authenticated groups automatically. --from and --to parameters will not be needed when the flag "
+                + "is active.", arity = 0)
+        public boolean syncAll;
+
         @Parameter(names = {"--type"}, description = "User account type of the users to be imported (guest or full).", arity = 1)
         public String type = Account.GUEST;
+
+        @Parameter(names = {"--force"}, description = "Flag to force the synchronisation into groups that already exist and were not " +
+                "previously synchronised.", arity = 0)
+        public boolean force;
 
         @Parameter(names = {"--expiration-date"}, description = "Expiration date (DD/MM/YYYY). By default, 1 year starting from the "
                 + "import day", arity = 1)
         public String expDate;
-
-        @Parameter(names = {"--study"}, description = "Study where the list of users will be associated to.", required = true, arity = 1)
-        public String study;
-
-        @Parameter(names = {"--sync-all"}, description = "Flag indicating whether to synchronise all the groups present in the study with"
-                + " their corresponding authenticated groups automatically. --from and --to parameters will not be needed when the flag "
-                + "is active.", required = false, arity = 0)
-        public boolean syncAll;
-
-        @Parameter(names = {"--force"}, description = "Flag to force the synchronisation into groups that already exist and were not " +
-                "previously synchronised.", required = false, arity = 0)
-        public boolean force;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete the user Catalog database entry and the workspace")

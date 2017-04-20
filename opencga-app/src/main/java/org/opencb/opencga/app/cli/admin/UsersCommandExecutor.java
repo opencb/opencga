@@ -28,11 +28,9 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
-import org.opencb.opencga.catalog.utils.LDAPUtils;
 import org.opencb.opencga.core.results.LdapImportResult;
 
 import javax.naming.NamingException;
-import javax.naming.directory.DirContext;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -212,13 +210,13 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             ObjectMap params = new ObjectMap();
-            params.putIfNotNull("group", executor.authGroup);
-            params.putIfNotNull("users", executor.users);
-            params.putIfNotNull("study-group", executor.group);
+            params.putIfNotNull("users", executor.user);
+            params.putIfNotNull("group", executor.group);
             params.putIfNotNull("study", executor.study);
+            params.putIfNotNull("study-group", executor.studyGroup);
             params.putIfNotNull("expirationDate", executor.expDate);
-            LdapImportResult ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,
-                    executor.type, params, configuration.getAdmin().getPassword());
+            LdapImportResult ldapImportResult = catalogManager.getUserManager()
+                    .importFromExternalAuthOrigin(executor.authOrigin, executor.type, params, configuration.getAdmin().getPassword());
 
             printImportReport(ldapImportResult);
         }
