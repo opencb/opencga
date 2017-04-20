@@ -56,14 +56,14 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
 
     private final MongoDBCollection sampleCollection;
     private SampleConverter sampleConverter;
-    private AclMongoDBAdaptor<SampleAclEntry> aclDBAdaptor;
+    private AclMongoDBAdaptorOld<SampleAclEntry> aclDBAdaptor;
 
     public SampleMongoDBAdaptor(MongoDBCollection sampleCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(SampleMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.sampleCollection = sampleCollection;
         this.sampleConverter = new SampleConverter();
-        this.aclDBAdaptor = new AclMongoDBAdaptor<>(sampleCollection, sampleConverter, logger);
+        this.aclDBAdaptor = new AclMongoDBAdaptorOld<>(sampleCollection, sampleConverter, logger);
     }
 
     @Override
@@ -756,19 +756,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         query = new Query(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId);
         result = dbAdaptorFactory.getCatalogCohortDBAdaptor().extractSamplesFromCohorts(query, Collections.singletonList(sampleId));
         logger.debug("SampleId {} extracted from {} cohorts", sampleId, result.first());
-    }
-
-    @Override
-    public QueryResult<SampleAclEntry> createAcl(long id, SampleAclEntry acl) throws CatalogDBException {
-        long startTime = startQuery();
-//        CatalogMongoDBUtils.setAcl(id, acl, sampleCollection, "SampleAcl");
-        return endQuery("create sample Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
-    }
-
-    @Override
-    public void createAcl(Query query, List<SampleAclEntry> aclEntryList) throws CatalogDBException {
-        Bson queryDocument = parseQuery(query, true);
-        aclDBAdaptor.setAcl(queryDocument, aclEntryList);
     }
 
     @Override

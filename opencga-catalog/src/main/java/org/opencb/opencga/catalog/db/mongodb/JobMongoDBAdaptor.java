@@ -58,14 +58,14 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     private final MongoDBCollection jobCollection;
     private JobConverter jobConverter;
-    private AclMongoDBAdaptor<JobAclEntry> aclDBAdaptor;
+    private AclMongoDBAdaptorOld<JobAclEntry> aclDBAdaptor;
 
     public JobMongoDBAdaptor(MongoDBCollection jobCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(JobMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.jobCollection = jobCollection;
         this.jobConverter = new JobConverter();
-        this.aclDBAdaptor = new AclMongoDBAdaptor<>(jobCollection, jobConverter, logger);
+        this.aclDBAdaptor = new AclMongoDBAdaptorOld<>(jobCollection, jobConverter, logger);
     }
 
 
@@ -700,19 +700,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         } else {
             return new Document();
         }
-    }
-
-    @Override
-    public QueryResult<JobAclEntry> createAcl(long id, JobAclEntry acl) throws CatalogDBException {
-        long startTime = startQuery();
-//        CatalogMongoDBUtils.setAcl(id, acl, jobCollection, "JobAcl");
-        return endQuery("create job Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
-    }
-
-    @Override
-    public void createAcl(Query query, List<JobAclEntry> aclEntryList) throws CatalogDBException {
-        Bson queryDocument = parseQuery(query, true);
-        aclDBAdaptor.setAcl(queryDocument, aclEntryList);
     }
 
     @Override

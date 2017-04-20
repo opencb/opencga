@@ -51,7 +51,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
 
     private final MongoDBCollection datasetCollection;
     private DatasetConverter datasetConverter;
-    private AclMongoDBAdaptor<DatasetAclEntry> aclDBAdaptor;
+    private AclMongoDBAdaptorOld<DatasetAclEntry> aclDBAdaptor;
 
     /***
      * CatalogMongoDatasetDBAdaptor constructor.
@@ -64,7 +64,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.datasetCollection = datasetCollection;
         this.datasetConverter = new DatasetConverter();
-        this.aclDBAdaptor = new AclMongoDBAdaptor<>(datasetCollection, datasetConverter, logger);
+        this.aclDBAdaptor = new AclMongoDBAdaptorOld<>(datasetCollection, datasetConverter, logger);
     }
 
     /**
@@ -535,19 +535,6 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
         } else {
             return new Document();
         }
-    }
-
-    @Override
-    public QueryResult<DatasetAclEntry> createAcl(long id, DatasetAclEntry acl) throws CatalogDBException {
-        long startTime = startQuery();
-//        CatalogMongoDBUtils.setAcl(id, acl, datasetCollection, "DatasetAcl");
-        return endQuery("create dataset Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
-    }
-
-    @Override
-    public void createAcl(Query query, List<DatasetAclEntry> aclEntryList) throws CatalogDBException {
-        Bson queryDocument = parseQuery(query, true);
-        aclDBAdaptor.setAcl(queryDocument, aclEntryList);
     }
 
     @Override

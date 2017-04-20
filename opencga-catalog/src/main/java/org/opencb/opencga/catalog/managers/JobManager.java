@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -636,15 +637,17 @@ public class JobManager extends AbstractManager implements IJobManager {
         CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
         catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
+        String collectionName = MongoDBAdaptorFactory.JOB_COLLECTION;
+
         switch (aclParams.getAction()) {
             case SET:
-                return authorizationManager.setAcls(resourceIds, members, permissions, jobDBAdaptor);
+                return authorizationManager.setAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
             case ADD:
-                return authorizationManager.addAcls(resourceIds, members, permissions, jobDBAdaptor);
+                return authorizationManager.addAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
             case REMOVE:
-                return authorizationManager.removeAcls(resourceIds, members, permissions, jobDBAdaptor);
+                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
             case RESET:
-                return authorizationManager.removeAcls(resourceIds, members, null, jobDBAdaptor);
+                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, collectionName);
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }

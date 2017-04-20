@@ -30,7 +30,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.auth.authorization.AclDBAdaptor;
+import org.opencb.opencga.catalog.auth.authorization.AclDbAdaptorOld;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.acls.AbstractAcl;
@@ -48,14 +48,14 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_STUDY
 /**
  * Created by pfurio on 29/07/16.
  */
-public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdaptor<T> {
+public class AclMongoDBAdaptorOld<T extends AbstractAclEntry> implements AclDbAdaptorOld<T> {
 
     private MongoDBCollection collection;
     private GenericDocumentComplexConverter<? extends AbstractAcl> converter;
     private Logger logger;
 
-    public AclMongoDBAdaptor(MongoDBCollection collection, GenericDocumentComplexConverter<? extends AbstractAcl> converter,
-                             Logger logger) {
+    public AclMongoDBAdaptorOld(MongoDBCollection collection, GenericDocumentComplexConverter<? extends AbstractAcl> converter,
+                                Logger logger) {
         this.collection = collection;
         this.converter = converter;
         this.logger = logger;
@@ -134,7 +134,7 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
         List<String> memberList = aclEntryList.stream().map(fileAclEntry -> fileAclEntry.getMember()).collect(Collectors.toList());
 
         Document update = new Document("$pull", new Document(FileDBAdaptor.QueryParams.ACL.key(),
-                new Document(AclMongoDBAdaptor.QueryParams.MEMBER.key(), new Document("$in", memberList))));
+                new Document(AclMongoDBAdaptorOld.QueryParams.MEMBER.key(), new Document("$in", memberList))));
         logger.debug("Create Acl: Query {}, Pull {}",
                 bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));

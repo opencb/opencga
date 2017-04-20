@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -847,15 +848,17 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
         catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
+        String collectionName = MongoDBAdaptorFactory.SAMPLE_COLLECTION;
+
         switch (sampleAclParams.getAction()) {
             case SET:
-                return authorizationManager.setAcls(resourceIds, members, permissions, sampleDBAdaptor);
+                return authorizationManager.setAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
             case ADD:
-                return authorizationManager.addAcls(resourceIds, members, permissions, sampleDBAdaptor);
+                return authorizationManager.addAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
             case REMOVE:
-                return authorizationManager.removeAcls(resourceIds, members, permissions, sampleDBAdaptor);
+                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
             case RESET:
-                return authorizationManager.removeAcls(resourceIds, members, null, sampleDBAdaptor);
+                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, collectionName);
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }

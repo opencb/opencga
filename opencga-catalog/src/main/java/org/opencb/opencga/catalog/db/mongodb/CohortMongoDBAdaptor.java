@@ -53,14 +53,14 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
 
     private final MongoDBCollection cohortCollection;
     private CohortConverter cohortConverter;
-    private AclMongoDBAdaptor<CohortAclEntry> aclDBAdaptor;
+    private AclMongoDBAdaptorOld<CohortAclEntry> aclDBAdaptor;
 
     public CohortMongoDBAdaptor(MongoDBCollection cohortCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CohortMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.cohortCollection = cohortCollection;
         this.cohortConverter = new CohortConverter();
-        this.aclDBAdaptor = new AclMongoDBAdaptor<>(cohortCollection, cohortConverter, logger);
+        this.aclDBAdaptor = new AclMongoDBAdaptorOld<>(cohortCollection, cohortConverter, logger);
     }
 
     @Override
@@ -713,19 +713,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
                     Collections.singletonList(updateQueryResult.first().getModifiedCount()));
         }
         return endQuery("Extract samples from cohorts", startTime, Collections.singletonList(0L));
-    }
-
-    @Override
-    public QueryResult<CohortAclEntry> createAcl(long id, CohortAclEntry acl) throws CatalogDBException {
-        long startTime = startQuery();
-//        CatalogMongoDBUtils.setAcl(id, acl, cohortCollection, "CohortAcl");
-        return endQuery("create cohort Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
-    }
-
-    @Override
-    public void createAcl(Query query, List<CohortAclEntry> aclEntryList) throws CatalogDBException {
-        Bson queryDocument = parseQuery(query, true);
-        aclDBAdaptor.setAcl(queryDocument, aclEntryList);
     }
 
     @Override

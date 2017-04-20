@@ -53,14 +53,14 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
     private final MongoDBCollection panelCollection;
     private PanelConverter panelConverter;
-    private AclMongoDBAdaptor<DiseasePanelAclEntry> aclDBAdaptor;
+    private AclMongoDBAdaptorOld<DiseasePanelAclEntry> aclDBAdaptor;
 
     public PanelMongoDBAdaptor(MongoDBCollection panelCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(JobMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.panelCollection = panelCollection;
         this.panelConverter = new PanelConverter();
-        this.aclDBAdaptor = new AclMongoDBAdaptor<>(panelCollection, panelConverter, logger);
+        this.aclDBAdaptor = new AclMongoDBAdaptorOld<>(panelCollection, panelConverter, logger);
     }
 
     @Override
@@ -352,19 +352,6 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         } else {
             return new Document();
         }
-    }
-
-    @Override
-    public QueryResult<DiseasePanelAclEntry> createAcl(long id, DiseasePanelAclEntry acl) throws CatalogDBException {
-        long startTime = startQuery();
-//        CatalogMongoDBUtils.setAcl(id, acl, panelCollection, "DiseasePanelAcl");
-        return endQuery("create panel Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
-    }
-
-    @Override
-    public void createAcl(Query query, List<DiseasePanelAclEntry> aclEntryList) throws CatalogDBException {
-        Bson queryDocument = parseQuery(query, true);
-        aclDBAdaptor.setAcl(queryDocument, aclEntryList);
     }
 
     @Override

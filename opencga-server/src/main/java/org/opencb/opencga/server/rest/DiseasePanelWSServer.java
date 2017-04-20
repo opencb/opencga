@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.apache.commons.lang.NotImplementedException;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.DiseasePanel;
 import org.opencb.opencga.core.exception.VersionException;
@@ -84,11 +85,12 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
     @Path("/{panelIds}/acl")
     @ApiOperation(value = "Return the acl of the panel", position = 18)
     public Response getAcls(@ApiParam(value = "Comma separated list of panel ids", required = true) @PathParam("panelIds") String panelIdsStr) {
-        try {
-            return createOkResponse(catalogManager.getAllPanelAcls(panelIdsStr, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+//        try {
+//            return createOkResponse(catalogManager.getAllPanelAcls(panelIdsStr, sessionId));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+        return createErrorResponse(new NotImplementedException());
     }
 
 
@@ -98,11 +100,12 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
     public Response createRole(@ApiParam(value = "Comma separated list of panel ids", required = true) @PathParam("panelIds") String panelIdsStr,
                                @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
-        try {
-            return createOkResponse(catalogManager.createPanelAcls(panelIdsStr, members, permissions, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+//        try {
+//            return createOkResponse(catalogManager.createPanelAcls(panelIdsStr, members, permissions, sessionId));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+        return createErrorResponse(new NotImplementedException());
     }
 
     @GET
@@ -110,11 +113,12 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Return the set of permissions granted for the member", position = 20)
     public Response getAcl(@ApiParam(value = "Panel id", required = true) @PathParam("panelId") String panelIdStr,
                            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
-        try {
-            return createOkResponse(catalogManager.getPanelAcl(panelIdStr, memberId, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+//        try {
+//            return createOkResponse(catalogManager.getPanelAcl(panelIdStr, memberId, sessionId));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+        return createErrorResponse(new NotImplementedException());
     }
 
     @GET
@@ -128,11 +132,12 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
                                           String removePermissions,
                               @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("set")
                                           String setPermissions) {
-        try {
-            return createOkResponse(catalogManager.updatePanelAcl(panelIdStr, memberId, addPermissions, removePermissions, setPermissions, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+//        try {
+//            return createOkResponse(catalogManager.updatePanelAcl(panelIdStr, memberId, addPermissions, removePermissions, setPermissions, sessionId));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+        return createErrorResponse(new NotImplementedException());
     }
 
     @GET
@@ -140,11 +145,12 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Delete all the permissions granted for the member", position = 22)
     public Response deleteAcl(@ApiParam(value = "Comma separated list of panel ids", required = true) @PathParam("panelIds") String panelIdsStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
-        try {
-            return createOkResponse(catalogManager.removePanelAcl(panelIdsStr, memberId, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+//        try {
+//            return createOkResponse(catalogManager.removePanelAcl(panelIdsStr, memberId, sessionId));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+        return createErrorResponse(new NotImplementedException());
     }
 
 

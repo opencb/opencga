@@ -62,17 +62,17 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             "audit"
     );
 
-    protected static final String USER_COLLECTION = "user";
-    protected static final String STUDY_COLLECTION = "study";
-    protected static final String FILE_COLLECTION = "file";
-    protected static final String JOB_COLLECTION = "job";
-    protected static final String SAMPLE_COLLECTION = "sample";
-    protected static final String INDIVIDUAL_COLLECTION = "individual";
-    protected static final String COHORT_COLLECTION = "cohort";
-    protected static final String DATASET_COLLECTION = "dataset";
-    protected static final String PANEL_COLLECTION = "panel";
-    protected static final String METADATA_COLLECTION = "metadata";
-    protected static final String AUDIT_COLLECTION = "audit";
+    public static final String USER_COLLECTION = "user";
+    public static final String STUDY_COLLECTION = "study";
+    public static final String FILE_COLLECTION = "file";
+    public static final String JOB_COLLECTION = "job";
+    public static final String SAMPLE_COLLECTION = "sample";
+    public static final String INDIVIDUAL_COLLECTION = "individual";
+    public static final String COHORT_COLLECTION = "cohort";
+    public static final String DATASET_COLLECTION = "dataset";
+    public static final String PANEL_COLLECTION = "panel";
+    public static final String METADATA_COLLECTION = "metadata";
+    public static final String AUDIT_COLLECTION = "audit";
     static final String METADATA_OBJECT_ID = "METADATA";
     private final MongoDataStoreManager mongoManager;
     private final MongoDBConfiguration configuration;
@@ -261,6 +261,11 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     @Override
     public PanelDBAdaptor getCatalogPanelDBAdaptor() {
         return panelDBAdaptor;
+    }
+
+    @Override
+    public Map<String, MongoDBCollection> getMongoDBCollectionMap() {
+        return collections;
     }
 
     @Override

@@ -29,26 +29,6 @@ import java.util.List;
 public interface AclDBAdaptor<T, U> extends DBAdaptor<T> {
 
     /**
-     * Creates a new Acl.
-     *
-     * @param id id.
-     * @param acl Acl.
-     * @return the new created Acl.
-     * @throws CatalogDBException if there is any internal error.
-     */
-    @Deprecated
-    QueryResult<U> createAcl(long id, U acl) throws CatalogDBException;
-
-    /**
-     * Creates new ACLs for the documents matching the query.
-     *
-     * @param query Query object.
-     * @param aclEntryList List of ACLs to be created.
-     * @throws CatalogDBException if there is any internal error.
-     */
-    void createAcl(Query query, List<U> aclEntryList) throws CatalogDBException;
-
-    /**
      * Obtains the acl given the following parameters. If only the id is given, a list containing all the acls will be returned.
      *
      * @param id id.

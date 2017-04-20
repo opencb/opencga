@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * Created by pfurio on 29/07/16.
  */
-public interface AclDBAdaptor<T extends AbstractAclEntry> {
+public interface AclDbAdaptorOld<T extends AbstractAclEntry> {
 
     /**
      * Register the Acl given in the resource.

@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -769,10 +770,12 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
         catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
+        String collectionName = MongoDBAdaptorFactory.INDIVIDUAL_COLLECTION;
+
         List<QueryResult<IndividualAclEntry>> queryResults;
         switch (aclParams.getAction()) {
             case SET:
-                queryResults = authorizationManager.setAcls(resourceIds, members, permissions, individualDBAdaptor);
+                queryResults = authorizationManager.setAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
                 if (aclParams.isPropagate()) {
                     List<Long> sampleIds = getSamplesFromIndividuals(resourceIds);
                     Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(aclParams.getPermissions(), AclParams.Action.SET,
@@ -782,7 +785,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                 }
                 break;
             case ADD:
-                queryResults = authorizationManager.addAcls(resourceIds, members, permissions, individualDBAdaptor);
+                queryResults = authorizationManager.addAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
                 if (aclParams.isPropagate()) {
                     List<Long> sampleIds = getSamplesFromIndividuals(resourceIds);
                     Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(aclParams.getPermissions(), AclParams.Action.ADD,
@@ -792,7 +795,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                 }
                 break;
             case REMOVE:
-                queryResults = authorizationManager.removeAcls(resourceIds, members, permissions, individualDBAdaptor);
+                queryResults = authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
                 if (aclParams.isPropagate()) {
                     List<Long> sampleIds = getSamplesFromIndividuals(resourceIds);
                     Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(aclParams.getPermissions(), AclParams.Action.REMOVE,
@@ -802,7 +805,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                 }
                 break;
             case RESET:
-                queryResults = authorizationManager.removeAcls(resourceIds, members, null, individualDBAdaptor);
+                queryResults = authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, collectionName);
                 if (aclParams.isPropagate()) {
                     List<Long> sampleIds = getSamplesFromIndividuals(resourceIds);
                     Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(aclParams.getPermissions(), AclParams.Action.RESET,

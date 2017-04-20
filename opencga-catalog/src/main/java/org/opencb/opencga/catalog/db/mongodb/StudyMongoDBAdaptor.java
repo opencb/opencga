@@ -55,7 +55,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     private final MongoDBCollection studyCollection;
     private StudyConverter studyConverter;
     private VariableSetConverter variableSetConverter;
-    private AclMongoDBAdaptor<StudyAclEntry> aclDBAdaptor;
+    private AclMongoDBAdaptorOld<StudyAclEntry> aclDBAdaptor;
 
     public StudyMongoDBAdaptor(MongoDBCollection studyCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(StudyMongoDBAdaptor.class));
@@ -63,7 +63,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         this.studyCollection = studyCollection;
         this.studyConverter = new StudyConverter();
         this.variableSetConverter = new VariableSetConverter();
-        this.aclDBAdaptor = new AclMongoDBAdaptor<>(studyCollection, studyConverter, logger);
+        this.aclDBAdaptor = new AclMongoDBAdaptorOld<>(studyCollection, studyConverter, logger);
     }
 
     /*
@@ -610,19 +610,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 //
 //        return endQuery("setStudyAcl", startTime, Arrays.asList(studyAcl));
 //    }
-
-    @Override
-    public QueryResult<StudyAclEntry> createAcl(long studyId, StudyAclEntry studyAcl) throws CatalogDBException {
-        long startTime = startQuery();
-//        CatalogMongoDBUtils.setAcl(studyId, studyAcl, studyCollection, "StudyAcl");
-        return endQuery("create study Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(studyId, studyAcl)));
-    }
-
-    @Override
-    public void createAcl(Query query, List<StudyAclEntry> aclEntryList) throws CatalogDBException {
-        Bson queryDocument = parseQuery(query, true);
-        aclDBAdaptor.setAcl(queryDocument, aclEntryList);
-    }
 
     @Override
     public void removeAcl(long studyId, String member) throws CatalogDBException {

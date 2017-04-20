@@ -60,7 +60,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
     private final MongoDBCollection fileCollection;
     private FileConverter fileConverter;
-    private AclMongoDBAdaptor<FileAclEntry> aclDBAdaptor;
+    private AclMongoDBAdaptorOld<FileAclEntry> aclDBAdaptor;
 
     /***
      * CatalogMongoFileDBAdaptor constructor.
@@ -73,7 +73,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.fileCollection = fileCollection;
         this.fileConverter = new FileConverter();
-        this.aclDBAdaptor = new AclMongoDBAdaptor<>(fileCollection, fileConverter, logger);
+        this.aclDBAdaptor = new AclMongoDBAdaptorOld<>(fileCollection, fileConverter, logger);
     }
 
     /**
@@ -775,19 +775,6 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
         QueryResult<UpdateResult> updateQueryResult = fileCollection.update(bsonQuery, update, multi);
         return endQuery("Extract samples from files", startTime, Collections.singletonList(updateQueryResult.first().getModifiedCount()));
-    }
-
-    @Override
-    public QueryResult<FileAclEntry> createAcl(long id, FileAclEntry acl) throws CatalogDBException {
-        long startTime = startQuery();
-        return endQuery("create file Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
-    }
-
-    // This setAcl method is to create multiple acls at once for the files matching the query
-    @Override
-    public void createAcl(Query query, List<FileAclEntry> aclEntryList) throws CatalogDBException {
-        Bson queryDocument = parseQuery(query, true);
-        aclDBAdaptor.setAcl(queryDocument, aclEntryList);
     }
 
     @Override

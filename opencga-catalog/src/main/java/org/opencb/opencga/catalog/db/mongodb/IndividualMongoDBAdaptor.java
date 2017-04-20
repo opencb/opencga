@@ -57,14 +57,14 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
 
     private final MongoDBCollection individualCollection;
     private IndividualConverter individualConverter;
-    private AclMongoDBAdaptor<IndividualAclEntry> aclDBAdaptor;
+    private AclMongoDBAdaptorOld<IndividualAclEntry> aclDBAdaptor;
 
     public IndividualMongoDBAdaptor(MongoDBCollection individualCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(IndividualMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.individualCollection = individualCollection;
         this.individualConverter = new IndividualConverter();
-        this.aclDBAdaptor = new AclMongoDBAdaptor<>(individualCollection, individualConverter, logger);
+        this.aclDBAdaptor = new AclMongoDBAdaptorOld<>(individualCollection, individualConverter, logger);
     }
 
     @Override
@@ -888,19 +888,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         count = dbAdaptorFactory.getCatalogSampleDBAdaptor()
                 .update(query, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1)).first();
         logger.debug("Individual id {} extracted from {} samples", individualId, count);
-    }
-
-    @Override
-    public QueryResult<IndividualAclEntry> createAcl(long id, IndividualAclEntry acl) throws CatalogDBException {
-        long startTime = startQuery();
-//        CatalogMongoDBUtils.setAcl(id, acl, individualCollection, "IndividualAcl");
-        return endQuery("create individual Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
-    }
-
-    @Override
-    public void createAcl(Query query, List<IndividualAclEntry> aclEntryList) throws CatalogDBException {
-        Bson queryDocument = parseQuery(query, true);
-        aclDBAdaptor.setAcl(queryDocument, aclEntryList);
     }
 
     @Override
