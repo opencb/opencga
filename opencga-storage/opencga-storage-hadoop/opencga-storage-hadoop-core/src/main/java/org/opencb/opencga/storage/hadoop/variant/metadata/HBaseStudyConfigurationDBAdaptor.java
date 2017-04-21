@@ -171,8 +171,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
                 table.put(put);
             });
         } catch (IOException e) {
-            e.printStackTrace();
-            error = e.getMessage();
+            throw new UncheckedIOException(e);
         }
 
         return new QueryResult<>("", (int) (System.currentTimeMillis() - startTime), 0, 0, "", error, Collections.emptyList());
@@ -201,9 +200,8 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
                 }
             });
         } catch (IOException e) {
-            e.printStackTrace();
-            logger.warn("Get StudyConfiguration summary ERROR");
-            return HashBiMap.create();
+            logger.warn("Get StudyConfiguration summary ERROR", e);
+            throw new UncheckedIOException(e);
         }
     }
 
