@@ -44,6 +44,7 @@ public class VariantStringIdConverter implements ComplexTypeConverter<Variant, D
     public static final String END_FIELD = "end";
     public static final String REF_FIELD = "ref";
     public static final String ALT_FIELD = "alt";
+    public static final String STUDY_FILE_FIELD = "_i";
 
     public Variant convertToDataModelType(String object) {
         String[] split = object.split(SEPARATOR, -1);

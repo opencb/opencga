@@ -1069,12 +1069,13 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
     public static boolean isNewVariant(Document document, boolean newStudy) {
         // If the document has only the study, _id, end, ref and alt fields.
-        if (!newStudy || document.size() != 5) {
+        if (!newStudy || document.size() != 6) {
             for (Map.Entry<String, Object> entry : document.entrySet()) {
                 if (!entry.getKey().equals(VariantStringIdConverter.ID_FIELD)
                         && !entry.getKey().equals(VariantStringIdConverter.END_FIELD)
                         && !entry.getKey().equals(VariantStringIdConverter.REF_FIELD)
-                        && !entry.getKey().equals(VariantStringIdConverter.ALT_FIELD)) {
+                        && !entry.getKey().equals(VariantStringIdConverter.ALT_FIELD)
+                        && !entry.getKey().equals(VariantStringIdConverter.STUDY_FILE_FIELD)) {
                     if (!isNewStudy((Document) entry.getValue())) {
                         return false;
                     }

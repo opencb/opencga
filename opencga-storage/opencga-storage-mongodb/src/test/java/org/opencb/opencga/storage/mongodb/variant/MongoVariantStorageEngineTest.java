@@ -868,6 +868,12 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
         checkPlatinumDatabase(d -> ((List) d.get(FILES_FIELD)).size(), Collections.singleton(DocumentToSamplesConverter.UNKNOWN_GENOTYPE));
     }
 
+    @Test
+    public void multiIndexPlatinumNoMerge() throws Exception {
+        super.multiIndexPlatinum(new ObjectMap(MongoDBVariantOptions.MERGE_IGNORE_OVERLAPPING_VARIANTS.key(), true));
+        checkPlatinumDatabase(d -> ((List) d.get(FILES_FIELD)).size(), Collections.singleton(DocumentToSamplesConverter.UNKNOWN_GENOTYPE));
+    }
+
     private void checkPlatinumDatabase(Function<Document, Integer> getExpectedSamples, Set<String> defaultGenotypes) throws Exception {
         try (VariantMongoDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor()) {
             MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();

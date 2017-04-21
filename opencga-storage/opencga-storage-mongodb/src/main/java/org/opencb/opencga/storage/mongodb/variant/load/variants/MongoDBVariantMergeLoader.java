@@ -25,6 +25,7 @@ import static com.mongodb.client.model.Updates.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.FILEID_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.FILES_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.STUDIES_FIELD;
+import static org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter.STUDY_FILE_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.DUP_KEY_WRITE_RESULT_ERROR_PATTERN;
 import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.NEW_STUDY_FIELD;
 
@@ -137,10 +138,13 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         if (!mongoDBOps.getDocumentsToCleanFiles().isEmpty()) {
             logger.debug("Cleaning files {} from stage collection", fileIds);
             List<Bson> fileUpdates = new LinkedList<>();
+            List<String> studyFileToPull = new ArrayList<>(fileIds.size());
             for (Integer fileId : fileIds) {
-//                fileUpdates.add(unset(studyId + "." + fileId));
-                fileUpdates.add(set(studyId + "." + fileId, null));
+                fileUpdates.add(unset(studyId + "." + fileId));
+//                fileUpdates.add(set(studyId + "." + fileId, null));
+                studyFileToPull.add(studyId + "_" + fileId);
             }
+            fileUpdates.add(pullAll(STUDY_FILE_FIELD, studyFileToPull));
             fileUpdates.add(set(studyId + "." + NEW_STUDY_FIELD, false));
             modifiedCount += stageCollection.update(in("_id", mongoDBOps.getDocumentsToCleanFiles()), combine(fileUpdates),
                     new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
