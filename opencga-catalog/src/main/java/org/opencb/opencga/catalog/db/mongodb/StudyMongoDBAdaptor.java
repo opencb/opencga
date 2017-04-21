@@ -33,7 +33,6 @@ import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +54,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     private final MongoDBCollection studyCollection;
     private StudyConverter studyConverter;
     private VariableSetConverter variableSetConverter;
-    private AclMongoDBAdaptorOld<StudyAclEntry> aclDBAdaptor;
 
     public StudyMongoDBAdaptor(MongoDBCollection studyCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(StudyMongoDBAdaptor.class));
@@ -63,7 +61,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         this.studyCollection = studyCollection;
         this.studyConverter = new StudyConverter();
         this.variableSetConverter = new VariableSetConverter();
-        this.aclDBAdaptor = new AclMongoDBAdaptorOld<>(studyCollection, studyConverter, logger);
     }
 
     /*
@@ -235,26 +232,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     @Override
     public String getOwnerId(long studyId) throws CatalogDBException {
         return dbAdaptorFactory.getCatalogProjectDbAdaptor().getOwnerId(getProjectIdByStudyId(studyId));
-    }
-
-    @Override
-    public List<QueryResult<StudyAclEntry>> getAcls(Query query, List<String> members) throws CatalogDBException {
-        long startTime = startQuery();
-
-        QueryResult<Study> studyQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
-        List<Long> studyIds = studyQueryResult.getResult().stream().map(Study::getId).collect(Collectors.toList());
-
-        if (studyIds == null || studyIds.size() == 0) {
-            throw new CatalogDBException("No matches found for query when attempting to get permissions");
-        }
-
-        List<List<StudyAclEntry>> acl = aclDBAdaptor.getAcl(studyIds, members);
-        List<QueryResult<StudyAclEntry>> retAclQueryResult = new ArrayList<>(acl.size());
-        for (List<StudyAclEntry> studyAclEntries : acl) {
-            retAclQueryResult.add(endQuery("get study Acl", startTime, studyAclEntries));
-        }
-
-        return retAclQueryResult;
     }
 
     @Override
@@ -595,78 +572,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 //
 //        return endQuery("setStudyAcl", startTime, Arrays.asList(studyAcl));
 //    }
-
-    @Override
-    public void removeAcl(long studyId, String member) throws CatalogDBException {
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().removeAclsFromStudy(studyId, member);
-        dbAdaptorFactory.getCatalogFileDBAdaptor().removeAclsFromStudy(studyId, member);
-        dbAdaptorFactory.getCatalogJobDBAdaptor().removeAclsFromStudy(studyId, member);
-        dbAdaptorFactory.getCatalogDatasetDBAdaptor().removeAclsFromStudy(studyId, member);
-        dbAdaptorFactory.getCatalogIndividualDBAdaptor().removeAclsFromStudy(studyId, member);
-        dbAdaptorFactory.getCatalogCohortDBAdaptor().removeAclsFromStudy(studyId, member);
-        dbAdaptorFactory.getCatalogPanelDBAdaptor().removeAclsFromStudy(studyId, member);
-
-        MongoDBUtils.removeAcl(studyId, member, studyCollection);
-    }
-
-    @Override
-    public QueryResult<StudyAclEntry> setAclsToMember(long studyId, String member, List<String> permissions) throws CatalogDBException {
-        long startTime = startQuery();
-//        CatalogMongoDBUtils.setAclsToMember(studyId, member, permissions, studyCollection);
-        return endQuery("Set Acls to member", startTime, Arrays.asList(aclDBAdaptor.setAclsToMember(studyId, member, permissions)));
-    }
-
-    @Override
-    public void setAclsToMember(Query query, List<String> members, List<String> permissions) throws CatalogDBException {
-        QueryResult<Study> studyQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
-        List<Long> studyIds = studyQueryResult.getResult().stream().map(study -> study.getId()).collect(Collectors.toList());
-
-        if (studyIds == null || studyIds.size() == 0) {
-            throw new CatalogDBException("No matches found for query when attempting to set permissions");
-        }
-
-        aclDBAdaptor.setAclsToMembers(studyIds, members, permissions);
-    }
-
-    @Override
-    public QueryResult<StudyAclEntry> addAclsToMember(long studyId, String member, List<String> permissions) throws CatalogDBException {
-        long startTime = startQuery();
-//        CatalogMongoDBUtils.addAclsToMember(studyId, member, permissions, studyCollection);
-        return endQuery("Add Acls to member", startTime, Arrays.asList(aclDBAdaptor.addAclsToMember(studyId, member, permissions)));
-    }
-
-    @Override
-    public void addAclsToMember(Query query, List<String> members, List<String> permissions) throws CatalogDBException {
-        QueryResult<Study> studyQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
-        List<Long> studyIds = studyQueryResult.getResult().stream().map(study -> study.getId()).collect(Collectors.toList());
-
-        if (studyIds == null || studyIds.size() == 0) {
-            throw new CatalogDBException("No matches found for query when attempting to add new permissions");
-        }
-
-        aclDBAdaptor.addAclsToMembers(studyIds, members, permissions);
-    }
-
-    @Override
-    public QueryResult<StudyAclEntry> removeAclsFromMember(long studyId, String member, List<String> permissions)
-            throws CatalogDBException {
-//        CatalogMongoDBUtils.removeAclsFromMember(studyId, member, permissions, studyCollection);
-        long startTime = startQuery();
-        return endQuery("Remove Acls from member", startTime,
-                Arrays.asList(aclDBAdaptor.removeAclsFromMember(studyId, member, permissions)));
-    }
-
-    @Override
-    public void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException {
-        QueryResult<Study> studyQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
-        List<Long> studyIds = studyQueryResult.getResult().stream().map(Study::getId).collect(Collectors.toList());
-
-        if (studyIds == null || studyIds.size() == 0) {
-            throw new CatalogDBException("No matches found for query when attempting to remove permissions");
-        }
-
-        aclDBAdaptor.removeAclsFromMembers(studyIds, members, permissions);
-    }
 
     /*
      * Variables Methods

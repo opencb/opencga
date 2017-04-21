@@ -615,19 +615,6 @@ public class CatalogManager implements AutoCloseable {
         return sampleAclList;
     }
 
-    public List<QueryResult<SampleAclEntry>> removeSampleAcl(String sampleIdsStr, @Nullable String studyStr, String member,
-                                                             String sessionId) throws CatalogException {
-        AbstractManager.MyResourceIds resourceId = sampleManager.getIds(sampleIdsStr, studyStr, sessionId);
-        List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(resourceId.getResourceIds().size());
-        for (int i = 0; i < resourceId.getResourceIds().size(); i++) {
-            Long sampleId = resourceId.getResourceIds().get(i);
-            QueryResult<SampleAclEntry> sampleAcls = authorizationManager.removeSampleAcl(resourceId.getUser(), sampleId, member);
-            sampleAcls.setId(Long.toString(sampleId));
-            sampleAclList.add(sampleAcls);
-        }
-        return sampleAclList;
-    }
-
     public QueryResult<SampleAclEntry> getSampleAcl(String sampleIdStr, @Nullable String studyStr, String member, String sessionId)
             throws CatalogException {
         AbstractManager.MyResourceId resourceId = sampleManager.getId(sampleIdStr, studyStr, sessionId);

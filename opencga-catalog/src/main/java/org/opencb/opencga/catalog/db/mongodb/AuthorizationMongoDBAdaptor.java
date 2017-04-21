@@ -14,7 +14,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.*;
-import org.opencb.opencga.catalog.auth.authorization.AclDbAdaptor;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.mongodb.converters.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -32,7 +32,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory.*;
 /**
  * Created by pfurio on 20/04/17.
  */
-public class AclMongoDbAdaptor extends MongoDBAdaptor implements AclDbAdaptor {
+public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements AuthorizationDBAdaptor {
 
     private MongoDataStore mongoDataStore;
 
@@ -43,6 +43,7 @@ public class AclMongoDbAdaptor extends MongoDBAdaptor implements AclDbAdaptor {
     private MongoDBCollection individualCollection;
     private MongoDBCollection jobCollection;
     private MongoDBCollection sampleCollection;
+    private MongoDBCollection panelCollection;
 
     private StudyConverter studyConverter;
     private CohortConverter cohortConverter;
@@ -51,9 +52,10 @@ public class AclMongoDbAdaptor extends MongoDBAdaptor implements AclDbAdaptor {
     private IndividualConverter individualConverter;
     private JobConverter jobConverter;
     private SampleConverter sampleConverter;
+    private PanelConverter panelConverter;
 
-    public AclMongoDbAdaptor(Configuration configuration) throws CatalogDBException {
-        super(LoggerFactory.getLogger(AclMongoDbAdaptor.class));
+    public AuthorizationMongoDBAdaptor(Configuration configuration) throws CatalogDBException {
+        super(LoggerFactory.getLogger(AuthorizationMongoDBAdaptor.class));
         initMongoDatastore(configuration);
         initCollectionConnections();
         initConverters();
@@ -116,6 +118,7 @@ public class AclMongoDbAdaptor extends MongoDBAdaptor implements AclDbAdaptor {
         this.individualConverter = new IndividualConverter();
         this.jobConverter = new JobConverter();
         this.sampleConverter = new SampleConverter();
+        this.panelConverter = new PanelConverter();
     }
 
     private void initCollectionConnections() {
@@ -126,6 +129,7 @@ public class AclMongoDbAdaptor extends MongoDBAdaptor implements AclDbAdaptor {
         this.individualCollection = mongoDataStore.getCollection(INDIVIDUAL_COLLECTION);
         this.jobCollection = mongoDataStore.getCollection(JOB_COLLECTION);
         this.sampleCollection = mongoDataStore.getCollection(SAMPLE_COLLECTION);
+        this.panelCollection= mongoDataStore.getCollection(PANEL_COLLECTION);
     }
 
     private void initMongoDatastore(Configuration configuration) throws CatalogDBException {
@@ -183,6 +187,8 @@ public class AclMongoDbAdaptor extends MongoDBAdaptor implements AclDbAdaptor {
                 return fileCollection;
             case SAMPLE_COLLECTION:
                 return sampleCollection;
+            case PANEL_COLLECTION:
+                return panelCollection;
             default:
                 throw new CatalogDBException("Unexpected parameter received. " + collection + " has been received.");
         }
@@ -204,6 +210,8 @@ public class AclMongoDbAdaptor extends MongoDBAdaptor implements AclDbAdaptor {
                 return fileConverter;
             case SAMPLE_COLLECTION:
                 return sampleConverter;
+            case PANEL_COLLECTION:
+                return panelConverter;
             default:
                 throw new CatalogException("Unexpected parameter received. " + collection + " has been received.");
         }

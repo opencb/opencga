@@ -766,22 +766,79 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             case REMOVE:
                 return authorizationManager.removeStudyAcls(studyIds, members, permissions);
             case RESET:
-                // TODO: Improve this way of doing things
-                for (Long studyId : studyIds) {
-                    for (String member : members) {
-                        sampleDBAdaptor.removeAclsFromStudy(studyId, member);
-                        fileDBAdaptor.removeAclsFromStudy(studyId, member);
-                        jobDBAdaptor.removeAclsFromStudy(studyId, member);
-                        datasetDBAdaptor.removeAclsFromStudy(studyId, member);
-                        individualDBAdaptor.removeAclsFromStudy(studyId, member);
-                        cohortDBAdaptor.removeAclsFromStudy(studyId, member);
-                        panelDBAdaptor.removeAclsFromStudy(studyId, member);
-                    }
-                }
+                removeAllPermissionsFromOtherEntities(studyIds, members);
+//                // TODO: Improve this way of doing things
+//                for (Long studyId : studyIds) {
+//                    for (String member : members) {
+//                        sampleDBAdaptor.removeAclsFromStudy(studyId, member);
+//                        fileDBAdaptor.removeAclsFromStudy(studyId, member);
+//                        jobDBAdaptor.removeAclsFromStudy(studyId, member);
+//                        datasetDBAdaptor.removeAclsFromStudy(studyId, member);
+//                        individualDBAdaptor.removeAclsFromStudy(studyId, member);
+//                        cohortDBAdaptor.removeAclsFromStudy(studyId, member);
+//                        panelDBAdaptor.removeAclsFromStudy(studyId, member);
+//                    }
+//                }
                 return authorizationManager.removeStudyAcls(studyIds, members, null);
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }
+    }
+
+    private void removeAllPermissionsFromOtherEntities(List<Long> studyIds, List<String> members) throws CatalogException {
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(FileDBAdaptor.QueryParams.ACL_MEMBER.key(), members);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
+
+        List<Long> sampleIds = new ArrayList<>();
+        DBIterator<Sample> sampleDBIterator = sampleDBAdaptor.iterator(query, options);
+        while (sampleDBIterator.hasNext()) {
+            sampleIds.add(sampleDBIterator.next().getId());
+        }
+        authorizationManager.removeAcls(sampleIds, members, null, MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+
+        List<Long> fileIds = new ArrayList<>();
+        DBIterator<File> fileDBIterator = fileDBAdaptor.iterator(query, options);
+        while (fileDBIterator.hasNext()) {
+            fileIds.add(fileDBIterator.next().getId());
+        }
+        authorizationManager.removeAcls(fileIds, members, null, MongoDBAdaptorFactory.FILE_COLLECTION);
+
+        List<Long> jobIds = new ArrayList<>();
+        DBIterator<Job> jobDBIterator = jobDBAdaptor.iterator(query, options);
+        while (jobDBIterator.hasNext()) {
+            jobIds.add(jobDBIterator.next().getId());
+        }
+        authorizationManager.removeAcls(jobIds, members, null, MongoDBAdaptorFactory.JOB_COLLECTION);
+
+        List<Long> datasetIds = new ArrayList<>();
+        DBIterator<Dataset> datasetDBIterator = datasetDBAdaptor.iterator(query, options);
+        while (datasetDBIterator.hasNext()) {
+            datasetIds.add(datasetDBIterator.next().getId());
+        }
+        authorizationManager.removeAcls(datasetIds, members, null, MongoDBAdaptorFactory.DATASET_COLLECTION);
+
+        List<Long> individualIds = new ArrayList<>();
+        DBIterator<Individual> individualDBIterator = individualDBAdaptor.iterator(query, options);
+        while (individualDBIterator.hasNext()) {
+            individualIds.add(individualDBIterator.next().getId());
+        }
+        authorizationManager.removeAcls(individualIds, members, null, MongoDBAdaptorFactory.INDIVIDUAL_COLLECTION);
+
+        List<Long> cohortIds = new ArrayList<>();
+        DBIterator<Cohort> cohortDBIterator = cohortDBAdaptor.iterator(query, options);
+        while (cohortDBIterator.hasNext()) {
+            cohortIds.add(cohortDBIterator.next().getId());
+        }
+        authorizationManager.removeAcls(cohortIds, members, null, MongoDBAdaptorFactory.COHORT_COLLECTION);
+
+        List<Long> panelIds = new ArrayList<>();
+        DBIterator<DiseasePanel> panelDBIterator = panelDBAdaptor.iterator(query, options);
+        while (panelDBIterator.hasNext()) {
+            panelIds.add(panelDBIterator.next().getId());
+        }
+        authorizationManager.removeAcls(panelIds, members, null, MongoDBAdaptorFactory.PANEL_COLLECTION);
     }
 
     @Override

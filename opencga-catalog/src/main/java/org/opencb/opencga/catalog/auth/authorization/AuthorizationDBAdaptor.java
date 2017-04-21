@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * Created by pfurio on 20/04/17.
  */
-public interface AclDbAdaptor {
+public interface AuthorizationDBAdaptor {
 
     /**
      * Retrieve the list of Acls for the list of members in the resource given.

@@ -34,7 +34,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface FileDBAdaptor extends AclDBAdaptor<File, FileAclEntry> {
+public interface FileDBAdaptor extends DBAdaptor<File> {
 
     enum QueryParams implements QueryParam {
         DELETE_DATE("deleteDate", TEXT_ARRAY, ""),
@@ -306,14 +306,5 @@ public interface FileDBAdaptor extends AclDBAdaptor<File, FileAclEntry> {
             return _key;
         }
     }
-
-    /**
-     * Remove all the Acls defined for the member in the resource.
-     *
-     * @param studyId study id where the Acls will be removed from.
-     * @param member member from whom the Acls will be removed.
-     * @throws CatalogDBException if any problem occurs during the removal.
-     */
-    void removeAclsFromStudy(long studyId, String member) throws CatalogDBException;
 
 }

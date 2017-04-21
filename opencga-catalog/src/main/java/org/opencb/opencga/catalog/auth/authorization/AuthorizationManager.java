@@ -232,19 +232,6 @@ public interface AuthorizationManager {
      */
     QueryResult<SampleAclEntry> getSampleAcl(String userId, long sampleId, String member) throws CatalogException;
 
-    /**
-     * Removes the ACLs defined for the member.
-     *
-     * @param userId   user asking to remove the ACLs.
-     * @param sampleId sample id.
-     * @param member   member whose permissions will be taken out.
-     * @return the SampleAcl prior to the deletion.
-     * @throws CatalogException if the user asking to remove the ACLs does not have proper permissions or the member does not have any ACL
-     *                          defined.
-     */
-    @Deprecated
-    QueryResult<SampleAclEntry> removeSampleAcl(String userId, long sampleId, String member) throws CatalogException;
-
     //------------------------- End of sample ACL ----------------------
 
 
@@ -345,22 +332,6 @@ public interface AuthorizationManager {
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
     QueryResult<DatasetAclEntry> getDatasetAcl(String userId, long datasetId, String member) throws CatalogException;
-
-    /**
-     * Removes the ACLs defined for the member.
-     *
-     * @param userId    user asking to remove the ACLs.
-     * @param datasetId dataset id.
-     * @param member    member whose permissions will be taken out.
-     * @return the DatasetAcl prior to the deletion.
-     * @throws CatalogException if the user asking to remove the ACLs does not have proper permissions or the member does not have any ACL
-     *                          defined.
-     */
-    QueryResult<DatasetAclEntry> removeDatasetAcl(String userId, long datasetId, String member) throws CatalogException;
-
-    QueryResult<DatasetAclEntry> updateDatasetAcl(String userId, long datasetId, String member, @Nullable String addPermissions,
-                                                  @Nullable String removePermissions, @Nullable String setPermissions)
-            throws CatalogException;
 
 
     //------------------------- End of dataset ACL ----------------------
