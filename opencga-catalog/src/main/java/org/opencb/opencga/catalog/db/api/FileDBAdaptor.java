@@ -25,7 +25,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -236,10 +235,6 @@ public interface FileDBAdaptor extends AclDBAdaptor<File, FileAclEntry> {
      */
     QueryResult<Map<String, Map<String, FileAclEntry>>> getAcls(long studyId, List<String> filePaths, List<String> userIds)
             throws CatalogDBException;
-
-    default QueryResult<FileAclEntry> getAcl(long fileId, String member) throws CatalogDBException {
-        return getAcl(fileId, Arrays.asList(member));
-    }
 
     @Deprecated
     enum FileFilterOption implements AbstractDBAdaptor.FilterOption {

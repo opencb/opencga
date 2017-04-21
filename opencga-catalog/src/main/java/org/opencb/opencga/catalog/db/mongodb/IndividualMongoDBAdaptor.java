@@ -891,21 +891,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<IndividualAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
-        long startTime = startQuery();
-//
-//        List<IndividualAclEntry> acl = null;
-//        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, individualCollection, logger);
-//        Individual individual = individualConverter.convertToDataModelType(aggregate.first());
-//
-//        if (individual != null) {
-//            acl = individual.getAcl();
-//        }
-
-        return endQuery("get individual Acl", startTime, aclDBAdaptor.getAcl(id, members));
-    }
-
-    @Override
     public List<QueryResult<IndividualAclEntry>> getAcls(Query query, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 

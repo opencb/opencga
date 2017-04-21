@@ -21,23 +21,18 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.acls.AbstractAcl;
 import org.opencb.opencga.catalog.models.acls.permissions.AbstractAclEntry;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_ID;
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_STUDY_ID;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory.*;
 
 /**
  * Created by pfurio on 20/04/17.
  */
-public class AclMongoDbAdaptor implements AclDbAdaptor {
-
-    private final Logger logger;
+public class AclMongoDbAdaptor extends MongoDBAdaptor implements AclDbAdaptor {
 
     private MongoDataStore mongoDataStore;
 
@@ -58,7 +53,7 @@ public class AclMongoDbAdaptor implements AclDbAdaptor {
     private SampleConverter sampleConverter;
 
     public AclMongoDbAdaptor(Configuration configuration) throws CatalogDBException {
-        this.logger = LoggerFactory.getLogger(AclMongoDbAdaptor.class);
+        super(LoggerFactory.getLogger(AclMongoDbAdaptor.class));
         initMongoDatastore(configuration);
         initCollectionConnections();
         initConverters();
@@ -215,7 +210,8 @@ public class AclMongoDbAdaptor implements AclDbAdaptor {
     }
 
     @Override
-    public <E extends AbstractAclEntry> List<E> get(long resourceId, List<String> members, String entity) throws CatalogException {
+    public <E extends AbstractAclEntry> QueryResult<E> get(long resourceId, List<String> members, String entity) throws CatalogException {
+        long startTime = startQuery();
         List<Bson> aggregation = new ArrayList<>();
         aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, resourceId)));
         aggregation.add(Aggregates.project(
@@ -246,13 +242,13 @@ public class AclMongoDbAdaptor implements AclDbAdaptor {
             }
         }
 
-        return retList;
+        return endQuery(Long.toString(resourceId), startTime, retList);
     }
 
     @Override
-    public <E extends AbstractAclEntry> List<List<E>> get(List<Long> resourceIds, List<String> members, String entity)
+    public <E extends AbstractAclEntry> List<QueryResult<E>> get(List<Long> resourceIds, List<String> members, String entity)
             throws CatalogException {
-        List<List<E>> retList = new ArrayList<>(resourceIds.size());
+        List<QueryResult<E>> retList = new ArrayList<>(resourceIds.size());
         for (Long resourceId : resourceIds) {
             retList.add(get(resourceId, members, entity));
         }

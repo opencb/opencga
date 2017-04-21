@@ -28,16 +28,6 @@ import java.util.List;
  */
 public interface AclDBAdaptor<T, U> extends DBAdaptor<T> {
 
-    /**
-     * Obtains the acl given the following parameters. If only the id is given, a list containing all the acls will be returned.
-     *
-     * @param id id.
-     * @param members List of members to look for permissions. Can only be existing users or groups.
-     * @return A queryResult object containing a list of acls that satisfies the query.
-     * @throws CatalogDBException when the id does not exist or the members introduced do not exist in the database.
-     */
-    QueryResult<U> getAcl(long id, List<String> members) throws CatalogDBException;
-
     List<QueryResult<U>> getAcls(Query query, List<String> members) throws CatalogDBException;
 
     /**

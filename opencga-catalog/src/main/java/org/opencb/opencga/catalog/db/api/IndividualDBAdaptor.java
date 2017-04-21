@@ -26,7 +26,6 @@ import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 
-import java.util.Arrays;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -66,10 +65,6 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual, 
             CatalogDBException;
 
     QueryResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId) throws CatalogDBException;
-
-    default QueryResult<IndividualAclEntry> getAcl(long individualId, String member) throws CatalogDBException {
-        return getAcl(individualId, Arrays.asList(member));
-    }
 
     long getStudyId(long individualId) throws CatalogDBException;
 

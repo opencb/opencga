@@ -23,7 +23,6 @@ import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
 
-import java.util.Arrays;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -136,10 +135,6 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort, CohortAc
 
     @Deprecated
     QueryResult<AnnotationSet> deleteAnnotation(long cohortId, String annotationId) throws CatalogDBException;
-
-    default QueryResult<CohortAclEntry> getAcl(long cohortId, String member) throws CatalogDBException {
-        return getAcl(cohortId, Arrays.asList(member));
-    }
 
     long getStudyId(long cohortId) throws CatalogDBException;
 

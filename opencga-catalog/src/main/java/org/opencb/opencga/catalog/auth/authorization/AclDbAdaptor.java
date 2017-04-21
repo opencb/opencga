@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.auth.authorization;
 
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.acls.permissions.AbstractAclEntry;
@@ -22,7 +23,7 @@ public interface AclDbAdaptor {
      * @return the list of Acls defined for the members.
      * @throws CatalogException  CatalogException.
      */
-    <E extends AbstractAclEntry> List<E> get(long resourceId, List<String> members, String entity) throws CatalogException;
+    <E extends AbstractAclEntry> QueryResult<E> get(long resourceId, List<String> members, String entity) throws CatalogException;
 
     /**
      * Retrieve the list of Acls for the list of members in the resources given.
@@ -34,7 +35,8 @@ public interface AclDbAdaptor {
      * @return the list of Acls defined for the members.
      * @throws CatalogException  CatalogException.
      */
-    <E extends AbstractAclEntry> List<List<E>> get(List<Long> resourceIds, List<String> members, String entity) throws CatalogException;
+    <E extends AbstractAclEntry> List<QueryResult<E>> get(List<Long> resourceIds, List<String> members, String entity)
+            throws CatalogException;
 
     /**
      * Remove all the Acls defined for the member in the resource for the study.

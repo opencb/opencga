@@ -238,21 +238,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<StudyAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
-        long startTime = startQuery();
-//
-//        List<StudyAclEntry> acl = null;
-//        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, studyCollection, logger);
-//        Study study = studyConverter.convertToDataModelType(aggregate.first());
-//
-//        if (study != null) {
-//            acl = study.getAcl();
-//        }
-
-        return endQuery("get study Acl", startTime, aclDBAdaptor.getAcl(id, members));
-    }
-
-    @Override
     public List<QueryResult<StudyAclEntry>> getAcls(Query query, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 

@@ -703,21 +703,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public QueryResult<JobAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
-        long startTime = startQuery();
-//
-//        List<JobAclEntry> acl = null;
-//        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, jobCollection, logger);
-//        Job job = jobConverter.convertToDataModelType(aggregate.first());
-//
-//        if (job != null) {
-//            acl = job.getAcl();
-//        }
-
-        return endQuery("get job Acl", startTime, aclDBAdaptor.getAcl(id, members));
-    }
-
-    @Override
     public List<QueryResult<JobAclEntry>> getAcls(Query query, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 

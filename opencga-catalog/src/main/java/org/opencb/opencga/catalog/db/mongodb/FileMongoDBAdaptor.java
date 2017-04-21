@@ -802,21 +802,6 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     }
 
     @Override
-    public QueryResult<FileAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
-        long startTime = startQuery();
-//
-//        List<FileAclEntry> acl = null;
-//        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, fileCollection, logger);
-//        File file = fileConverter.convertToDataModelType(aggregate.first());
-//
-//        if (file != null) {
-//            acl = file.getAcl();
-//        }
-
-        return endQuery("get file Acl", startTime, aclDBAdaptor.getAcl(id, members));
-    }
-
-    @Override
     public List<QueryResult<FileAclEntry>> getAcls(Query query, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 

@@ -716,21 +716,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
     }
 
     @Override
-    public QueryResult<CohortAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
-        long startTime = startQuery();
-//
-//        List<CohortAclEntry> acl = null;
-//        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, cohortCollection, logger);
-//        Cohort cohort = cohortConverter.convertToDataModelType(aggregate.first());
-//
-//        if (cohort != null) {
-//            acl = cohort.getAcl();
-//        }
-
-        return endQuery("get cohort Acl", startTime, aclDBAdaptor.getAcl(id, members));
-    }
-
-    @Override
     public List<QueryResult<CohortAclEntry>> getAcls(Query query, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 

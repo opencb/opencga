@@ -134,26 +134,6 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
      */
     QueryResult<Sample> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
-    /**
-     * Retrieve the sample Acls for the given members in the sample.
-     *
-     * @param sampleStr Sample id of which the acls will be obtained.
-     * @param members userIds/groupIds for which the acls will be retrieved. When this is null, it will obtain all the acls.
-     * @param sessionId Session of the user that wants to retrieve the acls.
-     * @return A queryResult containing the sample acls.
-     * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
-     * the sample id is not valid or the members given do not exist.
-     */
-    QueryResult<SampleAclEntry> getAcls(String sampleStr, List<String> members, String sessionId) throws CatalogException;
-    default List<QueryResult<SampleAclEntry>> getAcls(List<String> sampleIds, List<String> members, String sessionId)
-            throws CatalogException {
-        List<QueryResult<SampleAclEntry>> result = new ArrayList<>(sampleIds.size());
-        for (String sampleStr : sampleIds) {
-            result.add(getAcls(sampleStr, members, sessionId));
-        }
-        return result;
-    }
-
     @Deprecated
     QueryResult<AnnotationSet> annotate(long sampleId, String annotationSetName, long variableSetId, Map<String, Object> annotations,
                                         Map<String, Object> attributes, boolean checkAnnotationSet,

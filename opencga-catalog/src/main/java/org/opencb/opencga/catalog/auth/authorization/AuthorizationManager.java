@@ -399,6 +399,8 @@ public interface AuthorizationManager {
     List<QueryResult<StudyAclEntry>> removeStudyAcls(List<Long> studyIds, List<String> members, @Nullable List<String> permissions)
             throws CatalogException;
 
+    <E extends AbstractAclEntry> QueryResult<E> getAcl(long id, List<String> members, String entity) throws CatalogException;
+
     <E extends AbstractAclEntry> List<QueryResult<E>> getAcls(List<Long> ids, List<String> members, String entity) throws CatalogException;
 
     <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(List<Long> ids, List<String> members,
@@ -422,17 +424,17 @@ public interface AuthorizationManager {
      */
     boolean memberHasPermissionsInStudy(long studyId, String member) throws CatalogException;
 
-    /**
-     * Checks whether any of the members already have any permission set for the particular document.
-     *
-     * @param studyId   study id where the main id belongs to.
-     * @param id        id of the document that is going to be checked (file id, sample id, cohort id...)
-     * @param members   List of members (users or groups) that will be checked.
-     * @param dbAdaptor Mongo db adaptor to make the mongo query.
-     * @return a boolean indicating whether any of the members already have permissions.
-     * @throws CatalogException CatalogException.
-     */
-    boolean anyMemberHasPermissions(long studyId, long id, List<String> members, org.opencb.opencga.catalog.db.api.AclDBAdaptor dbAdaptor)
-            throws CatalogException;
+//    /**
+//     * Checks whether any of the members already have any permission set for the particular document.
+//     *
+//     * @param studyId   study id where the main id belongs to.
+//     * @param id        id of the document that is going to be checked (file id, sample id, cohort id...)
+//     * @param members   List of members (users or groups) that will be checked.
+//     * @param dbAdaptor Mongo db adaptor to make the mongo query.
+//     * @return a boolean indicating whether any of the members already have permissions.
+//     * @throws CatalogException CatalogException.
+//     */
+//    boolean anyMemberHasPermissions(long studyId, long id, List<String> members, org.opencb.opencga.catalog.db.api.AclDBAdaptor dbAdaptor)
+//            throws CatalogException;
 
 }

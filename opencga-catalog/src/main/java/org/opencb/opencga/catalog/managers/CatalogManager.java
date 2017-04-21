@@ -602,11 +602,6 @@ public class CatalogManager implements AutoCloseable {
 //        return new QueryResult("unshareStudy");
 //    }
 
-    @Deprecated
-    public QueryResult<StudyAclEntry> getStudyAcls(String studyStr, List<String> members, String sessionId) throws CatalogException {
-        return studyManager.getAcls(studyStr, members, sessionId);
-    }
-
     public List<QueryResult<SampleAclEntry>> getAllSampleAcls(String sampleIdsStr, @Nullable String studyStr, String sessionId)
             throws CatalogException {
         AbstractManager.MyResourceIds resourceId = sampleManager.getIds(sampleIdsStr, studyStr, sessionId);

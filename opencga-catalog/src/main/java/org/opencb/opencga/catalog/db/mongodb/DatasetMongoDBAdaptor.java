@@ -538,21 +538,6 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     }
 
     @Override
-    public QueryResult<DatasetAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
-        long startTime = startQuery();
-//
-//        List<DatasetAclEntry> acl = null;
-//        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, datasetCollection, logger);
-//        Dataset dataset = datasetConverter.convertToDataModelType(aggregate.first());
-//
-//        if (dataset != null) {
-//            acl = dataset.getAcl();
-//        }
-
-        return endQuery("get dataset Acl", startTime, aclDBAdaptor.getAcl(id, members));
-    }
-
-    @Override
     public List<QueryResult<DatasetAclEntry>> getAcls(Query query, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 
