@@ -36,14 +36,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     private MongoDataStore mongoDataStore;
 
-    private MongoDBCollection studyCollection;
-    private MongoDBCollection cohortCollection;
-    private MongoDBCollection datasetCollection;
-    private MongoDBCollection fileCollection;
-    private MongoDBCollection individualCollection;
-    private MongoDBCollection jobCollection;
-    private MongoDBCollection sampleCollection;
-    private MongoDBCollection panelCollection;
+    private Map<String, MongoDBCollection> dbCollectionMap = new HashMap<>();
 
     private StudyConverter studyConverter;
     private CohortConverter cohortConverter;
@@ -122,14 +115,14 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     private void initCollectionConnections() {
-        this.studyCollection = mongoDataStore.getCollection(STUDY_COLLECTION);
-        this.cohortCollection= mongoDataStore.getCollection(COHORT_COLLECTION);
-        this.datasetCollection = mongoDataStore.getCollection(DATASET_COLLECTION);
-        this.fileCollection = mongoDataStore.getCollection(FILE_COLLECTION);
-        this.individualCollection = mongoDataStore.getCollection(INDIVIDUAL_COLLECTION);
-        this.jobCollection = mongoDataStore.getCollection(JOB_COLLECTION);
-        this.sampleCollection = mongoDataStore.getCollection(SAMPLE_COLLECTION);
-        this.panelCollection= mongoDataStore.getCollection(PANEL_COLLECTION);
+        this.dbCollectionMap.put(STUDY_COLLECTION, mongoDataStore.getCollection(STUDY_COLLECTION));
+        this.dbCollectionMap.put(COHORT_COLLECTION, mongoDataStore.getCollection(COHORT_COLLECTION));
+        this.dbCollectionMap.put(DATASET_COLLECTION, mongoDataStore.getCollection(DATASET_COLLECTION));
+        this.dbCollectionMap.put(FILE_COLLECTION, mongoDataStore.getCollection(FILE_COLLECTION));
+        this.dbCollectionMap.put(INDIVIDUAL_COLLECTION, mongoDataStore.getCollection(INDIVIDUAL_COLLECTION));
+        this.dbCollectionMap.put(JOB_COLLECTION, mongoDataStore.getCollection(JOB_COLLECTION));
+        this.dbCollectionMap.put(SAMPLE_COLLECTION, mongoDataStore.getCollection(SAMPLE_COLLECTION));
+        this.dbCollectionMap.put(PANEL_COLLECTION, mongoDataStore.getCollection(PANEL_COLLECTION));
     }
 
     private void initMongoDatastore(Configuration configuration) throws CatalogDBException {
@@ -171,24 +164,17 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         return database;
     }
 
-    private MongoDBCollection getCollection(String collection) throws CatalogDBException {
+    private void validateCollection(String collection) throws CatalogDBException {
         switch (collection) {
             case STUDY_COLLECTION:
-                return studyCollection;
             case COHORT_COLLECTION:
-                return cohortCollection;
             case INDIVIDUAL_COLLECTION:
-                return individualCollection;
             case DATASET_COLLECTION:
-                return datasetCollection;
             case JOB_COLLECTION:
-                return jobCollection;
             case FILE_COLLECTION:
-                return fileCollection;
             case SAMPLE_COLLECTION:
-                return sampleCollection;
             case PANEL_COLLECTION:
-                return panelCollection;
+                return;
             default:
                 throw new CatalogDBException("Unexpected parameter received. " + collection + " has been received.");
         }
@@ -219,6 +205,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     @Override
     public <E extends AbstractAclEntry> QueryResult<E> get(long resourceId, List<String> members, String entity) throws CatalogException {
+        validateCollection(entity);
         long startTime = startQuery();
         List<Bson> aggregation = new ArrayList<>();
         aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, resourceId)));
@@ -240,7 +227,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             logger.debug("Get Acl: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         }
 
-        QueryResult<Document> aggregate = getCollection(entity).aggregate(aggregation, null);
+        QueryResult<Document> aggregate = dbCollectionMap.get(entity).aggregate(aggregation, null);
 
         List<E> retList = new ArrayList<>();
 
@@ -265,11 +252,12 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     @Override
     public void removeFromStudy(long studyId, String member, String entity) throws CatalogException {
+        validateCollection(entity);
         Document query = new Document()
                 .append(PRIVATE_STUDY_ID, studyId)
                 .append(QueryParams.ACL_MEMBER.key(), member);
         Bson update = new Document("$pull", new Document("acl", new Document("member", member)));
-        getCollection(entity).update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
+        dbCollectionMap.get(entity).update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
 
         logger.debug("Remove all the Acls for member {} in study {}", member, studyId);
     }
@@ -277,7 +265,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     @Override
     public void setToMembers(List<Long> resourceIds, List<String> members, List<String> permissions, String entity)
             throws CatalogDBException {
-        MongoDBCollection collection = getCollection(entity);
+        validateCollection(entity);
+        MongoDBCollection collection = dbCollectionMap.get(entity);
         for (String member : members) {
             logger.debug("Setting ACLs for {}", member);
 
@@ -315,7 +304,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     @Override
     public void addToMembers(List<Long> resourceIds, List<String> members, List<String> permissions, String entity)
             throws CatalogDBException {
-        MongoDBCollection collection = getCollection(entity);
+        validateCollection(entity);
+        MongoDBCollection collection = dbCollectionMap.get(entity);
         for (String member : members) {
             logger.debug("Adding ACLs for {}", member);
 
@@ -355,7 +345,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     @Override
     public void removeFromMembers(List<Long> resourceIds, List<String> members, @Nullable List<String> permissions, String entity)
             throws CatalogDBException {
-        MongoDBCollection collection = getCollection(entity);
+        validateCollection(entity);
+        MongoDBCollection collection = dbCollectionMap.get(entity);
         if (permissions == null || permissions.size() == 0) {
             // Remove the members from the acl table
             Document queryDocument = new Document()
