@@ -37,12 +37,12 @@ def retry(func, max_attempts, initial_retry_seconds, max_retry_seconds,
                 if login_handler:
                     login_handler()
                 else:
-                    raise e  # there's no point in retrying if we can't log in
+                    raise  # there's no point in retrying if we can't log in
             elif is_bad_login_exception(e):
-                raise e  # no point in retrying login if we have the wrong credentials
+                raise  # no point in retrying login if we have the wrong credentials
             else:
                 if attempt_number >= max_attempts:  # last attempt failed, propagate error:
-                    raise e
+                    raise
                 if on_retry:
                     # notify that we are retrying
                     exc_type, exc_val, exc_tb = sys.exc_info()
