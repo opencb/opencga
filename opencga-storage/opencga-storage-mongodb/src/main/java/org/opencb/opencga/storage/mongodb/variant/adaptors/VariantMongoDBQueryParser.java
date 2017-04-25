@@ -197,8 +197,16 @@ public class VariantMongoDBQueryParser {
     private void parseAnnotationQueryParams(Query query, QueryBuilder builder) {
         if (query != null) {
             if (isValidParam(query, ANNOTATION_EXISTS)) {
+                boolean exists = query.getBoolean(ANNOTATION_EXISTS.key());
                 builder.and(DocumentToVariantConverter.ANNOTATION_FIELD + "." + DocumentToVariantAnnotationConverter.ANNOT_ID_FIELD);
-                builder.exists(query.getBoolean(ANNOTATION_EXISTS.key()));
+                builder.exists(exists);
+                if (!exists) {
+                    builder.and(DocumentToVariantConverter.ANNOTATION_FIELD
+                            + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                            + '.' + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD)
+                            .exists(false);
+                }
+                // else , should be combined with an or, and it would not speed up the filtering. This scenario is not so common
             }
 
             if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {

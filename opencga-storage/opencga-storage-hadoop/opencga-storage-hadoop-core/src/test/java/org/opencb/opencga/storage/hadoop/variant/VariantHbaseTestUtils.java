@@ -305,7 +305,7 @@ public class VariantHbaseTestUtils {
                 .append(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId())
                 .append(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName())
                 .append(VariantStorageEngine.Options.DB_NAME.key(), dbName).append(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantAnnotationManager.SPECIES, "hsapiens").append(VariantAnnotationManager.ASSEMBLY, "GRc37")
+                .append(VariantAnnotationManager.SPECIES, "hsapiens").append(VariantAnnotationManager.ASSEMBLY, "GRch37")
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
                 .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true)
                 .append(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE, loadArchive)

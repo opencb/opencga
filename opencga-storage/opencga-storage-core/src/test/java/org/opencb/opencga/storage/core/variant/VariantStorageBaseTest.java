@@ -255,7 +255,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
 //        newParams.putIfAbsent(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
         newParams.putIfAbsent(VariantStorageEngine.Options.ANNOTATE.key(), true);
         newParams.putIfAbsent(VariantAnnotationManager.SPECIES, "hsapiens");
-        newParams.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRc37");
+        newParams.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRch37");
         newParams.putIfAbsent(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
 
         StoragePipelineResult storagePipelineResult = runETL(variantStorageManager, inputUri, outputUri, newParams, true, doTransform, doLoad);
