@@ -481,7 +481,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
             if (Bytes.toString(ctx.getCurrRowKey()).equals(sliceToFail)) {
                 if (!hadFail.getAndSet(true)) {
                     System.out.println("DO FAIL!!");
-                    ctx.getContext().getCounter(COUNTER_GROUP_NAME, "TEST.FAIL").increment(1);
+                    ctx.getContext().getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "TEST.FAIL").increment(1);
                     throw new RuntimeException();
                 }
             }

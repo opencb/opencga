@@ -27,7 +27,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 
@@ -66,9 +65,9 @@ public class VariantTableHelper extends GenomeHelper {
         setArchiveTable(archiveTable);
     }
 
-    public StudyConfiguration loadMeta() throws IOException {
+    public StudyConfiguration readStudyConfiguration() throws IOException {
         StudyConfigurationManager scm = new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(this,
-                Bytes.toString(analysisTable.get()), this.hBaseManager.getConf(), null));
+                Bytes.toString(analysisTable.get()), getConf(), null));
         QueryResult<StudyConfiguration> query = scm.getStudyConfiguration(getStudyId(), new QueryOptions());
         if (query.getResult().size() != 1) {
             throw new IllegalStateException("Only one study configuration expected for study");
@@ -80,19 +79,11 @@ public class VariantTableHelper extends GenomeHelper {
         return analysisTable.get();
     }
 
-    public byte[] getAtchiveTable() {
+    public byte[] getArchiveTable() {
         return archiveTable.get();
     }
 
-    public void act(Connection con, HBaseManager.HBaseTableConsumer func) throws IOException {
-        hBaseManager.act(con, getAnalysisTable(), func);
-    }
-
-    public <T> T actOnTable(Connection con, HBaseManager.HBaseTableAdminFunction<T> func) throws IOException {
-        return hBaseManager.act(con, getOutputTableAsString(), func);
-    }
-
-    public String getOutputTableAsString() {
+    public String getAnalysisTableAsString() {
         return Bytes.toString(getAnalysisTable());
     }
 

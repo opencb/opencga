@@ -7,8 +7,8 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.NullWritable;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.AbstractHBaseMapReduce;
+import org.opencb.opencga.storage.hadoop.variant.AnalysisTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableMapReduce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +67,7 @@ public class AnalysisToFileMapper extends AbstractHBaseMapReduce<Object, Object>
                 default:
                     throw new IllegalStateException("Type not supported: " + this.type);
             }
-            context.getCounter(AbstractVariantTableMapReduce.COUNTER_GROUP_NAME, this.type.name()).increment(1);
+            context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, this.type.name()).increment(1);
         }
     }
 }

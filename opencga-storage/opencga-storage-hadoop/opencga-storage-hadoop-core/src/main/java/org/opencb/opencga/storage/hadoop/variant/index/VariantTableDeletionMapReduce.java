@@ -36,6 +36,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 
+import static org.opencb.opencga.storage.hadoop.variant.AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME;
+
 /**
  * Removes Sample data for a provided file from the Analysis (Variant) and the
  * file data from the Archive Table.
@@ -55,7 +57,7 @@ public class VariantTableDeletionMapReduce extends AbstractVariantTableMapReduce
         super.setup(context);
         Connection connection = getHelper().getHBaseManager().getConnection();
         this.analysisTable = connection.getTable(TableName.valueOf(getHelper().getAnalysisTable()));
-        this.archiveTable = connection.getTable(TableName.valueOf(getHelper().getAtchiveTable()));
+        this.archiveTable = connection.getTable(TableName.valueOf(getHelper().getArchiveTable()));
     }
 
     @Override
@@ -74,7 +76,7 @@ public class VariantTableDeletionMapReduce extends AbstractVariantTableMapReduce
             }
         }
 
-        endTime("2 Unpack and convert input ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN_PREFIX + ")");
+        endStep("2 Unpack and convert input ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN_PREFIX + ")");
 
 
         for (Variant var : analysisVar) {

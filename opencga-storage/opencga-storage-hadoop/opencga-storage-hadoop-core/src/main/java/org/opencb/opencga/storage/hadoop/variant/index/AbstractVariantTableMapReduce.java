@@ -31,6 +31,7 @@ import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.AbstractHBaseMapReduce;
+import org.opencb.opencga.storage.hadoop.variant.AnalysisTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
@@ -40,7 +41,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -50,7 +50,6 @@ import java.util.stream.Stream;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  */
 public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapReduce<ImmutableBytesWritable, Mutation> {
-    public static final String COUNTER_GROUP_NAME = "OPENCGA.HBASE";
     public static final String SPECIFIC_PUT = "opencga.storage.hadoop.hbase.merge.use_specific_put";
     public static final String ARCHIVE_GET_BATCH_SIZE = "opencga.storage.hadoop.hbase.merge.archive.scan.batchsize";
     private Logger logger = LoggerFactory.getLogger(AbstractVariantTableMapReduce.class);
@@ -147,7 +146,7 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
             }
             if (put != null) {
                 context.write(new ImmutableBytesWritable(getHelper().getAnalysisTable()), put);
-                context.getCounter(COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
+                context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
             }
             return row;
         } catch (RuntimeException | InterruptedException | IOException e) {
@@ -165,7 +164,7 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
                 } catch (IOException | InterruptedException e) {
                     throw new IllegalStateException(e);
                 }
-                context.getCounter(COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
+                context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
             }
         }
     }
@@ -183,12 +182,12 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
             put.addColumn(getHelper().getColumnFamily(), Bytes.toBytes(column), value);
         }
         try {
-            context.write(new ImmutableBytesWritable(getHelper().getAtchiveTable()), put);
+            context.write(new ImmutableBytesWritable(getHelper().getArchiveTable()), put);
         } catch (IOException | InterruptedException e) {
             throw new IllegalStateException(e);
         }
-        context.getCounter(COUNTER_GROUP_NAME, "ARCHIVE_TABLE_ROW_PUT").increment(1);
-        context.getCounter(COUNTER_GROUP_NAME, "ARCHIVE_TABLE_ROWS_IN_PUT").increment(tableStudyRows.size());
+        context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "ARCHIVE_TABLE_ROW_PUT").increment(1);
+        context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "ARCHIVE_TABLE_ROWS_IN_PUT").increment(tableStudyRows.size());
     }
 
     @Override
@@ -203,24 +202,26 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
         variantMerger = new VariantMerger(true);
         variantMerger.setStudyId(Integer.toString(studyId));
 
-        String[] toIdxFileIds = context.getConfiguration().getStrings(AbstractAnalysisTableDriver.CONFIG_VARIANT_FILE_IDS, new String[0]);
-        if (toIdxFileIds.length == 0) {
+        Set<Integer> filesToIndex = context.getConfiguration().getStringCollection(AbstractAnalysisTableDriver.CONFIG_VARIANT_FILE_IDS)
+                .stream()
+                .map(Integer::valueOf)
+                .collect(Collectors.toSet());
+        if (filesToIndex.size() == 0) {
             throw new IllegalStateException(
                     "File IDs to be indexed not found in configuration: " + AbstractAnalysisTableDriver.CONFIG_VARIANT_FILE_IDS);
         }
-        Set<String> toIndexSampleNames = new HashSet<>();
-        Set<Integer> toIndexFileIdSet = Arrays.stream(toIdxFileIds).map(id -> Integer.valueOf(id)).collect(Collectors.toSet());
+        Set<String> samplesToIndex = new HashSet<>();
         BiMap<Integer, String> sampleIdToSampleName = StudyConfiguration.inverseMap(getStudyConfiguration().getSampleIds());
         for (BiMap.Entry<Integer, LinkedHashSet<Integer>> entry : getStudyConfiguration().getSamplesInFiles().entrySet()) {
-            if (toIndexFileIdSet.contains(entry.getKey())) {
-                entry.getValue().forEach(sid -> toIndexSampleNames.add(sampleIdToSampleName.get(sid)));
+            if (filesToIndex.contains(entry.getKey())) {
+                entry.getValue().forEach(sid -> samplesToIndex.add(sampleIdToSampleName.get(sid)));
             }
         }
-        getVariantMerger().setExpectedSamples(getIndexedSamples().keySet());
+        variantMerger.setExpectedSamples(getIndexedSamples().keySet());
         // Add all samples which are currently being indexed.
 
-        this.currentIndexingSamples = new HashSet<>(toIndexSampleNames);
-        getVariantMerger().addExpectedSamples(toIndexSampleNames);
+        this.currentIndexingSamples = new HashSet<>(samplesToIndex);
+        variantMerger.addExpectedSamples(samplesToIndex);
     }
 
     @Override
@@ -234,16 +235,16 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
     @Override
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
         logger.info("Start mapping key: " + Bytes.toString(key.get()));
-        startTime();
+        startStep();
         if (value.isEmpty()) {
-            context.getCounter(COUNTER_GROUP_NAME, "VCF_RESULT_EMPTY").increment(1);
+            context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "VCF_RESULT_EMPTY").increment(1);
             return; // TODO search backwards?
         }
 
         if (Bytes.equals(key.get(), getHelper().getMetaRowKey())) {
             return; // ignore metadata column
         }
-        context.getCounter(COUNTER_GROUP_NAME, "VCF_BLOCK_READ").increment(1);
+        context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "VCF_BLOCK_READ").increment(1);
 
 
         // Calculate various positions
@@ -271,7 +272,7 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
         VariantMapReduceContext ctx = new VariantMapReduceContext(currRowKey, context, value, fileIds,
                 sampleIds, chr, startPos, nextStartPos);
 
-        endTime("1 Prepare slice");
+        endStep("1 Prepare slice");
 
         /* *********************************** */
         /* ********* CALL concrete class ***** */
@@ -279,10 +280,8 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
         /* *********************************** */
 
         // Clean up of this slice
-        for (Entry<String, Long> entry : this.getTimes().entrySet()) {
-            context.getCounter(COUNTER_GROUP_NAME, "VCF_TIMER_" + entry.getKey().replace(' ', '_')).increment(entry.getValue());
-        }
-        this.getTimes().clear();
+        this.getMrHelper().addTimesAsCounters();
+
         logger.info("Finished mapping key: " + Bytes.toString(key.get()));
     }
 

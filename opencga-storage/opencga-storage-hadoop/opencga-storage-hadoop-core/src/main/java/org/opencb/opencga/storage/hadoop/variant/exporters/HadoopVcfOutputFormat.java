@@ -64,7 +64,7 @@ public class HadoopVcfOutputFormat extends FileOutputFormat<Variant, NullWritabl
         boolean withGenotype = conf.getBoolean(VariantTableExportDriver.CONFIG_VARIANT_TABLE_EXPORT_GENOTYPE, false);
 
         try (VariantTableHelper helper = new VariantTableHelper(conf)) {
-            StudyConfiguration sc = helper.loadMeta();
+            StudyConfiguration sc = helper.readStudyConfiguration();
             VariantSourceDBAdaptor source = new HadoopVariantSourceDBAdaptor(helper);
             QueryOptions options = new QueryOptions();
             VariantVcfDataWriter exporter = new VariantVcfDataWriter(sc, source, fileOut, new Query(), options);
