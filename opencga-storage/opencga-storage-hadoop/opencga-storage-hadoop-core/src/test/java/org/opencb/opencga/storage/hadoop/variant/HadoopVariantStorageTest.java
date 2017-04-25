@@ -86,7 +86,7 @@ import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -441,7 +441,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                     int r = new VariantTableDriver(){
                         @Override
                         protected Class<? extends TableMapper> getMapperClass() {
-                            return VariantTableMapperFail.class;
+                            return VariantMergerTableMapperFail.class;
                         }
                     }.privateMain(Commandline.translateCommandline(args), conf);
                     System.out.println("Finish execution VariantTableDriver");
@@ -461,7 +461,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
     }
 
 
-    class VariantTableMapperFail extends VariantTableMapper {
+    class VariantMergerTableMapperFail extends VariantMergerTableMapper {
 
         public static final String SLICE_TO_FAIL = "slice.to.fail";
         private String sliceToFail = "";

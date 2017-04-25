@@ -34,16 +34,16 @@ import java.util.List;
  */
 public class VariantHbasePutTask implements DataWriter<VcfSlice> {
     protected final Logger logger = LoggerFactory.getLogger(VariantHbasePutTask.class);
-    private final ArchiveHelper helper;
+    private final ArchiveTableHelper helper;
     private final TableName tableName;
     private BufferedMutator tableMutator;
 
-    public VariantHbasePutTask(ArchiveHelper helper, String tableName) {
+    public VariantHbasePutTask(ArchiveTableHelper helper, String tableName) {
         this.helper = helper;
         this.tableName = TableName.valueOf(tableName);
     }
 
-    private ArchiveHelper getHelper() {
+    private ArchiveTableHelper getHelper() {
         return helper;
     }
 

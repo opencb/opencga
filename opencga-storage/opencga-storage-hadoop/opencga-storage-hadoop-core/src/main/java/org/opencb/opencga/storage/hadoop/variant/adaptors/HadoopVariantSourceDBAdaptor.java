@@ -33,8 +33,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,7 +100,7 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
             get.addFamily(genomeHelper.getColumnFamily());
         } else {
             for (Integer fileId : fileIds) {
-                byte[] columnName = Bytes.toBytes(ArchiveHelper.getColumnName(fileId));
+                byte[] columnName = Bytes.toBytes(ArchiveTableHelper.getColumnName(fileId));
                 get.addColumn(genomeHelper.getColumnFamily(), columnName);
             }
         }
@@ -165,7 +164,7 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
         Objects.requireNonNull(variantSource);
         String tableName = HadoopVariantStorageEngine.getArchiveTableName(Integer.parseInt(variantSource.getStudyId()),
                 genomeHelper.getConf());
-        if (ArchiveDriver.createArchiveTableIfNeeded(genomeHelper, tableName, getHBaseManager().getConnection())) {
+        if (ArchiveTableHelper.createArchiveTableIfNeeded(genomeHelper, tableName, getHBaseManager().getConnection())) {
             logger.info("Create table '{}' in hbase!", tableName);
         }
         Put put = wrapVcfMetaAsPut(variantSource, this.genomeHelper);
@@ -183,7 +182,7 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
 
     public void updateLoadedFilesSummary(int studyId, List<Integer> newLoadedFiles) throws IOException {
         String tableName = HadoopVariantStorageEngine.getArchiveTableName(studyId, genomeHelper.getConf());
-        if (ArchiveDriver.createArchiveTableIfNeeded(genomeHelper, tableName, getHBaseManager().getConnection())) {
+        if (ArchiveTableHelper.createArchiveTableIfNeeded(genomeHelper, tableName, getHBaseManager().getConnection())) {
             logger.info("Create table '{}' in hbase!", tableName);
         }
         StringBuilder sb = new StringBuilder();

@@ -87,7 +87,7 @@ public class VariantTableDriver extends AbstractAnalysisTableDriver {
 
     @Override
     protected Class<? extends TableMapper> getMapperClass() {
-        return VariantTableMapper.class;
+        return VariantMergerTableMapper.class;
     }
 
     @Override

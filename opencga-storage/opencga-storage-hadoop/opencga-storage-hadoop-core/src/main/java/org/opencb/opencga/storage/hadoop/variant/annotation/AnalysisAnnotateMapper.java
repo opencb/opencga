@@ -15,11 +15,12 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
-import org.opencb.opencga.storage.hadoop.variant.AbstractHBaseMapReduce;
+import org.opencb.opencga.storage.hadoop.variant.AbstractHBaseVariantMapper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * Created by mh719 on 15/12/2016.
  */
-public class AnalysisAnnotateMapper extends AbstractHBaseMapReduce<NullWritable, PhoenixVariantAnnotationWritable> {
+public class AnalysisAnnotateMapper extends AbstractHBaseVariantMapper<NullWritable, PhoenixVariantAnnotationWritable> {
     private Logger logger = LoggerFactory.getLogger(AnalysisAnnotateMapper.class);
     public static final String CONFIG_VARIANT_TABLE_ANNOTATE_FORCE = "opencga.variant.table.annotate.force";
 
@@ -48,7 +49,7 @@ public class AnalysisAnnotateMapper extends AbstractHBaseMapReduce<NullWritable,
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
         this.forceAnnotation = context.getConfiguration().getBoolean(CONFIG_VARIANT_TABLE_ANNOTATE_FORCE, false);
-        studiesRow = getHelper().generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
+        studiesRow = VariantPhoenixKeyFactory.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
 
         /* Annotation -> Phoenix converter */
         annotationConverter = new VariantAnnotationToHBaseConverter(getHelper());

@@ -55,9 +55,9 @@ import static org.opencb.opencga.storage.hadoop.variant.AnalysisTableMapReduceHe
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
  */
-public class VariantTableMapper extends AbstractVariantTableMapReduce {
+public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
 
-    private Logger logger = LoggerFactory.getLogger(VariantTableMapper.class);
+    private Logger logger = LoggerFactory.getLogger(VariantMergerTableMapper.class);
     private final AtomicBoolean parallel = new AtomicBoolean(false);
 
 

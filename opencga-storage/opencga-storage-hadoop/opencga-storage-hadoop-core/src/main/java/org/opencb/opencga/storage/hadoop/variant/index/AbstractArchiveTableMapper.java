@@ -30,10 +30,11 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
-import org.opencb.opencga.storage.hadoop.variant.AbstractHBaseMapReduce;
+import org.opencb.opencga.storage.hadoop.variant.AbstractHBaseVariantMapper;
 import org.opencb.opencga.storage.hadoop.variant.AnalysisTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 import org.slf4j.Logger;
@@ -49,15 +50,16 @@ import java.util.stream.Stream;
  *
  * @author Matthias Haimel mh719+git@cam.ac.uk
  */
-public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapReduce<ImmutableBytesWritable, Mutation> {
+public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMapper<ImmutableBytesWritable, Mutation> {
     public static final String SPECIFIC_PUT = "opencga.storage.hadoop.hbase.merge.use_specific_put";
     public static final String ARCHIVE_GET_BATCH_SIZE = "opencga.storage.hadoop.hbase.merge.archive.scan.batchsize";
-    private Logger logger = LoggerFactory.getLogger(AbstractVariantTableMapReduce.class);
+    private Logger logger = LoggerFactory.getLogger(AbstractArchiveTableMapper.class);
 
     protected ArchiveResultToVariantConverter resultConverter;
     protected VariantMerger variantMerger;
     protected Set<String> currentIndexingSamples;
     protected Integer archiveBatchSize;
+    private ArchiveRowKeyFactory rowKeyFactory;
 
 
     protected ArchiveResultToVariantConverter getResultConverter() {
@@ -222,6 +224,8 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
 
         this.currentIndexingSamples = new HashSet<>(samplesToIndex);
         variantMerger.addExpectedSamples(samplesToIndex);
+
+        rowKeyFactory = new ArchiveRowKeyFactory(getHelper().getChunkSize(), getHelper().getSeparator());
     }
 
     @Override
@@ -250,11 +254,10 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
         // Calculate various positions
         byte[] currRowKey = key.get();
         String sliceKey = Bytes.toString(currRowKey);
-        VariantTableHelper h = getHelper();
-        String chr = h.extractChromosomeFromBlockId(sliceKey);
-        Long sliceReg = h.extractSliceFromBlockId(sliceKey);
-        long startPos = h.getStartPositionFromSlice(sliceReg);
-        long nextStartPos = h.getStartPositionFromSlice(sliceReg + 1);
+        String chr = rowKeyFactory.extractChromosomeFromBlockId(sliceKey);
+        Long sliceReg = rowKeyFactory.extractSliceFromBlockId(sliceKey);
+        long startPos = rowKeyFactory.getStartPositionFromSlice(sliceReg);
+        long nextStartPos = rowKeyFactory.getStartPositionFromSlice(sliceReg + 1);
 
         Set<Integer> fileIds = extractFileIds(value);
         if (logger.isDebugEnabled()) {

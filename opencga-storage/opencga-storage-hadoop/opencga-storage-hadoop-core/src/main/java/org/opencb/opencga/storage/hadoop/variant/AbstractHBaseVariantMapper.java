@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Created by mh719 on 06/12/2016.
  */
-public abstract class AbstractHBaseMapReduce<KEYOUT, VALUEOUT> extends TableMapper<KEYOUT, VALUEOUT> {
+public abstract class AbstractHBaseVariantMapper<KEYOUT, VALUEOUT> extends TableMapper<KEYOUT, VALUEOUT> {
     private final AtomicReference<AnalysisTableMapReduceHelper> mrHelper = new AtomicReference<>();
 
     @Override

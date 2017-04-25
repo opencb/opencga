@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory.generateVariantRowKey;
 
 /**
  * Created on 01/12/15.
@@ -204,7 +205,7 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter
 
     Put buildPut(VariantAnnotation variantAnnotation, Map<PhoenixHelper.Column, ?> map) {
 
-        byte[] bytesRowKey = genomeHelper.generateVariantRowKey(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
+        byte[] bytesRowKey = generateVariantRowKey(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
                 variantAnnotation.getReference(), variantAnnotation.getAlternate());
         Put put = new Put(bytesRowKey);
 

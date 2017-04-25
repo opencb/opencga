@@ -46,7 +46,8 @@ import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
@@ -55,6 +56,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotat
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotationUpsertExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.slf4j.Logger;
@@ -151,12 +153,12 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         return configuration;
     }
 
-    public ArchiveHelper getArchiveHelper(int studyId, int fileId) throws StorageEngineException, IOException {
+    public ArchiveTableHelper getArchiveHelper(int studyId, int fileId) throws StorageEngineException, IOException {
         VcfMeta vcfMeta = getVcfMeta(studyId, fileId, null);
         if (vcfMeta == null) {
             throw new StorageEngineException("File '" + fileId + "' not found in study '" + studyId + "'");
         }
-        return new ArchiveHelper(genomeHelper, vcfMeta);
+        return new ArchiveTableHelper(genomeHelper, vcfMeta);
 
     }
 
@@ -351,7 +353,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             }
 
             //Get the ArchiveHelper related with the requested file.
-            ArchiveHelper archiveHelper;
+            ArchiveTableHelper archiveHelper;
             try {
                 archiveHelper = getArchiveHelper(studyId, fileId);
             } catch (IOException | StorageEngineException e) {
@@ -359,7 +361,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             }
 
             Scan scan = new Scan();
-            scan.addColumn(archiveHelper.getColumnFamily(), Bytes.toBytes(ArchiveHelper.getColumnName(fileId)));
+            scan.addColumn(archiveHelper.getColumnFamily(), Bytes.toBytes(ArchiveTableHelper.getColumnName(fileId)));
             addArchiveRegionFilter(scan, region, archiveHelper);
             scan.setMaxResultSize(options.getInt("limit"));
             String tableName = HadoopVariantStorageEngine.getArchiveTableName(studyId, genomeHelper.getConf());
@@ -617,14 +619,15 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         filters.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE, valueFilters));
     }
 
-    public void addArchiveRegionFilter(Scan scan, Region region, ArchiveHelper archiveHelper) {
+    public void addArchiveRegionFilter(Scan scan, Region region, ArchiveTableHelper archiveHelper) {
         if (region == null) {
             addDefaultRegionFilter(scan);
         } else {
-            scan.setStartRow(archiveHelper.generateBlockIdAsBytes(region.getChromosome(), region.getStart()));
-            long endSlice = archiveHelper.getSliceId(region.getEnd()) + 1;
+            ArchiveRowKeyFactory keyFactory = archiveHelper.getKeyFactory();
+            scan.setStartRow(keyFactory.generateBlockIdAsBytes(region.getChromosome(), region.getStart()));
+            long endSlice = keyFactory.getSliceId((long) region.getEnd()) + 1;
             // +1 because the stop row is exclusive
-            scan.setStopRow(Bytes.toBytes(archiveHelper.generateBlockIdFromSlice(region.getChromosome(), endSlice)));
+            scan.setStopRow(Bytes.toBytes(keyFactory.generateBlockIdFromSlice(region.getChromosome(), endSlice)));
         }
     }
 
@@ -632,8 +635,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         if (region == null) {
             addDefaultRegionFilter(scan);
         } else {
-            scan.setStartRow(genomeHelper.generateVariantRowKey(region.getChromosome(), region.getStart()));
-            scan.setStopRow(genomeHelper.generateVariantRowKey(region.getChromosome(), region.getEnd()));
+            scan.setStartRow(VariantPhoenixKeyFactory.generateVariantRowKey(region.getChromosome(), region.getStart()));
+            scan.setStopRow(VariantPhoenixKeyFactory.generateVariantRowKey(region.getChromosome(), region.getEnd()));
         }
     }
 

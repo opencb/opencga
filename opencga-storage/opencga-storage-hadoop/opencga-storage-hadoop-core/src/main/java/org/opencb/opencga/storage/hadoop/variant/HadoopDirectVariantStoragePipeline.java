@@ -33,7 +33,7 @@ import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbasePutTask;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.slf4j.Logger;
@@ -117,7 +117,7 @@ public class HadoopDirectVariantStoragePipeline extends AbstractHadoopVariantSto
         source.setFileId(fileId.toString());
         source.setStudyId(Integer.toString(studyId));
         VcfMeta meta = new VcfMeta(source);
-        ArchiveHelper helper = new ArchiveHelper(dbAdaptor.getGenomeHelper(), meta);
+        ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), meta);
 
 
         ProgressLogger progressLogger = new ProgressLogger("Loaded slices:",

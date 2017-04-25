@@ -118,7 +118,7 @@ public class ArchiveResultToVariantConverter {
     }
 
     private List<Variant> archiveCellToVariants(byte[] key, byte[] value) throws InvalidProtocolBufferException {
-        int fileId = ArchiveHelper.getFileIdFromColumnName(key);
+        int fileId = ArchiveTableHelper.getFileIdFromColumnName(key);
         VcfSliceToVariantListConverter converter = loadConverter(fileId);
         VcfSlice vcfSlice = VcfSlice.parseFrom(value);
         return converter.convert(vcfSlice);

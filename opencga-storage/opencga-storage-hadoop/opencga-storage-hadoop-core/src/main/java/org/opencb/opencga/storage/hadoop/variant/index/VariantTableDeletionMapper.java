@@ -45,9 +45,9 @@ import static org.opencb.opencga.storage.hadoop.variant.AnalysisTableMapReduceHe
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
-public class VariantTableDeletionMapReduce extends AbstractVariantTableMapReduce {
+public class VariantTableDeletionMapper extends AbstractArchiveTableMapper {
 
-    private Logger logger = LoggerFactory.getLogger(VariantTableDeletionMapReduce.class);
+    private Logger logger = LoggerFactory.getLogger(VariantTableDeletionMapper.class);
     private Table analysisTable;
     private Table archiveTable;
 

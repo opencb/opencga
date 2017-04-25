@@ -56,7 +56,7 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
     private int endPosition = Integer.MAX_VALUE;
     private VcfSliceProtos.VcfRecord nextVcfRecord = null;
 
-    public VariantHadoopArchiveDBIterator(ResultScanner resultScanner, ArchiveHelper archiveHelper, QueryOptions options) {
+    public VariantHadoopArchiveDBIterator(ResultScanner resultScanner, ArchiveTableHelper archiveHelper, QueryOptions options) {
         this.resultScanner = resultScanner;
         this.iterator = this.resultScanner.iterator();
         this.columnFamily = archiveHelper.getColumnFamily();

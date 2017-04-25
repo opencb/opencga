@@ -29,10 +29,6 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.io.compress.Compression;
-import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
@@ -97,7 +93,7 @@ public class ArchiveDriver extends Configured implements Tool {
         GenomeHelper genomeHelper = new GenomeHelper(conf);
 
 /*  SERVER details  */
-        if (createArchiveTableIfNeeded(genomeHelper, tableName)) {
+        if (ArchiveTableHelper.createArchiveTableIfNeeded(genomeHelper, tableName)) {
             LOGGER.info(String.format("Create table '%s' in hbase!", tableName));
         } else {
             LOGGER.info(String.format("Table '%s' exists in hbase!", tableName));
@@ -150,21 +146,6 @@ public class ArchiveDriver extends Configured implements Tool {
             manager.updateLoadedFilesSummary(studyId, Collections.singletonList(fileId));
         }
         return succeed ? 0 : 1;
-    }
-
-    public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName) throws IOException {
-        try (Connection con = ConnectionFactory.createConnection(genomeHelper.getConf())) {
-            return createArchiveTableIfNeeded(genomeHelper, tableName, con);
-        }
-    }
-
-    public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con) throws IOException {
-        Algorithm compression = Compression.getCompressionAlgorithmByName(
-                genomeHelper.getConf().get(CONFIG_ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName()));
-        int nSplits = genomeHelper.getConf().getInt(CONFIG_ARCHIVE_TABLE_PRESPLIT_SIZE, 100);
-        List<byte[]> preSplits = GenomeHelper.generateBootPreSplitsHuman(nSplits,
-                (chr, pos) -> genomeHelper.generateBlockIdAsBytes(chr, pos));
-        return HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(), preSplits, compression);
     }
 
     private void storeMetaData(VcfMeta meta, Configuration conf) throws IOException {

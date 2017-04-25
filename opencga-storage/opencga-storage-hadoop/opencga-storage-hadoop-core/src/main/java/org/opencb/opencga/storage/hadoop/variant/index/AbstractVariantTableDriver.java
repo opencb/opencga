@@ -44,9 +44,10 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -252,8 +253,8 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         FilterList filter = new FilterList(FilterList.Operator.MUST_PASS_ONE);
         for (String fileIdStr : fileArr) {
             int id = Integer.parseInt(fileIdStr);
-            filter.addFilter(new ColumnRangeFilter(Bytes.toBytes(ArchiveHelper.getColumnName(id)), true,
-                    Bytes.toBytes(ArchiveHelper.getColumnName(id)), true));
+            filter.addFilter(new ColumnRangeFilter(Bytes.toBytes(ArchiveTableHelper.getColumnName(id)), true,
+                    Bytes.toBytes(ArchiveTableHelper.getColumnName(id)), true));
         }
         filter.addFilter(new ColumnPrefixFilter(GenomeHelper.VARIANT_COLUMN_B_PREFIX));
         scan.setFilter(filter);
@@ -315,7 +316,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         int nsplits = genomeHelper.getConf().getInt(AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_PRESPLIT_SIZE, 100);
         List<byte[]> splitList = GenomeHelper.generateBootPreSplitsHuman(
                 nsplits,
-                (chr, pos) -> genomeHelper.generateVariantRowKey(chr, pos, "", ""));
+                (chr, pos) -> VariantPhoenixKeyFactory.generateVariantRowKey(chr, pos, "", ""));
         boolean newTable = HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
                 splitList, Compression.getCompressionAlgorithmByName(
                         genomeHelper.getConf().get(
