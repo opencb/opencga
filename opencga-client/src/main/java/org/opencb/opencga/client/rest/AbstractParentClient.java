@@ -19,6 +19,7 @@ package org.opencb.opencga.client.rest;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
@@ -140,15 +141,15 @@ public abstract class AbstractParentClient {
 
         // TODO we still have to check if there are multiple IDs, the limit is 200 pero query, this can be parallelized
         // Some WS do not have IDs such as 'create'
-        if (id1 != null && !id1.isEmpty()) {
+        if (StringUtils.isNotEmpty(id1)) {
             path = path.path(id1);
         }
 
-        if (category2 != null && !category2.isEmpty()) {
+        if (StringUtils.isNotEmpty(category2)) {
             path = path.path(category2);
         }
 
-        if (id2 != null && !id2.isEmpty()) {
+        if (StringUtils.isNotEmpty(id2)) {
             path = path.path(id2);
         }
 

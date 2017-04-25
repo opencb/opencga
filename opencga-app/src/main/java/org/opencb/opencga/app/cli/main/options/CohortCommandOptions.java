@@ -22,10 +22,7 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
-import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
-
-import java.util.List;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
@@ -49,6 +46,7 @@ public class CohortCommandOptions {
     public AclCommandOptions.AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
     public AclCommandOptions.AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
     public AclCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
+    public AclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
     public AnnotationCommandOptions.AnnotationSetsCreateCommandOptions annotationCreateCommandOptions;
     public AnnotationCommandOptions.AnnotationSetsAllInfoCommandOptions annotationAllInfoCommandOptions;
@@ -62,7 +60,6 @@ public class CohortCommandOptions {
     public DataModelOptions commonDataModelOptions;
     public NumericOptions commonNumericOptions;
 
-    private AclCommandOptions aclCommandOptions;
     private AnnotationCommandOptions annotationCommandOptions;
 
     public CohortCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions, NumericOptions numericOptions,
@@ -90,12 +87,13 @@ public class CohortCommandOptions {
         this.annotationInfoCommandOptions = this.annotationCommandOptions.getInfoCommandOptions();
         this.annotationUpdateCommandOptions = this.annotationCommandOptions.getUpdateCommandOptions();
 
-        aclCommandOptions = new AclCommandOptions(commonCommandOptions);
+        AclCommandOptions aclCommandOptions = new AclCommandOptions(commonCommandOptions);
         this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
         this.aclsCreateCommandOptions = aclCommandOptions.getAclsCreateCommandOptions();
         this.aclsMemberDeleteCommandOptions = aclCommandOptions.getAclsMemberDeleteCommandOptions();
         this.aclsMemberInfoCommandOptions = aclCommandOptions.getAclsMemberInfoCommandOptions();
         this.aclsMemberUpdateCommandOptions = aclCommandOptions.getAclsMemberUpdateCommandOptions();
+        this.aclsUpdateCommandOptions = aclCommandOptions.getAclsUpdateCommandOptions();
     }
 
     public class BaseCohortsCommand extends StudyOption {

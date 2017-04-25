@@ -23,10 +23,12 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.PanelCommandOptions;
+import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DiseasePanel;
 import org.opencb.opencga.catalog.models.acls.permissions.DiseasePanelAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 
 import java.io.IOException;
 
@@ -77,6 +79,9 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = aclCommandExecutor.aclMemberUpdate(panelsCommandOptions.aclsMemberUpdateCommandOptions,
                         openCGAClient.getPanelClient());
                 break;
+            case "acl-update":
+                queryResponse = updateAcl();
+                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -107,5 +112,19 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
         options.putIfNotEmpty(QueryOptions.INCLUDE, panelsCommandOptions.infoCommandOptions.include);
         options.putIfNotEmpty(QueryOptions.EXCLUDE, panelsCommandOptions.infoCommandOptions.exclude);
         return openCGAClient.getPanelClient().get(panelsCommandOptions.infoCommandOptions.id, options);
+    }
+
+    private QueryResponse<DiseasePanelAclEntry> updateAcl() throws IOException, CatalogException {
+        AclCommandOptions.AclsUpdateCommandOptions commandOptions = panelsCommandOptions.aclsUpdateCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotNull("study", commandOptions.study);
+
+        ObjectMap bodyParams = new ObjectMap();
+        bodyParams.putIfNotNull("permissions", commandOptions.permissions);
+        bodyParams.putIfNotNull("action", commandOptions.action);
+        bodyParams.putIfNotNull("panel", commandOptions.id);
+
+        return openCGAClient.getPanelClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
     }
 }

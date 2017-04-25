@@ -112,6 +112,9 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
             case "acl-create":
                 queryResponse = createAcl();
                 break;
+            case "acl-update":
+                queryResponse = updateAcl();
+                break;
             case "acl-member-delete":
                 queryResponse = deleteAcl();
                 break;
@@ -539,11 +542,11 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
     /************************************************* Acl commands *********************************************************/
     private QueryResponse<StudyAclEntry> getAcl() throws IOException, CatalogException {
         logger.debug("Get Acl");
-        studiesCommandOptions.aclsCommandOptions.study =
-                getSingleValidStudy(studiesCommandOptions.aclsCommandOptions.study);
+        studiesCommandOptions.aclsCommandOptionsOld.study =
+                getSingleValidStudy(studiesCommandOptions.aclsCommandOptionsOld.study);
 
         ObjectMap params = new ObjectMap();
-        return openCGAClient.getStudyClient().getAcls(studiesCommandOptions.aclsCommandOptions.study, params);
+        return openCGAClient.getStudyClient().getAcls(studiesCommandOptions.aclsCommandOptionsOld.study, params);
     }
 
     private QueryResponse<StudyAclEntry> createAcl() throws IOException, CatalogException {
@@ -593,6 +596,18 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
         return openCGAClient.getStudyClient().updateAcl(studiesCommandOptions.aclsMemberUpdateCommandOptions.study,
                 studiesCommandOptions.aclsMemberUpdateCommandOptions.memberId, params);
+    }
+
+    private QueryResponse<StudyAclEntry> updateAcl() throws IOException, CatalogException {
+        StudyCommandOptions.AclsUpdateCommandOptions commandOptions = studiesCommandOptions.aclsUpdateCommandOptions;
+
+        ObjectMap bodyParams = new ObjectMap();
+        bodyParams.putIfNotNull("permissions", commandOptions.permissions);
+        bodyParams.putIfNotNull("action", commandOptions.action);
+        bodyParams.putIfNotNull("study", commandOptions.study);
+        bodyParams.putIfNotNull("template", commandOptions.template);
+
+        return openCGAClient.getStudyClient().updateAcl(commandOptions.memberId, new ObjectMap(), bodyParams);
     }
 
 }

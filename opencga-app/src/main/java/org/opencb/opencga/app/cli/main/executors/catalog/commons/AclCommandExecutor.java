@@ -40,6 +40,7 @@ public class AclCommandExecutor<T,U> {
         return client.getAcls(aclCommandOptions.id.replace("/", ":"), params);
     }
 
+    @Deprecated
     public QueryResponse<U> aclsCreate(AclCommandOptions.AclsCreateCommandOptions aclCommandOptions, CatalogClient<T,U> client)
             throws CatalogException,IOException {
         ObjectMap params = new ObjectMap();
@@ -48,6 +49,7 @@ public class AclCommandExecutor<T,U> {
         return client.createAcl(aclCommandOptions.id.replace("/", ":"), aclCommandOptions.members, params);
     }
 
+    @Deprecated
     public QueryResponse<U> aclMemberDelete(AclCommandOptions.AclsMemberDeleteCommandOptions aclCommandOptions,
                                             CatalogClient<T,U> client) throws CatalogException,IOException {
         ObjectMap params = new ObjectMap();
@@ -62,6 +64,7 @@ public class AclCommandExecutor<T,U> {
         return client.getAcl(aclCommandOptions.id.replace("/", ":"), aclCommandOptions.memberId, params);
     }
 
+    @Deprecated
     public QueryResponse<U> aclMemberUpdate(AclCommandOptions.AclsMemberUpdateCommandOptions aclCommandOptions,
                                             CatalogClient<T,U> client) throws CatalogException,IOException {
         ObjectMap params = new ObjectMap();

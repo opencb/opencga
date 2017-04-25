@@ -20,6 +20,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 
 /**
  * Created by imedina on 26/07/16.
@@ -33,6 +34,7 @@ public class AclCommandOptions {
     private AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
     private AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
     private AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
+    private AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
     public AclCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions) {
         this.commonCommandOptions = commonCommandOptions;
@@ -48,6 +50,7 @@ public class AclCommandOptions {
         public String id;
     }
 
+    @Deprecated
     @Parameters(commandNames = {"acl-create"}, commandDescription = "Define a set of permissions for a list of users or groups")
     public class AclsCreateCommandOptions extends AclsCommandOptions {
         @Parameter(names = {"--members"},
@@ -58,6 +61,7 @@ public class AclCommandOptions {
         public String permissions;
     }
 
+    @Deprecated
     @Parameters(commandNames = {"acl-member-delete"}, commandDescription = "Delete all the permissions granted for the user or group")
     public class AclsMemberDeleteCommandOptions extends AclsCommandOptions {
 
@@ -73,6 +77,28 @@ public class AclCommandOptions {
         public String memberId;
     }
 
+    @Parameters(commandNames = {"acl-update"}, commandDescription = "Update the permissions set for a member")
+    public class AclsUpdateCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--id"}, description = "Comma separated list of ids or names", arity = 1)
+        public String id;
+
+        @Parameter(names = {"-m", "--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
+        public String memberId;
+
+        @Parameter(names = {"-p", "--permissions"}, description = "Comma separated list of accepted permissions for the resource",
+                arity = 1)
+        public String permissions;
+
+        @Parameter(names = {"-a", "--action"}, description = "Comma separated list of accepted permissions for the resource", arity = 1)
+        public AclParams.Action action = AclParams.Action.SET;
+
+    }
+
+    @Deprecated
     @Parameters(commandNames = {"acl-member-update"},
             commandDescription = "Update the set of permissions granted for the user or group")
     public class AclsMemberUpdateCommandOptions extends AclsCommandOptions {
@@ -116,6 +142,13 @@ public class AclCommandOptions {
             this.aclsMemberInfoCommandOptions = new AclsMemberInfoCommandOptions();
         }
         return aclsMemberInfoCommandOptions;
+    }
+
+    public AclsUpdateCommandOptions getAclsUpdateCommandOptions() {
+        if (this.aclsUpdateCommandOptions == null) {
+            this.aclsUpdateCommandOptions = new AclsUpdateCommandOptions();
+        }
+        return aclsUpdateCommandOptions;
     }
 
     public AclsMemberUpdateCommandOptions getAclsMemberUpdateCommandOptions() {

@@ -98,6 +98,9 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
             case "acl-member-update":
                 queryResponse = updateAcl(individualsCommandOptions.aclsMemberUpdateCommandOptions, openCGAClient.getIndividualClient());
                 break;
+            case "acl-update":
+                queryResponse = updateAcl();
+                break;
             case "annotation-sets-create":
                 queryResponse = annotationCommandExecutor.createAnnotationSet(individualsCommandOptions.annotationCreateCommandOptions,
                         openCGAClient.getIndividualClient());
@@ -376,6 +379,23 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
 
         return individualClient.updateAcl(aclsMemberUpdateCommandOptions.id.replace("/", ":"),
                 aclsMemberUpdateCommandOptions.memberId, params);
+    }
+
+    private QueryResponse<IndividualAclEntry> updateAcl() throws IOException, CatalogException {
+        IndividualCommandOptions.IndividualAclCommandOptions.AclsUpdateCommandOptions commandOptions =
+                individualsCommandOptions.aclsUpdateCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotNull("study", commandOptions.study);
+
+        ObjectMap bodyParams = new ObjectMap();
+        bodyParams.putIfNotNull("permissions", commandOptions.permissions);
+        bodyParams.putIfNotNull("action", commandOptions.action);
+        bodyParams.putIfNotNull("propagate", commandOptions.propagate);
+        bodyParams.putIfNotNull("individual", commandOptions.id);
+        bodyParams.putIfNotNull("sample", commandOptions.sample);
+
+        return openCGAClient.getIndividualClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
     }
 
 }
