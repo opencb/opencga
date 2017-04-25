@@ -16,7 +16,11 @@
 
 package org.opencb.opencga.app.cli.admin;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+
+import java.util.Collections;
 
 /**
  * Created on 03/05/16
@@ -40,5 +44,33 @@ public abstract class AdminCommandExecutor extends CommandExecutor {
     public CommandExecutor setAdminPassword(String adminPassword) {
         this.adminPassword = adminPassword;
         return this;
+    }
+
+    protected void setCatalogDatabaseCredentials(String host, String prefix, String user, String password, String adminPassword)
+            throws CatalogException {
+
+        if (StringUtils.isNotEmpty(host)) {
+            configuration.getCatalog().getDatabase().setHosts(Collections.singletonList(host));
+        }
+
+        if (StringUtils.isNotEmpty(prefix)) {
+            configuration.setDatabasePrefix(prefix);
+        }
+
+        if (StringUtils.isNotEmpty(user)) {
+            configuration.getCatalog().getDatabase().setUser(user);
+        }
+
+        if (StringUtils.isNotEmpty(password)) {
+            configuration.getCatalog().getDatabase().setPassword(password);
+        }
+
+        if (StringUtils.isNotEmpty(adminPassword)) {
+            configuration.getAdmin().setPassword(adminPassword);
+        }
+
+        if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
+            throw new CatalogException("No admin password found. Please, insert your password.");
+        }
     }
 }

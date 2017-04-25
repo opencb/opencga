@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -38,7 +39,6 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IJobManager;
 import org.opencb.opencga.catalog.managers.api.IUserManager;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.catalog.models.acls.AclParams;
@@ -201,101 +201,102 @@ public class JobManager extends AbstractManager implements IJobManager {
         }
     }
 
-    @Override
-    public QueryResult<JobAclEntry> getAcls(String jobStr, List<String> members, String sessionId) throws CatalogException {
-        long startTime = System.currentTimeMillis();
-        String userId = userManager.getId(sessionId);
-        Long jobId = getId(userId, jobStr);
-        authorizationManager.checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.SHARE);
-        Long studyId = getStudyId(jobId);
-
-        // Split and obtain the set of members (users + groups), users and groups
-        Set<String> memberSet = new HashSet<>();
-        Set<String> userIds = new HashSet<>();
-        Set<String> groupIds = new HashSet<>();
-        for (String member: members) {
-            memberSet.add(member);
-            if (!member.startsWith("@")) {
-                userIds.add(member);
-            } else {
-                groupIds.add(member);
-            }
-        }
-        // Obtain the groups the user might belong to in order to be able to get the permissions properly
-        // (the permissions might be given to the group instead of the user)
-        // Map of group -> users
-        Map<String, List<String>> groupUsers = new HashMap<>();
-
-        if (userIds.size() > 0) {
-            List<String> tmpUserIds = userIds.stream().collect(Collectors.toList());
-            QueryResult<Group> groups = studyDBAdaptor.getGroup(studyId, null, tmpUserIds);
-            // We add the groups where the users might belong to to the memberSet
-            if (groups.getNumResults() > 0) {
-                for (Group group : groups.getResult()) {
-                    for (String tmpUserId : group.getUserIds()) {
-                        if (userIds.contains(tmpUserId)) {
-                            memberSet.add(group.getName());
-
-                            if (!groupUsers.containsKey(group.getName())) {
-                                groupUsers.put(group.getName(), new ArrayList<>());
-                            }
-                            groupUsers.get(group.getName()).add(tmpUserId);
-                        }
-                    }
-                }
-            }
-        }
-        List<String> memberList = memberSet.stream().collect(Collectors.toList());
-        QueryResult<JobAclEntry> jobAclQueryResult = jobDBAdaptor.getAcl(jobId, memberList);
-
-        if (members.size() == 0) {
-            return jobAclQueryResult;
-        }
-
-        // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the user
-        // instead of the group.
-        // We loop over the results and recreate one sampleAcl per member
-        Map<String, JobAclEntry> jobAclHashMap = new HashMap<>();
-        for (JobAclEntry jobAcl : jobAclQueryResult.getResult()) {
-            if (memberList.contains(jobAcl.getMember())) {
-                if (jobAcl.getMember().startsWith("@")) {
-                    // Check if the user was demanding the group directly or a user belonging to the group
-                    if (groupIds.contains(jobAcl.getMember())) {
-                        jobAclHashMap.put(jobAcl.getMember(), new JobAclEntry(jobAcl.getMember(), jobAcl.getPermissions()));
-                    } else {
-                        // Obtain the user(s) belonging to that group whose permissions wanted the userId
-                        if (groupUsers.containsKey(jobAcl.getMember())) {
-                            for (String tmpUserId : groupUsers.get(jobAcl.getMember())) {
-                                if (userIds.contains(tmpUserId)) {
-                                    jobAclHashMap.put(tmpUserId, new JobAclEntry(tmpUserId, jobAcl.getPermissions()));
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    // Add the user
-                    jobAclHashMap.put(jobAcl.getMember(), new JobAclEntry(jobAcl.getMember(), jobAcl.getPermissions()));
-                }
-            }
-
-        }
-
-        // We recreate the output that is in jobAclHashMap but in the same order the members were queried.
-        List<JobAclEntry> jobAclList = new ArrayList<>(jobAclHashMap.size());
-        for (String member : members) {
-            if (jobAclHashMap.containsKey(member)) {
-                jobAclList.add(jobAclHashMap.get(member));
-            }
-        }
-
-        // Update queryResult info
-        jobAclQueryResult.setId(jobStr);
-        jobAclQueryResult.setNumResults(jobAclList.size());
-        jobAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
-        jobAclQueryResult.setResult(jobAclList);
-
-        return jobAclQueryResult;
-    }
+//    @Override
+//    public QueryResult<JobAclEntry> getAcls(String jobStr, List<String> members, String sessionId) throws CatalogException {
+//        long startTime = System.currentTimeMillis();
+//        String userId = userManager.getId(sessionId);
+//        Long jobId = getId(userId, jobStr);
+//        authorizationManager.checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.SHARE);
+//        Long studyId = getStudyId(jobId);
+//
+//        // Split and obtain the set of members (users + groups), users and groups
+//        Set<String> memberSet = new HashSet<>();
+//        Set<String> userIds = new HashSet<>();
+//        Set<String> groupIds = new HashSet<>();
+//        for (String member: members) {
+//            memberSet.add(member);
+//            if (!member.startsWith("@")) {
+//                userIds.add(member);
+//            } else {
+//                groupIds.add(member);
+//            }
+//        }
+//        // Obtain the groups the user might belong to in order to be able to get the permissions properly
+//        // (the permissions might be given to the group instead of the user)
+//        // Map of group -> users
+//        Map<String, List<String>> groupUsers = new HashMap<>();
+//
+//        if (userIds.size() > 0) {
+//            List<String> tmpUserIds = userIds.stream().collect(Collectors.toList());
+//            QueryResult<Group> groups = studyDBAdaptor.getGroup(studyId, null, tmpUserIds);
+//            // We add the groups where the users might belong to to the memberSet
+//            if (groups.getNumResults() > 0) {
+//                for (Group group : groups.getResult()) {
+//                    for (String tmpUserId : group.getUserIds()) {
+//                        if (userIds.contains(tmpUserId)) {
+//                            memberSet.add(group.getName());
+//
+//                            if (!groupUsers.containsKey(group.getName())) {
+//                                groupUsers.put(group.getName(), new ArrayList<>());
+//                            }
+//                            groupUsers.get(group.getName()).add(tmpUserId);
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        List<String> memberList = memberSet.stream().collect(Collectors.toList());
+//        QueryResult<JobAclEntry> jobAclQueryResult = jobDBAdaptor.getAcl(jobId, memberList);
+//
+//        if (members.size() == 0) {
+//            return jobAclQueryResult;
+//        }
+//
+//        // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the
+// user
+//        // instead of the group.
+//        // We loop over the results and recreate one sampleAcl per member
+//        Map<String, JobAclEntry> jobAclHashMap = new HashMap<>();
+//        for (JobAclEntry jobAcl : jobAclQueryResult.getResult()) {
+//            if (memberList.contains(jobAcl.getMember())) {
+//                if (jobAcl.getMember().startsWith("@")) {
+//                    // Check if the user was demanding the group directly or a user belonging to the group
+//                    if (groupIds.contains(jobAcl.getMember())) {
+//                        jobAclHashMap.put(jobAcl.getMember(), new JobAclEntry(jobAcl.getMember(), jobAcl.getPermissions()));
+//                    } else {
+//                        // Obtain the user(s) belonging to that group whose permissions wanted the userId
+//                        if (groupUsers.containsKey(jobAcl.getMember())) {
+//                            for (String tmpUserId : groupUsers.get(jobAcl.getMember())) {
+//                                if (userIds.contains(tmpUserId)) {
+//                                    jobAclHashMap.put(tmpUserId, new JobAclEntry(tmpUserId, jobAcl.getPermissions()));
+//                                }
+//                            }
+//                        }
+//                    }
+//                } else {
+//                    // Add the user
+//                    jobAclHashMap.put(jobAcl.getMember(), new JobAclEntry(jobAcl.getMember(), jobAcl.getPermissions()));
+//                }
+//            }
+//
+//        }
+//
+//        // We recreate the output that is in jobAclHashMap but in the same order the members were queried.
+//        List<JobAclEntry> jobAclList = new ArrayList<>(jobAclHashMap.size());
+//        for (String member : members) {
+//            if (jobAclHashMap.containsKey(member)) {
+//                jobAclList.add(jobAclHashMap.get(member));
+//            }
+//        }
+//
+//        // Update queryResult info
+//        jobAclQueryResult.setId(jobStr);
+//        jobAclQueryResult.setNumResults(jobAclList.size());
+//        jobAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
+//        jobAclQueryResult.setResult(jobAclList);
+//
+//        return jobAclQueryResult;
+//    }
 
     @Override
     public QueryResult<ObjectMap> visit(long jobId, String sessionId) throws CatalogException {
@@ -636,15 +637,17 @@ public class JobManager extends AbstractManager implements IJobManager {
         CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
         catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
+        String collectionName = MongoDBAdaptorFactory.JOB_COLLECTION;
+
         switch (aclParams.getAction()) {
             case SET:
-                return authorizationManager.setAcls(resourceIds, members, permissions, jobDBAdaptor);
+                return authorizationManager.setAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
             case ADD:
-                return authorizationManager.addAcls(resourceIds, members, permissions, jobDBAdaptor);
+                return authorizationManager.addAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
             case REMOVE:
-                return authorizationManager.removeAcls(resourceIds, members, permissions, jobDBAdaptor);
+                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
             case RESET:
-                return authorizationManager.removeAcls(resourceIds, members, null, jobDBAdaptor);
+                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, collectionName);
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }

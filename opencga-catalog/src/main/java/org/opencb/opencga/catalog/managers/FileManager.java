@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.db.api.DatasetDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -2678,15 +2679,17 @@ public class FileManager extends AbstractManager implements IFileManager {
         CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
         catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
+        String collectionName = MongoDBAdaptorFactory.FILE_COLLECTION;
+
         switch (fileAclParams.getAction()) {
             case SET:
-                return authorizationManager.setAcls(resourceIds, members, permissions, fileDBAdaptor);
+                return authorizationManager.setAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
             case ADD:
-                return authorizationManager.addAcls(resourceIds, members, permissions, fileDBAdaptor);
+                return authorizationManager.addAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
             case REMOVE:
-                return authorizationManager.removeAcls(resourceIds, members, permissions, fileDBAdaptor);
+                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
             case RESET:
-                return authorizationManager.removeAcls(resourceIds, members, null, fileDBAdaptor);
+                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, collectionName);
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }

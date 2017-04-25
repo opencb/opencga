@@ -43,13 +43,11 @@ import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
@@ -60,7 +58,6 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
     private final MongoDBCollection fileCollection;
     private FileConverter fileConverter;
-    private AclMongoDBAdaptor<FileAclEntry> aclDBAdaptor;
 
     /***
      * CatalogMongoFileDBAdaptor constructor.
@@ -73,7 +70,6 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.fileCollection = fileCollection;
         this.fileConverter = new FileConverter();
-        this.aclDBAdaptor = new AclMongoDBAdaptor<>(fileCollection, fileConverter, logger);
     }
 
     /**
@@ -777,126 +773,4 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         return endQuery("Extract samples from files", startTime, Collections.singletonList(updateQueryResult.first().getModifiedCount()));
     }
 
-    @Override
-    public QueryResult<FileAclEntry> createAcl(long id, FileAclEntry acl) throws CatalogDBException {
-        long startTime = startQuery();
-        return endQuery("create file Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
-    }
-
-    // This setAcl method is to create multiple acls at once for the files matching the query
-    @Override
-    public void createAcl(Query query, List<FileAclEntry> aclEntryList) throws CatalogDBException {
-        Bson queryDocument = parseQuery(query, true);
-        aclDBAdaptor.setAcl(queryDocument, aclEntryList);
-    }
-
-    @Override
-    public void addAclsToMember(Query query, List<String> members, List<String> permissions) throws CatalogDBException {
-        QueryResult<File> fileQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
-        List<Long> fileIds = fileQueryResult.getResult().stream().map(file -> file.getId()).collect(Collectors.toList());
-
-        if (fileIds == null || fileIds.size() == 0) {
-            throw new CatalogDBException("No matches found for query when attempting to add new permissions");
-        }
-
-        aclDBAdaptor.addAclsToMembers(fileIds, members, permissions);
-    }
-
-    @Override
-    public void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException {
-        QueryResult<File> fileQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
-        List<Long> fileIds = fileQueryResult.getResult().stream().map(File::getId).collect(Collectors.toList());
-
-        if (fileIds == null || fileIds.size() == 0) {
-            throw new CatalogDBException("No matches found for query when attempting to remove permissions");
-        }
-
-        aclDBAdaptor.removeAclsFromMembers(fileIds, members, permissions);
-    }
-
-    @Override
-    public QueryResult<FileAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
-        long startTime = startQuery();
-//
-//        List<FileAclEntry> acl = null;
-//        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, fileCollection, logger);
-//        File file = fileConverter.convertToDataModelType(aggregate.first());
-//
-//        if (file != null) {
-//            acl = file.getAcl();
-//        }
-
-        return endQuery("get file Acl", startTime, aclDBAdaptor.getAcl(id, members));
-    }
-
-    @Override
-    public List<QueryResult<FileAclEntry>> getAcls(Query query, List<String> members) throws CatalogDBException {
-        long startTime = startQuery();
-
-        QueryResult<File> fileQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
-        List<Long> fileIds = fileQueryResult.getResult().stream().map(File::getId).collect(Collectors.toList());
-
-        if (fileIds == null || fileIds.size() == 0) {
-            throw new CatalogDBException("No matches found for query when attempting to get permissions");
-        }
-
-        List<List<FileAclEntry>> acl = aclDBAdaptor.getAcl(fileIds, members);
-        List<QueryResult<FileAclEntry>> retAclQueryResult = new ArrayList<>(acl.size());
-        if (acl.size() == fileIds.size()) {
-            for (int i = 0; i < acl.size(); i++) {
-                retAclQueryResult.add(endQuery(Long.toString(fileIds.get(i)), startTime, acl.get(i)));
-            }
-        } else {
-            logger.warn("Something strange happened. Only obtained ACLs for {} out of the {} files queried", acl.size(),
-                    fileIds.size());
-            for (List<FileAclEntry> fileAclEntries : acl) {
-                retAclQueryResult.add(endQuery("get file Acl", startTime, fileAclEntries));
-            }
-        }
-
-        return retAclQueryResult;
-    }
-
-    @Override
-    public void removeAcl(long id, String member) throws CatalogDBException {
-//        CatalogMongoDBUtils.removeAcl(id, member, fileCollection);
-        aclDBAdaptor.removeAcl(id, member);
-    }
-
-    @Override
-    public QueryResult<FileAclEntry> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
-        long startTime = startQuery();
-//        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, fileCollection);
-        return endQuery("Set Acls to member", startTime, Arrays.asList(aclDBAdaptor.setAclsToMember(id, member, permissions)));
-    }
-
-    @Override
-    public void setAclsToMember(Query query, List<String> members, List<String> permissions) throws CatalogDBException {
-        QueryResult<File> fileQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
-        List<Long> fileIds = fileQueryResult.getResult().stream().map(file -> file.getId()).collect(Collectors.toList());
-
-        if (fileIds == null || fileIds.size() == 0) {
-            throw new CatalogDBException("No matches found for query when attempting to set permissions");
-        }
-
-        aclDBAdaptor.setAclsToMembers(fileIds, members, permissions);
-    }
-
-    @Override
-    public QueryResult<FileAclEntry> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
-        long startTime = startQuery();
-//        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, fileCollection);
-        return endQuery("Add Acls to member", startTime, Arrays.asList(aclDBAdaptor.addAclsToMember(id, member, permissions)));
-    }
-
-    @Override
-    public QueryResult<FileAclEntry> removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
-//        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, fileCollection);
-        long startTime = startQuery();
-        return endQuery("Remove Acls from member", startTime, Arrays.asList(aclDBAdaptor.removeAclsFromMember(id, member, permissions)));
-    }
-
-    public void removeAclsFromStudy(long studyId, String member) throws CatalogDBException {
-        aclDBAdaptor.removeAclsFromStudy(studyId, member);
-    }
 }

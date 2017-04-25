@@ -1,19 +1,3 @@
-/*
- * Copyright 2015-2016 OpenCB
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
@@ -25,40 +9,49 @@ import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
-import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.auth.authorization.AclDBAdaptor;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.commons.datastore.mongodb.*;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
+import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.catalog.db.mongodb.converters.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.acls.AbstractAcl;
 import org.opencb.opencga.catalog.models.acls.permissions.AbstractAclEntry;
-import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_ID;
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_STUDY_ID;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory.*;
 
 /**
- * Created by pfurio on 29/07/16.
+ * Created by pfurio on 20/04/17.
  */
-public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdaptor<T> {
+public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements AuthorizationDBAdaptor {
 
-    private MongoDBCollection collection;
-    private GenericDocumentComplexConverter<? extends AbstractAcl> converter;
-    private Logger logger;
+    private MongoDataStore mongoDataStore;
 
-    public AclMongoDBAdaptor(MongoDBCollection collection, GenericDocumentComplexConverter<? extends AbstractAcl> converter,
-                             Logger logger) {
-        this.collection = collection;
-        this.converter = converter;
-        this.logger = logger;
+    private Map<String, MongoDBCollection> dbCollectionMap = new HashMap<>();
+
+    private StudyConverter studyConverter;
+    private CohortConverter cohortConverter;
+    private DatasetConverter datasetConverter;
+    private FileConverter fileConverter;
+    private IndividualConverter individualConverter;
+    private JobConverter jobConverter;
+    private SampleConverter sampleConverter;
+    private PanelConverter panelConverter;
+
+    public AuthorizationMongoDBAdaptor(Configuration configuration) throws CatalogDBException {
+        super(LoggerFactory.getLogger(AuthorizationMongoDBAdaptor.class));
+        initMongoDatastore(configuration);
+        initCollectionConnections();
+        initConverters();
     }
 
     enum QueryParams implements QueryParam {
@@ -110,65 +103,114 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
         }
     }
 
-    @Deprecated
-    @Override
-    public T createAcl(long resourceId, T acl) throws CatalogDBException {
-        // Push the new acl to the list of acls.
-        Document queryDocument = new Document(PRIVATE_ID, resourceId);
-        Document update = new Document("$push", new Document(QueryParams.ACL.key(),
-                MongoDBUtils.getMongoDBDocument(acl, "ACL")));
-        QueryResult<UpdateResult> updateResult = collection.update(queryDocument, update, null);
-
-        if (updateResult.first().getModifiedCount() == 0) {
-            throw new CatalogDBException("create Acl: An error occurred when trying to create acl for " + resourceId + " for "
-                    + acl.getMember());
-        }
-
-        logger.debug("Create Acl: {}", acl.toString());
-        return acl;
+    private void initConverters() {
+        this.studyConverter = new StudyConverter();
+        this.cohortConverter = new CohortConverter();
+        this.datasetConverter = new DatasetConverter();
+        this.fileConverter = new FileConverter();
+        this.individualConverter = new IndividualConverter();
+        this.jobConverter = new JobConverter();
+        this.sampleConverter = new SampleConverter();
+        this.panelConverter = new PanelConverter();
     }
 
-    @Override
-    public void setAcl(Bson bsonQuery, List<T> aclEntryList) throws CatalogDBException {
-        // First we take out all possible acls that could be present for any of the members.
-        List<String> memberList = aclEntryList.stream().map(fileAclEntry -> fileAclEntry.getMember()).collect(Collectors.toList());
+    private void initCollectionConnections() {
+        this.dbCollectionMap.put(STUDY_COLLECTION, mongoDataStore.getCollection(STUDY_COLLECTION));
+        this.dbCollectionMap.put(COHORT_COLLECTION, mongoDataStore.getCollection(COHORT_COLLECTION));
+        this.dbCollectionMap.put(DATASET_COLLECTION, mongoDataStore.getCollection(DATASET_COLLECTION));
+        this.dbCollectionMap.put(FILE_COLLECTION, mongoDataStore.getCollection(FILE_COLLECTION));
+        this.dbCollectionMap.put(INDIVIDUAL_COLLECTION, mongoDataStore.getCollection(INDIVIDUAL_COLLECTION));
+        this.dbCollectionMap.put(JOB_COLLECTION, mongoDataStore.getCollection(JOB_COLLECTION));
+        this.dbCollectionMap.put(SAMPLE_COLLECTION, mongoDataStore.getCollection(SAMPLE_COLLECTION));
+        this.dbCollectionMap.put(PANEL_COLLECTION, mongoDataStore.getCollection(PANEL_COLLECTION));
+    }
 
-        Document update = new Document("$pull", new Document(FileDBAdaptor.QueryParams.ACL.key(),
-                new Document(AclMongoDBAdaptor.QueryParams.MEMBER.key(), new Document("$in", memberList))));
-        logger.debug("Create Acl: Query {}, Pull {}",
-                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+    private void initMongoDatastore(Configuration configuration) throws CatalogDBException {
+        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
+                .add("username", configuration.getCatalog().getDatabase().getUser())
+                .add("password", configuration.getCatalog().getDatabase().getPassword())
+                .add("authenticationDatabase", configuration.getCatalog().getDatabase().getOptions().get("authenticationDatabase"))
+                .build();
 
-        QueryResult<UpdateResult> pullUpdate = collection.update(bsonQuery, update, new QueryOptions("multi", true));
-
-        logger.debug("{} out of {} file acls removed", pullUpdate.first().getModifiedCount(), pullUpdate.first().getMatchedCount());
-
-        // Now we push all the new acls
-        List<Document> aclDocumentList = new ArrayList<>(aclEntryList.size());
-        for (T aclEntry : aclEntryList) {
-            aclDocumentList.add(MongoDBUtils.getMongoDBDocument(aclEntry, "ACL"));
+        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
+        for (String hostPort : configuration.getCatalog().getDatabase().getHosts()) {
+            if (hostPort.contains(":")) {
+                String[] split = hostPort.split(":");
+                Integer port = Integer.valueOf(split[1]);
+                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
+            } else {
+                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
+            }
         }
 
-        update = new Document("$push", new Document(QueryParams.ACL.key(), new Document("$each", aclDocumentList)));
-
-        logger.debug("Create Acl: Query {}, Push {}",
-                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-
-        QueryResult<UpdateResult> pushUpdate = collection.update(bsonQuery, update, new QueryOptions("multi", true));
-
-        logger.debug("{} out of {} file acls created", pushUpdate.first().getModifiedCount(), pushUpdate.first().getMatchedCount());
-
-        if (pushUpdate.first().getModifiedCount() == 0) {
-            throw new CatalogDBException("Create Acl: An error occurred when trying to create acls");
+        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
+        mongoDataStore = mongoManager.get(getCatalogDatabase(configuration), mongoDBConfiguration);
+        if (mongoDataStore == null) {
+            throw new CatalogDBException("Unable to connect to MongoDB");
         }
     }
 
+    private String getCatalogDatabase(Configuration configuration) {
+        String database;
+        if (StringUtils.isNotEmpty(configuration.getDatabasePrefix())) {
+            if (!configuration.getDatabasePrefix().endsWith("_")) {
+                database = configuration.getDatabasePrefix() + "_catalog";
+            } else {
+                database = configuration.getDatabasePrefix() + "catalog";
+            }
+        } else {
+            database = "opencga_catalog";
+        }
+        return database;
+    }
+
+    private void validateCollection(String collection) throws CatalogDBException {
+        switch (collection) {
+            case STUDY_COLLECTION:
+            case COHORT_COLLECTION:
+            case INDIVIDUAL_COLLECTION:
+            case DATASET_COLLECTION:
+            case JOB_COLLECTION:
+            case FILE_COLLECTION:
+            case SAMPLE_COLLECTION:
+            case PANEL_COLLECTION:
+                return;
+            default:
+                throw new CatalogDBException("Unexpected parameter received. " + collection + " has been received.");
+        }
+    }
+
+    private GenericDocumentComplexConverter<? extends AbstractAcl> getConverter(String collection) throws CatalogException {
+        switch (collection) {
+            case STUDY_COLLECTION:
+                return studyConverter;
+            case COHORT_COLLECTION:
+                return cohortConverter;
+            case INDIVIDUAL_COLLECTION:
+                return individualConverter;
+            case DATASET_COLLECTION:
+                return datasetConverter;
+            case JOB_COLLECTION:
+                return jobConverter;
+            case FILE_COLLECTION:
+                return fileConverter;
+            case SAMPLE_COLLECTION:
+                return sampleConverter;
+            case PANEL_COLLECTION:
+                return panelConverter;
+            default:
+                throw new CatalogException("Unexpected parameter received. " + collection + " has been received.");
+        }
+    }
+
     @Override
-    public List<T> getAcl(long resourceId, List<String> members) {
+    public <E extends AbstractAclEntry> QueryResult<E> get(long resourceId, List<String> members, String entity) throws CatalogException {
+        validateCollection(entity);
+        long startTime = startQuery();
         List<Bson> aggregation = new ArrayList<>();
         aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, resourceId)));
-        aggregation.add(Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACL.key())));
+        aggregation.add(Aggregates.project(
+                Projections.include(QueryParams.ID.key(), QueryParams.ACL.key())));
         aggregation.add(Aggregates.unwind("$" + QueryParams.ACL.key()));
 
         List<Bson> filters = new ArrayList<>();
@@ -185,71 +227,46 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
             logger.debug("Get Acl: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         }
 
-        QueryResult<Document> aggregate = collection.aggregate(aggregation, null);
+        QueryResult<Document> aggregate = dbCollectionMap.get(entity).aggregate(aggregation, null);
 
-        List<T> retList = new ArrayList<>();
+        List<E> retList = new ArrayList<>();
+
         if (aggregate.getNumResults() > 0) {
             for (Document document : aggregate.getResult()) {
-                retList.add((T) converter.convertToDataModelType(document).getAcl().get(0));
+                retList.add((E) getConverter(entity).convertToDataModelType(document).getAcl().get(0));
             }
         }
 
-        return retList;
+        return endQuery(Long.toString(resourceId), startTime, retList);
     }
 
     @Override
-    public List<List<T>> getAcl(List<Long> resourceIds, List<String> members) {
-        List<List<T>> retList = new ArrayList<>(resourceIds.size());
+    public <E extends AbstractAclEntry> List<QueryResult<E>> get(List<Long> resourceIds, List<String> members, String entity)
+            throws CatalogException {
+        List<QueryResult<E>> retList = new ArrayList<>(resourceIds.size());
         for (Long resourceId : resourceIds) {
-            retList.add(getAcl(resourceId, members));
+            retList.add(get(resourceId, members, entity));
         }
         return retList;
     }
 
     @Override
-    public void removeAcl(long resourceId, String member) throws CatalogDBException {
-        Document query = new Document()
-                .append(PRIVATE_ID, resourceId)
-                .append(QueryParams.ACL_MEMBER.key(), member);
-        Bson update = new Document().append("$pull", new Document("acl", new Document("member", member)));
-        QueryResult<UpdateResult> updateResult = collection.update(query, update, null);
-        if (updateResult.first().getModifiedCount() == 0) {
-            throw new CatalogDBException("remove ACL: An error occurred when trying to remove the ACL defined for " + member);
-        }
-        logger.debug("Remove Acl in {} for member {}", resourceId, member);
-    }
-
-    @Override
-    public void removeAclsFromStudy(long studyId, String member) throws CatalogDBException {
+    public void removeFromStudy(long studyId, String member, String entity) throws CatalogException {
+        validateCollection(entity);
         Document query = new Document()
                 .append(PRIVATE_STUDY_ID, studyId)
                 .append(QueryParams.ACL_MEMBER.key(), member);
         Bson update = new Document("$pull", new Document("acl", new Document("member", member)));
-        QueryResult<UpdateResult> updateResult = collection.update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
-//        if (updateResult.first().getModifiedCount() == 0) {
-//            throw new CatalogDBException("remove ACL: An error occurred when trying to remove the ACLs defined for " + member);
-//        }
+        dbCollectionMap.get(entity).update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
+
         logger.debug("Remove all the Acls for member {} in study {}", member, studyId);
     }
 
     @Override
-    public T setAclsToMember(long resourceId, String member, List<String> permissions) throws CatalogDBException {
-        Document query = new Document()
-                .append(PRIVATE_ID, resourceId)
-                .append(QueryParams.ACL_MEMBER.key(), member);
-        Document update = new Document("$set", new Document("acl.$.permissions", permissions));
-        QueryResult<UpdateResult> queryResult = collection.update(query, update, null);
-
-        if (queryResult.first().getModifiedCount() != 1) {
-            throw new CatalogDBException("Unable to set the new permissions to " + member);
-        }
-
-        logger.debug("Set Acl for member {}: {}", member, StringUtils.join(permissions, ","));
-        return getAcl(resourceId, Arrays.asList(member)).get(0);
-    }
-
-    @Override
-    public void setAclsToMembers(List<Long> resourceIds, List<String> members, List<String> permissions) throws CatalogDBException {
+    public void setToMembers(List<Long> resourceIds, List<String> members, List<String> permissions, String entity)
+            throws CatalogDBException {
+        validateCollection(entity);
+        MongoDBCollection collection = dbCollectionMap.get(entity);
         for (String member : members) {
             logger.debug("Setting ACLs for {}", member);
 
@@ -285,25 +302,10 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
     }
 
     @Override
-    @Deprecated
-    public T addAclsToMember(long resourceId, String member, List<String> permissions) throws CatalogDBException {
-        Document query = new Document()
-                .append(PRIVATE_ID, resourceId)
-                .append(QueryParams.ACL_MEMBER.key(), member);
-        Document update = new Document("$addToSet", new Document("acl.$.permissions", new Document("$each", permissions)));
-        QueryResult<UpdateResult> queryResult = collection.update(query, update, null);
-
-        if (queryResult.first().getModifiedCount() != 1) {
-            throw new CatalogDBException("Unable to add new permissions to " + member + ". Maybe the member already had those"
-                    + " permissions?");
-        }
-
-        logger.debug("Add Acl for member {}: {}", member, StringUtils.join(permissions, ","));
-        return getAcl(resourceId, Arrays.asList(member)).get(0);
-    }
-
-    @Override
-    public void addAclsToMembers(List<Long> resourceIds, List<String> members, List<String> permissions) throws CatalogDBException {
+    public void addToMembers(List<Long> resourceIds, List<String> members, List<String> permissions, String entity)
+            throws CatalogDBException {
+        validateCollection(entity);
+        MongoDBCollection collection = dbCollectionMap.get(entity);
         for (String member : members) {
             logger.debug("Adding ACLs for {}", member);
 
@@ -341,24 +343,10 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
     }
 
     @Override
-    public T removeAclsFromMember(long resourceId, String member, List<String> permissions) throws CatalogDBException {
-        Document query = new Document()
-                .append("$isolated", 1)
-                .append(PRIVATE_ID, resourceId)
-                .append(QueryParams.ACL_MEMBER.key(), member);
-        Bson pull = Updates.pullAll("acl.$.permissions", permissions);
-        QueryResult<UpdateResult> update = collection.update(query, pull, null);
-        if (update.first().getModifiedCount() != 1) {
-            throw new CatalogDBException("Unable to remove the permissions from " + member + ". Maybe it didn't have those permissions?");
-        }
-
-        logger.debug("Remove Acl for member {}: {}", member, StringUtils.join(permissions, ","));
-        return getAcl(resourceId, Arrays.asList(member)).get(0);
-    }
-
-    @Override
-    public void removeAclsFromMembers(List<Long> resourceIds, List<String> members, @Nullable List<String> permissions)
+    public void removeFromMembers(List<Long> resourceIds, List<String> members, @Nullable List<String> permissions, String entity)
             throws CatalogDBException {
+        validateCollection(entity);
+        MongoDBCollection collection = dbCollectionMap.get(entity);
         if (permissions == null || permissions.size() == 0) {
             // Remove the members from the acl table
             Document queryDocument = new Document()
@@ -392,5 +380,4 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
             }
         }
     }
-
 }

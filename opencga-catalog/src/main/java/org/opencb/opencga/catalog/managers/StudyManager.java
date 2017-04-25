@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -351,8 +352,9 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         }
     }
 
-    private boolean memberExists(long studyId, String member) throws CatalogDBException {
-        QueryResult<StudyAclEntry> acl = studyDBAdaptor.getAcl(studyId, Arrays.asList(member));
+    private boolean memberExists(long studyId, String member) throws CatalogException {
+        QueryResult<StudyAclEntry> acl = authorizationManager.getAcl(studyId, Arrays.asList(member),
+                MongoDBAdaptorFactory.STUDY_COLLECTION);
         return acl.getNumResults() > 0;
     }
 
@@ -597,103 +599,104 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 Collections.singletonList(studySummary));
     }
 
-    @Deprecated
-    @Override
-    public QueryResult<StudyAclEntry> getAcls(String studyStr, List<String> members, String sessionId) throws CatalogException {
-        long startTime = System.currentTimeMillis();
-        String userId = catalogManager.getUserManager().getId(sessionId);
-        long studyId = getId(userId, studyStr);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
-
-        // Split and obtain the set of members (users + groups), users and groups
-        Set<String> memberSet = new HashSet<>();
-        Set<String> userIds = new HashSet<>();
-        Set<String> groupIds = new HashSet<>();
-        for (String member: members) {
-            memberSet.add(member);
-            if (!member.startsWith("@")) {
-                userIds.add(member);
-            } else {
-                groupIds.add(member);
-            }
-        }
-
-
-        // Obtain the groups the user might belong to in order to be able to get the permissions properly
-        // (the permissions might be given to the group instead of the user)
-        // Map of group -> users
-        Map<String, List<String>> groupUsers = new HashMap<>();
-
-        if (userIds.size() > 0) {
-            List<String> tmpUserIds = userIds.stream().collect(Collectors.toList());
-            QueryResult<Group> groups = studyDBAdaptor.getGroup(studyId, null, tmpUserIds);
-            // We add the groups where the users might belong to to the memberSet
-            if (groups.getNumResults() > 0) {
-                for (Group group : groups.getResult()) {
-                    for (String tmpUserId : group.getUserIds()) {
-                        if (userIds.contains(tmpUserId)) {
-                            memberSet.add(group.getName());
-
-                            if (!groupUsers.containsKey(group.getName())) {
-                                groupUsers.put(group.getName(), new ArrayList<>());
-                            }
-                            groupUsers.get(group.getName()).add(tmpUserId);
-                        }
-                    }
-                }
-            }
-        }
-        List<String> memberList = memberSet.stream().collect(Collectors.toList());
-        QueryResult<StudyAclEntry> studyAclQueryResult = studyDBAdaptor.getAcl(studyId, memberList);
-
-        if (members.size() == 0) {
-            return studyAclQueryResult;
-        }
-
-        // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the user
-        // instead of the group.
-        Map<String, StudyAclEntry> studyAclHashMap = new HashMap<>();
-        for (StudyAclEntry studyAcl : studyAclQueryResult.getResult()) {
-            String tmpMember = studyAcl.getMember();
-            if (memberList.contains(tmpMember)) {
-                if (tmpMember.startsWith("@")) {
-                    // Check if the user was demanding the group directly or a user belonging to the group
-                    if (groupIds.contains(tmpMember)) {
-                        studyAclHashMap.put(tmpMember, studyAcl);
-                    } else {
-                        // Obtain the user(s) belonging to that group whose permissions wanted the userId
-                        if (groupUsers.containsKey(tmpMember)) {
-                            for (String tmpUserId : groupUsers.get(tmpMember)) {
-                                if (userIds.contains(tmpUserId)) {
-                                    studyAclHashMap.put(tmpUserId, new StudyAclEntry(tmpUserId, studyAcl.getPermissions()));
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    // Add the user
-                    studyAclHashMap.put(tmpMember, studyAcl);
-                }
-            }
-
-        }
-
-        // We recreate the output that is in studyAclHashMap but in the same order the members were queried.
-        List<StudyAclEntry> studyAclList = new ArrayList<>(studyAclHashMap.size());
-        for (String member : members) {
-            if (studyAclHashMap.containsKey(member)) {
-                studyAclList.add(studyAclHashMap.get(member));
-            }
-        }
-
-        // Update queryResult info
-        studyAclQueryResult.setId(studyStr);
-        studyAclQueryResult.setNumResults(studyAclList.size());
-        studyAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
-        studyAclQueryResult.setResult(studyAclList);
-
-        return studyAclQueryResult;
-    }
+//    @Deprecated
+//    @Override
+//    public QueryResult<StudyAclEntry> getAcls(String studyStr, List<String> members, String sessionId) throws CatalogException {
+//        long startTime = System.currentTimeMillis();
+//        String userId = catalogManager.getUserManager().getId(sessionId);
+//        long studyId = getId(userId, studyStr);
+//        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
+//
+//        // Split and obtain the set of members (users + groups), users and groups
+//        Set<String> memberSet = new HashSet<>();
+//        Set<String> userIds = new HashSet<>();
+//        Set<String> groupIds = new HashSet<>();
+//        for (String member: members) {
+//            memberSet.add(member);
+//            if (!member.startsWith("@")) {
+//                userIds.add(member);
+//            } else {
+//                groupIds.add(member);
+//            }
+//        }
+//
+//
+//        // Obtain the groups the user might belong to in order to be able to get the permissions properly
+//        // (the permissions might be given to the group instead of the user)
+//        // Map of group -> users
+//        Map<String, List<String>> groupUsers = new HashMap<>();
+//
+//        if (userIds.size() > 0) {
+//            List<String> tmpUserIds = userIds.stream().collect(Collectors.toList());
+//            QueryResult<Group> groups = studyDBAdaptor.getGroup(studyId, null, tmpUserIds);
+//            // We add the groups where the users might belong to to the memberSet
+//            if (groups.getNumResults() > 0) {
+//                for (Group group : groups.getResult()) {
+//                    for (String tmpUserId : group.getUserIds()) {
+//                        if (userIds.contains(tmpUserId)) {
+//                            memberSet.add(group.getName());
+//
+//                            if (!groupUsers.containsKey(group.getName())) {
+//                                groupUsers.put(group.getName(), new ArrayList<>());
+//                            }
+//                            groupUsers.get(group.getName()).add(tmpUserId);
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        List<String> memberList = memberSet.stream().collect(Collectors.toList());
+//        QueryResult<StudyAclEntry> studyAclQueryResult = studyDBAdaptor.getAcl(studyId, memberList);
+//
+//        if (members.size() == 0) {
+//            return studyAclQueryResult;
+//        }
+//
+//        // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the
+// user
+//        // instead of the group.
+//        Map<String, StudyAclEntry> studyAclHashMap = new HashMap<>();
+//        for (StudyAclEntry studyAcl : studyAclQueryResult.getResult()) {
+//            String tmpMember = studyAcl.getMember();
+//            if (memberList.contains(tmpMember)) {
+//                if (tmpMember.startsWith("@")) {
+//                    // Check if the user was demanding the group directly or a user belonging to the group
+//                    if (groupIds.contains(tmpMember)) {
+//                        studyAclHashMap.put(tmpMember, studyAcl);
+//                    } else {
+//                        // Obtain the user(s) belonging to that group whose permissions wanted the userId
+//                        if (groupUsers.containsKey(tmpMember)) {
+//                            for (String tmpUserId : groupUsers.get(tmpMember)) {
+//                                if (userIds.contains(tmpUserId)) {
+//                                    studyAclHashMap.put(tmpUserId, new StudyAclEntry(tmpUserId, studyAcl.getPermissions()));
+//                                }
+//                            }
+//                        }
+//                    }
+//                } else {
+//                    // Add the user
+//                    studyAclHashMap.put(tmpMember, studyAcl);
+//                }
+//            }
+//
+//        }
+//
+//        // We recreate the output that is in studyAclHashMap but in the same order the members were queried.
+//        List<StudyAclEntry> studyAclList = new ArrayList<>(studyAclHashMap.size());
+//        for (String member : members) {
+//            if (studyAclHashMap.containsKey(member)) {
+//                studyAclList.add(studyAclHashMap.get(member));
+//            }
+//        }
+//
+//        // Update queryResult info
+//        studyAclQueryResult.setId(studyStr);
+//        studyAclQueryResult.setNumResults(studyAclList.size());
+//        studyAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
+//        studyAclQueryResult.setResult(studyAclList);
+//
+//        return studyAclQueryResult;
+//    }
 
     @Override
     public List<QueryResult<StudyAclEntry>> updateAcl(String studyStr, String memberIds, Study.StudyAclParams aclParams, String sessionId)
@@ -763,22 +766,79 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             case REMOVE:
                 return authorizationManager.removeStudyAcls(studyIds, members, permissions);
             case RESET:
-                // TODO: Improve this way of doing things
-                for (Long studyId : studyIds) {
-                    for (String member : members) {
-                        sampleDBAdaptor.removeAclsFromStudy(studyId, member);
-                        fileDBAdaptor.removeAclsFromStudy(studyId, member);
-                        jobDBAdaptor.removeAclsFromStudy(studyId, member);
-                        datasetDBAdaptor.removeAclsFromStudy(studyId, member);
-                        individualDBAdaptor.removeAclsFromStudy(studyId, member);
-                        cohortDBAdaptor.removeAclsFromStudy(studyId, member);
-                        panelDBAdaptor.removeAclsFromStudy(studyId, member);
-                    }
-                }
+                removeAllPermissionsFromOtherEntities(studyIds, members);
+//                // TODO: Improve this way of doing things
+//                for (Long studyId : studyIds) {
+//                    for (String member : members) {
+//                        sampleDBAdaptor.removeAclsFromStudy(studyId, member);
+//                        fileDBAdaptor.removeAclsFromStudy(studyId, member);
+//                        jobDBAdaptor.removeAclsFromStudy(studyId, member);
+//                        datasetDBAdaptor.removeAclsFromStudy(studyId, member);
+//                        individualDBAdaptor.removeAclsFromStudy(studyId, member);
+//                        cohortDBAdaptor.removeAclsFromStudy(studyId, member);
+//                        panelDBAdaptor.removeAclsFromStudy(studyId, member);
+//                    }
+//                }
                 return authorizationManager.removeStudyAcls(studyIds, members, null);
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }
+    }
+
+    private void removeAllPermissionsFromOtherEntities(List<Long> studyIds, List<String> members) throws CatalogException {
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(FileDBAdaptor.QueryParams.ACL_MEMBER.key(), members);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
+
+        List<Long> sampleIds = new ArrayList<>();
+        DBIterator<Sample> sampleDBIterator = sampleDBAdaptor.iterator(query, options);
+        while (sampleDBIterator.hasNext()) {
+            sampleIds.add(sampleDBIterator.next().getId());
+        }
+        authorizationManager.removeAcls(sampleIds, members, null, MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+
+        List<Long> fileIds = new ArrayList<>();
+        DBIterator<File> fileDBIterator = fileDBAdaptor.iterator(query, options);
+        while (fileDBIterator.hasNext()) {
+            fileIds.add(fileDBIterator.next().getId());
+        }
+        authorizationManager.removeAcls(fileIds, members, null, MongoDBAdaptorFactory.FILE_COLLECTION);
+
+        List<Long> jobIds = new ArrayList<>();
+        DBIterator<Job> jobDBIterator = jobDBAdaptor.iterator(query, options);
+        while (jobDBIterator.hasNext()) {
+            jobIds.add(jobDBIterator.next().getId());
+        }
+        authorizationManager.removeAcls(jobIds, members, null, MongoDBAdaptorFactory.JOB_COLLECTION);
+
+        List<Long> datasetIds = new ArrayList<>();
+        DBIterator<Dataset> datasetDBIterator = datasetDBAdaptor.iterator(query, options);
+        while (datasetDBIterator.hasNext()) {
+            datasetIds.add(datasetDBIterator.next().getId());
+        }
+        authorizationManager.removeAcls(datasetIds, members, null, MongoDBAdaptorFactory.DATASET_COLLECTION);
+
+        List<Long> individualIds = new ArrayList<>();
+        DBIterator<Individual> individualDBIterator = individualDBAdaptor.iterator(query, options);
+        while (individualDBIterator.hasNext()) {
+            individualIds.add(individualDBIterator.next().getId());
+        }
+        authorizationManager.removeAcls(individualIds, members, null, MongoDBAdaptorFactory.INDIVIDUAL_COLLECTION);
+
+        List<Long> cohortIds = new ArrayList<>();
+        DBIterator<Cohort> cohortDBIterator = cohortDBAdaptor.iterator(query, options);
+        while (cohortDBIterator.hasNext()) {
+            cohortIds.add(cohortDBIterator.next().getId());
+        }
+        authorizationManager.removeAcls(cohortIds, members, null, MongoDBAdaptorFactory.COHORT_COLLECTION);
+
+        List<Long> panelIds = new ArrayList<>();
+        DBIterator<DiseasePanel> panelDBIterator = panelDBAdaptor.iterator(query, options);
+        while (panelDBIterator.hasNext()) {
+            panelIds.add(panelDBIterator.next().getId());
+        }
+        authorizationManager.removeAcls(panelIds, members, null, MongoDBAdaptorFactory.PANEL_COLLECTION);
     }
 
     @Override

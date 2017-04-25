@@ -28,13 +28,10 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
-import org.opencb.opencga.catalog.utils.LDAPUtils;
 import org.opencb.opencga.core.results.LdapImportResult;
 
 import javax.naming.NamingException;
-import javax.naming.directory.DirContext;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -48,8 +45,6 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         super(usersCommandOptions.commonOptions);
         this.usersCommandOptions = usersCommandOptions;
     }
-
-
 
     @Override
     public void execute() throws Exception {
@@ -76,30 +71,13 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                 logger.error("Subcommand not valid");
                 break;
         }
-
     }
 
     private void syncGroups() throws CatalogException, NamingException, IOException {
         AdminCliOptionsParser.SyncCommandOptions executor = usersCommandOptions.syncCommandOptions;
-        if (executor.databaseUser != null) {
-            configuration.getCatalog().getDatabase().setUser(executor.databaseUser);
-        }
-        if (executor.databasePassword != null) {
-            configuration.getCatalog().getDatabase().setPassword(executor.databasePassword);
-        }
-        if (executor.prefix != null) {
-            configuration.setDatabasePrefix(executor.prefix);
-        }
-        if (executor.databaseHost != null) {
-            configuration.getCatalog().getDatabase().setHosts(Collections.singletonList(executor.databaseHost));
-        }
-        if (executor.commonOptions.adminPassword != null) {
-            configuration.getAdmin().setPassword(executor.commonOptions.adminPassword);
-        }
 
-        if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
-            throw new CatalogException("No admin password found. Please, insert the OpenCGA admin password.");
-        }
+        setCatalogDatabaseCredentials(executor.databaseHost, executor.prefix, executor.databaseUser, executor.databasePassword,
+                executor.commonOptions.adminPassword);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             QueryResult<Session> login = catalogManager.login("admin", configuration.getAdmin().getPassword(), "localhost");
@@ -190,35 +168,19 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
 
     private void importUsersAndGroups() throws CatalogException, NamingException {
         AdminCliOptionsParser.ImportCommandOptions executor = usersCommandOptions.importCommandOptions;
-        if (executor.databaseUser != null) {
-            configuration.getCatalog().getDatabase().setUser(executor.databaseUser);
-        }
-        if (executor.databasePassword != null) {
-            configuration.getCatalog().getDatabase().setPassword(executor.databasePassword);
-        }
-        if (executor.prefix != null) {
-            configuration.setDatabasePrefix(executor.prefix);
-        }
-        if (executor.databaseHost != null) {
-            configuration.getCatalog().getDatabase().setHosts(Collections.singletonList(executor.databaseHost));
-        }
-        if (executor.commonOptions.adminPassword != null) {
-            configuration.getAdmin().setPassword(executor.commonOptions.adminPassword);
-        }
 
-        if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
-            throw new CatalogException("No admin password found. Please, insert the OpenCGA admin password.");
-        }
+        setCatalogDatabaseCredentials(executor.databaseHost, executor.prefix, executor.databaseUser, executor.databasePassword,
+                executor.commonOptions.adminPassword);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             ObjectMap params = new ObjectMap();
-            params.putIfNotNull("group", executor.authGroup);
-            params.putIfNotNull("users", executor.users);
-            params.putIfNotNull("study-group", executor.group);
+            params.putIfNotNull("users", executor.user);
+            params.putIfNotNull("group", executor.group);
             params.putIfNotNull("study", executor.study);
+            params.putIfNotNull("study-group", executor.studyGroup);
             params.putIfNotNull("expirationDate", executor.expDate);
-            LdapImportResult ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,
-                    executor.type, params, configuration.getAdmin().getPassword());
+            LdapImportResult ldapImportResult = catalogManager.getUserManager()
+                    .importFromExternalAuthOrigin(executor.authOrigin, executor.type, params, configuration.getAdmin().getPassword());
 
             printImportReport(ldapImportResult);
         }
@@ -255,26 +217,10 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
     }
 
     private void create() throws CatalogException, IOException {
-        if (usersCommandOptions.createUserCommandOptions.databaseUser != null) {
-            configuration.getCatalog().getDatabase().setUser(usersCommandOptions.createUserCommandOptions.databaseUser);
-        }
-        if (usersCommandOptions.createUserCommandOptions.databasePassword != null) {
-            configuration.getCatalog().getDatabase().setPassword(usersCommandOptions.createUserCommandOptions.databasePassword);
-        }
-        if (usersCommandOptions.createUserCommandOptions.prefix != null) {
-            configuration.setDatabasePrefix(usersCommandOptions.createUserCommandOptions.prefix);
-        }
-        if (usersCommandOptions.createUserCommandOptions.databaseHost != null) {
-            configuration.getCatalog().getDatabase()
-                    .setHosts(Collections.singletonList(usersCommandOptions.createUserCommandOptions.databaseHost));
-        }
-        if (usersCommandOptions.commonOptions.adminPassword != null) {
-            configuration.getAdmin().setPassword(usersCommandOptions.commonOptions.adminPassword);
-        }
-
-        if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
-            throw new CatalogException("No admin password found. Please, insert the OpenCGA admin password.");
-        }
+        setCatalogDatabaseCredentials(usersCommandOptions.createUserCommandOptions.databaseHost,
+                usersCommandOptions.createUserCommandOptions.prefix, usersCommandOptions.createUserCommandOptions.databaseUser,
+                usersCommandOptions.createUserCommandOptions.databasePassword,
+                usersCommandOptions.createUserCommandOptions.commonOptions.adminPassword);
 
         long userQuota;
         if (usersCommandOptions.createUserCommandOptions.userQuota != null) {
@@ -297,26 +243,10 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
     }
 
     private void delete() throws CatalogException, IOException {
-        if (usersCommandOptions.deleteUserCommandOptions.databaseUser != null) {
-            configuration.getCatalog().getDatabase().setUser(usersCommandOptions.deleteUserCommandOptions.databaseUser);
-        }
-        if (usersCommandOptions.deleteUserCommandOptions.databasePassword != null) {
-            configuration.getCatalog().getDatabase().setPassword(usersCommandOptions.deleteUserCommandOptions.databasePassword);
-        }
-        if (usersCommandOptions.deleteUserCommandOptions.prefix != null) {
-            configuration.setDatabasePrefix(usersCommandOptions.deleteUserCommandOptions.prefix);
-        }
-        if (usersCommandOptions.deleteUserCommandOptions.databaseHost != null) {
-            configuration.getCatalog().getDatabase()
-                    .setHosts(Collections.singletonList(usersCommandOptions.deleteUserCommandOptions.databaseHost));
-        }
-        if (usersCommandOptions.commonOptions.adminPassword != null) {
-            configuration.getAdmin().setPassword(usersCommandOptions.commonOptions.adminPassword);
-        }
-
-        if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
-            throw new CatalogException("No admin password found. Please, insert your password.");
-        }
+        setCatalogDatabaseCredentials(usersCommandOptions.deleteUserCommandOptions.databaseHost,
+                usersCommandOptions.deleteUserCommandOptions.prefix, usersCommandOptions.deleteUserCommandOptions.databaseUser,
+                usersCommandOptions.deleteUserCommandOptions.databasePassword,
+                usersCommandOptions.deleteUserCommandOptions.commonOptions.adminPassword);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             catalogManager.getUserManager().validatePassword("admin", configuration.getAdmin().getPassword(), true);
@@ -335,26 +265,10 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
     }
 
     private void setQuota() throws CatalogException {
-        if (usersCommandOptions.QuotaUserCommandOptions.databaseUser != null) {
-            configuration.getCatalog().getDatabase().setUser(usersCommandOptions.QuotaUserCommandOptions.databaseUser);
-        }
-        if (usersCommandOptions.QuotaUserCommandOptions.databasePassword != null) {
-            configuration.getCatalog().getDatabase().setPassword(usersCommandOptions.QuotaUserCommandOptions.databasePassword);
-        }
-        if (usersCommandOptions.QuotaUserCommandOptions.prefix != null) {
-            configuration.setDatabasePrefix(usersCommandOptions.QuotaUserCommandOptions.prefix);
-        }
-        if (usersCommandOptions.QuotaUserCommandOptions.databaseHost != null) {
-            configuration.getCatalog().getDatabase()
-                    .setHosts(Collections.singletonList(usersCommandOptions.QuotaUserCommandOptions.databaseHost));
-        }
-        if (usersCommandOptions.commonOptions.adminPassword != null) {
-            configuration.getAdmin().setPassword(usersCommandOptions.commonOptions.adminPassword);
-        }
-
-        if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
-            throw new CatalogException("No admin password found. Please, insert your password.");
-        }
+        setCatalogDatabaseCredentials(usersCommandOptions.QuotaUserCommandOptions.databaseHost,
+                usersCommandOptions.QuotaUserCommandOptions.prefix, usersCommandOptions.QuotaUserCommandOptions.databaseUser,
+                usersCommandOptions.QuotaUserCommandOptions.databasePassword,
+                usersCommandOptions.QuotaUserCommandOptions.commonOptions.adminPassword);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             catalogManager.getUserManager().validatePassword("admin", configuration.getAdmin().getPassword(), true);

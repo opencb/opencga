@@ -21,15 +21,19 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
+import org.opencb.opencga.catalog.audit.CatalogAuditManager;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.AclDBAdaptor;
 import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -49,8 +53,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                     FILTER_ROUTE_FILES + FileDBAdaptor.QueryParams.ACL.key()
             ));
 
+    private final Logger logger;
+
     private final DBAdaptorFactory dbAdaptorFactory;
-    private final UserDBAdaptor userDBAdaptor;
     private final ProjectDBAdaptor projectDBAdaptor;
     private final StudyDBAdaptor studyDBAdaptor;
     private final FileDBAdaptor fileDBAdaptor;
@@ -63,23 +68,28 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final MetaDBAdaptor metaDBAdaptor;
     private final AuditManager auditManager;
 
+    private final AuthorizationDBAdaptor aclDBAdaptor;
+
     private final String ADMIN = "admin";
     private final String ANONYMOUS = "anonymous";
 
-    public CatalogAuthorizationManager(DBAdaptorFactory catalogDBAdaptorFactory, AuditManager auditManager) {
+    public CatalogAuthorizationManager(DBAdaptorFactory dbFactory, CatalogAuditManager auditManager, Configuration configuration)
+            throws CatalogDBException {
+        this.logger = LoggerFactory.getLogger(CatalogAuthorizationManager.class);
         this.auditManager = auditManager;
-        this.dbAdaptorFactory = catalogDBAdaptorFactory;
-        userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
-        projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
-        studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
-        fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();
-        jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
-        sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
-        individualDBAdaptor = catalogDBAdaptorFactory.getCatalogIndividualDBAdaptor();
-        cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
-        datasetDBAdaptor = catalogDBAdaptorFactory.getCatalogDatasetDBAdaptor();
-        panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
-        metaDBAdaptor = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor();
+        this.aclDBAdaptor = new AuthorizationMongoDBAdaptor(configuration);
+
+        this.dbAdaptorFactory = dbFactory;
+        projectDBAdaptor = dbFactory.getCatalogProjectDbAdaptor();
+        studyDBAdaptor = dbFactory.getCatalogStudyDBAdaptor();
+        fileDBAdaptor = dbFactory.getCatalogFileDBAdaptor();
+        jobDBAdaptor = dbFactory.getCatalogJobDBAdaptor();
+        sampleDBAdaptor = dbFactory.getCatalogSampleDBAdaptor();
+        individualDBAdaptor = dbFactory.getCatalogIndividualDBAdaptor();
+        cohortDBAdaptor = dbFactory.getCatalogCohortDBAdaptor();
+        datasetDBAdaptor = dbFactory.getCatalogDatasetDBAdaptor();
+        panelDBAdaptor = dbFactory.getCatalogPanelDBAdaptor();
+        metaDBAdaptor = dbFactory.getCatalogMetaDBAdaptor();
     }
 
     @Override
@@ -192,10 +202,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
                 : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
-        List<FileAclEntry> fileAclEntryList = fileDBAdaptor.getAcl(fileId, userIds).getResult();
+        QueryResult<FileAclEntry> fileQueryResult = aclDBAdaptor.get(fileId, userIds, MongoDBAdaptorFactory.FILE_COLLECTION);
 
         Map<String, FileAclEntry> userAclMap = new HashMap<>();
-        for (FileAclEntry fileAclEntry : fileAclEntryList) {
+        for (FileAclEntry fileAclEntry : fileQueryResult.getResult()) {
             userAclMap.put(fileAclEntry.getMember(), fileAclEntry);
         }
 
@@ -301,10 +311,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
                 : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
-        List<SampleAclEntry> sampleAclList = sampleDBAdaptor.getAcl(sampleId, userIds).getResult();
+        QueryResult<SampleAclEntry> sampleQueryResult = aclDBAdaptor.get(sampleId, userIds, MongoDBAdaptorFactory.SAMPLE_COLLECTION);
 
         Map<String, SampleAclEntry> userAclMap = new HashMap<>();
-        for (SampleAclEntry sampleAcl : sampleAclList) {
+        for (SampleAclEntry sampleAcl : sampleQueryResult.getResult()) {
             userAclMap.put(sampleAcl.getMember(), sampleAcl);
         }
 
@@ -400,10 +410,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
                 : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
-        List<IndividualAclEntry> individualAcls = individualDBAdaptor.getAcl(individualId, userIds).getResult();
+        QueryResult<IndividualAclEntry> individualQueryResult = aclDBAdaptor.get(individualId, userIds,
+                MongoDBAdaptorFactory.INDIVIDUAL_COLLECTION);
 
         Map<String, IndividualAclEntry> userAclMap = new HashMap<>();
-        for (IndividualAclEntry individualAcl : individualAcls) {
+        for (IndividualAclEntry individualAcl : individualQueryResult.getResult()) {
             userAclMap.put(individualAcl.getMember(), individualAcl);
         }
 
@@ -499,10 +510,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
                 : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
-        List<JobAclEntry> jobAcls = jobDBAdaptor.getAcl(jobId, userIds).getResult();
+        QueryResult<JobAclEntry> jobQueryResult = aclDBAdaptor.get(jobId, userIds, MongoDBAdaptorFactory.JOB_COLLECTION);
 
         Map<String, JobAclEntry> userAclMap = new HashMap<>();
-        for (JobAclEntry jobAcl : jobAcls) {
+        for (JobAclEntry jobAcl : jobQueryResult.getResult()) {
             userAclMap.put(jobAcl.getMember(), jobAcl);
         }
 
@@ -597,10 +608,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
                 : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
-        List<CohortAclEntry> cohortAcls = cohortDBAdaptor.getAcl(cohortId, userIds).getResult();
+        QueryResult<CohortAclEntry> cohortQueryResult = aclDBAdaptor.get(cohortId, userIds, MongoDBAdaptorFactory.COHORT_COLLECTION);
 
         Map<String, CohortAclEntry> userAclMap = new HashMap<>();
-        for (CohortAclEntry cohortAcl : cohortAcls) {
+        for (CohortAclEntry cohortAcl : cohortQueryResult.getResult()) {
             userAclMap.put(cohortAcl.getMember(), cohortAcl);
         }
 
@@ -696,10 +707,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
                 : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
-        List<DatasetAclEntry> datasetAcls = datasetDBAdaptor.getAcl(datasetId, userIds).getResult();
+        QueryResult<DatasetAclEntry> datasetQueryResult= aclDBAdaptor.get(datasetId, userIds,
+                MongoDBAdaptorFactory.DATASET_COLLECTION);
 
         Map<String, DatasetAclEntry> userAclMap = new HashMap<>();
-        for (DatasetAclEntry datasetAcl : datasetAcls) {
+        for (DatasetAclEntry datasetAcl : datasetQueryResult.getResult()) {
             userAclMap.put(datasetAcl.getMember(), datasetAcl);
         }
 
@@ -795,10 +807,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
                 : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
-        List<DiseasePanelAclEntry> panelAcls = panelDBAdaptor.getAcl(panelId, userIds).getResult();
+        QueryResult<DiseasePanelAclEntry> panelQueryResult = aclDBAdaptor.get(panelId, userIds,
+                MongoDBAdaptorFactory.PANEL_COLLECTION);
 
         Map<String, DiseasePanelAclEntry> userAclMap = new HashMap<>();
-        for (DiseasePanelAclEntry panelAcl : panelAcls) {
+        for (DiseasePanelAclEntry panelAcl : panelQueryResult.getResult()) {
             userAclMap.put(panelAcl.getMember(), panelAcl);
         }
 
@@ -1038,8 +1051,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
     }
 
-    private boolean memberExists(long studyId, String member) throws CatalogDBException {
-        QueryResult<StudyAclEntry> acl = studyDBAdaptor.getAcl(studyId, Arrays.asList(member));
+    private boolean memberExists(long studyId, String member) throws CatalogException {
+        QueryResult<StudyAclEntry> acl = aclDBAdaptor.get(studyId, Arrays.asList(member), MongoDBAdaptorFactory.STUDY_COLLECTION);
         return acl.getNumResults() > 0;
     }
 
@@ -1097,45 +1110,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
 
-        return studyDBAdaptor.getAcl(studyId, members);
-    }
-
-    @Override
-    public QueryResult<SampleAclEntry> createSampleAcls(String userId, long sampleId, List<String> members, List<String> permissions)
-            throws CatalogException {
-        sampleDBAdaptor.checkId(sampleId);
-        // Check if the userId has proper permissions for all the samples.
-        checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.SHARE);
-
-        // Check if all the members have a permission already set at the study level.
-        long studyId = sampleDBAdaptor.getStudyId(sampleId);
-        for (String member : members) {
-            if (!member.equals("*") && !member.equals("anonymous") && !memberExists(studyId, member)) {
-                throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
-                        + "defined for that member.");
-            }
-        }
-
-        // Check all the members exist in all the possible different studies
-        checkMembers(dbAdaptorFactory, studyId, members);
-
-        // Check if any of the members already have permissions set in the sample
-        if (anyMemberHasPermissions(studyId, sampleId, members, sampleDBAdaptor)) {
-            throw new CatalogException("Cannot create ACL. At least one of the members already have some permissions set for this "
-                    + "particular sample. Please, use update instead.");
-        }
-
-        // Set the permissions
-        int timeSpent = 0;
-        List<SampleAclEntry> sampleAclList = new ArrayList<>(members.size());
-        for (String member : members) {
-            SampleAclEntry sampleAcl = new SampleAclEntry(member, permissions);
-            QueryResult<SampleAclEntry> sampleAclQueryResult = sampleDBAdaptor.createAcl(sampleId, sampleAcl);
-            timeSpent += sampleAclQueryResult.getDbTime();
-            sampleAclList.add(sampleAclQueryResult.first());
-        }
-
-        return new QueryResult<>("create sample acl", timeSpent, sampleAclList.size(), sampleAclList.size(), "", "", sampleAclList);
+        return aclDBAdaptor.get(studyId, members, MongoDBAdaptorFactory.STUDY_COLLECTION);
     }
 
     @Override
@@ -1195,29 +1170,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
 
-        return sampleDBAdaptor.getAcl(sampleId, members);
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult<SampleAclEntry> removeSampleAcl(String userId, long sampleId, String member) throws CatalogException {
-        sampleDBAdaptor.checkId(sampleId);
-        checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.SHARE);
-
-        long studyId = sampleDBAdaptor.getStudyId(sampleId);
-        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
-
-        // Obtain the ACLs the member had
-        QueryResult<SampleAclEntry> sampleAcl = sampleDBAdaptor.getAcl(sampleId, Arrays.asList(member));
-        if (sampleAcl == null || sampleAcl.getNumResults() == 0) {
-            throw new CatalogException("Could not remove the ACLs for " + member + ". It seems " + member + " did not have any ACLs "
-                    + "defined");
-        }
-
-        sampleDBAdaptor.removeAcl(sampleId, member);
-
-        sampleAcl.setId("Remove sample ACLs");
-        return sampleAcl;
+        return aclDBAdaptor.get(sampleId, members, MongoDBAdaptorFactory.SAMPLE_COLLECTION);
     }
 
     @Override
@@ -1295,7 +1248,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
 
-        return fileDBAdaptor.getAcl(fileId, members);
+        return aclDBAdaptor.get(fileId, members, MongoDBAdaptorFactory.FILE_COLLECTION);
     }
 
     @Override
@@ -1355,7 +1308,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
 
-        return individualDBAdaptor.getAcl(individualId, members);
+        return aclDBAdaptor.get(individualId, members, MongoDBAdaptorFactory.INDIVIDUAL_COLLECTION);
     }
 
     @Override
@@ -1415,7 +1368,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
 
-        return cohortDBAdaptor.getAcl(cohortId, members);
+        return aclDBAdaptor.get(cohortId, members, MongoDBAdaptorFactory.COHORT_COLLECTION);
     }
 
     private void checkUpdateParams(@Nullable String addPermissions, @Nullable String removePermissions, @Nullable String setPermissions)
@@ -1430,45 +1383,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         } else if (cont > 1) {
             throw new CatalogException("More than one action to be performed found. Please, select just one.");
         }
-    }
-
-    @Override
-    public QueryResult<DatasetAclEntry> createDatasetAcls(String userId, long datasetId, List<String> members, List<String> permissions)
-            throws CatalogException {
-        datasetDBAdaptor.checkId(datasetId);
-        // Check if the userId has proper permissions for all the datasets.
-        checkDatasetPermission(datasetId, userId, DatasetAclEntry.DatasetPermissions.SHARE);
-
-        // Check if all the members have a permission already set at the study level.
-        long studyId = datasetDBAdaptor.getStudyIdByDatasetId(datasetId);
-        for (String member : members) {
-            if (!member.equals("*") && !member.equals("anonymous") && !memberExists(studyId, member)) {
-                throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
-                        + "defined for that member.");
-            }
-        }
-
-        // Check all the members exist in all the possible different studies
-        checkMembers(dbAdaptorFactory, studyId, members);
-
-        // Check if any of the members already have permissions set in the file
-        if (anyMemberHasPermissions(studyId, datasetId, members, datasetDBAdaptor)) {
-            throw new CatalogException("Cannot create ACL. At least one of the members already have some permissions set for this "
-                    + "particular dataset. Please, use update instead.");
-        }
-
-        // Set the permissions
-        int timeSpent = 0;
-        List<DatasetAclEntry> datasetAclList = new ArrayList<>(members.size());
-        for (String member : members) {
-            DatasetAclEntry datasetAcl = new DatasetAclEntry(member, permissions);
-            QueryResult<DatasetAclEntry> datasetAclQueryResult = datasetDBAdaptor.createAcl(datasetId, datasetAcl);
-            timeSpent += datasetAclQueryResult.getDbTime();
-            datasetAclList.add(datasetAclQueryResult.first());
-        }
-
-        return new QueryResult<>("create dataset acl", timeSpent, datasetAclList.size(), datasetAclList.size(), "", "",
-                datasetAclList);
     }
 
     @Override
@@ -1528,80 +1442,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
 
-        return datasetDBAdaptor.getAcl(datasetId, members);
+        return aclDBAdaptor.get(datasetId, members, MongoDBAdaptorFactory.DATASET_COLLECTION);
     }
-
-    @Override
-    public QueryResult<DatasetAclEntry> removeDatasetAcl(String userId, long datasetId, String member) throws CatalogException {
-        datasetDBAdaptor.checkId(datasetId);
-        checkDatasetPermission(datasetId, userId, DatasetAclEntry.DatasetPermissions.SHARE);
-
-        long studyId = datasetDBAdaptor.getStudyIdByDatasetId(datasetId);
-        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
-
-        // Obtain the ACLs the member had
-        QueryResult<DatasetAclEntry> datasetDBAdaptorAcl = datasetDBAdaptor.getAcl(datasetId, Arrays.asList(member));
-        if (datasetDBAdaptorAcl == null || datasetDBAdaptorAcl.getNumResults() == 0) {
-            throw new CatalogException("Could not remove the ACLs for " + member + ". It seems " + member + " did not have any ACLs "
-                    + "defined");
-        }
-
-        datasetDBAdaptor.removeAcl(datasetId, member);
-
-        datasetDBAdaptorAcl.setId("Remove dataset ACLs");
-        return datasetDBAdaptorAcl;
-    }
-
-    @Override
-    public QueryResult<DatasetAclEntry> updateDatasetAcl(String userId, long datasetId, String member, @Nullable String addPermissions,
-                                                         @Nullable String removePermissions, @Nullable String setPermissions)
-            throws CatalogException {
-        checkUpdateParams(addPermissions, removePermissions, setPermissions);
-
-        datasetDBAdaptor.checkId(datasetId);
-        checkDatasetPermission(datasetId, userId, DatasetAclEntry.DatasetPermissions.SHARE);
-
-        long studyId = datasetDBAdaptor.getStudyIdByDatasetId(datasetId);
-        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
-
-        // Check that the member has permissions
-        Query query = new Query()
-                .append(DatasetDBAdaptor.QueryParams.ID.key(), datasetId)
-                .append(DatasetDBAdaptor.QueryParams.ACL_MEMBER.key(), member);
-        QueryResult<Long> count = datasetDBAdaptor.count(query);
-        if (count == null || count.first() == 0) {
-            throw new CatalogException("Could not update ACLs for " + member + ". It seems the member does not have any permissions set "
-                    + "yet.");
-        }
-
-        List<String> permissions;
-        if (setPermissions != null) {
-            permissions = Arrays.asList(setPermissions.split(","));
-            // Check if the permissions are correct
-            checkPermissions(permissions, DatasetAclEntry.DatasetPermissions::valueOf);
-
-            datasetDBAdaptor.setAclsToMember(datasetId, member, permissions);
-        } else {
-            if (addPermissions != null) {
-                permissions = Arrays.asList(addPermissions.split(","));
-                // Check if the permissions are correct
-                checkPermissions(permissions, DatasetAclEntry.DatasetPermissions::valueOf);
-
-                datasetDBAdaptor.addAclsToMember(datasetId, member, permissions);
-            }
-
-            if (removePermissions != null) {
-                permissions = Arrays.asList(removePermissions.split(","));
-                // Check if the permissions are correct
-                checkPermissions(permissions, DatasetAclEntry.DatasetPermissions::valueOf);
-
-                datasetDBAdaptor.removeAclsFromMember(datasetId, member, permissions);
-            }
-        }
-
-        return datasetDBAdaptor.getAcl(datasetId, Arrays.asList(member));
-    }
-
 
     @Override
     public QueryResult<JobAclEntry> getAllJobAcls(String userId, long jobId) throws CatalogException {
@@ -1660,299 +1502,130 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
 
-        return jobDBAdaptor.getAcl(jobId, members);
-    }
-
-    @Override
-    public QueryResult<DiseasePanelAclEntry> createPanelAcls(String userId, long panelId, List<String> members, List<String> permissions)
-            throws CatalogException {
-        panelDBAdaptor.checkId(panelId);
-        // Check if the userId has proper permissions for all the panels.
-        checkDiseasePanelPermission(panelId, userId, DiseasePanelAclEntry.DiseasePanelPermissions.SHARE);
-
-        // Check if all the members have a permission already set at the study level.
-        Set<Long> studySet = new HashSet<>();
-        long studyId = panelDBAdaptor.getStudyId(panelId);
-        studySet.add(studyId);
-        for (String member : members) {
-            if (!member.equals("*") && !member.equals("anonymous") && !memberExists(studyId, member)) {
-                throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
-                        + "defined for that member.");
-            }
-        }
-
-        // Check all the members exist in all the possible different studies
-        checkMembers(dbAdaptorFactory, studyId, members);
-
-        // Check if any of the members already have permissions set in the panel
-        if (anyMemberHasPermissions(studyId, panelId, members, panelDBAdaptor)) {
-            throw new CatalogException("Cannot create ACL. At least one of the members already have some permissions set for this "
-                    + "particular panel. Please, use update instead.");
-        }
-
-        // Set the permissions
-        int timeSpent = 0;
-        List<DiseasePanelAclEntry> panelAclList = new ArrayList<>(members.size());
-        for (String member : members) {
-            DiseasePanelAclEntry panelAcl = new DiseasePanelAclEntry(member, permissions);
-            QueryResult<DiseasePanelAclEntry> panelAclQueryResult = panelDBAdaptor.createAcl(panelId, panelAcl);
-            timeSpent += panelAclQueryResult.getDbTime();
-            panelAclList.add(panelAclQueryResult.first());
-        }
-
-        return new QueryResult<>("create panel acl", timeSpent, panelAclList.size(), panelAclList.size(), "", "",
-                panelAclList);
-    }
-
-    @Override
-    public QueryResult<DiseasePanelAclEntry> getAllPanelAcls(String userId, long panelId) throws CatalogException {
-        panelDBAdaptor.checkId(panelId);
-        // Check if the userId has proper permissions for all the panels.
-//        checkDiseasePanelPermission(panelId, userId, DiseasePanelAclEntry.DiseasePanelPermissions.SHARE);
-
-        // Obtain the Acls
-        Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(), panelId);
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, PanelDBAdaptor.QueryParams.ACL.key());
-        QueryResult<DiseasePanel> queryResult = panelDBAdaptor.get(query, queryOptions);
-
-        List<DiseasePanelAclEntry> aclList;
-        if (queryResult != null && queryResult.getNumResults() == 1) {
-            aclList = queryResult.first().getAcl();
-        } else {
-            aclList = Collections.emptyList();
-        }
-        return new QueryResult<>("get panel acl", queryResult.getDbTime(), aclList.size(), aclList.size(),
-                queryResult.getWarningMsg(), queryResult.getErrorMsg(), aclList);
-    }
-
-    @Override
-    public QueryResult<DiseasePanelAclEntry> getPanelAcl(String userId, long panelId, String member) throws CatalogException {
-        panelDBAdaptor.checkId(panelId);
-
-        long studyId = panelDBAdaptor.getStudyId(panelId);
-        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
-
-        try {
-            checkDiseasePanelPermission(panelId, userId, DiseasePanelAclEntry.DiseasePanelPermissions.SHARE);
-        } catch (CatalogException e) {
-            // It will be OK if the userId asking for the ACLs wants to see its own permissions
-            if (member.startsWith("@")) { //group
-                // If the userId does not belong to the group...
-                QueryResult<Group> groupBelonging = getGroupBelonging(studyId, userId);
-                if (groupBelonging.getNumResults() != 1 || !groupBelonging.first().getName().equals(member)) {
-                    throw new CatalogAuthorizationException("The user " + userId + " does not have permissions to see the ACLs of "
-                            + member);
-                }
-            } else {
-                // If the userId asking to see the permissions is not asking to see their own permissions
-                if (!userId.equals(member)) {
-                    throw new CatalogAuthorizationException("The user " + userId + " does not have permissions to see the ACLs of "
-                            + member);
-                }
-            }
-        }
-
-        List<String> members = new ArrayList<>(2);
-        members.add(member);
-        if (!member.startsWith("@") && !member.equalsIgnoreCase("anonymous") && !member.equals("*")) {
-            QueryResult<Group> groupBelonging = getGroupBelonging(studyId, member);
-            if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
-                members.add(groupBelonging.first().getName());
-            }
-        }
-
-        return panelDBAdaptor.getAcl(panelId, members);
-    }
-
-    @Override
-    public QueryResult<DiseasePanelAclEntry> removePanelAcl(String userId, long panelId, String member) throws CatalogException {
-        panelDBAdaptor.checkId(panelId);
-        checkDiseasePanelPermission(panelId, userId, DiseasePanelAclEntry.DiseasePanelPermissions.SHARE);
-
-        long studyId = panelDBAdaptor.getStudyId(panelId);
-        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
-
-        // Obtain the ACLs the member had
-        QueryResult<DiseasePanelAclEntry> panelDBAdaptorAcl = panelDBAdaptor.getAcl(panelId, Arrays.asList(member));
-        if (panelDBAdaptorAcl == null || panelDBAdaptorAcl.getNumResults() == 0) {
-            throw new CatalogException("Could not remove the ACLs for " + member + ". It seems " + member + " did not have any ACLs "
-                    + "defined");
-        }
-
-        panelDBAdaptor.removeAcl(panelId, member);
-
-        panelDBAdaptorAcl.setId("Remove panel ACLs");
-        return panelDBAdaptorAcl;
-    }
-
-    @Override
-    public QueryResult<DiseasePanelAclEntry> updatePanelAcl(String userId, long panelId, String member, @Nullable String addPermissions,
-                                                            @Nullable String removePermissions, @Nullable String setPermissions)
-            throws CatalogException {
-        checkUpdateParams(addPermissions, removePermissions, setPermissions);
-
-        panelDBAdaptor.checkId(panelId);
-        checkDiseasePanelPermission(panelId, userId, DiseasePanelAclEntry.DiseasePanelPermissions.SHARE);
-
-        long studyId = panelDBAdaptor.getStudyId(panelId);
-        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
-
-        // Check that the member has permissions
-        Query query = new Query()
-                .append(PanelDBAdaptor.QueryParams.ID.key(), panelId)
-                .append(PanelDBAdaptor.QueryParams.ACL_MEMBER.key(), member);
-        QueryResult<Long> count = panelDBAdaptor.count(query);
-        if (count == null || count.first() == 0) {
-            throw new CatalogException("Could not update ACLs for " + member + ". It seems the member does not have any permissions set "
-                    + "yet.");
-        }
-
-        List<String> permissions;
-        if (setPermissions != null) {
-            permissions = Arrays.asList(setPermissions.split(","));
-            // Check if the permissions are correct
-            checkPermissions(permissions, DiseasePanelAclEntry.DiseasePanelPermissions::valueOf);
-
-            panelDBAdaptor.setAclsToMember(panelId, member, permissions);
-        } else {
-            if (addPermissions != null) {
-                permissions = Arrays.asList(addPermissions.split(","));
-                // Check if the permissions are correct
-                checkPermissions(permissions, DiseasePanelAclEntry.DiseasePanelPermissions::valueOf);
-
-                panelDBAdaptor.addAclsToMember(panelId, member, permissions);
-            }
-
-            if (removePermissions != null) {
-                permissions = Arrays.asList(removePermissions.split(","));
-                // Check if the permissions are correct
-                checkPermissions(permissions, DiseasePanelAclEntry.DiseasePanelPermissions::valueOf);
-
-                panelDBAdaptor.removeAclsFromMember(panelId, member, permissions);
-            }
-        }
-
-        return panelDBAdaptor.getAcl(panelId, Arrays.asList(member));
+        return aclDBAdaptor.get(jobId, members, MongoDBAdaptorFactory.JOB_COLLECTION);
     }
 
     @Override
     public List<QueryResult<StudyAclEntry>> setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException {
-        List<QueryResult<StudyAclEntry>> retQueryResultList = new ArrayList<>(studyIds.size());
-
-        Query query = new Query(StudyDBAdaptor.QueryParams.ID.key(), studyIds);
-        studyDBAdaptor.setAclsToMember(query, members, permissions);
-
-        List<QueryResult<StudyAclEntry>> acls = studyDBAdaptor.getAcls(query, members);
-        retQueryResultList.addAll(acls);
-
-        return retQueryResultList;
+        aclDBAdaptor.setToMembers(studyIds, members, permissions, MongoDBAdaptorFactory.STUDY_COLLECTION);
+        return aclDBAdaptor.get(studyIds, members, MongoDBAdaptorFactory.STUDY_COLLECTION);
     }
 
     @Override
     public List<QueryResult<StudyAclEntry>> addStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException {
-        List<QueryResult<StudyAclEntry>> retQueryResultList = new ArrayList<>(studyIds.size());
-
-        Query query = new Query(StudyDBAdaptor.QueryParams.ID.key(), studyIds);
-        studyDBAdaptor.addAclsToMember(query, members, permissions);
-
-        List<QueryResult<StudyAclEntry>> acls = studyDBAdaptor.getAcls(query, members);
-        retQueryResultList.addAll(acls);
-
-        return retQueryResultList;
+        aclDBAdaptor.addToMembers(studyIds, members, permissions, MongoDBAdaptorFactory.STUDY_COLLECTION);
+        return aclDBAdaptor.get(studyIds, members, MongoDBAdaptorFactory.STUDY_COLLECTION);
     }
 
     @Override
     public List<QueryResult<StudyAclEntry>> removeStudyAcls(List<Long> studyIds, List<String> members, @Nullable List<String> permissions)
             throws CatalogException {
-        List<QueryResult<StudyAclEntry>> retQueryResultList = new ArrayList<>(studyIds.size());
-
-        Query query = new Query(StudyDBAdaptor.QueryParams.ID.key(), studyIds);
-        studyDBAdaptor.removeAclsFromMember(query, members, permissions);
-
-        List<QueryResult<StudyAclEntry>> acls = studyDBAdaptor.getAcls(query, members);
-        retQueryResultList.addAll(acls);
-
-        return retQueryResultList;
+        aclDBAdaptor.removeFromMembers(studyIds, members, permissions, MongoDBAdaptorFactory.STUDY_COLLECTION);
+        return aclDBAdaptor.get(studyIds, members, MongoDBAdaptorFactory.STUDY_COLLECTION);
     }
 
     @Override
-    public <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(AbstractManager.MyResourceIds resources, List<String> members,
-                                                                     List<String> permissions, AclDBAdaptor dbAdaptor)
-            throws CatalogException {
-        List<QueryResult<E>> retQueryResultList = new ArrayList<>(resources.getResourceIds().size());
-
-        Query query = new Query()
-                .append("id", resources.getResourceIds())
-                .append("studyId", resources.getStudyId());
-        dbAdaptor.setAclsToMember(query, members, permissions);
-
-        List<QueryResult<E>> acls = dbAdaptor.getAcls(query, members);
-        retQueryResultList.addAll(acls);
-
-        return retQueryResultList;
+    public <E extends AbstractAclEntry> QueryResult<E> getAcl(long id, List<String> members, String entity) throws CatalogException {
+        return aclDBAdaptor.get(id, members, entity);
     }
 
     @Override
-    public <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(AbstractManager.MyResourceIds resources, List<String> members,
-                                                                     List<String> permissions, AclDBAdaptor dbAdaptor)
+    public <E extends AbstractAclEntry> List<QueryResult<E>> getAcls(List<Long> ids, List<String> members, String entity)
             throws CatalogException {
-        List<QueryResult<E>> retQueryResultList = new ArrayList<>(resources.getResourceIds().size());
-
-        Query query = new Query()
-                .append("id", resources.getResourceIds())
-                .append("studyId", resources.getStudyId());
-        dbAdaptor.addAclsToMember(query, members, permissions);
-
-        List<QueryResult<E>> acls = dbAdaptor.getAcls(query, members);
-        retQueryResultList.addAll(acls);
-
-        return retQueryResultList;
+        return aclDBAdaptor.get(ids, members, entity);
     }
 
     @Override
-    public <E extends AbstractAclEntry> List<QueryResult<E>> removeAcls(AbstractManager.MyResourceIds resources, List<String> members,
-                                                                        @Nullable List<String> permissions, AclDBAdaptor dbAdaptor)
-            throws CatalogException {
-        List<QueryResult<E>> retQueryResultList = new ArrayList<>(resources.getResourceIds().size());
-
-        Query query = new Query()
-                .append("id", resources.getResourceIds())
-                .append("studyId", resources.getStudyId());
-        dbAdaptor.removeAclsFromMember(query, members, permissions);
-
-        List<QueryResult<E>> acls = dbAdaptor.getAcls(query, members);
-        retQueryResultList.addAll(acls);
-
-        return retQueryResultList;
-    }
-
-    @Override
-    public boolean anyMemberHasPermissions(long studyId, long id, List<String> members, AclDBAdaptor dbAdaptor)
-            throws CatalogException {
-
-        List<String> allMembers = new ArrayList<>(members.size());
-        allMembers.addAll(members);
-
-        for (String member : members) {
-            if (member.startsWith("@")) { // It's a group
-                // Obtain the users of the group
-                QueryResult<Group> group = studyDBAdaptor.getGroup(studyId, member, Collections.emptyList());
-                if (group != null && group.getNumResults() == 1) {
-                    allMembers.addAll(group.first().getUserIds());
-                }
-            } else if (!member.equalsIgnoreCase("anonymous") && !member.equals("*")) { // It's a user id
-                // Get the group where the user might belong to
-                QueryResult<Group> groupBelonging = getGroupBelonging(studyId, member);
-                if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
-                    allMembers.add(groupBelonging.first().getName());
-                }
-            }
+    public <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(List<Long> ids, List<String> members, List<String> permissions,
+                                                                     String entity) throws CatalogException {
+        if (ids == null || ids.size() == 0) {
+            logger.warn("Missing identifiers to set acls");
+            return Collections.emptyList();
         }
 
-        return dbAdaptor.getAcl(id, allMembers).getNumResults() > 0;
+        long startTime = System.currentTimeMillis();
+        aclDBAdaptor.setToMembers(ids, members, permissions, entity);
+        int dbTime = (int) (System.currentTimeMillis() - startTime);
+
+        List<QueryResult<E>> aclResultList = getAcls(ids, members, entity);
+
+        for (QueryResult<E> aclEntryQueryResult : aclResultList) {
+            aclEntryQueryResult.setDbTime(aclEntryQueryResult.getDbTime() + dbTime);
+        }
+
+        return aclResultList;
     }
+
+    @Override
+    public <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(List<Long> ids, List<String> members, List<String> permissions,
+                                                                     String entity) throws CatalogException {
+        if (ids == null || ids.size() == 0) {
+            logger.warn("Missing identifiers to add acls");
+            return Collections.emptyList();
+        }
+
+        long startTime = System.currentTimeMillis();
+        aclDBAdaptor.addToMembers(ids, members, permissions, entity);
+        int dbTime = (int) (System.currentTimeMillis() - startTime);
+
+        List<QueryResult<E>> aclResultList = getAcls(ids, members, entity);
+
+        for (QueryResult<E> aclEntryQueryResult : aclResultList) {
+            aclEntryQueryResult.setDbTime(aclEntryQueryResult.getDbTime() + dbTime);
+        }
+
+        return aclResultList;
+    }
+
+    @Override
+    public <E extends AbstractAclEntry> List<QueryResult<E>> removeAcls(List<Long> ids, List<String> members,
+                                                                        @Nullable List<String> permissions, String entity)
+            throws CatalogException {
+        if (ids == null || ids.size() == 0) {
+            logger.warn("Missing identifiers to remove acls");
+            return Collections.emptyList();
+        }
+
+        long startTime = System.currentTimeMillis();
+        aclDBAdaptor.removeFromMembers(ids, members, permissions, entity);
+
+        int dbTime = (int) (System.currentTimeMillis() - startTime);
+        List<QueryResult<E>> aclResultList = getAcls(ids, members, entity);
+
+        // Update dbTime
+        for (QueryResult<E> aclEntryQueryResult : aclResultList) {
+            aclEntryQueryResult.setDbTime(aclEntryQueryResult.getDbTime() + dbTime);
+        }
+        return aclResultList;
+    }
+
+//    @Override
+//    public boolean anyMemberHasPermissions(long studyId, long id, List<String> members, AclDBAdaptor dbAdaptor)
+//            throws CatalogException {
+//
+//        List<String> allMembers = new ArrayList<>(members.size());
+//        allMembers.addAll(members);
+//
+//        for (String member : members) {
+//            if (member.startsWith("@")) { // It's a group
+//                // Obtain the users of the group
+//                QueryResult<Group> group = studyDBAdaptor.getGroup(studyId, member, Collections.emptyList());
+//                if (group != null && group.getNumResults() == 1) {
+//                    allMembers.addAll(group.first().getUserIds());
+//                }
+//            } else if (!member.equalsIgnoreCase("anonymous") && !member.equals("*")) { // It's a user id
+//                // Get the group where the user might belong to
+//                QueryResult<Group> groupBelonging = getGroupBelonging(studyId, member);
+//                if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
+//                    allMembers.add(groupBelonging.first().getName());
+//                }
+//            }
+//        }
+//
+//        return dbAdaptor.getAcl(id, allMembers).getNumResults() > 0;
+//    }
 
     @Override
     public boolean memberHasPermissionsInStudy(long studyId, String member) throws CatalogException {
@@ -2011,7 +1684,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 ? Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS)
                 : Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS);
 
-        QueryResult<StudyAclEntry> studyQueryResult = studyDBAdaptor.getAcl(studyId, members);
+        QueryResult<StudyAclEntry> studyQueryResult = aclDBAdaptor.get(studyId, members, MongoDBAdaptorFactory.STUDY_COLLECTION);
         Map<String, StudyAclEntry> userAclMap = studyQueryResult.getResult().stream().collect(Collectors.toMap(StudyAclEntry::getMember,
                 Function.identity()));
 

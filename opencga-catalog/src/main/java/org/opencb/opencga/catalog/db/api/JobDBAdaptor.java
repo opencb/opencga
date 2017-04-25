@@ -20,7 +20,6 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
-import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +30,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface JobDBAdaptor extends AclDBAdaptor<Job, JobAclEntry> {
+public interface JobDBAdaptor extends DBAdaptor<Job> {
 
     default boolean exists(long jobId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), jobId)).first() > 0;
@@ -80,16 +79,6 @@ public interface JobDBAdaptor extends AclDBAdaptor<Job, JobAclEntry> {
     QueryResult<ObjectMap> incJobVisits(long jobId) throws CatalogDBException;
 
     long getStudyId(long jobId) throws CatalogDBException;
-
-    /**
-     * Remove all the Acls defined for the member in the resource.
-     *
-     * @param studyId study id where the Acls will be removed from.
-     * @param member member from whom the Acls will be removed.
-     * @throws CatalogDBException if any problem occurs during the removal.
-     */
-    void removeAclsFromStudy(long studyId, String member) throws CatalogDBException;
-
 
     /**
      * Extract the fileIds given from the jobs matching the query. It will try to take them out from the input and output arrays.

@@ -16,11 +16,14 @@
 
 package org.opencb.opencga.catalog.db;
 
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+
+import java.util.Map;
 
 /**
  * Created by hpccoll1 on 19/06/15.
@@ -88,4 +91,6 @@ public interface DBAdaptorFactory {
     DatasetDBAdaptor getCatalogDatasetDBAdaptor();
 
     PanelDBAdaptor getCatalogPanelDBAdaptor();
+
+    Map<String, MongoDBCollection> getMongoDBCollectionMap();
 }

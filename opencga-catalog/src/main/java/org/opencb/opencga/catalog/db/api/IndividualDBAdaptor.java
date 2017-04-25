@@ -24,9 +24,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 
-import java.util.Arrays;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -34,7 +32,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * Created by hpccoll1 on 19/06/15.
  */
-public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual, IndividualAclEntry> {
+public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> {
 
     default boolean exists(long sampleId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
@@ -66,10 +64,6 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual, 
             CatalogDBException;
 
     QueryResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId) throws CatalogDBException;
-
-    default QueryResult<IndividualAclEntry> getAcl(long individualId, String member) throws CatalogDBException {
-        return getAcl(individualId, Arrays.asList(member));
-    }
 
     long getStudyId(long individualId) throws CatalogDBException;
 
@@ -158,14 +152,5 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual, 
             return map.get(key);
         }
     }
-
-    /**
-     * Remove all the Acls defined for the member in the resource.
-     *
-     * @param studyId study id where the Acls will be removed from.
-     * @param member member from whom the Acls will be removed.
-     * @throws CatalogDBException if any problem occurs during the removal.
-     */
-    void removeAclsFromStudy(long studyId, String member) throws CatalogDBException;
 
 }
