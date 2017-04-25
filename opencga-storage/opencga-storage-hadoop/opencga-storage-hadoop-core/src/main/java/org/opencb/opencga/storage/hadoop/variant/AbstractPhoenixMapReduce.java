@@ -10,34 +10,29 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Created by mh719 on 22/12/2016.
  */
-public class AbstractPhoenisMapReduce<PHOENIXIN, KEYOUT, VALUEOUT> extends Mapper<NullWritable, PHOENIXIN, KEYOUT, VALUEOUT> {
+public class AbstractPhoenixMapReduce<PHOENIXIN, KEYOUT, VALUEOUT> extends Mapper<NullWritable, PHOENIXIN, KEYOUT, VALUEOUT> {
     private Logger LOG = LoggerFactory.getLogger(this.getClass());
-    private final AtomicReference<OpencgaMapReduceHelper> mrHelper = new AtomicReference<>();
+    private final AtomicReference<AnalysisTableMapReduceHelper> mrHelper = new AtomicReference<>();
 
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
-        mrHelper.set(new OpencgaMapReduceHelper(context));
+        mrHelper.set(new AnalysisTableMapReduceHelper(context));
     }
 
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
         super.cleanup(context);
-        getMrHelper().cleanup();
+        getMrHelper().close();
     }
 
-    public Logger getLog() {
-        return LOG;
-    }
-
-    public OpencgaMapReduceHelper getMrHelper() {
+    public AnalysisTableMapReduceHelper getMrHelper() {
         return mrHelper.get();
     }
 
@@ -49,43 +44,23 @@ public class AbstractPhoenisMapReduce<PHOENIXIN, KEYOUT, VALUEOUT> extends Mappe
         return getMrHelper().getTimestamp();
     }
 
-    public void setTimestamp(long timestamp) {
-        getMrHelper().setTimestamp(timestamp);
-    }
-
     public BiMap<String, Integer> getIndexedSamples() {
         return getMrHelper().getIndexedSamples();
-    }
-
-    public void setIndexedSamples(BiMap<String, Integer> indexedSamples) {
-        getMrHelper().setIndexedSamples(indexedSamples);
     }
 
     public StudyConfiguration getStudyConfiguration() {
         return getMrHelper().getStudyConfiguration();
     }
 
-    public void setStudyConfiguration(StudyConfiguration studyConfiguration) {
-        getMrHelper().setStudyConfiguration(studyConfiguration);
-    }
-
     public HBaseToVariantConverter getHbaseToVariantConverter() {
         return getMrHelper().getHbaseToVariantConverter();
     }
 
-    public void setHbaseToVariantConverter(HBaseToVariantConverter hbaseToVariantConverter) {
-        getMrHelper().setHbaseToVariantConverter(hbaseToVariantConverter);
+    public void startStep() {
+        getMrHelper().startStep();
     }
 
-    public void startTime() {
-        getMrHelper().startTime();
-    }
-
-    public void endTime(String name) {
-        getMrHelper().endTime(name);
-    }
-
-    public Map<String, Long> getTimes() {
-        return getMrHelper().getTimes();
+    public void endStep(String name) {
+        getMrHelper().endStep(name);
     }
 }

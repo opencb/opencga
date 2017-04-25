@@ -60,7 +60,6 @@ import org.opencb.opencga.storage.hadoop.variant.annotation.HadoopDefaultVariant
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.executors.ExternalMRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
@@ -371,7 +370,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             BatchFileOperation operation =
                     etl.addBatchOperation(sc, VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList, resume,
                             BatchFileOperation.Type.REMOVE);
-            options.put(AbstractVariantTableDriver.TIMESTAMP, operation.getTimestamp());
+            options.put(AbstractAnalysisTableDriver.TIMESTAMP, operation.getTimestamp());
             return sc;
         });
 

@@ -36,6 +36,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbasePutTask;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
@@ -52,6 +53,8 @@ import java.util.zip.GZIPInputStream;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  */
 public class HadoopDirectVariantStoragePipeline extends AbstractHadoopVariantStoragePipeline {
+
+    private final Logger logger = LoggerFactory.getLogger(HadoopDirectVariantStoragePipeline.class);
 
     /**
      * @param configuration      {@link StorageConfiguration}

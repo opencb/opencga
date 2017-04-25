@@ -135,7 +135,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
             }
             if (organism == null) {
                 annotationOptions.putIfAbsent(VariantAnnotationManager.SPECIES, "hsapiens");
-                annotationOptions.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRc37");
+                annotationOptions.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRch37");
             } else {
                 String scientificName = organism.getScientificName();
                 scientificName = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(scientificName);

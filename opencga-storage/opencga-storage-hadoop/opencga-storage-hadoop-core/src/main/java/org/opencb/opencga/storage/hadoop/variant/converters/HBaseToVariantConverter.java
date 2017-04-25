@@ -80,7 +80,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
         this(variantTableHelper, new StudyConfigurationManager(
                 new HBaseStudyConfigurationDBAdaptor(
-                        variantTableHelper.getOutputTableAsString(), variantTableHelper.getConf(), new ObjectMap())));
+                        variantTableHelper.getAnalysisTableAsString(), variantTableHelper.getConf(), new ObjectMap())));
     }
 
     public HBaseToVariantConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
