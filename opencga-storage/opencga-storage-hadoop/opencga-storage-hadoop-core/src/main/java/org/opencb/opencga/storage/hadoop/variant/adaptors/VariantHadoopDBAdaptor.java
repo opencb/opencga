@@ -92,22 +92,27 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final VariantSqlQueryParser queryParser;
     private final HadoopVariantSourceDBAdaptor variantSourceDBAdaptor;
     private boolean clientSideSkip;
+    private HBaseManager hBaseManager;
 
     public VariantHadoopDBAdaptor(HBaseCredentials credentials, StorageConfiguration configuration,
                                   Configuration conf, CellBaseUtils cellBaseUtils) throws IOException {
         this(null, credentials, configuration, getHbaseConfiguration(conf, credentials), cellBaseUtils);
     }
 
-    public VariantHadoopDBAdaptor(Connection connection, HBaseCredentials credentials, StorageConfiguration configuration,
+    public VariantHadoopDBAdaptor(HBaseManager hBaseManager, HBaseCredentials credentials, StorageConfiguration configuration,
                                   Configuration conf, CellBaseUtils cellBaseUtils) throws IOException {
         this.credentials = credentials;
         this.configuration = conf;
-        this.genomeHelper = new GenomeHelper(this.configuration, connection);
+        if (hBaseManager == null) {
+            hBaseManager = new HBaseManager(conf);
+        }
+        this.hBaseManager = hBaseManager;
+        this.genomeHelper = new GenomeHelper(this.configuration);
         this.variantTable = credentials.getTable();
         ObjectMap options = configuration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getVariant().getOptions();
         this.studyConfigurationManager.set(
-                new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(genomeHelper, credentials.getTable(), conf, options)));
-        this.variantSourceDBAdaptor = new HadoopVariantSourceDBAdaptor(this.genomeHelper);
+                new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(credentials.getTable(), conf, options, hBaseManager)));
+        this.variantSourceDBAdaptor = new HadoopVariantSourceDBAdaptor(genomeHelper, hBaseManager);
 
         clientSideSkip = !options.getBoolean(PhoenixHelper.PHOENIX_SERVER_OFFSET_AVAILABLE, true);
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable,
@@ -134,6 +139,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     public GenomeHelper getGenomeHelper() {
         return genomeHelper;
+    }
+
+    public HBaseManager getHBaseManager() {
+        return hBaseManager;
     }
 
     public HBaseCredentials getCredentials() {
@@ -184,7 +193,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public void close() throws IOException {
-        this.genomeHelper.close();
+        this.hBaseManager.close();
         try {
            close(this.phoenixCon.getAndSet(null));
         } catch (SQLException e) {
@@ -530,7 +539,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     public Connection getConnection() {
-        return this.genomeHelper.getHBaseManager().getConnection();
+        return hBaseManager.getConnection();
     }
 
     @Override

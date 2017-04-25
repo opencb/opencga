@@ -588,7 +588,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
             byte[] cf = getHelper().getColumnFamily();
             batch.forEach(e -> get.addColumn(cf, Bytes.toBytes(e)));
             Set<Integer> batchIds = batch.stream().map(e -> Integer.valueOf(e)).collect(Collectors.toSet());
-            Result res = getHelper().getHBaseManager().act(getHelper().getArchiveTable(), table -> table.get(get));
+            Result res = getHBaseManager().act(getHelper().getArchiveTable(), table -> table.get(get));
             addStepDuration("9a Load archive slice from hbase", System.nanoTime() - startTime);
             if (res.isEmpty()) {
                 logger.warn("No data found in archive table!!!");

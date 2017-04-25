@@ -6,6 +6,7 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 
@@ -28,9 +29,6 @@ public abstract class AbstractHBaseVariantMapper<KEYOUT, VALUEOUT> extends Table
     @Override
     protected void cleanup(Context context) throws IOException,
             InterruptedException {
-        if (null != this.getHelper()) {
-            this.getHelper().close();
-        }
         getMrHelper().close();
     }
 
@@ -40,6 +38,10 @@ public abstract class AbstractHBaseVariantMapper<KEYOUT, VALUEOUT> extends Table
 
     public VariantTableHelper getHelper() {
         return getMrHelper().getHelper();
+    }
+
+    public HBaseManager getHBaseManager() {
+        return getMrHelper().getHBaseManager();
     }
 
     public long getTimestamp() {

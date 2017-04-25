@@ -55,7 +55,7 @@ public class VariantTableDeletionMapper extends AbstractArchiveTableMapper {
     protected void setup(Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Mutation>.Context context) throws IOException,
             InterruptedException {
         super.setup(context);
-        Connection connection = getHelper().getHBaseManager().getConnection();
+        Connection connection = getHBaseManager().getConnection();
         this.analysisTable = connection.getTable(TableName.valueOf(getHelper().getAnalysisTable()));
         this.archiveTable = connection.getTable(TableName.valueOf(getHelper().getArchiveTable()));
     }

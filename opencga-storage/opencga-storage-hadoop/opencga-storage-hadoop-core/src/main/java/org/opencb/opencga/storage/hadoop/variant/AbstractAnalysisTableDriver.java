@@ -102,7 +102,9 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
 
         /* -------------------------------*/
         // Validate input CHECK
-        checkTablesExist(helper.getHBaseManager(), archiveTable, variantTable);
+        try (HBaseManager hBaseManager = new HBaseManager(conf)) {
+            checkTablesExist(hBaseManager, archiveTable, variantTable);
+        }
 
         // Check File(s) or Study is specified
         List<Integer> fileIds = getFiles();

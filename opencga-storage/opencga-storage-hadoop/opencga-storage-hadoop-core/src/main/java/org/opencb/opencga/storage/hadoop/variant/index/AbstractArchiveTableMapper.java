@@ -231,9 +231,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
     @Override
     protected void cleanup(Context context) throws IOException,
             InterruptedException {
-        if (null != this.getHelper()) {
-            this.getHelper().close();
-        }
+        super.cleanup(context);
     }
 
     @Override

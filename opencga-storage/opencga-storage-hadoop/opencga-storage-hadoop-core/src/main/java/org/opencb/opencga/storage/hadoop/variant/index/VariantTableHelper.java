@@ -54,7 +54,7 @@ public class VariantTableHelper extends GenomeHelper {
 
 
     public VariantTableHelper(Configuration conf, String archiveTable, String analysisTable, Connection con) {
-        super(conf, con);
+        super(conf);
         if (StringUtils.isEmpty(analysisTable)) {
             throw new IllegalArgumentException("Property for Analysis Table name missing or empty!!!");
         }
@@ -66,13 +66,14 @@ public class VariantTableHelper extends GenomeHelper {
     }
 
     public StudyConfiguration readStudyConfiguration() throws IOException {
-        StudyConfigurationManager scm = new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(this,
-                Bytes.toString(analysisTable.get()), getConf(), null));
-        QueryResult<StudyConfiguration> query = scm.getStudyConfiguration(getStudyId(), new QueryOptions());
-        if (query.getResult().size() != 1) {
-            throw new IllegalStateException("Only one study configuration expected for study");
+        try (StudyConfigurationManager scm = new StudyConfigurationManager(
+                new HBaseStudyConfigurationDBAdaptor(getAnalysisTableAsString(), getConf(), null, null))) {
+            QueryResult<StudyConfiguration> query = scm.getStudyConfiguration(getStudyId(), new QueryOptions());
+            if (query.getResult().size() != 1) {
+                throw new IllegalStateException("Only one study configuration expected for study");
+            }
+            return query.first();
         }
-        return query.first();
     }
 
     public byte[] getAnalysisTable() {

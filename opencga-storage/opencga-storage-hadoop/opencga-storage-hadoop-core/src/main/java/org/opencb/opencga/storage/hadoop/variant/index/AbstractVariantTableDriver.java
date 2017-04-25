@@ -130,13 +130,12 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         VariantTableHelper.setAnalysisTable(conf, outTable);
         VariantTableHelper.setArchiveTable(conf, inTable);
 
-        VariantTableHelper gh = getHelper();
-
         /* -------------------------------*/
         // Validate input CHECK
-        HBaseManager hBaseManager = gh.getHBaseManager();
-        if (!hBaseManager.tableExists(inTable)) {
-            throw new IllegalArgumentException(String.format("Input table %s does not exist!!!", inTable));
+        try (HBaseManager hBaseManager = new HBaseManager(conf)) {
+            if (!hBaseManager.tableExists(inTable)) {
+                throw new IllegalArgumentException(String.format("Input table %s does not exist!!!", inTable));
+            }
         }
 
         /* -------------------------------*/

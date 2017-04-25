@@ -60,23 +60,30 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
     private final Configuration configuration;
     private final ObjectMap options;
     private final GenomeHelper genomeHelper;
+    private final HBaseManager hBaseManager;
     private final ObjectMapper objectMapper;
     private final String tableName;
     private final HBaseLock lock;
 
-    public HBaseStudyConfigurationDBAdaptor(GenomeHelper helper, String tableName, Configuration configuration, ObjectMap options) {
+
+    public HBaseStudyConfigurationDBAdaptor(String tableName, Configuration configuration, ObjectMap options) {
+        this(tableName, configuration, options, null);
+    }
+
+    public HBaseStudyConfigurationDBAdaptor(String tableName, Configuration configuration, ObjectMap options, HBaseManager hBaseManager) {
         this.configuration = Objects.requireNonNull(configuration);
         this.tableName = Objects.requireNonNull(tableName);
         this.options = options;
-        this.genomeHelper = helper;
+        this.genomeHelper = new GenomeHelper(configuration);
         this.objectMapper = new ObjectMapper();
         this.studiesRow = VariantPhoenixKeyFactory.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
         this.studiesSummaryColumn = VariantPhoenixKeyFactory.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
-        lock = new HBaseLock(getHBaseManager(), this.tableName, genomeHelper.getColumnFamily(), studiesRow);
-    }
-
-    public HBaseStudyConfigurationDBAdaptor(String tableName, Configuration configuration, ObjectMap options) {
-        this(new GenomeHelper(configuration), tableName, configuration, options);
+        if (hBaseManager == null) {
+            this.hBaseManager = new HBaseManager(configuration);
+        } else {
+            this.hBaseManager = hBaseManager;
+        }
+        lock = new HBaseLock(hBaseManager, this.tableName, genomeHelper.getColumnFamily(), studiesRow);
     }
 
     @Override
@@ -88,7 +95,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
     @Override
     public long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException, TimeoutException {
         try {
-            VariantTableDriver.createVariantTableIfNeeded(genomeHelper, tableName, getConnection());
+            VariantTableDriver.createVariantTableIfNeeded(genomeHelper, tableName, hBaseManager.getConnection());
             return lock.lock(Bytes.toBytes(studyId + "_LOCK"), lockDuration, timeout);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -106,10 +113,6 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
 
     public GenomeHelper getGenomeHelper() {
         return this.genomeHelper;
-    }
-
-    protected HBaseManager getHBaseManager() {
-        return this.getGenomeHelper().getHBaseManager();
     }
 
     @Override
@@ -135,8 +138,8 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
         }
 
         try {
-            if (getHBaseManager().act(getConnection(), tableName, (table, admin) -> admin.tableExists(table.getName()))) {
-                studyConfigurationList = getHBaseManager().act(getConnection(), tableName, table -> {
+            if (hBaseManager.act(tableName, (table, admin) -> admin.tableExists(table.getName()))) {
+                studyConfigurationList = hBaseManager.act(tableName, table -> {
                     Result result = table.get(get);
                     if (result.isEmpty()) {
                         return Collections.emptyList();
@@ -165,7 +168,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
         studyConfiguration.getHeaders().clear(); // REMOVE: stored in Archive table
 
         try {
-            getHBaseManager().act(tableName, table -> {
+            hBaseManager.act(tableName, table -> {
                 byte[] bytes = objectMapper.writeValueAsBytes(studyConfiguration);
                 Put put = new Put(studiesRow);
                 put.addColumn(genomeHelper.getColumnFamily(), columnQualifier, studyConfiguration.getTimeStamp(), bytes);
@@ -183,11 +186,11 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
         Get get = new Get(studiesRow);
         get.addColumn(genomeHelper.getColumnFamily(), studiesSummaryColumn);
         try {
-            if (!getHBaseManager().act(tableName, (table, admin) -> admin.tableExists(table.getName()))) {
+            if (!hBaseManager.act(tableName, (table, admin) -> admin.tableExists(table.getName()))) {
                 logger.debug("Get StudyConfiguration summary TABLE_NO_EXISTS");
                 return HashBiMap.create();
             }
-            return getHBaseManager().act(tableName, table -> {
+            return hBaseManager.act(tableName, table -> {
                 Result result = table.get(get);
                 if (result.isEmpty()) {
                     logger.debug("Get StudyConfiguration summary EMPTY");
@@ -222,8 +225,9 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
 
     private void updateStudiesSummary(BiMap<String, Integer> studies, QueryOptions options) {
         try {
-            VariantTableDriver.createVariantTableIfNeeded(genomeHelper, tableName, getConnection());
-            try (Table table = getConnection().getTable(TableName.valueOf(tableName))) {
+            Connection connection = hBaseManager.getConnection();
+            VariantTableDriver.createVariantTableIfNeeded(genomeHelper, tableName, connection);
+            try (Table table = connection.getTable(TableName.valueOf(tableName))) {
                 byte[] bytes = objectMapper.writeValueAsBytes(studies);
                 Put put = new Put(studiesRow);
                 put.addColumn(genomeHelper.getColumnFamily(), studiesSummaryColumn, bytes);
@@ -236,14 +240,10 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
         }
     }
 
-    public Connection getConnection() throws IOException {
-        return this.getHBaseManager().getConnection();
-    }
-
     @Override
     public void close() throws IOException {
         try {
-            this.getHBaseManager().close();
+            hBaseManager.close();
         } catch (Exception e) {
             throw new IOException(e);
         }

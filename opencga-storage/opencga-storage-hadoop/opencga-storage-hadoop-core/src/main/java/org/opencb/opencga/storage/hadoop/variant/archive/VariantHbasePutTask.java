@@ -21,6 +21,7 @@ import org.apache.hadoop.hbase.client.BufferedMutator;
 import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,11 +37,17 @@ public class VariantHbasePutTask implements DataWriter<VcfSlice> {
     protected final Logger logger = LoggerFactory.getLogger(VariantHbasePutTask.class);
     private final ArchiveTableHelper helper;
     private final TableName tableName;
+    private final HBaseManager hBaseManager;
     private BufferedMutator tableMutator;
 
     public VariantHbasePutTask(ArchiveTableHelper helper, String tableName) {
+        this(helper, tableName, new HBaseManager(helper.getConf()));
+    }
+
+    public VariantHbasePutTask(ArchiveTableHelper helper, String tableName, HBaseManager hBaseManager) {
         this.helper = helper;
         this.tableName = TableName.valueOf(tableName);
+        this.hBaseManager = hBaseManager;
     }
 
     private ArchiveTableHelper getHelper() {
@@ -51,7 +58,7 @@ public class VariantHbasePutTask implements DataWriter<VcfSlice> {
     public boolean open() {
         try {
             logger.info("Open connection using " + getHelper().getConf());
-            tableMutator = getHelper().getHBaseManager().getConnection().getBufferedMutator(this.tableName);
+            tableMutator = hBaseManager.getConnection().getBufferedMutator(this.tableName);
         } catch (IOException e) {
             throw new RuntimeException("Failed to connect to Hbase", e);
         }
@@ -90,7 +97,7 @@ public class VariantHbasePutTask implements DataWriter<VcfSlice> {
             }
         }
         try {
-            getHelper().close();
+            hBaseManager.close();
         } catch (Exception e) {
             throw new IllegalStateException("Problems closing connection", e);
         }

@@ -5,6 +5,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
@@ -32,6 +33,7 @@ public class AnalysisTableMapReduceHelper implements AutoCloseable {
     private final BiMap<String, Integer> indexedSamples;
     private final Map<String, Long> timeSum = new ConcurrentHashMap<>();
     private final AtomicLong lastTime = new AtomicLong(0);
+    private final HBaseManager hBaseManager;
 
 
     public AnalysisTableMapReduceHelper(Mapper.Context context) throws IOException {
@@ -44,9 +46,10 @@ public class AnalysisTableMapReduceHelper implements AutoCloseable {
         helper = new VariantTableHelper(context.getConfiguration());
         this.studyConfiguration = getHelper().readStudyConfiguration(); // Variant meta
 
+        hBaseManager = new HBaseManager(context.getConfiguration());
         StudyConfigurationManager scm = new StudyConfigurationManager(
-                new HBaseStudyConfigurationDBAdaptor(getHelper(), getHelper().getAnalysisTableAsString(),
-                        getHelper().getConf(), new ObjectMap()));
+                new HBaseStudyConfigurationDBAdaptor(getHelper().getAnalysisTableAsString(), context.getConfiguration(),
+                        new ObjectMap(), hBaseManager));
         hbaseToVariantConverter = new HBaseToVariantConverter(getHelper(), scm)
                 .setFailOnEmptyVariants(true)
                 .setSimpleGenotypes(false);
@@ -60,6 +63,10 @@ public class AnalysisTableMapReduceHelper implements AutoCloseable {
 
     public VariantTableHelper getHelper() {
         return helper;
+    }
+
+    public HBaseManager getHBaseManager() {
+        return hBaseManager;
     }
 
     public long getTimestamp() {
@@ -80,8 +87,8 @@ public class AnalysisTableMapReduceHelper implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
-        if (null != this.getHelper()) {
-            this.getHelper().close();
+        if (hBaseManager != null) {
+            hBaseManager.close();
         }
     }
 

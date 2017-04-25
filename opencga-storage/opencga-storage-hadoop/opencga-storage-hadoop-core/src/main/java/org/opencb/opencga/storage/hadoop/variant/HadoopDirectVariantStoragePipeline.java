@@ -122,7 +122,7 @@ public class HadoopDirectVariantStoragePipeline extends AbstractHadoopVariantSto
 
         ProgressLogger progressLogger = new ProgressLogger("Loaded slices:",
                 source.getStats() != null ? source.getStats().getNumRecords() : 0);
-        VariantHbasePutTask hbaseWriter = new VariantHbasePutTask(helper, table);
+        VariantHbasePutTask hbaseWriter = new VariantHbasePutTask(helper, table, dbAdaptor.getHBaseManager());
         long counter = 0;
         long start = System.currentTimeMillis();
         try (InputStream in = new BufferedInputStream(new GZIPInputStream(new FileInputStream(input.toFile())))) {

@@ -93,7 +93,7 @@ public class VariantHbaseTestUtils {
     public static VariantHadoopDBAdaptor printVariantsFromArchiveTable(VariantHadoopDBAdaptor dbAdaptor,
                                                                        StudyConfiguration studyConfiguration, PrintStream out) throws Exception {
         GenomeHelper helper = dbAdaptor.getGenomeHelper();
-        helper.getHBaseManager().act(HadoopVariantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId(), dbAdaptor.getConfiguration()), table -> {
+        dbAdaptor.getHBaseManager().act(HadoopVariantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId(), dbAdaptor.getConfiguration()), table -> {
             for (Result result : table.getScanner(helper.getColumnFamily())) {
                 GenomeHelper.getVariantColumns(result.rawCells()).stream()
                         .filter(c -> Bytes.startsWith(CellUtil.cloneFamily(c), helper.getColumnFamily()))

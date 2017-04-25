@@ -4,6 +4,7 @@ import com.google.common.collect.BiMap;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.slf4j.Logger;
@@ -15,7 +16,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Created by mh719 on 22/12/2016.
  */
-public class AbstractPhoenixMapReduce<PHOENIXIN, KEYOUT, VALUEOUT> extends Mapper<NullWritable, PHOENIXIN, KEYOUT, VALUEOUT> {
+public class AbstractPhoenixMapper<PHOENIXIN, KEYOUT, VALUEOUT> extends Mapper<NullWritable, PHOENIXIN, KEYOUT, VALUEOUT> {
     private Logger LOG = LoggerFactory.getLogger(this.getClass());
     private final AtomicReference<AnalysisTableMapReduceHelper> mrHelper = new AtomicReference<>();
 
@@ -38,6 +39,10 @@ public class AbstractPhoenixMapReduce<PHOENIXIN, KEYOUT, VALUEOUT> extends Mappe
 
     public VariantTableHelper getHelper() {
         return getMrHelper().getHelper();
+    }
+
+    public HBaseManager getHBaseManager() {
+        return getMrHelper().getHBaseManager();
     }
 
     public long getTimestamp() {
