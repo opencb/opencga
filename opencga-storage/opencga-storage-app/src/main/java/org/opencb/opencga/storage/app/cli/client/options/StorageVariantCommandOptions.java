@@ -445,7 +445,7 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--species"}, description = "Species. Default hsapiens", arity = 1)
         public String species = "hsapiens";
 
-        @Parameter(names = {"--assembly"}, description = "Assembly. Default GRc37", arity = 1)
+        @Parameter(names = {"--assembly"}, description = "Assembly. Default GRch37", arity = 1)
         public String assembly = "GRCh37";
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
