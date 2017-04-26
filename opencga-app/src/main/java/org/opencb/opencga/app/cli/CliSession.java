@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli;
 
 import java.time.Instant;
-
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;

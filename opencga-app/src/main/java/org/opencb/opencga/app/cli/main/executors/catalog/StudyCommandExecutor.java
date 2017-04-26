@@ -109,20 +109,11 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
             case "acl":
                 queryResponse = getAcl();
                 break;
-            case "acl-create":
-                queryResponse = createAcl();
-                break;
             case "acl-update":
                 queryResponse = updateAcl();
                 break;
-            case "acl-member-delete":
-                queryResponse = deleteAcl();
-                break;
             case "acl-member-info":
                 queryResponse = getMemberAcl();
-                break;
-            case "acl-member-update":
-                queryResponse = updateMemberAcl();
                 break;
             case "groups":
                 queryResponse = groups();
@@ -542,33 +533,11 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
     /************************************************* Acl commands *********************************************************/
     private QueryResponse<StudyAclEntry> getAcl() throws IOException, CatalogException {
         logger.debug("Get Acl");
-        studiesCommandOptions.aclsCommandOptionsOld.study =
-                getSingleValidStudy(studiesCommandOptions.aclsCommandOptionsOld.study);
+        studiesCommandOptions.aclsCommandOptions.study =
+                getSingleValidStudy(studiesCommandOptions.aclsCommandOptions.study);
 
         ObjectMap params = new ObjectMap();
-        return openCGAClient.getStudyClient().getAcls(studiesCommandOptions.aclsCommandOptionsOld.study, params);
-    }
-
-    private QueryResponse<StudyAclEntry> createAcl() throws IOException, CatalogException {
-        logger.debug("Create Acl");
-        studiesCommandOptions.aclsCreateCommandOptions.study =
-                getSingleValidStudy(studiesCommandOptions.aclsCreateCommandOptions.study);
-
-        ObjectMap params = new ObjectMap();
-        params.putIfNotNull("permissions", studiesCommandOptions.aclsCreateCommandOptions.permissions);
-        params.putIfNotNull("templateId", studiesCommandOptions.aclsCreateCommandOptions.templateId);
-        return openCGAClient.getStudyClient().createAcl(studiesCommandOptions.aclsCreateCommandOptions.study,
-                studiesCommandOptions.aclsCreateCommandOptions.members, params);
-    }
-
-    private QueryResponse<StudyAclEntry> deleteAcl() throws IOException, CatalogException {
-        logger.debug("Delete Acl");
-        studiesCommandOptions.aclsMemberDeleteCommandOptions.study =
-                getSingleValidStudy(studiesCommandOptions.aclsMemberDeleteCommandOptions.study);
-
-        ObjectMap params = new ObjectMap();
-        return openCGAClient.getStudyClient().deleteAcl(studiesCommandOptions.aclsMemberDeleteCommandOptions.study,
-                studiesCommandOptions.aclsMemberDeleteCommandOptions.memberId, params);
+        return openCGAClient.getStudyClient().getAcls(studiesCommandOptions.aclsCommandOptions.study, params);
     }
 
     private QueryResponse<StudyAclEntry> getMemberAcl() throws IOException, CatalogException {
@@ -579,23 +548,6 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap();
         return openCGAClient.getStudyClient().getAcl(studiesCommandOptions.aclsMemberInfoCommandOptions.study,
                 studiesCommandOptions.aclsMemberInfoCommandOptions.memberId, params);
-    }
-
-    private QueryResponse<StudyAclEntry> updateMemberAcl() throws IOException, CatalogException {
-        logger.debug("Update member Acl");
-        studiesCommandOptions.aclsMemberUpdateCommandOptions.study =
-                getSingleValidStudy(studiesCommandOptions.aclsMemberUpdateCommandOptions.study);
-
-        ObjectMap params = new ObjectMap();
-        params.putIfNotNull(StudyClient.AclParams.ADD.key(),
-                studiesCommandOptions.aclsMemberUpdateCommandOptions.addPermissions);
-        params.putIfNotNull(StudyClient.AclParams.REMOVE.key(),
-                studiesCommandOptions.aclsMemberUpdateCommandOptions.removePermissions);
-        params.putIfNotNull(StudyClient.AclParams.SET.key(),
-                studiesCommandOptions.aclsMemberUpdateCommandOptions.setPermissions);
-
-        return openCGAClient.getStudyClient().updateAcl(studiesCommandOptions.aclsMemberUpdateCommandOptions.study,
-                studiesCommandOptions.aclsMemberUpdateCommandOptions.memberId, params);
     }
 
     private QueryResponse<StudyAclEntry> updateAcl() throws IOException, CatalogException {

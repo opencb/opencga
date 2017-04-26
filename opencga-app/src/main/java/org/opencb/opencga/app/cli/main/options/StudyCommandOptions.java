@@ -52,16 +52,8 @@ public class StudyCommandOptions {
     public GroupsInfoCommandOptions groupsInfoCommandOptions;
     public GroupsUpdateCommandOptions groupsUpdateCommandOptions;
 
-    @Deprecated
-    public AclsCommandOptions aclsCommandOptionsOld;
-    @Deprecated
-    public AclsCreateCommandOptions aclsCreateCommandOptions;
-    @Deprecated
-    public AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
+    public AclsCommandOptions aclsCommandOptions;
     public AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
-    @Deprecated
-    public AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
-
     public AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
     public JCommander jCommander;
@@ -98,12 +90,8 @@ public class StudyCommandOptions {
         this.groupsInfoCommandOptions = new GroupsInfoCommandOptions();
         this.groupsUpdateCommandOptions = new GroupsUpdateCommandOptions();
 
-        this.aclsCommandOptionsOld = new AclsCommandOptions();
-        this.aclsCreateCommandOptions = new AclsCreateCommandOptions();
-        this.aclsMemberDeleteCommandOptions = new AclsMemberDeleteCommandOptions();
+        this.aclsCommandOptions = new AclsCommandOptions();
         this.aclsMemberInfoCommandOptions = new AclsMemberInfoCommandOptions();
-        this.aclsMemberUpdateCommandOptions = new AclsMemberUpdateCommandOptions();
-
         this.aclsUpdateCommandOptions = new AclsUpdateCommandOptions();
     }
 
@@ -599,53 +587,12 @@ public class StudyCommandOptions {
 
     }
 
-    @Deprecated
-    @Parameters(commandNames = {"acl-create"}, commandDescription = "Define a set of permissions for a list of users or groups")
-    public class AclsCreateCommandOptions extends AclsCommandOptions {
-        @Parameter(names = {"--members"},
-                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true, arity = 1)
-        public String members;
-
-        @Parameter(names = {"--permissions"}, description = "Comma separated list of accepted permissions for the resource", arity = 1)
-        public String permissions;
-
-        @Parameter(names = {"--template"}, description = "Template of permissions to be used (admin, analyst or view_only)", arity = 1)
-        public String templateId;
-    }
-
-    @Deprecated
-    @Parameters(commandNames = {"acl-member-delete"}, commandDescription = "Delete all the permissions granted for the user or group")
-    public class AclsMemberDeleteCommandOptions extends AclsCommandOptions {
-
-        @Parameter(names = {"--member"}, description = "Member id ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
-        public String memberId;
-    }
-
-    @Deprecated
     @Parameters(commandNames = {"acl-member-info"},
             commandDescription = "Return the set of permissions granted for the user or group")
     public class AclsMemberInfoCommandOptions extends AclsCommandOptions {
 
         @Parameter(names = {"--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
         public String memberId;
-    }
-
-    @Deprecated
-    @Parameters(commandNames = {"acl-member-update"}, hidden = true,
-            commandDescription = "Update the set of permissions granted for the user or group")
-    public class AclsMemberUpdateCommandOptions extends AclsCommandOptions {
-
-        @Parameter(names = {"--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
-        public String memberId;
-
-        @Parameter(names = {"--add-permissions"}, description = "Comma separated list of permissions to add", arity = 1)
-        public String addPermissions;
-
-        @Parameter(names = {"--remove-permissions"}, description = "Comma separated list of permissions to remove", arity = 1)
-        public String removePermissions;
-
-        @Parameter(names = {"--set-permissions"}, description = "Comma separated list of permissions to set", arity = 1)
-        public String setPermissions;
     }
 
     @Parameters(commandNames = {"acl-update"}, commandDescription = "Update the permissions set for a member")

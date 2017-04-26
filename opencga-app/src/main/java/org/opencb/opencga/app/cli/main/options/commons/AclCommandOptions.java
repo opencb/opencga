@@ -30,10 +30,7 @@ public class AclCommandOptions {
     private GeneralCliOptions.CommonCommandOptions commonCommandOptions;
 
     private AclsCommandOptions aclsCommandOptions;
-    private AclsCreateCommandOptions aclsCreateCommandOptions;
-    private AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
     private AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
-    private AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
     private AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
     public AclCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions) {
@@ -48,25 +45,6 @@ public class AclCommandOptions {
 
         @Parameter(names = {"--id"}, description = "Id of the resource", required = true, arity = 1)
         public String id;
-    }
-
-    @Deprecated
-    @Parameters(commandNames = {"acl-create"}, commandDescription = "Define a set of permissions for a list of users or groups")
-    public class AclsCreateCommandOptions extends AclsCommandOptions {
-        @Parameter(names = {"--members"},
-                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true, arity = 1)
-        public String members;
-
-        @Parameter(names = {"--permissions"}, description = "Comma separated list of accepted permissions for the resource", arity = 1)
-        public String permissions;
-    }
-
-    @Deprecated
-    @Parameters(commandNames = {"acl-member-delete"}, commandDescription = "Delete all the permissions granted for the user or group")
-    public class AclsMemberDeleteCommandOptions extends AclsCommandOptions {
-
-        @Parameter(names = {"--member"}, description = "Member id ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
-        public String memberId;
     }
 
     @Parameters(commandNames = {"acl-member-info"},
@@ -98,43 +76,11 @@ public class AclCommandOptions {
 
     }
 
-    @Deprecated
-    @Parameters(commandNames = {"acl-member-update"},
-            commandDescription = "Update the set of permissions granted for the user or group")
-    public class AclsMemberUpdateCommandOptions extends AclsCommandOptions {
-
-        @Parameter(names = {"--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
-        public String memberId;
-
-        @Parameter(names = {"--add-permissions"}, description = "Comma separated list of permissions to add", arity = 1)
-        public String addPermissions;
-
-        @Parameter(names = {"--remove-permissions"}, description = "Comma separated list of permissions to remove", arity = 1)
-        public String removePermissions;
-
-        @Parameter(names = {"--set-permissions"}, description = "Comma separated list of permissions to set", arity = 1)
-        public String setPermissions;
-    }
-
     public AclsCommandOptions getAclsCommandOptions() {
         if (this.aclsCommandOptions == null) {
             this.aclsCommandOptions = new AclsCommandOptions();
         }
         return aclsCommandOptions;
-    }
-
-    public AclsCreateCommandOptions getAclsCreateCommandOptions() {
-        if (this.aclsCreateCommandOptions == null) {
-            this.aclsCreateCommandOptions = new AclsCreateCommandOptions();
-        }
-        return aclsCreateCommandOptions;
-    }
-
-    public AclsMemberDeleteCommandOptions getAclsMemberDeleteCommandOptions() {
-        if (this.aclsMemberDeleteCommandOptions == null) {
-            this.aclsMemberDeleteCommandOptions = new AclsMemberDeleteCommandOptions();
-        }
-        return aclsMemberDeleteCommandOptions;
     }
 
     public AclsMemberInfoCommandOptions getAclsMemberInfoCommandOptions() {
@@ -151,10 +97,4 @@ public class AclCommandOptions {
         return aclsUpdateCommandOptions;
     }
 
-    public AclsMemberUpdateCommandOptions getAclsMemberUpdateCommandOptions() {
-        if (this.aclsMemberUpdateCommandOptions == null) {
-            this.aclsMemberUpdateCommandOptions = new AclsMemberUpdateCommandOptions();
-        }
-        return aclsMemberUpdateCommandOptions;
-    }
 }

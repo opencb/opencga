@@ -28,7 +28,6 @@ import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DiseasePanel;
 import org.opencb.opencga.catalog.models.acls.permissions.DiseasePanelAclEntry;
-import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 
 import java.io.IOException;
 
@@ -63,20 +62,8 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
             case "acl":
                 queryResponse = aclCommandExecutor.acls(panelsCommandOptions.aclsCommandOptions, openCGAClient.getPanelClient());
                 break;
-            case "acl-create":
-                queryResponse = aclCommandExecutor.aclsCreate(panelsCommandOptions.aclsCreateCommandOptions,
-                        openCGAClient.getPanelClient());
-                break;
-            case "acl-member-delete":
-                queryResponse = aclCommandExecutor.aclMemberDelete(panelsCommandOptions.aclsMemberDeleteCommandOptions,
-                        openCGAClient.getPanelClient());
-                break;
             case "acl-member-info":
                 queryResponse = aclCommandExecutor.aclMemberInfo(panelsCommandOptions.aclsMemberInfoCommandOptions,
-                        openCGAClient.getPanelClient());
-                break;
-            case "acl-member-update":
-                queryResponse = aclCommandExecutor.aclMemberUpdate(panelsCommandOptions.aclsMemberUpdateCommandOptions,
                         openCGAClient.getPanelClient());
                 break;
             case "acl-update":

@@ -20,13 +20,14 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.opencga.app.cli.GeneralCliOptions.*;
+import org.opencb.opencga.app.cli.GeneralCliOptions.CommonCommandOptions;
+import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
+import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
+import org.opencb.opencga.app.cli.GeneralCliOptions.StudyOption;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.models.File;
 
 import java.util.List;
-
-import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
 /**
  * Created by sgallego on 6/14/16.
@@ -55,11 +56,8 @@ public class FileCommandOptions {
     public GroupByCommandOptions groupByCommandOptions;
 //    public VariantsCommandOptions variantsCommandOptions;
 
-    public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
-    public AclCommandOptions.AclsCreateCommandOptions aclsCreateCommandOptions;
-    public AclCommandOptions.AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
-    public AclCommandOptions.AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
-    public AclCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
+    public FileAclCommandOptions.AclsCommandOptions aclsCommandOptions;
+    public FileAclCommandOptions.AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
     public FileAclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
     public JCommander jCommander;
@@ -98,10 +96,7 @@ public class FileCommandOptions {
 
         FileAclCommandOptions aclCommandOptions = new FileAclCommandOptions(commonCommandOptions);
         this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
-        this.aclsCreateCommandOptions = aclCommandOptions.getAclsCreateCommandOptions();
-        this.aclsMemberDeleteCommandOptions = aclCommandOptions.getAclsMemberDeleteCommandOptions();
         this.aclsMemberInfoCommandOptions = aclCommandOptions.getAclsMemberInfoCommandOptions();
-        this.aclsMemberUpdateCommandOptions = aclCommandOptions.getAclsMemberUpdateCommandOptions();
         this.aclsUpdateCommandOptions = aclCommandOptions.getAclsUpdateCommandOptions();
     }
 

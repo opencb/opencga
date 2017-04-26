@@ -86,20 +86,8 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
             case "acl":
                 queryResponse = aclCommandExecutor.acls(cohortsCommandOptions.aclsCommandOptions, openCGAClient.getCohortClient());
                 break;
-            case "acl-create":
-                queryResponse = aclCommandExecutor.aclsCreate(cohortsCommandOptions.aclsCreateCommandOptions,
-                        openCGAClient.getCohortClient());
-                break;
-            case "acl-member-delete":
-                queryResponse = aclCommandExecutor.aclMemberDelete(cohortsCommandOptions.aclsMemberDeleteCommandOptions,
-                        openCGAClient.getCohortClient());
-                break;
             case "acl-member-info":
                 queryResponse = aclCommandExecutor.aclMemberInfo(cohortsCommandOptions.aclsMemberInfoCommandOptions,
-                        openCGAClient.getCohortClient());
-                break;
-            case "acl-member-update":
-                queryResponse = aclCommandExecutor.aclMemberUpdate(cohortsCommandOptions.aclsMemberUpdateCommandOptions,
                         openCGAClient.getCohortClient());
                 break;
             case "acl-update":

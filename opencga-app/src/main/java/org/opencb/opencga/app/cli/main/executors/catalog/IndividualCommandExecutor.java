@@ -31,8 +31,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
-import org.opencb.opencga.client.rest.catalog.IndividualClient;
-import org.opencb.opencga.client.rest.catalog.StudyClient;
 
 import java.io.IOException;
 
@@ -84,19 +82,9 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
             case "acl":
                 queryResponse = aclCommandExecutor.acls(individualsCommandOptions.aclsCommandOptions, openCGAClient.getIndividualClient());
                 break;
-            case "acl-create":
-                queryResponse = createAcl(individualsCommandOptions.aclsCreateCommandOptions, openCGAClient.getIndividualClient());
-                break;
-            case "acl-member-delete":
-                queryResponse = aclCommandExecutor.aclMemberDelete(individualsCommandOptions.aclsMemberDeleteCommandOptions,
-                        openCGAClient.getIndividualClient());
-                break;
             case "acl-member-info":
                 queryResponse = aclCommandExecutor.aclMemberInfo(individualsCommandOptions.aclsMemberInfoCommandOptions,
                         openCGAClient.getIndividualClient());
-                break;
-            case "acl-member-update":
-                queryResponse = updateAcl(individualsCommandOptions.aclsMemberUpdateCommandOptions, openCGAClient.getIndividualClient());
                 break;
             case "acl-update":
                 queryResponse = updateAcl();
@@ -356,29 +344,6 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         options.putIfNotNull(QueryOptions.EXCLUDE, individualsCommandOptions.sampleCommandOptions.dataModelOptions.exclude);
 
         return openCGAClient.getSampleClient().search(query, options);
-    }
-
-    private QueryResponse createAcl(IndividualCommandOptions.AclsCreateCommandOptions aclsCreateCommandOptions,
-                                    IndividualClient individualClient) throws CatalogException, IOException {
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty("study", aclsCreateCommandOptions.study);
-        params.putIfNotNull("permissions", aclsCreateCommandOptions.permissions);
-        params.put("propagate", aclsCreateCommandOptions.propagate);
-
-        return individualClient.createAcl(aclsCreateCommandOptions.id.replace("/", ":"), aclsCreateCommandOptions.members, params);
-    }
-
-    private QueryResponse updateAcl(IndividualCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions,
-                                    IndividualClient individualClient) throws CatalogException, IOException {
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty("study", aclsMemberUpdateCommandOptions.study);
-        params.putIfNotNull(StudyClient.AclParams.ADD.key(), aclsMemberUpdateCommandOptions.addPermissions);
-        params.putIfNotNull(StudyClient.AclParams.REMOVE.key(), aclsMemberUpdateCommandOptions.removePermissions);
-        params.putIfNotNull(StudyClient.AclParams.SET.key(), aclsMemberUpdateCommandOptions.setPermissions);
-        params.put("propagate", aclsMemberUpdateCommandOptions.propagate);
-
-        return individualClient.updateAcl(aclsMemberUpdateCommandOptions.id.replace("/", ":"),
-                aclsMemberUpdateCommandOptions.memberId, params);
     }
 
     private QueryResponse<IndividualAclEntry> updateAcl() throws IOException, CatalogException {
