@@ -229,22 +229,22 @@ public class OpencgaCliOptionsParser {
         cohortSubCommands.addCommand("annotation-sets-update", cohortCommandOptions.annotationUpdateCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-delete", cohortCommandOptions.annotationDeleteCommandOptions);
 
-        toolCommandOptions = new ToolCommandOptions(this.commonCommandOptions, jCommander);
-        jCommander.addCommand("tools", toolCommandOptions);
-        JCommander toolSubCommands = jCommander.getCommands().get("tools");
-        toolSubCommands.addCommand("help", toolCommandOptions.helpCommandOptions);
-        toolSubCommands.addCommand("info", toolCommandOptions.infoCommandOptions);
-        toolSubCommands.addCommand("search", toolCommandOptions.searchCommandOptions);
-        toolSubCommands.addCommand("update", toolCommandOptions.updateCommandOptions);
-        toolSubCommands.addCommand("delete", toolCommandOptions.deleteCommandOptions);
+//        toolCommandOptions = new ToolCommandOptions(this.commonCommandOptions, jCommander);
+//        jCommander.addCommand("tools", toolCommandOptions);
+//        JCommander toolSubCommands = jCommander.getCommands().get("tools");
+//        toolSubCommands.addCommand("help", toolCommandOptions.helpCommandOptions);
+//        toolSubCommands.addCommand("info", toolCommandOptions.infoCommandOptions);
+//        toolSubCommands.addCommand("search", toolCommandOptions.searchCommandOptions);
+//        toolSubCommands.addCommand("update", toolCommandOptions.updateCommandOptions);
+//        toolSubCommands.addCommand("delete", toolCommandOptions.deleteCommandOptions);
 
-        panelCommandOptions = new PanelCommandOptions(this.commonCommandOptions, jCommander);
-        jCommander.addCommand("panels", panelCommandOptions);
-        JCommander panelSubCommands = jCommander.getCommands().get("panels");
-        panelSubCommands.addCommand("create", panelCommandOptions.createCommandOptions);
-        panelSubCommands.addCommand("info", panelCommandOptions.infoCommandOptions);
-        panelSubCommands.addCommand("acl-info", panelCommandOptions.aclsCommandOptions);
-        panelSubCommands.addCommand("acl-update", panelCommandOptions.aclsUpdateCommandOptions);
+//        panelCommandOptions = new PanelCommandOptions(this.commonCommandOptions, jCommander);
+//        jCommander.addCommand("panels", panelCommandOptions);
+//        JCommander panelSubCommands = jCommander.getCommands().get("panels");
+//        panelSubCommands.addCommand("create", panelCommandOptions.createCommandOptions);
+//        panelSubCommands.addCommand("info", panelCommandOptions.infoCommandOptions);
+//        panelSubCommands.addCommand("acl-info", panelCommandOptions.aclsCommandOptions);
+//        panelSubCommands.addCommand("acl-update", panelCommandOptions.aclsUpdateCommandOptions);
 
 
         alignmentCommandOptions = new AlignmentCommandOptions(this.commonCommandOptions, jCommander);
