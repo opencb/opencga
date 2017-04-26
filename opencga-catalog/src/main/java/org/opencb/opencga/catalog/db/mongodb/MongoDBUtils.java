@@ -439,6 +439,14 @@ class MongoDBUtils {
         return filteredOptions;
     }
 
+    static void filterBooleanParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams) {
+        for (String s : acceptedParams) {
+            if (parameters.containsKey(s)) {
+                filteredParams.put(s, parameters.getBoolean(s));
+            }
+        }
+    }
+
     static void filterStringParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams) {
         for (String s : acceptedParams) {
             if (parameters.containsKey(s)) {

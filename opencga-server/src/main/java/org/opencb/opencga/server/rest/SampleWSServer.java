@@ -98,12 +98,14 @@ public class SampleWSServer extends OpenCGAWSServer {
                                  @QueryParam("study") String studyStr,
                                  @ApiParam(value = "name", required = true) @QueryParam("name") String name,
                                  @ApiParam(value = "source", required = false) @QueryParam("source") String source,
+                                 @ApiParam(value = "somatic", defaultValue = "false") @QueryParam("somatic") boolean somatic,
                                  @ApiParam(value = "description", required = false) @QueryParam("description") String description) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            QueryResult<Sample> queryResult = sampleManager.create(studyStr, name, source, description, null, null, null, sessionId);
+            QueryResult<Sample> queryResult = sampleManager.create(studyStr, name, source, description, somatic,null, null, null,
+                    sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -119,6 +121,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         public String name;
         public String source;
         public String description;
+        public boolean somatic;
         public IndividualParameters individual;
     }
 
@@ -141,8 +144,8 @@ public class SampleWSServer extends OpenCGAWSServer {
                         .setId(params.individual.id)
                         .setName(params.individual.name);
             }
-            QueryResult<Sample> queryResult = sampleManager.create(studyStr, params.name, params.source, params.description, individual,
-                    null, null, sessionId);
+            QueryResult<Sample> queryResult = sampleManager.create(studyStr, params.name, params.source, params.description,
+                    params.somatic, individual, null, null, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -235,6 +238,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
                            @ApiParam(value = "source", required = false) @QueryParam("source") String source,
+                           @ApiParam(value = "somatic", defaultValue = "false") @QueryParam("somatic") boolean somatic,
                            @ApiParam(value = "DEPRECATED: use individual.id instead", hidden = true) @QueryParam("individualId")
                                        String individualIdOld,
                            @ApiParam(value = "Individual id or name", required = false) @QueryParam("individual.id") String individualId,
@@ -268,6 +272,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         public String source;
         @JsonProperty("individual.id")
         public String individualId;
+        public boolean somatic;
         public Map<String, Object> attributes;
     }
 

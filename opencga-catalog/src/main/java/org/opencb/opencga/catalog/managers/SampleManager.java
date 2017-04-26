@@ -124,8 +124,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<Sample> create(String studyStr, String name, String source, String description, Individual individual,
-                                      Map<String, Object> attributes, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Sample> create(String studyStr, String name, String source, String description, boolean somatic,
+                                      Individual individual, Map<String, Object> attributes, QueryOptions options, String sessionId)
+            throws CatalogException {
         ParamUtils.checkAlias(name, "name", configuration.getCatalog().getOffset());
         source = ParamUtils.defaultString(source, "");
         description = ParamUtils.defaultString(description, "");
@@ -142,7 +143,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             }
         }
 
-        Sample sample = new Sample(-1, name, source, individual, description, Collections.emptyList(), Collections.emptyList(),
+        Sample sample = new Sample(-1, name, source, individual, description, somatic, Collections.emptyList(), Collections.emptyList(),
                 attributes);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -256,12 +257,12 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
 
-
+    @Deprecated
     @Override
     public QueryResult<Sample> create(String studyStr, String name, String source, String description,
                                       Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
-        return create(studyStr, name, source, description, null, attributes, options, sessionId);
+        return create(studyStr, name, source, description, false, null, attributes, options, sessionId);
     }
 
     @Override
@@ -673,6 +674,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                     ParamUtils.checkAlias(parameters.getString(queryParam.key()), "name", configuration.getCatalog().getOffset());
                     break;
                 case INDIVIDUAL_ID:
+                case SOMATIC:
                 case DESCRIPTION:
                 case ATTRIBUTES:
                     break;
