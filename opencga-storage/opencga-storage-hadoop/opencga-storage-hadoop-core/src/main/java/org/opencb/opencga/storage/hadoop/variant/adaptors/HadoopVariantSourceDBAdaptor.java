@@ -62,7 +62,12 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
         this.genomeHelper = genomeHelper;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        this.hBaseManager = hBaseManager;
+        if (hBaseManager == null) {
+            this.hBaseManager = new HBaseManager(genomeHelper.getConf());
+        } else {
+            // Create a new instance of HBaseManager to close only if needed
+            this.hBaseManager = new HBaseManager(hBaseManager);
+        }
     }
 
     @Override

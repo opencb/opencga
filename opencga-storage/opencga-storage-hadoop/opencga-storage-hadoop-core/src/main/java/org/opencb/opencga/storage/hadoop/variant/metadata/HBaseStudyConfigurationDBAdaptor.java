@@ -81,7 +81,8 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
         if (hBaseManager == null) {
             this.hBaseManager = new HBaseManager(configuration);
         } else {
-            this.hBaseManager = hBaseManager;
+            // Create a new instance of HBaseManager to close only if needed
+            this.hBaseManager = new HBaseManager(hBaseManager);
         }
         lock = new HBaseLock(hBaseManager, this.tableName, genomeHelper.getColumnFamily(), studiesRow);
     }

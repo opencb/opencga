@@ -104,9 +104,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         this.credentials = credentials;
         this.configuration = conf;
         if (hBaseManager == null) {
-            hBaseManager = new HBaseManager(conf);
+            this.hBaseManager = new HBaseManager(conf);
+        } else {
+            // Create a new instance of HBaseManager to close only if needed
+            this.hBaseManager = new HBaseManager(hBaseManager);
         }
-        this.hBaseManager = hBaseManager;
         this.genomeHelper = new GenomeHelper(this.configuration);
         this.variantTable = credentials.getTable();
         ObjectMap options = configuration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getVariant().getOptions();

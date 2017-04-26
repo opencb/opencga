@@ -120,8 +120,10 @@ public class HadoopDirectVariantStoragePipeline extends AbstractHadoopVariantSto
         ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), meta);
 
 
-        ProgressLogger progressLogger = new ProgressLogger("Loaded slices:",
-                source.getStats() != null ? source.getStats().getNumRecords() : 0);
+        ProgressLogger progressLogger = new ProgressLogger("Loaded slices:");
+        if (source.getStats() != null) {
+            progressLogger.setApproximateTotalCount(source.getStats().getNumRecords());
+        }
         VariantHbasePutTask hbaseWriter = new VariantHbasePutTask(helper, table, dbAdaptor.getHBaseManager());
         long counter = 0;
         long start = System.currentTimeMillis();

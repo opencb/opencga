@@ -38,16 +38,22 @@ public class VariantHbasePutTask implements DataWriter<VcfSlice> {
     private final ArchiveTableHelper helper;
     private final TableName tableName;
     private final HBaseManager hBaseManager;
+    private boolean closeHBaseManager;
     private BufferedMutator tableMutator;
 
     public VariantHbasePutTask(ArchiveTableHelper helper, String tableName) {
-        this(helper, tableName, new HBaseManager(helper.getConf()));
+        this(helper, tableName, null);
     }
 
     public VariantHbasePutTask(ArchiveTableHelper helper, String tableName, HBaseManager hBaseManager) {
         this.helper = helper;
         this.tableName = TableName.valueOf(tableName);
-        this.hBaseManager = hBaseManager;
+        if (hBaseManager == null) {
+            this.hBaseManager = new HBaseManager(helper.getConf());
+        } else {
+            // Create a new instance of HBaseManager to close only if needed
+            this.hBaseManager = new HBaseManager(hBaseManager);
+        }
     }
 
     private ArchiveTableHelper getHelper() {

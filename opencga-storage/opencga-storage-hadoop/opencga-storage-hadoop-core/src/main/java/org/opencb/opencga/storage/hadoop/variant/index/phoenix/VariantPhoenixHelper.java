@@ -271,7 +271,7 @@ public class VariantPhoenixHelper {
 
     public void createSchemaIfNeeded(Connection con, String schema) throws SQLException {
         String sql = "CREATE SCHEMA IF NOT EXISTS \"" + schema + "\"";
-        logger.info(sql);
+        logger.debug(sql);
         phoenixHelper.execute(con, sql);
     }
 
