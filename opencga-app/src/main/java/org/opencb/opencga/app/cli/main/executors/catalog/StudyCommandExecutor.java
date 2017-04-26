@@ -106,14 +106,11 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
             case "variants":
                 queryResponse = variants();
                 break;
-            case "acl":
+            case "acl-info":
                 queryResponse = getAcl();
                 break;
             case "acl-update":
                 queryResponse = updateAcl();
-                break;
-            case "acl-member-info":
-                queryResponse = getMemberAcl();
                 break;
             case "groups":
                 queryResponse = groups();
@@ -537,17 +534,13 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 getSingleValidStudy(studiesCommandOptions.aclsCommandOptions.study);
 
         ObjectMap params = new ObjectMap();
-        return openCGAClient.getStudyClient().getAcls(studiesCommandOptions.aclsCommandOptions.study, params);
-    }
 
-    private QueryResponse<StudyAclEntry> getMemberAcl() throws IOException, CatalogException {
-        logger.debug("Get member Acl");
-        studiesCommandOptions.aclsMemberInfoCommandOptions.study =
-                getSingleValidStudy(studiesCommandOptions.aclsMemberInfoCommandOptions.study);
-
-        ObjectMap params = new ObjectMap();
-        return openCGAClient.getStudyClient().getAcl(studiesCommandOptions.aclsMemberInfoCommandOptions.study,
-                studiesCommandOptions.aclsMemberInfoCommandOptions.memberId, params);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.aclsCommandOptions.memberId)) {
+            return openCGAClient.getStudyClient().getAcl(studiesCommandOptions.aclsCommandOptions.study,
+                    studiesCommandOptions.aclsCommandOptions.memberId, params);
+        } else {
+            return openCGAClient.getStudyClient().getAcls(studiesCommandOptions.aclsCommandOptions.study, params);
+        }
     }
 
     private QueryResponse<StudyAclEntry> updateAcl() throws IOException, CatalogException {

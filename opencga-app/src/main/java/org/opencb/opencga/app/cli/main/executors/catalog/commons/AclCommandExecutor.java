@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.app.cli.main.executors.catalog.commons;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
@@ -36,14 +37,11 @@ public class AclCommandExecutor<T,U> {
             throws CatalogException,IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty("study", aclCommandOptions.study);
-        return client.getAcls(aclCommandOptions.id.replace("/", ":"), params);
-    }
-
-    public QueryResponse<U> aclMemberInfo(AclCommandOptions.AclsMemberInfoCommandOptions aclCommandOptions,
-                                          CatalogClient<T,U> client) throws CatalogException,IOException {
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty("study", aclCommandOptions.study);
-        return client.getAcl(aclCommandOptions.id.replace("/", ":"), aclCommandOptions.memberId, params);
+        if (StringUtils.isNotEmpty(aclCommandOptions.memberId)) {
+            return client.getAcl(aclCommandOptions.id.replace("/", ":"), aclCommandOptions.memberId, params);
+        } else {
+            return client.getAcls(aclCommandOptions.id.replace("/", ":"), params);
+        }
     }
 
 }

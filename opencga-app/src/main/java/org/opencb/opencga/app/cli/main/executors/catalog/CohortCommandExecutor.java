@@ -83,12 +83,8 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
             case "group-by":
                 queryResponse = groupBy();
                 break;
-            case "acl":
+            case "acl-info":
                 queryResponse = aclCommandExecutor.acls(cohortsCommandOptions.aclsCommandOptions, openCGAClient.getCohortClient());
-                break;
-            case "acl-member-info":
-                queryResponse = aclCommandExecutor.aclMemberInfo(cohortsCommandOptions.aclsMemberInfoCommandOptions,
-                        openCGAClient.getCohortClient());
                 break;
             case "acl-update":
                 queryResponse = updateAcl();

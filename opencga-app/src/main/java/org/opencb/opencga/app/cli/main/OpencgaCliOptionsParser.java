@@ -117,8 +117,7 @@ public class OpencgaCliOptionsParser {
         studySubCommands.addCommand("groups-delete", studyCommandOptions.groupsDeleteCommandOptions);
         studySubCommands.addCommand("groups-info", studyCommandOptions.groupsInfoCommandOptions);
         studySubCommands.addCommand("groups-update", studyCommandOptions.groupsUpdateCommandOptions);
-        studySubCommands.addCommand("acl", studyCommandOptions.aclsCommandOptions);
-        studySubCommands.addCommand("acl-member-info", studyCommandOptions.aclsMemberInfoCommandOptions);
+        studySubCommands.addCommand("acl-info", studyCommandOptions.aclsCommandOptions);
         studySubCommands.addCommand("acl-update", studyCommandOptions.aclsUpdateCommandOptions);
 
         fileCommandOptions = new FileCommandOptions(this.commonCommandOptions,dataModelOptions, numericOptions, jCommander);
@@ -143,8 +142,7 @@ public class OpencgaCliOptionsParser {
         fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
         fileSubCommands.addCommand("refresh", fileCommandOptions.refreshCommandOptions);
 //        fileSubCommands.addCommand("variants", fileCommandOptions.variantsCommandOptions);
-        fileSubCommands.addCommand("acl", fileCommandOptions.aclsCommandOptions);
-        fileSubCommands.addCommand("acl-member-info", fileCommandOptions.aclsMemberInfoCommandOptions);
+        fileSubCommands.addCommand("acl-info", fileCommandOptions.aclsCommandOptions);
         fileSubCommands.addCommand("acl-update", fileCommandOptions.aclsUpdateCommandOptions);
 
         jobCommandOptions = new JobCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
@@ -156,8 +154,7 @@ public class OpencgaCliOptionsParser {
         jobSubCommands.addCommand("visit", jobCommandOptions.visitCommandOptions);
         jobSubCommands.addCommand("delete", jobCommandOptions.deleteCommandOptions);
         jobSubCommands.addCommand("group-by", jobCommandOptions.groupByCommandOptions);
-        jobSubCommands.addCommand("acl", jobCommandOptions.aclsCommandOptions);
-        jobSubCommands.addCommand("acl-member-info", jobCommandOptions.aclsMemberInfoCommandOptions);
+        jobSubCommands.addCommand("acl-info", jobCommandOptions.aclsCommandOptions);
         jobSubCommands.addCommand("acl-update", jobCommandOptions.aclsUpdateCommandOptions);
        // jobSubCommands.addCommand("status", jobCommandOptions.statusCommandOptions);
 
@@ -171,8 +168,7 @@ public class OpencgaCliOptionsParser {
         individualSubCommands.addCommand("delete", individualCommandOptions.deleteCommandOptions);
         individualSubCommands.addCommand("group-by", individualCommandOptions.groupByCommandOptions);
         individualSubCommands.addCommand("samples", individualCommandOptions.sampleCommandOptions);
-        individualSubCommands.addCommand("acl", individualCommandOptions.aclsCommandOptions);
-        individualSubCommands.addCommand("acl-member-info", individualCommandOptions.aclsMemberInfoCommandOptions);
+        individualSubCommands.addCommand("acl-info", individualCommandOptions.aclsCommandOptions);
         individualSubCommands.addCommand("acl-update", individualCommandOptions.aclsUpdateCommandOptions);
         individualSubCommands.addCommand("annotation-sets-create", individualCommandOptions.annotationCreateCommandOptions);
         individualSubCommands.addCommand("annotation-sets-all-info", individualCommandOptions.annotationAllInfoCommandOptions);
@@ -192,8 +188,7 @@ public class OpencgaCliOptionsParser {
         sampleSubCommands.addCommand("delete", sampleCommandOptions.deleteCommandOptions);
         sampleSubCommands.addCommand("group-by", sampleCommandOptions.groupByCommandOptions);
         sampleSubCommands.addCommand("individuals", sampleCommandOptions.individualCommandOptions);
-        sampleSubCommands.addCommand("acl", sampleCommandOptions.aclsCommandOptions);
-        sampleSubCommands.addCommand("acl-member-info", sampleCommandOptions.aclsMemberInfoCommandOptions);
+        sampleSubCommands.addCommand("acl-info", sampleCommandOptions.aclsCommandOptions);
         sampleSubCommands.addCommand("acl-update", sampleCommandOptions.aclsUpdateCommandOptions);
         sampleSubCommands.addCommand("annotation-sets-create", sampleCommandOptions.annotationCreateCommandOptions);
         sampleSubCommands.addCommand("annotation-sets-all-info", sampleCommandOptions.annotationAllInfoCommandOptions);
@@ -225,8 +220,7 @@ public class OpencgaCliOptionsParser {
         cohortSubCommands.addCommand("delete", cohortCommandOptions.deleteCommandOptions);
         cohortSubCommands.addCommand("stats", cohortCommandOptions.statsCommandOptions);
         cohortSubCommands.addCommand("group-by", cohortCommandOptions.groupByCommandOptions);
-        cohortSubCommands.addCommand("acl", cohortCommandOptions.aclsCommandOptions);
-        cohortSubCommands.addCommand("acl-member-info", cohortCommandOptions.aclsMemberInfoCommandOptions);
+        cohortSubCommands.addCommand("acl-info", cohortCommandOptions.aclsCommandOptions);
         cohortSubCommands.addCommand("acl-update", cohortCommandOptions.aclsUpdateCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-create", cohortCommandOptions.annotationCreateCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-all-info", cohortCommandOptions.annotationAllInfoCommandOptions);
@@ -249,8 +243,7 @@ public class OpencgaCliOptionsParser {
         JCommander panelSubCommands = jCommander.getCommands().get("panels");
         panelSubCommands.addCommand("create", panelCommandOptions.createCommandOptions);
         panelSubCommands.addCommand("info", panelCommandOptions.infoCommandOptions);
-        panelSubCommands.addCommand("acl", panelCommandOptions.aclsCommandOptions);
-        panelSubCommands.addCommand("acl-member-info", panelCommandOptions.aclsMemberInfoCommandOptions);
+        panelSubCommands.addCommand("acl-info", panelCommandOptions.aclsCommandOptions);
         panelSubCommands.addCommand("acl-update", panelCommandOptions.aclsUpdateCommandOptions);
 
 

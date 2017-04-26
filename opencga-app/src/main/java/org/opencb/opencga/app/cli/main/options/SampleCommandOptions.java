@@ -41,7 +41,6 @@ public class SampleCommandOptions {
     public IndividualCommandOptions individualCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
-    public AclCommandOptions.AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
     public SampleAclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
     public AnnotationCommandOptions.AnnotationSetsCreateCommandOptions annotationCreateCommandOptions;
@@ -83,7 +82,6 @@ public class SampleCommandOptions {
 
         SampleAclCommandOptions aclCommandOptions = new SampleAclCommandOptions(commonCommandOptions);
         this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
-        this.aclsMemberInfoCommandOptions = aclCommandOptions.getAclsMemberInfoCommandOptions();
         this.aclsUpdateCommandOptions = aclCommandOptions.getAclsUpdateCommandOptions();
     }
 

@@ -75,12 +75,8 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
             case "group-by":
                 queryResponse = groupBy();
                 break;
-            case "acl":
+            case "acl-info":
                 queryResponse = aclCommandExecutor.acls(jobsCommandOptions.aclsCommandOptions, openCGAClient.getJobClient());
-                break;
-            case "acl-member-info":
-                queryResponse = aclCommandExecutor.aclMemberInfo(jobsCommandOptions.aclsMemberInfoCommandOptions,
-                        openCGAClient.getJobClient());
                 break;
             case "acl-update":
                 queryResponse = updateAcl();

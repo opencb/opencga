@@ -33,7 +33,6 @@ public class PanelCommandOptions {
     public InfoCommandOptions infoCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
-    public AclCommandOptions.AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
     public AclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
     public JCommander jCommander;
@@ -49,7 +48,6 @@ public class PanelCommandOptions {
 
         AclCommandOptions aclCommandOptions = new AclCommandOptions(commonCommandOptions);
         this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
-        this.aclsMemberInfoCommandOptions = aclCommandOptions.getAclsMemberInfoCommandOptions();
         this.aclsUpdateCommandOptions = aclCommandOptions.getAclsUpdateCommandOptions();
     }
 

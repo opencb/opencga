@@ -38,7 +38,6 @@ public class JobCommandOptions {
     public GroupByCommandOptions groupByCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
-    public AclCommandOptions.AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
     public AclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
     public JCommander jCommander;
@@ -63,7 +62,6 @@ public class JobCommandOptions {
 
         AclCommandOptions aclCommandOptions = new AclCommandOptions(commonCommandOptions);
         this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
-        this.aclsMemberInfoCommandOptions = aclCommandOptions.getAclsMemberInfoCommandOptions();
         this.aclsUpdateCommandOptions = aclCommandOptions.getAclsUpdateCommandOptions();
     }
 

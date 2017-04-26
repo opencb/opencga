@@ -30,7 +30,6 @@ public class AclCommandOptions {
     private GeneralCliOptions.CommonCommandOptions commonCommandOptions;
 
     private AclsCommandOptions aclsCommandOptions;
-    private AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
     private AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
     public AclCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions) {
@@ -45,13 +44,9 @@ public class AclCommandOptions {
 
         @Parameter(names = {"--id"}, description = "Id of the resource", required = true, arity = 1)
         public String id;
-    }
 
-    @Parameters(commandNames = {"acl-member-info"},
-            commandDescription = "Return the set of permissions granted for the user or group")
-    public class AclsMemberInfoCommandOptions extends AclsCommandOptions {
-
-        @Parameter(names = {"--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
+        @Parameter(names = {"--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*'). If provided, only returns acls given "
+                + "to the member.", arity = 1)
         public String memberId;
     }
 
@@ -81,13 +76,6 @@ public class AclCommandOptions {
             this.aclsCommandOptions = new AclsCommandOptions();
         }
         return aclsCommandOptions;
-    }
-
-    public AclsMemberInfoCommandOptions getAclsMemberInfoCommandOptions() {
-        if (this.aclsMemberInfoCommandOptions == null) {
-            this.aclsMemberInfoCommandOptions = new AclsMemberInfoCommandOptions();
-        }
-        return aclsMemberInfoCommandOptions;
     }
 
     public AclsUpdateCommandOptions getAclsUpdateCommandOptions() {

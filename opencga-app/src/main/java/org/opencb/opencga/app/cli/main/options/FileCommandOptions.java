@@ -57,7 +57,6 @@ public class FileCommandOptions {
 //    public VariantsCommandOptions variantsCommandOptions;
 
     public FileAclCommandOptions.AclsCommandOptions aclsCommandOptions;
-    public FileAclCommandOptions.AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
     public FileAclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
     public JCommander jCommander;
@@ -96,7 +95,6 @@ public class FileCommandOptions {
 
         FileAclCommandOptions aclCommandOptions = new FileAclCommandOptions(commonCommandOptions);
         this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
-        this.aclsMemberInfoCommandOptions = aclCommandOptions.getAclsMemberInfoCommandOptions();
         this.aclsUpdateCommandOptions = aclCommandOptions.getAclsUpdateCommandOptions();
     }
 

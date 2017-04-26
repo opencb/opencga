@@ -53,7 +53,6 @@ public class StudyCommandOptions {
     public GroupsUpdateCommandOptions groupsUpdateCommandOptions;
 
     public AclsCommandOptions aclsCommandOptions;
-    public AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
     public AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
     public JCommander jCommander;
@@ -91,7 +90,6 @@ public class StudyCommandOptions {
         this.groupsUpdateCommandOptions = new GroupsUpdateCommandOptions();
 
         this.aclsCommandOptions = new AclsCommandOptions();
-        this.aclsMemberInfoCommandOptions = new AclsMemberInfoCommandOptions();
         this.aclsUpdateCommandOptions = new AclsUpdateCommandOptions();
     }
 
@@ -582,21 +580,15 @@ public class StudyCommandOptions {
         public String removeUsers;
     }
 
-    @Parameters(commandNames = {"acl"}, commandDescription = "Return the acl of the resource")
+    @Parameters(commandNames = {"acl"}, commandDescription = "Return the acls set for the resource")
     public class AclsCommandOptions extends BaseStudyCommand {
-
-    }
-
-    @Parameters(commandNames = {"acl-member-info"},
-            commandDescription = "Return the set of permissions granted for the user or group")
-    public class AclsMemberInfoCommandOptions extends AclsCommandOptions {
-
-        @Parameter(names = {"--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
+        @Parameter(names = {"--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*'). If provided, only returns acls given "
+                + "to the member.", arity = 1)
         public String memberId;
     }
 
     @Parameters(commandNames = {"acl-update"}, commandDescription = "Update the permissions set for a member")
-    public class AclsUpdateCommandOptions extends AclsCommandOptions {
+    public class AclsUpdateCommandOptions extends BaseStudyCommand {
 
         @Parameter(names = {"-m", "--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
         public String memberId;
