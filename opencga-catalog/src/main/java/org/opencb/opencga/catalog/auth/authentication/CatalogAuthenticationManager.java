@@ -57,7 +57,7 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
 
     @Override
     public boolean authenticate(String userId, String password, boolean throwException) throws CatalogException {
-        String cypherPassword = (password.length() != 40) ? cypherPassword(password) : password;
+        String cypherPassword = cypherPassword(password);
         String storedPassword;
         boolean validSessionId = false;
         if (userId.equals("admin")) {
