@@ -118,7 +118,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
 //            case "variants":
 //                queryResponse = variants();
 //                break;
-            case "acl-info":
+            case "acl":
                 queryResponse = aclCommandExecutor.acls(filesCommandOptions.aclsCommandOptions, openCGAClient.getFileClient());
                 break;
             case "acl-update":

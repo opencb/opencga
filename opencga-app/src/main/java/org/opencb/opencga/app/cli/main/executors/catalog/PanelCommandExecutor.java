@@ -59,7 +59,7 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
             case "info":
                 queryResponse = info();
                 break;
-            case "acl-info":
+            case "acl":
                 queryResponse = aclCommandExecutor.acls(panelsCommandOptions.aclsCommandOptions, openCGAClient.getPanelClient());
                 break;
             case "acl-update":

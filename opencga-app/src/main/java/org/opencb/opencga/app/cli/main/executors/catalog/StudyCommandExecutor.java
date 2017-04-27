@@ -106,7 +106,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
             case "variants":
                 queryResponse = variants();
                 break;
-            case "acl-info":
+            case "acl":
                 queryResponse = getAcl();
                 break;
             case "acl-update":

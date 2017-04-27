@@ -79,7 +79,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
             case "samples":
                 queryResponse = getSamples();
                 break;
-            case "acl-info":
+            case "acl":
                 queryResponse = aclCommandExecutor.acls(individualsCommandOptions.aclsCommandOptions, openCGAClient.getIndividualClient());
                 break;
             case "acl-update":
