@@ -38,17 +38,12 @@ public class JobCommandOptions {
     public GroupByCommandOptions groupByCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
-    public AclCommandOptions.AclsCreateCommandOptions aclsCreateCommandOptions;
-    public AclCommandOptions.AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
-    public AclCommandOptions.AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
-    public AclCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
+    public AclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
     public JCommander jCommander;
     public CommonCommandOptions commonCommandOptions;
     public DataModelOptions commonDataModelOptions;
     public NumericOptions commonNumericOptions;
-
-    private AclCommandOptions aclCommandOptions;
 
     public JobCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions, NumericOptions numericOptions,
                              JCommander jCommander) {
@@ -65,12 +60,9 @@ public class JobCommandOptions {
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
 
-        aclCommandOptions = new AclCommandOptions(commonCommandOptions);
+        AclCommandOptions aclCommandOptions = new AclCommandOptions(commonCommandOptions);
         this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
-        this.aclsCreateCommandOptions = aclCommandOptions.getAclsCreateCommandOptions();
-        this.aclsMemberDeleteCommandOptions = aclCommandOptions.getAclsMemberDeleteCommandOptions();
-        this.aclsMemberInfoCommandOptions = aclCommandOptions.getAclsMemberInfoCommandOptions();
-        this.aclsMemberUpdateCommandOptions = aclCommandOptions.getAclsMemberUpdateCommandOptions();
+        this.aclsUpdateCommandOptions = aclCommandOptions.getAclsUpdateCommandOptions();
     }
 
     public class BaseJobCommand extends StudyOption {

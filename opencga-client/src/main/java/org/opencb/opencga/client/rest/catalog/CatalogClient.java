@@ -84,38 +84,10 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
         return execute(category, id, "acl", memberId, "info", params, GET, aclClass);
     }
 
-    public QueryResponse<A> createAcl(String id, String members, ObjectMap params) throws CatalogException, IOException {
-        ObjectMap myParams;
-        params = addParamsToObjectMap(params, "members", members);
-        if (params.containsKey("study")) {
-            String study = params.getString("study");
-            params.remove("study");
-            myParams = new ObjectMap()
-                    .append("study", study)
-                    .append("body", params);
-        } else {
-            myParams = new ObjectMap("body", params);
-        }
-        return execute(category, id, "acl", null, "create", myParams, POST, aclClass);
-    }
-
-    public QueryResponse<A> deleteAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {
-        return execute(category, id, "acl", memberId, "delete", params, GET, aclClass);
-    }
-
-    public QueryResponse<A> updateAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {
-        ObjectMap myParams;
-        if (params.containsKey("study")) {
-            String study = params.getString("study");
-            params.remove("study");
-            myParams = new ObjectMap()
-                    .append("study", study)
-                    .append("body", params);
-        } else {
-            myParams = new ObjectMap("body", params);
-        }
-
-        return execute(category, id, "acl", memberId, "update", myParams, POST, aclClass);
+    public QueryResponse<A> updateAcl(String memberId, ObjectMap queryParams, ObjectMap bodyParams) throws CatalogException, IOException {
+        ObjectMap myParams = new ObjectMap(queryParams);
+        myParams.put("body", bodyParams);
+        return execute(category, null, "acl", memberId, "update", myParams, POST, aclClass);
     }
 
 }

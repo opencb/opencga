@@ -21,8 +21,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
@@ -54,10 +53,7 @@ public class StudyCommandOptions {
     public GroupsUpdateCommandOptions groupsUpdateCommandOptions;
 
     public AclsCommandOptions aclsCommandOptions;
-    public AclsCreateCommandOptions aclsCreateCommandOptions;
-    public AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
-    public AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
-    public AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
+    public AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
     public JCommander jCommander;
     public CommonCommandOptions commonCommandOptions;
@@ -94,10 +90,7 @@ public class StudyCommandOptions {
         this.groupsUpdateCommandOptions = new GroupsUpdateCommandOptions();
 
         this.aclsCommandOptions = new AclsCommandOptions();
-        this.aclsCreateCommandOptions = new AclsCreateCommandOptions();
-        this.aclsMemberDeleteCommandOptions = new AclsMemberDeleteCommandOptions();
-        this.aclsMemberInfoCommandOptions = new AclsMemberInfoCommandOptions();
-        this.aclsMemberUpdateCommandOptions = new AclsMemberUpdateCommandOptions();
+        this.aclsUpdateCommandOptions = new AclsUpdateCommandOptions();
     }
 
     public abstract class BaseStudyCommand extends StudyOption {
@@ -587,53 +580,27 @@ public class StudyCommandOptions {
         public String removeUsers;
     }
 
-    @Parameters(commandNames = {"acl"}, commandDescription = "Return the acl of the resource")
+    @Parameters(commandNames = {"acl"}, commandDescription = "Return the acls set for the resource")
     public class AclsCommandOptions extends BaseStudyCommand {
-
+        @Parameter(names = {"--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*'). If provided, only returns acls given "
+                + "to the member.", arity = 1)
+        public String memberId;
     }
 
-    @Parameters(commandNames = {"acl-create"}, commandDescription = "Define a set of permissions for a list of users or groups")
-    public class AclsCreateCommandOptions extends AclsCommandOptions {
-        @Parameter(names = {"--members"},
-                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true, arity = 1)
-        public String members;
+    @Parameters(commandNames = {"acl-update"}, commandDescription = "Update the permissions set for a member")
+    public class AclsUpdateCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"--permissions"}, description = "Comma separated list of accepted permissions for the resource", arity = 1)
+        @Parameter(names = {"-m", "--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
+        public String memberId;
+
+        @Parameter(names = {"-p", "--permissions"}, description = "Comma separated list of accepted permissions for the resource",
+                arity = 1)
         public String permissions;
 
+        @Parameter(names = {"-a", "--action"}, description = "Comma separated list of accepted permissions for the resource", arity = 1)
+        public AclParams.Action action = AclParams.Action.SET;
+
         @Parameter(names = {"--template"}, description = "Template of permissions to be used (admin, analyst or view_only)", arity = 1)
-        public String templateId;
-    }
-
-    @Parameters(commandNames = {"acl-member-delete"}, commandDescription = "Delete all the permissions granted for the user or group")
-    public class AclsMemberDeleteCommandOptions extends AclsCommandOptions {
-
-        @Parameter(names = {"--member"}, description = "Member id ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
-        public String memberId;
-    }
-
-    @Parameters(commandNames = {"acl-member-info"},
-            commandDescription = "Return the set of permissions granted for the user or group")
-    public class AclsMemberInfoCommandOptions extends AclsCommandOptions {
-
-        @Parameter(names = {"--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
-        public String memberId;
-    }
-
-    @Parameters(commandNames = {"acl-member-update"},
-            commandDescription = "Update the set of permissions granted for the user or group")
-    public class AclsMemberUpdateCommandOptions extends AclsCommandOptions {
-
-        @Parameter(names = {"--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
-        public String memberId;
-
-        @Parameter(names = {"--add-permissions"}, description = "Comma separated list of permissions to add", arity = 1)
-        public String addPermissions;
-
-        @Parameter(names = {"--remove-permissions"}, description = "Comma separated list of permissions to remove", arity = 1)
-        public String removePermissions;
-
-        @Parameter(names = {"--set-permissions"}, description = "Comma separated list of permissions to set", arity = 1)
-        public String setPermissions;
+        public String template;
     }
 }

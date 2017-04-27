@@ -86,21 +86,8 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
             case "acl":
                 queryResponse = aclCommandExecutor.acls(samplesCommandOptions.aclsCommandOptions, openCGAClient.getSampleClient());
                 break;
-            case "acl-create":
-                queryResponse = aclCommandExecutor.aclsCreate(samplesCommandOptions.aclsCreateCommandOptions,
-                        openCGAClient.getSampleClient());
-                break;
-            case "acl-member-delete":
-                queryResponse = aclCommandExecutor.aclMemberDelete(samplesCommandOptions.aclsMemberDeleteCommandOptions,
-                        openCGAClient.getSampleClient());
-                break;
-            case "acl-member-info":
-                queryResponse = aclCommandExecutor.aclMemberInfo(samplesCommandOptions.aclsMemberInfoCommandOptions,
-                        openCGAClient.getSampleClient());
-                break;
-            case "acl-member-update":
-                queryResponse = aclCommandExecutor.aclMemberUpdate(samplesCommandOptions.aclsMemberUpdateCommandOptions,
-                        openCGAClient.getSampleClient());
+            case "acl-update":
+                queryResponse = updateAcl();
                 break;
             case "annotation-sets-create":
                 queryResponse = annotationCommandExecutor.createAnnotationSet(samplesCommandOptions.annotationCreateCommandOptions,
@@ -261,6 +248,25 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
                 sampleQueryResponse.getError(), sampleQueryResponse.getQueryOptions(),
                 Arrays.asList(new QueryResult<>(samplesCommandOptions.individualCommandOptions.sample,
                         -1, individualList.size(), individualList.size(), "", "", individualList)));
+    }
+
+
+    private QueryResponse<SampleAclEntry> updateAcl() throws IOException, CatalogException {
+        SampleCommandOptions.SampleAclCommandOptions.AclsUpdateCommandOptions commandOptions =
+                samplesCommandOptions.aclsUpdateCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotNull("study", commandOptions.study);
+
+        ObjectMap bodyParams = new ObjectMap();
+        bodyParams.putIfNotNull("permissions", commandOptions.permissions);
+        bodyParams.putIfNotNull("action", commandOptions.action);
+        bodyParams.putIfNotNull("sample", commandOptions.id);
+        bodyParams.putIfNotNull("individual", commandOptions.individual);
+        bodyParams.putIfNotNull("cohort", commandOptions.cohort);
+        bodyParams.putIfNotNull("file", commandOptions.file);
+
+        return openCGAClient.getSampleClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
     }
 
 }

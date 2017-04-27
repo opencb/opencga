@@ -40,11 +40,8 @@ public class IndividualCommandOptions {
     public GroupByCommandOptions groupByCommandOptions;
     public SampleCommandOptions sampleCommandOptions;
 
-    public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
-    public AclsCreateCommandOptions aclsCreateCommandOptions;
-    public AclCommandOptions.AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
-    public AclCommandOptions.AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
-    public AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
+    public IndividualAclCommandOptions.AclsCommandOptions aclsCommandOptions;
+    public IndividualAclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
     public AnnotationCommandOptions.AnnotationSetsCreateCommandOptions annotationCreateCommandOptions;
     public AnnotationCommandOptions.AnnotationSetsAllInfoCommandOptions annotationAllInfoCommandOptions;
@@ -57,9 +54,6 @@ public class IndividualCommandOptions {
     public CommonCommandOptions commonCommandOptions;
     public DataModelOptions commonDataModelOptions;
     public NumericOptions commonNumericOptions;
-
-    private AclCommandOptions aclCommandOptions;
-    private AnnotationCommandOptions annotationCommandOptions;
 
     public IndividualCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions,
                                     NumericOptions numericOptions, JCommander jCommander) {
@@ -77,20 +71,17 @@ public class IndividualCommandOptions {
         this.groupByCommandOptions = new GroupByCommandOptions();
         this.sampleCommandOptions = new SampleCommandOptions();
 
-        this.annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
-        this.annotationCreateCommandOptions = this.annotationCommandOptions.getCreateCommandOptions();
-        this.annotationAllInfoCommandOptions = this.annotationCommandOptions.getAllInfoCommandOptions();
-        this.annotationSearchCommandOptions = this.annotationCommandOptions.getSearchCommandOptions();
-        this.annotationDeleteCommandOptions = this.annotationCommandOptions.getDeleteCommandOptions();
-        this.annotationInfoCommandOptions = this.annotationCommandOptions.getInfoCommandOptions();
-        this.annotationUpdateCommandOptions = this.annotationCommandOptions.getUpdateCommandOptions();
+        AnnotationCommandOptions annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
+        this.annotationCreateCommandOptions = annotationCommandOptions.getCreateCommandOptions();
+        this.annotationAllInfoCommandOptions = annotationCommandOptions.getAllInfoCommandOptions();
+        this.annotationSearchCommandOptions = annotationCommandOptions.getSearchCommandOptions();
+        this.annotationDeleteCommandOptions = annotationCommandOptions.getDeleteCommandOptions();
+        this.annotationInfoCommandOptions = annotationCommandOptions.getInfoCommandOptions();
+        this.annotationUpdateCommandOptions = annotationCommandOptions.getUpdateCommandOptions();
 
-        this.aclCommandOptions = new AclCommandOptions(commonCommandOptions);
+        IndividualAclCommandOptions aclCommandOptions = new IndividualAclCommandOptions(commonCommandOptions);
         this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
-        this.aclsCreateCommandOptions = new AclsCreateCommandOptions();
-        this.aclsMemberDeleteCommandOptions = aclCommandOptions.getAclsMemberDeleteCommandOptions();
-        this.aclsMemberInfoCommandOptions = aclCommandOptions.getAclsMemberInfoCommandOptions();
-        this.aclsMemberUpdateCommandOptions = new AclsMemberUpdateCommandOptions();
+        this.aclsUpdateCommandOptions = aclCommandOptions.getAclsUpdateCommandOptions();
     }
 
     public class BaseIndividualsCommand extends StudyOption {
@@ -380,48 +371,34 @@ public class IndividualCommandOptions {
         public String individual;
     }
 
-    @Parameters(commandNames = {"acl"}, commandDescription = "Return the acl of the resource")
-    public class AclsCommandOptions extends StudyOption {
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
+    public class IndividualAclCommandOptions extends AclCommandOptions {
 
-        @Parameter(names = {"--id"}, description = "Id of the resource", required = true, arity = 1)
-        public String id;
-    }
+        private AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
-    @Parameters(commandNames = {"acl-create"}, commandDescription = "Define a set of permissions for a list of users or groups")
-    public class AclsCreateCommandOptions extends AclsCommandOptions {
-        @Parameter(names = {"--members"},
-                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true, arity = 1)
-        public String members;
+        public IndividualAclCommandOptions(CommonCommandOptions commonCommandOptions) {
+            super(commonCommandOptions);
+        }
 
-        @Parameter(names = {"--permissions"}, description = "Comma separated list of accepted permissions for the resource", arity = 1)
-        public String permissions;
+        @Parameters(commandNames = {"acl-update"}, commandDescription = "Update the permissions set for a member")
+        public class AclsUpdateCommandOptions extends AclCommandOptions.AclsUpdateCommandOptions {
 
-        @Parameter(names = {"--propagate"}, description = "Boolean indicating whether to propagate the permissions to the samples related" +
-                " to the individuals as well", arity = 0)
-        public boolean propagate;
-    }
+//            @Parameter(names = {"--individual"}, description = "Comma separated list of individual ids or names", arity = 1)
+//            public String individual;
 
-    @Parameters(commandNames = {"acl-member-update"},
-            commandDescription = "Update the set of permissions granted for the user or group")
-    public class AclsMemberUpdateCommandOptions extends AclsCommandOptions {
+            @Parameter(names = {"--sample"}, description = "Comma separated list of sample ids or names", arity = 1)
+            public String sample;
 
-        @Parameter(names = {"--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
-        public String memberId;
+            @Parameter(names = {"--propagate"}, description = "Boolean parameter indicating whether to propagate the permissions to the " +
+                    "samples related to the individual(s).", arity = 0)
+            public boolean propagate;
+        }
 
-        @Parameter(names = {"--add-permissions"}, description = "Comma separated list of permissions to add", arity = 1)
-        public String addPermissions;
-
-        @Parameter(names = {"--remove-permissions"}, description = "Comma separated list of permissions to remove", arity = 1)
-        public String removePermissions;
-
-        @Parameter(names = {"--set-permissions"}, description = "Comma separated list of permissions to set", arity = 1)
-        public String setPermissions;
-
-        @Parameter(names = {"--propagate"}, description = "Boolean indicating whether to propagate the permissions to the samples related" +
-                " to the individuals as well", arity = 0)
-        public boolean propagate;
+        public AclsUpdateCommandOptions getAclsUpdateCommandOptions() {
+            if (this.aclsUpdateCommandOptions == null) {
+                this.aclsUpdateCommandOptions = new AclsUpdateCommandOptions();
+            }
+            return aclsUpdateCommandOptions;
+        }
     }
 
 }

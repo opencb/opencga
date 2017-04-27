@@ -18,7 +18,6 @@ package org.opencb.opencga.app.cli;
 
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 
 import java.util.HashMap;
 import java.util.Map;

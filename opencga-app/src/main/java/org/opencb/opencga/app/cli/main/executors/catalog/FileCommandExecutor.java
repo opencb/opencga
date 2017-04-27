@@ -121,20 +121,8 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
             case "acl":
                 queryResponse = aclCommandExecutor.acls(filesCommandOptions.aclsCommandOptions, openCGAClient.getFileClient());
                 break;
-            case "acl-create":
-                queryResponse = aclCommandExecutor.aclsCreate(filesCommandOptions.aclsCreateCommandOptions, openCGAClient.getFileClient());
-                break;
-            case "acl-member-delete":
-                queryResponse = aclCommandExecutor.aclMemberDelete(filesCommandOptions.aclsMemberDeleteCommandOptions,
-                        openCGAClient.getFileClient());
-                break;
-            case "acl-member-info":
-                queryResponse = aclCommandExecutor.aclMemberInfo(filesCommandOptions.aclsMemberInfoCommandOptions,
-                        openCGAClient.getFileClient());
-                break;
-            case "acl-member-update":
-                queryResponse = aclCommandExecutor.aclMemberUpdate(filesCommandOptions.aclsMemberUpdateCommandOptions,
-                        openCGAClient.getFileClient());
+            case "acl-update":
+                queryResponse = updateAcl();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -436,6 +424,21 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.NATTRIBUTES.key(), filesCommandOptions.groupByCommandOptions.nattributes);
         return openCGAClient.getFileClient().groupBy(resolveStudy(filesCommandOptions.groupByCommandOptions.study),
                 filesCommandOptions.groupByCommandOptions.fields, queryOptions);
+    }
+
+    private QueryResponse<FileAclEntry> updateAcl() throws IOException, CatalogException {
+        FileCommandOptions.FileAclCommandOptions.AclsUpdateCommandOptions commandOptions = filesCommandOptions.aclsUpdateCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotNull("study", commandOptions.study);
+
+        ObjectMap bodyParams = new ObjectMap();
+        bodyParams.putIfNotNull("permissions", commandOptions.permissions);
+        bodyParams.putIfNotNull("action", commandOptions.action);
+        bodyParams.putIfNotNull("file", commandOptions.id);
+        bodyParams.putIfNotNull("sample", commandOptions.sample);
+
+        return openCGAClient.getFileClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
     }
 
 }

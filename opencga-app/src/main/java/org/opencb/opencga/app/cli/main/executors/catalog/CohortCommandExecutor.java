@@ -25,6 +25,7 @@ import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AnnotationCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.CohortCommandOptions;
+import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -85,21 +86,8 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
             case "acl":
                 queryResponse = aclCommandExecutor.acls(cohortsCommandOptions.aclsCommandOptions, openCGAClient.getCohortClient());
                 break;
-            case "acl-create":
-                queryResponse = aclCommandExecutor.aclsCreate(cohortsCommandOptions.aclsCreateCommandOptions,
-                        openCGAClient.getCohortClient());
-                break;
-            case "acl-member-delete":
-                queryResponse = aclCommandExecutor.aclMemberDelete(cohortsCommandOptions.aclsMemberDeleteCommandOptions,
-                        openCGAClient.getCohortClient());
-                break;
-            case "acl-member-info":
-                queryResponse = aclCommandExecutor.aclMemberInfo(cohortsCommandOptions.aclsMemberInfoCommandOptions,
-                        openCGAClient.getCohortClient());
-                break;
-            case "acl-member-update":
-                queryResponse = aclCommandExecutor.aclMemberUpdate(cohortsCommandOptions.aclsMemberUpdateCommandOptions,
-                        openCGAClient.getCohortClient());
+            case "acl-update":
+                queryResponse = updateAcl();
                 break;
             case "annotation-sets-create":
                 queryResponse = annotationCommandExecutor.createAnnotationSet(cohortsCommandOptions.annotationCreateCommandOptions,
@@ -246,5 +234,20 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getCohortClient().groupBy(cohortsCommandOptions.groupByCommandOptions.study,
                 cohortsCommandOptions.groupByCommandOptions.fields,params);
     }
+
+    private QueryResponse<CohortAclEntry> updateAcl() throws IOException, CatalogException {
+        AclCommandOptions.AclsUpdateCommandOptions commandOptions = cohortsCommandOptions.aclsUpdateCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotNull("study", commandOptions.study);
+
+        ObjectMap bodyParams = new ObjectMap();
+        bodyParams.putIfNotNull("permissions", commandOptions.permissions);
+        bodyParams.putIfNotNull("action", commandOptions.action);
+        bodyParams.putIfNotNull("cohort", commandOptions.id);
+
+        return openCGAClient.getCohortClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
+    }
+
 
 }
