@@ -5,21 +5,17 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
-import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionConfiguration;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
 import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
 import org.apache.hadoop.hbase.filter.FilterList;
-import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -29,14 +25,11 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -385,44 +378,4 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         }
     }
 
-    public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName) throws IOException {
-        try (Connection con = ConnectionFactory.createConnection(genomeHelper.getConf())) {
-            return createVariantTableIfNeeded(genomeHelper, tableName, con);
-        }
-    }
-
-    public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con)
-            throws IOException {
-        VariantPhoenixHelper variantPhoenixHelper = new VariantPhoenixHelper(genomeHelper);
-
-        String namespace = SchemaUtil.getSchemaNameFromFullName(tableName);
-        if (StringUtils.isNotEmpty(namespace)) {
-//            HBaseManager.createNamespaceIfNeeded(con, namespace);
-            try (java.sql.Connection jdbcConnection = variantPhoenixHelper.newJdbcConnection()) {
-                variantPhoenixHelper.createSchemaIfNeeded(jdbcConnection, namespace);
-                LoggerFactory.getLogger(AbstractAnalysisTableDriver.class).info("Phoenix connection is autoclosed ... " + jdbcConnection);
-            } catch (ClassNotFoundException | SQLException e) {
-                throw new IOException(e);
-            }
-        }
-
-        int nsplits = genomeHelper.getConf().getInt(CONFIG_VARIANT_TABLE_PRESPLIT_SIZE, 100);
-        List<byte[]> splitList = GenomeHelper.generateBootPreSplitsHuman(
-                nsplits,
-                (chr, pos) -> VariantPhoenixKeyFactory.generateVariantRowKey(chr, pos, "", ""));
-        boolean newTable = HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
-                splitList, Compression.getCompressionAlgorithmByName(
-                        genomeHelper.getConf().get(
-                                CONFIG_VARIANT_TABLE_COMPRESSION,
-                                Compression.Algorithm.SNAPPY.getName())));
-        if (newTable) {
-            try (java.sql.Connection jdbcConnection = variantPhoenixHelper.newJdbcConnection()) {
-                variantPhoenixHelper.createTableIfNeeded(jdbcConnection, tableName);
-                LoggerFactory.getLogger(AbstractAnalysisTableDriver.class).info("Phoenix connection is autoclosed ... " + jdbcConnection);
-            } catch (ClassNotFoundException | SQLException e) {
-                throw new IOException(e);
-            }
-        }
-        return newTable;
-    }
 }

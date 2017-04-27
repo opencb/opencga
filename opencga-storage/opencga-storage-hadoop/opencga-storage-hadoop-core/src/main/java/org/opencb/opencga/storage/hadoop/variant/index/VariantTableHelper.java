@@ -22,15 +22,25 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.sql.SQLException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -63,6 +73,54 @@ public class VariantTableHelper extends GenomeHelper {
         }
         setAnalysisTable(analysisTable);
         setArchiveTable(archiveTable);
+    }
+
+    public boolean createVariantTableIfNeeded(Connection con) throws IOException {
+        return createVariantTableIfNeeded(this, getAnalysisTableAsString(), con);
+    }
+
+    public boolean createVariantTableIfNeeded() throws IOException {
+        return createVariantTableIfNeeded(this, getAnalysisTableAsString());
+    }
+
+    public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName) throws IOException {
+        try (Connection con = ConnectionFactory.createConnection(genomeHelper.getConf())) {
+            return createVariantTableIfNeeded(genomeHelper, tableName, con);
+        }
+    }
+    public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con)
+            throws IOException {
+        VariantPhoenixHelper variantPhoenixHelper = new VariantPhoenixHelper(genomeHelper);
+
+        String namespace = SchemaUtil.getSchemaNameFromFullName(tableName);
+        if (StringUtils.isNotEmpty(namespace)) {
+//            HBaseManager.createNamespaceIfNeeded(con, namespace);
+            try (java.sql.Connection jdbcConnection = variantPhoenixHelper.newJdbcConnection()) {
+                variantPhoenixHelper.createSchemaIfNeeded(jdbcConnection, namespace);
+                LoggerFactory.getLogger(AbstractAnalysisTableDriver.class).info("Phoenix connection is autoclosed ... " + jdbcConnection);
+            } catch (ClassNotFoundException | SQLException e) {
+                throw new IOException(e);
+            }
+        }
+
+        int nsplits = genomeHelper.getConf().getInt(AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_PRESPLIT_SIZE, 100);
+        List<byte[]> splitList = generateBootPreSplitsHuman(
+                nsplits,
+                (chr, pos) -> VariantPhoenixKeyFactory.generateVariantRowKey(chr, pos, "", ""));
+        boolean newTable = HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
+                splitList, Compression.getCompressionAlgorithmByName(
+                        genomeHelper.getConf().get(
+                                AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_COMPRESSION,
+                                Compression.Algorithm.SNAPPY.getName())));
+        if (newTable) {
+            try (java.sql.Connection jdbcConnection = variantPhoenixHelper.newJdbcConnection()) {
+                variantPhoenixHelper.createTableIfNeeded(jdbcConnection, tableName);
+                LoggerFactory.getLogger(AbstractAnalysisTableDriver.class).info("Phoenix connection is autoclosed ... " + jdbcConnection);
+            } catch (ClassNotFoundException | SQLException e) {
+                throw new IOException(e);
+            }
+        }
+        return newTable;
     }
 
     public StudyConfiguration readStudyConfiguration() throws IOException {

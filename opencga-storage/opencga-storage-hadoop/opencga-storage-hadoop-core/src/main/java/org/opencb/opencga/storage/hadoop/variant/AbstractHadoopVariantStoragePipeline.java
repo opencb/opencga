@@ -63,6 +63,7 @@ import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbaseTransformTask;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
@@ -345,7 +346,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             throw new StorageHadoopException("Issue creating table " + archiveTableCredentials.getTable(), e);
         }
         try {
-            VariantTableDriver.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), variantsTableCredentials.getTable(),
+            VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), variantsTableCredentials.getTable(),
                     dbAdaptor.getConnection());
         } catch (IOException e) {
             throw new StorageHadoopException("Issue creating table " + variantsTableCredentials.getTable(), e);

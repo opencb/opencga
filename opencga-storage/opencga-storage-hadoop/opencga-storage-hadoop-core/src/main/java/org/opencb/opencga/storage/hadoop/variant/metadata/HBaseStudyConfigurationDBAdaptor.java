@@ -32,7 +32,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationAdaptor;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,7 +96,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
     @Override
     public long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException, TimeoutException {
         try {
-            VariantTableDriver.createVariantTableIfNeeded(genomeHelper, tableName, hBaseManager.getConnection());
+            VariantTableHelper.createVariantTableIfNeeded(genomeHelper, tableName, hBaseManager.getConnection());
             return lock.lock(Bytes.toBytes(studyId + "_LOCK"), lockDuration, timeout);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -227,7 +227,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
     private void updateStudiesSummary(BiMap<String, Integer> studies, QueryOptions options) {
         try {
             Connection connection = hBaseManager.getConnection();
-            VariantTableDriver.createVariantTableIfNeeded(genomeHelper, tableName, connection);
+            VariantTableHelper.createVariantTableIfNeeded(genomeHelper, tableName, connection);
             try (Table table = connection.getTable(TableName.valueOf(tableName))) {
                 byte[] bytes = objectMapper.writeValueAsBytes(studies);
                 Put put = new Put(studiesRow);
