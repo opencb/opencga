@@ -32,6 +32,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.protobuf.VariantProto;
+import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -295,13 +297,40 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
             long startTime = System.nanoTime();
             // Uses ForkJoinPool !!!
             // only load variants which have overlap.
-            List<Variant> archiveOther = getResultConverter().convert(res, true, var -> {
+            AtomicLong protoTime = new AtomicLong();
+            List<Variant> archiveOther = getResultConverter().convert(res, true, record -> {
+                int start = VcfRecordProtoToVariantConverter.getStart(record, (int) ctx.getStartPos());
+                int end = VcfRecordProtoToVariantConverter.getEnd(record, (int) ctx.getStartPos());
+                for (VariantProto.AlternateCoordinate alt : record.getSecondaryAlternatesList()) {
+                    int altStart = alt.getStart();
+                    if (altStart != 0 && altStart < start) {
+                        start = altStart;
+                    }
+                    int altEnd = alt.getEnd();
+                    if (altEnd != 0 && altEnd > end) {
+                        end = altEnd;
+                    }
+                }
+                for (int i = start; i <= end; i++) {
+                    if (coveredPositions.contains(i)) {
+                        return true;
+                    }
+                }
+                return false;
+            }, var -> {
                 // Complete ALTs
                 completeAlternateCoordinates(var);
                 int min = toPosition(var, true);
                 int max = toPosition(var, false);
-                return IntStream.range(min, max + 1).boxed().anyMatch(i -> coveredPositions.contains(i));
-            });
+//                return IntStream.range(min, max + 1).boxed().anyMatch(i -> coveredPositions.contains(i));
+                for (int i = min; i <= max; i++) {
+                    if (coveredPositions.contains(i)) {
+                        return true;
+                    }
+                }
+                return false;
+            }, protoTime);
+            addStepDuration("9b.1 Parse proto from archive", protoTime.get());
             addStepDuration("9b Convert to Variants", System.nanoTime() - startTime);
             logger.info("Loaded "
                     + archiveOther.size() + " variants for "

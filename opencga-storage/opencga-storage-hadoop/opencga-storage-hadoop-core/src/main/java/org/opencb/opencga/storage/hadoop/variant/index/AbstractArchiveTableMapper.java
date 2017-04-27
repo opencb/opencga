@@ -331,5 +331,20 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
             return chr;
         }
 
+        public Set<Integer> getFileIds() {
+            return fileIds;
+        }
+
+        public String getChr() {
+            return chr;
+        }
+
+        public long getStartPos() {
+            return startPos;
+        }
+
+        public long getNextStartPos() {
+            return nextStartPos;
+        }
     }
 }
