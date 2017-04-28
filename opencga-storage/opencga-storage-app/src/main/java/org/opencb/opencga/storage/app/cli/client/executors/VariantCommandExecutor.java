@@ -32,6 +32,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
@@ -45,6 +46,7 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.search.VariantSearchManager;
+import org.opencb.opencga.storage.core.search.solr.SolrVariantIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -606,7 +608,13 @@ public class VariantCommandExecutor extends CommandExecutor {
         String solrUrl = (searchOptions.solrUrl == null ? "http://localhost:8983/solr/" : searchOptions.solrUrl);
         String dbName = (searchOptions.dbName == null ? "variants" : searchOptions.dbName);
 
-        VariantSearchManager variantSearchManager = new VariantSearchManager(solrUrl, dbName);
+        variantStorageEngine.getConfiguration().getSearch().setHost(solrUrl);
+
+//        VariantSearchManager variantSearchManager = new VariantSearchManager(solrUrl, dbName);
+//        VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getStudyConfigurationManager(),
+//                variantStorageEngine.getCellBaseUtils(), variantStorageEngine.getConfiguration());
+        VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getStudyConfigurationManager(),
+                null, variantStorageEngine.getConfiguration());
         boolean querying = true;
         String mode = searchOptions.mode;
 
@@ -648,28 +656,57 @@ public class VariantCommandExecutor extends CommandExecutor {
             variantStorageEngine.searchIndex();
         }
 
-//        // query
-//        if (querying) {
-//            if (!variantSearchManager.existCore(dbName)) {
-//                throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
-//            }
-//            int count = 0;
-//            try {
-//                Query query = new Query();
-//                query = VariantQueryCommandUtils.parseQuery(searchOptions, query);
-//                QueryOptions queryOptions = new QueryOptions(); // VariantQueryCommandUtils.parseQueryOptions(searchOptions);
-//                SolrVariantSearchIterator iterator = variantSearchManager.iterator(dbName, query, queryOptions);
-//                while (iterator.hasNext()) {
-//                    VariantSearchModel variantSearch = iterator.next();
-//                    System.out.println("Variant #" + count);
-//                    System.out.println(variantSearch.toString());
-//                    count++;
-//                }
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//            System.out.println("Num. variants: " + count);
-//        }
+        // query
+        if (querying) {
+            if ("collection".equals(mode)) {
+                if (!variantSearchManager.existCollection(dbName)) {
+                    throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
+                }
+            } else {
+                if (!variantSearchManager.existCore(dbName)) {
+                    throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
+                }
+            }
+            int count = 0;
+            try {
+                Query query = new Query();
+                query = VariantQueryCommandUtils.parseQuery(searchOptions, query);
+
+                // TODO: create a function to parse searchOptions to queryOptions
+                QueryOptions queryOptions = new QueryOptions(); //VariantQueryCommandUtils.parseQueryOptions(searchOptions.commonOptions);
+
+                if (StringUtils.isNotEmpty(searchOptions.facet)) {
+                    // update query options for facet
+                    queryOptions.put(QueryOptions.LIMIT, 0);
+                    queryOptions.put(QueryOptions.SKIP, 0);
+                    // TODO: move this to the function mentioned in the previous TODO
+                    queryOptions.put(QueryOptions.FACET, searchOptions.facet);
+                    FacetedQueryResult facetedQueryResult = variantSearchManager.facetedQuery(dbName, query, queryOptions);
+
+                    System.out.println("Faceted fields:");
+                    if (facetedQueryResult.getResult().getFields() != null
+                            && facetedQueryResult.getResult().getFields().size() > 0) {
+                        facetedQueryResult.getResult().getFields().forEach(f -> System.out.println(f.toString()));
+                    }
+                    System.out.println("Faceted ranges:");
+                    if (facetedQueryResult.getResult().getRanges() != null
+                            && facetedQueryResult.getResult().getRanges().size() > 0) {
+                        facetedQueryResult.getResult().getRanges().forEach(f -> System.out.println(f.toString()));
+                    }
+                } else {
+                    SolrVariantIterator iterator = variantSearchManager.iterator(dbName, query, queryOptions);
+                    while (iterator.hasNext()) {
+                        Variant variant = iterator.next();
+                        System.out.println("Variant #" + count);
+                        System.out.println(variant.getId());
+                        count++;
+                    }
+                    System.out.println("Num. variants: " + count);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void executeRank(Query query, VariantStorageEngine variantStorageEngine,

@@ -347,6 +347,7 @@ public class VariantSearchManager {
 
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+            //System.out.println(solrQuery);
             QueryResponse response = solrClient.query(solrQuery);
             SolrVariantIterator iterator = new SolrVariantIterator((response.getBeans(VariantSearchModel.class).iterator()));
             iterator.setNumFound(response.getResults().getNumFound());
