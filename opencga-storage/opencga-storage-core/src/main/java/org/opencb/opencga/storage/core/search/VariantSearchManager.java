@@ -404,7 +404,7 @@ public class VariantSearchManager {
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
             QueryResponse response = solrClient.query(solrQuery);
-            System.out.println(response);
+            //System.out.println(response);
             FacetedQueryResultItem item = toFacetedQueryResultItem(queryOptions, response);
             return new FacetedQueryResult("", (int) stopWatch.getTime(TimeUnit.MILLISECONDS),
                     1, 1, "Faceted data from Solr", "", item);

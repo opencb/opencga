@@ -683,7 +683,6 @@ public class VariantCommandExecutor extends CommandExecutor {
                     queryOptions.put(QueryOptions.FACET, searchOptions.facet);
                     queryOptions.put(QueryOptions.FACET_RANGE, searchOptions.facetRange);
                     FacetedQueryResult facetedQueryResult = variantSearchManager.facetedQuery(dbName, query, queryOptions);
-
                     if (facetedQueryResult.getResult().getFields() != null
                             && facetedQueryResult.getResult().getFields().size() > 0) {
                         System.out.println("Faceted fields (" + facetedQueryResult.getResult().getFields().size() + "):");

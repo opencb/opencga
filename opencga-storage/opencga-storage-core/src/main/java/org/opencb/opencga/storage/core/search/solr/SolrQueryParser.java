@@ -710,7 +710,6 @@ public class SolrQueryParser {
                 sb.append("geneToSoAcc:").append(gene).append("_").append(VariantQueryUtils.parseConsequenceType(ct));
             }
         }
-        System.out.println("---> " + sb.toString());
         return sb.toString();
     }
 
