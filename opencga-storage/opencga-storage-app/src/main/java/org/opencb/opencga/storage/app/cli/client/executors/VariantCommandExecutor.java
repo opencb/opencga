@@ -681,17 +681,23 @@ public class VariantCommandExecutor extends CommandExecutor {
                     queryOptions.put(QueryOptions.SKIP, 0);
                     // TODO: move this to the function mentioned in the previous TODO
                     queryOptions.put(QueryOptions.FACET, searchOptions.facet);
+                    queryOptions.put(QueryOptions.FACET_RANGE, searchOptions.facetRange);
                     FacetedQueryResult facetedQueryResult = variantSearchManager.facetedQuery(dbName, query, queryOptions);
 
-                    System.out.println("Faceted fields:");
                     if (facetedQueryResult.getResult().getFields() != null
                             && facetedQueryResult.getResult().getFields().size() > 0) {
+                        System.out.println("Faceted fields (" + facetedQueryResult.getResult().getFields().size() + "):");
                         facetedQueryResult.getResult().getFields().forEach(f -> System.out.println(f.toString()));
                     }
-                    System.out.println("Faceted ranges:");
                     if (facetedQueryResult.getResult().getRanges() != null
                             && facetedQueryResult.getResult().getRanges().size() > 0) {
+                        System.out.println("Faceted ranges (" + facetedQueryResult.getResult().getRanges().size() + "):");
                         facetedQueryResult.getResult().getRanges().forEach(f -> System.out.println(f.toString()));
+                    }
+                    if (facetedQueryResult.getResult().getIntersections() != null
+                            && facetedQueryResult.getResult().getIntersections().size() > 0) {
+                        System.out.println("Faceted intersections (" + facetedQueryResult.getResult().getIntersections().size() + "):");
+                        facetedQueryResult.getResult().getIntersections().forEach(f -> System.out.println(f.toString()));
                     }
                 } else {
                     SolrVariantIterator iterator = variantSearchManager.iterator(dbName, query, queryOptions);
