@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -73,6 +74,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                      @ApiParam(value = "motherId", required = false) @QueryParam("motherId") long motherId,
                                      @ApiParam(value = "sex", required = false) @QueryParam("sex") @DefaultValue("UNKNOWN")
                                                  Individual.Sex sex,
+                                     @ApiParam(value = "Date of birth. Format: yyyyMMdd", required = false) @QueryParam("dateOfBirth")
+                                                 String dateOfBirth,
                                      @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
                                      @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode")
                                                  String speciesTaxonomyCode,
@@ -99,7 +102,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             long studyId = catalogManager.getStudyId(studyStr, sessionId);
             QueryResult<Individual> queryResult = individualManager.create(studyId, name, family, fatherId, motherId,
                     sex, ethnicity, speciesCommonName, speciesScientificName, speciesTaxonomyCode, populationName, populationSubpopulation,
-                    populationDescription, karyotypicSex, lifeStatus, affectationStatus, queryOptions, sessionId);
+                    populationDescription, karyotypicSex, lifeStatus, affectationStatus, dateOfBirth, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -112,6 +115,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public long fatherId;
         public long motherId;
         public Individual.Sex sex;
+        public String dateOfBirth;
         public String ethnicity;
         public Individual.Species species;
         public Individual.Population population;
@@ -154,8 +158,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             QueryResult<Individual> queryResult = individualManager.create(studyId, params.name, params.family, params.fatherId,
                     params.motherId, params.sex, params.ethnicity, commonName, scientificName, taxonomyCode, populationName,
-                    subpopulationName, description, params.karyotypicSex, params.lifeStatus, params.affectationStatus, queryOptions,
-                    sessionId);
+                    subpopulationName, description, params.karyotypicSex, params.lifeStatus, params.affectationStatus,
+                    params.dateOfBirth, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -483,6 +487,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                      @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                                      @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
                                      @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
+                                     @ApiParam(value = "Date of birth. Format: yyyyMMdd", required = false) @QueryParam("dateOfBirth")
+                                                 String dateOfBirth,
                                      @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode")
                                                  String speciesTaxonomyCode,
                                      @ApiParam(value = "Species scientific name", required = false) @QueryParam("species.scientificName")
@@ -519,6 +525,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), karyotypicSex);
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(), lifeStatus);
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), affectationStatus);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), dateOfBirth);
             QueryResult<Individual> queryResult = individualManager.update(resource.getResourceId(), params, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -532,6 +539,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public int motherId;
         public String family;
         public Individual.Sex sex;
+        public String dateOfBirth;
         public String ethnicity;
         public Individual.Species species;
         public Individual.Population population;

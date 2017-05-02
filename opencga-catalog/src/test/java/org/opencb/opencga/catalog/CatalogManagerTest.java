@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManag
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.api.IIndividualManager;
 import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
@@ -1586,6 +1587,33 @@ public class CatalogManagerTest extends GenericTest {
                         .append(IndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".PHEN", "CASE"),
                 null, sessionIdUser).getResult().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_3")));
+    }
 
+    @Test
+    public void testUpdateIndividualInfo() throws CatalogException {
+        long studyId = catalogManager.getStudyManager().getId("", "user@1000G:phase1");
+        Study study = catalogManager.getStudy(studyId, sessionIdUser).first();
+
+        IIndividualManager individualManager = catalogManager.getIndividualManager();
+        QueryResult<Individual> individualQueryResult = individualManager.create(study.getId(), "Test", null, -1, -1, Individual.Sex.UNDETERMINED, "", "",
+                "", "", "", "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.ALIVE, Individual.AffectationStatus.AFFECTED,
+                "19870214", QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, individualQueryResult.getNumResults());
+        assertEquals("Test", individualQueryResult.first().getName());
+        assertEquals("19870214", individualQueryResult.first().getDateOfBirth());
+
+        QueryResult<Individual> update = individualManager.update(individualQueryResult.first().getId(), new ObjectMap
+                (IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), null), QueryOptions.empty(), sessionIdUser);
+        assertEquals("", update.first().getDateOfBirth());
+
+        update = individualManager.update(individualQueryResult.first().getId(),
+                new ObjectMap(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), "19870214"), QueryOptions.empty(), sessionIdUser);
+        assertEquals("19870214", update.first().getDateOfBirth());
+
+        // Wrong date of birth format
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Invalid date of birth format");
+        individualManager.update(individualQueryResult.first().getId(),
+                new ObjectMap(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), "198421"), QueryOptions.empty(), sessionIdUser);
     }
 }

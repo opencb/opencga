@@ -425,7 +425,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.FAMILY.key(), QueryParams.ETHNICITY.key(), QueryParams.SEX.key(),
                 QueryParams.SPECIES_TAXONOMY_CODE.key(), QueryParams.SPECIES_SCIENTIFIC_NAME.key(), QueryParams.SPECIES_COMMON_NAME.key(),
                 QueryParams.POPULATION_NAME.key(), QueryParams.POPULATION_SUBPOPULATION.key(), QueryParams.POPULATION_DESCRIPTION.key(),
-                QueryParams.KARYOTYPIC_SEX.key(), QueryParams.LIFE_STATUS.key(), QueryParams.AFFECTATION_STATUS.key(), };
+                QueryParams.KARYOTYPIC_SEX.key(), QueryParams.LIFE_STATUS.key(), QueryParams.AFFECTATION_STATUS.key(),
+                QueryParams.DATE_OF_BIRTH.key(), };
         filterStringParams(parameters, individualParameters, acceptedParams);
 
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.SEX.key()), Individual.Sex.class);

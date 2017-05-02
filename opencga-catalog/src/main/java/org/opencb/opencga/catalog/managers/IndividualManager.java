@@ -73,6 +73,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         this.userManager = catalogManager.getUserManager();
     }
 
+    @Deprecated
     @Override
     public QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Sex sex,
                                           String ethnicity, String speciesCommonName, String speciesScientificName,
@@ -80,35 +81,9 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                                           String populationDescription, Individual.KaryotypicSex karyotypicSex,
                                           Individual.LifeStatus lifeStatus, Individual.AffectationStatus affectationStatus,
                                           QueryOptions options, String sessionId) throws CatalogException {
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-        sex = ParamUtils.defaultObject(sex, Individual.Sex.UNKNOWN);
-        logger.info(Long.toString(configuration.getCatalog().getOffset()));
-        ParamUtils.checkAlias(name, "name", configuration.getCatalog().getOffset());
-        family = ParamUtils.defaultObject(family, "");
-        ethnicity = ParamUtils.defaultObject(ethnicity, "");
-        speciesCommonName = ParamUtils.defaultObject(speciesCommonName, "");
-        speciesScientificName = ParamUtils.defaultObject(speciesScientificName, "");
-        speciesTaxonomyCode = ParamUtils.defaultObject(speciesTaxonomyCode, "");
-        populationName = ParamUtils.defaultObject(populationName, "");
-        populationSubpopulation = ParamUtils.defaultObject(populationSubpopulation, "");
-        populationDescription = ParamUtils.defaultObject(populationDescription, "");
-        karyotypicSex = ParamUtils.defaultObject(karyotypicSex, Individual.KaryotypicSex.UNKNOWN);
-        lifeStatus = ParamUtils.defaultObject(lifeStatus, Individual.LifeStatus.UNKNOWN);
-        affectationStatus = ParamUtils.defaultObject(affectationStatus, Individual.AffectationStatus.UNKNOWN);
-
-        String userId = userManager.getId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
-
-        Individual individual = new Individual(0, name, fatherId, motherId,
-                family, sex, karyotypicSex, ethnicity, new Individual.Species(speciesCommonName, speciesScientificName,
-                speciesTaxonomyCode), new Individual.Population(populationName, populationSubpopulation, populationDescription), lifeStatus,
-                affectationStatus);
-
-        QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
-//      auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
-        auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.create, AuditRecord.Magnitude.low,
-                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
-        return queryResult;
+        return create(studyId, name, family, fatherId, motherId, sex, ethnicity, speciesCommonName, speciesScientificName,
+                speciesTaxonomyCode, populationName, populationSubpopulation, populationDescription, karyotypicSex, lifeStatus,
+                affectationStatus, null, options, sessionId);
     }
 
     @Override
@@ -454,6 +429,51 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     @Override
+    public QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Sex sex,
+                                          String ethnicity, String speciesCommonName, String speciesScientificName,
+                                          String speciesTaxonomyCode, String populationName, String populationSubpopulation,
+                                          String populationDescription, Individual.KaryotypicSex karyotypicSex,
+                                          Individual.LifeStatus lifeStatus, Individual.AffectationStatus affectationStatus,
+                                          String dateOfBirth, QueryOptions options, String sessionId) throws CatalogException {
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        sex = ParamUtils.defaultObject(sex, Individual.Sex.UNKNOWN);
+        logger.info(Long.toString(configuration.getCatalog().getOffset()));
+        ParamUtils.checkAlias(name, "name", configuration.getCatalog().getOffset());
+        family = ParamUtils.defaultObject(family, "");
+        ethnicity = ParamUtils.defaultObject(ethnicity, "");
+        speciesCommonName = ParamUtils.defaultObject(speciesCommonName, "");
+        speciesScientificName = ParamUtils.defaultObject(speciesScientificName, "");
+        speciesTaxonomyCode = ParamUtils.defaultObject(speciesTaxonomyCode, "");
+        populationName = ParamUtils.defaultObject(populationName, "");
+        populationSubpopulation = ParamUtils.defaultObject(populationSubpopulation, "");
+        populationDescription = ParamUtils.defaultObject(populationDescription, "");
+        karyotypicSex = ParamUtils.defaultObject(karyotypicSex, Individual.KaryotypicSex.UNKNOWN);
+        lifeStatus = ParamUtils.defaultObject(lifeStatus, Individual.LifeStatus.UNKNOWN);
+        affectationStatus = ParamUtils.defaultObject(affectationStatus, Individual.AffectationStatus.UNKNOWN);
+        if (StringUtils.isEmpty(dateOfBirth)) {
+            dateOfBirth = "";
+        } else {
+            if (!TimeUtils.isValidFormat("yyyyMMdd", dateOfBirth)) {
+                throw new CatalogException("Invalid date of birth format. Valid format yyyyMMdd");
+            }
+        }
+
+        String userId = userManager.getId(sessionId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
+
+        Individual individual = new Individual(0, name, fatherId, motherId,
+                family, sex, karyotypicSex, ethnicity, new Individual.Species(speciesCommonName, speciesScientificName,
+                speciesTaxonomyCode), new Individual.Population(populationName, populationSubpopulation, populationDescription),
+                lifeStatus, affectationStatus, dateOfBirth);
+
+        QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
+//      auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+        return queryResult;
+    }
+
+    @Override
     @Deprecated
     public QueryResult<AnnotationSet> annotate(long individualId, String annotationSetName, long variableSetId, Map<String, Object>
             annotations, Map<String, Object> attributes, String sessionId) throws CatalogException {
@@ -540,7 +560,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
             throws CatalogException {
         ParamUtils.defaultObject(parameters, QueryOptions::new);
         ParamUtils.defaultObject(options, QueryOptions::new);
-
         String userId = userManager.getId(sessionId);
         authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.UPDATE);
 
@@ -557,6 +576,15 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                             .append(IndividualDBAdaptor.QueryParams.NAME.key(), myName);
                     if (individualDBAdaptor.count(query).first() > 0) {
                         throw new CatalogException("Individual name " + myName + " already in use");
+                    }
+                    break;
+                case DATE_OF_BIRTH:
+                    if (StringUtils.isEmpty((String) param.getValue())) {
+                        parameters.put(param.getKey(), "");
+                    } else {
+                        if (!TimeUtils.isValidFormat("yyyyMMdd", (String) param.getValue())) {
+                            throw new CatalogException("Invalid date of birth format. Valid format yyyyMMdd");
+                        }
                     }
                     break;
                 case FATHER_ID:

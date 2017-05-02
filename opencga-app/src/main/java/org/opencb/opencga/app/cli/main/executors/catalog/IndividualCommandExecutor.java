@@ -179,6 +179,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), commandOptions.karyotypicSex);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(), commandOptions.lifeStatus);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), commandOptions.affectationStatus);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), commandOptions.dateOfBirth);
 
         return openCGAClient.getIndividualClient().create(resolveStudy(commandOptions.study), params);
     }
@@ -252,6 +253,8 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.updateCommandOptions.family);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.updateCommandOptions.fatherId);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.updateCommandOptions.motherId);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(),
+                individualsCommandOptions.updateCommandOptions.dateOfBirth);
 
         String sex = individualsCommandOptions.updateCommandOptions.sex;
         if (individualsCommandOptions.updateCommandOptions.sex != null) {

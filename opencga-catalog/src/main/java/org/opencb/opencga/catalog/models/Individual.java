@@ -38,6 +38,7 @@ public class Individual extends Annotable<IndividualAclEntry> {
     private String ethnicity;
     private Species species;
     private Population population;
+    private String dateOfBirth;
     private String creationDate;
     private Status status;
     private LifeStatus lifeStatus;
@@ -78,8 +79,8 @@ public class Individual extends Annotable<IndividualAclEntry> {
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Species species,
                       Population population, Status status, List<IndividualAclEntry> acl, List<AnnotationSet> annotationSets,
                       Map<String, Object> attributes) {
-        this(id, name, fatherId, motherId, family, sex, KaryotypicSex.UNKNOWN, ethnicity, species, population, TimeUtils.getTime(), status,
-                LifeStatus.UNKNOWN, AffectationStatus.UNKNOWN, Collections.emptyList(), acl, annotationSets, attributes);
+        this(id, name, fatherId, motherId, family, sex, KaryotypicSex.UNKNOWN, ethnicity, species, population, "", TimeUtils.getTime(),
+                status, LifeStatus.UNKNOWN, AffectationStatus.UNKNOWN, Collections.emptyList(), acl, annotationSets, attributes);
 
         if (sex == null) {
             this.sex = Sex.UNKNOWN;
@@ -94,11 +95,19 @@ public class Individual extends Annotable<IndividualAclEntry> {
         }
     }
 
+    @Deprecated
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
                       String ethnicity, Species species, Population population, LifeStatus lifeStatus,
                       AffectationStatus affectationStatus) {
-        this(id, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, species, population, TimeUtils.getTime(), new Status(),
-                lifeStatus, affectationStatus, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyMap());
+        this(id, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, species, population, lifeStatus, affectationStatus, "");
+    }
+
+    public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
+                      String ethnicity, Species species, Population population, LifeStatus lifeStatus,
+                      AffectationStatus affectationStatus, String dateOfBirth) {
+        this(id, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, species, population, dateOfBirth, TimeUtils.getTime(),
+                new Status(), lifeStatus, affectationStatus, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                Collections.emptyMap());
 
         if (sex == null) {
             this.sex = Sex.UNKNOWN;
@@ -117,9 +126,9 @@ public class Individual extends Annotable<IndividualAclEntry> {
         }
     }
 
-    public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
-                      String ethnicity, Species species, Population population, String creationDate, Status status, LifeStatus lifeStatus,
-                      AffectationStatus affectationStatus, List<OntologyTerm> ontologyTerms, List<IndividualAclEntry> acl,
+    public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex, String
+            ethnicity, Species species, Population population, String dateOfBirth, String creationDate, Status status, LifeStatus
+            lifeStatus, AffectationStatus affectationStatus, List<OntologyTerm> ontologyTerms, List<IndividualAclEntry> acl,
                       List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -131,6 +140,7 @@ public class Individual extends Annotable<IndividualAclEntry> {
         this.ethnicity = ethnicity;
         this.species = species;
         this.population = population;
+        this.dateOfBirth = dateOfBirth;
         this.creationDate = creationDate;
         this.status = status;
         this.lifeStatus = lifeStatus;
@@ -373,20 +383,24 @@ public class Individual extends Annotable<IndividualAclEntry> {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Individual{");
-        sb.append("id=").append(id);
+        sb.append("acl=").append(acl);
+        sb.append(", id=").append(id);
         sb.append(", name='").append(name).append('\'');
         sb.append(", fatherId=").append(fatherId);
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", motherId=").append(motherId);
         sb.append(", family='").append(family).append('\'');
         sb.append(", sex=").append(sex);
+        sb.append(", karyotypicSex=").append(karyotypicSex);
         sb.append(", ethnicity='").append(ethnicity).append('\'');
         sb.append(", species=").append(species);
         sb.append(", population=").append(population);
+        sb.append(", dateOfBirth='").append(dateOfBirth).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status=").append(status);
+        sb.append(", lifeStatus=").append(lifeStatus);
+        sb.append(", affectationStatus=").append(affectationStatus);
         sb.append(", ontologyTerms=").append(ontologyTerms);
-        sb.append(", acl=").append(acl);
-        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -488,6 +502,15 @@ public class Individual extends Annotable<IndividualAclEntry> {
 
     public Individual setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public Individual setDateOfBirth(String dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
         return this;
     }
 

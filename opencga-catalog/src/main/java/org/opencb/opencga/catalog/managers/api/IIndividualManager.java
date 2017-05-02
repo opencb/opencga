@@ -107,7 +107,14 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
      */
     QueryResult<Individual> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
+    QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Sex sex,
+                                   String ethnicity, String speciesCommonName, String speciesScientificName, String speciesTaxonomyCode,
+                                   String populationName, String populationSubpopulation, String populationDescription,
+                                   Individual.KaryotypicSex karyotypicSex, Individual.LifeStatus lifeStatus,
+                                   Individual.AffectationStatus affectationStatus, String dateOfBirth, QueryOptions options,
+                                   String sessionId) throws CatalogException;
 
+    @Deprecated
     QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Sex sex,
                                    String ethnicity, String speciesCommonName, String speciesScientificName, String speciesTaxonomyCode,
                                    String populationName, String populationSubpopulation, String populationDescription,
