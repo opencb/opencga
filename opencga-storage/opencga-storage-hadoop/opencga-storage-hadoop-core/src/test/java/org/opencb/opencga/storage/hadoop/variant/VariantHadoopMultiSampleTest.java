@@ -27,16 +27,19 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
+import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantNormalizer;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
+import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
@@ -45,6 +48,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
@@ -54,11 +58,10 @@ import org.opencb.opencga.storage.hadoop.variant.index.AbstractArchiveTableMappe
 import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -120,13 +123,32 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-        VariantSource source1 = loadFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
+        loadFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
         checkArchiveTableTimeStamp(dbAdaptor);
 
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
-        VariantSource source2 = loadFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
+        loadFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
+
         checkArchiveTableTimeStamp(dbAdaptor);
-//        printVariantsFromArchiveTable(dbAdaptor, studyConfiguration);
+        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
+
+
+        checkLoadedFilesS1S2(studyConfiguration, dbAdaptor);
+
+    }
+
+    @Test
+    public void testTwoFiles_reverse() throws Exception {
+
+        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
+        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
+        loadFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
+        checkArchiveTableTimeStamp(dbAdaptor);
+
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        loadFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
+
+        checkArchiveTableTimeStamp(dbAdaptor);
         printVariants(studyConfiguration, dbAdaptor, newOutputUri());
 
 
@@ -157,14 +179,12 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
             System.out.println(storagePipelineResult);
         }
 
-        try(PrintStream out = new PrintStream(new FileOutputStream(outputUri.resolve("s1-2.merged.archive.json").getPath()))){
-            printVariantsFromArchiveTable(dbAdaptor, studyConfiguration, out);
-        }
+        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
 
         for (Variant variant : dbAdaptor) {
             System.out.println("variant = " + variant);
         }
-//        checkLoadedFilesS1S2(studyConfiguration, dbAdaptor);
+        checkLoadedFilesS1S2(studyConfiguration, dbAdaptor);
 
         assertThat(studyConfiguration.getIndexedFiles(), hasItems(1, 2));
     }
@@ -319,75 +339,130 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     }
 
-    public void checkLoadedFilesS1S2(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor) {
+    public void checkLoadedFilesS1S2(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor) throws IOException, StorageEngineException {
+
+        Path path = Paths.get(getResourceUri("s1_s2.genome.vcf"));
+        VariantReader variantReader = new VariantVcfHtsjdkReader(new FileInputStream(path.toFile()), VariantReaderUtils.readVariantSource(path, null));
+        variantReader.open();
+        variantReader.pre();
+        Map<String, Variant> expectedVariants = new LinkedHashMap<>();
+        new VariantNormalizer()
+                .apply(variantReader.read(1000))
+                .forEach(v -> expectedVariants.put(v.toString(), v));
+        variantReader.post();
+        variantReader.close();
+
         System.out.println("studyConfiguration = " + studyConfiguration);
         Map<String, Variant> variants = new HashMap<>();
         for (Variant variant : dbAdaptor) {
             String v = variant.toString();
             assertFalse(variants.containsKey(v));
             variants.put(v, variant);
-            VariantAnnotation a = variant.getAnnotation();
-            variant.setAnnotation(null);
-            System.out.println(variant.toJson());
-            variant.setAnnotation(a);
+//            VariantAnnotation a = variant.getAnnotation();
+//            variant.setAnnotation(null);
+//            System.out.println(variant.toJson());
+//            variant.setAnnotation(a);
         }
         String studyName = studyConfiguration.getStudyName();
 
         // TODO: Add more asserts
         // TODO: Update with last changes!
-        /*                      s1  s2
-        1	10013	T	C   0/1 0/0
-        1	10014	A	T   0/1 0/2
-        1	10014	A	G   0/2 0/1
-        1	10030	T	G   0/0 0/1
-        1	10031	T	G   0/1 0/1
-        1	10032	A	G   0/1 0/0
-        1   11000   T   G   1/1 0/1
-        1   12000   T   G   1/1 0/0
-        1   13000   T   G   0/0 0/1
+        /*
+        #CHROM   POS     REF                   ALT                 s1      s2
+        1        10013   T                     C                   0/1     0/0
+        1        10014   A                     T,G                 0/1     0/2
+        1        10030   T                     G                   0/0     0/1
+        1        10031   T                     G                   0/1     1/1
+        1        10032   A                     G                   0/1     0/0
+        1        10064   C                     CTTTTT              0/0     0/1
+        1        11000   T                     G                   1/1     0/1
+        1        12000   T                     G                   1/1     .
+        1        12081   ATTACTTACTTTTTTTTTTT  ATTTTTTT,ATTACTTAC  1/2     .
+        1        12094   C                     .                   0/0     .
+        1        13000   T                     G                   0/0     0/1
+        1        13488   G                     TGAAGTATGCAGGGT,T   1/1     0/2
+        1        13563   TACACACACAC           TACACAC,T           1/2     0/0
+        
         */
 
-        assertEquals(16, variants.size());
-        assertTrue(variants.containsKey("1:10013:T:C"));
-        assertEquals("0/1", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s1", "GT"));
-        assertEquals("0/0", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));
+        System.out.println("variants.size() = " + variants.size());
+        System.out.println("expectedVariants.size() = " + expectedVariants.size());
 
-        assertTrue(variants.containsKey("1:10014:A:T"));
-        assertEquals("0/1", variants.get("1:10014:A:T").getStudy(studyName).getSampleData("s1", "GT"));
-        assertEquals("0/2", variants.get("1:10014:A:T").getStudy(studyName).getSampleData("s2", "GT"));
+        List<String> errors = new ArrayList<>();
 
-        assertTrue(variants.containsKey("1:10014:A:G"));
-        assertEquals("0/2", variants.get("1:10014:A:G").getStudy(studyName).getSampleData("s1", "GT"));
-        assertEquals("0/1", variants.get("1:10014:A:G").getStudy(studyName).getSampleData("s2", "GT"));
+        String[] samples = {"s1", "s2"};
+        String[] format = {VariantMerger.GT_KEY};
+        // TODO: Add FT to the merged vcf!
+//        String[] format = {VariantMerger.GT_KEY, VariantMerger.GENOTYPE_FILTER_KEY};
+        for (String key : expectedVariants.keySet()) {
+            if (variants.containsKey(key)) {
+                for (String sample : samples) {
+                    for (String formatKey : format) {
+                        String expected = expectedVariants.get(key).getStudies().get(0).getSampleData(sample, formatKey);
+                        if (expected.equals("./.")) {
+                            expected = ".";
+                        }
+                        String actual = variants.get(key).getStudy(studyName).getSampleData(sample, formatKey);
+                        if (!expected.equals(actual)) {
+                            errors.add("In variant " + key + " wrong " + formatKey + " for sample " + sample + ". Expected: " + expected + ", Actual: " + actual);
+                        }
+                    }
+                }
+            } else {
+                errors.add("Missing variant! " + key);
+            }
+        }
+        for (String key : variants.keySet()) {
+            if (!expectedVariants.containsKey(key)) {
+                errors.add("Extra variant! " + key);
+            }
+        }
 
-        assertTrue(variants.containsKey("1:10030:T:G"));
-        assertEquals("0/0", variants.get("1:10030:T:G").getStudy(studyName).getSampleData("s1", "GT"));
-        assertEquals("0/1", variants.get("1:10030:T:G").getStudy(studyName).getSampleData("s2", "GT"));
+        if (!errors.isEmpty()) {
+            assertThat(errors, not(hasItem(any(String.class))));
+        }
 
-        assertTrue(variants.containsKey("1:10031:T:G"));
-        assertEquals("0/1", variants.get("1:10031:T:G").getStudy(studyName).getSampleData("s1", "GT"));
-        assertEquals("0/1", variants.get("1:10031:T:G").getStudy(studyName).getSampleData("s2", "GT"));
-
-        assertTrue(variants.containsKey("1:10032:A:G"));
-        assertEquals("1", variants.get("1:10032:A:G").getStudy(studyName).getFiles().get(0).getAttributes().get("PASS"));
-        assertEquals("0/1", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s1", "GT"));
-        assertEquals("PASS", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s1", VariantMerger.GENOTYPE_FILTER_KEY));
-        assertEquals("0/0", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s2", "GT"));
-        assertEquals("LowGQX", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s2", VariantMerger.GENOTYPE_FILTER_KEY));
-
-        assertTrue(variants.containsKey("1:11000:T:G"));
-        assertEquals("1/1", variants.get("1:11000:T:G").getStudy(studyName).getSampleData("s1", "GT"));
-        assertEquals("0/1", variants.get("1:11000:T:G").getStudy(studyName).getSampleData("s2", "GT"));
-
-        assertTrue(variants.containsKey("1:12000:T:G"));
-        assertEquals("1/1", variants.get("1:12000:T:G").getStudy(studyName).getSampleData("s1", "GT"));
-        assertEquals(".", variants.get("1:12000:T:G").getStudy(studyName).getSampleData("s1", VariantMerger.GENOTYPE_FILTER_KEY));
-        assertEquals("0/0", variants.get("1:12000:T:G").getStudy(studyName).getSampleData("s2", "GT"));
-        assertEquals("HighDPFRatio;LowGQX", variants.get("1:12000:T:G").getStudy(studyName).getSampleData("s2", VariantMerger.GENOTYPE_FILTER_KEY));
-
-        assertTrue(variants.containsKey("1:13000:T:G"));
-        assertEquals("0/0", variants.get("1:13000:T:G").getStudy(studyName).getSampleData("s1", "GT"));
-        assertEquals("0/1", variants.get("1:13000:T:G").getStudy(studyName).getSampleData("s2", "GT"));
+//        assertEquals(16, variants.size());
+//        assertTrue(variants.containsKey("1:10013:T:C"));
+//        assertEquals("0/1", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s1", "GT"));
+//        assertEquals("0/0", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));
+//
+//        assertTrue(variants.containsKey("1:10014:A:T"));
+//        assertEquals("0/1", variants.get("1:10014:A:T").getStudy(studyName).getSampleData("s1", "GT"));
+//        assertEquals("0/2", variants.get("1:10014:A:T").getStudy(studyName).getSampleData("s2", "GT"));
+//
+//        assertTrue(variants.containsKey("1:10014:A:G"));
+//        assertEquals("0/2", variants.get("1:10014:A:G").getStudy(studyName).getSampleData("s1", "GT"));
+//        assertEquals("0/1", variants.get("1:10014:A:G").getStudy(studyName).getSampleData("s2", "GT"));
+//
+//        assertTrue(variants.containsKey("1:10030:T:G"));
+//        assertEquals("0/0", variants.get("1:10030:T:G").getStudy(studyName).getSampleData("s1", "GT"));
+//        assertEquals("0/1", variants.get("1:10030:T:G").getStudy(studyName).getSampleData("s2", "GT"));
+//
+//        assertTrue(variants.containsKey("1:10031:T:G"));
+//        assertEquals("0/1", variants.get("1:10031:T:G").getStudy(studyName).getSampleData("s1", "GT"));
+//        assertEquals("0/1", variants.get("1:10031:T:G").getStudy(studyName).getSampleData("s2", "GT"));
+//
+//        assertTrue(variants.containsKey("1:10032:A:G"));
+//        assertEquals("1", variants.get("1:10032:A:G").getStudy(studyName).getFiles().get(0).getAttributes().get("PASS"));
+//        assertEquals("0/1", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s1", "GT"));
+//        assertEquals("PASS", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s1", VariantMerger.GENOTYPE_FILTER_KEY));
+//        assertEquals("0/0", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s2", "GT"));
+//        assertEquals("LowGQX", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s2", VariantMerger.GENOTYPE_FILTER_KEY));
+//
+//        assertTrue(variants.containsKey("1:11000:T:G"));
+//        assertEquals("1/1", variants.get("1:11000:T:G").getStudy(studyName).getSampleData("s1", "GT"));
+//        assertEquals("0/1", variants.get("1:11000:T:G").getStudy(studyName).getSampleData("s2", "GT"));
+//
+//        assertTrue(variants.containsKey("1:12000:T:G"));
+//        assertEquals("1/1", variants.get("1:12000:T:G").getStudy(studyName).getSampleData("s1", "GT"));
+//        assertEquals(".", variants.get("1:12000:T:G").getStudy(studyName).getSampleData("s1", VariantMerger.GENOTYPE_FILTER_KEY));
+//        assertEquals("0/0", variants.get("1:12000:T:G").getStudy(studyName).getSampleData("s2", "GT"));
+//        assertEquals("HighDPFRatio;LowGQX", variants.get("1:12000:T:G").getStudy(studyName).getSampleData("s2", VariantMerger.GENOTYPE_FILTER_KEY));
+//
+//        assertTrue(variants.containsKey("1:13000:T:G"));
+//        assertEquals("0/0", variants.get("1:13000:T:G").getStudy(studyName).getSampleData("s1", "GT"));
+//        assertEquals("0/1", variants.get("1:13000:T:G").getStudy(studyName).getSampleData("s2", "GT"));
     }
 
     @Test
