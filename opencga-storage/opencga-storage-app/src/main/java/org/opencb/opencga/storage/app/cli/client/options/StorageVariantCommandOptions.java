@@ -611,7 +611,12 @@ public class StorageVariantCommandOptions {
                 + " or histology subtypes.", arity = 1)
         public String cosmic;
 
-        // TODO: facet options
+        @Parameter(names = {"--facet"}, description = "Facet search.", arity = 1)
+        public String facet;
+
+        @Deprecated
+        @Parameter(names = {"--facetRange"}, description = "Facet range (DEPRECATED)", arity = 1)
+        public String facetRange;
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Solr support.")

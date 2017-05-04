@@ -27,6 +27,8 @@ import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.api.IIndividualManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.ServerUtils;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.core.exception.VersionException;
 
@@ -107,19 +109,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         }
     }
 
-    private static class IndividualParameters {
-        public String name;
-        public String family;
-        public long fatherId;
-        public long motherId;
-        public Individual.Sex sex;
-        public String ethnicity;
-        public Individual.Species species;
-        public Individual.Population population;
-        public Individual.KaryotypicSex karyotypicSex;
-        public Individual.LifeStatus lifeStatus;
-        public Individual.AffectationStatus affectationStatus;
-    }
+
 
     @POST
     @Path("/create")
@@ -128,36 +118,13 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value="JSON containing individual information", required = true) IndividualParameters params){
+            @ApiParam(value="JSON containing individual information", required = true) ServerUtils.IndividualParameters params){
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            long studyId = catalogManager.getStudyId(studyStr, sessionId);
 
-            String scientificName = "";
-            String commonName = "";
-            String taxonomyCode = "";
-            if (params.species != null) {
-                commonName = params.species.getCommonName();
-                scientificName = params.species.getScientificName();
-                taxonomyCode = params.species.getTaxonomyCode();
-            }
-
-            String populationName = "";
-            String subpopulationName = "";
-            String description = "";
-            if (params.population != null) {
-                populationName = params.population.getName();
-                subpopulationName = params.population.getSubpopulation();
-                description = params.population.getDescription();
-            }
-
-            QueryResult<Individual> queryResult = individualManager.create(studyId, params.name, params.family, params.fatherId,
-                    params.motherId, params.sex, params.ethnicity, commonName, scientificName, taxonomyCode, populationName,
-                    subpopulationName, description, params.karyotypicSex, params.lifeStatus, params.affectationStatus, queryOptions,
-                    sessionId);
-            return createOkResponse(queryResult);
+            return createOkResponse(individualManager.create(studyStr, params, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

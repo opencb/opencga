@@ -72,6 +72,7 @@ public class CatalogManager implements AutoCloseable {
     private IIndividualManager individualManager;
     private ISampleManager sampleManager;
     private ICohortManager cohortManager;
+    private FamilyManager familyManager;
 //    private AuthenticationManager authenticationManager;
     private CatalogAuditManager auditManager;
     private SessionManager sessionManager;
@@ -135,6 +136,8 @@ public class CatalogManager implements AutoCloseable {
                 catalogIOManagerFactory, configuration);
         cohortManager = new CohortManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
+        familyManager = new FamilyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManagerFactory,
+                configuration);
     }
 
     /**
@@ -621,13 +624,29 @@ public class CatalogManager implements AutoCloseable {
         return authorizationManager.getSampleAcl(resourceId.getUser(), resourceId.getResourceId(), member);
     }
 
-//    public QueryResult<SampleAclEntry> updateSampleAcl(String sampleIdStr, @Nullable String studyStr, String member,
-//                                                       @Nullable String addPermissions, @Nullable String removePermissions,
-//                                                       @Nullable String setPermissions, String sessionId) throws CatalogException {
-//        AbstractManager.MyResourceId resourceId = sampleManager.getId(sampleIdStr, studyStr, sessionId);
-//        return authorizationManager.updateSampleAcl(resourceId.getUser(), resourceId.getResourceId(), member, addPermissions,
-//                removePermissions, setPermissions);
-//    }
+    public List<QueryResult<FamilyAclEntry>> getAllFamilyAcls(String familyIdsStr, @Nullable String studyStr, String sessionId)
+            throws CatalogException {
+        AbstractManager.MyResourceIds resources = familyManager.getIds(familyIdsStr, studyStr, sessionId);
+        for (Long familyId : resources.getResourceIds()) {
+            AbstractManager.MyResourceId tmpResource = new AbstractManager.MyResourceId(resources.getUser(), resources.getStudyId(),
+                    familyId);
+            authorizationManager.checkPermissions(tmpResource, FamilyAclEntry.FamilyPermissions.VIEW,
+                    MongoDBAdaptorFactory.FAMILY_COLLECTION);
+        }
+        return authorizationManager.getAcls(resources.getResourceIds(), null, MongoDBAdaptorFactory.FAMILY_COLLECTION);
+    }
+
+    public QueryResult<FamilyAclEntry> getFamilyAcl(String familyIdStr, @Nullable String studyStr, String member, String sessionId)
+            throws CatalogException {
+        AbstractManager.MyResourceId resource = familyManager.getId(familyIdStr, studyStr, sessionId);
+        authorizationManager.checkPermissions(resource, FamilyAclEntry.FamilyPermissions.VIEW, MongoDBAdaptorFactory.FAMILY_COLLECTION);
+
+        List<String> memberList = null;
+        if (StringUtils.isNotEmpty(member)) {
+            memberList = Arrays.asList(StringUtils.split(member, ","));
+        }
+        return authorizationManager.getAcl(resource.getResourceId(), memberList, MongoDBAdaptorFactory.FAMILY_COLLECTION);
+    }
 
     /**
      * Modify some params from the specified study.
@@ -1235,6 +1254,10 @@ public class CatalogManager implements AutoCloseable {
 
     public ICohortManager getCohortManager() {
         return cohortManager;
+    }
+
+    public FamilyManager getFamilyManager() {
+        return familyManager;
     }
 
     public Configuration getConfiguration() {
