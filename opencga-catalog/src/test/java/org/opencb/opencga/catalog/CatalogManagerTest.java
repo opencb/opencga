@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.models.*;
@@ -1526,6 +1527,38 @@ public class CatalogManagerTest extends GenericTest {
         assertTrue(myCohort.getSamples().contains(sampleId1));
         assertTrue(myCohort.getSamples().contains(sampleId2));
         assertTrue(myCohort.getSamples().contains(sampleId3));
+    }
+
+    @Test
+    public void createIndividualWithSamples() throws CatalogException {
+        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().create("user@1000G:phase1", "sample1", "", "", null,
+                null, QueryOptions.empty(), sessionIdUser);
+
+        Sample oldSample = new Sample().setId(sampleQueryResult.first().getId());
+        Sample newSample = new Sample().setName("sample2");
+        ServerUtils.IndividualParameters individualParameters = new ServerUtils.IndividualParameters()
+                .setName("individual").setSamples(Arrays.asList(oldSample, newSample));
+
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
+        // We create the individual together with the samples
+        QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().create("user@1000G:phase1",
+                individualParameters, QueryOptions.empty(), sessionIdUser);
+
+        assertEquals(1, individualQueryResult.getNumResults());
+        assertEquals("individual", individualQueryResult.first().getName());
+
+        AbstractManager.MyResourceIds resources = catalogManager.getSampleManager().getIds("sample1,sample2", Long.toString(studyId),
+                sessionIdUser);
+
+        assertEquals(2, resources.getResourceIds().size());
+        Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), resources.getResourceIds());
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
+        sampleQueryResult = catalogManager.getSampleManager().get(studyId, query, options, sessionIdUser);
+
+        assertEquals(2, sampleQueryResult.getNumResults());
+        for (Sample sample : sampleQueryResult.getResult()) {
+            assertEquals(individualQueryResult.first().getId(), sample.getIndividual().getId());
+        }
     }
 
     @Test
