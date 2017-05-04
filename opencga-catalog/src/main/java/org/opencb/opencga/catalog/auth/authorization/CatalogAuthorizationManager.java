@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.*;
 import org.slf4j.Logger;
@@ -779,6 +780,172 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
     }
 
+    @Override
+    public <E extends Enum<E>> void checkPermissions(AbstractManager.MyResourceId resource, E permission, String entity)
+            throws CatalogException {
+        String userId = resource.getUser();
+        long studyId = resource.getStudyId();
+        long resourceId = resource.getResourceId();
+
+        if (isStudyOwner(studyId, userId)) {
+            return;
+        }
+
+        AbstractAclEntry aclEntry = null;
+        if (userId.equals(ADMIN)) {
+            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList(ADMIN));
+            if (studyAclQueryResult.getNumResults() == 1) {
+                aclEntry = transformStudyAclToEntityAcl(studyAclQueryResult.first(), entity);
+            }
+        } else {
+            aclEntry = resolvePermissions(resource, entity);
+        }
+
+        if (aclEntry == null || !aclEntry.getPermissions().contains(permission)) {
+            throw CatalogAuthorizationException.deny(userId, permission.name(), entity, resourceId, null);
+        }
+    }
+
+    private <E extends Enum<E>> AbstractAclEntry resolvePermissions(AbstractManager.MyResourceId resource, String entity)
+            throws CatalogException {
+        String userId = resource.getUser();
+        long studyId = resource.getStudyId();
+        long resourceId = resource.getResourceId();
+
+        String groupId = null;
+        if (!userId.equalsIgnoreCase(ANONYMOUS)) {
+            QueryResult<Group> group = getGroupBelonging(studyId, userId);
+            groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+        }
+
+        List<String> userIds = (groupId == null)
+                ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
+                : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
+
+        QueryResult<AbstractAclEntry<E>> aclEntryQueryResult = aclDBAdaptor.get(resourceId, userIds, entity);
+
+        Map<String, AbstractAclEntry<E>> userAclMap = new HashMap<>();
+        for (AbstractAclEntry<E> aclEntry : aclEntryQueryResult.getResult()) {
+            userAclMap.put(aclEntry.getMember(), aclEntry);
+        }
+
+        return resolvePermissions(studyId, userId, groupId, userAclMap, entity);
+    }
+
+    private <E extends Enum<E>> AbstractAclEntry resolvePermissions(long studyId, String userId, String groupId,
+                                                                    Map<String, AbstractAclEntry<E>> userAclMap, String entity)
+            throws CatalogException {
+        if (userId.equals(ANONYMOUS)) {
+            if (userAclMap.containsKey(userId)) {
+                return userAclMap.get(userId);
+            } else {
+                return transformStudyAclToEntityAcl(getStudyAclBelonging(studyId, userId, groupId), entity);
+            }
+        }
+
+        // Registered user
+        AbstractAclEntry<E> aclEntry = null;
+
+        if (userAclMap.containsKey(userId)) {
+            aclEntry = userAclMap.get(userId);
+        }
+        if (StringUtils.isNotEmpty(groupId) && userAclMap.containsKey(groupId)) {
+            if (aclEntry == null) {
+                aclEntry = userAclMap.get(groupId);
+            } else {
+                aclEntry.getPermissions().addAll(userAclMap.get(groupId).getPermissions());
+            }
+        }
+        if (userAclMap.containsKey(ANONYMOUS)) {
+            if (aclEntry == null) {
+                aclEntry = userAclMap.get(ANONYMOUS);
+            } else {
+                aclEntry.getPermissions().addAll(userAclMap.get(ANONYMOUS).getPermissions());
+            }
+        }
+        if (userAclMap.containsKey(OTHER_USERS_ID)) {
+            if (aclEntry == null) {
+                aclEntry = userAclMap.get(OTHER_USERS_ID);
+            } else {
+                aclEntry.getPermissions().addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
+            }
+        }
+
+        if (aclEntry != null) {
+            aclEntry.setMember(userId);
+            return aclEntry;
+        } else {
+            return transformStudyAclToEntityAcl(getStudyAclBelonging(studyId, userId, groupId), entity);
+        }
+    }
+
+    private <E extends Enum<E>> AbstractAclEntry transformStudyAclToEntityAcl(StudyAclEntry studyAcl, String entity)
+            throws CatalogAuthorizationException {
+        AbstractAclEntry<E> aclEntry = getEmptyAclEntry(entity);
+        if (studyAcl == null) {
+            return aclEntry;
+        }
+
+        aclEntry.setMember(studyAcl.getMember());
+        EnumSet<StudyAclEntry.StudyPermissions> studyPermissions = studyAcl.getPermissions();
+
+        for (StudyAclEntry.StudyPermissions studyPermission : studyPermissions) {
+            E permission = transformStudyPermission(studyPermission, entity);
+            if (permission != null) {
+                aclEntry.getPermissions().add(permission);
+            }
+        }
+        return aclEntry;
+
+    }
+
+    private <E extends Enum<E>> E transformStudyPermission(StudyAclEntry.StudyPermissions studyPermission, String entity)
+            throws CatalogAuthorizationException {
+        switch (entity) {
+            case MongoDBAdaptorFactory.FILE_COLLECTION:
+                return (E) studyPermission.getFilePermission();
+            case MongoDBAdaptorFactory.FAMILY_COLLECTION:
+                return (E) studyPermission.getFamilyPermission();
+            case MongoDBAdaptorFactory.COHORT_COLLECTION:
+                return (E) studyPermission.getCohortPermission();
+            case MongoDBAdaptorFactory.DATASET_COLLECTION:
+                return (E) studyPermission.getDatasetPermission();
+            case MongoDBAdaptorFactory.INDIVIDUAL_COLLECTION:
+                return (E) studyPermission.getIndividualPermission();
+            case MongoDBAdaptorFactory.JOB_COLLECTION:
+                return (E) studyPermission.getJobPermission();
+            case MongoDBAdaptorFactory.PANEL_COLLECTION:
+                return (E) studyPermission.getDiseasePanelPermission();
+            case MongoDBAdaptorFactory.SAMPLE_COLLECTION:
+                return (E) studyPermission.getSamplePermission();
+            default:
+                throw new CatalogAuthorizationException("Internal error. Entity " + entity + " not found.");
+        }
+    }
+
+    private AbstractAclEntry getEmptyAclEntry(String entity) throws CatalogAuthorizationException {
+        switch (entity) {
+            case MongoDBAdaptorFactory.FILE_COLLECTION:
+                return new FileAclEntry(null, new ArrayList<>());
+            case MongoDBAdaptorFactory.FAMILY_COLLECTION:
+                return new FamilyAclEntry(null, new ArrayList<>());
+            case MongoDBAdaptorFactory.COHORT_COLLECTION:
+                return new CohortAclEntry(null, new ArrayList<>());
+            case MongoDBAdaptorFactory.DATASET_COLLECTION:
+                return new DatasetAclEntry(null, new ArrayList<>());
+            case MongoDBAdaptorFactory.INDIVIDUAL_COLLECTION:
+                return new IndividualAclEntry(null, new ArrayList<>());
+            case MongoDBAdaptorFactory.JOB_COLLECTION:
+                return new JobAclEntry(null, new ArrayList<>());
+            case MongoDBAdaptorFactory.PANEL_COLLECTION:
+                return new DiseasePanelAclEntry(null, new ArrayList<>());
+            case MongoDBAdaptorFactory.SAMPLE_COLLECTION:
+                return new SampleAclEntry(null, new ArrayList<>());
+            default:
+                throw new CatalogAuthorizationException("Internal error. Entity " + entity + " not found.");
+        }
+    }
+
     private DiseasePanelAclEntry resolveDiseasePanelPermissions(long studyId, DiseasePanel panel, String userId) throws CatalogException {
         if (panel.getAcl() == null) {
             return resolveDiseasePanelPermissions(studyId, panel.getId(), userId);
@@ -949,6 +1116,34 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
             if (!sampleACL.getPermissions().contains(SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS)) {
                 sample.setAnnotationSets(new ArrayList<>());
+            }
+        }
+    }
+
+    @Override
+    public void filterFamilies(String userId, long studyId, List<Family> families) throws CatalogException {
+        if (families == null || families.isEmpty()) {
+            return;
+        }
+        if (userId.equals(ADMIN)) {
+            return;
+        }
+        if (isStudyOwner(studyId, userId)) {
+            return;
+        }
+
+        Iterator<Family> familyIterator = families.iterator();
+        while (familyIterator.hasNext()) {
+            Family family = familyIterator.next();
+            AbstractManager.MyResourceId resource = new AbstractManager.MyResourceId(userId, studyId, family.getId());
+            FamilyAclEntry familyAclEntry = (FamilyAclEntry) resolvePermissions(resource, MongoDBAdaptorFactory.FAMILY_COLLECTION);
+            if (!familyAclEntry.getPermissions().contains(FamilyAclEntry.FamilyPermissions.VIEW)) {
+                familyIterator.remove();
+                continue;
+            }
+
+            if (!familyAclEntry.getPermissions().contains(FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS)) {
+                family.setAnnotationSets(new ArrayList<>());
             }
         }
     }

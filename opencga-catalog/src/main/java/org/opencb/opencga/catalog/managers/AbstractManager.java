@@ -59,6 +59,7 @@ public abstract class AbstractManager {
     protected final IndividualDBAdaptor individualDBAdaptor;
     protected final SampleDBAdaptor sampleDBAdaptor;
     protected final CohortDBAdaptor cohortDBAdaptor;
+    protected final FamilyDBAdaptor familyDBAdaptor;
     protected final DatasetDBAdaptor datasetDBAdaptor;
     protected final JobDBAdaptor jobDBAdaptor;
     protected final PanelDBAdaptor panelDBAdaptor;
@@ -77,6 +78,7 @@ public abstract class AbstractManager {
         this.sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
         this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
         this.cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
+        this.familyDBAdaptor = catalogDBAdaptorFactory.getCatalogFamilyDBAdaptor();
         this.datasetDBAdaptor = catalogDBAdaptorFactory.getCatalogDatasetDBAdaptor();
         this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
@@ -99,6 +101,7 @@ public abstract class AbstractManager {
         this.sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
         this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
         this.cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
+        this.familyDBAdaptor = catalogDBAdaptorFactory.getCatalogFamilyDBAdaptor();
         this.datasetDBAdaptor = catalogDBAdaptorFactory.getCatalogDatasetDBAdaptor();
         this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
@@ -122,6 +125,7 @@ public abstract class AbstractManager {
         this.sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
         this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
         this.cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
+        this.familyDBAdaptor = catalogDBAdaptorFactory.getCatalogFamilyDBAdaptor();
         this.datasetDBAdaptor = catalogDBAdaptorFactory.getCatalogDatasetDBAdaptor();
         this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
@@ -221,7 +225,7 @@ public abstract class AbstractManager {
         return studyIds;
     }
 
-    public class MyResourceId {
+    public static class MyResourceId {
         private String user;
         private long studyId;
         private long resourceId;
@@ -263,7 +267,7 @@ public abstract class AbstractManager {
         }
     }
 
-    public class MyResourceIds {
+    public static class MyResourceIds {
         private String user;
         private long studyId;
         private List<Long> resourceIds;

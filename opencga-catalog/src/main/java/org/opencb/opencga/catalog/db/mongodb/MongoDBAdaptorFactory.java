@@ -29,6 +29,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -58,6 +59,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             "cohort",
             "dataset",
             "panel",
+            "family",
             "metadata",
             "audit"
     );
@@ -69,6 +71,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String SAMPLE_COLLECTION = "sample";
     public static final String INDIVIDUAL_COLLECTION = "individual";
     public static final String COHORT_COLLECTION = "cohort";
+    public static final String FAMILY_COLLECTION = "family";
     public static final String DATASET_COLLECTION = "dataset";
     public static final String PANEL_COLLECTION = "panel";
     public static final String METADATA_COLLECTION = "metadata";
@@ -88,6 +91,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private MongoDBCollection individualCollection;
     private MongoDBCollection jobCollection;
     private MongoDBCollection cohortCollection;
+    private MongoDBCollection familyCollection;
     private MongoDBCollection datasetCollection;
     private MongoDBCollection panelCollection;
     private MongoDBCollection auditCollection;
@@ -100,6 +104,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private JobMongoDBAdaptor jobDBAdaptor;
     private ProjectMongoDBAdaptor projectDBAdaptor;
     private CohortMongoDBAdaptor cohortDBAdaptor;
+    private FamilyMongoDBAdaptor familyDBAdaptor;
     private DatasetMongoDBAdaptor datasetDBAdaptor;
     private PanelMongoDBAdaptor panelDBAdaptor;
     private AuditMongoDBAdaptor auditDBAdaptor;
@@ -264,6 +269,11 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
+    public FamilyDBAdaptor getCatalogFamilyDBAdaptor() {
+        return familyDBAdaptor;
+    }
+
+    @Override
     public Map<String, MongoDBCollection> getMongoDBCollectionMap() {
         return collections;
     }
@@ -290,6 +300,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         datasetCollection = db.getCollection(DATASET_COLLECTION);
         auditCollection = db.getCollection(AUDIT_COLLECTION);
         panelCollection = db.getCollection(PANEL_COLLECTION);
+        familyCollection = db.getCollection(FAMILY_COLLECTION);
 
         collections = new HashMap<>();
         collections.put(METADATA_COLLECTION, metaCollection);
@@ -303,6 +314,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         collections.put(DATASET_COLLECTION, datasetCollection);
         collections.put(AUDIT_COLLECTION, auditCollection);
         collections.put(PANEL_COLLECTION, panelCollection);
+        collections.put(FAMILY_COLLECTION, familyCollection);
 
         fileDBAdaptor = new FileMongoDBAdaptor(fileCollection, this);
         individualDBAdaptor = new IndividualMongoDBAdaptor(individualCollection, this);
@@ -314,6 +326,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         cohortDBAdaptor = new CohortMongoDBAdaptor(cohortCollection, this);
         datasetDBAdaptor = new DatasetMongoDBAdaptor(datasetCollection, this);
         panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, this);
+        familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, this);
         metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, this);
         auditDBAdaptor = new AuditMongoDBAdaptor(auditCollection);
 

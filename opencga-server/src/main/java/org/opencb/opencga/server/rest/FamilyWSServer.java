@@ -1,0 +1,296 @@
+package org.opencb.opencga.server.rest;
+
+import io.swagger.annotations.*;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
+import org.opencb.opencga.catalog.managers.FamilyManager;
+import org.opencb.opencga.catalog.models.AnnotationSet;
+import org.opencb.opencga.catalog.models.Family;
+import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.OntologyTerm;
+import org.opencb.opencga.catalog.models.acls.AclParams;
+import org.opencb.opencga.core.exception.VersionException;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by pfurio on 03/05/17.
+ */
+@Path("/{version}/families")
+@Produces(MediaType.APPLICATION_JSON)
+@Api(value = "Families", position = 8, description = "Methods for working with 'families' endpoint")
+public class FamilyWSServer extends OpenCGAWSServer {
+
+    private FamilyManager familyManager;
+
+    public FamilyWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest);
+        familyManager = catalogManager.getFamilyManager();
+    }
+
+    @GET
+    @Path("/{families}/info")
+    @ApiOperation(value = "Get family information", position = 1, response = Family.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "lazy", value = "False to return the entire individual object", defaultValue = "true", dataType = "boolean", paramType = "query")
+    })
+    public Response infoFamily(@ApiParam(value = "Comma separated list of family IDs or names", required = true)
+                               @PathParam("families") String familyStr,
+                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                               @QueryParam("study") String studyStr) {
+        try {
+            AbstractManager.MyResourceIds resourceIds = familyManager.getIds(familyStr, studyStr, sessionId);
+
+            List<QueryResult<Family>> queryResults = new LinkedList<>();
+            if (resourceIds.getResourceIds() != null && resourceIds.getResourceIds().size() > 0) {
+                for (Long familyId : resourceIds.getResourceIds()) {
+                    queryResults.add(familyManager.get(familyId, queryOptions, sessionId));
+                }
+            }
+            return createOkResponse(queryResults);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/create")
+    @ApiOperation(value = "Create family", position = 2, response = Family.class)
+    public Response createFamilyPOST(
+            @ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                    String studyStr,
+            @ApiParam(value="JSON containing family information", required = true) Family family) {
+        try {
+            if (StringUtils.isNotEmpty(studyIdStr)) {
+                studyStr = studyIdStr;
+            }
+
+            QueryResult<Family> queryResult = familyManager.create(studyStr, family, queryOptions, sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    public static class UpdateFamily {
+        public String name;
+        public String description;
+        public List<OntologyTerm> ontologyTerms;
+        public List<Individual> individualIds;
+        public Map<String, Object> attributes;
+    }
+
+    @POST
+    @Path("/{family}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update some family attributes using POST method", position = 6)
+    public Response updateByPost(@ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
+                                 @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                 @QueryParam("study") String studyStr,
+                                 @ApiParam(value = "params", required = true) UpdateFamily parameters) {
+        try {
+            AbstractManager.MyResourceId resourceId = catalogManager.getFamilyManager().getId(familyStr, studyStr, sessionId);
+
+            ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
+
+            if (params.size() == 0) {
+                throw new CatalogException("Missing parameters to update.");
+            }
+
+            QueryResult<Family> queryResult = catalogManager.getFamilyManager().update(resourceId.getResourceId(), params, queryOptions,
+                    sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{family}/annotationsets/search")
+    @ApiOperation(value = "Search annotation sets [NOT TESTED]", position = 11)
+    public Response searchAnnotationSetGET(@ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
+                                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                           @QueryParam("study") String studyStr,
+                                           @ApiParam(value = "variableSetId") @QueryParam("variableSetId") long variableSetId,
+                                           @ApiParam(value = "annotation") @QueryParam("annotation") String annotation,
+                                           @ApiParam(value = "Indicates whether to show the annotations as key-value",
+                                                   defaultValue = "false") @QueryParam("asMap") boolean asMap) {
+        try {
+            if (asMap) {
+                return createOkResponse(familyManager.searchAnnotationSetAsMap(familyStr, studyStr, variableSetId, annotation, sessionId));
+            } else {
+                return createOkResponse(familyManager.searchAnnotationSet(familyStr, studyStr, variableSetId, annotation, sessionId));
+            }
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{family}/annotationsets/info")
+    @ApiOperation(value = "Return the annotation sets of the family [NOT TESTED]", position = 12)
+    public Response infoAnnotationSetGET(@ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
+                                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                         @QueryParam("study") String studyStr,
+                                         @ApiParam(value = "Indicates whether to show the annotations as key-value",
+                                                 defaultValue = "false") @QueryParam("asMap") boolean asMap) {
+        try {
+            if (asMap) {
+                return createOkResponse(familyManager.getAllAnnotationSetsAsMap(familyStr, studyStr, sessionId));
+            } else {
+                return createOkResponse(familyManager.getAllAnnotationSets(familyStr, studyStr, sessionId));
+            }
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{family}/annotationsets/create")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Create an annotation set for the family [NOT TESTED]", position = 13)
+    public Response annotateFamilyPOST(
+            @ApiParam(value = "FamilyId", required = true) @PathParam("family") String familyStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                    String studyStr,
+            @ApiParam(value = "VariableSetId of the new annotation", required = true) @QueryParam("variableSetId") long variableSetId,
+            @ApiParam(value="JSON containing the annotation set name and the array of annotations. The name should be unique for the "
+                    + "family", required = true) CohortWSServer.AnnotationsetParameters params) {
+        try {
+            QueryResult<AnnotationSet> queryResult = familyManager.createAnnotationSet(familyStr, studyStr, variableSetId, params.name,
+                    params.annotations, Collections.emptyMap(), sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{family}/annotationsets/{annotationsetName}/delete")
+    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [NOT TESTED]", position = 14)
+    public Response deleteAnnotationGET(@ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
+                                        @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                        @QueryParam("study") String studyStr,
+                                        @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName") String annotationsetName,
+                                        @ApiParam(value = "[NOT IMPLEMENTED] Comma separated list of annotation names to be deleted", required = false) @QueryParam("annotations") String annotations) {
+        try {
+            QueryResult<AnnotationSet> queryResult;
+            if (annotations != null) {
+                queryResult = familyManager.deleteAnnotations(familyStr, studyStr, annotationsetName, annotations, sessionId);
+            } else {
+                queryResult = familyManager.deleteAnnotationSet(familyStr, studyStr, annotationsetName, sessionId);
+            }
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{family}/annotationsets/{annotationsetName}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update the annotations [NOT TESTED]", position = 15)
+    public Response updateAnnotationGET(@ApiParam(value = "familyId", required = true) @PathParam("family") String familyIdStr,
+                                        @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                        @QueryParam("study") String studyStr,
+                                        @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName") String annotationsetName,
+//                                        @ApiParam(value = "reset", required = false) @QueryParam("reset") String reset,
+                                        Map<String, Object> annotations) {
+        try {
+            QueryResult<AnnotationSet> queryResult = familyManager.updateAnnotationSet(familyIdStr, studyStr, annotationsetName,
+                    annotations, sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{family}/annotationsets/{annotationsetName}/info")
+    @ApiOperation(value = "Return the annotation set [NOT TESTED]", position = 16)
+    public Response infoAnnotationGET(@ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
+                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                      @QueryParam("study") String studyStr,
+                                      @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName") String annotationsetName,
+                                      @ApiParam(value = "Indicates whether to show the annotations as key-value",
+                                              defaultValue = "false") @QueryParam("asMap") boolean asMap) {
+        try {
+            if (asMap) {
+                return createOkResponse(catalogManager.getFamilyManager().getAnnotationSetAsMap(familyStr, studyStr, annotationsetName,
+                        sessionId));
+            } else {
+                return createOkResponse(catalogManager.getFamilyManager().getAnnotationSet(familyStr, studyStr, annotationsetName,
+                        sessionId));
+            }
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{families}/acl")
+    @ApiOperation(value = "Returns the acl of the families", position = 18)
+    public Response getAcls(@ApiParam(value = "Comma separated list of family IDs or names", required = true) @PathParam("families")
+                                    String familyIdsStr,
+                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                            @QueryParam("study") String studyStr) {
+        try {
+            return createOkResponse(catalogManager.getAllFamilyAcls(familyIdsStr, studyStr, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{family}/acl/{memberIds}/info")
+    @ApiOperation(value = "Returns the set of permissions granted for the members", position = 20)
+    public Response getAcl(@ApiParam(value = "Family id or name", required = true) @PathParam("family") String familyIdStr,
+                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                           @QueryParam("study") String studyStr,
+                           @ApiParam(value = "Member ids", required = true) @PathParam("memberIds") String memberId) {
+        try {
+            return createOkResponse(catalogManager.getFamilyAcl(familyIdStr, studyStr, memberId, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    public static class FamilyAcl extends AclParams {
+        public String family;
+    }
+
+    @POST
+    @Path("/acl/{memberId}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    public Response updateAcl(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                    String studyStr,
+            @ApiParam(value = "Comma separated list of member ids", required = true) @PathParam("memberId") String memberId,
+            @ApiParam(value="JSON containing the parameters to add ACLs", required = true) FamilyWSServer.FamilyAcl params) {
+        try {
+            AclParams familyAclParams = new AclParams(
+                    params.getPermissions(), params.getAction());
+            return createOkResponse(familyManager.updateAcl(params.family, studyStr, memberId, familyAclParams, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+
+}

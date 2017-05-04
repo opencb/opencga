@@ -554,14 +554,14 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         long startTime = startQuery();
 
         checkId(id);
-        // Check if the cohort is active
+        // Check if the sample is active
         Query query = new Query(QueryParams.ID.key(), id)
                 .append(QueryParams.STATUS_NAME.key(), Status.TRASHED);
         if (count(query).first() == 0) {
             throw new CatalogDBException("The sample {" + id + "} is not deleted");
         }
 
-        // Change the status of the cohort to deleted
+        // Change the status of the sample to deleted
         setStatus(id, Status.READY);
         query = new Query(QueryParams.ID.key(), id);
 

@@ -62,6 +62,7 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
     private static final int INDIVIDUAL = 5;
     private static final int DATASET = 6;
     private static final int DISEASE_PANEL = 7;
+    private static final int FAMILY = 8;
 
     public enum StudyPermissions {
         VIEW_STUDY,
@@ -104,6 +105,15 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         WRITE_INDIVIDUAL_ANNOTATIONS(IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS.name(), INDIVIDUAL),
         VIEW_INDIVIDUAL_ANNOTATIONS(IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name(), INDIVIDUAL),
         DELETE_INDIVIDUAL_ANNOTATIONS(IndividualAclEntry.IndividualPermissions.DELETE_ANNOTATIONS.name(), INDIVIDUAL),
+
+        // FAMILIES
+        VIEW_FAMILIES(FamilyAclEntry.FamilyPermissions.VIEW.name(), FAMILY),
+        WRITE_FAMILIES(FamilyAclEntry.FamilyPermissions.UPDATE.name(), FAMILY),
+        DELETE_FAMILIES(FamilyAclEntry.FamilyPermissions.DELETE.name(), FAMILY),
+        SHARE_FAMILIES(FamilyAclEntry.FamilyPermissions.SHARE.name(), FAMILY),
+        WRITE_FAMILY_ANNOTATIONS(FamilyAclEntry.FamilyPermissions.WRITE_ANNOTATIONS.name(), FAMILY),
+        VIEW_FAMILY_ANNOTATIONS(FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name(), FAMILY),
+        DELETE_FAMILY_ANNOTATIONS(FamilyAclEntry.FamilyPermissions.DELETE_ANNOTATIONS.name(), FAMILY),
 
         // COHORTS
         VIEW_COHORTS(CohortAclEntry.CohortPermissions.VIEW.name(), COHORT),
@@ -169,6 +179,13 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         public CohortAclEntry.CohortPermissions getCohortPermission() {
             if (this.type == COHORT) {
                 return CohortAclEntry.CohortPermissions.valueOf(this.permission);
+            }
+            return null;
+        }
+
+        public FamilyAclEntry.FamilyPermissions getFamilyPermission() {
+            if (this.type == FAMILY) {
+                return FamilyAclEntry.FamilyPermissions.valueOf(this.permission);
             }
             return null;
         }

@@ -657,7 +657,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     public QueryResult<Sample> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(query, "query");
         QueryResult<Sample> result =
-                get(query.getInt(SampleDBAdaptor.QueryParams.STUDY_ID.key(), -1), query, options, sessionId);
+                get(query.getLong(SampleDBAdaptor.QueryParams.STUDY_ID.key(), -1), query, options, sessionId);
 //        auditManager.recordRead(AuditRecord.Resource.sample, , userId, parameters, null, null);
         return result;
     }
@@ -665,8 +665,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     @Override
     public QueryResult<Sample> update(Long sampleId, ObjectMap parameters, QueryOptions options, String sessionId) throws
             CatalogException {
-        ParamUtils.checkObj(parameters, "parameters");
-//        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        parameters = ParamUtils.defaultObject(parameters, ObjectMap::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getId(sessionId);
         authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.UPDATE);
@@ -674,10 +674,10 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         for (Map.Entry<String, Object> param : parameters.entrySet()) {
             SampleDBAdaptor.QueryParams queryParam = SampleDBAdaptor.QueryParams.getParam(param.getKey());
             switch (queryParam) {
-                case SOURCE:
                 case NAME:
                     ParamUtils.checkAlias(parameters.getString(queryParam.key()), "name", configuration.getCatalog().getOffset());
                     break;
+                case SOURCE:
                 case INDIVIDUAL_ID:
                 case DESCRIPTION:
                 case ATTRIBUTES:

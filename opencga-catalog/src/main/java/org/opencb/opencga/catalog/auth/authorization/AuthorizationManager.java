@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.auth.authorization;
 
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.*;
 
@@ -104,6 +105,8 @@ public interface AuthorizationManager {
     void checkDiseasePanelPermission(long panelId, String userId, DiseasePanelAclEntry.DiseasePanelPermissions permission)
             throws CatalogException;
 
+    <E extends Enum<E>> void checkPermissions(AbstractManager.MyResourceId resource, E permission, String entity) throws CatalogException;
+
     /**
      * Removes from the list the projects that the user can not read.
      * From the remaining projects, filters the studies.
@@ -143,6 +146,16 @@ public interface AuthorizationManager {
      * @throws CatalogException CatalogException
      */
     void filterSamples(String userId, long studyId, List<Sample> samples) throws CatalogException;
+
+    /**
+     * Removes from the list the families that the user can not read.
+     *
+     * @param userId  UserId
+     * @param studyId StudyId
+     * @param families Families
+     * @throws CatalogException CatalogException
+     */
+    void filterFamilies(String userId, long studyId, List<Family> families) throws CatalogException;
 
     /**
      * Removes from the list the individuals that the user can not read.

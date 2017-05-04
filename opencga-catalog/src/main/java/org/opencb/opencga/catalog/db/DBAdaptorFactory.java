@@ -92,5 +92,7 @@ public interface DBAdaptorFactory {
 
     PanelDBAdaptor getCatalogPanelDBAdaptor();
 
+    FamilyDBAdaptor getCatalogFamilyDBAdaptor();
+
     Map<String, MongoDBCollection> getMongoDBCollectionMap();
 }
