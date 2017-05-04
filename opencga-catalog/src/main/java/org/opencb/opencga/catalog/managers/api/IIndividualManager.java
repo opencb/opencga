@@ -108,8 +108,8 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
      */
     QueryResult<Individual> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
-    QueryResult<Individual> create(String studyStr, ServerUtils.IndividualParameters individualParams, QueryOptions options, String sessionId)
-        throws CatalogException;
+    QueryResult<Individual> create(String studyStr, ServerUtils.IndividualParameters individualParams, QueryOptions options,
+                                   String sessionId) throws CatalogException;
 
     QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Sex sex,
                                    String ethnicity, String speciesCommonName, String speciesScientificName, String speciesTaxonomyCode,
