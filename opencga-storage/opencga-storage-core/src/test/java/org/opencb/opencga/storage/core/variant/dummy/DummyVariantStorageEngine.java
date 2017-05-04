@@ -11,7 +11,6 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -41,7 +40,7 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public DummyVariantStoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException {
-        return new DummyVariantStoragePipeline(getConfiguration(), STORAGE_ENGINE_ID, LoggerFactory.getLogger(DummyVariantStoragePipeline.class), getDBAdaptor(), getVariantReaderUtils());
+        return new DummyVariantStoragePipeline(getConfiguration(), STORAGE_ENGINE_ID, getDBAdaptor(), getVariantReaderUtils());
     }
 
     @Override

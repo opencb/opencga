@@ -45,7 +45,7 @@ public class PhoenixHelper {
         logger.debug(sql);
         try (Statement statement = con.createStatement()) {
             return statement.execute(sql);
-        } catch (Exception e) {
+        } catch (SQLException | RuntimeException e) {
             logger.error("Error executing '{}'", sql);
             throw e;
         }

@@ -25,6 +25,7 @@ import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
@@ -39,6 +40,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Optio
  */
 public class HadoopVariantStoragePipeline extends AbstractHadoopVariantStoragePipeline {
 
+    private final Logger logger = LoggerFactory.getLogger(HadoopVariantStoragePipeline.class);
 
     public HadoopVariantStoragePipeline(
             StorageConfiguration configuration, String storageEngineId,

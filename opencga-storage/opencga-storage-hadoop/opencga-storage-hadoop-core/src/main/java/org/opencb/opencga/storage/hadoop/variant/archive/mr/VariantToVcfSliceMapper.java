@@ -22,12 +22,13 @@ import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.tools.variant.converters.proto.VariantToProtoVcfRecord;
 import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConverter;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,7 @@ public class VariantToVcfSliceMapper extends Mapper<AvroKey<VariantAvro>, NullWr
 
 //    private final VariantToProtoVcfRecord converter = new VariantToProtoVcfRecord();
     private final VariantToVcfSliceConverter converter = new VariantToVcfSliceConverter();
-    private final AtomicReference<ArchiveHelper> helper = new AtomicReference<>();
+    private final AtomicReference<ArchiveTableHelper> helper = new AtomicReference<>();
 
     private DatumWriter<VariantAvro> variantDatumWriter = new SpecificDatumWriter<>(VariantAvro.class);
 
@@ -54,12 +55,12 @@ public class VariantToVcfSliceMapper extends Mapper<AvroKey<VariantAvro>, NullWr
     @Override
     protected void setup(Context context)
             throws IOException, InterruptedException {
-        this.helper.set(new ArchiveHelper(context.getConfiguration()));
+        this.helper.set(new ArchiveTableHelper(context.getConfiguration()));
 //        converter.updateVcfMeta(getHelper().getMeta());
         super.setup(context);
     }
 
-    public ArchiveHelper getHelper() {
+    public ArchiveTableHelper getHelper() {
         return helper.get();
     }
 
@@ -81,8 +82,8 @@ public class VariantToVcfSliceMapper extends Mapper<AvroKey<VariantAvro>, NullWr
         long[] slicePositionArr = getCoveredSlicePositions(variant);
         for (long slicePos : slicePositionArr) {
             VcfSlice slice = converter.convert(Collections.singletonList(variant), (int) slicePos);
-            ImmutableBytesWritable rowKey = new ImmutableBytesWritable(getHelper().generateBlockIdAsBytes(variant.getChromosome(),
-                    (int) slicePos));
+            ImmutableBytesWritable rowKey = new ImmutableBytesWritable(getHelper().getKeyFactory().
+                    generateBlockIdAsBytes(variant.getChromosome(), (int) slicePos));
             context.write(rowKey, new VcfSliceWritable(slice));
         }
 
@@ -105,7 +106,7 @@ public class VariantToVcfSliceMapper extends Mapper<AvroKey<VariantAvro>, NullWr
     }
 
     private String extractChromosome(Variant var) {
-        return getHelper().standardChromosome(var.getChromosome());
+        return Region.normalizeChromosome(var.getChromosome());
     }
 
     public Logger getLogger() {

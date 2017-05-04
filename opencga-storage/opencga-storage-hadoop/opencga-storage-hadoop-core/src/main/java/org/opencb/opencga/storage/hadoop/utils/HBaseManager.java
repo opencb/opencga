@@ -73,7 +73,11 @@ public class HBaseManager extends Configured implements AutoCloseable {
     private final AtomicReference<Connection> connection = new AtomicReference<>(null);
 
     public HBaseManager(Configuration configuration) {
-        this(configuration, null);
+        this(configuration, (Connection) null);
+    }
+
+    public HBaseManager(HBaseManager hBaseManager) {
+        this(hBaseManager.getConf(), hBaseManager.getConnection());
     }
 
     public HBaseManager(Configuration configuration, Connection connection) {

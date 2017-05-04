@@ -59,15 +59,15 @@ import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbaseTransformTask;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -93,6 +93,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     protected final HBaseCredentials archiveTableCredentials;
     protected final HBaseCredentials variantsTableCredentials;
     protected MRExecutor mrExecutor = null;
+    private final Logger logger = LoggerFactory.getLogger(AbstractHadoopVariantStoragePipeline.class);
 
     // Do not create phoenix indexes. Testing purposes only
     public static final String SKIP_CREATE_PHOENIX_INDEXES = "skip.create.phoenix.indexes";
@@ -103,7 +104,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             VariantReaderUtils variantReaderUtils, ObjectMap options,
             HBaseCredentials archiveCredentials, MRExecutor mrExecutor,
             Configuration conf) {
-        super(configuration, storageEngineId, logger, dbAdaptor, variantReaderUtils, options);
+        super(configuration, storageEngineId, dbAdaptor, variantReaderUtils, options);
         this.archiveTableCredentials = archiveCredentials;
         this.mrExecutor = mrExecutor;
         this.dbAdaptor = dbAdaptor;
@@ -174,7 +175,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
         // Transformer
         VcfMeta meta = new VcfMeta(source);
-        ArchiveHelper helper = new ArchiveHelper(conf, meta);
+        ArchiveTableHelper helper = new ArchiveTableHelper(conf, meta);
         ProgressLogger progressLogger = new ProgressLogger("Transform proto:").setBatchSize(100000);
 
         logger.info("Generating output file {}", outputVariantsFile);
@@ -338,7 +339,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         }
 
         try {
-            ArchiveDriver.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableCredentials.getTable(),
+            ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableCredentials.getTable(),
                     dbAdaptor.getConnection());
         } catch (IOException e) {
             throw new StorageHadoopException("Issue creating table " + archiveTableCredentials.getTable(), e);
@@ -484,7 +485,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             BatchFileOperation op = addBatchOperation(studyConfiguration, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles, resume,
                     BatchFileOperation.Type.LOAD);
             options.put(HADOOP_LOAD_VARIANT_STATUS, op.currentStatus());
-            options.put(AbstractVariantTableDriver.TIMESTAMP, op.getTimestamp());
+            options.put(AbstractAnalysisTableDriver.TIMESTAMP, op.getTimestamp());
 
         }
     }
@@ -573,8 +574,8 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
         boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
 
-        ArchiveHelper.setChunkSize(conf, conf.getInt(ArchiveDriver.CONFIG_ARCHIVE_CHUNK_SIZE, ArchiveDriver.DEFAULT_CHUNK_SIZE));
-        ArchiveHelper.setStudyId(conf, studyId);
+        ArchiveTableHelper.setChunkSize(conf, conf.getInt(ArchiveDriver.CONFIG_ARCHIVE_CHUNK_SIZE, ArchiveDriver.DEFAULT_CHUNK_SIZE));
+        ArchiveTableHelper.setStudyId(conf, studyId);
 
         if (loadArch) {
             Set<Integer> loadedFiles = dbAdaptor.getVariantSourceDBAdaptor().getLoadedFiles(studyId);

@@ -205,35 +205,6 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void fileAclsTest() throws CatalogDBException {
-        long fileId = catalogFileDBAdaptor.getId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
-        System.out.println(fileId);
-
-        FileAclEntry granted = new FileAclEntry("jmmut", Arrays.asList(FileAclEntry.FilePermissions.VIEW.name(),
-                FileAclEntry.FilePermissions.VIEW_CONTENT.name(), FileAclEntry.FilePermissions.VIEW_HEADER.name(),
-                FileAclEntry.FilePermissions.DELETE.name(), FileAclEntry.FilePermissions.SHARE.name()
-        ));
-
-//        AclEntry granted = new AclEntry("jmmut", true, true, true, false);
-        catalogFileDBAdaptor.createAcl(fileId, granted);
-        granted.setMember("imedina");
-        catalogFileDBAdaptor.createAcl(fileId, granted);
-//        try {
-//            granted.setMember("noUser");
-//            catalogFileDBAdaptor.setFileAcl(fileId, granted, true);
-//            fail("error: expected exception");
-//        } catch (CatalogDBException e) {
-//            System.out.println("correct exception: " + e);
-//        }
-
-        List<FileAclEntry> jmmut = catalogFileDBAdaptor.getAcl(fileId, "jmmut").getResult();
-        assertTrue(!jmmut.isEmpty());
-        System.out.println(jmmut.get(0).getPermissions());
-        List<FileAclEntry> jcoll = catalogFileDBAdaptor.getAcl(fileId, "jcoll").getResult();
-        assertTrue(jcoll.isEmpty());
-    }
-
-    @Test
     public void includeFields() throws CatalogDBException {
 
         QueryResult<File> fileQueryResult = catalogFileDBAdaptor.get(7,

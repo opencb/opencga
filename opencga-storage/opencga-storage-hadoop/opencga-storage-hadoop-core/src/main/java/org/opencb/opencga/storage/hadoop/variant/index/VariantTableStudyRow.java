@@ -38,6 +38,7 @@ import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.*;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.ComplexFilter.Builder;
 
@@ -230,7 +231,7 @@ public class VariantTableStudyRow {
     }
 
     public byte[] generateRowKey(VariantTableHelper helper) {
-        return helper.generateVariantRowKey(this.chromosome, this.pos, this.ref, this.alt);
+        return VariantPhoenixKeyFactory.generateVariantRowKey(this.chromosome, this.pos, this.ref, this.alt);
     }
 
     public void addHomeRefCount(Integer cnt) {
@@ -479,7 +480,7 @@ public class VariantTableStudyRow {
         }
         List<VariantTableStudyRow> rows = new ArrayList<>(studyIds.size());
         for (Integer studyId : studyIds) {
-            Variant variant = helper.extractVariantFromVariantRowKey(result.getRow());
+            Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow());
             rows.add(new VariantTableStudyRow(variant, studyId, familyMap, true));
         }
         return rows;

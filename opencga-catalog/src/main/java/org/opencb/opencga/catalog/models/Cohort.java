@@ -18,7 +18,10 @@ package org.opencb.opencga.catalog.models;
 
 import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;

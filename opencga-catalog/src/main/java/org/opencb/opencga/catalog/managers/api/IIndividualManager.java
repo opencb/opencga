@@ -131,28 +131,6 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
 
     QueryResult<Individual> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
-    /**
-     * Retrieve the individual Acls for the given members in the individual.
-     *
-     * @param individualStr Individual id of which the acls will be obtained.
-     * @param members userIds/groupIds for which the acls will be retrieved. When this is null, it will obtain all the acls.
-     * @param sessionId Session of the user that wants to retrieve the acls.
-     * @return A queryResult containing the individual acls.
-     * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
-     * the individual id is not valid or the members given do not exist.
-     */
-    @Deprecated
-    QueryResult<IndividualAclEntry> getAcls(String individualStr, List<String> members, String sessionId) throws CatalogException;
-    @Deprecated
-    default List<QueryResult<IndividualAclEntry>> getAcls(List<String> individualIds, List<String> members, String sessionId)
-            throws CatalogException {
-        List<QueryResult<IndividualAclEntry>> result = new ArrayList<>(individualIds.size());
-        for (String individualStr : individualIds) {
-            result.add(getAcls(individualStr, members, sessionId));
-        }
-        return result;
-    }
-
     @Deprecated
     QueryResult<AnnotationSet> annotate(long individualId, String annotationSetName, long variableSetId, Map<String, Object> annotations,
                                         Map<String, Object> attributes, String sessionId) throws CatalogException;

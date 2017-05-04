@@ -33,9 +33,10 @@ import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbasePutTask;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
@@ -52,6 +53,8 @@ import java.util.zip.GZIPInputStream;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  */
 public class HadoopDirectVariantStoragePipeline extends AbstractHadoopVariantStoragePipeline {
+
+    private final Logger logger = LoggerFactory.getLogger(HadoopDirectVariantStoragePipeline.class);
 
     /**
      * @param configuration      {@link StorageConfiguration}
@@ -114,12 +117,14 @@ public class HadoopDirectVariantStoragePipeline extends AbstractHadoopVariantSto
         source.setFileId(fileId.toString());
         source.setStudyId(Integer.toString(studyId));
         VcfMeta meta = new VcfMeta(source);
-        ArchiveHelper helper = new ArchiveHelper(dbAdaptor.getGenomeHelper(), meta);
+        ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), meta);
 
 
-        ProgressLogger progressLogger = new ProgressLogger("Loaded slices:",
-                source.getStats() != null ? source.getStats().getNumRecords() : 0);
-        VariantHbasePutTask hbaseWriter = new VariantHbasePutTask(helper, table);
+        ProgressLogger progressLogger = new ProgressLogger("Loaded slices:");
+        if (source.getStats() != null) {
+            progressLogger.setApproximateTotalCount(source.getStats().getNumRecords());
+        }
+        VariantHbasePutTask hbaseWriter = new VariantHbasePutTask(helper, table, dbAdaptor.getHBaseManager());
         long counter = 0;
         long start = System.currentTimeMillis();
         try (InputStream in = new BufferedInputStream(new GZIPInputStream(new FileInputStream(input.toFile())))) {

@@ -213,19 +213,6 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      */
     QueryResult<StudySummary> getSummary(long studyId, String sessionId, QueryOptions queryOptions) throws CatalogException;
 
-    /**
-     * Retrieve the study Acls for the given members.
-     *
-     * @param studyStr Study id of which the acls will be obtained.
-     * @param members userIds/groupIds for which the acls will be retrieved. When this is null, it will obtain all the acls.
-     * @param sessionId Session of the user that wants to retrieve the acls.
-     * @return A queryResult containing the study acls.
-     * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
-     * the study id is not valid or the members given do not exist.
-     */
-    @Deprecated
-    QueryResult<StudyAclEntry> getAcls(String studyStr, List<String> members, String sessionId) throws CatalogException;
-
     List<QueryResult<StudyAclEntry>> updateAcl(String studyStr, String memberId, Study.StudyAclParams aclParams, String sessionId)
             throws CatalogException;
 

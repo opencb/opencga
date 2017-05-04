@@ -19,6 +19,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -39,7 +40,9 @@ public class VariantTableExportDriver extends AbstractAnalysisTableDriver {
 
     public enum ExportType {AVRO, VCF};
 
-    public VariantTableExportDriver() { /* nothing */ }
+    public VariantTableExportDriver() {
+        super();
+    }
 
     public VariantTableExportDriver(Configuration conf) {
         super(conf);
@@ -67,8 +70,11 @@ public class VariantTableExportDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected void initMapReduceJob(String inTable, Job job, Scan scan, boolean addDependencyJar) throws IOException {
-        super.initMapReduceJob(inTable, job, scan, addDependencyJar);
+    protected Job setupJob(Job job, String archiveTable, String variantTable, List<Integer> files) throws IOException {
+        // QUERY design
+        Scan scan = createVariantsTableScan();
+
+        initMapReduceJob(job, getMapperClass(), variantTable, scan);
 
         FileOutputFormat.setOutputPath(job, new Path(this.outFile)); // set Path
         FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class); // compression
@@ -84,12 +90,19 @@ public class VariantTableExportDriver extends AbstractAnalysisTableDriver {
                 throw new IllegalStateException("Type not known: " + this.type);
         }
         job.setNumReduceTasks(0);
+
+        return job;
+    }
+
+    @Override
+    protected String getJobOperationName() {
+        return "Export";
     }
 
     @Override
     protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
         super.postExecution(succeed);
-        StudyConfiguration studyConfiguration = loadStudyConfiguration();
+        StudyConfiguration studyConfiguration = readStudyConfiguration();
         writeMetadata(studyConfiguration, this.outFile + ".studyConfiguration");
     }
 
@@ -102,9 +115,9 @@ public class VariantTableExportDriver extends AbstractAnalysisTableDriver {
         }
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         try {
-            System.exit(privateMain(args, null, new VariantTableExportDriver()));
+            System.exit(new VariantTableExportDriver().privateMain(args));
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);

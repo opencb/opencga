@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -201,107 +202,109 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
         throw new NotImplementedException("Project: Operation not yet supported");
     }
-
-    @Override
-    public QueryResult<IndividualAclEntry> getAcls(String individualStr, List<String> members, String sessionId)
-            throws CatalogException {
-        long startTime = System.currentTimeMillis();
-        String userId = userManager.getId(sessionId);
-        Long individualId = getId(userId, individualStr);
-        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.SHARE);
-        Long studyId = getStudyId(individualId);
-
-        // Split and obtain the set of members (users + groups), users and groups
-        Set<String> memberSet = new HashSet<>();
-        Set<String> userIds = new HashSet<>();
-        Set<String> groupIds = new HashSet<>();
-        for (String member: members) {
-            memberSet.add(member);
-            if (!member.startsWith("@")) {
-                userIds.add(member);
-            } else {
-                groupIds.add(member);
-            }
-        }
-
-
-        // Obtain the groups the user might belong to in order to be able to get the permissions properly
-        // (the permissions might be given to the group instead of the user)
-        // Map of group -> users
-        Map<String, List<String>> groupUsers = new HashMap<>();
-
-        if (userIds.size() > 0) {
-            List<String> tmpUserIds = userIds.stream().collect(Collectors.toList());
-            QueryResult<Group> groups = studyDBAdaptor.getGroup(studyId, null, tmpUserIds);
-            // We add the groups where the users might belong to to the memberSet
-            if (groups.getNumResults() > 0) {
-                for (Group group : groups.getResult()) {
-                    for (String tmpUserId : group.getUserIds()) {
-                        if (userIds.contains(tmpUserId)) {
-                            memberSet.add(group.getName());
-
-                            if (!groupUsers.containsKey(group.getName())) {
-                                groupUsers.put(group.getName(), new ArrayList<>());
-                            }
-                            groupUsers.get(group.getName()).add(tmpUserId);
-                        }
-                    }
-                }
-            }
-        }
-        List<String> memberList = memberSet.stream().collect(Collectors.toList());
-        QueryResult<IndividualAclEntry> individualAclQueryResult = individualDBAdaptor.getAcl(individualId, memberList);
-
-        if (members.size() == 0) {
-            return individualAclQueryResult;
-        }
-
-        // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the user
-        // instead of the group.
-        // We loop over the results and recreate one individualAcl per member
-        Map<String, IndividualAclEntry> individualAclHashMap = new HashMap<>();
-        for (IndividualAclEntry individualAcl : individualAclQueryResult.getResult()) {
-            if (memberList.contains(individualAcl.getMember())) {
-                if (individualAcl.getMember().startsWith("@")) {
-                    // Check if the user was demanding the group directly or a user belonging to the group
-                    if (groupIds.contains(individualAcl.getMember())) {
-                        individualAclHashMap.put(individualAcl.getMember(),
-                                new IndividualAclEntry(individualAcl.getMember(), individualAcl.getPermissions()));
-                    } else {
-                        // Obtain the user(s) belonging to that group whose permissions wanted the userId
-                        if (groupUsers.containsKey(individualAcl.getMember())) {
-                            for (String tmpUserId : groupUsers.get(individualAcl.getMember())) {
-                                if (userIds.contains(tmpUserId)) {
-                                    individualAclHashMap.put(tmpUserId, new IndividualAclEntry(tmpUserId, individualAcl.getPermissions()));
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    // Add the user
-                    individualAclHashMap.put(individualAcl.getMember(), new IndividualAclEntry(individualAcl.getMember(),
-                            individualAcl.getPermissions()));
-                }
-            }
-
-        }
-
-        // We recreate the output that is in fileAclHashMap but in the same order the members were queried.
-        List<IndividualAclEntry> individualAclList = new ArrayList<>(individualAclHashMap.size());
-        for (String member : members) {
-            if (individualAclHashMap.containsKey(member)) {
-                individualAclList.add(individualAclHashMap.get(member));
-            }
-        }
-
-        // Update queryResult info
-        individualAclQueryResult.setId(individualStr);
-        individualAclQueryResult.setNumResults(individualAclList.size());
-        individualAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
-        individualAclQueryResult.setResult(individualAclList);
-
-        return individualAclQueryResult;
-    }
+//
+//    @Override
+//    public QueryResult<IndividualAclEntry> getAcls(String individualStr, List<String> members, String sessionId)
+//            throws CatalogException {
+//        long startTime = System.currentTimeMillis();
+//        String userId = userManager.getId(sessionId);
+//        Long individualId = getId(userId, individualStr);
+//        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.SHARE);
+//        Long studyId = getStudyId(individualId);
+//
+//        // Split and obtain the set of members (users + groups), users and groups
+//        Set<String> memberSet = new HashSet<>();
+//        Set<String> userIds = new HashSet<>();
+//        Set<String> groupIds = new HashSet<>();
+//        for (String member: members) {
+//            memberSet.add(member);
+//            if (!member.startsWith("@")) {
+//                userIds.add(member);
+//            } else {
+//                groupIds.add(member);
+//            }
+//        }
+//
+//
+//        // Obtain the groups the user might belong to in order to be able to get the permissions properly
+//        // (the permissions might be given to the group instead of the user)
+//        // Map of group -> users
+//        Map<String, List<String>> groupUsers = new HashMap<>();
+//
+//        if (userIds.size() > 0) {
+//            List<String> tmpUserIds = userIds.stream().collect(Collectors.toList());
+//            QueryResult<Group> groups = studyDBAdaptor.getGroup(studyId, null, tmpUserIds);
+//            // We add the groups where the users might belong to to the memberSet
+//            if (groups.getNumResults() > 0) {
+//                for (Group group : groups.getResult()) {
+//                    for (String tmpUserId : group.getUserIds()) {
+//                        if (userIds.contains(tmpUserId)) {
+//                            memberSet.add(group.getName());
+//
+//                            if (!groupUsers.containsKey(group.getName())) {
+//                                groupUsers.put(group.getName(), new ArrayList<>());
+//                            }
+//                            groupUsers.get(group.getName()).add(tmpUserId);
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        List<String> memberList = memberSet.stream().collect(Collectors.toList());
+//        QueryResult<IndividualAclEntry> individualAclQueryResult = individualDBAdaptor.getAcl(individualId, memberList);
+//
+//        if (members.size() == 0) {
+//            return individualAclQueryResult;
+//        }
+//
+//        // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the
+// user
+//        // instead of the group.
+//        // We loop over the results and recreate one individualAcl per member
+//        Map<String, IndividualAclEntry> individualAclHashMap = new HashMap<>();
+//        for (IndividualAclEntry individualAcl : individualAclQueryResult.getResult()) {
+//            if (memberList.contains(individualAcl.getMember())) {
+//                if (individualAcl.getMember().startsWith("@")) {
+//                    // Check if the user was demanding the group directly or a user belonging to the group
+//                    if (groupIds.contains(individualAcl.getMember())) {
+//                        individualAclHashMap.put(individualAcl.getMember(),
+//                                new IndividualAclEntry(individualAcl.getMember(), individualAcl.getPermissions()));
+//                    } else {
+//                        // Obtain the user(s) belonging to that group whose permissions wanted the userId
+//                        if (groupUsers.containsKey(individualAcl.getMember())) {
+//                            for (String tmpUserId : groupUsers.get(individualAcl.getMember())) {
+//                                if (userIds.contains(tmpUserId)) {
+//                                    individualAclHashMap.put(tmpUserId, new IndividualAclEntry(tmpUserId,
+// individualAcl.getPermissions()));
+//                                }
+//                            }
+//                        }
+//                    }
+//                } else {
+//                    // Add the user
+//                    individualAclHashMap.put(individualAcl.getMember(), new IndividualAclEntry(individualAcl.getMember(),
+//                            individualAcl.getPermissions()));
+//                }
+//            }
+//
+//        }
+//
+//        // We recreate the output that is in fileAclHashMap but in the same order the members were queried.
+//        List<IndividualAclEntry> individualAclList = new ArrayList<>(individualAclHashMap.size());
+//        for (String member : members) {
+//            if (individualAclHashMap.containsKey(member)) {
+//                individualAclList.add(individualAclHashMap.get(member));
+//            }
+//        }
+//
+//        // Update queryResult info
+//        individualAclQueryResult.setId(individualStr);
+//        individualAclQueryResult.setNumResults(individualAclList.size());
+//        individualAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
+//        individualAclQueryResult.setResult(individualAclList);
+//
+//        return individualAclQueryResult;
+//    }
 
     @Override
     public Long getStudyId(long individualId) throws CatalogException {
@@ -769,10 +772,12 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
         catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
+        String collectionName = MongoDBAdaptorFactory.INDIVIDUAL_COLLECTION;
+
         List<QueryResult<IndividualAclEntry>> queryResults;
         switch (aclParams.getAction()) {
             case SET:
-                queryResults = authorizationManager.setAcls(resourceIds, members, permissions, individualDBAdaptor);
+                queryResults = authorizationManager.setAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
                 if (aclParams.isPropagate()) {
                     List<Long> sampleIds = getSamplesFromIndividuals(resourceIds);
                     Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(aclParams.getPermissions(), AclParams.Action.SET,
@@ -782,7 +787,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                 }
                 break;
             case ADD:
-                queryResults = authorizationManager.addAcls(resourceIds, members, permissions, individualDBAdaptor);
+                queryResults = authorizationManager.addAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
                 if (aclParams.isPropagate()) {
                     List<Long> sampleIds = getSamplesFromIndividuals(resourceIds);
                     Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(aclParams.getPermissions(), AclParams.Action.ADD,
@@ -792,7 +797,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                 }
                 break;
             case REMOVE:
-                queryResults = authorizationManager.removeAcls(resourceIds, members, permissions, individualDBAdaptor);
+                queryResults = authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
                 if (aclParams.isPropagate()) {
                     List<Long> sampleIds = getSamplesFromIndividuals(resourceIds);
                     Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(aclParams.getPermissions(), AclParams.Action.REMOVE,
@@ -802,7 +807,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                 }
                 break;
             case RESET:
-                queryResults = authorizationManager.removeAcls(resourceIds, members, null, individualDBAdaptor);
+                queryResults = authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, collectionName);
                 if (aclParams.isPropagate()) {
                     List<Long> sampleIds = getSamplesFromIndividuals(resourceIds);
                     Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(aclParams.getPermissions(), AclParams.Action.RESET,

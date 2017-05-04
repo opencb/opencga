@@ -60,6 +60,7 @@ import org.opencb.opencga.storage.core.variant.transform.VariantAvroTransformTas
 import org.opencb.opencga.storage.core.variant.transform.VariantJsonTransformTask;
 import org.opencb.opencga.storage.core.variant.transform.VariantTransformTask;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URI;
@@ -85,29 +86,27 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     protected final ObjectMap options;
     protected final VariantDBAdaptor dbAdaptor;
     protected final VariantReaderUtils variantReaderUtils;
-    protected final Logger logger;
+    private final Logger logger = LoggerFactory.getLogger(VariantStoragePipeline.class);
     protected final ObjectMap transformStats = new ObjectMap();
 
 
-    public VariantStoragePipeline(StorageConfiguration configuration, String storageEngineId, Logger logger, VariantDBAdaptor dbAdaptor,
+    public VariantStoragePipeline(StorageConfiguration configuration, String storageEngineId, VariantDBAdaptor dbAdaptor,
                                   VariantReaderUtils variantReaderUtils) {
-        this(configuration, storageEngineId, logger, dbAdaptor, variantReaderUtils,
+        this(configuration, storageEngineId, dbAdaptor, variantReaderUtils,
                 new ObjectMap(configuration.getStorageEngine(storageEngineId).getVariant().getOptions()));
     }
 
     /**
      * @param configuration     Storage Configuration
      * @param storageEngineId   StorageEngineID
-     * @param logger            Logger
      * @param dbAdaptor         VariantDBAdaptor. Can be null if the load step is skipped
      * @param variantReaderUtils    VariantReaderUtils
      * @param options           Unique copy of the options to be used. This object can not be shared.
      */
-    public VariantStoragePipeline(StorageConfiguration configuration, String storageEngineId, Logger logger, VariantDBAdaptor dbAdaptor,
+    public VariantStoragePipeline(StorageConfiguration configuration, String storageEngineId, VariantDBAdaptor dbAdaptor,
                                   VariantReaderUtils variantReaderUtils, ObjectMap options) {
         this.configuration = configuration;
         this.storageEngineId = storageEngineId;
-        this.logger = logger;
         this.dbAdaptor = dbAdaptor;
         this.variantReaderUtils = variantReaderUtils;
         this.options = options;

@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
 /**
  * Created by pfurio on 06/07/16.
  */
-public interface AnnotationSetDBAdaptor<T, U> extends AclDBAdaptor<T, U> {
+public interface AnnotationSetDBAdaptor<T> extends DBAdaptor<T> {
 
     /**
      * Insert an annotation set object in the database to annotate the entity with id "id".

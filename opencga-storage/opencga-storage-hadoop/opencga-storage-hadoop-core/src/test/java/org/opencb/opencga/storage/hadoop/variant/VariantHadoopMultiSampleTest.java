@@ -50,8 +50,8 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableMapReduce;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
+import org.opencb.opencga.storage.hadoop.variant.index.AbstractArchiveTableMapper;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
 import java.io.File;
@@ -77,7 +77,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
 
-    public static final List<VariantType> VARIANT_TYPES = Arrays.asList(VariantTableMapper.getTargetVariantType());
+    public static final List<VariantType> VARIANT_TYPES = Arrays.asList(VariantMergerTableMapper.getTargetVariantType());
 
     // Variants that are wrong in the platinum files that should not be included
     private static final HashSet<String> PLATINUM_SKIP_VARIANTS = new HashSet<>();
@@ -237,7 +237,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         options.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto");
         options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
         options.put(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
-        options.put(AbstractVariantTableMapReduce.SPECIFIC_PUT, specificput);
+        options.put(AbstractArchiveTableMapper.SPECIFIC_PUT, specificput);
         List<StoragePipelineResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
 
         for (StoragePipelineResult storagePipelineResult : index) {
@@ -284,7 +284,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
         try {
             VariantSource source1 = loadFile("s1.genome.vcf", studyConfiguration,
-                    Collections.singletonMap(VariantTableMapperFail.SLICE_TO_FAIL, "1_000000000011"));
+                    Collections.singletonMap(VariantMergerTableMapperFail.SLICE_TO_FAIL, "1_000000000011"));
             fail();
         } catch (StoragePipelineException e) {
             StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
@@ -296,7 +296,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         Integer fileId = studyConfiguration.getFileIds().get("s1.genome.vcf");
         System.out.println("fileId = " + fileId);
         VariantSource source1 = loadFile("s1.genome.vcf.variants.proto.gz", -1, studyConfiguration,
-                Collections.singletonMap(VariantTableMapperFail.SLICE_TO_FAIL, "_"), false, false, true);
+                Collections.singletonMap(VariantMergerTableMapperFail.SLICE_TO_FAIL, "_"), false, false, true);
         checkArchiveTableTimeStamp(dbAdaptor);
         VariantSource source2 = loadFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
         checkArchiveTableTimeStamp(dbAdaptor);

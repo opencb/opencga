@@ -41,8 +41,9 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
 import java.io.IOException;
@@ -137,7 +138,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
         long partialCount2 = dbAdaptor.count(new Query(VariantQueryParam.REGION.key(), "1:15030-60000")).first();
 
 
-        long count = Arrays.stream(VariantTableMapper.getTargetVariantType())
+        long count = Arrays.stream(VariantMergerTableMapper.getTargetVariantType())
                 .map(type -> source.getStats().getVariantTypeCount(type))
                 .reduce((a, b) -> a + b)
                 .orElse(0).longValue();
@@ -211,7 +212,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
                 if (Bytes.toString(result.getRow()).startsWith(genomeHelper.getMetaRowKeyString())) {
                     continue;
                 }
-                Variant variant = genomeHelper.extractVariantFromVariantRowKey(result.getRow());
+                Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow());
                 System.out.println("Variant = " + variant);
                 if (!variant.getChromosome().equals(genomeHelper.getMetaRowKeyString())) {
                     num++;
@@ -222,7 +223,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
         });
         System.out.println("End query from HBase : " + DB_NAME);
         System.out.println(source.getStats().getVariantTypeCounts());
-        long count = Arrays.stream(VariantTableMapper.getTargetVariantType())
+        long count = Arrays.stream(VariantMergerTableMapper.getTargetVariantType())
                 .map(type -> source.getStats().getVariantTypeCount(type))
                 .reduce((a, b) -> a + b).orElse(0).longValue();
         count  -= 1; // Deletion is in conflict with other variant: 1:10403:ACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC:A
@@ -235,7 +236,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
         System.out.println("Query from archive HBase " + tableName);
         HBaseManager hm = new HBaseManager(configuration.get());
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
-        ArchiveHelper archiveHelper = dbAdaptor.getArchiveHelper(studyConfiguration.getStudyId(), FILE_ID);
+        ArchiveTableHelper archiveHelper = dbAdaptor.getArchiveHelper(studyConfiguration.getStudyId(), FILE_ID);
         VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(archiveHelper.getMeta());
         hm.act(tableName, table -> {
             ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());

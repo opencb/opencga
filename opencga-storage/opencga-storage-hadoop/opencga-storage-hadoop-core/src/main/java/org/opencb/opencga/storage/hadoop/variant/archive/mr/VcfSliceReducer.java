@@ -23,7 +23,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConverter;
 import org.opencb.biodata.tools.variant.converters.proto.VcfSliceToVariantListConverter;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,7 +37,7 @@ import java.util.List;
  */
 public class VcfSliceReducer extends TableReducer<ImmutableBytesWritable, VcfSliceWritable, ImmutableBytesWritable> {
 
-    private ArchiveHelper helper;
+    private ArchiveTableHelper helper;
 
     private VcfSliceToVariantListConverter converterFromSlice;
     private VariantToVcfSliceConverter converterToSlice;
@@ -47,7 +47,7 @@ public class VcfSliceReducer extends TableReducer<ImmutableBytesWritable, VcfSli
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
 
-        helper = new ArchiveHelper(context.getConfiguration());
+        helper = new ArchiveTableHelper(context.getConfiguration());
         converterFromSlice = new VcfSliceToVariantListConverter(helper.getMeta());
         converterToSlice = new VariantToVcfSliceConverter();
     }

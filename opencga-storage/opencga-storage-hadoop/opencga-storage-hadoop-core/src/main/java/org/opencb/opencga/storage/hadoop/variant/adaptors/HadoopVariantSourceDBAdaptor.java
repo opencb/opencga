@@ -33,8 +33,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,20 +51,23 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
     protected static Logger logger = LoggerFactory.getLogger(HadoopVariantSourceDBAdaptor.class);
 
     private final GenomeHelper genomeHelper;
+    private final HBaseManager hBaseManager;
     private final ObjectMapper objectMapper;
 
     public HadoopVariantSourceDBAdaptor(Configuration configuration) {
-        this(new GenomeHelper(configuration));
+        this(new GenomeHelper(configuration), null);
     }
 
-    public HadoopVariantSourceDBAdaptor(Connection connection, Configuration configuration) {
-        this(new GenomeHelper(configuration, connection));
-    }
-
-    public HadoopVariantSourceDBAdaptor(GenomeHelper genomeHelper) {
+    public HadoopVariantSourceDBAdaptor(GenomeHelper genomeHelper, HBaseManager hBaseManager) {
         this.genomeHelper = genomeHelper;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+        if (hBaseManager == null) {
+            this.hBaseManager = new HBaseManager(genomeHelper.getConf());
+        } else {
+            // Create a new instance of HBaseManager to close only if needed
+            this.hBaseManager = new HBaseManager(hBaseManager);
+        }
     }
 
     @Override
@@ -101,11 +103,10 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
             get.addFamily(genomeHelper.getColumnFamily());
         } else {
             for (Integer fileId : fileIds) {
-                byte[] columnName = Bytes.toBytes(ArchiveHelper.getColumnName(fileId));
+                byte[] columnName = Bytes.toBytes(ArchiveTableHelper.getColumnName(fileId));
                 get.addColumn(genomeHelper.getColumnFamily(), columnName);
             }
         }
-        HBaseManager hBaseManager = getHBaseManager();
         if (!hBaseManager.act(tableName, (table, admin) -> admin.tableExists(table.getName()))) {
             return Collections.emptyIterator();
         }
@@ -142,11 +143,6 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
         return null;
     }
 
-    protected HBaseManager getHBaseManager() {
-        return this.genomeHelper.getHBaseManager();
-    }
-
-
     public void updateVcfMetaData(VcfMeta meta) throws IOException {
         Objects.requireNonNull(meta);
         update(meta.getVariantSource());
@@ -165,11 +161,11 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
         Objects.requireNonNull(variantSource);
         String tableName = HadoopVariantStorageEngine.getArchiveTableName(Integer.parseInt(variantSource.getStudyId()),
                 genomeHelper.getConf());
-        if (ArchiveDriver.createArchiveTableIfNeeded(genomeHelper, tableName, getHBaseManager().getConnection())) {
+        if (ArchiveTableHelper.createArchiveTableIfNeeded(genomeHelper, tableName, hBaseManager.getConnection())) {
             logger.info("Create table '{}' in hbase!", tableName);
         }
         Put put = wrapVcfMetaAsPut(variantSource, this.genomeHelper);
-        getHBaseManager().act(tableName, table -> {
+        hBaseManager.act(tableName, table -> {
             table.put(put);
         });
     }
@@ -183,7 +179,7 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
 
     public void updateLoadedFilesSummary(int studyId, List<Integer> newLoadedFiles) throws IOException {
         String tableName = HadoopVariantStorageEngine.getArchiveTableName(studyId, genomeHelper.getConf());
-        if (ArchiveDriver.createArchiveTableIfNeeded(genomeHelper, tableName, getHBaseManager().getConnection())) {
+        if (ArchiveTableHelper.createArchiveTableIfNeeded(genomeHelper, tableName, hBaseManager.getConnection())) {
             logger.info("Create table '{}' in hbase!", tableName);
         }
         StringBuilder sb = new StringBuilder();
@@ -194,7 +190,7 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
         Append append = new Append(genomeHelper.getMetaRowKey());
         append.add(genomeHelper.getColumnFamily(), genomeHelper.getMetaRowKey(),
                 Bytes.toBytes(sb.toString()));
-        getHBaseManager().act(tableName, table -> {
+        hBaseManager.act(tableName, table -> {
             table.append(append);
         });
     }
@@ -202,7 +198,7 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
     @Override
     public void close() throws IOException {
         try {
-            this.genomeHelper.close();
+            hBaseManager.close();
         } catch (Exception e) {
             throw new IOException(e);
         }
@@ -210,10 +206,10 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
 
     public Set<Integer> getLoadedFiles(int studyId) throws IOException {
         String tableName = HadoopVariantStorageEngine.getArchiveTableName(studyId, genomeHelper.getConf());
-        if (!getHBaseManager().tableExists(tableName)) {
+        if (!hBaseManager.tableExists(tableName)) {
             return new HashSet<>();
         } else {
-            return getHBaseManager().act(tableName, table -> {
+            return hBaseManager.act(tableName, table -> {
                 Get get = new Get(genomeHelper.getMetaRowKey());
                 get.addColumn(genomeHelper.getColumnFamily(), genomeHelper.getMetaRowKey());
                 byte[] value = table.get(get).getValue(genomeHelper.getColumnFamily(), genomeHelper.getMetaRowKey());

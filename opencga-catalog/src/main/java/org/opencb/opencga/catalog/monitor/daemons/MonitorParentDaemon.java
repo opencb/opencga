@@ -17,8 +17,8 @@
 package org.opencb.opencga.catalog.monitor.daemons;
 
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.monitor.executors.ExecutorManager;
 import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
+import org.opencb.opencga.catalog.monitor.executors.ExecutorManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -21,20 +21,22 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.mapreduce.MultiTableOutputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
-import org.apache.hadoop.util.ToolRunner;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
+import org.apache.hadoop.mapreduce.Job;
+import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
  */
-public class VariantTableDriver extends AbstractVariantTableDriver {
+public class VariantTableDriver extends AbstractAnalysisTableDriver {
     protected static final Logger LOG = LoggerFactory.getLogger(VariantTableDriver.class);
 
     public static final String JOB_OPERATION_NAME = "Load";
@@ -46,16 +48,7 @@ public class VariantTableDriver extends AbstractVariantTableDriver {
     }
 
     @Override
-    public int run(String[] args) throws Exception {
-        int fixedSizeArgs = 5;
-        getConf().set(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, args[1]);
-        getConf().set(CONFIG_VARIANT_TABLE_NAME, args[2]);
-        getConf().set(GenomeHelper.CONFIG_STUDY_ID, args[3]);
-        getConf().setStrings(CONFIG_VARIANT_FILE_IDS, args[4].split(","));
-        for (int i = fixedSizeArgs; i < args.length; i = i + 2) {
-            getConf().set(args[i], args[i + 1]);
-        }
-
+    protected void parseAndValidateParameters() {
         // Set parallel pool size
         String fjpKey = "java.util.concurrent.ForkJoinPool.common.parallelism";
         boolean hasForkJoinPool = false;
@@ -78,13 +71,23 @@ public class VariantTableDriver extends AbstractVariantTableDriver {
             LOG.info("Set mapreduce java opts: {}", optString);
             getConf().set("mapreduce.map.java.opts", optString);
         }
-        return super.run(args);
     }
 
-    @SuppressWarnings ("rawtypes")
+    @Override
+    protected Job setupJob(Job job, String archiveTable, String variantTable, List<Integer> files) throws IOException {
+        // QUERY design
+        Scan scan = createArchiveTableScan(files);
+
+        // set other scan attrs
+        initMapReduceJob(job, getMapperClass(), archiveTable, variantTable, scan);
+        job.setOutputFormatClass(MultiTableOutputFormat.class);
+
+        return job;
+    }
+
     @Override
     protected Class<? extends TableMapper> getMapperClass() {
-        return VariantTableMapper.class;
+        return VariantMergerTableMapper.class;
     }
 
     @Override
@@ -94,22 +97,12 @@ public class VariantTableDriver extends AbstractVariantTableDriver {
 
     public static void main(String[] args) throws Exception {
         try {
-            System.exit(privateMain(args, null, new VariantTableDriver()));
+            System.exit(new VariantTableDriver().privateMain(args));
         } catch (Exception e) {
             LOG.error("Problems", e);
             e.printStackTrace();
             System.exit(1);
         }
-    }
-
-    public static int privateMain(String[] args, Configuration conf, VariantTableDriver driver) throws Exception {
-        // info https://code.google.com/p/temapred/wiki/HbaseWithJava
-        if (conf == null) {
-            conf = HBaseConfiguration.create();
-        }
-        driver.setConf(conf);
-        int exitCode = ToolRunner.run(driver, args);
-        return exitCode;
     }
 
 }

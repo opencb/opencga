@@ -84,10 +84,9 @@ import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -371,7 +370,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         options.put(HadoopVariantStorageEngine.OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY, intermediateDirectory);
 
         options.put(ArchiveDriver.CONFIG_ARCHIVE_TABLE_PRESPLIT_SIZE, 5);
-        options.put(AbstractVariantTableDriver.CONFIG_VARIANT_TABLE_PRESPLIT_SIZE, 5);
+        options.put(AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_PRESPLIT_SIZE, 5);
 
         variantConfiguration.getDatabase().setHosts(Collections.singletonList("hbase://" + HadoopVariantStorageTest.configuration.get().get(HConstants.ZOOKEEPER_QUORUM)));
         return storageConfiguration;
@@ -439,17 +438,17 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                     return r;
                 } else if (executable.endsWith(VariantTableDriver.class.getName())) {
                     System.out.println("Executing VariantTableDriver : " + executable + " " + args);
-                    int r = VariantTableDriver.privateMain(Commandline.translateCommandline(args), conf, new VariantTableDriver(){
+                    int r = new VariantTableDriver(){
                         @Override
                         protected Class<? extends TableMapper> getMapperClass() {
-                            return VariantTableMapperFail.class;
+                            return VariantMergerTableMapperFail.class;
                         }
-                    });
+                    }.privateMain(Commandline.translateCommandline(args), conf);
                     System.out.println("Finish execution VariantTableDriver");
                     return r;
                 } else if (executable.endsWith(VariantTableDeletionDriver.class.getName())) {
                     System.out.println("Executing VariantTableDeletionDriver : " + executable + " " + args);
-                    int r = VariantTableDeletionDriver.privateMain(Commandline.translateCommandline(args), conf);
+                    int r = new VariantTableDeletionDriver().privateMain(Commandline.translateCommandline(args), conf);
                     System.out.println("Finish execution VariantTableDeletionDriver");
                     return r;
                 }
@@ -462,7 +461,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
     }
 
 
-    class VariantTableMapperFail extends VariantTableMapper {
+    class VariantMergerTableMapperFail extends VariantMergerTableMapper {
 
         public static final String SLICE_TO_FAIL = "slice.to.fail";
         private String sliceToFail = "";
@@ -482,7 +481,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
             if (Bytes.toString(ctx.getCurrRowKey()).equals(sliceToFail)) {
                 if (!hadFail.getAndSet(true)) {
                     System.out.println("DO FAIL!!");
-                    ctx.getContext().getCounter(COUNTER_GROUP_NAME, "TEST.FAIL").increment(1);
+                    ctx.getContext().getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "TEST.FAIL").increment(1);
                     throw new RuntimeException();
                 }
             }

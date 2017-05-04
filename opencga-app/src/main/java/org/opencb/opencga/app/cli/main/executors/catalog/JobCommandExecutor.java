@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.JobCommandOptions;
+import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
@@ -77,20 +78,8 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
             case "acl":
                 queryResponse = aclCommandExecutor.acls(jobsCommandOptions.aclsCommandOptions, openCGAClient.getJobClient());
                 break;
-            case "acl-create":
-                queryResponse = aclCommandExecutor.aclsCreate(jobsCommandOptions.aclsCreateCommandOptions, openCGAClient.getJobClient());
-                break;
-            case "acl-member-delete":
-                queryResponse = aclCommandExecutor.aclMemberDelete(jobsCommandOptions.aclsMemberDeleteCommandOptions,
-                        openCGAClient.getJobClient());
-                break;
-            case "acl-member-info":
-                queryResponse = aclCommandExecutor.aclMemberInfo(jobsCommandOptions.aclsMemberInfoCommandOptions,
-                        openCGAClient.getJobClient());
-                break;
-            case "acl-member-update":
-                queryResponse = aclCommandExecutor.aclMemberUpdate(jobsCommandOptions.aclsMemberUpdateCommandOptions,
-                        openCGAClient.getJobClient());
+            case "acl-update":
+                queryResponse = updateAcl();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -201,6 +190,20 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
 
         return openCGAClient.getJobClient().groupBy(jobsCommandOptions.groupByCommandOptions.study,
                 jobsCommandOptions.groupByCommandOptions.fields,params);
+    }
+
+
+    private QueryResponse<JobAclEntry> updateAcl() throws IOException, CatalogException {
+        AclCommandOptions.AclsUpdateCommandOptions commandOptions = jobsCommandOptions.aclsUpdateCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+
+        ObjectMap bodyParams = new ObjectMap();
+        bodyParams.putIfNotNull("permissions", commandOptions.permissions);
+        bodyParams.putIfNotNull("action", commandOptions.action);
+        bodyParams.putIfNotNull("job", commandOptions.id);
+
+        return openCGAClient.getJobClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
     }
 
 }

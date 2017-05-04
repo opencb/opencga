@@ -22,13 +22,17 @@ package org.opencb.opencga.storage.hadoop.variant.archive;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice.Builder;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.slf4j.Logger;
@@ -44,17 +48,16 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk.
  */
-public class ArchiveHelper extends GenomeHelper {
+public class ArchiveTableHelper extends GenomeHelper {
 
-    private final Logger logger = LoggerFactory.getLogger(ArchiveHelper.class);
+    private final Logger logger = LoggerFactory.getLogger(ArchiveTableHelper.class);
     private final AtomicReference<VcfMeta> meta = new AtomicReference<>();
+    private final ArchiveRowKeyFactory keyFactory;
     private byte[] column;
-
 
     private final VcfRecordComparator vcfComparator = new VcfRecordComparator();
 
-
-    public ArchiveHelper(Configuration conf) throws IOException {
+    public ArchiveTableHelper(Configuration conf) throws IOException {
         this(conf, null);
         int fileId = conf.getInt(ArchiveDriver.CONFIG_ARCHIVE_FILE_ID, 0);
         int studyId = conf.getInt(GenomeHelper.CONFIG_STUDY_ID, 0);
@@ -65,25 +68,32 @@ public class ArchiveHelper extends GenomeHelper {
         column = Bytes.toBytes(getColumnName(meta.get().getVariantSource()));
     }
 
-    public ArchiveHelper(GenomeHelper helper, VcfMeta meta) {
+    public ArchiveTableHelper(GenomeHelper helper, VcfMeta meta) {
         super(helper);
         this.meta.set(meta);
         column = Bytes.toBytes(getColumnName(meta.getVariantSource()));
+        keyFactory = new ArchiveRowKeyFactory(getChunkSize(), getSeparator());
     }
 
-    public ArchiveHelper(Configuration conf, VcfMeta meta) {
+    public ArchiveTableHelper(Configuration conf, VcfMeta meta) {
         super(conf);
         if (meta != null) {
             this.meta.set(meta);
             VariantSource variantSource = getMeta().getVariantSource();
             column = Bytes.toBytes(getColumnName(variantSource));
         }
+        keyFactory = new ArchiveRowKeyFactory(getChunkSize(), getSeparator());
     }
 
-    public ArchiveHelper(GenomeHelper helper, VariantSource source) throws IOException {
+    public ArchiveTableHelper(GenomeHelper helper, VariantSource source) throws IOException {
         super(helper);
         this.meta.set(new VcfMeta(source));
         column = Bytes.toBytes(getColumnName(source));
+        keyFactory = new ArchiveRowKeyFactory(getChunkSize(), getSeparator());
+    }
+
+    public ArchiveRowKeyFactory getKeyFactory() {
+        return keyFactory;
     }
 
     /**
@@ -116,6 +126,21 @@ public class ArchiveHelper extends GenomeHelper {
         return variantSource.getFileId();
     }
 
+    public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName) throws IOException {
+        try (Connection con = ConnectionFactory.createConnection(genomeHelper.getConf())) {
+            return createArchiveTableIfNeeded(genomeHelper, tableName, con);
+        }
+    }
+
+    public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con) throws IOException {
+        Compression.Algorithm compression = Compression.getCompressionAlgorithmByName(
+                genomeHelper.getConf().get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName()));
+        int nSplits = genomeHelper.getConf().getInt(ArchiveDriver.CONFIG_ARCHIVE_TABLE_PRESPLIT_SIZE, 100);
+        ArchiveRowKeyFactory rowKeyFactory = new ArchiveRowKeyFactory(genomeHelper.getChunkSize(), genomeHelper.getSeparator());
+        List<byte[]> preSplits = generateBootPreSplitsHuman(nSplits, rowKeyFactory::generateBlockIdAsBytes);
+        return HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(), preSplits, compression);
+    }
+
     public VcfMeta getMeta() {
         return meta.get();
     }
@@ -131,7 +156,7 @@ public class ArchiveHelper extends GenomeHelper {
         List<VcfRecord> vcfRecordLst = new ArrayList<VcfRecord>();
         for (VcfSlice slice : input) {
 
-            byte[] skey = generateBlockIdAsBytes(slice.getChromosome(), slice.getPosition());
+            byte[] skey = getKeyFactory().generateBlockIdAsBytes(slice.getChromosome(), slice.getPosition());
             // Consistency check
             if (!Bytes.equals(skey, key)) { // Address doesn't match up -> should never happen
                 throw new IllegalStateException(String.format("Row keys don't match up!!! %s != %s", Bytes.toString(key),
@@ -189,7 +214,7 @@ public class ArchiveHelper extends GenomeHelper {
     public Put wrap(VcfSlice slice) {
 //        byte[] rowId = generateBlockIdAsBytes(slice.getChromosome(), (long) slice.getPosition() + slice.getRecords(0).getRelativeStart
 // () * 100);
-        byte[] rowId = generateBlockIdAsBytes(slice.getChromosome(), slice.getPosition());
+        byte[] rowId = keyFactory.generateBlockIdAsBytes(slice.getChromosome(), slice.getPosition());
         return wrapAsPut(getColumn(), rowId, slice);
     }
 
