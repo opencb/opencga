@@ -385,9 +385,6 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         
         */
 
-        System.out.println("variants.size() = " + variants.size());
-        System.out.println("expectedVariants.size() = " + expectedVariants.size());
-
         List<String> errors = new ArrayList<>();
 
         String[] samples = {"s1", "s2"};
@@ -419,6 +416,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         }
 
         if (!errors.isEmpty()) {
+            errors.forEach(System.out::println);
             assertThat(errors, not(hasItem(any(String.class))));
         }
 

@@ -181,6 +181,19 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
         ctx.getContext().getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ANALYSIS").increment(analysisVar.size());
         endStep("3 Unpack and convert input ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN_PREFIX + ")");
 
+        logger.info("Filter ...");
+        List<Variant> archiveTarget = filterForVariant(archiveVar.stream(), TARGET_VARIANT_TYPE).collect(Collectors.toList());
+        endStep("7a Filter archive variants by target");
+        ctx.context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE_TARGET").increment(archiveTarget.size());
+        logger.info("Loaded current: " + analysisVar.size()
+                + "; archive: " + archiveVar.size()
+                + "; target: " + archiveTarget.size());
+
+        /* ******** Update Analysis Variants ************** */
+        // Variants of target type
+        Set<Variant> analysisNew = getNewVariantsAsTemplates(ctx, analysisVar, archiveTarget, (int) ctx.startPos, (int) ctx.nextStartPos);
+        endStep("7b Create NEW variants");
+
         // Check if Archive covers all bases in Analysis
         // TODO switched off at the moment down to removed variant calls from gVCF files (malformated variants)
         //        checkArchiveConsistency(ctx.context, ctx.startPos, ctx.nextStartPos, archiveVar, analysisVar);
@@ -207,18 +220,6 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
         startStep();
         updateOutputTable(ctx.context, analysisVar, rows, ctx.sampleIds);
         endStep("6 Update OUTPUT table");
-        logger.info("Filter ...");
-        List<Variant> archiveTarget = filterForVariant(archiveVar.stream(), TARGET_VARIANT_TYPE).collect(Collectors.toList());
-        endStep("7a Filter archive variants by target");
-        ctx.context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE_TARGET").increment(archiveTarget.size());
-        logger.info("Loaded current: " + analysisVar.size()
-                + "; archive: " + archiveVar.size()
-                + "; target: " + archiveTarget.size());
-
-        /* ******** Update Analysis Variants ************** */
-        // Variants of target type
-        Set<Variant> analysisNew = getNewVariantsAsTemplates(ctx, analysisVar, archiveTarget, (int) ctx.startPos, (int) ctx.nextStartPos);
-        endStep("7b Create NEW variants");
         return analysisNew;
     }
 
