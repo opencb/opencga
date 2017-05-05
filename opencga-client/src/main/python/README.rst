@@ -70,7 +70,7 @@ The next step is to create the specific client for the data we want to query:
    >>> files = oc.files()  # Query for files
    >>> cohorts = oc.cohorts()  # Query for cohorts
 
-Now you can start asking to the CellBase RESTful service by providing a query ID:
+Now you can start asking to the OpenCGA RESTful service by providing a query ID:
 
 .. code-block:: python
 
