@@ -302,17 +302,20 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
             List<Variant> archiveOther = getResultConverter().convert(res, true, record -> {
                 int start = VcfRecordProtoToVariantConverter.getStart(record, (int) ctx.getStartPos());
                 int end = VcfRecordProtoToVariantConverter.getEnd(record, (int) ctx.getStartPos());
+                int min = Math.min(start, end);
+                int max = Math.max(start, end);
                 for (VariantProto.AlternateCoordinate alt : record.getSecondaryAlternatesList()) {
                     int altStart = alt.getStart();
-                    if (altStart != 0 && altStart < start) {
-                        start = altStart;
+                    if (altStart != 0 && altStart < min) {
+                        min = altStart;
                     }
                     int altEnd = alt.getEnd();
-                    if (altEnd != 0 && altEnd > end) {
-                        end = altEnd;
+                    if (altEnd != 0 && altEnd > max) {
+                        max = altEnd;
                     }
                 }
-                for (int i = start; i <= end; i++) {
+                int pad = 3;
+                for (int i = min - pad; i <= max + pad; i++) {
                     if (coveredPositions.contains(i)) {
                         return true;
                     }
