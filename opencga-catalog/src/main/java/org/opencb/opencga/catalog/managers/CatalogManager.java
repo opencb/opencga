@@ -140,6 +140,10 @@ public class CatalogManager implements AutoCloseable {
                 configuration);
     }
 
+    public ObjectMap getDatabaseStatus() {
+        return catalogDBAdaptorFactory.getDatabaseStatus();
+    }
+
     /**
      * Checks if the database exists.
      *

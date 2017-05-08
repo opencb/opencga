@@ -49,14 +49,13 @@ public class GitRepositoryState {
     private String buildUserEmail;          // =${git.build.user.email}
     private String buildTime;               // =${git.build.time}
     private String buildHost;               // =${git.build.host}
-    private String buildVersion;             // =${git.build.version}
+    private String buildVersion;            // =${git.build.version}
 
     public static GitRepositoryState get() {
-        if (gitRepositoryState == null)
-        {
+        if (gitRepositoryState == null) {
             Properties properties = new Properties();
             try {
-                properties.load(GitRepositoryState.class.getClassLoader().getResourceAsStream("git.properties"));
+                properties.load(GitRepositoryState.class.getClassLoader().getResourceAsStream("org/opencb/opencga/core/git.properties"));
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -69,8 +68,7 @@ public class GitRepositoryState {
     GitRepositoryState() {
     }
 
-    private GitRepositoryState(Properties properties)
-    {
+    private GitRepositoryState(Properties properties) {
         this.tags = properties.get("git.tags").toString();
         this.branch = properties.get("git.branch").toString();
         this.dirty = properties.get("git.dirty").toString();

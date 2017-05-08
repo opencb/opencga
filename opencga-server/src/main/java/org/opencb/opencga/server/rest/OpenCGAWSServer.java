@@ -156,7 +156,8 @@ public class OpenCGAWSServer {
     }
 
 
-    public OpenCGAWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+    public OpenCGAWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+            throws IOException, VersionException {
         this(uriInfo.getPathParameters().getFirst("version"), uriInfo, httpServletRequest);
     }
 
@@ -171,6 +172,11 @@ public class OpenCGAWSServer {
         // This is only executed the first time to initialize configuration and some variables
         if (initialized.compareAndSet(false, true)) {
             init();
+        }
+
+        if (catalogManager == null) {
+            throw new IllegalStateException("OpenCGA was not properly initialized. Please, check if the configuration files are reachable "
+                    + "or properly defined.");
         }
 
         query = new Query();
