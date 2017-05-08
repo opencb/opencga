@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 import com.google.common.collect.BiMap;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Mutation;
@@ -36,6 +37,7 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +62,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
     protected Set<String> currentIndexingSamples;
     protected Integer archiveBatchSize;
     private ArchiveRowKeyFactory rowKeyFactory;
+    private boolean specificPut;
 
 
     protected ArchiveResultToVariantConverter getResultConverter() {
@@ -119,39 +122,52 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
 
     /**
      * Load (if available) current data, merge information and store new object in DB.
-     *
      * @param context Context
      * @param analysisVar Analysis variants
      * @param rows Variant Table rows
      * @param newSampleIds Sample Ids currently processed
+     * @return pair of numbers with the nano time of creating the put and writing it
      */
-    protected void updateOutputTable(Context context, Collection<Variant> analysisVar,
-            List<VariantTableStudyRow> rows, Set<Integer> newSampleIds) {
+    protected Pair<Long, Long> updateOutputTable(Context context, Collection<Variant> analysisVar,
+                                                 List<VariantTableStudyRow> rows, Set<Integer> newSampleIds) {
         int studyId = getStudyConfiguration().getStudyId();
         BiMap<String, Integer> idMapping = getStudyConfiguration().getSampleIds();
+        List<Put> puts = new ArrayList<>(analysisVar.size());
+        long start = System.nanoTime();
         for (Variant variant : analysisVar) {
-            VariantTableStudyRow row = updateOutputTable(context, studyId, idMapping, variant, newSampleIds);
+            VariantTableStudyRow row = new VariantTableStudyRow(variant, studyId, idMapping);
             rows.add(row);
+            Put put = createPut(variant, newSampleIds, row);
+            if (put != null) {
+                puts.add(put);
+            }
         }
+        long mid = System.nanoTime();
+        ImmutableBytesWritable keyout = new ImmutableBytesWritable(getHelper().getAnalysisTable());
+        for (Put put : puts) {
+            try {
+                context.write(keyout, put);
+            } catch (IOException | InterruptedException e) {
+                throw new IllegalStateException("Problems updating "
+                        + VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(put.getRow()), e);
+            }
+        }
+        context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(puts.size());
+        long createPutNanoTime = mid - start;
+        long writePutNanoTime = System.nanoTime() - mid;
+        return Pair.of(createPutNanoTime, writePutNanoTime);
     }
 
-    protected VariantTableStudyRow updateOutputTable(Context context, int studyId, BiMap<String, Integer> idMapping,
-                                                     Variant variant, Set<Integer> newSampleIds) {
+    protected Put createPut(Variant variant, Set<Integer> newSampleIds, VariantTableStudyRow row) {
         try {
-            VariantTableStudyRow row = new VariantTableStudyRow(variant, studyId, idMapping);
-            boolean specificPut = context.getConfiguration().getBoolean(SPECIFIC_PUT, true);
-            Put put = null;
+            Put put;
             if (specificPut && null != newSampleIds) {
                 put = row.createSpecificPut(getHelper(), newSampleIds);
             } else {
                 put = row.createPut(getHelper());
             }
-            if (put != null) {
-                context.write(new ImmutableBytesWritable(getHelper().getAnalysisTable()), put);
-                context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
-            }
-            return row;
-        } catch (RuntimeException | InterruptedException | IOException e) {
+            return put;
+        } catch (RuntimeException e) {
             throw new IllegalStateException("Problems updating " + variant, e);
         }
     }
@@ -197,6 +213,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
             InterruptedException {
         super.setup(context);
         this.archiveBatchSize = context.getConfiguration().getInt(ARCHIVE_GET_BATCH_SIZE, 500);
+        this.specificPut = context.getConfiguration().getBoolean(SPECIFIC_PUT, true);
 
         // Load VCF meta data for columns
         int studyId = getStudyConfiguration().getStudyId();

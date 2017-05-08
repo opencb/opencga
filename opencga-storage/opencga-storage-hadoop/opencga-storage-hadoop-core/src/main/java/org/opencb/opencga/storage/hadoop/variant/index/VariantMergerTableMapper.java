@@ -21,6 +21,7 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 
 import com.google.common.collect.BiMap;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Get;
@@ -130,13 +131,22 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
     private List<Variant> loadArchiveVariants(VariantMapReduceContext ctx) {
         // Archive: unpack Archive data (selection only
         logger.info("Read Archive ...");
-        List<Variant> archiveVar = getResultConverter().convert(ctx.value, true, var -> {
-            completeAlternateCoordinates(var);
-            int from = toPosition(var, true);
-            int to = toPosition(var, false);
-            return from <= ctx.nextStartPos && to >= ctx.startPos;
-        });
+        AtomicLong protoTime = new AtomicLong();
+        AtomicLong resolveConflictTime = new AtomicLong();
+        AtomicLong convertTime = new AtomicLong();
+        List<Variant> archiveVar = getResultConverter().convert(ctx.value, true,
+                var -> true,
+                var -> {
+                    completeAlternateCoordinates(var);
+                    int from = toPosition(var, true);
+                    int to = toPosition(var, false);
+                    return from <= ctx.nextStartPos && to >= ctx.startPos;
+                }, protoTime, resolveConflictTime, convertTime);
         ctx.context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE").increment(archiveVar.size());
+        addStepDuration("1a Unpack and convert input ARCHIVE variants - proto", protoTime.get());
+        addStepDuration("1b Unpack and convert input ARCHIVE variants - conflicts", resolveConflictTime.get());
+        addStepDuration("1b Unpack and convert input ARCHIVE variants - covnert", convertTime.get());
+
         return archiveVar;
     }
 
@@ -214,11 +224,13 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
         };
         logger.info("Merge ...");
         processVariants(analysisVar, variantConsumer);
+        endStep("5 Merge same and distinct");
         addStepDuration("5a Merge same and missing - overlap", overlap.get());
         addStepDuration("5b Merge same and missing - merge", merge.get());
         logger.info("Submit ...");
-        startStep();
-        updateOutputTable(ctx.context, analysisVar, rows, ctx.sampleIds);
+        Pair<Long, Long> pair = updateOutputTable(ctx.context, analysisVar, rows, ctx.sampleIds);
+        addStepDuration("6a Update OUTPUT table - create put", pair.getLeft());
+        addStepDuration("6b Update OUTPUT table - write put", pair.getRight());
         endStep("6 Update OUTPUT table");
         return analysisNew;
     }
@@ -299,6 +311,10 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
             // Uses ForkJoinPool !!!
             // only load variants which have overlap.
             AtomicLong protoTime = new AtomicLong();
+            AtomicLong resolveConflictTime = new AtomicLong();
+            AtomicLong convertTime = new AtomicLong();
+            AtomicLong discardedVcfRecord = new AtomicLong();
+            AtomicLong discardedVariant = new AtomicLong();
             List<Variant> archiveOther = getResultConverter().convert(res, true, record -> {
                 int start = VcfRecordProtoToVariantConverter.getStart(record, (int) ctx.getStartPos());
                 int end = VcfRecordProtoToVariantConverter.getEnd(record, (int) ctx.getStartPos());
@@ -320,6 +336,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
                         return true;
                     }
                 }
+                discardedVcfRecord.incrementAndGet();
                 return false;
             }, var -> {
                 // Complete ALTs
@@ -332,10 +349,17 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
                         return true;
                     }
                 }
+                discardedVariant.incrementAndGet();
                 return false;
-            }, protoTime);
-            addStepDuration("9b.1 Parse proto from archive", protoTime.get());
-            addStepDuration("9b Convert to Variants", System.nanoTime() - startTime);
+            }, protoTime, resolveConflictTime, convertTime);
+            ctx.getContext().getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE_DISCARDED_VCF_RECORD")
+                    .increment(discardedVcfRecord.get());
+            ctx.getContext().getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE_DISCARDED_VARIANT")
+                    .increment(discardedVariant.get());
+            addStepDuration("9b.1 Unpack and convert from Archive - proto", protoTime.get());
+            addStepDuration("9b.2 Unpack and convert from Archive - conflict", resolveConflictTime.get());
+            addStepDuration("9b.3 Unpack and convert from Archive - convert", convertTime.get());
+            addStepDuration("9b Unpack and convert from Archive", System.nanoTime() - startTime);
             logger.info("Loaded "
                     + archiveOther.size() + " variants for "
                     + fileIds.size() + " files for "
@@ -440,9 +464,8 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
         }
     }
 
-    private Set<Variant> getNewVariantsAsTemplates(
-            VariantMapReduceContext ctx, List<Variant> analysisVar,
-            List<Variant> archiveTarget, int startPos, int nextStartPos) {
+    private Set<Variant> getNewVariantsAsTemplates(VariantMapReduceContext ctx, List<Variant> analysisVar, List<Variant> archiveTarget,
+                                                   int startPos, int nextStartPos) {
         String studyId = Integer.toString(getStudyConfiguration().getStudyId());
         // (1) NEW variants (only create the position, no filling yet)
         Set<String> analysisVarSet = analysisVar.stream().map(Variant::toString).collect(Collectors.toSet());
