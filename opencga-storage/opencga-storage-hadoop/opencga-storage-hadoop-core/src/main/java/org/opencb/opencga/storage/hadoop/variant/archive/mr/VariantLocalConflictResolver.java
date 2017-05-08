@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.storage.hadoop.variant.archive.mr;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -27,23 +29,33 @@ import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static htsjdk.variant.vcf.VCFConstants.GENOTYPE_FILTER_KEY;
 import static htsjdk.variant.vcf.VCFConstants.GENOTYPE_KEY;
-import static org.opencb.biodata.models.variant.VariantVcfFactory.FILTER;
-import static org.opencb.biodata.models.variant.VariantVcfFactory.QUAL;
+import static org.opencb.biodata.models.variant.StudyEntry.FILTER;
+import static org.opencb.biodata.models.variant.StudyEntry.QUAL;
 import static org.opencb.biodata.models.variant.avro.VariantType.NO_VARIATION;
 
 /**
+ * Variant conflict resolver.
+ *
+ * Identifies and fixes overlapping variants from the same set of samples that may be inconsistent.
+ *
+ *
  * Created by mh719 on 10/06/2016.
+ *
  */
 public class VariantLocalConflictResolver {
 
+    private final Logger logger = LoggerFactory.getLogger(VariantLocalConflictResolver.class);
 
     private static VariantPositionRefAltComparator variantPositionRefAltComparator = new VariantPositionRefAltComparator();
+
     public List<Variant> resolveConflicts(List<Variant> variants) {
         Map<AlternateWrapper, Variant> altToVar = removeDuplicatedAlts(variants);
 
@@ -55,6 +67,7 @@ public class VariantLocalConflictResolver {
         // sort alts by position
         NavigableSet<Variant> altSorted = new TreeSet<>(variantPositionRefAltComparator);
         altSorted.addAll(altToVar.keySet().stream().map(v -> v.getVariant()).collect(Collectors.toList()));
+
 
         List<Variant> resolved = new ArrayList<>();
         while (!altSorted.isEmpty()) {
@@ -88,59 +101,85 @@ public class VariantLocalConflictResolver {
      * @return Map Alternate (SecAlt and Alt as variant) to originating Variant.
      */
     protected Map<AlternateWrapper, Variant> removeDuplicatedAlts(Collection<Variant> variants) {
-        // Remove redundant variants (variant with one alt already represented in a SecAlt)
-        Map<AlternateWrapper, List<Variant>> altToVarList = variants.stream()
-                .flatMap(v -> expandToVariants(v).stream().map(e -> new ImmutablePair<>(new AlternateWrapper(e), v)))
-                .collect(Collectors.groupingBy(Pair::getLeft, Collectors.mapping(Pair::getRight, Collectors.toList())));
-        // reindex the other way
-        Map<Variant, Set<AlternateWrapper>> varToAlt =
-                altToVarList.entrySet().stream()
-                .flatMap(e -> e.getValue().stream().map(v -> new ImmutablePair<>(v, e.getKey())))
-                .collect(
-                Collectors.groupingBy(
-                        Pair::getKey,
-                        Collectors.mapping(Pair::getValue, Collectors.toSet())));
 
-        Map<AlternateWrapper, Variant> resMap = new HashMap<>();
-        Set<AlternateWrapper> altBlackList = new HashSet<>();
+        List<Variant> notFromSameCall = new ArrayList<>(variants.size());
 
-         altToVarList.entrySet().forEach(e -> {
-             AlternateWrapper key = e.getKey();
-             if (altBlackList.contains(key)) {
-                 return; // ignore
-             }
-             List<Variant> lst = e.getValue();
-             if (lst.size() > 1) {
-                 // remove exact duplicated call
-                 Set<Set<AlternateWrapper>> duplicatedCheck = new HashSet<>();
-                 List<Variant> uniqCalls = new ArrayList<>();
-                 lst.forEach(v -> {
-                     if (duplicatedCheck.add(varToAlt.get(v))) {
-                         uniqCalls.add(v);
-                     }
-                 });
-                 lst = uniqCalls;
-             }
-             // conflict
-             while (lst.size() > 1) {
-                 // remove calls with no sec-alt
-                 Optional<Variant> any = lst.stream().filter(
-                         v -> isSamePosRefAlt(v, key.variant)
-                                 && v.getStudies().get(0).getSecondaryAlternates().isEmpty()).findAny();
-                 if (any.isPresent()) {
-                     lst.remove(any.get());
-                     continue; // removed one variant with no sec-alt
-                 }
-                 // >1 variant with sec-alt ...
-                 // chose 'best' call, remove other.
-                 Collections.sort(lst, VARIANT_COMP);
-                 lst.forEach(v -> altBlackList.addAll(varToAlt.get(v)));
-                 lst = Collections.singletonList(lst.get(0));
-                 altBlackList.removeAll(varToAlt.get(lst.get(0)));
-             }
-             resMap.put(key, lst.get(0));
-         });
-        return resMap;
+        // Get all variants with multiple calls
+        Multimap<String, Variant> callVariantsMap = ArrayListMultimap.create();
+        for (Variant variant : variants) {
+            String call = variant.getStudies().get(0).getFiles().get(0).getCall();
+            if (variant.getType().equals(NO_VARIATION) || StringUtils.isEmpty(call)) {
+                notFromSameCall.add(variant);
+            } else {
+                call = call.substring(0, call.lastIndexOf(':'));
+                callVariantsMap.put(call, variant);
+            }
+        }
+
+        // Remove all variants from the same call but one
+        for (Map.Entry<String, Collection<Variant>> entry : callVariantsMap.asMap().entrySet()) {
+            String call = entry.getKey();
+            Collection<Variant> variantsFromSameCall = entry.getValue();
+            if (!call.isEmpty() && variantsFromSameCall.size() > 1) {
+                // Select the one with the lowest allele index
+                List<Variant> sorted = new ArrayList<>(variantsFromSameCall);
+                sorted.sort((v1, v2) -> {
+                    String alleleIdx1 = v1.getStudies().get(0).getFiles().get(0).getCall().substring(call.length() + 1);
+                    String alleleIdx2 = v2.getStudies().get(0).getFiles().get(0).getCall().substring(call.length() + 1);
+                    return Integer.valueOf(alleleIdx1).compareTo(Integer.valueOf(alleleIdx2));
+                });
+                notFromSameCall.add(sorted.get(0));
+                for (int i = 1; i < sorted.size(); i++) {
+                    Variant discardedVariant = sorted.get(i);
+                    logger.debug("Discarding variant {} ({}). Duplicated call {}", discardedVariant,
+                            System.identityHashCode(discardedVariant), call);
+                }
+            } else {
+                notFromSameCall.addAll(variantsFromSameCall);
+            }
+        }
+
+        // Add all the alternates to the deDupMap. If already existing, add to the duplicated alternates map.
+        Map<AlternateWrapper, Variant> deDupMap = new HashMap<>();
+        Map<AlternateWrapper, List<Variant>> duplicated = new HashMap<>();
+        for (Variant variant : notFromSameCall) {
+            for (Variant subVariant : expandToVariants(variant)) {
+                AlternateWrapper key = new AlternateWrapper(subVariant);
+                Variant old = deDupMap.put(key, variant);
+                if (old != null) {
+                    List<Variant> duplicatedVariants;
+                    if (duplicated.containsKey(key)) {
+                        duplicatedVariants = duplicated.get(key);
+                    } else {
+                        duplicatedVariants = new ArrayList<>();
+                        duplicated.put(key, duplicatedVariants);
+                        duplicatedVariants.add(old);
+                    }
+                    duplicatedVariants.add(variant);
+                }
+            }
+        }
+
+        // Get the best variant for duplicated variants
+        for (Map.Entry<AlternateWrapper, List<Variant>> entry : duplicated.entrySet()) {
+//            deDupMap.remove(entry.getKey());
+            List<Variant> duplicatedVariants = entry.getValue();
+            for (Variant duplicatedVariant : duplicatedVariants) {
+                // Remove all the variants associated with this duplicated variant.
+                // This loop should remove only one variant
+                for (Variant alternate : expandToVariants(duplicatedVariant)) {
+                    Variant removed = deDupMap.remove(new AlternateWrapper(alternate));
+                    if (removed != null) {
+                        logger.debug("Discarded {}, ({})", removed, System.identityHashCode(removed));
+                    }
+                }
+            }
+            duplicatedVariants.sort(VARIANT_COMP);
+            Variant variant = duplicatedVariants.get(0);
+            deDupMap.put(entry.getKey(), variant);
+            logger.debug("Replaced by {}, ({})", variant, System.identityHashCode(variant));
+        }
+        return deDupMap;
     }
 
 
@@ -158,7 +197,7 @@ public class VariantLocalConflictResolver {
      * @param varToAlt Variant with a list of Alternates (Alt and SecAlts).
      * @return Set of conflicting Alts.
      */
-    public static Set<Variant> findConflictAlternates(Variant varQuery, NavigableSet<Variant> altSorted,
+    private Set<Variant> findConflictAlternates(Variant varQuery, NavigableSet<Variant> altSorted,
                              Map<AlternateWrapper, Variant> altToVar, Map<Variant, List<Variant>> varToAlt) {
 
         // Get ALTs for Variant
@@ -240,7 +279,8 @@ public class VariantLocalConflictResolver {
                 if (!hasAnyConflictOverlapInclSecAlt(resolved, query, varToAlt)) {
                     resolved.add(query);
                 } else if (allSameTypeAndGT(resolved, VariantType.NO_VARIATION)) {
-                    List<Variant> collect = resolved.stream().filter(r -> r.overlapWith(query, true))
+                    List<Variant> collect = resolved.stream()
+                            .filter(r -> r.overlapWith(query, true))
                             .collect(Collectors.toList());
                     collect.add(query);
                     List<Pair<Integer, Integer>> pairs = buildRegions(collect);
@@ -365,7 +405,10 @@ public class VariantLocalConflictResolver {
     }
 
     public static boolean hasAnyConflictOverlapInclSecAlt(List<Variant> target, Variant query, Map<Variant, List<Variant>> varToAlt) {
-        return target.stream().filter(v -> hasAnyConflictOverlapInclSecAlt(v, query, varToAlt)).findAny().isPresent();
+        return target.stream()
+                .filter(v -> hasAnyConflictOverlapInclSecAlt(v, query, varToAlt))
+                .findAny()
+                .isPresent();
     }
 
     public static boolean hasAnyConflictOverlapInclSecAlt(Variant a, Variant b, Map<Variant, List<Variant>> varToAlt) {
@@ -400,18 +443,18 @@ public class VariantLocalConflictResolver {
      * @return List of Variant positions.
      */
     public static List<Variant> expandToVariants(Variant v) {
-        Variant nv = asVariant(v);
+        Variant mainVariant = asVariant(v);
         if (v.getStudies().isEmpty()) {
-            return Collections.singletonList(nv);
+            return Collections.singletonList(mainVariant);
         }
-        StudyEntry studyEntry = v.getStudies().get(0);
-        List<AlternateCoordinate> secAlt = studyEntry.getSecondaryAlternates();
-        if (secAlt.isEmpty()) {
-            return Collections.singletonList(nv);
+        List<AlternateCoordinate> secondaryAlternates = v.getStudies().get(0).getSecondaryAlternates();
+        if (secondaryAlternates.isEmpty()) {
+            return Collections.singletonList(mainVariant);
         }
         // Check AltCoords as well
-        List<Variant> list = new ArrayList<>(Collections.singletonList(nv));
-        secAlt.forEach(alt -> list.add(asVariant(v, alt)));
+        List<Variant> list = new ArrayList<>(1 + secondaryAlternates.size());
+        list.add(mainVariant);
+        secondaryAlternates.forEach(alt -> list.add(asVariant(v, alt)));
         return list;
     }
 
@@ -444,8 +487,7 @@ public class VariantLocalConflictResolver {
     }
 
     public static Variant asVariant(Variant v) {
-        Variant variant =
-                new Variant(v.getChromosome(), v.getStart(), v.getEnd(), v.getReference(), v.getAlternate(), v.getStrand());
+        Variant variant = new Variant(v.getChromosome(), v.getStart(), v.getEnd(), v.getReference(), v.getAlternate(), v.getStrand());
         variant.setType(v.getType());
         return variant;
     }
@@ -682,8 +724,7 @@ public class VariantLocalConflictResolver {
 
     public static Variant deepCopy(Variant var) {
 
-        Variant v = new Variant(var.getChromosome(), var.getStart(), var.getEnd(), var.getReference(), var
-                .getAlternate());
+        Variant v = new Variant(var.getChromosome(), var.getStart(), var.getEnd(), var.getReference(), var.getAlternate());
         v.setType(var.getType());
         v.setIds(var.getIds());
         v.setStrand(var.getStrand());
@@ -789,8 +830,15 @@ public class VariantLocalConflictResolver {
             return variant != null ? variant.toString().hashCode() : 0;
         }
 
+        @Override
+        public String toString() {
+            return variant.toString();
+        }
+
         public Variant getVariant() {
             return variant;
         }
+
+
     }
 }
