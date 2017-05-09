@@ -663,7 +663,7 @@ class MongoDBUtils {
             if (variableType == Variable.VariableType.BOOLEAN) {
                 type = QueryParam.Type.BOOLEAN;
 
-            } else if (variableType == Variable.VariableType.NUMERIC) {
+            } else if (variableType == Variable.VariableType.DOUBLE) {
                 type = QueryParam.Type.DECIMAL;
             }
         }
@@ -729,7 +729,7 @@ class MongoDBUtils {
                 if (variableType == Variable.VariableType.BOOLEAN) {
                     type = AbstractDBAdaptor.FilterOption.Type.BOOLEAN;
 
-                } else if (variableType == Variable.VariableType.NUMERIC) {
+                } else if (variableType == Variable.VariableType.DOUBLE) {
                     type = AbstractDBAdaptor.FilterOption.Type.NUMERICAL;
                 }
             }

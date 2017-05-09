@@ -216,15 +216,15 @@ public class CatalogSampleAnnotationsLoader {
         String category = "PEDIGREE";
         variableList.add(new Variable("family", category, Variable.VariableType.TEXT, null, true,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
-        variableList.add(new Variable("id", category, Variable.VariableType.NUMERIC, null, true,
+        variableList.add(new Variable("id", category, Variable.VariableType.DOUBLE, null, true,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
         variableList.add(new Variable("name", category, Variable.VariableType.TEXT, null, true,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
-        variableList.add(new Variable("fatherId", category, Variable.VariableType.NUMERIC, null, false,
+        variableList.add(new Variable("fatherId", category, Variable.VariableType.DOUBLE, null, false,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
         variableList.add(new Variable("fatherName", category, Variable.VariableType.TEXT, null, false,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
-        variableList.add(new Variable("motherId", category, Variable.VariableType.NUMERIC, null, false,
+        variableList.add(new Variable("motherId", category, Variable.VariableType.DOUBLE, null, false,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
         variableList.add(new Variable("motherName", category, Variable.VariableType.TEXT, null, false,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
@@ -272,14 +272,14 @@ public class CatalogSampleAnnotationsLoader {
                     type = Variable.VariableType.CATEGORICAL;
                 } else {
                     if (isNumerical) {
-                        type = Variable.VariableType.NUMERIC;
+                        type = Variable.VariableType.DOUBLE;
                     } else {
                         type = Variable.VariableType.TEXT;
                     }
                 }
             } else {
                 if (isNumerical) {
-                    type = Variable.VariableType.NUMERIC;
+                    type = Variable.VariableType.DOUBLE;
                 } else {
                     type = Variable.VariableType.TEXT;
                 }
