@@ -28,8 +28,8 @@ import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.api.ISampleManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.ServerUtils;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.core.exception.VersionException;
@@ -41,7 +41,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 15/12/14.
@@ -107,18 +110,6 @@ public class SampleWSServer extends OpenCGAWSServer {
         }
     }
 
-    private static class IndividualParameters {
-        public long id;
-        public String name;
-    }
-
-    private static class SampleParameters {
-        public String name;
-        public String source;
-        public String description;
-        public IndividualParameters individual;
-    }
-
     @POST
     @Path("/create")
     @ApiOperation(value = "Create sample", position = 2, response = Sample.class)
@@ -126,21 +117,13 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value="JSON containing sample information", required = true)  SampleParameters params) {
+            @ApiParam(value="JSON containing sample information", required = true) ServerUtils.SampleParameters params) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
 
-            Individual individual = null;
-            if (params.individual != null) {
-                individual = new Individual()
-                        .setId(params.individual.id)
-                        .setName(params.individual.name);
-            }
-            QueryResult<Sample> queryResult = sampleManager.create(studyStr, params.name, params.source, params.description, individual,
-                    null, null, sessionId);
-            return createOkResponse(queryResult);
+            return createOkResponse(sampleManager.create(studyStr, params, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

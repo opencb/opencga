@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -125,6 +126,106 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         } else {
             return -1L;
         }
+    }
+
+    @Override
+    public QueryResult<Sample> create(String studyStr, ServerUtils.SampleParameters sampleParams, QueryOptions options, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkAlias(sampleParams.getName(), "name", configuration.getCatalog().getOffset());
+        sampleParams.setSource(ParamUtils.defaultString(sampleParams.getSource(), ""));
+        sampleParams.setDescription(ParamUtils.defaultString(sampleParams.getDescription(), ""));
+        sampleParams.setAttributes(ParamUtils.defaultObject(sampleParams.getAttributes(), Collections.emptyMap()));
+
+        String userId = userManager.getId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
+
+        long individualId = 0;
+
+        if (sampleParams.getIndividual() != null) {
+            if (sampleParams.getIndividual().getId() > 0) {
+                individualDBAdaptor.checkId(sampleParams.getIndividual().getId());
+
+                // Check studyId of the individual
+                long studyIdIndividual = individualDBAdaptor.getStudyId(sampleParams.getIndividual().getId());
+                if (studyId != studyIdIndividual) {
+                    throw new CatalogException("Cannot associate sample from one study with an individual of a different study.");
+                }
+
+                individualId = sampleParams.getIndividual().getId();
+            } else {
+                if (StringUtils.isEmpty(sampleParams.getIndividual().getName())) {
+                    throw new CatalogException("Missing individual name. If the sample is not intended to be associated to any "
+                            + "individual, please do not include any individual parameter.");
+                }
+
+                Query query = new Query()
+                        .append(IndividualDBAdaptor.QueryParams.NAME.key(), sampleParams.getIndividual().getName())
+                        .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                QueryOptions options1 = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
+                QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options1);
+                if (individualQueryResult.getNumResults() == 1) {
+                    // We set the id
+                    individualId = individualQueryResult.first().getId();
+                } else {
+                    // We create the individual
+                    individualQueryResult = catalogManager.getIndividualManager().create(Long.toString(studyId),
+                            sampleParams.getIndividual(), new QueryOptions(), sessionId);
+
+                    if (individualQueryResult.getNumResults() == 0) {
+                        throw new CatalogException("Unexpected error occurred when creating the individual");
+                    } else {
+                        // We set the id
+                        individualId = individualQueryResult.first().getId();
+                    }
+                }
+            }
+        }
+
+        Sample sample = new Sample()
+                .setName(sampleParams.getName())
+                .setSource(sampleParams.getSource())
+                .setDescription(sampleParams.getDescription())
+                .setAttributes(sampleParams.getAttributes());
+        if (individualId > 0) {
+            sample.setIndividual(new Individual().setId(individualId));
+        }
+
+        return create(Long.toString(studyId), sample, options, sessionId);
+    }
+
+    @Override
+    public QueryResult<Sample> create(String studyStr, Sample sample, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkAlias(sample.getName(), "name", configuration.getCatalog().getOffset());
+        sample.setSource(ParamUtils.defaultString(sample.getSource(), ""));
+        sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
+        sample.setAcl(Collections.emptyList());
+        sample.setOntologyTerms(ParamUtils.defaultObject(sample.getOntologyTerms(), Collections.emptyList()));
+        sample.setAnnotationSets(ParamUtils.defaultObject(sample.getAnnotationSets(), Collections.emptyList()));
+        sample.setAttributes(ParamUtils.defaultObject(sample.getAttributes(), Collections.emptyMap()));
+        sample.setStatus(new Status());
+        sample.setCreationDate(TimeUtils.getTime());
+
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        String userId = userManager.getId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
+
+        if (sample.getIndividual() != null && sample.getIndividual().getId() > 0) {
+            individualDBAdaptor.checkId(sample.getIndividual().getId());
+
+            // Check studyId of the individual
+            long studyIdIndividual = individualDBAdaptor.getStudyId(sample.getIndividual().getId());
+            if (studyId != studyIdIndividual) {
+                throw new CatalogException("Cannot associate sample from one study with an individual of a different study.");
+            }
+        }
+
+        QueryResult<Sample> queryResult = sampleDBAdaptor.insert(sample, studyId, options);
+        auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+        return queryResult;
     }
 
     @Override

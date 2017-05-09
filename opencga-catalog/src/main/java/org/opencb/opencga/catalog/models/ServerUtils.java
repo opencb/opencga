@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.models;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by pfurio on 04/05/17.
@@ -8,6 +9,59 @@ import java.util.List;
  * will be used as the main input of the entry points of the webservices.
  */
 public class ServerUtils {
+
+    public static class SampleParameters {
+        private String name;
+        private String source;
+        private String description;
+        private Individual individual;
+        private Map<String, Object> attributes;
+
+        public String getName() {
+            return name;
+        }
+
+        public SampleParameters setName(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public String getSource() {
+            return source;
+        }
+
+        public SampleParameters setSource(String source) {
+            this.source = source;
+            return this;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public SampleParameters setDescription(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Individual getIndividual() {
+            return individual;
+        }
+
+        public SampleParameters setIndividual(Individual individual) {
+            this.individual = individual;
+            return this;
+        }
+
+        public Map<String, Object> getAttributes() {
+            return attributes;
+        }
+
+        public SampleParameters setAttributes(Map<String, Object> attributes) {
+            this.attributes = attributes;
+            return this;
+        }
+    }
 
     public static class IndividualParameters {
         private String name;

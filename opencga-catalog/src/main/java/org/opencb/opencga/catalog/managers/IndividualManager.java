@@ -549,13 +549,11 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         }
 
         // Create individual
-        QueryResult<Individual> individualQueryResult = create(studyId, individualParams.getName(), individualParams.getFamily(),
-                individualParams.getFatherId(), individualParams.getMotherId(), individualParams.getSex(), individualParams.getEthnicity(),
-                individualParams.getSpecies().getCommonName(), individualParams.getSpecies().getScientificName(),
-                individualParams.getSpecies().getTaxonomyCode(), individualParams.getPopulation().getName(),
-                individualParams.getPopulation().getSubpopulation(), individualParams.getPopulation().getDescription(),
-                individualParams.getKaryotypicSex(), individualParams.getLifeStatus(), individualParams.getAffectationStatus(), options,
-                sessionId);
+        Individual ind = new Individual(-1, individualParams.getName(), individualParams.getFatherId(), individualParams.getMotherId(),
+                individualParams.getFamily(), individualParams.getSex(), individualParams.getKaryotypicSex(),
+                individualParams.getEthnicity(), individualParams.getSpecies(), individualParams.getPopulation(), null, null,
+                individualParams.getLifeStatus(), individualParams.getAffectationStatus(), null, null, null, null);
+        QueryResult<Individual> individualQueryResult = create(Long.toString(studyId), ind, options, sessionId);
         if (individualQueryResult.getNumResults() == 0) {
             throw new CatalogException("Internal error. Individual could not be created.");
         }
@@ -573,6 +571,38 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         }
 
         return individualQueryResult;
+    }
+
+    @Override
+    public QueryResult<Individual> create(String studyStr, Individual individual, QueryOptions options, String sessionId)
+            throws CatalogException {
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        ParamUtils.checkAlias(individual.getName(), "name", configuration.getCatalog().getOffset());
+        individual.setSex(ParamUtils.defaultObject(individual.getSex(), Individual.Sex.UNKNOWN));
+        individual.setFamily(ParamUtils.defaultObject(individual.getFamily(), ""));
+        individual.setEthnicity(ParamUtils.defaultObject(individual.getEthnicity(), ""));
+        individual.setSpecies(ParamUtils.defaultObject(individual.getSpecies(), Individual.Species::new));
+        individual.setPopulation(ParamUtils.defaultObject(individual.getPopulation(), Individual.Population::new));
+        individual.setKaryotypicSex(ParamUtils.defaultObject(individual.getKaryotypicSex(), Individual.KaryotypicSex.UNKNOWN));
+        individual.setLifeStatus(ParamUtils.defaultObject(individual.getLifeStatus(), Individual.LifeStatus.UNKNOWN));
+        individual.setAffectationStatus(ParamUtils.defaultObject(individual.getAffectationStatus(), Individual.AffectationStatus.UNKNOWN));
+        individual.setOntologyTerms(ParamUtils.defaultObject(individual.getOntologyTerms(), Collections.emptyList()));
+        individual.setAnnotationSets(ParamUtils.defaultObject(individual.getAnnotationSets(), Collections.emptyList()));
+        individual.setAttributes(ParamUtils.defaultObject(individual.getAttributes(), Collections.emptyMap()));
+        individual.setAcl(Collections.emptyList());
+        individual.setStatus(new Status());
+        individual.setCreationDate(TimeUtils.getTime());
+
+        String userId = catalogManager.getUserManager().getId(sessionId);
+        long studyId = catalogManager.getStudyId(studyStr, sessionId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
+
+        QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
+//      auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+        return queryResult;
     }
 
     @Override
