@@ -542,6 +542,8 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             project.setAlias(ownerId + "@" + project.getAlias());
         }
 
+        authorizationManager.filterProjects(userSessionId, projectQueryResult.getResult());
+
         projectQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
         projectQueryResult.setId(userId);
 

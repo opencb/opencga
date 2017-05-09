@@ -1056,6 +1056,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         Iterator<Study> studyIt = studies.iterator();
         while (studyIt.hasNext()) {
             Study study = studyIt.next();
+            study.setAcl(null);
             try {
                 checkStudyPermission(study.getId(), userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
             } catch (CatalogAuthorizationException e) {
@@ -1090,6 +1091,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             if (!fileAcl.getPermissions().contains(FileAclEntry.FilePermissions.VIEW)) {
                 fileIt.remove();
             }
+            file.setAcl(null);
         }
     }
 
@@ -1117,6 +1119,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             if (!sampleACL.getPermissions().contains(SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS)) {
                 sample.setAnnotationSets(new ArrayList<>());
             }
+
+            sample.setAcl(null);
         }
     }
 
@@ -1145,6 +1149,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             if (!familyAclEntry.getPermissions().contains(FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS)) {
                 family.setAnnotationSets(new ArrayList<>());
             }
+
+            family.setAcl(null);
         }
     }
 
@@ -1172,6 +1178,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             if (!individualAcl.getPermissions().contains(IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS)) {
                 individual.setAnnotationSets(new ArrayList<>());
             }
+
+            individual.setAcl(null);
         }
     }
 
@@ -1199,6 +1207,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             if (!cohortAcl.getPermissions().contains(CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS)) {
                 cohort.setAnnotationSets(new ArrayList<>());
             }
+
+            cohort.setAcl(null);
         }
     }
 
@@ -1221,6 +1231,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             if (!jobAcl.getPermissions().contains(JobAclEntry.JobPermissions.VIEW)) {
                 jobIterator.remove();
             }
+
+            job.setAcl(null);
         }
     }
 

@@ -367,9 +367,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
 
         QueryResult<Study> studyResult = studyDBAdaptor.get(studyId, options);
-        if (!studyResult.getResult().isEmpty()) {
-            authorizationManager.filterFiles(userId, studyId, studyResult.getResult().get(0).getFiles());
-        }
+        authorizationManager.filterStudies(userId, studyResult.getResult());
 
         return studyResult;
     }
