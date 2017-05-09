@@ -492,12 +492,15 @@ public class VariantLocalConflictResolverTest {
 
     public void conflictOverlap(String[] varA, String varB, boolean hasOverlap) {
         Variant b = new Variant(varB);
-        Map<Variant, List<Variant>> map = Arrays.stream(varA).map(v -> new Variant(v))
-                .flatMap(v -> VariantLocalConflictResolver.expandToVariants(v).stream().map(e -> new ImmutablePair<>(e, v)))
-                .collect(Collectors.groupingBy(Pair::getLeft, Collectors.mapping(Pair::getRight, Collectors.toList())));
+        Map<Variant, List<VariantLocalConflictResolver.Alternate>> map = Arrays.stream(varA)
+                .map(Variant::new)
+                .flatMap(v -> VariantLocalConflictResolver.expandToVariants(v)
+                        .stream()
+                        .map(e -> new ImmutablePair<>(e, v)))
+                .collect(Collectors.groupingBy(Pair::getRight, Collectors.mapping(Pair::getLeft, Collectors.toList())));
         map.put(b, VariantLocalConflictResolver.expandToVariants(b));
 
-        List<Variant> collect = Arrays.stream(varA).map(v -> new Variant(v)).collect(Collectors.toList());
+        List<Variant> collect = Arrays.stream(varA).map(Variant::new).collect(Collectors.toList());
         assertEquals(hasOverlap,
                 VariantLocalConflictResolver.hasAnyConflictOverlapInclSecAlt(collect, b, map));
     }
