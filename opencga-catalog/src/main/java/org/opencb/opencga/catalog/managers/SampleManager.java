@@ -129,72 +129,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<Sample> create(String studyStr, ServerUtils.SampleParameters sampleParams, QueryOptions options, String sessionId)
-            throws CatalogException {
-        ParamUtils.checkAlias(sampleParams.getName(), "name", configuration.getCatalog().getOffset());
-        sampleParams.setSource(ParamUtils.defaultString(sampleParams.getSource(), ""));
-        sampleParams.setDescription(ParamUtils.defaultString(sampleParams.getDescription(), ""));
-        sampleParams.setAttributes(ParamUtils.defaultObject(sampleParams.getAttributes(), Collections.emptyMap()));
-
-        String userId = userManager.getId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
-
-        long individualId = 0;
-
-        if (sampleParams.getIndividual() != null) {
-            if (sampleParams.getIndividual().getId() > 0) {
-                individualDBAdaptor.checkId(sampleParams.getIndividual().getId());
-
-                // Check studyId of the individual
-                long studyIdIndividual = individualDBAdaptor.getStudyId(sampleParams.getIndividual().getId());
-                if (studyId != studyIdIndividual) {
-                    throw new CatalogException("Cannot associate sample from one study with an individual of a different study.");
-                }
-
-                individualId = sampleParams.getIndividual().getId();
-            } else {
-                if (StringUtils.isEmpty(sampleParams.getIndividual().getName())) {
-                    throw new CatalogException("Missing individual name. If the sample is not intended to be associated to any "
-                            + "individual, please do not include any individual parameter.");
-                }
-
-                Query query = new Query()
-                        .append(IndividualDBAdaptor.QueryParams.NAME.key(), sampleParams.getIndividual().getName())
-                        .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-                QueryOptions options1 = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
-                QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options1);
-                if (individualQueryResult.getNumResults() == 1) {
-                    // We set the id
-                    individualId = individualQueryResult.first().getId();
-                } else {
-                    // We create the individual
-                    individualQueryResult = catalogManager.getIndividualManager().create(Long.toString(studyId),
-                            sampleParams.getIndividual(), new QueryOptions(), sessionId);
-
-                    if (individualQueryResult.getNumResults() == 0) {
-                        throw new CatalogException("Unexpected error occurred when creating the individual");
-                    } else {
-                        // We set the id
-                        individualId = individualQueryResult.first().getId();
-                    }
-                }
-            }
-        }
-
-        Sample sample = new Sample()
-                .setName(sampleParams.getName())
-                .setSource(sampleParams.getSource())
-                .setDescription(sampleParams.getDescription())
-                .setAttributes(sampleParams.getAttributes());
-        if (individualId > 0) {
-            sample.setIndividual(new Individual().setId(individualId));
-        }
-
-        return create(Long.toString(studyId), sample, options, sessionId);
-    }
-
-    @Override
     public QueryResult<Sample> create(String studyStr, Sample sample, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkAlias(sample.getName(), "name", configuration.getCatalog().getOffset());
         sample.setSource(ParamUtils.defaultString(sample.getSource(), ""));
@@ -212,14 +146,50 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
 
-        if (sample.getIndividual() != null && sample.getIndividual().getId() > 0) {
-            individualDBAdaptor.checkId(sample.getIndividual().getId());
+        long individualId = 0;
 
-            // Check studyId of the individual
-            long studyIdIndividual = individualDBAdaptor.getStudyId(sample.getIndividual().getId());
-            if (studyId != studyIdIndividual) {
-                throw new CatalogException("Cannot associate sample from one study with an individual of a different study.");
+        if (sample.getIndividual() != null) {
+            if (sample.getIndividual().getId() > 0) {
+                individualDBAdaptor.checkId(sample.getIndividual().getId());
+
+                // Check studyId of the individual
+                long studyIdIndividual = individualDBAdaptor.getStudyId(sample.getIndividual().getId());
+                if (studyId != studyIdIndividual) {
+                    throw new CatalogException("Cannot associate sample from one study with an individual of a different study.");
+                }
+
+                individualId = sample.getIndividual().getId();
+            } else {
+                if (StringUtils.isEmpty(sample.getIndividual().getName())) {
+                    throw new CatalogException("Missing individual name. If the sample is not intended to be associated to any "
+                            + "individual, please do not include any individual parameter.");
+                }
+
+                Query query = new Query()
+                        .append(IndividualDBAdaptor.QueryParams.NAME.key(), sample.getIndividual().getName())
+                        .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                QueryOptions options1 = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
+                QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options1);
+                if (individualQueryResult.getNumResults() == 1) {
+                    // We set the id
+                    individualId = individualQueryResult.first().getId();
+                } else {
+                    // We create the individual
+                    individualQueryResult = catalogManager.getIndividualManager().create(Long.toString(studyId),
+                            sample.getIndividual(), new QueryOptions(), sessionId);
+
+                    if (individualQueryResult.getNumResults() == 0) {
+                        throw new CatalogException("Unexpected error occurred when creating the individual");
+                    } else {
+                        // We set the id
+                        individualId = individualQueryResult.first().getId();
+                    }
+                }
             }
+        }
+
+        if (individualId > 0) {
+            sample.setIndividual(new Individual().setId(individualId));
         }
 
         QueryResult<Sample> queryResult = sampleDBAdaptor.insert(sample, studyId, options);

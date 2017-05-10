@@ -28,8 +28,8 @@ import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.api.ISampleManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.ServerUtils;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.core.exception.VersionException;
@@ -117,13 +117,13 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value="JSON containing sample information", required = true) ServerUtils.SampleParameters params) {
+            @ApiParam(value="JSON containing sample information", required = true) CreateSamplePOST params) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
 
-            return createOkResponse(sampleManager.create(studyStr, params, queryOptions, sessionId));
+            return createOkResponse(sampleManager.create(studyStr, params.toSample(), queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -242,15 +242,6 @@ public class SampleWSServer extends OpenCGAWSServer {
         }
     }
 
-    public static class UpdateSample {
-        public String name;
-        public String description;
-        public String source;
-        @JsonProperty("individual.id")
-        public String individualId;
-        public Map<String, Object> attributes;
-    }
-
     @POST
     @Path("/{sample}/update")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -258,7 +249,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                  @QueryParam("study") String studyStr,
-                                 @ApiParam(value = "params", required = true) UpdateSample parameters) {
+                                 @ApiParam(value = "params", required = true) UpdateSamplePOST parameters) {
         try {
             AbstractManager.MyResourceId resourceId = catalogManager.getSampleManager().getId(sampleStr, studyStr, sessionId);
 
@@ -630,6 +621,26 @@ public class SampleWSServer extends OpenCGAWSServer {
             return createOkResponse(sampleManager.updateAcl(sampleIdsStr, studyStr, memberId, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
+        }
+    }
+
+    private static class SamplePOST {
+        public String name;
+        public String description;
+        public String source;
+        public Map<String, Object> attributes;
+    }
+
+    public static class UpdateSamplePOST extends SamplePOST {
+        @JsonProperty("individual.id")
+        public String individualId;
+    }
+
+    private static class CreateSamplePOST extends SamplePOST {
+        public Individual individual;
+
+        public Sample toSample() {
+            return new Sample(-1, name, source, individual, description, null, null, attributes);
         }
     }
 }

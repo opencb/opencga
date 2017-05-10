@@ -27,8 +27,6 @@ import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.api.IIndividualManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.ServerUtils;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.core.exception.VersionException;
 
@@ -118,13 +116,13 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value="JSON containing individual information", required = true) ServerUtils.IndividualParameters params){
+            @ApiParam(value="JSON containing individual information", required = true) IndividualPOST params){
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
 
-            return createOkResponse(individualManager.create(studyStr, params, queryOptions, sessionId));
+            return createOkResponse(individualManager.create(studyStr, params.toIndividual(), queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -494,20 +492,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
         }
     }
 
-    public static class UpdateIndividual {
-        public String name;
-        public int fatherId;
-        public int motherId;
-        public String family;
-        public Individual.Sex sex;
-        public String ethnicity;
-        public Individual.Species species;
-        public Individual.Population population;
-        public Individual.KaryotypicSex karyotypicSex;
-        public Individual.LifeStatus lifeStatus;
-        public Individual.AffectationStatus affectationStatus;
-    }
-
     @POST
     @Path("/{individual}/update")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -515,7 +499,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     public Response updateByPost(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                         @QueryParam("study") String studyStr,
-                                 @ApiParam(value = "params", required = true) UpdateIndividual updateParams) {
+                                 @ApiParam(value = "params", required = true) IndividualPOST updateParams) {
         try {
             AbstractManager.MyResourceId resource = individualManager.getId(individualStr, studyStr, sessionId);
             QueryResult<Individual> queryResult = catalogManager.modifyIndividual(resource.getResourceId(),
@@ -774,6 +758,26 @@ public class IndividualWSServer extends OpenCGAWSServer {
             return createOkResponse(individualManager.updateAcl(individualIdsStr, studyStr, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
+        }
+    }
+
+    // Data models
+
+    private static class IndividualPOST {
+        public String name;
+        public String family;
+        public long fatherId;
+        public long motherId;
+        public Individual.Sex sex;
+        public String ethnicity;
+        public Individual.Population population;
+        public Individual.KaryotypicSex karyotypicSex;
+        public Individual.LifeStatus lifeStatus;
+        public Individual.AffectationStatus affectationStatus;
+
+        public Individual toIndividual() {
+            return new Individual(-1, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, null, population, lifeStatus,
+                    affectationStatus);
         }
     }
 

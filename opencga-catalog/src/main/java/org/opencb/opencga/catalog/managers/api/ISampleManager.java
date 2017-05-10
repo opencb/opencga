@@ -72,9 +72,6 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
     @Deprecated
     Long getId(String fileId) throws CatalogException;
 
-    QueryResult<Sample> create(String studyStr, ServerUtils.SampleParameters sampleParams, QueryOptions options, String sessionId)
-            throws CatalogException;
-
     QueryResult<Sample> create(String studyStr, Sample sample, QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<Sample> create(String studyStr, String name, String source, String description, Individual individual,
