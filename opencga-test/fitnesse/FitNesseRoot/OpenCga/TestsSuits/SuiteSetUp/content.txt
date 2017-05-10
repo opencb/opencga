@@ -64,9 +64,17 @@
 | setHeader|Content-Type:application/json|
 | POST | /v1/users/create?sid=$sessionId |200| Content-Type : application/json| jsonbody.error === '' |
 
-!3 Create ACL for User (userA)
+# dep WS 
+#!3 Create ACL for User (userA)
+#!|Table: Rest Fixture | $baseURL  |
+#| setBody | {"members" : "$userA"}|
+#| setHeader|Content-Type:application/json|
+#| POST | /v1/studies/$study/acl/create?sid=$sessionId |200|  Content-Type: application/json ||
+
+!3 Update (Create) ACL for User (userA)
 !|Table: Rest Fixture | $baseURL  |
-| setBody | {"members" : "$userA"}|
+| setBody | {  "action": "ADD",  "study": "$study"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/$study/acl/create?sid=$sessionId |200|  Content-Type: application/json ||
+| POST | /v1/studies/acl/$userA/update?sid=$sessionId |200|  Content-Type: application/json ||
+
 

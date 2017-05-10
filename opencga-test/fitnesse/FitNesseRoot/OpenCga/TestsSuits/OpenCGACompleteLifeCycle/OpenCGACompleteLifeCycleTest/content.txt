@@ -28,47 +28,47 @@
 | POST | /v1/studies/create?sid=$sessionId&projectId=$projectAId |200|  Content-Type: application/json ||
 |let|studyBId|js|response.jsonbody.response[0].result[0].id||
 
-!3 Create ACL For Admin
+!3 Update (Create) ACL For Admin
 !|Table: Rest Fixture | $baseURL |
-| setBody | {  "templateId" : "admin",  "members": "$admin"}|
+| setBody | {  "action": "SET",  "study": "$studyAId",  "template": "admin"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/$studyAId/acl/create?sid=$sessionId|200|  Content-Type: application/json ||
+| POST | /v1/studies/acl/$admin/update?sid=$sessionId|200|  Content-Type: application/json ||
 
-!3 Create ACL For Analyst With Admin
+!3 Update (Create) ACL For Analyst With Admin
 !|Table: Rest Fixture | $baseURL |
-| setBody | {  "templateId" : "analyst",  "members": "$analyst"}|
+| setBody | {  "action": "SET",  "study": "$studyAId",  "template": "analyst"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/$studyAId/acl/create?sid=$adminSessionId|200|  Content-Type: application/json ||
+| POST | /v1/studies/acl/$analyst/update?sid=$adminSessionId|200|  Content-Type: application/json ||
 
 !3 (Negative) Create ACL For ROU Using Analyst
 !|Table: Rest Fixture | $baseURL |
-| setBody | {  "templateId" : "view_only",  "members": "$ROU"}|
+| setBody | {  "action": "SET",  "study": "$studyAId",  "template": "view_only"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/$studyAId/acl/create?sid=$analystSessionId|500|  Content-Type: application/json ||
+| POST | /v1/studies/acl/$ROU/update?sid=$analystSessionId|500|  Content-Type: application/json ||
 
 !3 Create ACL For ROU
 !|Table: Rest Fixture | $baseURL |
-| setBody | {  "templateId" : "view_only",  "members": "$ROU"}|
+| setBody | {  "action": "SET",  "study": "$studyAId",  "template": "view_only"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/$studyAId/acl/create?sid=$sessionId|200|  Content-Type: application/json ||
+| POST | /v1/studies/acl/$ROU/update?sid=$sessionId|200|  Content-Type: application/json ||
 
 !3 (Negative) Remove ACL For ROU Using Analyst
 !|Table: Rest Fixture | $baseURL |
-| setBody | {  "remove" : "view_only"}|
+| setBody | {   "action" :"REMOVE" , "study" : "$studyAId" , "template":"analyst"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/$studyAId/acl/$ROU/update?sid=$analystSessionId|500|  Content-Type: application/json ||
+| POST | /v1/studies/acl/$ROU/update?sid=$analystSessionId|500|  Content-Type: application/json ||
 
 !3 (Negative) Remove ACL For Admin Using ROU
 !|Table: Rest Fixture | $baseURL |
-| setBody | {  "remove" : "admin"}|
+| setBody | { "action" : "REMOVE", "study" : "$studyAId", "template": "admin"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/$studyAId/acl/$admin/update?sid=$ROUSessionId|500|  Content-Type: application/json ||
+| POST | /v1/studies/acl/$admin/update?sid=$ROUSessionId|500|  Content-Type: application/json ||
 
 !3 Create Empty ACL For User A 
 !|Table: Rest Fixture | $baseURL |
-| setBody | { "permissions": "", "members": "$userA"}|
+| setBody | {  "permissions": "", "action": "SET",  "study": "$studyAId"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/$studyAId/acl/create?sid=$sessionId|200|  Content-Type: application/json ||
+| POST | /v1/studies/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json ||
 
 !3 Get Study with Admin 
 !|Table: Rest Fixture | $baseURL |
@@ -148,9 +148,9 @@
 
 !3 Create ACL For User A for Sample A1
 !|Table: Rest Fixture | $baseURL |
-| setBody | { "permissions": "VIEW", "members": "$userA"}|
+| setBody | { "permissions": "VIEW", "action": "SET" , "sample" : "$sA1Id"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/samples/$sA1Id/acl/create?sid=$sessionId|200|  Content-Type: application/json ||
+| POST | /v1/samples/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json ||
 
 !3 Get Sample with User A
 !|Table: Rest Fixture | $baseURL |
@@ -188,9 +188,9 @@
 
 !3 Restrict ACL For Admin for Cohort A1
 !|Table: Rest Fixture | $baseURL |
-| setBody | { "permissions": "", "members": "$admin"}|
+| setBody |  {  "permissions": "", "action": "SET",  "cohort": "$cA1Id"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/cohorts/$cA1Id/acl/create?sid=$sessionId|200|  Content-Type: application/json ||
+| POST | /v1/cohorts/acl/$admin/update?sid=$sessionId|200|  Content-Type: application/json ||
 
 !3 (Negative) Get Cohort A1 with Admin After Restriction
 !|Table: Rest Fixture | $baseURL |
@@ -222,7 +222,7 @@
 
 !3 (Negative) Create Variable Set With User B
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  {  "unique": false,  "name": "$vsA3",  "description": "string",  "variables": [{"name": "variable1","category": "string","type": "BOOLEAN","defaultValue": {},"required": false,"multiValue":false},{"name": "variable2","category": "string","type": "NUMERIC","defaultValue": {},"required": true,"multiValue":false}]}|
+| setBody |  {  "unique": false,  "name": "$vsA3",  "description": "string",  "variables": [{"name": "variable1","category": "string","type": "BOOLEAN","defaultValue": {},"required": false,"multiValue":false},{"name": "variable2","category": "string","type": "INTEGER","defaultValue": {},"required": true,"multiValue":false}]}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/variableset/create?sid=$userBSessionId&study=$studyAId |500| Content-Type : application/json||
 
