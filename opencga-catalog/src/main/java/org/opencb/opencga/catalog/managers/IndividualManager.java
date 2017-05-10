@@ -471,14 +471,11 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         long studyId = catalogManager.getStudyId(studyStr, sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
 
-        List<Sample> samplesToCreate = null;
-        List<Long> samplesToUpdateIndividual = null;
+        List<Sample> samplesToCreate = new ArrayList<>();
+        List<Long> samplesToUpdateIndividual = new ArrayList<>();
 
         // Check that the samples can be created and if they exist, that they don't point to other individual
         if (individualParams.getSamples() != null && individualParams.getSamples().size() > 0) {
-
-            samplesToCreate = new ArrayList<>();
-            samplesToUpdateIndividual = new ArrayList<>();
 
             for (Sample sample : individualParams.getSamples()) {
                 if (sample.getId() > 0) {
