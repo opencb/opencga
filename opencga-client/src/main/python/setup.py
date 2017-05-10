@@ -2,10 +2,8 @@ from distutils.core import setup
 
 setup(
     name='pyCGA',
-    version='1.0.1',
-    scripts=[],
-    packages=['pyCGA', 'pyCGA/Utils'],
-    package_dir={'pyCGA': 'pyCGA'},
+    version='1.1.0-rc2',
+    packages=['pyCGA', 'pyCGA.Utils'],
     url='',
     license='',
     author='antonior,dapregi',
