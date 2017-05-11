@@ -920,40 +920,48 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                 queryResults = authorizationManager.setAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
                 if (aclParams.isPropagate()) {
                     List<Long> sampleIds = getSamplesFromIndividuals(resourceIds);
-                    Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(aclParams.getPermissions(), AclParams.Action.SET,
-                            null, null, null);
-                    catalogManager.getSampleManager().updateAcl(StringUtils.join(sampleIds, ","), studyStr, memberIds,
-                            sampleAclParams, sessionId);
+                    if (sampleIds.size() > 0) {
+                        Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(aclParams.getPermissions(),
+                                AclParams.Action.SET, null, null, null);
+                        catalogManager.getSampleManager().updateAcl(StringUtils.join(sampleIds, ","), studyStr, memberIds, sampleAclParams,
+                                sessionId);
+                    }
                 }
                 break;
             case ADD:
                 queryResults = authorizationManager.addAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
                 if (aclParams.isPropagate()) {
                     List<Long> sampleIds = getSamplesFromIndividuals(resourceIds);
-                    Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(aclParams.getPermissions(), AclParams.Action.ADD,
-                            null, null, null);
-                    catalogManager.getSampleManager().updateAcl(StringUtils.join(sampleIds, ","), studyStr, memberIds,
-                            sampleAclParams, sessionId);
+                    if (sampleIds.size() > 0) {
+                        Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(aclParams.getPermissions(),
+                                AclParams.Action.ADD, null, null, null);
+                        catalogManager.getSampleManager().updateAcl(StringUtils.join(sampleIds, ","), studyStr, memberIds, sampleAclParams,
+                                sessionId);
+                    }
                 }
                 break;
             case REMOVE:
                 queryResults = authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
                 if (aclParams.isPropagate()) {
                     List<Long> sampleIds = getSamplesFromIndividuals(resourceIds);
-                    Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(aclParams.getPermissions(), AclParams.Action.REMOVE,
-                            null, null, null);
-                    catalogManager.getSampleManager().updateAcl(StringUtils.join(sampleIds, ","), studyStr, memberIds,
-                            sampleAclParams, sessionId);
+                    if (sampleIds.size() > 0) {
+                        Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(aclParams.getPermissions(),
+                                AclParams.Action.REMOVE, null, null, null);
+                        catalogManager.getSampleManager().updateAcl(StringUtils.join(sampleIds, ","), studyStr, memberIds,
+                                sampleAclParams, sessionId);
+                    }
                 }
                 break;
             case RESET:
                 queryResults = authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, collectionName);
                 if (aclParams.isPropagate()) {
                     List<Long> sampleIds = getSamplesFromIndividuals(resourceIds);
-                    Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(aclParams.getPermissions(), AclParams.Action.RESET,
-                            null, null, null);
-                    catalogManager.getSampleManager().updateAcl(StringUtils.join(sampleIds, ","), studyStr, memberIds,
-                            sampleAclParams, sessionId);
+                    if (sampleIds.size() > 0) {
+                        Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(aclParams.getPermissions(),
+                                AclParams.Action.RESET, null, null, null);
+                        catalogManager.getSampleManager().updateAcl(StringUtils.join(sampleIds, ","), studyStr, memberIds,
+                                sampleAclParams, sessionId);
+                    }
                 }
                 break;
             default:
