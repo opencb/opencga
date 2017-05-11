@@ -215,17 +215,17 @@ public class SampleMongoDBAdaptorTest {
     @Test
     public void searchByOntology() throws CatalogDBException {
         List<OntologyTerm> ontologyList = Arrays.asList(
-                new OntologyTerm("hpo:123", "One hpo term", "hpo", "whatever", Collections.emptyMap()),
-                new OntologyTerm("hpo:456", "Another hpo term", "hpo", "whatever", Collections.emptyMap()),
-                new OntologyTerm("go:123", "My go term", "go", "whatever", Collections.emptyMap())
+                new OntologyTerm("hpo:123", "One hpo term", "hpo"),
+                new OntologyTerm("hpo:456", "Another hpo term", "hpo"),
+                new OntologyTerm("go:123", "My go term", "go")
         );
         Sample sample1 = new Sample().setName("sample1").setOntologyTerms(ontologyList);
 
         ontologyList = Arrays.asList(
-                new OntologyTerm("hpo:789", "One hpo term", "hpo", "whatever", Collections.emptyMap()),
-                new OntologyTerm("hpo:xxx", "Another hpo term", "hpo", "whatever", Collections.emptyMap()),
-                new OntologyTerm("hpo:456", "Another hpo term", "hpo", "whatever", Collections.emptyMap()),
-                new OntologyTerm("go:yyy", "My go term", "go", "whatever", Collections.emptyMap())
+                new OntologyTerm("hpo:789", "One hpo term", "hpo"),
+                new OntologyTerm("hpo:xxx", "Another hpo term", "hpo"),
+                new OntologyTerm("hpo:456", "Another hpo term", "hpo"),
+                new OntologyTerm("go:yyy", "My go term", "go")
         );
         Sample sample2 = new Sample().setName("sample2").setOntologyTerms(ontologyList);
 
