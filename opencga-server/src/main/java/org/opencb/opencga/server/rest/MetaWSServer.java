@@ -37,11 +37,11 @@ public class MetaWSServer extends OpenCGAWSServer {
     @ApiOperation(httpMethod = "GET", value = "Returns info about current OpenCGA code.")
     public Response getAbout() {
         Map<String, String> info = new HashMap<>(5);
-        info.put("Program: ", "OpenCGA (OpenCB)");
-        info.put("Version: ", GitRepositoryState.get().getBuildVersion());
-        info.put("Git branch: ", GitRepositoryState.get().getBranch());
-        info.put("Git commit: ", GitRepositoryState.get().getCommitId());
-        info.put("Description: ", "Big Data platform for processing and analysing NGS data");
+        info.put("Program", "OpenCGA (OpenCB)");
+        info.put("Version", GitRepositoryState.get().getBuildVersion());
+        info.put("Git branch", GitRepositoryState.get().getBranch());
+        info.put("Git commit", GitRepositoryState.get().getCommitId());
+        info.put("Description", "Big Data platform for processing and analysing NGS data");
         QueryResult queryResult = new QueryResult();
         queryResult.setId("about");
         queryResult.setDbTime(0);
