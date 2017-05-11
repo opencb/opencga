@@ -68,3 +68,6 @@
 {"collection": "family", "fields": {"children.id": 1}, "options": {}}
 {"collection": "family", "fields": {"acl.member": 1, "_studyId": 1}, "options": {}}
 {"collection": "family", "fields": {"status.name": 1, "_studyId": 1}, "options": {}}
+{"collection": "family", "fields": {"annotationSets.name": 1}, "options": {}}
+{"collection": "family", "fields": {"annotationSets.variableSetId": 1}, "options": {}}
+{"collection": "family", "fields": {"annotationSets.annotations.name": 1, "annotationSets.annotations.value": 1}, "options": {}}
