@@ -345,10 +345,10 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/acl/{memberId}/update")
+    @Path("/acl/{memberIds}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
     public Response updateAcl(
-            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
+            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("memberIds") String memberId,
             @ApiParam(value="JSON containing the parameters to add ACLs", required = true) JobAcl params) {
         try {
             AclParams aclParams = new AclParams(params.getPermissions(), params.getAction());
