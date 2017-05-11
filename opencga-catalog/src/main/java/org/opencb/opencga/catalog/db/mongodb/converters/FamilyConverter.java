@@ -19,6 +19,11 @@ public class FamilyConverter extends GenericDocumentComplexConverter<Family> {
     }
 
     @Override
+    public Family convertToDataModelType(Document document) {
+        return super.convertToDataModelType(document);
+    }
+
+    @Override
     public Document convertToStorageType(Family object) {
         Document document = super.convertToStorageType(object);
         document.put("id", document.getInteger("id").longValue());

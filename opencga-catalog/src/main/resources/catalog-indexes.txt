@@ -61,3 +61,10 @@
 {"collection": "dataset", "fields": {"files": 1}, "options": {}}
 {"collection": "dataset", "fields": {"acl.member": 1, "_studyId": 1}, "options": {}}
 {"collection": "dataset", "fields": {"status.name": 1, "_studyId": 1}, "options": {}}
+
+{"collection": "family", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true}}
+{"collection": "family", "fields": {"mother.id": 1}, "options": {}}
+{"collection": "family", "fields": {"father.id": 1}, "options": {}}
+{"collection": "family", "fields": {"children.id": 1}, "options": {}}
+{"collection": "family", "fields": {"acl.member": 1, "_studyId": 1}, "options": {}}
+{"collection": "family", "fields": {"status.name": 1, "_studyId": 1}, "options": {}}

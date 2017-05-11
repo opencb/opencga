@@ -1,17 +1,13 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
-import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.annotate.JsonProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
-import org.opencb.opencga.catalog.models.AnnotationSet;
-import org.opencb.opencga.catalog.models.Family;
-import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.OntologyTerm;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.core.exception.VersionException;
 
@@ -22,10 +18,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -49,7 +42,6 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "lazy", value = "False to return the entire individual object", defaultValue = "true", dataType = "boolean", paramType = "query")
     })
     public Response infoFamily(@ApiParam(value = "Comma separated list of family IDs or names", required = true)
                                @PathParam("families") String familyStr,
@@ -70,19 +62,45 @@ public class FamilyWSServer extends OpenCGAWSServer {
         }
     }
 
+    @GET
+    @Path("/search")
+    @ApiOperation(value = "Multi-study search that allows the user to look for families from from different studies of the same project "
+            + "applying filters.", position = 4, response = Sample[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
+    public Response search(@ApiParam(value = "Study [[user@]project:]{study1,study2|*}  where studies and project can be either the id or"
+                                   + " alias.") @QueryParam("study") String studyStr,
+                           @ApiParam(value = "Family name") @QueryParam("name") String name,
+                           @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
+                           @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("individual") String
+                                       individual,
+                           @ApiParam(value = "Ontology terms") @QueryParam("ontologies") String ontologies,
+                           @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
+                           @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,
+                           @ApiParam(value = "annotation") @QueryParam("annotation") String annotation,
+                           @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
+        try {
+            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
+            QueryResult<Family> queryResult = familyManager.search(studyStr, query, queryOptions, sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @POST
     @Path("/create")
     @ApiOperation(value = "Create family", position = 2, response = Family.class)
     public Response createFamilyPOST(
-            @ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(value="JSON containing family information", required = true) CreateFamilyPOST family) {
         try {
-            if (StringUtils.isNotEmpty(studyIdStr)) {
-                studyStr = studyIdStr;
-            }
-
             QueryResult<Family> queryResult = familyManager.create(studyStr, family.toFamily(), queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -312,9 +330,10 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public Family toFamily() {
             return new Family(name, father != null ? father.toIndividual() : null, mother != null ? mother.toIndividual() : null,
                     children != null
-                            ? children.stream().map(IndividualWSServer.IndividualPOST::toIndividual).collect(Collectors.toList())
+                            ? children.stream().filter(Objects::nonNull).map(IndividualWSServer.IndividualPOST::toIndividual)
+                                .collect(Collectors.toList())
                             : null,
-                    parentalConsanguinity, description, ontologyTerms, null, attributes);
+                    parentalConsanguinity != null ? parentalConsanguinity : false, description, ontologyTerms, null, attributes);
         }
     }
 

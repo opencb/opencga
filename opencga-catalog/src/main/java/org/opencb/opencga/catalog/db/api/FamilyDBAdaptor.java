@@ -21,9 +21,9 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         ID("id", INTEGER, ""),
         NAME("name", TEXT, ""),
         PARENTAL_CONSANGUINITY("parentalConsanguinity", BOOLEAN, ""),
-        FATHER_ID("fatherId", TEXT, ""),
-        MOTHER_ID("motherId", TEXT, ""),
-        CHILDREN_IDS("childrenIds", TEXT_ARRAY, ""),
+        FATHER_ID("fatherId", INTEGER, ""),
+        MOTHER_ID("motherId", INTEGER, ""),
+        CHILDREN_IDS("childrenIds", INTEGER_ARRAY, ""),
         CREATION_DATE("creationDate", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

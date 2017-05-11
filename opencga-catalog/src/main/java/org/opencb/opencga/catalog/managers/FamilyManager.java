@@ -329,6 +329,70 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         return get(query.getLong(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), -1), query, options, sessionId);
     }
 
+
+    public QueryResult<Family> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
+        final String individualParam = "individual";
+
+        String userId = catalogManager.getUserManager().getId(sessionId);
+        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
+
+        // Check any permission in studies
+        for (Long studyId : studyIds) {
+            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
+        }
+
+        // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
+        MyResourceIds resourceIds = null;
+        // FIXME: Although the search method is multi-study, we can only use the smart resolutor for one study at the moment.
+        if (StringUtils.isNotEmpty(query.getString(individualParam)) && studyIds.size() == 1) {
+             resourceIds = catalogManager.getIndividualManager().getIds(query.getString(individualParam), Long.toString(studyIds.get(0)),
+                     sessionId);
+             query.remove(individualParam);
+        }
+
+        QueryResult<Family> queryResult = null;
+        for (Long studyId : studyIds) {
+            query.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
+            QueryResult<Family> queryResultAux;
+            if (resourceIds == null) {
+                queryResultAux = familyDBAdaptor.get(query, options);
+            } else {
+                // TODO: Because we still don't have a way to make an or, we have to make three different calls to search for all the
+                // TODO: possibilities where the individual can be found inside the family.
+                Query query1 = new Query(query).append(FamilyDBAdaptor.QueryParams.MOTHER_ID.key(), resourceIds.getResourceIds());
+                queryResultAux = familyDBAdaptor.get(query1, options);
+
+                query1 = new Query(query).append(FamilyDBAdaptor.QueryParams.FATHER_ID.key(), resourceIds.getResourceIds());
+                QueryResult<Family> fatherResult = familyDBAdaptor.get(query1, options);
+
+                query1 = new Query(query).append(FamilyDBAdaptor.QueryParams.CHILDREN_IDS.key(), resourceIds.getResourceIds());
+                QueryResult<Family> childrenResult = familyDBAdaptor.get(query1, options);
+
+                queryResultAux.getResult().addAll(fatherResult.getResult());
+                queryResultAux.getResult().addAll(childrenResult.getResult());
+
+                queryResultAux.setDbTime(queryResultAux.getDbTime() + fatherResult.getDbTime() + childrenResult.getDbTime());
+                queryResultAux.setNumResults(queryResultAux.getNumResults() + fatherResult.getNumResults()
+                        + childrenResult.getNumResults());
+                queryResultAux.setNumTotalResults(queryResultAux.getNumTotalResults() + fatherResult.getNumTotalResults()
+                        + childrenResult.getNumTotalResults());
+            }
+            authorizationManager.filterFamilies(userId, studyId, queryResultAux.getResult());
+
+            if (queryResult == null) {
+                queryResult = queryResultAux;
+            } else {
+                queryResult.getResult().addAll(queryResultAux.getResult());
+                queryResult.setNumTotalResults(queryResult.getNumTotalResults() + queryResultAux.getNumTotalResults());
+                queryResult.setDbTime(queryResult.getDbTime() + queryResultAux.getDbTime());
+            }
+        }
+        queryResult.setNumResults(queryResult.getResult().size());
+
+        return queryResult;
+    }
+
     @Override
     public QueryResult<Family> update(Long id, ObjectMap parameters, QueryOptions options, String sessionId) throws CatalogException {
         parameters = ParamUtils.defaultObject(parameters, ObjectMap::new);

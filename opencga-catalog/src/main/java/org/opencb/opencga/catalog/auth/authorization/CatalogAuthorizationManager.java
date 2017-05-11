@@ -1151,6 +1151,19 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
 
             family.setAcl(null);
+            if (family.getFather() != null && family.getFather().getAcl() != null) {
+                family.getFather().setAcl(null);
+            }
+            if (family.getMother() != null && family.getMother().getAcl() != null) {
+                family.getMother().setAcl(null);
+            }
+            if (family.getChildren() != null && family.getChildren() != null && family.getChildren().size() > 0) {
+                for (Individual individual : family.getChildren()) {
+                    if (individual != null && individual.getAcl() != null) {
+                        individual.setAcl(null);
+                    }
+                }
+            }
         }
     }
 

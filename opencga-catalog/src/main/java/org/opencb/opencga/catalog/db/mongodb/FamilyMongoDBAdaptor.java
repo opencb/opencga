@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.result.DeleteResult;
@@ -16,6 +17,7 @@ import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.FamilyConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
@@ -74,8 +76,25 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         } else {
             qOptions = new QueryOptions();
         }
+
         QueryResult<Family> familyQueryResult;
-        familyQueryResult = familyCollection.find(bson, familyConverter, qOptions);
+
+        Bson match = Aggregates.match(bson);
+        Bson lookupMother = Aggregates.lookup("individual", "mother.id", IndividualDBAdaptor.QueryParams.ID.key(), "mother");
+        Bson lookupFather = Aggregates.lookup("individual", "father.id", IndividualDBAdaptor.QueryParams.ID.key(), "father");
+        Bson unwindMother = Aggregates.unwind("$mother");
+        Bson unwindFather = Aggregates.unwind("$father");
+
+        // To be able to lookup by children, we need first to de-normalise the content
+//        Bson unwind = Aggregates.unwind("$children");
+//        Bson lookupChildren = Aggregates.lookup("individual", "children.id", IndividualDBAdaptor.QueryParams.ID.key(), "child");
+//        Bson unwindResult = Aggregates.unwind("$child");
+//        Bson group = Aggregates.group("$" + PRIVATE_ID, Accumulators.push("children", "$child"));
+
+        familyQueryResult = familyCollection.aggregate(
+                Arrays.asList(match, lookupMother, lookupFather, unwindMother, unwindFather),
+                familyConverter, options);
+//        familyQueryResult = familyCollection.find(bson, familyConverter, qOptions);
 
         logger.debug("Family get: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 qOptions == null ? "" : qOptions.toJson(), familyQueryResult.getDbTime());
