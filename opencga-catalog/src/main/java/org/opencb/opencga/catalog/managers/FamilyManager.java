@@ -116,7 +116,7 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
 
         if (StringUtils.isNumeric(familyStr) && Long.parseLong(familyStr) > configuration.getCatalog().getOffset()) {
             familyIds = Arrays.asList(Long.parseLong(familyStr));
-            familyDBAdaptor.exists(familyIds.get(0));
+            familyDBAdaptor.checkId(familyIds.get(0));
             studyId = familyDBAdaptor.getStudyId(familyIds.get(0));
             userId = catalogManager.getUserManager().getId(sessionId);
         } else {
