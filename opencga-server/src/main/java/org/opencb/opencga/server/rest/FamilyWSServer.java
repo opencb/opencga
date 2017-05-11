@@ -2,6 +2,7 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
+import org.codehaus.jackson.annotate.JsonProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -25,6 +26,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by pfurio on 03/05/17.
@@ -75,26 +77,20 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value="JSON containing family information", required = true) Family family) {
+            @ApiParam(value="JSON containing family information", required = true) CreateFamilyPOST family) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
 
-            QueryResult<Family> queryResult = familyManager.create(studyStr, family, queryOptions, sessionId);
+            QueryResult<Family> queryResult = familyManager.create(studyStr, family.toFamily(), queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
-    public static class UpdateFamily {
-        public String name;
-        public String description;
-        public List<OntologyTerm> ontologyTerms;
-        public List<Individual> individualIds;
-        public Map<String, Object> attributes;
-    }
+
 
     @POST
     @Path("/{family}/update")
@@ -103,7 +99,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
     public Response updateByPost(@ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                  @QueryParam("study") String studyStr,
-                                 @ApiParam(value = "params", required = true) UpdateFamily parameters) {
+                                 @ApiParam(value = "params", required = true) UpdateFamilyPOST parameters) {
         try {
             AbstractManager.MyResourceId resourceId = catalogManager.getFamilyManager().getId(familyStr, studyStr, sessionId);
 
@@ -292,5 +288,34 @@ public class FamilyWSServer extends OpenCGAWSServer {
         }
     }
 
+    private static class FamilyPOST {
+        public String name;
+
+        public Boolean parentalConsanguinity;
+
+        public String description;
+        public List<OntologyTerm> ontologyTerms;
+        public Map<String, Object> attributes;
+    }
+
+    private static class UpdateFamilyPOST extends FamilyPOST {
+        public Long motherId;
+        public Long fatherId;
+        public List<Long> childrenIds;
+    }
+
+    private static class CreateFamilyPOST extends FamilyPOST {
+        public IndividualWSServer.IndividualPOST mother;
+        public IndividualWSServer.IndividualPOST father;
+        public List<IndividualWSServer.IndividualPOST> children;
+
+        public Family toFamily() {
+            return new Family(name, father != null ? father.toIndividual() : null, mother != null ? mother.toIndividual() : null,
+                    children != null
+                            ? children.stream().map(IndividualWSServer.IndividualPOST::toIndividual).collect(Collectors.toList())
+                            : null,
+                    parentalConsanguinity, description, ontologyTerms, null, attributes);
+        }
+    }
 
 }

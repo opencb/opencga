@@ -34,8 +34,11 @@ public class Individual extends Annotable<IndividualAclEntry> {
 
     private long id;
     private String name;
+    @Deprecated
     private long fatherId;
+    @Deprecated
     private long motherId;
+    @Deprecated
     private String family;
     private Sex sex;
     private KaryotypicSex karyotypicSex;

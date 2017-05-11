@@ -763,10 +763,13 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     // Data models
 
-    private static class IndividualPOST {
+    protected static class IndividualPOST {
         public String name;
+        @Deprecated
         public String family;
+        @Deprecated
         public long fatherId;
+        @Deprecated
         public long motherId;
         public Individual.Sex sex;
         public String ethnicity;
