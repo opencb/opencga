@@ -64,7 +64,9 @@ public interface AuthorizationManager {
                 StudyAclEntry.StudyPermissions.WRITE_COHORTS, StudyAclEntry.StudyPermissions.VIEW_COHORTS,
                 StudyAclEntry.StudyPermissions.WRITE_COHORT_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS,
                 StudyAclEntry.StudyPermissions.WRITE_DATASETS, StudyAclEntry.StudyPermissions.VIEW_DATASETS,
-                StudyAclEntry.StudyPermissions.WRITE_PANELS, StudyAclEntry.StudyPermissions.VIEW_PANELS);
+                StudyAclEntry.StudyPermissions.WRITE_PANELS, StudyAclEntry.StudyPermissions.VIEW_PANELS,
+                StudyAclEntry.StudyPermissions.WRITE_FAMILIES, StudyAclEntry.StudyPermissions.VIEW_FAMILIES,
+                StudyAclEntry.StudyPermissions.WRITE_FAMILY_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS);
     }
 
     static EnumSet<StudyAclEntry.StudyPermissions> getViewOnlyAcls() {
@@ -75,7 +77,8 @@ public interface AuthorizationManager {
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS,
                 StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_COHORTS,
                 StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_DATASETS,
-                StudyAclEntry.StudyPermissions.VIEW_PANELS);
+                StudyAclEntry.StudyPermissions.VIEW_PANELS, StudyAclEntry.StudyPermissions.VIEW_FAMILIES,
+                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS);
     }
 
     static EnumSet<StudyAclEntry.StudyPermissions> getLockedAcls() {
