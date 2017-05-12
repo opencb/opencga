@@ -77,8 +77,12 @@ public class FamilyWSServer extends OpenCGAWSServer {
                                    + " alias.") @QueryParam("study") String studyStr,
                            @ApiParam(value = "Family name") @QueryParam("name") String name,
                            @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
-                           @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("individual") String
-                                       individual,
+                           @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("mother") String
+                                       mother,
+                           @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("father") String
+                                       father,
+                           @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("children") String
+                                       children,
                            @ApiParam(value = "Ontology terms") @QueryParam("ontologies") String ontologies,
                            @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
                            @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,

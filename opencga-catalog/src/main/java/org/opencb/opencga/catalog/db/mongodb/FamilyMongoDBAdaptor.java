@@ -2,7 +2,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.result.DeleteResult;
@@ -17,7 +16,6 @@ import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.FamilyConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
@@ -79,11 +77,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
 
         QueryResult<Family> familyQueryResult;
 
-        Bson match = Aggregates.match(bson);
-        Bson lookupMother = Aggregates.lookup("individual", "mother.id", IndividualDBAdaptor.QueryParams.ID.key(), "mother");
-        Bson lookupFather = Aggregates.lookup("individual", "father.id", IndividualDBAdaptor.QueryParams.ID.key(), "father");
-        Bson unwindMother = Aggregates.unwind("$mother");
-        Bson unwindFather = Aggregates.unwind("$father");
+//        Bson match = Aggregates.match(bson);
+//        Bson lookupMother = Aggregates.lookup("individual", "mother.id", IndividualDBAdaptor.QueryParams.ID.key(), "mother");
+//        Bson lookupFather = Aggregates.lookup("individual", "father.id", IndividualDBAdaptor.QueryParams.ID.key(), "father");
+//        Bson unwindMother = Aggregates.unwind("$mother");
+//        Bson unwindFather = Aggregates.unwind("$father");
 
         // To be able to lookup by children, we need first to de-normalise the content
 //        Bson unwind = Aggregates.unwind("$children");
@@ -91,14 +89,45 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
 //        Bson unwindResult = Aggregates.unwind("$child");
 //        Bson group = Aggregates.group("$" + PRIVATE_ID, Accumulators.push("children", "$child"));
 
-        familyQueryResult = familyCollection.aggregate(
-                Arrays.asList(match, lookupMother, lookupFather, unwindMother, unwindFather),
-                familyConverter, options);
-//        familyQueryResult = familyCollection.find(bson, familyConverter, qOptions);
+//        familyQueryResult = familyCollection.aggregate(
+//                Arrays.asList(match, lookupMother, lookupFather, unwindMother, unwindFather),
+//                familyConverter, options);
+        familyQueryResult = familyCollection.find(bson, familyConverter, qOptions);
+        addMemberInfoToFamily(familyQueryResult);
 
         logger.debug("Family get: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 qOptions == null ? "" : qOptions.toJson(), familyQueryResult.getDbTime());
         return endQuery("Get family", startTime, familyQueryResult);
+    }
+
+    public void addMemberInfoToFamily(QueryResult<Family> familyQueryResult) {
+        if (familyQueryResult.getResult() == null || familyQueryResult.getResult().size() == 0) {
+            return;
+        }
+        for (Family family : familyQueryResult.getResult()) {
+            family.setFather(getIndividual(family.getFather()));
+            family.setMother(getIndividual(family.getMother()));
+            if (family.getChildren() != null && family.getChildren().size() > 0) {
+                family.setChildren(family.getChildren().stream().map(this::getIndividual).collect(Collectors.toList()));
+            }
+        }
+    }
+
+    private Individual getIndividual(Individual individual) {
+        Individual retIndividual = individual;
+        if (individual != null && individual.getId() > 0) {
+            QueryResult<Individual> individualQueryResult = null;
+            try {
+                individualQueryResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(individual.getId(),
+                        QueryOptions.empty());
+            } catch (CatalogDBException e) {
+                logger.error(e.getMessage(), e);
+            }
+            if (individualQueryResult.getNumResults() == 1) {
+                retIndividual = individualQueryResult.first();
+            }
+        }
+        return retIndividual;
     }
 
     @Override
