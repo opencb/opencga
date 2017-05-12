@@ -142,13 +142,12 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{family}/annotationsets/search")
     @ApiOperation(value = "Search annotation sets [NOT TESTED]", position = 11)
-    public Response searchAnnotationSetGET(@ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
-                                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                           @QueryParam("study") String studyStr,
-                                           @ApiParam(value = "variableSetId") @QueryParam("variableSetId") long variableSetId,
-                                           @ApiParam(value = "annotation") @QueryParam("annotation") String annotation,
-                                           @ApiParam(value = "Indicates whether to show the annotations as key-value",
-                                                   defaultValue = "false") @QueryParam("asMap") boolean asMap) {
+    public Response searchAnnotationSetGET(
+            @ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Variable set id or name") @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "annotation") @QueryParam("annotation") String annotation,
+            @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(familyManager.searchAnnotationSetAsMap(familyStr, studyStr, variableSetId, annotation, sessionId));
@@ -187,7 +186,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "FamilyId", required = true) @PathParam("family") String familyStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value = "VariableSetId of the new annotation", required = true) @QueryParam("variableSetId") long variableSetId,
+            @ApiParam(value = "Variable set id or name", required = true) @QueryParam("variableSetId") String variableSetId,
             @ApiParam(value="JSON containing the annotation set name and the array of annotations. The name should be unique for the "
                     + "family", required = true) CohortWSServer.AnnotationsetParameters params) {
         try {
