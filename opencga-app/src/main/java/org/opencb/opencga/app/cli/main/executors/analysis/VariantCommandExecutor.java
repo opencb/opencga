@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli.main.executors.analysis;
 
 import com.google.protobuf.util.JsonFormat;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFHeader;
 import io.grpc.ManagedChannel;
@@ -324,7 +325,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             });
         }
 
-        // Prepare samples for the VCF
+        // Prepare samples for the VCF header
         List<String> samples = null;
         if (StringUtils.isEmpty(study)) {
             if (samplePerStudy.size() == 1) {
@@ -334,6 +335,13 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             if (study.contains(":")) {
                 study = study.split(":")[1];
+            } else {
+                if (clientConfiguration.getAlias().get(study) != null) {
+                    study = clientConfiguration.getAlias().get(study);
+                    if (study.contains(":")) {
+                        study = study.split(":")[1];
+                    }
+                }
             }
             samples = samplePerStudy.get(study);
         }
@@ -345,24 +353,23 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
 
         // Prepare other VCF fields
-        List<String> cohorts = Arrays.asList("ALL");
+        List<String> cohorts = Arrays.asList("ALL", "MXL");
         List<String> formats = new ArrayList<>();
         List<String> formatTypes = new ArrayList<>();
         List<Integer> formatArities = new ArrayList<>();
         List<String> formatDescriptions = new ArrayList<>();
 
         if (clientConfiguration.getVariant() != null && clientConfiguration.getVariant().getIncludeFormats() != null) {
-            String studyName = null;
+            String studyConfigAlias = null;
             if (clientConfiguration.getVariant().getIncludeFormats().get(study) != null) {
-                studyName = study;
+                studyConfigAlias = study;
             } else {
-                // checking study alias
+                // Search for the study alias
                 if (clientConfiguration.getAlias() != null) {
-
                     for (Map.Entry<String, String> stringStringEntry : clientConfiguration.getAlias().entrySet()) {
-                        if (stringStringEntry.getValue().equals(study)) {
-                            studyName = stringStringEntry.getKey();
-                            logger.info("Updating study name by alias (key) when including formats: from " + study + " to " + studyName);
+                        if (stringStringEntry.getValue().contains(study)) {
+                            studyConfigAlias = stringStringEntry.getKey();
+                            logger.debug("Updating study name by alias (key) when including formats: from " + study + " to " + studyConfigAlias);
                             break;
                         }
                     }
@@ -370,23 +377,32 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             }
 
             // create format arrays (names, types, arities, descriptions)
-            String formatFields = clientConfiguration.getVariant().getIncludeFormats().get(studyName);
+            String formatFields = clientConfiguration.getVariant().getIncludeFormats().get(studyConfigAlias);
             if (formatFields != null) {
                 String[] fields = formatFields.split(",");
                 for (String field : fields) {
                     String[] subfields = field.split(":");
-                    formats.add(subfields[0]);
-                    formatTypes.add(subfields[1]);
-                    if (StringUtils.isEmpty(subfields[2]) || !StringUtils.isNumeric(subfields[2])) {
-                        formatArities.add(1);
-                        logger.info("Invalid arity for format " + subfields[0] + ", updating arity to 1");
+                    if (subfields.length == 4) {
+                        formats.add(subfields[0]);
+                        formatTypes.add(subfields[1]);
+                        if (StringUtils.isEmpty(subfields[2]) || !StringUtils.isNumeric(subfields[2])) {
+                            formatArities.add(1);
+                            logger.debug("Invalid arity for format " + subfields[0] + ", updating arity to 1");
+                        } else {
+                            formatArities.add(Integer.parseInt(subfields[2]));
+                        }
+                        formatDescriptions.add(subfields[3]);
                     } else {
-                        formatArities.add(Integer.parseInt(subfields[2]));
+                        // We do not need the extra information fields for "GT", "AD", "DP", "GQ", "PL".
+                        formats.add(subfields[0]);
+                        formatTypes.add("");
+                        formatArities.add(0);
+                        formatDescriptions.add("");
                     }
-                    formatDescriptions.add(subfields[3]);
                 }
             } else {
-                logger.info("No formats found for " + study);
+                logger.debug("No formats found for: {}, setting default format: {}", study, VcfUtils.DEFAULT_SAMPLE_FORMAT);
+                formats = VcfUtils.DEFAULT_SAMPLE_FORMAT;
             }
         }
 

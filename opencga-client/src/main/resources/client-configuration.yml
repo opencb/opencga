@@ -8,8 +8,9 @@ sessionDuration: 12000  # number of seconds that session remains open
 defaultStudy: ""
 
 # Alias to different studies, these can be fully qualified: user@project:study
-#alias:
-#  1kg_grch37: hgvauser@reference_grch37:1kG_phase3
+alias:
+  1kg_grch37: hgvauser@reference_grch37:1kG_phase3
+  RD370616: researchcga@grch37_germline:RD370616
 #  1kg_grch38: reference_grch38:1kG_phase3
 
 # The default organism values can be defined here.
@@ -32,11 +33,11 @@ grpc:
   host: "${OPENCGA.CLIENT.GRPC.HOST}"
 
 ## Configure the default behaviour when query variants
-#variant:
-#  unknownGenotype: "0/0"
-  # each study can have a different format
-#  includeFormats:
-#    1kg_grch37: "GT:String::none,GQ:Integer::none,DP:Integer::none,DPF:Integer::none,AD:String::none,PF:String::none"
-#    RD370616: "GT:String::none,GQ:Integer::none,DP:Integer::none,DPF:Integer::none,AD:String::none,PF:String::none"
+variant:
+  unknownGenotype: "0/0"
+#   each study can have a different format
+  includeFormats:
+    1kg_grch37: "GT,AD,DP,GQ"
+    RD370616: "GT,AD,DP,GQ,DPF:Integer::none,PF:String::none"
 #  vcf:
 #    header: true
