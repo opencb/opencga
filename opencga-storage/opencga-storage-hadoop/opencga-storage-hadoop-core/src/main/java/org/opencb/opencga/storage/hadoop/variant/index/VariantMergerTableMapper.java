@@ -73,6 +73,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
             VariantType.SNV, VariantType.SNP,
             VariantType.INDEL, VariantType.INSERTION, VariantType.DELETION,
             VariantType.MNV, VariantType.MNP);
+    private List<String> expectedFormats;
 
     private boolean isParallel() {
         return this.parallel.get();
@@ -109,7 +110,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
         }
 
         // TODO: Allow other fields! Read from configuration
-        List<String> expectedFormats = Arrays.asList(VariantMerger.GT_KEY, VariantMerger.GENOTYPE_FILTER_KEY);
+        expectedFormats = Arrays.asList(VariantMerger.GT_KEY, VariantMerger.GENOTYPE_FILTER_KEY);
 
         variantMerger = new VariantMerger(true);
         variantMerger.setStudyId(Integer.toString(getStudyConfiguration().getStudyId()));
@@ -563,7 +564,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
                         for (StudyEntry tse : tar.getStudies()) {
                             StudyEntry se = new StudyEntry(tse.getStudyId());
                             se.setFiles(Collections.singletonList(new FileEntry("", "", new HashMap<>())));
-                            se.setFormat(Arrays.asList(VariantMerger.GT_KEY, VariantMerger.GENOTYPE_FILTER_KEY));
+                            se.setFormat(expectedFormats);
                             se.setSamplesPosition(new HashMap<>());
                             se.setSamplesData(new ArrayList<>());
                             tarNew.addStudyEntry(se);
@@ -604,44 +605,19 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
         }
     }
 
-    // Find only Objects with the same object ID
-    private static class VariantWrapper {
-        private volatile Variant var;
-        VariantWrapper(final Variant var) {
-            this.var = var;
-        }
-
-        @Override
-        public int hashCode() {
-            return System.identityHashCode(this.var);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (!(o instanceof VariantWrapper)) {
-                return false;
-            }
-            VariantWrapper wrapper = (VariantWrapper) o;
-            return this.var.equals(wrapper.var);
-        }
-    }
-
     private Collection<Variant> buildOverlappingNonRedundantSet(Variant var, final NavigableMap<Integer, List<Variant>> archiveVar) {
         int min = toPosition(var, true);
         int max = toPosition(var, false);
-        Set<VariantWrapper> vars = new HashSet<>();
+        Map<Variant, Object> vars = new IdentityHashMap<>();
         IntStream.range(min, max + 1).boxed().forEach(p -> {
             List<Variant> lst = archiveVar.get(p);
             if (null != lst) {
                 for (Variant v : lst) {
-                    vars.add(new VariantWrapper(v)); // Wrap for faster 'HashCode' comparison.
+                    vars.put(v, null);
                 }
             }
         });
-        return vars.stream().map(v -> v.var).collect(Collectors.toList());
+        return vars.keySet();
     }
 
     /**
