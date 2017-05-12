@@ -66,7 +66,8 @@ public class CatalogSampleAnnotationsLoader {
         //Take or infer the VariableSet
         VariableSet variableSet;
         if (variableSetId != null) {
-            variableSet = catalogManager.getVariableSet(variableSetId, null, sessionId).getResult().get(0);
+            variableSet = catalogManager.getStudyManager().getVariableSet(Long.toString(studyId), Long.toString(variableSetId), null,
+                    sessionId).first();
         } else {
             variableSet = getVariableSetFromPedFile(ped);
             CatalogAnnotationsValidator.checkVariableSet(variableSet);

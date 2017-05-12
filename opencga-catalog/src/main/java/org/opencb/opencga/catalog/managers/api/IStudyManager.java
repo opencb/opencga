@@ -136,19 +136,22 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
                                                Map<String, Object> attributes, Set<Variable> variables, String sessionId)
             throws CatalogException;
 
-    QueryResult<VariableSet> readVariableSet(long variableSet, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<VariableSet> getVariableSet(String studyStr, String variableSet, QueryOptions options, String sessionId)
+            throws CatalogException;
 
     QueryResult<VariableSet> searchVariableSets(String studyStr, Query query, QueryOptions options, String sessionId)
             throws CatalogException;
 
-    QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions, String sessionId) throws CatalogException;
+    QueryResult<VariableSet> deleteVariableSet(String studyStr, String variableSetStr, String sessionId) throws CatalogException;
 
-    QueryResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable, String sessionId) throws CatalogException;
-
-    QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name, String sessionId) throws CatalogException;
-
-    QueryResult<VariableSet> renameFieldFromVariableSet(long variableSetId, String oldName, String newName, String sessionId)
+    QueryResult<VariableSet> addFieldToVariableSet(String studyStr, String variableSetStr, Variable variable, String sessionId)
             throws CatalogException;
+
+    QueryResult<VariableSet> removeFieldFromVariableSet(String studyStr, String variableSetStr, String name, String sessionId)
+            throws CatalogException;
+
+    QueryResult<VariableSet> renameFieldFromVariableSet(String studyStr, String variableSetStr, String oldName, String newName,
+                                                        String sessionId) throws CatalogException;
 
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.
@@ -337,5 +340,5 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
 
     QueryResult<DiseasePanel> updateDiseasePanel(String panelStr, ObjectMap parameters, String sessionId) throws CatalogException;
 
-    QueryResult<VariableSetSummary> getVariableSetSummary(long variableSetId, String sessionId) throws CatalogException;
+    QueryResult<VariableSetSummary> getVariableSetSummary(String studyStr, String variableSetId, String sessionId) throws CatalogException;
 }

@@ -850,12 +850,14 @@ public class CatalogManagerTest extends GenericTest {
         );
         VariableSet vs1 = catalogManager.createVariableSet(studyId, "vs1", true, "", null, variables, sessionIdUser).first();
 
-        VariableSet vs1_deleted = catalogManager.deleteVariableSet(vs1.getId(), null, sessionIdUser).first();
+        VariableSet vs1_deleted = catalogManager.getStudyManager().deleteVariableSet(Long.toString(studyId), Long.toString(vs1.getId()),
+                sessionIdUser).first();
 
         assertEquals(vs1.getId(), vs1_deleted.getId());
 
-        thrown.expect(CatalogDBException.class);    //VariableSet does not exist
-        catalogManager.getVariableSet(vs1.getId(), null, sessionIdUser);
+        thrown.expect(CatalogException.class);    //VariableSet does not exist
+        thrown.expectMessage("not found");
+        catalogManager.getStudyManager().getVariableSet(Long.toString(studyId), vs1.getName(), null, sessionIdUser);
     }
 
     @Test
@@ -909,9 +911,10 @@ public class CatalogManagerTest extends GenericTest {
                 sessionIdUser);
 
         try {
-            catalogManager.deleteVariableSet(vs1.getId(), null, sessionIdUser).first();
+            catalogManager.getStudyManager().deleteVariableSet(Long.toString(studyId), Long.toString(vs1.getId()), sessionIdUser).first();
         } finally {
-            VariableSet variableSet = catalogManager.getVariableSet(vs1.getId(), null, sessionIdUser).first();
+            VariableSet variableSet = catalogManager.getStudyManager().getVariableSet(Long.toString(studyId), vs1.getName(), null,
+                    sessionIdUser).first();
             assertEquals(vs1.getId(), variableSet.getId());
 
             thrown.expect(CatalogDBException.class); //Expect the exception from the try
@@ -1399,7 +1402,7 @@ public class CatalogManagerTest extends GenericTest {
         long variableSetId = study.getVariableSets().get(0).getId();
 
         QueryResult<VariableSetSummary> variableSetSummary = catalogManager.getStudyManager()
-                .getVariableSetSummary(variableSetId, sessionIdUser);
+                .getVariableSetSummary(Long.toString(studyId), Long.toString(variableSetId), sessionIdUser);
 
         assertEquals(1, variableSetSummary.getNumResults());
         VariableSetSummary summary = variableSetSummary.first();
