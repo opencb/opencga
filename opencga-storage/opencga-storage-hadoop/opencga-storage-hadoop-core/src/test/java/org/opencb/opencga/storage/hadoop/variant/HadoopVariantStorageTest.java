@@ -477,7 +477,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         }
 
         @Override
-        protected void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException {
+        protected void map(VariantMapReduceContext ctx) throws IOException, InterruptedException {
             if (Bytes.toString(ctx.getCurrRowKey()).equals(sliceToFail)) {
                 if (!hadFail.getAndSet(true)) {
                     System.out.println("DO FAIL!!");
@@ -485,7 +485,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                     throw new RuntimeException();
                 }
             }
-            super.doMap(ctx);
+            super.map(ctx);
         }
     }
 

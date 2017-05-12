@@ -28,9 +28,6 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.variant.merge.VariantMerger;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.AbstractHBaseVariantMapper;
 import org.opencb.opencga.storage.hadoop.variant.AnalysisTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -58,8 +55,6 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
     private Logger logger = LoggerFactory.getLogger(AbstractArchiveTableMapper.class);
 
     protected ArchiveResultToVariantConverter resultConverter;
-    protected VariantMerger variantMerger;
-    protected Set<String> currentIndexingSamples;
     protected Integer archiveBatchSize;
     private ArchiveRowKeyFactory rowKeyFactory;
     private boolean specificPut;
@@ -69,9 +64,6 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         return resultConverter;
     }
 
-    protected VariantMerger getVariantMerger() {
-        return variantMerger;
-    }
 
 
     /**
@@ -87,7 +79,9 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
                 .collect(Collectors.toSet());
     }
 
-    protected List<Variant> parseCurrentVariantsRegion(List<Cell> variantCells, String chromosome) {
+    protected List<Variant> parseCurrentVariantsRegion(VariantMapReduceContext ctx) {
+        String chromosome = ctx.getChromosome();
+        List<Cell> variantCells = GenomeHelper.getVariantColumns(ctx.getValue().rawCells());
         List<VariantTableStudyRow> tableStudyRows = parseVariantStudyRowsFromArchive(variantCells, chromosome);
         HBaseToVariantConverter converter = getHbaseToVariantConverter();
         List<Variant> variants = new ArrayList<>(tableStudyRows.size());
@@ -218,29 +212,6 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         // Load VCF meta data for columns
         int studyId = getStudyConfiguration().getStudyId();
         resultConverter = new ArchiveResultToVariantConverter(studyId, getHelper().getColumnFamily(), this.getStudyConfiguration());
-        variantMerger = new VariantMerger(true);
-        variantMerger.setStudyId(Integer.toString(studyId));
-
-        Set<Integer> filesToIndex = context.getConfiguration().getStringCollection(AbstractAnalysisTableDriver.CONFIG_VARIANT_FILE_IDS)
-                .stream()
-                .map(Integer::valueOf)
-                .collect(Collectors.toSet());
-        if (filesToIndex.size() == 0) {
-            throw new IllegalStateException(
-                    "File IDs to be indexed not found in configuration: " + AbstractAnalysisTableDriver.CONFIG_VARIANT_FILE_IDS);
-        }
-        Set<String> samplesToIndex = new HashSet<>();
-        BiMap<Integer, String> sampleIdToSampleName = StudyConfiguration.inverseMap(getStudyConfiguration().getSampleIds());
-        for (BiMap.Entry<Integer, LinkedHashSet<Integer>> entry : getStudyConfiguration().getSamplesInFiles().entrySet()) {
-            if (filesToIndex.contains(entry.getKey())) {
-                entry.getValue().forEach(sid -> samplesToIndex.add(sampleIdToSampleName.get(sid)));
-            }
-        }
-        variantMerger.setExpectedSamples(getIndexedSamples().keySet());
-        // Add all samples which are currently being indexed.
-
-        this.currentIndexingSamples = new HashSet<>(samplesToIndex);
-        variantMerger.addExpectedSamples(samplesToIndex);
 
         rowKeyFactory = new ArchiveRowKeyFactory(getHelper().getChunkSize(), getHelper().getSeparator());
     }
@@ -252,7 +223,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
     }
 
     @Override
-    protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
+    protected final void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
         logger.info("Start mapping key: " + Bytes.toString(key.get()));
         startStep();
         if (value.isEmpty()) {
@@ -294,7 +265,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
 
         /* *********************************** */
         /* ********* CALL concrete class ***** */
-        doMap(ctx);
+        map(ctx);
         /* *********************************** */
 
         // Clean up of this slice
@@ -303,7 +274,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         logger.info("Finished mapping key: " + Bytes.toString(key.get()));
     }
 
-    abstract void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException;
+    abstract void map(VariantMapReduceContext ctx) throws IOException, InterruptedException;
 
     protected static class VariantMapReduceContext {
         public VariantMapReduceContext(byte[] currRowKey, Context context, Result value, Set<Integer> fileIds,

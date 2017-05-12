@@ -80,7 +80,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
 
-    public static final List<VariantType> VARIANT_TYPES = Arrays.asList(VariantMergerTableMapper.getTargetVariantType());
+    public static final Set<VariantType> VARIANT_TYPES = VariantMergerTableMapper.getTargetVariantType();
 
     // Variants that are wrong in the platinum files that should not be included
     private static final HashSet<String> PLATINUM_SKIP_VARIANTS = new HashSet<>();
