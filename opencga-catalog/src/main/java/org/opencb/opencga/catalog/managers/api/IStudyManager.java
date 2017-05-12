@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
@@ -115,6 +116,17 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
     /*---------------------*/
     /* VariableSet METHODS */
     /*---------------------*/
+
+    /**
+     * Obtains the resource java bean containing the requested ids.
+     *
+     * @param variableStr VariableSet in string format. Could be either the id or name.
+     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param sessionId Session id of the user logged.
+     * @return the resource java bean containing the requested id.
+     * @throws CatalogException when more than one variableSet is found.
+     */
+    AbstractManager.MyResourceId getVariableSetId(String variableStr, @Nullable String studyStr, String sessionId) throws CatalogException;
 
     QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique, String description,
                                                Map<String, Object> attributes, List<Variable> variables, String sessionId)

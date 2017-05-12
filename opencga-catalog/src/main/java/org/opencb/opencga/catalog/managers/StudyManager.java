@@ -352,6 +352,64 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         }
     }
 
+    @Override
+    public MyResourceId getVariableSetId(String variableStr, @Nullable String studyStr, String sessionId) throws CatalogException {
+        if (StringUtils.isEmpty(variableStr)) {
+            throw new CatalogException("Missing variableSet parameter");
+        }
+
+        String userId;
+        long studyId;
+        long variableSetId = -1;
+
+        if (StringUtils.isNumeric(variableStr) && Long.parseLong(variableStr) > configuration.getCatalog().getOffset()) {
+            variableSetId = Long.parseLong(variableStr);
+            Query query = new Query(StudyDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId);
+            QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, new QueryOptions(QueryOptions.INCLUDE,
+                    StudyDBAdaptor.QueryParams.ID.key()));
+            if (studyQueryResult.getNumResults() == 0) {
+                throw new CatalogException("Variable set " + variableStr + " not found");
+            }
+            studyId = studyQueryResult.first().getId();
+            userId = catalogManager.getUserManager().getId(sessionId);
+        } else {
+            if (variableStr.contains(",")) {
+                throw new CatalogException("More than one variable set found. Please, choose just one variable set");
+            }
+
+            userId = catalogManager.getUserManager().getId(sessionId);
+            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+            Query query = new Query()
+                    .append(StudyDBAdaptor.QueryParams.ID.key(), studyId)
+                    .append(StudyDBAdaptor.QueryParams.VARIABLE_SET_NAME.key(), variableStr);
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
+            QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions);
+            if (studyQueryResult.getNumResults() == 1) {
+                for (VariableSet variableSet : studyQueryResult.first().getVariableSets()) {
+                    if (variableSet.getName().equals(variableStr)) {
+                        variableSetId = variableSet.getId();
+                        break;
+                    }
+                }
+            } else {
+                if (studyQueryResult.getNumResults() == 0) {
+                    throw new CatalogException("Variable set" + variableStr + " not found in study " + studyStr);
+                } else {
+                    throw new CatalogException("More than one variable set found under " + variableStr + " in study " + studyStr);
+                }
+            }
+        }
+
+        if (variableSetId == -1) {
+            // This should not be ever happening
+            throw new CatalogException("Variable set" + variableStr + " not found in study " + studyStr);
+        }
+
+        return new MyResourceId(userId, studyId, variableSetId);
+    }
+
+
     private boolean memberExists(long studyId, String member) throws CatalogException {
         QueryResult<StudyAclEntry> acl = authorizationManager.getAcl(studyId, Arrays.asList(member),
                 MongoDBAdaptorFactory.STUDY_COLLECTION);
