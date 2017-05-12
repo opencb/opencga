@@ -334,7 +334,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         Map<String, Object> individualParameters = new HashMap<>();
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.FAMILY.key(), QueryParams.ETHNICITY.key(), QueryParams.SEX.key(),
-                QueryParams.SPECIES_TAXONOMY_CODE.key(), QueryParams.SPECIES_SCIENTIFIC_NAME.key(), QueryParams.SPECIES_COMMON_NAME.key(),
                 QueryParams.POPULATION_NAME.key(), QueryParams.POPULATION_SUBPOPULATION.key(), QueryParams.POPULATION_DESCRIPTION.key(),
                 QueryParams.KARYOTYPIC_SEX.key(), QueryParams.LIFE_STATUS.key(), QueryParams.AFFECTATION_STATUS.key(), };
         filterStringParams(parameters, individualParameters, acceptedParams);
@@ -689,10 +688,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
                     case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
-                    case SPECIES:
-                    case SPECIES_TAXONOMY_CODE:
-                    case SPECIES_SCIENTIFIC_NAME:
-                    case SPECIES_COMMON_NAME:
                     case POPULATION_NAME:
                     case POPULATION_SUBPOPULATION:
                     case POPULATION_DESCRIPTION:

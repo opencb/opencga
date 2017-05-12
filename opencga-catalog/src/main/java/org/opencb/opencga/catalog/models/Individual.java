@@ -43,6 +43,7 @@ public class Individual extends Annotable<IndividualAclEntry> {
     private Sex sex;
     private KaryotypicSex karyotypicSex;
     private String ethnicity;
+    @Deprecated
     private Species species;
     private Population population;
     private String creationDate;
@@ -75,22 +76,20 @@ public class Individual extends Annotable<IndividualAclEntry> {
     public Individual() {
     }
 
-    public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Species species,
-                      Population population, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, fatherId, motherId, family, sex, ethnicity, species, population, new Status(), Collections.emptyList(),
+    public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Population population,
+                      List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+        this(id, name, fatherId, motherId, family, sex, ethnicity, population, new Status(), Collections.emptyList(),
                 annotationSets, attributes);
     }
 
-    public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Species species,
-                      Population population, Status status, List<IndividualAclEntry> acl, List<AnnotationSet> annotationSets,
-                      Map<String, Object> attributes) {
-        this(id, name, fatherId, motherId, family, sex, KaryotypicSex.UNKNOWN, ethnicity, species, population, TimeUtils.getTime(), status,
+    public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Population population,
+                      Status status, List<IndividualAclEntry> acl, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+        this(id, name, fatherId, motherId, family, sex, KaryotypicSex.UNKNOWN, ethnicity, population, TimeUtils.getTime(), status,
                 LifeStatus.UNKNOWN, AffectationStatus.UNKNOWN, Collections.emptyList(), acl, annotationSets, attributes);
 
         if (sex == null) {
             this.sex = Sex.UNKNOWN;
         }
-
         if (this.sex.equals(Sex.MALE)) {
             this.karyotypicSex = KaryotypicSex.XY;
         } else if (this.sex.equals(Sex.FEMALE)) {
@@ -101,9 +100,8 @@ public class Individual extends Annotable<IndividualAclEntry> {
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
-                      String ethnicity, Species species, Population population, LifeStatus lifeStatus,
-                      AffectationStatus affectationStatus) {
-        this(id, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, species, population, TimeUtils.getTime(), new Status(),
+                      String ethnicity, Population population, LifeStatus lifeStatus, AffectationStatus affectationStatus) {
+        this(id, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, population, TimeUtils.getTime(), new Status(),
                 lifeStatus, affectationStatus, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyMap());
 
         if (sex == null) {
@@ -117,14 +115,10 @@ public class Individual extends Annotable<IndividualAclEntry> {
         if (population == null) {
             new Population();
         }
-
-        if (species == null) {
-            new Species();
-        }
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
-                      String ethnicity, Species species, Population population, String creationDate, Status status, LifeStatus lifeStatus,
+                      String ethnicity, Population population, String creationDate, Status status, LifeStatus lifeStatus,
                       AffectationStatus affectationStatus, List<OntologyTerm> ontologyTerms, List<IndividualAclEntry> acl,
                       List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
@@ -135,7 +129,6 @@ public class Individual extends Annotable<IndividualAclEntry> {
         this.sex = sex;
         this.karyotypicSex = karyotypicSex;
         this.ethnicity = ethnicity;
-        this.species = species;
         this.population = population;
         this.creationDate = creationDate;
         this.status = status;
@@ -179,9 +172,6 @@ public class Individual extends Annotable<IndividualAclEntry> {
         if (ethnicity != null ? !ethnicity.equals(that.ethnicity) : that.ethnicity != null) {
             return false;
         }
-        if (species != null ? !species.equals(that.species) : that.species != null) {
-            return false;
-        }
         if (population != null ? !population.equals(that.population) : that.population != null) {
             return false;
         }
@@ -201,13 +191,12 @@ public class Individual extends Annotable<IndividualAclEntry> {
         result = 31 * result + (family != null ? family.hashCode() : 0);
         result = 31 * result + (sex != null ? sex.hashCode() : 0);
         result = 31 * result + (ethnicity != null ? ethnicity.hashCode() : 0);
-        result = 31 * result + (species != null ? species.hashCode() : 0);
         result = 31 * result + (population != null ? population.hashCode() : 0);
         result = 31 * result + (attributes != null ? attributes.hashCode() : 0);
         return toIntExact(result);
     }
 
-
+    @Deprecated
     public static class Species {
 
         private String taxonomyCode;

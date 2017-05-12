@@ -75,12 +75,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                      @ApiParam(value = "sex", required = false) @QueryParam("sex") @DefaultValue("UNKNOWN")
                                                  Individual.Sex sex,
                                      @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-                                     @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode")
-                                                 String speciesTaxonomyCode,
-                                     @ApiParam(value = "Species scientific name", required = false) @QueryParam("species.scientificName")
-                                                 String speciesScientificName,
-                                     @ApiParam(value = "Species common name", required = false) @QueryParam("species.commonName")
-                                                 String speciesCommonName,
                                      @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
                                                  String populationName,
                                      @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
@@ -99,7 +93,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             }
             long studyId = catalogManager.getStudyId(studyStr, sessionId);
             QueryResult<Individual> queryResult = individualManager.create(studyId, name, family, fatherId, motherId,
-                    sex, ethnicity, speciesCommonName, speciesScientificName, speciesTaxonomyCode, populationName, populationSubpopulation,
+                    sex, ethnicity, populationName, populationSubpopulation,
                     populationDescription, karyotypicSex, lifeStatus, affectationStatus, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -177,12 +171,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                       @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                                       @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
                                       @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-                                      @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode")
-                                                  String speciesTaxonomyCode,
-                                      @ApiParam(value = "Species scientific name", required = false) @QueryParam("species.scientificName")
-                                                  String speciesScientificName,
-                                      @ApiParam(value = "Species common name", required = false) @QueryParam("species.commonName")
-                                                  String speciesCommonName,
                                       @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
                                                   String populationName,
                                       @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
@@ -449,12 +437,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                      @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                                      @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
                                      @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-                                     @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode")
-                                                 String speciesTaxonomyCode,
-                                     @ApiParam(value = "Species scientific name", required = false) @QueryParam("species.scientificName")
-                                                 String speciesScientificName,
-                                     @ApiParam(value = "Species common name", required = false) @QueryParam("species.commonName")
-                                                 String speciesCommonName,
                                      @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
                                                  String populationName,
                                      @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
@@ -476,9 +458,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.FAMILY.key(), family);
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.SEX.key(), sex);
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), ethnicity);
-            params.putIfNotNull(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(), speciesCommonName);
-            params.putIfNotNull(IndividualDBAdaptor.QueryParams.SPECIES_SCIENTIFIC_NAME.key(), speciesScientificName);
-            params.putIfNotNull(IndividualDBAdaptor.QueryParams.SPECIES_TAXONOMY_CODE.key(), speciesTaxonomyCode);
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(), populationName);
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.POPULATION_DESCRIPTION.key(), populationDescription);
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key(), populationSubpopulation);
@@ -539,12 +518,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                             @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
                             @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-                            @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode")
-                                        String speciesTaxonomyCode,
-                            @ApiParam(value = "Species scientific name", required = false) @QueryParam("species.scientificName")
-                                        String speciesScientificName,
-                            @ApiParam(value = "Species common name", required = false) @QueryParam("species.commonName")
-                                        String speciesCommonName,
                             @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
                             @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
                                         String populationSubpopulation,
@@ -779,7 +752,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public Individual.AffectationStatus affectationStatus;
 
         public Individual toIndividual() {
-            return new Individual(-1, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, null, population, lifeStatus,
+            return new Individual(-1, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, population, lifeStatus,
                     affectationStatus);
         }
     }

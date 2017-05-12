@@ -118,15 +118,6 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
         public String ethnicity;
 
-        @Parameter(names = {"--species-taxonomy-code"}, description = "Taxonomy code of the species", required = false, arity = 1)
-        public String speciesTaxonomyCode;
-
-        @Parameter(names = {"--species-scientific-name"}, description = "Scientific name of the species", required = false, arity = 1)
-        public String speciesScientificName;
-
-        @Parameter(names = {"--species-common-name"}, description = "Common name of the species", required = false, arity = 1)
-        public String speciesCommonName;
-
         @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
         public String populationName;
 
@@ -182,21 +173,8 @@ public class IndividualCommandOptions {
         public String ethnicity;
 
         @Deprecated
-        @Parameter(names = {"--species"}, description = "[DEPRECATED] species", required = false, arity = 1)
-        public String species;
-
-        @Deprecated
         @Parameter(names = {"--population"}, description = "[DEPRECATED] population", required = false, arity = 1)
         public String population;
-
-        @Parameter(names = {"--species-taxonomy-code"}, description = "Taxonomy code of the species", required = false, arity = 1)
-        public String speciesTaxonomyCode;
-
-        @Parameter(names = {"--species-scientific-name"}, description = "Scientific name of the species", required = false, arity = 1)
-        public String speciesScientificName;
-
-        @Parameter(names = {"--species-common-name"}, description = "Common name of the species", required = false, arity = 1)
-        public String speciesCommonName;
 
         @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
         public String populationName;
@@ -247,15 +225,6 @@ public class IndividualCommandOptions {
 
         @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
         public String ethnicity;
-
-        @Parameter(names = {"--species-taxonomy-code"}, description = "Taxonomy code of the species", required = false, arity = 1)
-        public String speciesTaxonomyCode;
-
-        @Parameter(names = {"--species-scientific-name"}, description = "Scientific name of the species", required = false, arity = 1)
-        public String speciesScientificName;
-
-        @Parameter(names = {"--species-common-name"}, description = "Common name of the species", required = false, arity = 1)
-        public String speciesCommonName;
 
         @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
         public String populationName;
@@ -314,21 +283,8 @@ public class IndividualCommandOptions {
         public String ethnicity;
 
         @Deprecated
-        @Parameter(names = {"--species"}, description = "[DEPRECATED] species", required = false, arity = 1)
-        public String species;
-
-        @Deprecated
         @Parameter(names = {"--population"}, description = "[DEPRECATED] population", required = false, arity = 1)
         public String population;
-
-        @Parameter(names = {"--species-taxonomy-code"}, description = "Taxonomy code of the species", required = false, arity = 1)
-        public String speciesTaxonomyCode;
-
-        @Parameter(names = {"--species-scientific-name"}, description = "Scientific name of the species", required = false, arity = 1)
-        public String speciesScientificName;
-
-        @Parameter(names = {"--species-common-name"}, description = "Common name of the species", required = false, arity = 1)
-        public String speciesCommonName;
 
         @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
         public String populationName;

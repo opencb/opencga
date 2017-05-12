@@ -139,18 +139,6 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
 
         IndividualCommandOptions.CreateCommandOptions commandOptions = individualsCommandOptions.createCommandOptions;
 
-        Individual.Species species = new Individual.Species();
-        if (commandOptions.speciesCommonName != null) {
-            species.setCommonName(commandOptions.speciesCommonName);
-        }
-        if (commandOptions.speciesScientificName != null) {
-            species.setScientificName(commandOptions.speciesScientificName);
-        }
-        if (commandOptions.speciesTaxonomyCode != null) {
-            species.setTaxonomyCode(commandOptions.speciesTaxonomyCode);
-        }
-        params.put(IndividualDBAdaptor.QueryParams.SPECIES.key(), species);
-
         Individual.Population population = new Individual.Population();
         if (commandOptions.populationName != null) {
             population.setName(commandOptions.populationName);
@@ -193,16 +181,8 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.searchCommandOptions.sex);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.searchCommandOptions.ethnicity);
         // TODO: Remove these 2 deprecated parameters in future release
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(),
-                individualsCommandOptions.searchCommandOptions.species);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                 individualsCommandOptions.searchCommandOptions.population);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(),
-                individualsCommandOptions.searchCommandOptions.speciesCommonName);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_TAXONOMY_CODE.key(),
-                individualsCommandOptions.searchCommandOptions.speciesTaxonomyCode);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_SCIENTIFIC_NAME.key(),
-                individualsCommandOptions.searchCommandOptions.speciesScientificName);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                 individualsCommandOptions.searchCommandOptions.populationName);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key(),
@@ -252,12 +232,6 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         }
 
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.updateCommandOptions.ethnicity);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_TAXONOMY_CODE.key(),
-                individualsCommandOptions.updateCommandOptions.speciesTaxonomyCode);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(),
-                individualsCommandOptions.updateCommandOptions.speciesCommonName);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_SCIENTIFIC_NAME.key(),
-                individualsCommandOptions.updateCommandOptions.speciesScientificName);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                 individualsCommandOptions.updateCommandOptions.populationName);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_DESCRIPTION.key(),
@@ -294,17 +268,9 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.groupByCommandOptions.family);
         params.put(IndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.groupByCommandOptions.sex);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.groupByCommandOptions.ethnicity);
-        // TODO: Remove these 2 deprecated parameters in future release
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(),
-                individualsCommandOptions.groupByCommandOptions.species);
+        // TODO: Remove this deprecated parameters in future release
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                 individualsCommandOptions.groupByCommandOptions.population);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_TAXONOMY_CODE.key(),
-                individualsCommandOptions.groupByCommandOptions.speciesTaxonomyCode);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(),
-                individualsCommandOptions.groupByCommandOptions.speciesCommonName);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_SCIENTIFIC_NAME.key(),
-                individualsCommandOptions.groupByCommandOptions.speciesScientificName);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                 individualsCommandOptions.groupByCommandOptions.populationName);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_DESCRIPTION.key(),

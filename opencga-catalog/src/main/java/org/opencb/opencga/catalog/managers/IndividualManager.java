@@ -80,8 +80,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
     @Override
     public QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Sex sex,
-                                          String ethnicity, String speciesCommonName, String speciesScientificName,
-                                          String speciesTaxonomyCode, String populationName, String populationSubpopulation,
+                                          String ethnicity, String populationName, String populationSubpopulation,
                                           String populationDescription, Individual.KaryotypicSex karyotypicSex,
                                           Individual.LifeStatus lifeStatus, Individual.AffectationStatus affectationStatus,
                                           QueryOptions options, String sessionId) throws CatalogException {
@@ -91,9 +90,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         ParamUtils.checkAlias(name, "name", configuration.getCatalog().getOffset());
         family = ParamUtils.defaultObject(family, "");
         ethnicity = ParamUtils.defaultObject(ethnicity, "");
-        speciesCommonName = ParamUtils.defaultObject(speciesCommonName, "");
-        speciesScientificName = ParamUtils.defaultObject(speciesScientificName, "");
-        speciesTaxonomyCode = ParamUtils.defaultObject(speciesTaxonomyCode, "");
         populationName = ParamUtils.defaultObject(populationName, "");
         populationSubpopulation = ParamUtils.defaultObject(populationSubpopulation, "");
         populationDescription = ParamUtils.defaultObject(populationDescription, "");
@@ -104,10 +100,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
 
-        Individual individual = new Individual(0, name, fatherId, motherId,
-                family, sex, karyotypicSex, ethnicity, new Individual.Species(speciesCommonName, speciesScientificName,
-                speciesTaxonomyCode), new Individual.Population(populationName, populationSubpopulation, populationDescription), lifeStatus,
-                affectationStatus);
+        Individual individual = new Individual(0, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity,
+                new Individual.Population(populationName, populationSubpopulation, populationDescription), lifeStatus, affectationStatus);
 
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
 //      auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
@@ -711,9 +705,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                 case FAMILY:
                 case SEX:
                 case ETHNICITY:
-                case SPECIES_COMMON_NAME:
-                case SPECIES_SCIENTIFIC_NAME:
-                case SPECIES_TAXONOMY_CODE:
                 case POPULATION_DESCRIPTION:
                 case POPULATION_NAME:
                 case POPULATION_SUBPOPULATION:
