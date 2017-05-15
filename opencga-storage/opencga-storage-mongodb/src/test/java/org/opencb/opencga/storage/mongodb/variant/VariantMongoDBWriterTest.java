@@ -23,6 +23,10 @@ import org.bson.Document;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -34,6 +38,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
@@ -55,6 +60,7 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSa
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
+@RunWith(Parameterized.class)
 public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
 
     private static String inputFile;
@@ -72,6 +78,14 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     private LinkedHashSet<Integer> file1SampleIds;
     private LinkedHashSet<Integer> file2SampleIds;
     private LinkedHashSet<Integer> file3SampleIds;
+
+    @Parameters
+    public static List<Object> data() {
+        return Arrays.asList(Boolean.FALSE, Boolean.TRUE);
+    }
+
+    @Parameter
+    public boolean cleanWhileLoading;
 
     @Before
     public void setUp() throws Exception {
@@ -441,7 +455,6 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stage, studyConfiguration.getStudyId(), chromosomes);
         MongoDBVariantMerger dbMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
                 studyConfiguration.getIndexedFiles(), false, false);
-        boolean cleanWhileLoading = true;
         boolean resume = false;
         MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(variantsCollection, dbAdaptor.getStageCollection(),
                 studyConfiguration.getStudyId(), fileIds, resume, cleanWhileLoading, null);
@@ -467,7 +480,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         }
         studyConfiguration.getIndexedFiles().addAll(fileIds);
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
-        return variantLoader.getResult().setSkippedVariants(stageWriteResult.getSkippedVariants());
+        return variantLoader.getResult().setSkippedVariants(stageWriteResult != null ? stageWriteResult.getSkippedVariants() : 0);
     }
 
     public List<Variant> createFile1Variants() {
@@ -583,18 +596,57 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     @Test
     public void testInsertSameVariantTwice() throws StorageEngineException {
 
-        String chromosome = "1";
-        loadFile1(chromosome, fileId1, Collections.singletonList(chromosome));
-        loadFile2(chromosome, fileId2, Collections.singletonList(chromosome));
-        Integer fileId = fileId3;
-        studyConfiguration2.getFileIds().putIfAbsent(getFileName(fileId), fileId);
-        studyConfiguration2.getSamplesInFiles().putIfAbsent(fileId, file3SampleIds);
+        loadFile1();
+        loadFile2();
 
-        List<Variant> file3Variants = createFile3Variants(chromosome, fileId.toString(), source3.getStudyId());
+        List<Variant> file3Variants = createFile3Variants();
         file3Variants.add(file3Variants.get(2));
 
-        MongoDBVariantWriteResult result = loadFile(studyConfiguration2, file3Variants, fileId, Collections.singletonList(chromosome));
+        MongoDBVariantWriteResult result = loadFile(studyConfiguration2, file3Variants, fileId3);
         assertEquals(new MongoDBVariantWriteResult(0, 2, 1, 0, 0, 2), clearTime(result));
+    }
+
+    @Test
+    public void testDuplicatedVariantOnlyOneFile_mergeAtSameTime() throws StorageEngineException {
+        List<Variant> file2Variants = createFile2Variants();
+        List<Variant> file3Variants = createFile3Variants();
+        file3Variants.add(file3Variants.get(0));
+        assertThat(file3Variants.get(0), VariantMatchers.overlaps(file2Variants.get(0)));
+
+        stageVariants(studyConfiguration2, file3Variants, fileId3);
+        stageVariants(studyConfiguration2, file2Variants, fileId2);
+        MongoDBVariantWriteResult result = clearTime(mergeVariants(studyConfiguration2, Arrays.asList(fileId2, fileId3), null, Collections.emptyList()));
+        assertEquals(new MongoDBVariantWriteResult(4, 0, 0, 0, 0, 2), result);
+    }
+
+    @Test
+    public void testDuplicatedVariantOnlyOneFile_mergeDuplicatedFirst() throws StorageEngineException {
+        List<Variant> file2Variants = createFile2Variants();
+        List<Variant> file3Variants = createFile3Variants();
+        file3Variants.add(file3Variants.get(0));
+        assertThat(file3Variants.get(0), VariantMatchers.overlaps(file2Variants.get(0)));
+
+        stageVariants(studyConfiguration2, file3Variants, fileId3);
+        stageVariants(studyConfiguration2, file2Variants, fileId2);
+        MongoDBVariantWriteResult resultMergeFile3 = clearTime(mergeVariants(studyConfiguration2, fileId3, null));
+        MongoDBVariantWriteResult resultMergeFile2 = clearTime(mergeVariants(studyConfiguration2, fileId2, null));
+        assertEquals(new MongoDBVariantWriteResult(2, 0, 0, 0, 0, 2), resultMergeFile3);
+        assertEquals(new MongoDBVariantWriteResult(2, 0, 2, 0, 0, 0), resultMergeFile2);
+    }
+
+    @Test
+    public void testDuplicatedVariantOnlyOneFile_mergeDuplicatedLast() throws StorageEngineException {
+        List<Variant> file2Variants = createFile2Variants();
+        List<Variant> file3Variants = createFile3Variants();
+        file3Variants.add(file3Variants.get(0));
+        assertThat(file3Variants.get(0), VariantMatchers.overlaps(file2Variants.get(0)));
+
+        stageVariants(studyConfiguration2, file3Variants, fileId3);
+        stageVariants(studyConfiguration2, file2Variants, fileId2);
+        MongoDBVariantWriteResult resultMergeFile2 = clearTime(mergeVariants(studyConfiguration2, fileId2, null));
+        MongoDBVariantWriteResult resultMergeFile3 = clearTime(mergeVariants(studyConfiguration2, fileId3, null));
+        assertEquals(new MongoDBVariantWriteResult(2, 0, 0, 0, 0, 0), resultMergeFile2);
+        assertEquals(new MongoDBVariantWriteResult(2, 0, 2, 0, 0, 2), resultMergeFile3);
     }
 
     public MongoDBVariantWriteResult clearTime(MongoDBVariantWriteResult writeResult) {

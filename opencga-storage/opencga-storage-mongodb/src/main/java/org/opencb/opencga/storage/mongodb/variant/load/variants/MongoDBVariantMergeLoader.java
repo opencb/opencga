@@ -22,9 +22,11 @@ import java.util.regex.Matcher;
 
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
+import static com.mongodb.client.model.Updates.combine;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.FILEID_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.FILES_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.STUDIES_FIELD;
+import static org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter.ID_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter.STUDY_FILE_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.DUP_KEY_WRITE_RESULT_ERROR_PATTERN;
 import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.NEW_STUDY_FIELD;
@@ -55,6 +57,8 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
 
     // Variables that must be aware of concurrent modification
     private final MongoDBVariantWriteResult result;
+    private final Bson cleanStageDuplicated;
+    private final Bson cleanStage;
 
     public MongoDBVariantMergeLoader(MongoDBCollection variantsCollection, MongoDBCollection stageCollection,
                                      Integer studyId, List<Integer> fileIds, boolean resume, boolean cleanWhileLoading,
@@ -67,6 +71,25 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         this.fileIds = fileIds;
         this.result = new MongoDBVariantWriteResult();
         this.cleanWhileLoading = cleanWhileLoading;
+
+        List<String> studyFileToPull = new ArrayList<>(fileIds.size());
+        for (Integer fileId : fileIds) {
+            studyFileToPull.add(studyId + "_" + fileId);
+        }
+        List<Bson> cleanStageDuplicatedList = new ArrayList<>(fileIds.size() + 1);
+        for (Integer fileId : fileIds) {
+            cleanStageDuplicatedList.add(unset(studyId + "." + fileId));
+//            defaultFileUpdates.add(set(studyId + "." + fileId, null));
+        }
+        cleanStageDuplicatedList.add(pullAll(STUDY_FILE_FIELD, studyFileToPull));
+
+        List<Bson> cleanStageList = new ArrayList<>(cleanStageDuplicatedList.size() + 1);
+        cleanStageList.addAll(cleanStageDuplicatedList);
+        cleanStageList.add(set(studyId.toString() + '.' + NEW_STUDY_FIELD, false));
+
+        cleanStageDuplicated = combine(cleanStageDuplicatedList);
+        cleanStage = combine(cleanStageList);
+
     }
 
     @Override
@@ -132,21 +155,12 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
             logger.debug("Clean study {} from stage where all the files {} where duplicated : {}", studyId, fileIds,
                     mongoDBOps.getDocumentsToCleanStudies());
             modifiedCount += stageCollection.update(
-                    in("_id", mongoDBOps.getDocumentsToCleanStudies()), unset(String.valueOf(studyId)),
+                    in(ID_FIELD, mongoDBOps.getDocumentsToCleanStudies()), cleanStageDuplicated,
                     new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
         }
         if (!mongoDBOps.getDocumentsToCleanFiles().isEmpty()) {
             logger.debug("Cleaning files {} from stage collection", fileIds);
-            List<Bson> fileUpdates = new LinkedList<>();
-            List<String> studyFileToPull = new ArrayList<>(fileIds.size());
-            for (Integer fileId : fileIds) {
-                fileUpdates.add(unset(studyId + "." + fileId));
-//                fileUpdates.add(set(studyId + "." + fileId, null));
-                studyFileToPull.add(studyId + "_" + fileId);
-            }
-            fileUpdates.add(pullAll(STUDY_FILE_FIELD, studyFileToPull));
-            fileUpdates.add(set(studyId + "." + NEW_STUDY_FIELD, false));
-            modifiedCount += stageCollection.update(in("_id", mongoDBOps.getDocumentsToCleanFiles()), combine(fileUpdates),
+            modifiedCount += stageCollection.update(in(ID_FIELD, mongoDBOps.getDocumentsToCleanFiles()), cleanStage,
                     new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
         }
 

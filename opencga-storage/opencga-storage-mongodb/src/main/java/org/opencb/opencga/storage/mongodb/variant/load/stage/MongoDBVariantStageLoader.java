@@ -237,28 +237,48 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
             chrFilter = new Document();
         }
 
+        List<String> studyFiles = new ArrayList<>(fileIds.size());
+        for (Integer fileId : fileIds) {
+            String studyFile = studyId + "_" + fileId;
+            studyFiles.add(studyFile);
+        }
         if (removeDuplicatedVariants) {
             // TODO: This variants should be removed while loading data. This operation is taking too much time.
             filters.add(exists(studyId + "." + NEW_STUDY_FIELD, false));
+            List<Bson> unsets = new ArrayList<>(fileIds.size() + 1);
             for (Integer fileId : fileIds) {
-                filters.add(or(exists(studyId + "." + fileId + ".0", false), exists(studyId + "." + fileId + ".1")));
+                String studyFile = studyId + "_" + fileId;
+                unsets.add(unset(studyId + "." + fileId));
+                filters.add(
+                        or(
+                                ne(STUDY_FILE_FIELD, studyFile),
+                                and(
+                                        eq(STUDY_FILE_FIELD, studyFile),
+                                        exists(studyId + "." + fileId + ".1")
+                                )
+                        )
+                );
             }
+            unsets.add(pullAll(STUDY_FILE_FIELD, studyFiles));
+            Bson filter = and(in(STUDY_FILE_FIELD, studyFiles), chrFilter, and(filters));
             LOGGER.info("Clean studies from stage where all the files where duplicated");
             modifiedCount += stageCollection.update(
-                    and(chrFilter, and(filters)), unset(Integer.toString(studyId)),
+                    filter, combine(unsets),
                     new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
         }
 
         filters.clear();
+        filters.add(in(STUDY_FILE_FIELD, studyFiles));
+        filters.add(chrFilter);
         List<Bson> updates = new LinkedList<>();
         for (Integer fileId : fileIds) {
-            filters.add(exists(studyId + "." + fileId));
-//            updates.add(unset(studyId + "." + fileId));
-            updates.add(set(studyId + "." + fileId, null));
+            updates.add(unset(studyId + "." + fileId));
+//            updates.add(set(studyId + "." + fileId, null));
         }
         updates.add(set(studyId + "." + NEW_STUDY_FIELD, false));
+        updates.add(pullAll(STUDY_FILE_FIELD, studyFiles));
         LOGGER.info("Cleaning files {} from stage collection", fileIds);
-        modifiedCount += stageCollection.update(and(chrFilter, or(filters)), combine(updates),
+        modifiedCount += stageCollection.update(and(filters), combine(updates),
                 new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
 
         return modifiedCount;

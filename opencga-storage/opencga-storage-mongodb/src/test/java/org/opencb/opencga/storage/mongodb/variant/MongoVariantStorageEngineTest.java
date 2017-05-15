@@ -277,6 +277,13 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
         return exception.get();
     }
 
+    /**
+     * 1. Stage file "inputUri"
+     * 2. wait
+     * 3. Merge file "inputUri" (in a different thread)
+     * 4. Try to stage smallInputUri (concurrently)
+     * 5. Assert fail stage
+     */
     @Test
     public void stageWhileMerging() throws Exception {
         StudyConfiguration studyConfiguration = newStudyConfiguration();

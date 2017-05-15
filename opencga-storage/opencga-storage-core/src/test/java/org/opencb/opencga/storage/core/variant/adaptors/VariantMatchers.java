@@ -121,6 +121,10 @@ public class VariantMatchers {
         };
     }
 
+    public static Matcher<Variant> overlaps(Variant variant) {
+        return overlaps(new Region(variant.getChromosome(), variant.getStart(), variant.getEnd()), true);
+    }
+
     public static Matcher<Variant> overlaps(Region region) {
         return overlaps(region, true);
     }
