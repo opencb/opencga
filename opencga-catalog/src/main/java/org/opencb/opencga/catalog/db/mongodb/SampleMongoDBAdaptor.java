@@ -463,7 +463,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         final String[] acceptedBooleanParams = {QueryParams.SOMATIC.key()};
         filterBooleanParams(parameters, sampleParameters, acceptedBooleanParams);
 
-        final String[] acceptedParams = {QueryParams.SOURCE.key(), QueryParams.DESCRIPTION.key()};
+        final String[] acceptedParams = {QueryParams.SOURCE.key(), QueryParams.DESCRIPTION.key(), QueryParams.TYPE.key()};
         filterStringParams(parameters, sampleParameters, acceptedParams);
 
         final String[] acceptedIntParams = {QueryParams.ID.key(), QueryParams.INDIVIDUAL_ID.key()};
@@ -696,6 +696,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
+                    case SOMATIC:
+                    case TYPE:
                     case ACL:
                     case ACL_MEMBER:
                     case ACL_PERMISSIONS:

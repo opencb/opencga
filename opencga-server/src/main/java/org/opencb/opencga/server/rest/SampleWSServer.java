@@ -96,12 +96,13 @@ public class SampleWSServer extends OpenCGAWSServer {
                                  @ApiParam(value = "name", required = true) @QueryParam("name") String name,
                                  @ApiParam(value = "source", required = false) @QueryParam("source") String source,
                                  @ApiParam(value = "somatic", defaultValue = "false") @QueryParam("somatic") boolean somatic,
+                                 @ApiParam(value = "type") @QueryParam("type") String type,
                                  @ApiParam(value = "description", required = false) @QueryParam("description") String description) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            QueryResult<Sample> queryResult = sampleManager.create(studyStr, name, source, description, somatic, null, null, null,
+            QueryResult<Sample> queryResult = sampleManager.create(studyStr, name, source, description, type, somatic, null, null, null,
                     sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -174,6 +175,8 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "DEPRECATED: use /info instead", hidden = true) @QueryParam("id") String id,
                            @ApiParam(value = "name") @QueryParam("name") String name,
                            @ApiParam(value = "source") @QueryParam("source") String source,
+                           @ApiParam(value = "type") @QueryParam("type") String type,
+                           @ApiParam(value = "somatic") @QueryParam("somatic") Boolean somatic,
 //                                  @ApiParam(value = "acls") @QueryParam("acls") String acls,
 //                                  @ApiParam(value = "acls.users") @QueryParam("acls.users") String acl_userIds,
                            @ApiParam(value = "DEPRECATED: use individual.id instead", hidden = true) @QueryParam("individualId")
@@ -627,8 +630,9 @@ public class SampleWSServer extends OpenCGAWSServer {
     private static class SamplePOST {
         public String name;
         public String description;
-        public boolean somatic;
+        public String type;
         public String source;
+        public boolean somatic;
         public List<CommonModels.AnnotationSetParams> annotationSets;
         public Map<String, Object> attributes;
     }
@@ -652,7 +656,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             }
 
             return new Sample(-1, name, source, individual != null ? individual.toIndividual(studyStr, studyManager, sessionId) : null,
-                    description, null, annotationSetList, attributes);
+                    description, type, somatic, null, annotationSetList, attributes);
         }
     }
 }

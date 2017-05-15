@@ -684,6 +684,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
                     case FATHER_ID:
                     case MOTHER_ID:
                     case FAMILY:
+                    case DATE_OF_BIRTH:
                     case SEX:
                     case ETHNICITY:
                     case STATUS_NAME:

@@ -133,6 +133,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkAlias(sample.getName(), "name", configuration.getCatalog().getOffset());
         sample.setSource(ParamUtils.defaultString(sample.getSource(), ""));
         sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
+        sample.setType(ParamUtils.defaultString(sample.getType(), ""));
         sample.setAcl(Collections.emptyList());
         sample.setOntologyTerms(ParamUtils.defaultObject(sample.getOntologyTerms(), Collections.emptyList()));
         sample.setAnnotationSets(ParamUtils.defaultObject(sample.getAnnotationSets(), Collections.emptyList()));
@@ -199,12 +200,13 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         return queryResult;
     }
 
-    public QueryResult<Sample> create(String studyStr, String name, String source, String description, boolean somatic,
+    public QueryResult<Sample> create(String studyStr, String name, String source, String description, String type, boolean somatic,
                                       Individual individual, Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkAlias(name, "name", configuration.getCatalog().getOffset());
         source = ParamUtils.defaultString(source, "");
         description = ParamUtils.defaultString(description, "");
+        type = ParamUtils.defaultString(type, "");
         attributes = ParamUtils.defaultObject(attributes, Collections.<String, Object>emptyMap());
 
         String userId = userManager.getId(sessionId);
@@ -218,8 +220,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             }
         }
 
-        Sample sample = new Sample(-1, name, source, individual, description, somatic, Collections.emptyList(), Collections.emptyList(),
-                attributes);
+        Sample sample = new Sample(-1, name, source, individual, description, type, somatic, Collections.emptyList(),
+                Collections.emptyList(), attributes);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         QueryResult<Sample> queryResult = sampleDBAdaptor.insert(sample, studyId, options);
@@ -337,7 +339,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     public QueryResult<Sample> create(String studyStr, String name, String source, String description,
                                       Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
-        return create(studyStr, name, source, description, false, null, attributes, options, sessionId);
+        return create(studyStr, name, source, description, null, false, null, attributes, options, sessionId);
     }
 
     @Override
@@ -751,6 +753,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                     break;
                 case SOURCE:
                 case INDIVIDUAL_ID:
+                case TYPE:
                 case SOMATIC:
                 case DESCRIPTION:
                 case ATTRIBUTES:

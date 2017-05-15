@@ -35,6 +35,7 @@ public class Sample extends Annotable<SampleAclEntry> {
     private String creationDate;
     private Status status;
     private String description;
+    private String type;
     private boolean somatic;
     private List<OntologyTerm> ontologyTerms;
 
@@ -45,21 +46,16 @@ public class Sample extends Annotable<SampleAclEntry> {
     }
 
     public Sample(long id, String name, String source, Individual individual, String description) {
-        this(id, name, source, individual, description, false, Collections.emptyList(), new LinkedList<>(), new HashMap<>());
+        this(id, name, source, individual, description, "", false, Collections.emptyList(), new LinkedList<>(), new HashMap<>());
     }
 
-    @Deprecated
-    public Sample(long id, String name, String source, Individual individual, String description, List<SampleAclEntry> acl,
-                  List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, source, individual, description, false, acl, annotationSets, attributes);
-    }
-
-    public Sample(long id, String name, String source, Individual individual, String description, boolean somatic, List<SampleAclEntry> acl,
-                  List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+    public Sample(long id, String name, String source, Individual individual, String description, String type, boolean somatic,
+                  List<SampleAclEntry> acl, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.source = source;
         this.individual = individual;
+        this.type = type;
         this.somatic = somatic;
         this.creationDate = TimeUtils.getTime();
         this.status = new Status();
@@ -80,9 +76,10 @@ public class Sample extends Annotable<SampleAclEntry> {
         sb.append(", individual=").append(individual);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status=").append(status);
-        sb.append(", description='").append(description).append('\'');
-        sb.append(", somatic=").append(somatic);
         sb.append(", annotationSets=").append(annotationSets);
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", type='").append(type).append('\'');
+        sb.append(", somatic=").append(somatic);
         sb.append(", ontologyTerms=").append(ontologyTerms);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -158,6 +155,15 @@ public class Sample extends Annotable<SampleAclEntry> {
 
     public Sample setSomatic(boolean somatic) {
         this.somatic = somatic;
+        return this;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public Sample setType(String type) {
+        this.type = type;
         return this;
     }
 

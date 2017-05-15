@@ -126,6 +126,9 @@ public class SampleCommandOptions {
 
         @Parameter(names = {"--somatic"}, description = "Flag indicating that the sample comes from somatic cells", arity = 0)
         public boolean somatic;
+
+        @Parameter(names = {"--type"}, description = "Sample type", arity = 1)
+        public String type;
     }
 
     @Parameters(commandNames = {"load"}, commandDescription = "Load samples from a pedigree file")
@@ -171,6 +174,12 @@ public class SampleCommandOptions {
 
         @Parameter(names = {"--variable-set-id"}, description = "Variable set id or name.", required = false, arity = 1)
         public String variableSetId;
+
+        @Parameter(names = {"--type"}, description = "Sample type", arity = 1)
+        public String type;
+
+        @Parameter(names = {"--somatic"}, description = "Flag indicating if the sample comes from somatic cells", arity = 1)
+        public Boolean somatic;
     }
 
 
@@ -191,6 +200,9 @@ public class SampleCommandOptions {
 
         @Parameter(names = {"--somatic"}, description = "Boolean indicating whether the sample comes from somatic cells or not", arity = 1)
         public Boolean somatic;
+
+        @Parameter(names = {"--type"}, description = "Sample type", arity = 1)
+        public String type;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete the selected sample")
