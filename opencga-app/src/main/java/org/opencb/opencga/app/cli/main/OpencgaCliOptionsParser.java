@@ -50,6 +50,7 @@ public class OpencgaCliOptionsParser {
     private SampleCommandOptions sampleCommandOptions;
     private VariableCommandOptions variableCommandOptions;
     private CohortCommandOptions cohortCommandOptions;
+    private FamilyCommandOptions familyCommandOptions;
     private PanelCommandOptions panelCommandOptions;
     private ToolCommandOptions toolCommandOptions;
 
@@ -176,6 +177,22 @@ public class OpencgaCliOptionsParser {
         individualSubCommands.addCommand("annotation-sets-search", individualCommandOptions.annotationSearchCommandOptions);
         individualSubCommands.addCommand("annotation-sets-update", individualCommandOptions.annotationUpdateCommandOptions);
         individualSubCommands.addCommand("annotation-sets-delete", individualCommandOptions.annotationDeleteCommandOptions);
+
+        familyCommandOptions = new FamilyCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
+        jCommander.addCommand("families", familyCommandOptions);
+        JCommander familySubCommands = jCommander.getCommands().get("families");
+        familySubCommands.addCommand("create", familyCommandOptions.createCommandOptions);
+        familySubCommands.addCommand("info", familyCommandOptions.infoCommandOptions);
+        familySubCommands.addCommand("search", familyCommandOptions.searchCommandOptions);
+        familySubCommands.addCommand("update", familyCommandOptions.updateCommandOptions);
+        familySubCommands.addCommand("acl", familyCommandOptions.aclsCommandOptions);
+        familySubCommands.addCommand("acl-update", familyCommandOptions.aclsUpdateCommandOptions);
+        familySubCommands.addCommand("annotation-sets-create", familyCommandOptions.annotationCreateCommandOptions);
+        familySubCommands.addCommand("annotation-sets-all-info", familyCommandOptions.annotationAllInfoCommandOptions);
+        familySubCommands.addCommand("annotation-sets-info", familyCommandOptions.annotationInfoCommandOptions);
+        familySubCommands.addCommand("annotation-sets-search", familyCommandOptions.annotationSearchCommandOptions);
+        familySubCommands.addCommand("annotation-sets-update", familyCommandOptions.annotationUpdateCommandOptions);
+        familySubCommands.addCommand("annotation-sets-delete", familyCommandOptions.annotationDeleteCommandOptions);
 
         sampleCommandOptions = new SampleCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("samples", sampleCommandOptions);
@@ -396,6 +413,10 @@ public class OpencgaCliOptionsParser {
 
     public CohortCommandOptions getCohortCommands() {
         return cohortCommandOptions;
+    }
+
+    public FamilyCommandOptions getFamilyCommands() {
+        return familyCommandOptions;
     }
 
     public PanelCommandOptions getPanelCommands() {

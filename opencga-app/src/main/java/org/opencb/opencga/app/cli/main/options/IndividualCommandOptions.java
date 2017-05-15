@@ -29,7 +29,7 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 /**
  * Created by sgallego on 6/14/16.
  */
-@Parameters(commandNames = {"individuals"}, commandDescription = "Individuals commands")
+@Parameters(commandNames = {"individuals"}, commandDescription = "Individual commands")
 public class IndividualCommandOptions {
 
     public CreateCommandOptions createCommandOptions;
