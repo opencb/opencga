@@ -404,6 +404,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 logger.debug("No formats found for: {}, setting default format: {}", study, VcfUtils.DEFAULT_SAMPLE_FORMAT);
                 formats = VcfUtils.DEFAULT_SAMPLE_FORMAT;
             }
+        } else {
+            logger.debug("No formats found for: {}, setting default format: {}", study, VcfUtils.DEFAULT_SAMPLE_FORMAT);
+            formats = VcfUtils.DEFAULT_SAMPLE_FORMAT;
         }
 
         // TODO: modify VcfUtils in biodata project to take into account the formatArities

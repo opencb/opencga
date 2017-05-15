@@ -8,9 +8,8 @@ sessionDuration: 12000  # number of seconds that session remains open
 defaultStudy: ""
 
 # Alias to different studies, these can be fully qualified: user@project:study
-alias:
-  1kg_grch37: hgvauser@reference_grch37:1kG_phase3
-  RD370616: researchcga@grch37_germline:RD370616
+#alias:
+#  1kg_grch37: hgvauser@reference_grch37:1kG_phase3
 #  1kg_grch38: reference_grch38:1kG_phase3
 
 # The default organism values can be defined here.
@@ -36,8 +35,7 @@ grpc:
 variant:
   unknownGenotype: "0/0"
 #   each study can have a different format
-  includeFormats:
-    1kg_grch37: "GT,AD,DP,GQ"
-    RD370616: "GT,AD,DP,GQ,DPF:Integer::none,PF:String::none"
+#  includeFormats:
+#    1kg_grch37: "GT,AD,DP,GQ"
 #  vcf:
 #    header: true
