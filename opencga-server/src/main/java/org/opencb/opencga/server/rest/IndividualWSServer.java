@@ -25,6 +25,7 @@ import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.api.IIndividualManager;
+import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.acls.AclParams;
@@ -37,10 +38,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by jacobo on 22/06/15.
@@ -116,7 +114,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 studyStr = studyIdStr;
             }
 
-            return createOkResponse(individualManager.create(studyStr, params.toIndividual(), queryOptions, sessionId));
+            return createOkResponse(
+                    individualManager.create(studyStr, params.toIndividual(studyStr, catalogManager.getStudyManager(), sessionId),
+                            queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -184,7 +184,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                                   Individual.LifeStatus lifeStatus,
                                       @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
                                                   Individual.AffectationStatus affectationStatus,
-                                      @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
+                                      @ApiParam(value = "Variable set id or name", required = false) @QueryParam("variableSetId") String variableSetId,
                                       @ApiParam(value = "annotationsetName", required = false) @QueryParam("annotationsetName")
                                                   String annotationsetName,
                                       @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
@@ -232,61 +232,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
 //                queryResult = catalogManager.annotateIndividual(individualId, annotateSetName, variableSetId,
 //                        annotations, Collections.emptyMap(), sessionId);
 //            }
-//            return createOkResponse(queryResult);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-    }
-
-    @Deprecated
-    @GET
-    @Path("/{individual}/annotate")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Annotate an individual [DEPRECATED]", position = 5, hidden = true)
-    public Response annotateSampleGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual")
-                                                  String individualStr,
-                                      @ApiParam(value = "Annotation set name. Must be unique", required = true)
-                                      @QueryParam("annotateSetName") String annotateSetName,
-                                      @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
-                                      @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update")
-                                          @DefaultValue("false") boolean update,
-                                      @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete")
-                                          @DefaultValue("false") boolean delete) {
-        return createErrorResponse(new CatalogException("Webservice no longer supported. Please, use "
-                + "/{individual}/annotationsets/..."));
-//        try {
-//            long individualId = catalogManager.getIndividualId(individualStr, sessionId);
-//            QueryResult<AnnotationSet> queryResult;
-//            if (update && delete) {
-//                return createErrorResponse("Annotate individual", "Unable to update and delete annotations at the same"
-//                        + " time");
-//            } else if (delete) {
-//                queryResult = catalogManager.deleteIndividualAnnotation(individualId, annotateSetName, sessionId);
-//            } else {
-//                if (update) {
-//                    for (AnnotationSet annotationset : catalogManager.getIndividual(individualId, null, sessionId).first()
-//                            .getAnnotationSets()) {
-//                        if (annotationset.getName().equals(annotateSetName)) {
-//                            variableSetId = annotationset.getVariableSetId();
-//                        }
-//                    }
-//                }
-//                QueryResult<VariableSet> variableSetResult = catalogManager.getVariableSet(variableSetId, null, sessionId);
-//                if(variableSetResult.getResult().isEmpty()) {
-//                    return createErrorResponse("sample annotate", "VariableSet not find.");
-//                }
-//                Map<String, Object> annotations = variableSetResult.getResult().get(0).getVariables().stream()
-//                        .filter(variable -> params.containsKey(variable.getName()))
-//                        .collect(Collectors.toMap(Variable::getName, variable -> params.getFirst(variable.getName())));
-//
-//                if (update) {
-//                    queryResult = catalogManager.updateIndividualAnnotation(individualId, annotateSetName, annotations, sessionId);
-//                } else {
-//                    queryResult = catalogManager.annotateIndividual(individualId, annotateSetName, variableSetId,
-//                            annotations, Collections.emptyMap(), sessionId);
-//                }
-//            }
-//
 //            return createOkResponse(queryResult);
 //        } catch (Exception e) {
 //            return createErrorResponse(e);
@@ -525,7 +470,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") Individual.LifeStatus lifeStatus,
                             @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
                                         Individual.AffectationStatus affectationStatus,
-                            @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
+                            @ApiParam(value = "Variable set id or name", required = false) @QueryParam("variableSetId") String variableSetId,
                             @ApiParam(value = "annotationsetName", required = false) @QueryParam("annotationsetName")
                                         String annotationsetName,
                             @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
@@ -747,10 +692,22 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public Individual.KaryotypicSex karyotypicSex;
         public Individual.LifeStatus lifeStatus;
         public Individual.AffectationStatus affectationStatus;
+        public List<CommonModels.AnnotationSetParams> annotationSets;
+        public Map<String, Object> attributes;
 
-        public Individual toIndividual() {
+
+        public Individual toIndividual(String studyStr, IStudyManager studyManager, String sessionId) throws CatalogException {
+            List<AnnotationSet> annotationSetList = new ArrayList<>();
+            if (annotationSets != null) {
+                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
+                    if (annotationSet != null) {
+                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
+                    }
+                }
+            }
+
             return new Individual(-1, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, population, lifeStatus,
-                    affectationStatus);
+                    affectationStatus, annotationSetList);
         }
     }
 

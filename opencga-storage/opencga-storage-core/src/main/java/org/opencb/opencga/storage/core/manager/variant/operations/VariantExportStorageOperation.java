@@ -228,9 +228,8 @@ public class VariantExportStorageOperation extends StorageOperation {
                             newSampleIds.add(samplesIdMap.get(sampleId));
                         }
                     }
-                    Cohort cohort = catalogManager.createCohort(
-                            studyConfiguration.getStudyId(), cohortName, Study.Type.COLLECTION,
-                            "", newSampleIds.stream().map(Long::valueOf).collect(Collectors.toList()),
+                    Cohort cohort = catalogManager.getCohortManager().create((long) studyConfiguration.getStudyId(), cohortName, Study
+                            .Type.COLLECTION, "", newSampleIds.stream().map(Long::valueOf).collect(Collectors.toList()), null,
                             Collections.emptyMap(), sessionId).first();
                     newCohortIds.put(cohortName, (int) cohort.getId());
                     newCohorts.put((int) cohort.getId(), newSampleIds);

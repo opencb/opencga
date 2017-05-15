@@ -71,11 +71,14 @@ public class CohortManager extends AbstractManager implements ICohortManager {
 
     @Override
     public QueryResult<Cohort> create(long studyId, String name, Study.Type type, String description, List<Long> sampleIds,
-                                            Map<String, Object> attributes, String sessionId) throws CatalogException {
+                                      List<AnnotationSet> annotationSetList, Map<String, Object> attributes, String sessionId)
+            throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkObj(sampleIds, "Samples list");
         type = ParamUtils.defaultObject(type, Study.Type.COLLECTION);
         description = ParamUtils.defaultString(description, "");
+        annotationSetList = ParamUtils.defaultObject(annotationSetList, Collections::emptyList);
+        annotationSetList = AnnotationManager.validateAnnotationSets(annotationSetList, studyDBAdaptor);
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         if (!sampleIds.isEmpty()) {
@@ -89,7 +92,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         }
         String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_COHORTS);
-        Cohort cohort = new Cohort(name, type, TimeUtils.getTime(), description, sampleIds, attributes);
+        Cohort cohort = new Cohort(name, type, TimeUtils.getTime(), description, sampleIds, annotationSetList, attributes);
         QueryResult<Cohort> queryResult = cohortDBAdaptor.insert(cohort, studyId, null);
 //        auditManager.recordCreation(AuditRecord.Resource.cohort, queryResult.first().getId(), userId, queryResult.first(), null, new
 //                ObjectMap());

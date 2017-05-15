@@ -7,6 +7,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
+import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.core.exception.VersionException;
@@ -19,7 +20,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Created by pfurio on 03/05/17.
@@ -105,7 +105,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
                     String studyStr,
             @ApiParam(value="JSON containing family information", required = true) CreateFamilyPOST family) {
         try {
-            QueryResult<Family> queryResult = familyManager.create(studyStr, family.toFamily(), queryOptions, sessionId);
+            QueryResult<Family> queryResult = familyManager.create(studyStr,
+                    family.toFamily(studyStr, catalogManager.getStudyManager(), sessionId), queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -329,14 +330,29 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public IndividualWSServer.IndividualPOST mother;
         public IndividualWSServer.IndividualPOST father;
         public List<IndividualWSServer.IndividualPOST> children;
+        public List<CommonModels.AnnotationSetParams> annotationSets;
 
-        public Family toFamily() {
-            return new Family(name, father != null ? father.toIndividual() : null, mother != null ? mother.toIndividual() : null,
-                    children != null
-                            ? children.stream().filter(Objects::nonNull).map(IndividualWSServer.IndividualPOST::toIndividual)
-                                .collect(Collectors.toList())
-                            : null,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, description, ontologyTerms, null, attributes);
+        public Family toFamily(String studyStr, IStudyManager studyManager, String sessionId) throws CatalogException {
+            List<Individual> childrenList = new ArrayList<>();
+            if (children != null) {
+                for (IndividualWSServer.IndividualPOST child : children) {
+                    childrenList.add(child.toIndividual(studyStr, studyManager, sessionId));
+                }
+            }
+
+            List<AnnotationSet> annotationSetList = new ArrayList<>();
+            if (annotationSets != null) {
+                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
+                    if (annotationSet != null) {
+                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
+                    }
+                }
+            }
+
+            return new Family(name, father != null ? father.toIndividual(studyStr, studyManager, sessionId) : null,
+                    mother != null ? mother.toIndividual(studyStr, studyManager, sessionId) : null, childrenList,
+                    parentalConsanguinity != null ? parentalConsanguinity : false, description, ontologyTerms, annotationSetList,
+                    attributes);
         }
     }
 

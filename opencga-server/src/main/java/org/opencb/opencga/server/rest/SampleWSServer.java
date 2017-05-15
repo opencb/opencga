@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.api.ISampleManager;
+import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Individual;
@@ -41,10 +42,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by jacobo on 15/12/14.
@@ -123,7 +121,8 @@ public class SampleWSServer extends OpenCGAWSServer {
                 studyStr = studyIdStr;
             }
 
-            return createOkResponse(sampleManager.create(studyStr, params.toSample(), queryOptions, sessionId));
+            return createOkResponse(sampleManager.create(studyStr, params.toSample(studyStr, catalogManager.getStudyManager(), sessionId),
+                    queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -627,6 +626,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         public String name;
         public String description;
         public String source;
+        public List<CommonModels.AnnotationSetParams> annotationSets;
         public Map<String, Object> attributes;
     }
 
@@ -636,10 +636,20 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     private static class CreateSamplePOST extends SamplePOST {
-        public Individual individual;
+        public IndividualWSServer.IndividualPOST individual;
 
-        public Sample toSample() {
-            return new Sample(-1, name, source, individual, description, null, null, attributes);
+        public Sample toSample(String studyStr, IStudyManager studyManager, String sessionId) throws CatalogException {
+            List<AnnotationSet> annotationSetList = new ArrayList<>();
+            if (annotationSets != null) {
+                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
+                    if (annotationSet != null) {
+                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
+                    }
+                }
+            }
+
+            return new Sample(-1, name, source, individual != null ? individual.toIndividual(studyStr, studyManager, sessionId) : null,
+                    description, null, annotationSetList, attributes);
         }
     }
 }

@@ -136,6 +136,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         sample.setAcl(Collections.emptyList());
         sample.setOntologyTerms(ParamUtils.defaultObject(sample.getOntologyTerms(), Collections.emptyList()));
         sample.setAnnotationSets(ParamUtils.defaultObject(sample.getAnnotationSets(), Collections.emptyList()));
+        sample.setAnnotationSets(AnnotationManager.validateAnnotationSets(sample.getAnnotationSets(), studyDBAdaptor));
         sample.setAttributes(ParamUtils.defaultObject(sample.getAttributes(), Collections.emptyMap()));
         sample.setStatus(new Status());
         sample.setCreationDate(TimeUtils.getTime());

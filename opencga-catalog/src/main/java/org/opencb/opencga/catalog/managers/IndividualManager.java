@@ -101,7 +101,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
 
         Individual individual = new Individual(0, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity,
-                new Individual.Population(populationName, populationSubpopulation, populationDescription), lifeStatus, affectationStatus);
+                new Individual.Population(populationName, populationSubpopulation, populationDescription), lifeStatus, affectationStatus,
+                Collections.emptyList());
 
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
 //      auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
@@ -578,6 +579,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         individual.setAffectationStatus(ParamUtils.defaultObject(individual.getAffectationStatus(), Individual.AffectationStatus.UNKNOWN));
         individual.setOntologyTerms(ParamUtils.defaultObject(individual.getOntologyTerms(), Collections.emptyList()));
         individual.setAnnotationSets(ParamUtils.defaultObject(individual.getAnnotationSets(), Collections.emptyList()));
+        individual.setAnnotationSets(AnnotationManager.validateAnnotationSets(individual.getAnnotationSets(), studyDBAdaptor));
         individual.setAttributes(ParamUtils.defaultObject(individual.getAttributes(), Collections.emptyMap()));
         individual.setAcl(Collections.emptyList());
         individual.setStatus(new Status());

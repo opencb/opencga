@@ -40,9 +40,6 @@ public class Cohort extends Annotable<CohortAclEntry> {
     private List<Long> samples;
     private Family family;
 
-//    private List<CohortAclEntry> acl;
-//    private List<AnnotationSet> annotationSets;
-
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
@@ -52,9 +49,16 @@ public class Cohort extends Annotable<CohortAclEntry> {
 
     public Cohort(String name, Study.Type type, String creationDate, String description, List<Long> samples,
                   Map<String, Object> attributes) {
-        this(-1, name, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(), Collections.emptyList(),
-                Collections.emptyMap(), attributes);
+        this(-1, name, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(),
+                Collections.emptyList(), Collections.emptyMap(), attributes);
     }
+
+    public Cohort(String name, Study.Type type, String creationDate, String description, List<Long> samples,
+                  List<AnnotationSet> annotationSetList, Map<String, Object> attributes) {
+        this(-1, name, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(),
+                annotationSetList, Collections.emptyMap(), attributes);
+    }
+
     public Cohort(long id, String name, Study.Type type, String creationDate, CohortStatus status, String description,
                   List<Long> samples, Family family, List<CohortAclEntry> acl, List<AnnotationSet> annotationSets,
                   Map<String, Object> stats, Map<String, Object> attributes) {
