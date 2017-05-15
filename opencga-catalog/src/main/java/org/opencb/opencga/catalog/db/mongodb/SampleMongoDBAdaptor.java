@@ -460,6 +460,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         long startTime = startQuery();
         Map<String, Object> sampleParameters = new HashMap<>();
 
+        final String[] acceptedBooleanParams = {QueryParams.SOMATIC.key()};
+        filterBooleanParams(parameters, sampleParameters, acceptedBooleanParams);
+
         final String[] acceptedParams = {QueryParams.SOURCE.key(), QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, sampleParameters, acceptedParams);
 

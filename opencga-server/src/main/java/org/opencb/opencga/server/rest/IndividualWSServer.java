@@ -72,6 +72,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                      @ApiParam(value = "motherId", required = false) @QueryParam("motherId") long motherId,
                                      @ApiParam(value = "sex", required = false) @QueryParam("sex") @DefaultValue("UNKNOWN")
                                                  Individual.Sex sex,
+                                     @ApiParam(value = "Date of birth. Format: yyyyMMdd", required = false) @QueryParam("dateOfBirth")
+                                                 String dateOfBirth,
                                      @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
                                      @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
                                                  String populationName,
@@ -90,16 +92,14 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 studyStr = studyIdStr;
             }
             long studyId = catalogManager.getStudyId(studyStr, sessionId);
-            QueryResult<Individual> queryResult = individualManager.create(studyId, name, family, fatherId, motherId,
-                    sex, ethnicity, populationName, populationSubpopulation,
-                    populationDescription, karyotypicSex, lifeStatus, affectationStatus, queryOptions, sessionId);
+            QueryResult<Individual> queryResult = individualManager.create(studyId, name, family, fatherId, motherId, sex, ethnicity,
+                    populationName, populationSubpopulation, populationDescription, dateOfBirth, karyotypicSex, lifeStatus, affectationStatus,
+                    queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
-
-
 
     @POST
     @Path("/create")
@@ -379,6 +379,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                      @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                                      @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
                                      @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
+                                     @ApiParam(value = "Date of birth. Format: yyyyMMdd", required = false) @QueryParam("dateOfBirth")
+                                                 String dateOfBirth,
                                      @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
                                                  String populationName,
                                      @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
@@ -406,6 +408,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), karyotypicSex);
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(), lifeStatus);
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), affectationStatus);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), dateOfBirth);
             QueryResult<Individual> queryResult = individualManager.update(resource.getResourceId(), params, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -689,6 +692,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public Individual.Sex sex;
         public String ethnicity;
         public Individual.Population population;
+        public String dateOfBirth;
         public Individual.KaryotypicSex karyotypicSex;
         public Individual.LifeStatus lifeStatus;
         public Individual.AffectationStatus affectationStatus;
@@ -707,7 +711,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             }
 
             return new Individual(-1, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, population, lifeStatus,
-                    affectationStatus, annotationSetList);
+                    affectationStatus, dateOfBirth, annotationSetList);
         }
     }
 

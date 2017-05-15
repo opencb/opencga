@@ -74,7 +74,7 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
 
     QueryResult<Sample> create(String studyStr, Sample sample, QueryOptions options, String sessionId) throws CatalogException;
 
-    QueryResult<Sample> create(String studyStr, String name, String source, String description, Individual individual,
+    QueryResult<Sample> create(String studyStr, String name, String source, String description, boolean somatic, Individual individual,
                                Map<String, Object> attributes, QueryOptions options, String sessionId) throws CatalogException;
 
     @Deprecated

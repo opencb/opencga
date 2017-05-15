@@ -135,6 +135,9 @@ public class IndividualCommandOptions {
 
         @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
         public String affectationStatus;
+
+        @Parameter(names = {"-dob", "--date-of-birth"}, description = "Date of birth. Format: yyyyMMdd", arity = 1)
+        public String dateOfBirth;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get individual information")
@@ -244,6 +247,8 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
         public String affectationStatus;
 
+        @Parameter(names = {"-dob", "--date-of-birth"}, description = "Date of birth. Format: yyyyMMdd", arity = 1)
+        public String dateOfBirth;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete individual information")

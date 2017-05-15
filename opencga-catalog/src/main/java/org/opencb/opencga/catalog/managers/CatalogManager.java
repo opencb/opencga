@@ -1000,7 +1000,7 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Individual> createIndividual(long studyId, String name, String family, long fatherId, long motherId,
                                                     Individual.Sex sex, QueryOptions options, String sessionId)
             throws CatalogException {
-        return individualManager.create(studyId, name, family, fatherId, motherId, sex, "", "", "", "",
+        return individualManager.create(studyId, name, family, fatherId, motherId, sex, "", "", "", "", "",
                 Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, options, sessionId);
     }
 
@@ -1048,7 +1048,7 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Sample> createSample(long studyId, String name, String source, String description,
                                             Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
-        return sampleManager.create(Long.toString(studyId), name, source, description, null, attributes, options, sessionId);
+        return sampleManager.create(Long.toString(studyId), name, source, description, false, null, attributes, options, sessionId);
     }
 
     public long getSampleId(String sampleId, String sessionId) throws CatalogException {

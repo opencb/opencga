@@ -44,6 +44,7 @@ public class ClientConfiguration {
     private RestConfig rest;
     private GrpcConfig grpc;
 
+    private VariantClientConfiguration variant;
 
     public ClientConfiguration() {
     }
@@ -93,6 +94,7 @@ public class ClientConfiguration {
         sb.append(", alias=").append(alias);
         sb.append(", rest=").append(rest);
         sb.append(", grpc=").append(grpc);
+        sb.append(", variant=").append(variant);
         sb.append('}');
         return sb.toString();
     }
@@ -178,4 +180,12 @@ public class ClientConfiguration {
         return this;
     }
 
+    public VariantClientConfiguration getVariant() {
+        return variant;
+    }
+
+    public ClientConfiguration setVariant(VariantClientConfiguration variant) {
+        this.variant = variant;
+        return this;
+    }
 }

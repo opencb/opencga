@@ -123,6 +123,9 @@ public class SampleCommandOptions {
 
         @Parameter(names = {"--individual"}, description = "Individual name or id to whom the sample belongs to", arity = 1)
         public String individual;
+
+        @Parameter(names = {"--somatic"}, description = "Flag indicating that the sample comes from somatic cells", arity = 0)
+        public boolean somatic;
     }
 
     @Parameters(commandNames = {"load"}, commandDescription = "Load samples from a pedigree file")
@@ -171,10 +174,10 @@ public class SampleCommandOptions {
     }
 
 
-    @Parameters(commandNames = {"update"}, commandDescription = "Update cohort")
+    @Parameters(commandNames = {"update"}, commandDescription = "Update sample")
     public class UpdateCommandOptions extends BaseSampleCommand {
 
-        @Parameter(names = {"-n", "--name"}, description = "Cohort set name.", required = false, arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "New sample name.", required = false, arity = 1)
         public String name;
 
         @Parameter(names = {"--individual"}, description = "Individual id or name", required = false, arity = 1)
@@ -186,6 +189,8 @@ public class SampleCommandOptions {
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
         public String description;
 
+        @Parameter(names = {"--somatic"}, description = "Boolean indicating whether the sample comes from somatic cells or not", arity = 1)
+        public Boolean somatic;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete the selected sample")

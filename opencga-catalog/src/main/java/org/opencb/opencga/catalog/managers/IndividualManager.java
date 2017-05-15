@@ -81,7 +81,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     @Override
     public QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Sex sex,
                                           String ethnicity, String populationName, String populationSubpopulation,
-                                          String populationDescription, Individual.KaryotypicSex karyotypicSex,
+                                          String populationDescription, String dateOfBirth, Individual.KaryotypicSex karyotypicSex,
                                           Individual.LifeStatus lifeStatus, Individual.AffectationStatus affectationStatus,
                                           QueryOptions options, String sessionId) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -96,13 +96,20 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         karyotypicSex = ParamUtils.defaultObject(karyotypicSex, Individual.KaryotypicSex.UNKNOWN);
         lifeStatus = ParamUtils.defaultObject(lifeStatus, Individual.LifeStatus.UNKNOWN);
         affectationStatus = ParamUtils.defaultObject(affectationStatus, Individual.AffectationStatus.UNKNOWN);
+        if (StringUtils.isEmpty(dateOfBirth)) {
+            dateOfBirth = "";
+        } else {
+            if (!TimeUtils.isValidFormat("yyyyMMdd", dateOfBirth)) {
+                throw new CatalogException("Invalid date of birth format. Valid format yyyyMMdd");
+            }
+        }
 
         String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
 
         Individual individual = new Individual(0, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity,
                 new Individual.Population(populationName, populationSubpopulation, populationDescription), lifeStatus, affectationStatus,
-                Collections.emptyList());
+                dateOfBirth, Collections.emptyList());
 
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
 //      auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
@@ -683,7 +690,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
             throws CatalogException {
         ParamUtils.defaultObject(parameters, QueryOptions::new);
         ParamUtils.defaultObject(options, QueryOptions::new);
-
         String userId = userManager.getId(sessionId);
         authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.UPDATE);
 
@@ -700,6 +706,15 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                             .append(IndividualDBAdaptor.QueryParams.NAME.key(), myName);
                     if (individualDBAdaptor.count(query).first() > 0) {
                         throw new CatalogException("Individual name " + myName + " already in use");
+                    }
+                    break;
+                case DATE_OF_BIRTH:
+                    if (StringUtils.isEmpty((String) param.getValue())) {
+                        parameters.put(param.getKey(), "");
+                    } else {
+                        if (!TimeUtils.isValidFormat("yyyyMMdd", (String) param.getValue())) {
+                            throw new CatalogException("Invalid date of birth format. Valid format yyyyMMdd");
+                        }
                     }
                     break;
                 case FATHER_ID:

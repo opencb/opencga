@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.api.IIndividualManager;
 import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
@@ -1441,7 +1442,7 @@ public class CatalogManagerTest extends GenericTest {
     public void testModifySample() throws CatalogException {
         long studyId = catalogManager.getStudyId("user@1000G:phase1", sessionIdUser);
         long sampleId1 = catalogManager.getSampleManager()
-                .create("user@1000G:phase1", "SAMPLE_1", "", "", null, null, new QueryOptions(),
+                .create("user@1000G:phase1", "SAMPLE_1", "", "", false, null, null, new QueryOptions(),
                         sessionIdUser).first().getId();
         long individualId = catalogManager.createIndividual(studyId, "Individual1", "", 0, 0, Individual.Sex.MALE, new QueryOptions(),
                 sessionIdUser).first().getId();
@@ -1459,7 +1460,7 @@ public class CatalogManagerTest extends GenericTest {
         long individualId = catalogManager.createIndividual(studyId, "Individual1", "", 0, 0, Individual.Sex.MALE, new QueryOptions(),
                 sessionIdUser).first().getId();
         long sampleId1 = catalogManager.getSampleManager()
-                .create("user@1000G:phase1", "SAMPLE_1", "", "", new Individual().setId(individualId), null, new QueryOptions(),
+                .create("user@1000G:phase1", "SAMPLE_1", "", "", false, new Individual().setId(individualId), null, new QueryOptions(),
                         sessionIdUser).first().getId();
         Sample sample = catalogManager.getSampleManager().get(sampleId1, QueryOptions.empty(), sessionIdUser).first();
 
@@ -1467,7 +1468,7 @@ public class CatalogManagerTest extends GenericTest {
 
         // Create sample linking to individual based on the individual name
         long sampleId2 = catalogManager.getSampleManager()
-                .create("user@1000G:phase1", "SAMPLE_2", "", "", new Individual().setName("Individual1"), null, new QueryOptions(),
+                .create("user@1000G:phase1", "SAMPLE_2", "", "", false, new Individual().setName("Individual1"), null, new QueryOptions(),
                         sessionIdUser).first().getId();
         sample = catalogManager.getSampleManager().get(sampleId2, QueryOptions.empty(), sessionIdUser).first();
         assertEquals(individualId, sample.getIndividual().getId());
@@ -1750,6 +1751,33 @@ public class CatalogManagerTest extends GenericTest {
                         .append(IndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".PHEN", "CASE"),
                 null, sessionIdUser).getResult().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_3")));
+    }
 
+    @Test
+    public void testUpdateIndividualInfo() throws CatalogException {
+        long studyId = catalogManager.getStudyManager().getId("", "user@1000G:phase1");
+        Study study = catalogManager.getStudy(studyId, sessionIdUser).first();
+
+        IIndividualManager individualManager = catalogManager.getIndividualManager();
+        QueryResult<Individual> individualQueryResult = individualManager.create(study.getId(), "Test", null, -1, -1, Individual.Sex.UNDETERMINED, "", "",
+                "", "", "19870214", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.ALIVE, Individual.AffectationStatus.AFFECTED,
+                QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, individualQueryResult.getNumResults());
+        assertEquals("Test", individualQueryResult.first().getName());
+        assertEquals("19870214", individualQueryResult.first().getDateOfBirth());
+
+        QueryResult<Individual> update = individualManager.update(individualQueryResult.first().getId(), new ObjectMap
+                (IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), null), QueryOptions.empty(), sessionIdUser);
+        assertEquals("", update.first().getDateOfBirth());
+
+        update = individualManager.update(individualQueryResult.first().getId(),
+                new ObjectMap(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), "19870214"), QueryOptions.empty(), sessionIdUser);
+        assertEquals("19870214", update.first().getDateOfBirth());
+
+        // Wrong date of birth format
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Invalid date of birth format");
+        individualManager.update(individualQueryResult.first().getId(),
+                new ObjectMap(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), "198421"), QueryOptions.empty(), sessionIdUser);
     }
 }

@@ -107,14 +107,11 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
      */
     QueryResult<Individual> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
-//    QueryResult<Individual> create(String studyStr, ServerUtils.IndividualParameters individualParams, QueryOptions options,
-//                                   String sessionId) throws CatalogException;
-
     QueryResult<Individual> create(String studyStr, Individual individual, QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Sex sex,
                                    String ethnicity, String populationName, String populationSubpopulation, String populationDescription,
-                                   Individual.KaryotypicSex karyotypicSex, Individual.LifeStatus lifeStatus,
+                                   String dateOfBirth, Individual.KaryotypicSex karyotypicSex, Individual.LifeStatus lifeStatus,
                                    Individual.AffectationStatus affectationStatus, QueryOptions options, String sessionId)
             throws CatalogException;
 
