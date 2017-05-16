@@ -80,10 +80,6 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
         return execute(category, id, "acl", params, GET, aclClass);
     }
 
-    public QueryResponse<A> getAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {
-        return execute(category, id, "acl", memberId, "info", params, GET, aclClass);
-    }
-
     public QueryResponse<A> updateAcl(String memberId, ObjectMap queryParams, ObjectMap bodyParams) throws CatalogException, IOException {
         ObjectMap myParams = new ObjectMap(queryParams);
         myParams.put("body", bodyParams);

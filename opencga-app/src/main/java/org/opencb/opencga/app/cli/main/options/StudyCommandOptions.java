@@ -582,15 +582,15 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {"acl"}, commandDescription = "Return the acls set for the resource")
     public class AclsCommandOptions extends BaseStudyCommand {
-        @Parameter(names = {"--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*'). If provided, only returns acls given "
-                + "to the member.", arity = 1)
+        @Parameter(names = {"-m", "--member"}, description = "Member id  ('userId', '@groupId' or '*'). If provided, only returns "
+                + "acls given to the member.", arity = 1)
         public String memberId;
     }
 
     @Parameters(commandNames = {"acl-update"}, commandDescription = "Update the permissions set for a member")
     public class AclsUpdateCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"-m", "--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
+        @Parameter(names = {"-m", "--member"}, description = "Member id  ('userId', '@groupId' or '*')", required = true, arity = 1)
         public String memberId;
 
         @Parameter(names = {"-p", "--permissions"}, description = "Comma separated list of accepted permissions for the resource",
