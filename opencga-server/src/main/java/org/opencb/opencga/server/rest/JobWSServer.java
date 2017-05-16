@@ -274,6 +274,7 @@ public class JobWSServer extends OpenCGAWSServer {
                                        required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
             AclParams aclParams = getAclParams(permissions, null, null);
+            aclParams.setAction(AclParams.Action.SET);
             return createOkResponse(jobManager.updateAcl(jobIdsStr, null, members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -291,6 +292,7 @@ public class JobWSServer extends OpenCGAWSServer {
                     StudyWSServer.CreateAclCommands params) {
         try {
             AclParams aclParams = getAclParams(params.permissions, null, null);
+            aclParams.setAction(AclParams.Action.SET);
             return createOkResponse(jobManager.updateAcl(jobIdsStr, null, params.members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);

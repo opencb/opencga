@@ -545,6 +545,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                                        required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
             AclParams aclParams = getAclParams(permissions, null, null);
+            aclParams.setAction(AclParams.Action.SET);
             return createOkResponse(cohortManager.updateAcl(cohortIdsStr, studyStr, members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -564,6 +565,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                     StudyWSServer.CreateAclCommands params) {
         try {
             AclParams aclParams = getAclParams(params.permissions, null, null);
+            aclParams.setAction(AclParams.Action.SET);
             return createOkResponse(cohortManager.updateAcl(cohortIdsStr, studyStr, params.members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);

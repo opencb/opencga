@@ -913,6 +913,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                @QueryParam("templateId") String templateId) {
         try {
             Study.StudyAclParams aclParams = getAclParams(permissions, null, null, templateId);
+            aclParams.setAction(AclParams.Action.SET);
             return createOkResponse(studyManager.updateAcl(studyStr, members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -931,6 +932,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                     CreateAclCommandsTemplate params) {
         try {
             Study.StudyAclParams aclParams = getAclParams(params.permissions, null, null, params.templateId);
+            aclParams.setAction(AclParams.Action.SET);
             return createOkResponse(studyManager.updateAcl(studyStr, params.members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);

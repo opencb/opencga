@@ -1489,6 +1489,7 @@ public class FileWSServer extends OpenCGAWSServer {
                                       required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
             File.FileAclParams aclParams = getAclParams(permissions, null, null);
+            aclParams.setAction(AclParams.Action.SET);
             return createOkResponse(fileManager.updateAcl(fileIdStr, studyStr, members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1508,6 +1509,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     StudyWSServer.CreateAclCommands params) {
         try {
             File.FileAclParams aclParams = getAclParams(params.permissions, null, null);
+            aclParams.setAction(AclParams.Action.SET);
             return createOkResponse(fileManager.updateAcl(fileIdStr, studyStr, params.members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);

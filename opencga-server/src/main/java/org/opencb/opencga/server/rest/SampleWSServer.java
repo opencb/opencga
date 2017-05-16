@@ -494,6 +494,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                                    @DefaultValue("") @QueryParam("members") String members) {
         try {
             Sample.SampleAclParams sampleAclParams = getAclParams(permissions, null, null);
+            sampleAclParams.setAction(AclParams.Action.SET);
             return createOkResponse(sampleManager.updateAcl(sampleIdsStr, studyStr, members, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -513,6 +514,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                     StudyWSServer.CreateAclCommands params) {
         try {
             Sample.SampleAclParams sampleAclParams = getAclParams(params.permissions, null, null);
+            sampleAclParams.setAction(AclParams.Action.SET);
             return createOkResponse(sampleManager.updateAcl(sampleIdsStr, studyStr, params.members, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
