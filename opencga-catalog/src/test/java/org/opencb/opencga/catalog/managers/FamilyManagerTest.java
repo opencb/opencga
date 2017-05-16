@@ -10,6 +10,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
+import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Family;
 import org.opencb.opencga.catalog.models.Individual;
@@ -77,6 +78,23 @@ public class FamilyManagerTest extends GenericTest {
         assertEquals("Sue", familyQueryResult.first().getMother().getName());
         assertEquals(2, familyQueryResult.first().getChildren().size());
 
-        familyManager.search(STUDY, new Query("individual", "John"), QueryOptions.empty(), sessionIdUser);
+        QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, FamilyDBAdaptor.QueryParams.CHILDREN.key());
+        Query query = new Query(FamilyDBAdaptor.QueryParams.MOTHER.key(), "Sue");
+        QueryResult<Family> search = familyManager.search(STUDY, query, options, sessionIdUser);
+        assertEquals(null, search.first().getChildren());
+        assertEquals("Sue", search.first().getMother().getName());
+        assertEquals("John", search.first().getFather().getName());
+
+        options = new QueryOptions(QueryOptions.EXCLUDE, FamilyDBAdaptor.QueryParams.FATHER.key());
+        search = familyManager.search(STUDY, query, options, sessionIdUser);
+        assertEquals(2, search.first().getChildren().size());
+        assertEquals("Sue", search.first().getMother().getName());
+        assertEquals(null, search.first().getFather());
+
+        options = new QueryOptions(QueryOptions.INCLUDE, FamilyDBAdaptor.QueryParams.FATHER.key());
+        search = familyManager.search(STUDY, query, options, sessionIdUser);
+        assertEquals(null, search.first().getChildren());
+        assertEquals(null, search.first().getMother());
+        assertEquals("John", search.first().getFather().getName());
     }
 }

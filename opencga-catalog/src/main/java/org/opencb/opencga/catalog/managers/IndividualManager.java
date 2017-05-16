@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
@@ -119,8 +120,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     @Override
-    public QueryResult<Individual> get(Long individualId, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public QueryResult<Individual> get(Long individualId, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(individualId, "individualId");
         ParamUtils.checkObj(sessionId, "sessionId");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -130,6 +130,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(individualId, options);
         long studyId = individualDBAdaptor.getStudyId(individualId);
         authorizationManager.filterIndividuals(userId, studyId, individualQueryResult.getResult());
+        addChildrenInformation(userId, studyId, individualQueryResult);
         individualQueryResult.setNumResults(individualQueryResult.getResult().size());
         return individualQueryResult;
     }
@@ -154,8 +155,36 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Individual> queryResult = individualDBAdaptor.get(query, options);
         authorizationManager.filterIndividuals(userId, studyId, queryResult.getResult());
+        addChildrenInformation(userId, studyId, queryResult);
         queryResult.setNumResults(queryResult.getResult().size());
         return queryResult;
+    }
+
+    private void addChildrenInformation(String userId, long studyId, QueryResult<Individual> queryResult) {
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(FamilyDBAdaptor.QueryParams.FATHER.key(), FamilyDBAdaptor.QueryParams.MOTHER.key()));
+        for (Individual individual : queryResult.getResult()) {
+            Query query = new Query()
+                    .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(FamilyDBAdaptor.QueryParams.CHILDREN_IDS.key(), individual.getId());
+            try {
+                QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions);
+                authorizationManager.filterFamilies(userId, studyId, familyQueryResult.getResult());
+                if (familyQueryResult.getNumResults() == 0) {
+                    continue;
+                }
+                Map<String, Object> attributes = individual.getAttributes();
+                if (attributes == null) {
+                    individual.setAttributes(new HashMap<>());
+                    attributes = individual.getAttributes();
+                }
+                attributes.put(FamilyDBAdaptor.QueryParams.MOTHER.key(), familyQueryResult.first().getMother());
+                attributes.put(FamilyDBAdaptor.QueryParams.FATHER.key(), familyQueryResult.first().getFather());
+
+            } catch (CatalogException e) {
+                logger.warn("Error occurred when trying to fetch parents of individual: {}", e.getMessage(), e);
+            }
+        }
     }
 
     @Override
