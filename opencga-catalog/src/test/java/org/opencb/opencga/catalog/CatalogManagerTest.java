@@ -977,7 +977,6 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals("Joe", map.get("NAME"));
         assertEquals(25, map.get("AGE"));
         assertEquals(180.0, map.get("HEIGHT"));
-
     }
 
     @Test
@@ -1326,14 +1325,15 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testUpdateAnnotation() throws CatalogException {
 
-        long studyId = catalogManager.getStudyId("user@1000G:phase1");
-        Study study = catalogManager.getStudy(studyId, sessionIdUser).first();
-        Individual individual = catalogManager.createIndividual(study.getId(), "INDIVIDUAL_1", "", -1, -1, Individual.Sex.UNKNOWN, new
-                QueryOptions(), sessionIdUser).first();
+        long studyId = catalogManager.getStudyId("user@1000G:phase1", sessionIdUser);
+        Study study = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), sessionIdUser).first();
+        Individual ind = new Individual().setName("INDIVIDUAL_1").setSex(Individual.Sex.UNKNOWN);
+        ind = catalogManager.getIndividualManager().create(Long.toString(study.getId()), ind, QueryOptions.empty(), sessionIdUser).first();
         Sample sample = catalogManager.getSample(s_1, null, sessionIdUser).first();
 
         AnnotationSet annotationSet = sample.getAnnotationSets().get(0);
-        catalogManager.annotateIndividual(individual.getId(), annotationSet.getName(), annotationSet.getVariableSetId(),
+        catalogManager.getIndividualManager().createAnnotationSet(Long.toString(ind.getId()), Long.toString(studyId),
+                Long.toString(annotationSet.getVariableSetId()), annotationSet.getName(),
                 annotationSet.getAnnotations().stream().collect(Collectors.toMap(Annotation::getName, Annotation::getValue)),
                 Collections.emptyMap(), sessionIdUser);
 
@@ -1342,8 +1342,10 @@ public class CatalogManagerTest extends GenericTest {
                 .append("AGE", 38)
                 .append("HEIGHT", null)
                 .append("EXTRA", "extra");
-        catalogManager.updateSampleAnnotation(s_1, annotationSet.getName(), updateAnnotation, sessionIdUser);
-        catalogManager.updateIndividualAnnotation(individual.getId(), annotationSet.getName(), updateAnnotation, sessionIdUser);
+        catalogManager.getIndividualManager().updateAnnotationSet(Long.toString(ind.getId()), Long.toString(studyId),
+                annotationSet.getName(), updateAnnotation, sessionIdUser);
+        catalogManager.getSampleManager().updateAnnotationSet(Long.toString(s_1), Long.toString(studyId),
+                annotationSet.getName(), updateAnnotation, sessionIdUser);
 
         Consumer<AnnotationSet> check = as -> {
             Map<String, Object> annotations = as.getAnnotations().stream()
@@ -1357,14 +1359,20 @@ public class CatalogManagerTest extends GenericTest {
         };
 
         sample = catalogManager.getSample(s_1, null, sessionIdUser).first();
-        individual = catalogManager.getIndividual(individual.getId(), null, sessionIdUser).first();
+        ind = catalogManager.getIndividual(ind.getId(), null, sessionIdUser).first();
         check.accept(sample.getAnnotationSets().get(0));
-        check.accept(individual.getAnnotationSets().get(0));
+        check.accept(ind.getAnnotationSets().get(0));
 
-        updateAnnotation = new ObjectMap("NAME", "SAMPLE 1")
-                .append("EXTRA", null);
-        catalogManager.updateSampleAnnotation(s_1, annotationSet.getName(), updateAnnotation, sessionIdUser);
-        catalogManager.updateIndividualAnnotation(individual.getId(), annotationSet.getName(), updateAnnotation, sessionIdUser);
+        // Call again to the update to check that nothing changed
+        catalogManager.getIndividualManager().updateAnnotationSet(Long.toString(ind.getId()), Long.toString(studyId),
+                annotationSet.getName(), updateAnnotation, sessionIdUser);
+        check.accept(ind.getAnnotationSets().get(0));
+
+        updateAnnotation = new ObjectMap("NAME", "SAMPLE 1").append("EXTRA", null);
+        catalogManager.getIndividualManager().updateAnnotationSet(Long.toString(ind.getId()), Long.toString(studyId),
+                annotationSet.getName(), updateAnnotation, sessionIdUser);
+        catalogManager.getSampleManager().updateAnnotationSet(Long.toString(s_1), Long.toString(studyId),
+                annotationSet.getName(), updateAnnotation, sessionIdUser);
 
         check = as -> {
             Map<String, Object> annotations = as.getAnnotations().stream()
@@ -1376,9 +1384,9 @@ public class CatalogManagerTest extends GenericTest {
         };
 
         sample = catalogManager.getSample(s_1, null, sessionIdUser).first();
-        individual = catalogManager.getIndividual(individual.getId(), null, sessionIdUser).first();
+        ind = catalogManager.getIndividual(ind.getId(), null, sessionIdUser).first();
         check.accept(sample.getAnnotationSets().get(0));
-        check.accept(individual.getAnnotationSets().get(0));
+        check.accept(ind.getAnnotationSets().get(0));
     }
 
     @Test
