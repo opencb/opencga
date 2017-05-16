@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.utils;
 
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.AnnotationSetDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -25,15 +26,38 @@ import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.VariableSet;
 import org.opencb.opencga.core.common.TimeUtils;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by pfurio on 06/07/16.
  */
 public class AnnotationManager {
+
+    public static List<AnnotationSet> validateAnnotationSets(List<AnnotationSet> annotationSetList, StudyDBAdaptor studyDBAdaptor)
+            throws CatalogException {
+        List<AnnotationSet> retAnnotationSetList = new ArrayList<>(annotationSetList.size());
+
+        Iterator<AnnotationSet> iterator = annotationSetList.iterator();
+        while (iterator.hasNext()) {
+            AnnotationSet originalAnnotSet = iterator.next();
+            String annotationSetName = originalAnnotSet.getName();
+            ParamUtils.checkAlias(annotationSetName, "annotationSetName", -1);
+
+            // Get the variable set
+            VariableSet variableSet = studyDBAdaptor.getVariableSet(originalAnnotSet.getVariableSetId(), QueryOptions.empty()).first();
+
+            // All the annotationSets the object had in order to check for duplicities assuming all annotationsets have been provided
+            List<AnnotationSet> annotationSets = retAnnotationSetList;
+
+            // Check validity of annotations and duplicities
+            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, originalAnnotSet, annotationSets);
+
+            // Add the annotation to the list of annotations
+            retAnnotationSetList.add(originalAnnotSet);
+        }
+
+        return retAnnotationSetList;
+    }
 
     /**
      * Creates an annotation set for the selected entity.

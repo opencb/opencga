@@ -71,11 +71,14 @@ public class CohortManager extends AbstractManager implements ICohortManager {
 
     @Override
     public QueryResult<Cohort> create(long studyId, String name, Study.Type type, String description, List<Long> sampleIds,
-                                            Map<String, Object> attributes, String sessionId) throws CatalogException {
+                                      List<AnnotationSet> annotationSetList, Map<String, Object> attributes, String sessionId)
+            throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkObj(sampleIds, "Samples list");
         type = ParamUtils.defaultObject(type, Study.Type.COLLECTION);
         description = ParamUtils.defaultString(description, "");
+        annotationSetList = ParamUtils.defaultObject(annotationSetList, Collections::emptyList);
+        annotationSetList = AnnotationManager.validateAnnotationSets(annotationSetList, studyDBAdaptor);
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         if (!sampleIds.isEmpty()) {
@@ -89,7 +92,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         }
         String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_COHORTS);
-        Cohort cohort = new Cohort(name, type, TimeUtils.getTime(), description, sampleIds, attributes);
+        Cohort cohort = new Cohort(name, type, TimeUtils.getTime(), description, sampleIds, annotationSetList, attributes);
         QueryResult<Cohort> queryResult = cohortDBAdaptor.insert(cohort, studyId, null);
 //        auditManager.recordCreation(AuditRecord.Resource.cohort, queryResult.first().getId(), userId, queryResult.first(), null, new
 //                ObjectMap());
@@ -526,7 +529,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
     }
 
     @Override
-    public QueryResult<AnnotationSet> createAnnotationSet(String id, @Nullable String studyStr, long variableSetId,
+    public QueryResult<AnnotationSet> createAnnotationSet(String id, @Nullable String studyStr, String variableSetId,
                                                           String annotationSetName, Map<String, Object> annotations,
                                                           Map<String, Object> attributes, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
@@ -536,8 +539,10 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         MyResourceId resource = getId(id, studyStr, sessionId);
         authorizationManager.checkCohortPermission(resource.getResourceId(), resource.getUser(),
                 CohortAclEntry.CohortPermissions.WRITE_ANNOTATIONS);
+        MyResourceId variableSetResource = catalogManager.getStudyManager().getVariableSetId(variableSetId,
+                Long.toString(resource.getStudyId()), sessionId);
 
-        VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
+        VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null).first();
 
         QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(resource.getResourceId(), variableSet,
                 annotationSetName, annotations, attributes, cohortDBAdaptor);
@@ -650,7 +655,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
     }
 
     @Override
-    public QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, long variableSetId,
+    public QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, String variableSetId,
                                                            @Nullable String annotation, String sessionId) throws CatalogException {
         QueryResult<Cohort> cohortQueryResult = commonSearchAnnotationSet(id, studyStr, variableSetId, annotation, sessionId);
         List<ObjectMap> annotationSets;
@@ -666,7 +671,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
     }
 
     @Override
-    public QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, long variableSetId,
+    public QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, String variableSetId,
                                                           @Nullable String annotation, String sessionId) throws CatalogException {
         QueryResult<Cohort> cohortQueryResult = commonSearchAnnotationSet(id, studyStr, variableSetId, annotation, sessionId);
         List<AnnotationSet> annotationSets;
@@ -681,7 +686,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
                 cohortQueryResult.getWarningMsg(), cohortQueryResult.getErrorMsg(), annotationSets);
     }
 
-    private QueryResult<Cohort> commonSearchAnnotationSet(String id, @Nullable String studyStr, long variableSetId,
+    private QueryResult<Cohort> commonSearchAnnotationSet(String id, @Nullable String studyStr, String variableSetStr,
                                                           @Nullable String annotation, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
 
@@ -691,7 +696,10 @@ public class CohortManager extends AbstractManager implements ICohortManager {
 
         Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), id);
 
-        if (variableSetId > 0) {
+        long variableSetId = -1;
+        if (StringUtils.isNotEmpty(variableSetStr)) {
+            variableSetId = catalogManager.getStudyManager().getVariableSetId(variableSetStr, Long.toString(resource.getStudyId()),
+                    sessionId).getResourceId();
             query.append(CohortDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId);
         }
         if (annotation != null) {
@@ -707,7 +715,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         for (Cohort cohort : cohortQueryResult.getResult()) {
             List<AnnotationSet> finalAnnotationSets = new ArrayList<>();
             for (AnnotationSet annotationSet : cohort.getAnnotationSets()) {
-                if (annotationSet.getVariableSetId() == variableSetId) {
+                if (variableSetId > -1 && annotationSet.getVariableSetId() == variableSetId) {
                     finalAnnotationSets.add(annotationSet);
                 }
             }

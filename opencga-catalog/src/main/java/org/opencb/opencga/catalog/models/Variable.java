@@ -83,7 +83,8 @@ public class Variable {
     public enum VariableType {
         BOOLEAN,
         CATEGORICAL,
-        NUMERIC,
+        INTEGER,
+        DOUBLE,
         TEXT,
         OBJECT
     }

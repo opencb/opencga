@@ -278,8 +278,8 @@ public class VariantStatsStorageOperation extends StorageOperation {
                 .collect(Collectors.toMap(Cohort::getName, Cohort::getId));
         for (String cohortName : cohortNames) {
             if (!catalogCohorts.containsKey(cohortName)) {
-                QueryResult<Cohort> cohort = catalogManager
-                        .createCohort(studyId, cohortName, Study.Type.COLLECTION, "", Collections.emptyList(), null, sessionId);
+                QueryResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, cohortName, Study.Type.COLLECTION, "",
+                        Collections.emptyList(), null, null, sessionId);
                 logger.info("Creating cohort {}", cohortName);
                 cohorts.add(cohort.first().getId());
             } else {

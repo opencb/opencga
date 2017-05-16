@@ -62,7 +62,7 @@ public class VariableCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--variable-set"}, description = "VariableSet id", required = true, arity = 1)
+        @Parameter(names = {"--variable-set"}, description = "VariableSet id or name", required = true, arity = 1)
         public String id;
 
         @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"

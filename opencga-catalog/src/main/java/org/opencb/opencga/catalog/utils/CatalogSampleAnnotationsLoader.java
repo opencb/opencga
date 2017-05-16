@@ -66,7 +66,8 @@ public class CatalogSampleAnnotationsLoader {
         //Take or infer the VariableSet
         VariableSet variableSet;
         if (variableSetId != null) {
-            variableSet = catalogManager.getVariableSet(variableSetId, null, sessionId).getResult().get(0);
+            variableSet = catalogManager.getStudyManager().getVariableSet(Long.toString(studyId), Long.toString(variableSetId), null,
+                    sessionId).first();
         } else {
             variableSet = getVariableSetFromPedFile(ped);
             CatalogAnnotationsValidator.checkVariableSet(variableSet);
@@ -132,7 +133,7 @@ public class CatalogSampleAnnotationsLoader {
             Map<String, Object> annotations = getAnnotation(ped.getIndividuals().get(entry.getKey()), sampleMap, variableSet, ped
                     .getFields());
             catalogManager.getSampleManager().createAnnotationSet(Long.toString(entry.getValue().getId()), Long.toString(studyId),
-                    variableSetId, "pedigreeAnnotation", annotations, Collections.emptyMap(), sessionId);
+                    Long.toString(variableSetId), "pedigreeAnnotation", annotations, Collections.emptyMap(), sessionId);
         }
         logger.debug("Annotated {} samples in {}ms", ped.getIndividuals().size(), System.currentTimeMillis() - auxTime);
 
@@ -216,15 +217,15 @@ public class CatalogSampleAnnotationsLoader {
         String category = "PEDIGREE";
         variableList.add(new Variable("family", category, Variable.VariableType.TEXT, null, true,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
-        variableList.add(new Variable("id", category, Variable.VariableType.NUMERIC, null, true,
+        variableList.add(new Variable("id", category, Variable.VariableType.DOUBLE, null, true,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
         variableList.add(new Variable("name", category, Variable.VariableType.TEXT, null, true,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
-        variableList.add(new Variable("fatherId", category, Variable.VariableType.NUMERIC, null, false,
+        variableList.add(new Variable("fatherId", category, Variable.VariableType.DOUBLE, null, false,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
         variableList.add(new Variable("fatherName", category, Variable.VariableType.TEXT, null, false,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
-        variableList.add(new Variable("motherId", category, Variable.VariableType.NUMERIC, null, false,
+        variableList.add(new Variable("motherId", category, Variable.VariableType.DOUBLE, null, false,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
         variableList.add(new Variable("motherName", category, Variable.VariableType.TEXT, null, false,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
@@ -272,14 +273,14 @@ public class CatalogSampleAnnotationsLoader {
                     type = Variable.VariableType.CATEGORICAL;
                 } else {
                     if (isNumerical) {
-                        type = Variable.VariableType.NUMERIC;
+                        type = Variable.VariableType.DOUBLE;
                     } else {
                         type = Variable.VariableType.TEXT;
                     }
                 }
             } else {
                 if (isNumerical) {
-                    type = Variable.VariableType.NUMERIC;
+                    type = Variable.VariableType.DOUBLE;
                 } else {
                     type = Variable.VariableType.TEXT;
                 }

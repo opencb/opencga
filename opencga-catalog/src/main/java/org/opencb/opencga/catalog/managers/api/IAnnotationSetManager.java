@@ -35,7 +35,7 @@ public interface IAnnotationSetManager {
      *
      * @param id id of the entity being annotated.
      * @param studyStr study string.
-     * @param variableSetId variable set id under which the annotation will be made.
+     * @param variableSetId variable set id or name under which the annotation will be made.
      * @param annotationSetName annotation set name that will be used for the annotation.
      * @param annotations map of annotations to create the annotation set.
      * @param attributes map with further attributes that the user might be interested in storing.
@@ -44,7 +44,7 @@ public interface IAnnotationSetManager {
      * @throws CatalogException when the session id is not valid, the user does not have permissions or any of the annotation
      * parameters are not valid.
      */
-    QueryResult<AnnotationSet> createAnnotationSet(String id, @Nullable String studyStr, long variableSetId, String annotationSetName,
+    QueryResult<AnnotationSet> createAnnotationSet(String id, @Nullable String studyStr, String variableSetId, String annotationSetName,
                                                    Map<String, Object> annotations, Map<String, Object> attributes, String sessionId)
             throws CatalogException;
 
@@ -150,13 +150,13 @@ public interface IAnnotationSetManager {
      *
      * @param id id of the entity storing the annotation.
      * @param studyStr study string.
-     * @param variableSetId variable set id.
+     * @param variableSetId variable set id or name.
      * @param annotation comma separated list of annotations by which to look for the annotationSets.
      * @param sessionId session id of the user asking for the annotationSets
      * @return a queryResult object containing the list of annotation sets that matches the query as key:value pairs.
      * @throws CatalogException when the session id is not valid, the user does not have permissions to look for annotationSets.
      */
-    QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, long variableSetId, @Nullable String annotation,
+    QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, String variableSetId, @Nullable String annotation,
                                                     String sessionId) throws CatalogException;
 
     /**
@@ -164,12 +164,12 @@ public interface IAnnotationSetManager {
      *
      * @param id id of the entity storing the annotation.
      * @param studyStr study string.
-     * @param variableSetId variable set id.
+     * @param variableSetId variable set id or name.
      * @param annotation comma separated list of annotations by which to look for the annotationSets.
      * @param sessionId session id of the user asking for the annotationSets
      * @return a queryResult object containing the list of annotation sets that matches the query.
      * @throws CatalogException when the session id is not valid, the user does not have permissions to look for annotationSets.
      */
-    QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, long variableSetId, @Nullable String annotation,
+    QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, String variableSetId, @Nullable String annotation,
                                                    String sessionId) throws CatalogException;
 }

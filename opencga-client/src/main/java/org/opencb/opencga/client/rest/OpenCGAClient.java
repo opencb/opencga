@@ -114,6 +114,11 @@ public class OpenCGAClient {
         return (PanelClient) clients.get("PANEL");
     }
 
+    public FamilyClient getFamilyClient() {
+        clients.putIfAbsent("FAMILY", new FamilyClient(userId, sessionId, clientConfiguration));
+        return (FamilyClient) clients.get("FAMILY");
+    }
+
     public ToolClient getToolClient() {
         clients.putIfAbsent("TOOL", new ToolClient(userId, sessionId, clientConfiguration));
         return (ToolClient) clients.get("TOOL");

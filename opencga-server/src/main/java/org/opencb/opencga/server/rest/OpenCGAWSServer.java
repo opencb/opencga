@@ -37,6 +37,7 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.core.common.Config;
@@ -156,7 +157,8 @@ public class OpenCGAWSServer {
     }
 
 
-    public OpenCGAWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+    public OpenCGAWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+            throws IOException, VersionException {
         this(uriInfo.getPathParameters().getFirst("version"), uriInfo, httpServletRequest);
     }
 
@@ -171,6 +173,11 @@ public class OpenCGAWSServer {
         // This is only executed the first time to initialize configuration and some variables
         if (initialized.compareAndSet(false, true)) {
             init();
+        }
+
+        if (catalogManager == null) {
+            throw new IllegalStateException("OpenCGA was not properly initialized. Please, check if the configuration files are reachable "
+                    + "or properly defined.");
         }
 
         query = new Query();
@@ -345,6 +352,16 @@ public class OpenCGAWSServer {
         if (query.containsKey("status")) {
             query.put("status.name", query.get("status"));
             query.remove("status");
+        }
+
+        if (query.containsKey("variableSetId")) {
+            try {
+                AbstractManager.MyResourceId resource = catalogManager.getStudyManager().getVariableSetId(query.getString
+                        ("variableSetId"), query.getString("study"), sessionId);
+                query.put("variableSetId", resource.getResourceId());
+            } catch (CatalogException e) {
+                logger.warn("VariableSetId parameter found, but proper id could not be found: {}", e.getMessage(), e);
+            }
         }
 
         try {

@@ -29,7 +29,7 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 /**
  * Created by sgallego on 6/14/16.
  */
-@Parameters(commandNames = {"individuals"}, commandDescription = "Individuals commands")
+@Parameters(commandNames = {"individuals"}, commandDescription = "Individual commands")
 public class IndividualCommandOptions {
 
     public CreateCommandOptions createCommandOptions;
@@ -118,15 +118,6 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
         public String ethnicity;
 
-        @Parameter(names = {"--species-taxonomy-code"}, description = "Taxonomy code of the species", required = false, arity = 1)
-        public String speciesTaxonomyCode;
-
-        @Parameter(names = {"--species-scientific-name"}, description = "Scientific name of the species", required = false, arity = 1)
-        public String speciesScientificName;
-
-        @Parameter(names = {"--species-common-name"}, description = "Common name of the species", required = false, arity = 1)
-        public String speciesCommonName;
-
         @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
         public String populationName;
 
@@ -144,6 +135,9 @@ public class IndividualCommandOptions {
 
         @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
         public String affectationStatus;
+
+        @Parameter(names = {"-dob", "--date-of-birth"}, description = "Date of birth. Format: yyyyMMdd", arity = 1)
+        public String dateOfBirth;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get individual information")
@@ -182,21 +176,8 @@ public class IndividualCommandOptions {
         public String ethnicity;
 
         @Deprecated
-        @Parameter(names = {"--species"}, description = "[DEPRECATED] species", required = false, arity = 1)
-        public String species;
-
-        @Deprecated
         @Parameter(names = {"--population"}, description = "[DEPRECATED] population", required = false, arity = 1)
         public String population;
-
-        @Parameter(names = {"--species-taxonomy-code"}, description = "Taxonomy code of the species", required = false, arity = 1)
-        public String speciesTaxonomyCode;
-
-        @Parameter(names = {"--species-scientific-name"}, description = "Scientific name of the species", required = false, arity = 1)
-        public String speciesScientificName;
-
-        @Parameter(names = {"--species-common-name"}, description = "Common name of the species", required = false, arity = 1)
-        public String speciesCommonName;
 
         @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
         public String populationName;
@@ -216,7 +197,7 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
         public String affectationStatus;
 
-        @Parameter(names = {"--variable-set-id"}, description = "variableSetId", required = false, arity = 1)
+        @Parameter(names = {"--variable-set-id"}, description = "Variable set id or name", required = false, arity = 1)
         public String variableSetId;
 
         @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 1)
@@ -248,15 +229,6 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
         public String ethnicity;
 
-        @Parameter(names = {"--species-taxonomy-code"}, description = "Taxonomy code of the species", required = false, arity = 1)
-        public String speciesTaxonomyCode;
-
-        @Parameter(names = {"--species-scientific-name"}, description = "Scientific name of the species", required = false, arity = 1)
-        public String speciesScientificName;
-
-        @Parameter(names = {"--species-common-name"}, description = "Common name of the species", required = false, arity = 1)
-        public String speciesCommonName;
-
         @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
         public String populationName;
 
@@ -275,6 +247,8 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
         public String affectationStatus;
 
+        @Parameter(names = {"-dob", "--date-of-birth"}, description = "Date of birth. Format: yyyyMMdd", arity = 1)
+        public String dateOfBirth;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete individual information")
@@ -314,21 +288,8 @@ public class IndividualCommandOptions {
         public String ethnicity;
 
         @Deprecated
-        @Parameter(names = {"--species"}, description = "[DEPRECATED] species", required = false, arity = 1)
-        public String species;
-
-        @Deprecated
         @Parameter(names = {"--population"}, description = "[DEPRECATED] population", required = false, arity = 1)
         public String population;
-
-        @Parameter(names = {"--species-taxonomy-code"}, description = "Taxonomy code of the species", required = false, arity = 1)
-        public String speciesTaxonomyCode;
-
-        @Parameter(names = {"--species-scientific-name"}, description = "Scientific name of the species", required = false, arity = 1)
-        public String speciesScientificName;
-
-        @Parameter(names = {"--species-common-name"}, description = "Common name of the species", required = false, arity = 1)
-        public String speciesCommonName;
 
         @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
         public String populationName;
@@ -348,7 +309,7 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
         public String affectationStatus;
 
-        @Parameter(names = {"--variable-set-id"}, description = "Variable set ids", required = false, arity = 1)
+        @Parameter(names = {"--variable-set-id"}, description = "Variable set id or name", required = false, arity = 1)
         public String variableSetId;
 
         @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 0)

@@ -441,26 +441,24 @@ public class UserManager extends AbstractManager implements IUserManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
+        QueryResult<User> userQueryResult = userDBAdaptor.get(userId, options, lastModified);
 
-        if (!options.containsKey(QueryOptions.INCLUDE) || options.get(QueryOptions.INCLUDE) == null) {
-            List<String> excludeList;
-            if (options.containsKey(QueryOptions.EXCLUDE)) {
-                List<String> asStringList = options.getAsStringList(QueryOptions.EXCLUDE, ",");
-                excludeList = new ArrayList<>(asStringList.size() + 3);
-                excludeList.addAll(asStringList);
-            } else {
-                excludeList = new ArrayList<>(3);
+        // Remove some unnecessary and prohibited parameters
+        for (User user : userQueryResult.getResult()) {
+            user.setPassword(null);
+            user.setSessions(null);
+            if (user.getProjects() != null) {
+                for (Project project : user.getProjects()) {
+                    if (project.getStudies() != null) {
+                        for (Study study : project.getStudies()) {
+                            study.setAcl(null);
+                            study.setVariableSets(null);
+                        }
+                    }
+                }
             }
-            excludeList.add(UserDBAdaptor.QueryParams.SESSIONS.key());
-            excludeList.add(UserDBAdaptor.QueryParams.PASSWORD.key());
-            if (!excludeList.contains(UserDBAdaptor.QueryParams.PROJECTS.key())) {
-                excludeList.add("projects.studies.variableSets");
-            }
-            options.put(QueryOptions.EXCLUDE, excludeList);
         }
-
-        QueryResult<User> user = userDBAdaptor.get(userId, options, lastModified);
-        return user;
+        return userQueryResult;
     }
 
     @Override

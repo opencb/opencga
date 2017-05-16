@@ -26,7 +26,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.ServerUtils;
 import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 
 import javax.annotation.Nullable;
@@ -108,13 +107,11 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
      */
     QueryResult<Individual> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
-    QueryResult<Individual> create(String studyStr, ServerUtils.IndividualParameters individualParams, QueryOptions options,
-                                   String sessionId) throws CatalogException;
+    QueryResult<Individual> create(String studyStr, Individual individual, QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Sex sex,
-                                   String ethnicity, String speciesCommonName, String speciesScientificName, String speciesTaxonomyCode,
-                                   String populationName, String populationSubpopulation, String populationDescription,
-                                   Individual.KaryotypicSex karyotypicSex, Individual.LifeStatus lifeStatus,
+                                   String ethnicity, String populationName, String populationSubpopulation, String populationDescription,
+                                   String dateOfBirth, Individual.KaryotypicSex karyotypicSex, Individual.LifeStatus lifeStatus,
                                    Individual.AffectationStatus affectationStatus, QueryOptions options, String sessionId)
             throws CatalogException;
 

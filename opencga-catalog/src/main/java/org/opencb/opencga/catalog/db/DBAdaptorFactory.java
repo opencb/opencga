@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.Configuration;
@@ -58,6 +59,8 @@ public interface DBAdaptorFactory {
       * @throws CatalogDBException if there is any problem creating the indexes.
      */
     void createIndexes() throws CatalogDBException;
+
+    ObjectMap getDatabaseStatus();
 
     /**
      * Removes the catalog database.

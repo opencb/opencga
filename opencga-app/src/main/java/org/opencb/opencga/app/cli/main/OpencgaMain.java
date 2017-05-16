@@ -93,6 +93,9 @@ public class OpencgaMain {
                         case "panels":
                             commandExecutor = new PanelCommandExecutor(cliOptionsParser.getPanelCommands());
                             break;
+                        case "families":
+                            commandExecutor = new FamilyCommandExecutor(cliOptionsParser.getFamilyCommands());
+                            break;
                         case "tools":
                             commandExecutor = new ToolCommandExecutor(cliOptionsParser.getToolCommands());
                             break;

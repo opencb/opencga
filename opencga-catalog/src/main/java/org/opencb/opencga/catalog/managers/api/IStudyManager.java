@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
@@ -116,6 +117,17 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
     /* VariableSet METHODS */
     /*---------------------*/
 
+    /**
+     * Obtains the resource java bean containing the requested ids.
+     *
+     * @param variableStr VariableSet in string format. Could be either the id or name.
+     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param sessionId Session id of the user logged.
+     * @return the resource java bean containing the requested id.
+     * @throws CatalogException when more than one variableSet is found.
+     */
+    AbstractManager.MyResourceId getVariableSetId(String variableStr, @Nullable String studyStr, String sessionId) throws CatalogException;
+
     QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique, String description,
                                                Map<String, Object> attributes, List<Variable> variables, String sessionId)
             throws CatalogException;
@@ -124,19 +136,22 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
                                                Map<String, Object> attributes, Set<Variable> variables, String sessionId)
             throws CatalogException;
 
-    QueryResult<VariableSet> readVariableSet(long variableSet, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<VariableSet> getVariableSet(String studyStr, String variableSet, QueryOptions options, String sessionId)
+            throws CatalogException;
 
     QueryResult<VariableSet> searchVariableSets(String studyStr, Query query, QueryOptions options, String sessionId)
             throws CatalogException;
 
-    QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions, String sessionId) throws CatalogException;
+    QueryResult<VariableSet> deleteVariableSet(String studyStr, String variableSetStr, String sessionId) throws CatalogException;
 
-    QueryResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable, String sessionId) throws CatalogException;
-
-    QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name, String sessionId) throws CatalogException;
-
-    QueryResult<VariableSet> renameFieldFromVariableSet(long variableSetId, String oldName, String newName, String sessionId)
+    QueryResult<VariableSet> addFieldToVariableSet(String studyStr, String variableSetStr, Variable variable, String sessionId)
             throws CatalogException;
+
+    QueryResult<VariableSet> removeFieldFromVariableSet(String studyStr, String variableSetStr, String name, String sessionId)
+            throws CatalogException;
+
+    QueryResult<VariableSet> renameFieldFromVariableSet(String studyStr, String variableSetStr, String oldName, String newName,
+                                                        String sessionId) throws CatalogException;
 
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.
@@ -325,5 +340,5 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
 
     QueryResult<DiseasePanel> updateDiseasePanel(String panelStr, ObjectMap parameters, String sessionId) throws CatalogException;
 
-    QueryResult<VariableSetSummary> getVariableSetSummary(long variableSetId, String sessionId) throws CatalogException;
+    QueryResult<VariableSetSummary> getVariableSetSummary(String studyStr, String variableSetId, String sessionId) throws CatalogException;
 }

@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli.main.executors.analysis;
 
 import com.google.protobuf.util.JsonFormat;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFHeader;
 import io.grpc.ManagedChannel;
@@ -312,49 +313,110 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private void printVcf(VariantQueryResult<Variant> variantQueryResult, String study, List<String> annotations, PrintStream outputStream) {
-        System.out.println(variantQueryResult.getSamples());
+        logger.debug("Samples from variantQueryResult: {}", variantQueryResult.getSamples());
 
-        Map<String, List<String>> smaplePerStudy = new HashMap<>();
-        variantQueryResult.getSamples().forEach((s, strings) -> {
-            String study1 = s.split(":")[1];
-            smaplePerStudy.put(study1, strings);
-        });
-
-        List<String> samples = new ArrayList<>();
-        if (variantQueryResult.getSamples().size() == 1) {
-            Iterator<String> iterator = variantQueryResult.getSamples().keySet().iterator();
-            study = iterator.next();
-            samples = variantQueryResult.getSamples().get(study);
-        } else {
-//            System.out.println("study = " + study);
-            String studyShort = study;
-            if (study.contains(":")) {
-                studyShort = study.split(":")[1];
-            }
-            samples = smaplePerStudy.get(studyShort);
+        Map<String, List<String>> samplePerStudy = new HashMap<>();
+        // Aggregated studies do not contain samples
+        if (variantQueryResult.getSamples() != null) {
+            // We have to remove the user and project from the Study name
+            variantQueryResult.getSamples().forEach((st, sampleList) -> {
+                String study1 = st.split(":")[1];
+                samplePerStudy.put(study1, sampleList);
+            });
         }
 
-//        System.out.println("samples = " + samples);
+        // Prepare samples for the VCF header
+        List<String> samples = null;
+        if (StringUtils.isEmpty(study)) {
+            if (samplePerStudy.size() == 1) {
+                study = samplePerStudy.keySet().iterator().next();
+                samples = samplePerStudy.get(study);
+            }
+        } else {
+            if (study.contains(":")) {
+                study = study.split(":")[1];
+            } else {
+                if (clientConfiguration.getAlias().get(study) != null) {
+                    study = clientConfiguration.getAlias().get(study);
+                    if (study.contains(":")) {
+                        study = study.split(":")[1];
+                    }
+                }
+            }
+            samples = samplePerStudy.get(study);
+        }
 
-        List<String> cohorts = Arrays.asList("ALL");
-        List<String> formats = Arrays.asList("GT");
-        List<String> formatTypes = Arrays.asList("String");
-        List<String> formatDescriptions = Arrays.asList("Desc");
+        // TODO move this to biodata
+        if (samples == null) {
+            samples = new ArrayList<>();
+        }
 
+
+        // Prepare other VCF fields
+        List<String> cohorts = Arrays.asList("ALL", "MXL");
+        List<String> formats = new ArrayList<>();
+        List<String> formatTypes = new ArrayList<>();
+        List<Integer> formatArities = new ArrayList<>();
+        List<String> formatDescriptions = new ArrayList<>();
+
+        if (clientConfiguration.getVariant() != null && clientConfiguration.getVariant().getIncludeFormats() != null) {
+            String studyConfigAlias = null;
+            if (clientConfiguration.getVariant().getIncludeFormats().get(study) != null) {
+                studyConfigAlias = study;
+            } else {
+                // Search for the study alias
+                if (clientConfiguration.getAlias() != null) {
+                    for (Map.Entry<String, String> stringStringEntry : clientConfiguration.getAlias().entrySet()) {
+                        if (stringStringEntry.getValue().contains(study)) {
+                            studyConfigAlias = stringStringEntry.getKey();
+                            logger.debug("Updating study name by alias (key) when including formats: from " + study + " to " + studyConfigAlias);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // create format arrays (names, types, arities, descriptions)
+            String formatFields = clientConfiguration.getVariant().getIncludeFormats().get(studyConfigAlias);
+            if (formatFields != null) {
+                String[] fields = formatFields.split(",");
+                for (String field : fields) {
+                    String[] subfields = field.split(":");
+                    if (subfields.length == 4) {
+                        formats.add(subfields[0]);
+                        formatTypes.add(subfields[1]);
+                        if (StringUtils.isEmpty(subfields[2]) || !StringUtils.isNumeric(subfields[2])) {
+                            formatArities.add(1);
+                            logger.debug("Invalid arity for format " + subfields[0] + ", updating arity to 1");
+                        } else {
+                            formatArities.add(Integer.parseInt(subfields[2]));
+                        }
+                        formatDescriptions.add(subfields[3]);
+                    } else {
+                        // We do not need the extra information fields for "GT", "AD", "DP", "GQ", "PL".
+                        formats.add(subfields[0]);
+                        formatTypes.add("");
+                        formatArities.add(0);
+                        formatDescriptions.add("");
+                    }
+                }
+            } else {
+                logger.debug("No formats found for: {}, setting default format: {}", study, VcfUtils.DEFAULT_SAMPLE_FORMAT);
+                formats = VcfUtils.DEFAULT_SAMPLE_FORMAT;
+            }
+        } else {
+            logger.debug("No formats found for: {}, setting default format: {}", study, VcfUtils.DEFAULT_SAMPLE_FORMAT);
+            formats = VcfUtils.DEFAULT_SAMPLE_FORMAT;
+        }
+
+        // TODO: modify VcfUtils in biodata project to take into account the formatArities
         VCFHeader vcfHeader = VcfUtils.createVCFHeader(cohorts, annotations, formats, formatTypes, formatDescriptions, samples, null);
-        VariantContextWriter variantContextWriter = VcfUtils.createVariantContextWriter(outputStream, vcfHeader.getSequenceDictionary(),
-                null);
+        VariantContextWriter variantContextWriter = VcfUtils.createVariantContextWriter(outputStream, vcfHeader.getSequenceDictionary(), null);
 
         VariantContextToAvroVariantConverter variantContextToAvroVariantConverter = new VariantContextToAvroVariantConverter(study, samples, annotations);
         variantContextWriter.writeHeader(vcfHeader);
         for (Variant variant : variantQueryResult.getResult()) {
-//            outputStream.println(variant.getId());
             VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
-//            try {
-//                System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(variantContext));
-//            } catch (JsonProcessingException e) {
-//                e.printStackTrace();
-//            }
             variantContextWriter.add(variantContext);
         }
         variantContextWriter.close();

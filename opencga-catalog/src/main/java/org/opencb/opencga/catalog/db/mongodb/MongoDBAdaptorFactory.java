@@ -16,11 +16,14 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DuplicateKeyException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
@@ -195,6 +198,18 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }
+    }
+
+    @Override
+    public ObjectMap getDatabaseStatus() {
+        Document dbStatus = mongoManager.get(database, this.configuration).getServerStatus();
+        try {
+            ObjectMap map = new ObjectMap(new ObjectMapper().writeValueAsString(dbStatus));
+            return new ObjectMap("ok", map.getInt("ok", 0) > 0);
+        } catch (JsonProcessingException e) {
+            logger.error(e.getMessage(), e);
+            return new ObjectMap();
+        }
     }
 
     @Override

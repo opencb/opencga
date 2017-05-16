@@ -124,6 +124,8 @@ import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVaria
  *  +-------------+-------+-------+------+
  *  | 1:225:A:C   | DATA  | DATA* | ---- |  <--- D4) Duplicated variants in file 2. Fill gaps for file2 and insert file1.
  *  +-------------+-------+-------+------+
+ *  | 1:225:A:C   | DATA* | DATA* | ---- |  <--- D5) Duplicated variants in file 1 and 2. Fill gaps for file1 and file2.
+ *  +-------------+-------+-------+------+           Skip if new study (nonInserted++)
  *
  *
  * ### Depending on how the data is splitted in files, and how the files are sent.
@@ -476,9 +478,10 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     }
                 }
 
-            } else if (addUnknownGenotypes) {
-//                logger.debug("File {} not in variant {}", fileId, emptyVar);
-                addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getSamplesInFile(fileId));
+            } else {
+                if (addUnknownGenotypes) {
+                    addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getSamplesInFile(fileId));
+                }
                 missing++;
             }
 
@@ -1069,12 +1072,13 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
     public static boolean isNewVariant(Document document, boolean newStudy) {
         // If the document has only the study, _id, end, ref and alt fields.
-        if (!newStudy || document.size() != 5) {
+        if (!newStudy || document.size() != 6) {
             for (Map.Entry<String, Object> entry : document.entrySet()) {
                 if (!entry.getKey().equals(VariantStringIdConverter.ID_FIELD)
                         && !entry.getKey().equals(VariantStringIdConverter.END_FIELD)
                         && !entry.getKey().equals(VariantStringIdConverter.REF_FIELD)
-                        && !entry.getKey().equals(VariantStringIdConverter.ALT_FIELD)) {
+                        && !entry.getKey().equals(VariantStringIdConverter.ALT_FIELD)
+                        && !entry.getKey().equals(VariantStringIdConverter.STUDY_FILE_FIELD)) {
                     if (!isNewStudy((Document) entry.getValue())) {
                         return false;
                     }

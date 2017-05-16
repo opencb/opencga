@@ -123,6 +123,12 @@ public class SampleCommandOptions {
 
         @Parameter(names = {"--individual"}, description = "Individual name or id to whom the sample belongs to", arity = 1)
         public String individual;
+
+        @Parameter(names = {"--somatic"}, description = "Flag indicating that the sample comes from somatic cells", arity = 0)
+        public boolean somatic;
+
+        @Parameter(names = {"--type"}, description = "Sample type", arity = 1)
+        public String type;
     }
 
     @Parameters(commandNames = {"load"}, commandDescription = "Load samples from a pedigree file")
@@ -166,15 +172,21 @@ public class SampleCommandOptions {
         @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 1)
         public String annotationSetName;
 
-        @Parameter(names = {"--variable-set-id"}, description = "Variable set id.", required = false, arity = 1)
+        @Parameter(names = {"--variable-set-id"}, description = "Variable set id or name.", required = false, arity = 1)
         public String variableSetId;
+
+        @Parameter(names = {"--type"}, description = "Sample type", arity = 1)
+        public String type;
+
+        @Parameter(names = {"--somatic"}, description = "Flag indicating if the sample comes from somatic cells", arity = 1)
+        public Boolean somatic;
     }
 
 
-    @Parameters(commandNames = {"update"}, commandDescription = "Update cohort")
+    @Parameters(commandNames = {"update"}, commandDescription = "Update sample")
     public class UpdateCommandOptions extends BaseSampleCommand {
 
-        @Parameter(names = {"-n", "--name"}, description = "Cohort set name.", required = false, arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "New sample name.", required = false, arity = 1)
         public String name;
 
         @Parameter(names = {"--individual"}, description = "Individual id or name", required = false, arity = 1)
@@ -186,6 +198,11 @@ public class SampleCommandOptions {
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
         public String description;
 
+        @Parameter(names = {"--somatic"}, description = "Boolean indicating whether the sample comes from somatic cells or not", arity = 1)
+        public Boolean somatic;
+
+        @Parameter(names = {"--type"}, description = "Sample type", arity = 1)
+        public String type;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete the selected sample")

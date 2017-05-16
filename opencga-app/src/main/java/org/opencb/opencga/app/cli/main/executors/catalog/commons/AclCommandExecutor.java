@@ -37,11 +37,8 @@ public class AclCommandExecutor<T,U> {
             throws CatalogException,IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty("study", aclCommandOptions.study);
-        if (StringUtils.isNotEmpty(aclCommandOptions.memberId)) {
-            return client.getAcl(aclCommandOptions.id.replace("/", ":"), aclCommandOptions.memberId, params);
-        } else {
-            return client.getAcls(aclCommandOptions.id.replace("/", ":"), params);
-        }
+        params.putIfNotEmpty("member", aclCommandOptions.memberId);
+        return client.getAcls(aclCommandOptions.id.replace("/", ":"), params);
     }
 
 }

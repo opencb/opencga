@@ -126,8 +126,10 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), samplesCommandOptions.createCommandOptions.description);
+        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.TYPE.key(), samplesCommandOptions.createCommandOptions.type);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.createCommandOptions.source);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.createCommandOptions.name);
+        params.put(SampleDBAdaptor.QueryParams.SOMATIC.key(), samplesCommandOptions.createCommandOptions.somatic);
         if (StringUtils.isNotEmpty(samplesCommandOptions.createCommandOptions.individual)) {
             params.put("individual", new ObjectMap("name", samplesCommandOptions.createCommandOptions.individual));
         }
@@ -165,6 +167,8 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(samplesCommandOptions.searchCommandOptions.study));
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.searchCommandOptions.name);
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.searchCommandOptions.source);
+        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.TYPE.key(), samplesCommandOptions.searchCommandOptions.type);
+        query.putIfNotNull(SampleDBAdaptor.QueryParams.SOMATIC.key(), samplesCommandOptions.searchCommandOptions.somatic);
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), samplesCommandOptions.searchCommandOptions.individual);
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
                 samplesCommandOptions.searchCommandOptions.annotationSetName);
@@ -188,7 +192,9 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.updateCommandOptions.name);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), samplesCommandOptions.updateCommandOptions.description);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.updateCommandOptions.source);
+        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.TYPE.key(), samplesCommandOptions.updateCommandOptions.type);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), samplesCommandOptions.updateCommandOptions.individual);
+        params.putIfNotNull(SampleDBAdaptor.QueryParams.SOMATIC.key(), samplesCommandOptions.updateCommandOptions.somatic);
         return openCGAClient.getSampleClient().update(samplesCommandOptions.updateCommandOptions.sample,
                 samplesCommandOptions.updateCommandOptions.study, params);
     }

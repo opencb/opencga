@@ -74,12 +74,60 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         } else {
             qOptions = new QueryOptions();
         }
+
         QueryResult<Family> familyQueryResult;
+
+//        Bson match = Aggregates.match(bson);
+//        Bson lookupMother = Aggregates.lookup("individual", "mother.id", IndividualDBAdaptor.QueryParams.ID.key(), "mother");
+//        Bson lookupFather = Aggregates.lookup("individual", "father.id", IndividualDBAdaptor.QueryParams.ID.key(), "father");
+//        Bson unwindMother = Aggregates.unwind("$mother");
+//        Bson unwindFather = Aggregates.unwind("$father");
+
+        // To be able to lookup by children, we need first to de-normalise the content
+//        Bson unwind = Aggregates.unwind("$children");
+//        Bson lookupChildren = Aggregates.lookup("individual", "children.id", IndividualDBAdaptor.QueryParams.ID.key(), "child");
+//        Bson unwindResult = Aggregates.unwind("$child");
+//        Bson group = Aggregates.group("$" + PRIVATE_ID, Accumulators.push("children", "$child"));
+
+//        familyQueryResult = familyCollection.aggregate(
+//                Arrays.asList(match, lookupMother, lookupFather, unwindMother, unwindFather),
+//                familyConverter, options);
         familyQueryResult = familyCollection.find(bson, familyConverter, qOptions);
+        addMemberInfoToFamily(familyQueryResult);
 
         logger.debug("Family get: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 qOptions == null ? "" : qOptions.toJson(), familyQueryResult.getDbTime());
         return endQuery("Get family", startTime, familyQueryResult);
+    }
+
+    public void addMemberInfoToFamily(QueryResult<Family> familyQueryResult) {
+        if (familyQueryResult.getResult() == null || familyQueryResult.getResult().size() == 0) {
+            return;
+        }
+        for (Family family : familyQueryResult.getResult()) {
+            family.setFather(getIndividual(family.getFather()));
+            family.setMother(getIndividual(family.getMother()));
+            if (family.getChildren() != null && family.getChildren().size() > 0) {
+                family.setChildren(family.getChildren().stream().map(this::getIndividual).collect(Collectors.toList()));
+            }
+        }
+    }
+
+    private Individual getIndividual(Individual individual) {
+        Individual retIndividual = individual;
+        if (individual != null && individual.getId() > 0) {
+            QueryResult<Individual> individualQueryResult = null;
+            try {
+                individualQueryResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(individual.getId(),
+                        QueryOptions.empty());
+            } catch (CatalogDBException e) {
+                logger.error(e.getMessage(), e);
+            }
+            if (individualQueryResult.getNumResults() == 1) {
+                retIndividual = individualQueryResult.first();
+            }
+        }
+        return retIndividual;
     }
 
     @Override
@@ -116,11 +164,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         long startTime = startQuery();
         Map<String, Object> familyParameters = new HashMap<>();
 
+        final String[] acceptedBooleanParams = {QueryParams.PARENTAL_CONSANGUINITY.key()};
+        filterBooleanParams(parameters, familyParameters, acceptedBooleanParams);
+
         final String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, familyParameters, acceptedParams);
-
-        final String[] acceptedLongListParams = {QueryParams.INDIVIDUAL_IDS.key()};
-        filterLongListParams(parameters, familyParameters, acceptedLongListParams);
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, familyParameters, acceptedMapParams);
@@ -153,10 +201,34 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
             familyParameters.put(QueryParams.NAME.key(), parameters.get(QueryParams.NAME.key()));
         }
 
+        if (parameters.containsKey(QueryParams.MOTHER_ID.key())) {
+            long motherId = parameters.getLong(QueryParams.MOTHER_ID.key());
+            dbAdaptorFactory.getCatalogIndividualDBAdaptor().checkId(motherId);
+            familyParameters.put("mother.id", motherId);
+        }
+
+        if (parameters.containsKey(QueryParams.FATHER_ID.key())) {
+            long fatherId = parameters.getLong(QueryParams.FATHER_ID.key());
+            dbAdaptorFactory.getCatalogIndividualDBAdaptor().checkId(fatherId);
+            familyParameters.put("father.id", fatherId);
+        }
+
+        if (parameters.containsKey(QueryParams.CHILDREN_IDS.key())) {
+            List<Long> individualIds = parameters.getAsLongList(QueryParams.CHILDREN_IDS.key());
+            List<ObjectMap> individualIdList = new ArrayList<>(individualIds.size());
+            for (Long individualId : individualIds) {
+                dbAdaptorFactory.getCatalogIndividualDBAdaptor().checkId(individualId);
+                individualIdList.add(new ObjectMap("id", individualId));
+            }
+            familyParameters.put("children", individualIdList);
+        }
+
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
             familyParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             familyParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
+
+        logger.info(familyParameters.toString());
 
         if (!familyParameters.isEmpty()) {
             QueryResult<UpdateResult> update = familyCollection.update(parseQuery(query, false),
@@ -278,7 +350,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
 
         long familyId = getNewId();
         family.setId(familyId);
-        family.setAnnotationSets(Collections.<AnnotationSet>emptyList());
 
         Document familyObject = familyConverter.convertToStorageType(family);
         familyObject.put(PRIVATE_STUDY_ID, studyId);
@@ -376,8 +447,16 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                     case ANNOTATION_SET_NAME:
                         addOrQuery("name", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
+                    case FATHER_ID:
+                        addAutoOrQuery("father.id", queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case MOTHER_ID:
+                        addAutoOrQuery("mother.id", queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case CHILDREN_IDS:
+                        addAutoOrQuery("children.id", queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case NAME:
-                    case INDIVIDUAL_IDS:
                     case DESCRIPTION:
                     case STATUS_NAME:
                     case STATUS_MSG:

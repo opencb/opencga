@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -128,11 +129,84 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<Sample> create(String studyStr, String name, String source, String description, Individual individual,
-                                      Map<String, Object> attributes, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Sample> create(String studyStr, Sample sample, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkAlias(sample.getName(), "name", configuration.getCatalog().getOffset());
+        sample.setSource(ParamUtils.defaultString(sample.getSource(), ""));
+        sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
+        sample.setType(ParamUtils.defaultString(sample.getType(), ""));
+        sample.setAcl(Collections.emptyList());
+        sample.setOntologyTerms(ParamUtils.defaultObject(sample.getOntologyTerms(), Collections.emptyList()));
+        sample.setAnnotationSets(ParamUtils.defaultObject(sample.getAnnotationSets(), Collections.emptyList()));
+        sample.setAnnotationSets(AnnotationManager.validateAnnotationSets(sample.getAnnotationSets(), studyDBAdaptor));
+        sample.setAttributes(ParamUtils.defaultObject(sample.getAttributes(), Collections.emptyMap()));
+        sample.setStatus(new Status());
+        sample.setCreationDate(TimeUtils.getTime());
+
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        String userId = userManager.getId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
+
+        long individualId = 0;
+
+        if (sample.getIndividual() != null) {
+            if (sample.getIndividual().getId() > 0) {
+                individualDBAdaptor.checkId(sample.getIndividual().getId());
+
+                // Check studyId of the individual
+                long studyIdIndividual = individualDBAdaptor.getStudyId(sample.getIndividual().getId());
+                if (studyId != studyIdIndividual) {
+                    throw new CatalogException("Cannot associate sample from one study with an individual of a different study.");
+                }
+
+                individualId = sample.getIndividual().getId();
+            } else {
+                if (StringUtils.isEmpty(sample.getIndividual().getName())) {
+                    throw new CatalogException("Missing individual name. If the sample is not intended to be associated to any "
+                            + "individual, please do not include any individual parameter.");
+                }
+
+                Query query = new Query()
+                        .append(IndividualDBAdaptor.QueryParams.NAME.key(), sample.getIndividual().getName())
+                        .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                QueryOptions options1 = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
+                QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options1);
+                if (individualQueryResult.getNumResults() == 1) {
+                    // We set the id
+                    individualId = individualQueryResult.first().getId();
+                } else {
+                    // We create the individual
+                    individualQueryResult = catalogManager.getIndividualManager().create(Long.toString(studyId),
+                            sample.getIndividual(), new QueryOptions(), sessionId);
+
+                    if (individualQueryResult.getNumResults() == 0) {
+                        throw new CatalogException("Unexpected error occurred when creating the individual");
+                    } else {
+                        // We set the id
+                        individualId = individualQueryResult.first().getId();
+                    }
+                }
+            }
+        }
+
+        if (individualId > 0) {
+            sample.setIndividual(new Individual().setId(individualId));
+        }
+
+        QueryResult<Sample> queryResult = sampleDBAdaptor.insert(sample, studyId, options);
+        auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+        return queryResult;
+    }
+
+    public QueryResult<Sample> create(String studyStr, String name, String source, String description, String type, boolean somatic,
+                                      Individual individual, Map<String, Object> attributes, QueryOptions options, String sessionId)
+            throws CatalogException {
         ParamUtils.checkAlias(name, "name", configuration.getCatalog().getOffset());
         source = ParamUtils.defaultString(source, "");
         description = ParamUtils.defaultString(description, "");
+        type = ParamUtils.defaultString(type, "");
         attributes = ParamUtils.defaultObject(attributes, Collections.<String, Object>emptyMap());
 
         String userId = userManager.getId(sessionId);
@@ -146,8 +220,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             }
         }
 
-        Sample sample = new Sample(-1, name, source, individual, description, Collections.emptyList(), Collections.emptyList(),
-                attributes);
+        Sample sample = new Sample(-1, name, source, individual, description, type, somatic, Collections.emptyList(),
+                Collections.emptyList(), attributes);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         QueryResult<Sample> queryResult = sampleDBAdaptor.insert(sample, studyId, options);
@@ -260,12 +334,12 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
 
-
+    @Deprecated
     @Override
     public QueryResult<Sample> create(String studyStr, String name, String source, String description,
                                       Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
-        return create(studyStr, name, source, description, null, attributes, options, sessionId);
+        return create(studyStr, name, source, description, null, false, null, attributes, options, sessionId);
     }
 
     @Override
@@ -679,6 +753,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                     break;
                 case SOURCE:
                 case INDIVIDUAL_ID:
+                case TYPE:
+                case SOMATIC:
                 case DESCRIPTION:
                 case ATTRIBUTES:
                     break;
@@ -885,7 +961,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<AnnotationSet> createAnnotationSet(String id, @Nullable String studyStr, long variableSetId,
+    public QueryResult<AnnotationSet> createAnnotationSet(String id, @Nullable String studyStr, String variableSetId,
                                                           String annotationSetName, Map<String, Object> annotations,
                                                           Map<String, Object> attributes, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
@@ -895,8 +971,10 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         MyResourceId resourceId = catalogManager.getSampleManager().getId(id, studyStr, sessionId);
         authorizationManager.checkSamplePermission(resourceId.getResourceId(), resourceId.getUser(),
                 SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS);
+        MyResourceId variableSetResource = catalogManager.getStudyManager().getVariableSetId(variableSetId,
+                Long.toString(resourceId.getStudyId()), sessionId);
 
-        VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
+        VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null).first();
 
         QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(resourceId.getResourceId(), variableSet,
                 annotationSetName, annotations, attributes, sampleDBAdaptor);
@@ -992,7 +1070,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, long variableSetId,
+    public QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, String variableSetId,
                                                            @Nullable String annotation, String sessionId) throws CatalogException {
         QueryResult<Sample> sampleQueryResult = commonSearchAnnotationSet(id, studyStr, variableSetId, annotation, sessionId);
         List<ObjectMap> annotationSets;
@@ -1011,7 +1089,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, long variableSetId,
+    public QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, String variableSetId,
                                                           @Nullable String annotation, String sessionId) throws CatalogException {
         QueryResult<Sample> sampleQueryResult = commonSearchAnnotationSet(id, null, variableSetId, annotation, sessionId);
         List<AnnotationSet> annotationSets;
@@ -1029,7 +1107,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                 sampleQueryResult.getWarningMsg(), sampleQueryResult.getErrorMsg(), annotationSets);
     }
 
-    private QueryResult<Sample> commonSearchAnnotationSet(String id, @Nullable String studyStr, long variableSetId,
+    private QueryResult<Sample> commonSearchAnnotationSet(String id, @Nullable String studyStr, String variableSetStr,
                                                           @Nullable String annotation, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
 
@@ -1039,7 +1117,10 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), id);
 
-        if (variableSetId > 0) {
+        long variableSetId = -1;
+        if (StringUtils.isNotEmpty(variableSetStr)) {
+            variableSetId = catalogManager.getStudyManager().getVariableSetId(variableSetStr, Long.toString(resourceId.getStudyId()),
+                    sessionId).getResourceId();
             query.append(SampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId);
         }
         if (annotation != null) {
@@ -1054,7 +1135,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         for (Sample sample : sampleQueryResult.getResult()) {
             List<AnnotationSet> finalAnnotationSets = new ArrayList<>();
             for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
-                if (annotationSet.getVariableSetId() == variableSetId) {
+                if (variableSetId > -1 && annotationSet.getVariableSetId() == variableSetId) {
                     finalAnnotationSets.add(annotationSet);
                 }
             }

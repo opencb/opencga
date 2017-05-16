@@ -53,35 +53,35 @@
 | POST | /v1/users/create?sid=$sessionId |200| Content-Type : application/json| jsonbody.error === '' |
 
 !3 Login Admin 
-!|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/  |
+!|Table: Rest Fixture | $baseURL  |
 | setBody | {"password" : "p@ssword"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/users/$admin/login |200|  Content-Type: application/json ||
 |let|adminSessionId|js|response.jsonbody.response[0].result[0].sessionId||
 
 !3 Login Analyst 
-!|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/  |
+!|Table: Rest Fixture | $baseURL  |
 | setBody | {"password" : "p@ssword"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/users/$analyst/login |200|  Content-Type: application/json ||
 |let|analystSessionId|js|response.jsonbody.response[0].result[0].sessionId||
 
 !3 Login Read Only User 
-!|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/  |
+!|Table: Rest Fixture | $baseURL  |
 | setBody | {"password" : "p@ssword"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/users/$ROU/login |200|  Content-Type: application/json ||
 |let|ROUSessionId|js|response.jsonbody.response[0].result[0].sessionId||
 
 !3 Login user A 
-!|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/  |
+!|Table: Rest Fixture | $baseURL  |
 | setBody | {"password" : "p@ssword"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/users/$userA/login |200|  Content-Type: application/json ||
 |let|userASessionId|js|response.jsonbody.response[0].result[0].sessionId||
 
 !3 Login user B 
-!|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/  |
+!|Table: Rest Fixture | $baseURL  |
 | setBody | {"password" : "p@ssword"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/users/$userB/login |200|  Content-Type: application/json ||

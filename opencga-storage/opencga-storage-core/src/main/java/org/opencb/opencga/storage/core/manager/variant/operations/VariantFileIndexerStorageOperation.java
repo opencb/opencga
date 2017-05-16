@@ -576,7 +576,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         if (cohorts.getResult().isEmpty()) {
             defaultCohort = catalogManager.getCohortManager().create(study.getId(), StudyEntry.DEFAULT_COHORT, Study.Type.COLLECTION,
-                    "Default cohort with almost all indexed samples", Collections.emptyList(), null, sessionId).first();
+                    "Default cohort with almost all indexed samples", Collections.emptyList(), null, null, sessionId).first();
             modified = true;
         } else {
             defaultCohort = cohorts.first();

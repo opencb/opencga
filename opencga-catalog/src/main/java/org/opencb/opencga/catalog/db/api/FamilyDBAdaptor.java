@@ -18,9 +18,15 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
 
     enum QueryParams implements QueryParam {
-        ID("id", DOUBLE, ""),
+        ID("id", INTEGER, ""),
         NAME("name", TEXT, ""),
-        INDIVIDUAL_IDS("individualIds", INTEGER_ARRAY, ""),
+        PARENTAL_CONSANGUINITY("parentalConsanguinity", BOOLEAN, ""),
+        FATHER("father", TEXT, ""),
+        MOTHER("mother", TEXT, ""),
+        CHILDREN("children", TEXT_ARRAY, ""),
+        FATHER_ID("fatherId", INTEGER, ""),
+        MOTHER_ID("motherId", INTEGER, ""),
+        CHILDREN_IDS("childrenIds", INTEGER_ARRAY, ""),
         CREATION_DATE("creationDate", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

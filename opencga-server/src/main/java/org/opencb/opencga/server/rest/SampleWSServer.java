@@ -26,9 +26,9 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.api.ISampleManager;
+import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
@@ -95,28 +95,19 @@ public class SampleWSServer extends OpenCGAWSServer {
                                  @QueryParam("study") String studyStr,
                                  @ApiParam(value = "name", required = true) @QueryParam("name") String name,
                                  @ApiParam(value = "source", required = false) @QueryParam("source") String source,
+                                 @ApiParam(value = "somatic", defaultValue = "false") @QueryParam("somatic") boolean somatic,
+                                 @ApiParam(value = "type") @QueryParam("type") String type,
                                  @ApiParam(value = "description", required = false) @QueryParam("description") String description) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            QueryResult<Sample> queryResult = sampleManager.create(studyStr, name, source, description, null, null, null, sessionId);
+            QueryResult<Sample> queryResult = sampleManager.create(studyStr, name, source, description, type, somatic, null, null, null,
+                    sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-    }
-
-    private static class IndividualParameters {
-        public long id;
-        public String name;
-    }
-
-    private static class SampleParameters {
-        public String name;
-        public String source;
-        public String description;
-        public IndividualParameters individual;
     }
 
     @POST
@@ -126,21 +117,14 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value="JSON containing sample information", required = true)  SampleParameters params) {
+            @ApiParam(value="JSON containing sample information", required = true) CreateSamplePOST params) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
 
-            Individual individual = null;
-            if (params.individual != null) {
-                individual = new Individual()
-                        .setId(params.individual.id)
-                        .setName(params.individual.name);
-            }
-            QueryResult<Sample> queryResult = sampleManager.create(studyStr, params.name, params.source, params.description, individual,
-                    null, null, sessionId);
-            return createOkResponse(queryResult);
+            return createOkResponse(sampleManager.create(studyStr, params.toSample(studyStr, catalogManager.getStudyManager(), sessionId),
+                    queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -191,6 +175,8 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "DEPRECATED: use /info instead", hidden = true) @QueryParam("id") String id,
                            @ApiParam(value = "name") @QueryParam("name") String name,
                            @ApiParam(value = "source") @QueryParam("source") String source,
+                           @ApiParam(value = "type") @QueryParam("type") String type,
+                           @ApiParam(value = "somatic") @QueryParam("somatic") Boolean somatic,
 //                                  @ApiParam(value = "acls") @QueryParam("acls") String acls,
 //                                  @ApiParam(value = "acls.users") @QueryParam("acls.users") String acl_userIds,
                            @ApiParam(value = "DEPRECATED: use individual.id instead", hidden = true) @QueryParam("individualId")
@@ -232,6 +218,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
                            @ApiParam(value = "source", required = false) @QueryParam("source") String source,
+                           @ApiParam(value = "somatic", defaultValue = "false") @QueryParam("somatic") boolean somatic,
                            @ApiParam(value = "DEPRECATED: use individual.id instead", hidden = true) @QueryParam("individualId")
                                        String individualIdOld,
                            @ApiParam(value = "Individual id or name", required = false) @QueryParam("individual.id") String individualId,
@@ -259,15 +246,6 @@ public class SampleWSServer extends OpenCGAWSServer {
         }
     }
 
-    public static class UpdateSample {
-        public String name;
-        public String description;
-        public String source;
-        @JsonProperty("individual.id")
-        public String individualId;
-        public Map<String, Object> attributes;
-    }
-
     @POST
     @Path("/{sample}/update")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -275,7 +253,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                  @QueryParam("study") String studyStr,
-                                 @ApiParam(value = "params", required = true) UpdateSample parameters) {
+                                 @ApiParam(value = "params", required = true) UpdateSamplePOST parameters) {
         try {
             AbstractManager.MyResourceId resourceId = catalogManager.getSampleManager().getId(sampleStr, studyStr, sessionId);
 
@@ -350,13 +328,12 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{sample}/annotationsets/search")
     @ApiOperation(value = "Search annotation sets [NOT TESTED]", position = 11)
-    public Response searchAnnotationSetGET(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
-                                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                           @QueryParam("study") String studyStr,
-                                           @ApiParam(value = "variableSetId") @QueryParam("variableSetId") long variableSetId,
-                                           @ApiParam(value = "annotation") @QueryParam("annotation") String annotation,
-                                           @ApiParam(value = "Indicates whether to show the annotations as key-value",
-                                                   defaultValue = "false") @QueryParam("asMap") boolean asMap) {
+    public Response searchAnnotationSetGET(
+            @ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Variable set id or name") @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "annotation") @QueryParam("annotation") String annotation,
+            @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(sampleManager.searchAnnotationSetAsMap(sampleStr, studyStr, variableSetId, annotation, sessionId));
@@ -395,7 +372,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "SampleId", required = true) @PathParam("sample") String sampleStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value = "VariableSetId of the new annotation", required = true) @QueryParam("variableSetId") long variableSetId,
+            @ApiParam(value = "Variable set id or name", required = true) @QueryParam("variableSetId") String variableSetId,
             @ApiParam(value="JSON containing the annotation set name and the array of annotations. The name should be unique for the "
                     + "sample", required = true) CohortWSServer.AnnotationsetParameters params) {
         try {
@@ -471,13 +448,18 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{samples}/acl")
-    @ApiOperation(value = "Returns the acl of the samples", position = 18)
+    @ApiOperation(value = "Returns the acl of the samples. If member is provided, it will only return the acl for the member.", position = 18)
     public Response getAcls(@ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("samples")
                                     String sampleIdsStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                            @QueryParam("study") String studyStr) {
+                            @QueryParam("study") String studyStr,
+                            @ApiParam(value = "User or group id") @QueryParam("member") String member) {
         try {
-            return createOkResponse(catalogManager.getAllSampleAcls(sampleIdsStr, studyStr, sessionId));
+            if (StringUtils.isEmpty(member)) {
+                return createOkResponse(catalogManager.getAllSampleAcls(sampleIdsStr, studyStr, sessionId));
+            } else {
+                return createOkResponse(catalogManager.getSampleAcl(sampleIdsStr, studyStr, member, sessionId));
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -524,7 +506,9 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{sample}/acl/{memberId}/info")
-    @ApiOperation(value = "Returns the set of permissions granted for the member", position = 20)
+    @ApiOperation(value = "Returns the set of permissions granted for the member [DEPRECATED]", position = 20,
+            notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
+                    + "/acl entrypoint.")
     public Response getAcl(@ApiParam(value = "Sample id or name", required = true) @PathParam("sample") String sampleIdStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                            @QueryParam("study") String studyStr,
@@ -616,12 +600,12 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/acl/{memberId}/update")
+    @Path("/acl/{memberIds}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
     public Response updateAcl(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value = "Comma separated list of member ids", required = true) @PathParam("memberId") String memberId,
+            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("memberIds") String memberId,
             @ApiParam(value="JSON containing the parameters to add ACLs", required = true) SampleAcl params) {
         try {
             Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(
@@ -647,6 +631,39 @@ public class SampleWSServer extends OpenCGAWSServer {
             return createOkResponse(sampleManager.updateAcl(sampleIdsStr, studyStr, memberId, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
+        }
+    }
+
+    private static class SamplePOST {
+        public String name;
+        public String description;
+        public String type;
+        public String source;
+        public boolean somatic;
+        public List<CommonModels.AnnotationSetParams> annotationSets;
+        public Map<String, Object> attributes;
+    }
+
+    public static class UpdateSamplePOST extends SamplePOST {
+        @JsonProperty("individual.id")
+        public String individualId;
+    }
+
+    private static class CreateSamplePOST extends SamplePOST {
+        public IndividualWSServer.IndividualPOST individual;
+
+        public Sample toSample(String studyStr, IStudyManager studyManager, String sessionId) throws CatalogException {
+            List<AnnotationSet> annotationSetList = new ArrayList<>();
+            if (annotationSets != null) {
+                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
+                    if (annotationSet != null) {
+                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
+                    }
+                }
+            }
+
+            return new Sample(-1, name, source, individual != null ? individual.toIndividual(studyStr, studyManager, sessionId) : null,
+                    description, type, somatic, null, annotationSetList, attributes);
         }
     }
 }

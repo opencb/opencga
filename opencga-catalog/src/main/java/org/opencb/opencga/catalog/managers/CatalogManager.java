@@ -140,6 +140,10 @@ public class CatalogManager implements AutoCloseable {
                 configuration);
     }
 
+    public ObjectMap getDatabaseStatus() {
+        return catalogDBAdaptorFactory.getDatabaseStatus();
+    }
+
     /**
      * Checks if the database exists.
      *
@@ -996,7 +1000,7 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Individual> createIndividual(long studyId, String name, String family, long fatherId, long motherId,
                                                     Individual.Sex sex, QueryOptions options, String sessionId)
             throws CatalogException {
-        return individualManager.create(studyId, name, family, fatherId, motherId, sex, "", "", "", "", "", "", "",
+        return individualManager.create(studyId, name, family, fatherId, motherId, sex, "", "", "", "", "",
                 Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, options, sessionId);
     }
 
@@ -1044,7 +1048,7 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Sample> createSample(long studyId, String name, String source, String description,
                                             Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
-        return sampleManager.create(Long.toString(studyId), name, source, description, null, attributes, options, sessionId);
+        return sampleManager.create(Long.toString(studyId), name, source, description, null, false, null, attributes, options, sessionId);
     }
 
     public long getSampleId(String sampleId, String sessionId) throws CatalogException {
@@ -1137,31 +1141,6 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.createVariableSet(studyId, name, unique, description, attributes, variables, sessionId);
     }
 
-    public QueryResult<VariableSet> getVariableSet(long variableSet, QueryOptions options, String sessionId)
-            throws CatalogException {
-        return studyManager.readVariableSet(variableSet, options, sessionId);
-    }
-
-    public QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions, String sessionId)
-            throws CatalogException {
-        return studyManager.deleteVariableSet(variableSetId, queryOptions, sessionId);
-    }
-
-    public QueryResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable, String sessionId)
-            throws CatalogException {
-        return studyManager.addFieldToVariableSet(variableSetId, variable, sessionId);
-    }
-
-    public QueryResult<VariableSet> renameFieldFromVariableSet(long variableSetId, String oldName, String newName, String sessionId)
-            throws CatalogException {
-        return studyManager.renameFieldFromVariableSet(variableSetId, oldName, newName, sessionId);
-    }
-
-    public QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name, String sessionId)
-            throws CatalogException {
-        return studyManager.removeFieldFromVariableSet(variableSetId, name, sessionId);
-    }
-
     /*
      * Cohort methods
      * ***************************
@@ -1177,11 +1156,6 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<Cohort> getAllCohorts(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
         return cohortManager.get(studyId, query, options, sessionId);
-    }
-
-    public QueryResult<Cohort> createCohort(long studyId, String name, Study.Type type, String description, List<Long> sampleIds,
-                                            Map<String, Object> attributes, String sessionId) throws CatalogException {
-        return cohortManager.create(studyId, name, type, description, sampleIds, attributes, sessionId);
     }
 
     public QueryResult<Cohort> modifyCohort(long cohortId, ObjectMap updateParams, QueryOptions options, String sessionId)

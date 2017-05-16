@@ -181,10 +181,10 @@ public class StudyWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{study}/update")
     @ApiOperation(value = "Update some study attributes [WARNING]", response = Study.class,
-    notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
-            + "is not tested and this can be deprecated in a future version.")
+            notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+                    + "is not tested and this can be deprecated in a future version.")
     public Response update(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                   required = true) @PathParam("study") String studyStr,
+            required = true) @PathParam("study") String studyStr,
                            @ApiParam(value = "Study name") @QueryParam("name") String name,
                            @ApiParam(value = "Study alias") @QueryParam("alias") String alias,
                            @ApiParam(value = "Study type") @QueryParam("type") String type,
@@ -252,7 +252,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                     dataType = "string", paramType = "query")
     })
     public Response info(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                 required = true) @PathParam("study") String studyStr) {
+            required = true) @PathParam("study") String studyStr) {
         try {
             List<QueryResult<Study>> queryResults = new LinkedList<>();
             List<Long> studyIds = catalogManager.getStudyIds(studyStr, sessionId);
@@ -270,7 +270,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Fetch study information plus some basic stats", notes = "Fetch study information plus some basic stats such as"
             + " the number of files, samples, cohorts...")
     public Response summary(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                    required = true) @PathParam("study") String studyStr) {
+            required = true) @PathParam("study") String studyStr) {
         try {
             List<Long> studyIds = catalogManager.getStudyIds(studyStr, sessionId);
             List<QueryResult<StudySummary>> queryResults = new LinkedList<>();
@@ -297,20 +297,20 @@ public class StudyWSServer extends OpenCGAWSServer {
                     dataType = "boolean", paramType = "query")
     })
     public Response getAllFiles(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                        required = true) @PathParam("study") String studyStr,
+            required = true) @PathParam("study") String studyStr,
                                 @ApiParam(value = "File id") @QueryParam("id") String id,
                                 @ApiParam(value = "File name") @QueryParam("name") String name,
                                 @ApiParam(value = "File path") @QueryParam("path") String path,
                                 @ApiParam(value = "File type (FILE or DIRECTORY)") @QueryParam("type") String type,
                                 @ApiParam(value = "Comma separated list of bioformat values. For existing Bioformats see files/bioformats")
-                                    @QueryParam("bioformat") String bioformat,
+                                @QueryParam("bioformat") String bioformat,
                                 @ApiParam(value = "Comma separated list of format values. For existing Formats see files/formats")
-                                    @QueryParam("format") String formats,
+                                @QueryParam("format") String formats,
                                 @ApiParam(value = "File status") @QueryParam("status") File.FileStatus status,
                                 @ApiParam(value = "Directory where the files will be looked for") @QueryParam("directory") String directory,
                                 @ApiParam(value = "Creation date of the file") @QueryParam("creationDate") String creationDate,
                                 @ApiParam(value = "Last modification date of the file") @QueryParam("modificationDate")
-                                            String modificationDate,
+                                        String modificationDate,
                                 @ApiParam(value = "File description") @QueryParam("description") String description,
                                 @ApiParam(value = "File size") @QueryParam("size") Long size,
                                 @ApiParam(value = "List of sample ids associated with the files") @QueryParam("sampleIds") String sampleIds,
@@ -340,7 +340,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                     dataType = "boolean", paramType = "query")
     })
     public Response getAllSamples(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                          required = true) @PathParam("study") String studyStr,
+            required = true) @PathParam("study") String studyStr,
                                   @ApiParam(value = "Sample name") @QueryParam("name") String name,
                                   @Deprecated @ApiParam(value = "source", hidden = true) @QueryParam("source") String source,
                                   @ApiParam(value = "individualId") @QueryParam("individualId") String individualId,
@@ -371,16 +371,16 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
     public Response getAllJobs(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                       required = true) @PathParam("study") String studyStr,
+            required = true) @PathParam("study") String studyStr,
                                @ApiParam(value = "name") @DefaultValue("") @QueryParam("name") String name,
                                @ApiParam(value = "tool name") @DefaultValue("") @QueryParam("toolName") String tool,
                                @ApiParam(value = "status") @DefaultValue("") @QueryParam("status") String status,
                                @ApiParam(value = "ownerId") @DefaultValue("") @QueryParam("ownerId") String ownerId,
                                @ApiParam(value = "date") @DefaultValue("") @QueryParam("date") String date,
                                @ApiParam(value = "Comma separated list of output file ids") @DefaultValue("")
-                                   @QueryParam("inputFiles") String inputFiles,
+                               @QueryParam("inputFiles") String inputFiles,
                                @ApiParam(value = "Comma separated list of output file ids") @DefaultValue("")
-                                   @QueryParam("outputFiles") String outputFiles) {
+                               @QueryParam("outputFiles") String outputFiles) {
         try {
             long studyId = catalogManager.getStudyId(studyStr, sessionId);
             return createOkResponse(catalogManager.getAllJobs(studyId, sessionId));
@@ -404,7 +404,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 //            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
     public Response getVariants(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                        required = true) @PathParam("study") String studyStr,
+            required = true) @PathParam("study") String studyStr,
                                 @ApiParam(value = "List of variant ids") @QueryParam("ids") String ids,
                                 @ApiParam(value = "List of regions: {chr}:{start}-{end}") @QueryParam("region") String region,
                                 @ApiParam(value = "List of chromosomes") @QueryParam("chromosome") String chromosome,
@@ -419,73 +419,73 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Variants in specific files") @QueryParam("files") String files,
                                 @ApiParam(value = VariantQueryParam.FILTER_DESCR) @QueryParam("filter") String filter,
                                 @ApiParam(value = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}")
-                                    @QueryParam("maf") String maf,
+                                @QueryParam("maf") String maf,
                                 @ApiParam(value = "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}")
-                                    @QueryParam("mgf") String mgf,
+                                @QueryParam("mgf") String mgf,
                                 @ApiParam(value = "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}")
-                                    @QueryParam("missingAlleles") String missingAlleles,
+                                @QueryParam("missingAlleles") String missingAlleles,
                                 @ApiParam(value = "Number of missing genotypes: [{study:}]{cohort}[<|>|<=|>=]{number}")
-                                    @QueryParam("missingGenotypes") String missingGenotypes,
+                                @QueryParam("missingGenotypes") String missingGenotypes,
                                 @ApiParam(value = "Specify if the variant annotation must exists.")
-                                    @QueryParam("annotationExists") boolean annotationExists,
+                                @QueryParam("annotationExists") boolean annotationExists,
                                 @ApiParam(value = "Samples with a specific genotype: "
                                         + "{samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1")
-                                    @QueryParam("genotype") String genotype,
+                                @QueryParam("genotype") String genotype,
                                 @ApiParam(value = VariantQueryParam.SAMPLES_DESCR) @QueryParam("samples") String samples,
                                 @ApiParam(value = "Consequence type SO term list. e.g. missense_variant,stop_lost or SO:0001583,SO:0001578")
-                                    @QueryParam("annot-ct") String annot_ct,
+                                @QueryParam("annot-ct") String annot_ct,
                                 @ApiParam(value = "XRef") @QueryParam("annot-xref") String annot_xref,
                                 @ApiParam(value = "Biotype") @QueryParam("annot-biotype") String annot_biotype,
                                 @ApiParam(value = "Polyphen, protein substitution score. "
                                         + "[<|>|<=|>=]{number} or [~=|=|]{description} e.g. <=0.9 , =benign")
-                                    @QueryParam("polyphen") String polyphen,
+                                @QueryParam("polyphen") String polyphen,
                                 @ApiParam(value = "Sift, protein substitution score. "
                                         + "[<|>|<=|>=]{number} or [~=|=|]{description} e.g. >0.1 , ~=tolerant")
-                                    @QueryParam("sift") String sift,
+                                @QueryParam("sift") String sift,
                                 @ApiParam(value = "Protein substitution score. {protein_score}[<|>|<=|>=]{number} or "
                                         + "{protein_score}[~=|=]{description} e.g. polyphen>0.1 , sift=tolerant")
-                                    @QueryParam ("protein_substitution") String protein_substitution,
+                                @QueryParam ("protein_substitution") String protein_substitution,
                                 @ApiParam(value = "Conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. "
                                         + "phastCons>0.5,phylop<0.1,gerp>0.1") @QueryParam("conservation") String conservation,
                                 @ApiParam(value = "Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}")
-                                    @QueryParam("annot-population-maf") String annotPopulationMaf,
+                                @QueryParam("annot-population-maf") String annotPopulationMaf,
                                 @ApiParam(value = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}")
-                                    @QueryParam("alternate_frequency") String alternate_frequency,
+                                @QueryParam("alternate_frequency") String alternate_frequency,
                                 @ApiParam(value = "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}")
-                                    @QueryParam("reference_frequency") String reference_frequency,
+                                @QueryParam("reference_frequency") String reference_frequency,
                                 @ApiParam(value = "List of transcript annotation flags. e.g. "
                                         + "CCDS, basic, cds_end_NF, mRNA_end_NF, cds_start_NF, mRNA_start_NF, seleno")
-                                    @QueryParam ("annot-transcription-flags") String transcriptionFlags,
+                                @QueryParam ("annot-transcription-flags") String transcriptionFlags,
                                 @ApiParam(value = "List of gene trait association id. e.g. \"umls:C0007222\" , \"OMIM:269600\"")
-                                    @QueryParam("annot-gene-trait-id") String geneTraitId,
+                                @QueryParam("annot-gene-trait-id") String geneTraitId,
                                 @ApiParam(value = "List of gene trait association names. e.g. \"Cardiovascular Diseases\"")
-                                    @QueryParam("annot-gene-trait-name") String geneTraitName,
+                                @QueryParam("annot-gene-trait-name") String geneTraitName,
                                 @ApiParam(value = "List of HPO terms. e.g. \"HP:0000545\"") @QueryParam("annot-hpo") String hpo,
                                 @ApiParam(value = "List of GO (Genome Ontology) terms. e.g. \"GO:0002020\"")
-                                    @QueryParam("annot-go") String go,
+                                @QueryParam("annot-go") String go,
                                 @ApiParam(value = "List of tissues of interest. e.g. \"tongue\"")
-                                    @QueryParam("annot-expression") String expression,
+                                @QueryParam("annot-expression") String expression,
                                 @ApiParam(value = "List of protein variant annotation keywords")
-                                    @QueryParam("annot-protein-keywords") String proteinKeyword,
+                                @QueryParam("annot-protein-keywords") String proteinKeyword,
                                 @ApiParam(value = "List of drug names") @QueryParam("annot-drug") String drug,
                                 @ApiParam(value = "Functional score: "
                                         + "{functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3")
-                                    @QueryParam ("annot-functional-score") String functional,
+                                @QueryParam ("annot-functional-score") String functional,
 
                                 @ApiParam(value = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]")
-                                    @QueryParam("unknownGenotype") String unknownGenotype,
+                                @QueryParam("unknownGenotype") String unknownGenotype,
                                 @ApiParam(value = "Returns the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.")
-                                    @QueryParam("samplesMetadata") boolean samplesMetadata,
+                                @QueryParam("samplesMetadata") boolean samplesMetadata,
                                 @ApiParam(value = "Count results", required = false) @QueryParam("count") boolean count,
                                 @ApiParam(value = "Sort the results", required = false) @QueryParam("sort") boolean sort,
                                 @ApiParam(value = "Group variants by: [ct, gene, ensemblGene]", required = false) @DefaultValue("")
-                                    @QueryParam("groupBy") String groupBy,
+                                @QueryParam("groupBy") String groupBy,
                                 @ApiParam(value = "Calculate histogram. Requires one region.", required = false) @DefaultValue("false")
-                                    @QueryParam("histogram") boolean histogram,
+                                @QueryParam("histogram") boolean histogram,
                                 @ApiParam(value = "Histogram interval size", required = false) @DefaultValue("2000")
-                                    @QueryParam("interval") int interval,
+                                @QueryParam("interval") int interval,
                                 @ApiParam(value = "Merge results", required = false) @DefaultValue("false")
-                                    @QueryParam("merge") boolean merge) {
+                                @QueryParam("merge") boolean merge) {
 
         try {
             List<Long> studyIds = catalogManager.getStudyIds(studyStr, sessionId);
@@ -528,22 +528,22 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
     public Response getAlignments(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                          required = true) @PathParam("study") String studyStr,
+            required = true) @PathParam("study") String studyStr,
                                   @ApiParam(value = "sample id", required = false) @DefaultValue("")
-                                      @QueryParam("sampleId") String sampleIds,
+                                  @QueryParam("sampleId") String sampleIds,
                                   @ApiParam(value = "file id", required = false) @DefaultValue("") @QueryParam("fileId") String fileIds,
                                   @ApiParam(value = "region with a maximum value of 10000 nucleotides", required = true) @DefaultValue("")
-                                      @QueryParam("region") String region,
+                                  @QueryParam("region") String region,
                                   @ApiParam(value = "view_as_pairs", required = false) @DefaultValue("false")
-                                      @QueryParam("view_as_pairs") boolean view_as_pairs,
+                                  @QueryParam("view_as_pairs") boolean view_as_pairs,
                                   @ApiParam(value = "include_coverage", required = false) @DefaultValue("true")
-                                      @QueryParam("include_coverage") boolean include_coverage,
+                                  @QueryParam("include_coverage") boolean include_coverage,
                                   @ApiParam(value = "process_differences", required = false) @DefaultValue("true")
-                                      @QueryParam("process_differences") boolean process_differences,
+                                  @QueryParam("process_differences") boolean process_differences,
                                   @ApiParam(value = "histogram", required = false) @DefaultValue("false")
-                                      @QueryParam("histogram") boolean histogram,
+                                  @QueryParam("histogram") boolean histogram,
                                   @ApiParam(value = "interval", required = false) @DefaultValue("2000")
-                                      @QueryParam("interval") int interval) {
+                                  @QueryParam("interval") int interval) {
         query.put(VariantQueryParam.STUDIES.key(), studyStr);
         List<Region> regions = Region.parseRegions(region);
 
@@ -647,7 +647,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{study}/scanFiles")
     @ApiOperation(value = "Scan the study folder to find untracked or missing files", position = 12)
     public Response scanFiles(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                      required = true) @PathParam("study") String studyStr) {
+            required = true) @PathParam("study") String studyStr) {
         try {
             long studyId = catalogManager.getStudyId(studyStr, sessionId);
             Study study = catalogManager.getStudy(studyId, sessionId).first();
@@ -709,7 +709,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             + "will keep track of those new files and/or folders found in the file system as well as update the status of those "
             + "files/folders that are no longer available in the file system setting their status to MISSING.")
     public Response resyncFiles(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                        required = true) @PathParam("study") String studyStr) {
+            required = true) @PathParam("study") String studyStr) {
         try {
             long studyId = catalogManager.getStudyId(studyStr, sessionId);
             Study study = catalogManager.getStudy(studyId, sessionId).first();
@@ -728,7 +728,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{study}/groups")
     @ApiOperation(value = "Return the groups present in the studies", position = 13, response = Group[].class)
     public Response getGroups(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                      required = true) @PathParam("study") String studyStr) {
+            required = true) @PathParam("study") String studyStr) {
         try {
             QueryResult<Group> allGroups = catalogManager.getAllGroups(studyStr, sessionId);
             return createOkResponse(allGroups);
@@ -741,11 +741,11 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{study}/groups/create")
     @ApiOperation(value = "Create a group", position = 14, hidden = true)
     public Response createGroup(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                        required = true) @PathParam("study") String studyStr,
+            required = true) @PathParam("study") String studyStr,
                                 @ApiParam(value = "Id of the new group to be created", required = true)
                                 @QueryParam("groupId") String groupId,
                                 @ApiParam(value = "Comma separated list of users to take part of the group", required = true)
-                                    @DefaultValue("") @QueryParam("users") String users) {
+                                @DefaultValue("") @QueryParam("users") String users) {
         try {
             QueryResult group = catalogManager.createGroup(studyStr, groupId, users, sessionId);
             return createOkResponse(group);
@@ -776,7 +776,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{study}/groups/{groupId}/info")
     @ApiOperation(value = "Return the group", position = 15)
     public Response getGroup(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                     required = true) @PathParam("study") String studyStr,
+            required = true) @PathParam("study") String studyStr,
                              @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId) {
         try {
             QueryResult<Group> group = catalogManager.getGroup(studyStr, groupId, sessionId);
@@ -790,14 +790,14 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{study}/groups/{groupId}/update")
     @ApiOperation(value = "Updates the members of the group", hidden = true)
     public Response addMembersToGroup(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
-                                              + "alias", required = true) @PathParam("study") String studyStr,
+            + "alias", required = true) @PathParam("study") String studyStr,
                                       @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId,
                                       @ApiParam(value = "Comma separated list of users that will be added to the group")
-                                          @QueryParam("addUsers") String addUsers,
+                                      @QueryParam("addUsers") String addUsers,
                                       @ApiParam(value = "Comma separated list of users that will be part of the group. Previous users "
                                               + "will be removed.", required = false) @QueryParam("setUsers") String setUsers,
                                       @ApiParam(value = "Comma separated list of users that will be removed from the group")
-                                          @QueryParam("removeUsers") String removeUsers) {
+                                      @QueryParam("removeUsers") String removeUsers) {
         try {
             return createOkResponse(catalogManager.updateGroup(studyStr, groupId, addUsers, removeUsers, setUsers, sessionId));
         } catch (Exception e) {
@@ -826,9 +826,9 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{study}/groups/{groupId}/delete")
     @ApiOperation(value = "Delete the group", position = 17, notes = "Delete the group selected from the study.")
     public Response deleteMembersFromGroup(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id "
-                                                   + "or alias", required = true) @PathParam("study") String studyStr,
+            + "or alias", required = true) @PathParam("study") String studyStr,
                                            @ApiParam(value = "groupId", required = true) @DefaultValue("")
-                                               @PathParam("groupId") String groupId) {
+                                           @PathParam("groupId") String groupId) {
         try {
             return createOkResponse(catalogManager.deleteGroup(studyStr, groupId, sessionId));
         } catch (Exception e) {
@@ -838,11 +838,17 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/acl")
-    @ApiOperation(value = "Return the acl of the study", position = 18)
-    public Response getAcls(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                    required = true) @PathParam("study") String studyStr) {
+    @ApiOperation(value = "Return the acl of the study. If member is provided, it will only return the acl for the member.", position = 18)
+    public Response getAcls(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
+                @PathParam("study") String studyStr,
+            @ApiParam(value = "User or group id") @QueryParam("member") String member) {
         try {
-            return createOkResponse(catalogManager.getAllStudyAcls(studyStr, sessionId));
+            if (StringUtils.isEmpty(member)) {
+                return createOkResponse(catalogManager.getAllStudyAcls(studyStr, sessionId));
+            } else {
+                return createOkResponse(catalogManager.getStudyAcl(studyStr, member, sessionId));
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -932,9 +938,11 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/acl/{memberId}/info")
-    @ApiOperation(value = "Return the set of permissions granted for the user or group", position = 20)
+    @ApiOperation(value = "Return the set of permissions granted for the user or group [DEPRECATED]", position = 20,
+        notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
+                + "/acl entrypoint.")
     public Response getAcl(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                   required = true) @PathParam("study") String studyStr,
+            required = true) @PathParam("study") String studyStr,
                            @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
         try {
             return createOkResponse(catalogManager.getStudyAcl(studyStr, memberId, sessionId));
@@ -947,14 +955,14 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{study}/acl/{memberId}/update")
     @ApiOperation(value = "Update the set of permissions granted for the user or group", hidden = true, position = 21)
     public Response updateAcl(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                      required = true) @PathParam("study") String studyStr,
+            required = true) @PathParam("study") String studyStr,
                               @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
                               @ApiParam(value = "Comma separated list of permissions to add")
-                                  @QueryParam("add") String addPermissions,
+                              @QueryParam("add") String addPermissions,
                               @ApiParam(value = "Comma separated list of permissions to remove")
-                                  @QueryParam("remove") String removePermissions,
+                              @QueryParam("remove") String removePermissions,
                               @ApiParam(value = "Comma separated list of permissions to set")
-                                  @QueryParam("set") String setPermissions) {
+                              @QueryParam("set") String setPermissions) {
         try {
             Study.StudyAclParams aclParams = getAclParams(addPermissions, removePermissions, setPermissions, null);
             return createOkResponse(studyManager.updateAcl(studyStr, memberId, aclParams, sessionId));
@@ -996,10 +1004,10 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/acl/{memberId}/update")
+    @Path("/acl/{memberIds}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
     public Response updateAcl(
-            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
+            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("memberIds") String memberId,
             @ApiParam(value="JSON containing the parameters to add ACLs", required = true) StudyAcl params) {
         try {
             Study.StudyAclParams aclParams = new Study.StudyAclParams(params.getPermissions(), params.getAction(), params.template);
@@ -1015,7 +1023,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             notes = "DEPRECATED: The usage of this webservice is discouraged. A RESET action has been added to the /acl/{members}/update "
                     + "entrypoint.")
     public Response deleteAcl(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                      required = true) @PathParam("study") String studyStr,
+            required = true) @PathParam("study") String studyStr,
                               @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
         try {
             Study.StudyAclParams aclParams = new Study.StudyAclParams(null, AclParams.Action.RESET, null);

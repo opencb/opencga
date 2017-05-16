@@ -100,8 +100,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
 
         long sampleId = getNewId();
         sample.setId(sampleId);
-        sample.setAnnotationSets(Collections.<AnnotationSet>emptyList());
-        //TODO: Add annotationSets
         Document sampleObject = sampleConverter.convertToStorageType(sample);
         sampleObject.put(PRIVATE_STUDY_ID, studyId);
         sampleObject.put(PRIVATE_ID, sampleId);
@@ -462,7 +460,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         long startTime = startQuery();
         Map<String, Object> sampleParameters = new HashMap<>();
 
-        final String[] acceptedParams = {QueryParams.SOURCE.key(), QueryParams.DESCRIPTION.key()};
+        final String[] acceptedBooleanParams = {QueryParams.SOMATIC.key()};
+        filterBooleanParams(parameters, sampleParameters, acceptedBooleanParams);
+
+        final String[] acceptedParams = {QueryParams.SOURCE.key(), QueryParams.DESCRIPTION.key(), QueryParams.TYPE.key()};
         filterStringParams(parameters, sampleParameters, acceptedParams);
 
         final String[] acceptedIntParams = {QueryParams.ID.key(), QueryParams.INDIVIDUAL_ID.key()};
@@ -695,6 +696,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
+                    case SOMATIC:
+                    case TYPE:
                     case ACL:
                     case ACL_MEMBER:
                     case ACL_PERMISSIONS:
