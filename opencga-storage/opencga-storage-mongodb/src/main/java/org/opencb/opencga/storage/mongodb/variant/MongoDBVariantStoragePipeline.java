@@ -99,6 +99,23 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         super.securePreLoad(studyConfiguration, source);
         int fileId = options.getInt(Options.FILE_ID.key());
 
+
+        if (studyConfiguration.getAttributes().containsKey(MERGE_IGNORE_OVERLAPPING_VARIANTS.key())) {
+            if (studyConfiguration.getAttributes().getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key())) {
+                logger.debug("Do not merge variants, as said in the StudyConfiguration");
+            } else {
+                logger.debug("Merge variants, as said in the StudyConfiguration");
+            }
+        } else {
+            boolean ignoreOverlapping = options.getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(),
+                    MERGE_IGNORE_OVERLAPPING_VARIANTS.defaultValue());
+            studyConfiguration.getAttributes().put(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(), ignoreOverlapping);
+            if (ignoreOverlapping) {
+                // When ignoring overlapping variants, the default genotype MUST be the UNKNOWN_GENOTYPE (?/?).
+                // Otherwise, a "fillGaps" step will be needed
+                studyConfiguration.getAttributes().put(DEFAULT_GENOTYPE.key(), DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
+            }
+        }
         if (studyConfiguration.getAttributes().containsKey(DEFAULT_GENOTYPE.key())) {
             Set<String> defaultGenotype = new HashSet<>(studyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key()));
             logger.debug("Using default genotype from study configuration: {}", defaultGenotype);
@@ -638,13 +655,16 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stageCollection, studyConfiguration.getStudyId(),
                 chromosomeToLoad == null ? Collections.emptyList() : Collections.singletonList(chromosomeToLoad));
+        boolean ignoreOverlapping = studyConfiguration.getAttributes().getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(),
+                MERGE_IGNORE_OVERLAPPING_VARIANTS.defaultValue());
+        if (ignoreOverlapping) {
+            reader.setFileIds(fileIds);
+        }
         boolean resume = isResumeMerge(options);
         boolean cleanWhileLoading = options.getBoolean(STAGE_CLEAN_WHILE_LOAD.key(), STAGE_CLEAN_WHILE_LOAD.defaultValue());
         ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", reader::countNumVariants, 200);
         progressLogger.setApproximateTotalCount(reader.countAproxNumVariants());
 
-        boolean ignoreOverlapping = options.getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(),
-                MERGE_IGNORE_OVERLAPPING_VARIANTS.defaultValue());
         MongoDBVariantMerger variantMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds, indexedFiles, resume,
                 ignoreOverlapping);
         MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(dbAdaptor.getVariantsCollection(), stageCollection,
