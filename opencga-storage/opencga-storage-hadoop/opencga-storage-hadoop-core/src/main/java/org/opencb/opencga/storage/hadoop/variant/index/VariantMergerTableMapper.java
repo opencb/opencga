@@ -37,7 +37,7 @@ import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 import org.slf4j.Logger;
@@ -55,6 +55,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.opencb.opencga.storage.hadoop.variant.AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -68,6 +69,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
     @Deprecated
     private VariantMerger variantMergerSamplesToIndex;
     private boolean resolveConflict;
+    private Integer archiveBatchSize;
 
     protected static final EnumSet<VariantType> TARGET_VARIANT_TYPE_SET = EnumSet.of(
             VariantType.SNV, VariantType.SNP,
@@ -89,17 +91,20 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
             logger.info("Using ForkJoinPool of {} ... ", cores);
             this.getResultConverter().setParallel(true);
         }
+        this.archiveBatchSize = context.getConfiguration().getInt(MERGE_ARCHIVE_SCAN_BATCH_SIZE, DEFAULT_MERGE_ARCHIVE_SCAN_BATCH_SIZE);
 
         // TODO: Read from configuration?
         resolveConflict = true;
 
-        Set<Integer> filesToIndex = context.getConfiguration().getStringCollection(AbstractAnalysisTableDriver.CONFIG_VARIANT_FILE_IDS)
+        boolean collapseDeletions = context.getConfiguration().getBoolean(MERGE_COLLAPSE_DELETIONS, DEFAULT_MERGE_COLLAPSE_DELETIONS);
+
+        Set<Integer> filesToIndex = context.getConfiguration().getStringCollection(VariantStorageEngine.Options.FILE_ID.key())
                 .stream()
                 .map(Integer::valueOf)
                 .collect(Collectors.toSet());
         if (filesToIndex.size() == 0) {
             throw new IllegalStateException(
-                    "File IDs to be indexed not found in configuration: " + AbstractAnalysisTableDriver.CONFIG_VARIANT_FILE_IDS);
+                    "File IDs to be indexed not found in configuration: " + VariantStorageEngine.Options.FILE_ID.key());
         }
         Set<String> samplesToIndex = new LinkedHashSet<>();
         BiMap<Integer, String> sampleIdToSampleName = StudyConfiguration.inverseMap(getStudyConfiguration().getSampleIds());
@@ -112,7 +117,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
         // TODO: Allow other fields! Read from configuration
         expectedFormats = Arrays.asList(VariantMerger.GT_KEY, VariantMerger.GENOTYPE_FILTER_KEY);
 
-        variantMerger = new VariantMerger(true);
+        variantMerger = new VariantMerger(collapseDeletions);
         variantMerger.setStudyId(Integer.toString(getStudyConfiguration().getStudyId()));
         variantMerger.setExpectedFormats(expectedFormats);
         variantMerger.setExpectedSamples(this.getIndexedSamples().keySet());
@@ -120,7 +125,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
         variantMerger.addExpectedSamples(samplesToIndex);
 
 
-        variantMergerSamplesToIndex = new VariantMerger(true);
+        variantMergerSamplesToIndex = new VariantMerger(collapseDeletions);
         variantMergerSamplesToIndex.setStudyId(Integer.toString(getStudyConfiguration().getStudyId()));
         variantMergerSamplesToIndex.setExpectedFormats(expectedFormats);
         variantMergerSamplesToIndex.setExpectedSamples(samplesToIndex);

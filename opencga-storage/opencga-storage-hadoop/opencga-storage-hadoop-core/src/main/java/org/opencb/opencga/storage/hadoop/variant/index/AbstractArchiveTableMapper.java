@@ -51,11 +51,10 @@ import java.util.stream.Stream;
  */
 public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMapper<ImmutableBytesWritable, Mutation> {
     public static final String SPECIFIC_PUT = "opencga.storage.hadoop.hbase.merge.use_specific_put";
-    public static final String ARCHIVE_GET_BATCH_SIZE = "opencga.storage.hadoop.hbase.merge.archive.scan.batchsize";
+
     private Logger logger = LoggerFactory.getLogger(AbstractArchiveTableMapper.class);
 
     protected ArchiveResultToVariantConverter resultConverter;
-    protected Integer archiveBatchSize;
     private ArchiveRowKeyFactory rowKeyFactory;
     private boolean specificPut;
 
@@ -206,7 +205,6 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
     protected void setup(Context context) throws IOException,
             InterruptedException {
         super.setup(context);
-        this.archiveBatchSize = context.getConfiguration().getInt(ARCHIVE_GET_BATCH_SIZE, 500);
         this.specificPut = context.getConfiguration().getBoolean(SPECIFIC_PUT, true);
 
         // Load VCF meta data for columns
