@@ -197,7 +197,7 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
         public String affectationStatus;
 
-        @Parameter(names = {"--variable-set-id"}, description = "Variable set id or name", required = false, arity = 1)
+        @Parameter(names = {"--variable-set"}, description = "Variable set id or name", required = false, arity = 1)
         public String variableSetId;
 
         @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 1)
@@ -309,7 +309,7 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
         public String affectationStatus;
 
-        @Parameter(names = {"--variable-set-id"}, description = "Variable set id or name", required = false, arity = 1)
+        @Parameter(names = {"--variable-set"}, description = "Variable set id or name", required = false, arity = 1)
         public String variableSetId;
 
         @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 0)

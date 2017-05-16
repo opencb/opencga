@@ -138,7 +138,8 @@ public class SampleWSServer extends OpenCGAWSServer {
                                 @QueryParam("study") String studyStr,
                                 @ApiParam(value = "DEPRECATED: use file instead", hidden = true) @QueryParam("fileId") String fileIdStr,
                                 @ApiParam(value = "file", required = true) @QueryParam("file") String fileStr,
-                                @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") Long variableSetId) {
+                                @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") Long variableSetId,
+                                @ApiParam(value = "variableSet", required = false) @QueryParam("variableSet") String variableSet) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
@@ -146,11 +147,15 @@ public class SampleWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(fileStr)) {
                 fileIdStr = fileStr;
             }
+            if (variableSetId != null) {
+                variableSet = Long.toString(variableSetId);
+            }
             AbstractManager.MyResourceId resourceId = catalogManager.getFileManager().getId(fileIdStr, studyStr, sessionId);
+            long varSetId = catalogManager.getStudyManager().getVariableSetId(variableSet, studyStr, sessionId).getResourceId();
 
             File pedigreeFile = catalogManager.getFile(resourceId.getResourceId(), sessionId).first();
             CatalogSampleAnnotationsLoader loader = new CatalogSampleAnnotationsLoader(catalogManager);
-            QueryResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedigreeFile, variableSetId, sessionId);
+            QueryResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedigreeFile, varSetId, sessionId);
             return createOkResponse(sampleQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -184,7 +189,8 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Individual id or name") @QueryParam("individual.id") String individual,
                            @ApiParam(value = "Ontology terms") @QueryParam("ontologies") String ontologies,
                            @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
-                           @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,
+                           @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
+                           @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
                            @ApiParam(value = "annotation") @QueryParam("annotation") String annotation,
                            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
@@ -306,7 +312,8 @@ public class SampleWSServer extends OpenCGAWSServer {
                                         String individualIdOld,
                             @ApiParam(value = "Individual id or name") @QueryParam("individual.id") String individualId,
                             @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
-                            @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,
+                            @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
+                            @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
                             @ApiParam(value = "annotation") @QueryParam("annotation") String annotation) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
@@ -331,14 +338,18 @@ public class SampleWSServer extends OpenCGAWSServer {
     public Response searchAnnotationSetGET(
             @ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Variable set id or name") @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "Variable set id or name") @QueryParam("variableSet") String variableSet,
             @ApiParam(value = "annotation") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
+            if (StringUtils.isNotEmpty(variableSetId)) {
+                variableSet = variableSetId;
+            }
             if (asMap) {
-                return createOkResponse(sampleManager.searchAnnotationSetAsMap(sampleStr, studyStr, variableSetId, annotation, sessionId));
+                return createOkResponse(sampleManager.searchAnnotationSetAsMap(sampleStr, studyStr, variableSet, annotation, sessionId));
             } else {
-                return createOkResponse(sampleManager.searchAnnotationSet(sampleStr, studyStr, variableSetId, annotation, sessionId));
+                return createOkResponse(sampleManager.searchAnnotationSet(sampleStr, studyStr, variableSet, annotation, sessionId));
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -372,11 +383,15 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "SampleId", required = true) @PathParam("sample") String sampleStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value = "Variable set id or name", required = true) @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "Variable set id or name", required = true) @QueryParam("variableSet") String variableSet,
             @ApiParam(value="JSON containing the annotation set name and the array of annotations. The name should be unique for the "
                     + "sample", required = true) CohortWSServer.AnnotationsetParameters params) {
         try {
-            QueryResult<AnnotationSet> queryResult = sampleManager.createAnnotationSet(sampleStr, studyStr, variableSetId, params.name,
+            if (StringUtils.isNotEmpty(variableSetId)) {
+                variableSet = variableSetId;
+            }
+            QueryResult<AnnotationSet> queryResult = sampleManager.createAnnotationSet(sampleStr, studyStr, variableSet, params.name,
                     params.annotations, Collections.emptyMap(), sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {

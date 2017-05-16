@@ -184,7 +184,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                                   Individual.LifeStatus lifeStatus,
                                       @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
                                                   Individual.AffectationStatus affectationStatus,
-                                      @ApiParam(value = "Variable set id or name", required = false) @QueryParam("variableSetId") String variableSetId,
+                                      @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId")
+                                                  String variableSetId,
+                                      @ApiParam(value = "Variable set id or name") @QueryParam("variableSet") String variableSet,
                                       @ApiParam(value = "annotationsetName", required = false) @QueryParam("annotationsetName")
                                                   String annotationsetName,
                                       @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
@@ -244,15 +246,19 @@ public class IndividualWSServer extends OpenCGAWSServer {
     public Response searchAnnotationSetGET(
             @ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Variable set id or name") @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "Variable set id or name") @QueryParam("variableSet") String variableSet,
             @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
+            if (StringUtils.isNotEmpty(variableSetId)) {
+                variableSet = variableSetId;
+            }
             if (asMap) {
-                return createOkResponse(individualManager.searchAnnotationSetAsMap(individualStr, studyStr, variableSetId, annotation,
+                return createOkResponse(individualManager.searchAnnotationSetAsMap(individualStr, studyStr, variableSet, annotation,
                         sessionId));
             } else {
-                return createOkResponse(individualManager.searchAnnotationSet(individualStr, studyStr, variableSetId, annotation,
+                return createOkResponse(individualManager.searchAnnotationSet(individualStr, studyStr, variableSet, annotation,
                         sessionId));
             }
         } catch (CatalogException e) {
@@ -287,11 +293,15 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value = "Variable set id or name", required = true) @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "Variable set id or name", required = true) @QueryParam("variableSet") String variableSet,
             @ApiParam(value="JSON containing the annotation set name and the array of annotations. The name should be unique for the "
                     + "individual", required = true) CohortWSServer.AnnotationsetParameters params) {
         try {
-            QueryResult<AnnotationSet> queryResult = individualManager.createAnnotationSet(individualStr, studyStr, variableSetId,
+            if (StringUtils.isNotEmpty(variableSetId)) {
+                variableSet = variableSetId;
+            }
+            QueryResult<AnnotationSet> queryResult = individualManager.createAnnotationSet(individualStr, studyStr, variableSet,
                     params.name, params.annotations, Collections.emptyMap(), sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
@@ -473,7 +483,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") Individual.LifeStatus lifeStatus,
                             @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
                                         Individual.AffectationStatus affectationStatus,
-                            @ApiParam(value = "Variable set id or name", required = false) @QueryParam("variableSetId") String variableSetId,
+                            @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId") String variableSetId,
+                            @ApiParam(value = "Variable set id or name", required = false) @QueryParam("variableSet") String variableSet,
                             @ApiParam(value = "annotationsetName", required = false) @QueryParam("annotationsetName")
                                         String annotationsetName,
                             @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {

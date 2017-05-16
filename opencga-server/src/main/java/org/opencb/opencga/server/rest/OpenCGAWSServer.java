@@ -354,6 +354,10 @@ public class OpenCGAWSServer {
             query.remove("status");
         }
 
+        if (query.containsKey("variableSet")) {
+            query.put("variableSetId", query.get("variableSet"));
+            query.remove("variableSet");
+        }
         if (query.containsKey("variableSetId")) {
             try {
                 AbstractManager.MyResourceId resource = catalogManager.getStudyManager().getVariableSetId(query.getString

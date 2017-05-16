@@ -140,7 +140,7 @@ public class SampleCommandOptions {
         @Parameter(names = {"--ped-file"}, description = "Pedigree file id already loaded in OpenCGA", required = true, arity = 1)
         public String pedFile;
 
-        @Parameter(names = {"--variable-set-id"}, description = "VariableSetId that represents the pedigree file", arity = 1)
+        @Parameter(names = {"--variable-set"}, description = "VariableSetId that represents the pedigree file", arity = 1)
         public String variableSetId;
 
     }
@@ -172,7 +172,7 @@ public class SampleCommandOptions {
         @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 1)
         public String annotationSetName;
 
-        @Parameter(names = {"--variable-set-id"}, description = "Variable set id or name.", required = false, arity = 1)
+        @Parameter(names = {"--variable-set"}, description = "Variable set id or name.", required = false, arity = 1)
         public String variableSetId;
 
         @Parameter(names = {"--type"}, description = "Sample type", arity = 1)
@@ -238,7 +238,7 @@ public class SampleCommandOptions {
         @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 0)
         public String annotationSetName;
 
-        @Parameter(names = {"--variable-set-id"}, description = "Variable set ids", required = false, arity = 1)
+        @Parameter(names = {"--variable-set"}, description = "Variable set ids", required = false, arity = 1)
         public String variableSetId;
     }
 
