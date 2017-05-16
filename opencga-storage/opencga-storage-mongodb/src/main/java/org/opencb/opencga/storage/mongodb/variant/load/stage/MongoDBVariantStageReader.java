@@ -32,8 +32,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.*;
+import static org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter.STUDY_FILE_FIELD;
 
 /**
  * DataReader for Variant stage collection.
@@ -47,6 +49,7 @@ import static com.mongodb.client.model.Filters.*;
 public class MongoDBVariantStageReader implements DataReader<Document> {
     private final MongoDBCollection stageCollection;
     private final int studyId;
+    private Collection<Integer> fileIds;
     private final Collection<String> chromosomes;
     private MongoPersistentCursor iterator;
     private Document next = null;   // Pending variant
@@ -63,6 +66,11 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
         this.stageCollection = stageCollection;
         this.studyId = studyId;
         this.chromosomes = chromosomes == null ? Collections.emptyList() : chromosomes;
+    }
+
+    public MongoDBVariantStageReader setFileIds(Collection<Integer> fileIds) {
+        this.fileIds = fileIds;
+        return this;
     }
 
     public long countNumVariants() {
@@ -82,10 +90,19 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
 //        );
 //        iterable.batchSize(20);
 //        this.iterator = iterable.iterator();
-        QueryOptions options = new QueryOptions(QueryOptions.SORT, Sorts.ascending("_id"));
-        iterator = new MongoPersistentCursor(stageCollection, getQuery(), null, options)
+        QueryOptions options = getQueryOptions();
+        Bson query = getQuery();
+        iterator = new MongoPersistentCursor(stageCollection, query, null, options)
                 .setBatchSize(20);
         return true;
+    }
+
+    public QueryOptions getQueryOptions() {
+        QueryOptions options = new QueryOptions();
+        if (fileIds == null || fileIds.isEmpty()) {
+            options.put(QueryOptions.SORT, Sorts.ascending("_id"));
+        }
+        return options;
     }
 
     protected Bson getQuery() {
@@ -94,11 +111,20 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
         for (String chromosome : chromosomes) {
             addChromosomeFilter(chrFilters, chromosome);
         }
+        Bson studyFilter;
+        if (fileIds != null && !fileIds.isEmpty()) {
+            List<String> files = fileIds.stream()
+                    .map(fid -> studyId + "_" + fid)
+                    .collect(Collectors.toList());
+            studyFilter = in(STUDY_FILE_FIELD, files);
+        } else {
+            studyFilter = eq(STUDY_FILE_FIELD, String.valueOf(studyId));
+        }
         Bson bson;
         if (chrFilters.isEmpty()) {
-            bson = exists(Integer.toString(studyId));
+            bson = studyFilter;
         } else {
-            bson = and(exists(Integer.toString(studyId)), or(chrFilters)); // Be in any of these chromosomes
+            bson = and(studyFilter, or(chrFilters)); // Be in any of these chromosomes
         }
         logger.debug("stage filter: " +  bson.toBsonDocument(Document.class, com.mongodb.MongoClient.getDefaultCodecRegistry()));
         return bson;

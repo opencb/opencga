@@ -188,9 +188,7 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter
             }
         }
 
-        VariantType variantType = Variant.inferType(variantAnnotation.getReference(),
-                variantAnnotation.getAlternate(),
-                variantAnnotation.getReference().length());
+        VariantType variantType = Variant.inferType(variantAnnotation.getReference(), variantAnnotation.getAlternate());
         if (StringUtils.isNotBlank(variantAnnotation.getId())) {
             if (variantType.equals(VariantType.SNV)) {
                 variantType = VariantType.SNP;
