@@ -539,8 +539,7 @@ public class StudyCommandOptions {
                 arity = 1)
         public String groupId;
 
-        @Parameter(names = {"--users"}, description = "Comma separated list of members that will form the group", required = true,
-                arity = 1)
+        @Parameter(names = {"--users"}, description = "Comma separated list of members that will form the group", arity = 1)
         public String users;
 
     }

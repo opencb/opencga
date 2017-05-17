@@ -484,7 +484,6 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         studiesCommandOptions.groupsCreateCommandOptions.study =
                 getSingleValidStudy(studiesCommandOptions.groupsCreateCommandOptions.study);
 
-        QueryOptions queryOptions = new QueryOptions();
         return openCGAClient.getStudyClient().createGroup(studiesCommandOptions.groupsCreateCommandOptions.study,
                 studiesCommandOptions.groupsCreateCommandOptions.groupId, studiesCommandOptions.groupsCreateCommandOptions.users);
     }
