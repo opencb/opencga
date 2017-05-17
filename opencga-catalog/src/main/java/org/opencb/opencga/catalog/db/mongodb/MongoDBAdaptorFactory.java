@@ -178,25 +178,6 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     @Override
     public void createIndexes() throws CatalogDBException {
         metaDBAdaptor.createIndexes();
-//        InputStream resourceAsStream = getClass().getResourceAsStream("/catalog-indexes.txt");
-//        ObjectMapper objectMapper = new ObjectMapper();
-//        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(resourceAsStream));
-//        bufferedReader.lines().filter(s -> !s.trim().isEmpty()).forEach(s -> {
-//            try {
-//                System.out.println(s);
-//                HashMap hashMap = objectMapper.readValue(s, HashMap.class);
-//                System.out.println(hashMap);
-//                QueryResult<Document> index = getCatalogUserDBAdaptor().getUserCollection().getIndex();
-//                System.out.println(index);
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        });
-//        try {
-//            bufferedReader.close();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
     }
 
     @Override

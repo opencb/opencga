@@ -173,7 +173,7 @@ public class CatalogManager implements AutoCloseable {
         catalogDBAdaptorFactory.createIndexes();
     }
 
-    public void deleteCatalogDB(boolean force) throws CatalogException {
+    public void deleteCatalogDB(boolean force) throws CatalogException, URISyntaxException {
         if (!force) {
             userManager.validatePassword("admin", configuration.getAdmin().getPassword(), true);
         }
@@ -181,7 +181,7 @@ public class CatalogManager implements AutoCloseable {
         clearCatalog();
     }
 
-    private void clearCatalog() {
+    private void clearCatalog() throws URISyntaxException {
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
         for (String hostPort : configuration.getCatalog().getDatabase().getHosts()) {
             if (hostPort.contains(":")) {
@@ -199,10 +199,10 @@ public class CatalogManager implements AutoCloseable {
 //        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
         mongoManager.close(getCatalogDatabase());
 
-        Path rootdir = Paths.get(URI.create(configuration.getDataDir()));
+        Path rootdir = Paths.get(UriUtils.createDirectoryUri(configuration.getDataDir()));
         deleteFolderTree(rootdir.toFile());
         if (!configuration.getTempJobsDir().isEmpty()) {
-            Path jobsDir = Paths.get(URI.create(configuration.getTempJobsDir()));
+            Path jobsDir = Paths.get(UriUtils.createDirectoryUri(configuration.getTempJobsDir()));
             if (jobsDir.toFile().exists()) {
                 deleteFolderTree(jobsDir.toFile());
             }

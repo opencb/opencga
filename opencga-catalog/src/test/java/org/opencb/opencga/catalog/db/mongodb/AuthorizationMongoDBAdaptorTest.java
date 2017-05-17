@@ -18,6 +18,7 @@ import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 
 import static org.junit.Assert.*;
 
@@ -66,7 +67,7 @@ public class AuthorizationMongoDBAdaptorTest {
                 SampleAclEntry.SamplePermissions.UPDATE.name()
         ));
         s1 = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(new Sample(0, "s1", "", new Individual(), "", "", false,
-                Arrays.asList(acl_s1_user1, acl_s1_user2), null, null), studyId, null).first();
+                Arrays.asList(acl_s1_user1, acl_s1_user2), Collections.emptyList(), Collections.emptyMap()), studyId, null).first();
         acl_s2_user1 = new SampleAclEntry(user1.getId(), Arrays.asList());
         acl_s2_user2 = new SampleAclEntry(user2.getId(), Arrays.asList(
                 SampleAclEntry.SamplePermissions.VIEW.name(),
