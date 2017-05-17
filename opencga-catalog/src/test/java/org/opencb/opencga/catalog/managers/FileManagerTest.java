@@ -29,6 +29,7 @@ import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.api.IFileManager;
@@ -45,6 +46,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -392,6 +399,78 @@ public class FileManagerTest extends GenericTest {
         thrown.expect(CatalogIOException.class);
         thrown.expectMessage("does not exist");
         catalogManager.link(uri, "test/myLinkedFolder/", Long.toString(studyId), params, sessionIdUser);
+    }
+
+    // The VCF file that is going to be linked contains names with "." Issue: #570
+    @Test
+    public void testLinkFile() throws CatalogException, IOException, URISyntaxException {
+        URI uri = getClass().getResource("/biofiles/variant-test-file-dot-names.vcf.gz").toURI();
+        QueryResult<File> link = fileManager.link(uri, ".", studyId, new ObjectMap(), sessionIdUser);
+
+        assertEquals(4, link.first().getSampleIds().size());
+
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ID.key(), link.first().getSampleIds())
+                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(query, QueryOptions.empty(), sessionIdUser);
+
+        assertEquals(4, sampleQueryResult.getNumResults());
+        List<String> sampleNames = sampleQueryResult.getResult().stream().map(Sample::getName).collect(Collectors.toList());
+        assertTrue(sampleNames.contains("test-name.bam"));
+        assertTrue(sampleNames.contains("NA19660"));
+        assertTrue(sampleNames.contains("NA19661"));
+        assertTrue(sampleNames.contains("NA19685"));
+    }
+
+    @Test
+    public void stressTestLinkFile() throws Exception {
+        URI uri = getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI();
+        AtomicInteger numFailures = new AtomicInteger();
+        AtomicInteger numOk = new AtomicInteger();
+        int numThreads = 10;
+        int numOperations = 500;
+
+        ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
+
+        for (int i = 0; i < numOperations; i++) {
+            executorService.submit(() -> {
+                try {
+                    fileManager.link(uri, ".", studyId, new ObjectMap(), sessionIdUser);
+                    int num = numOk.incrementAndGet();
+                    System.out.println("i = " + num);
+                } catch (Exception ignore) {
+                    ignore.printStackTrace();
+                    numFailures.incrementAndGet();
+                }
+            });
+
+        }
+//        executorService.shutdown();
+        executorService.awaitTermination(30, TimeUnit.SECONDS);
+        executorService.shutdown();
+
+        int unexecuted = executorService.shutdownNow().size();
+        System.out.println("Do not execute " + unexecuted + " tasks!");
+//        for (int i = 0; i < numThreads; i++) {
+//            threads.add(new Thread(() -> {
+//                try {
+//                    fileManager.link(uri, ".", studyId, new ObjectMap(), sessionIdUser);
+//                } catch (IOException | CatalogException ignore) {
+//                    numFailures.incrementAndGet();
+//                }
+//            }));
+//        }
+//        threads.parallelStream().forEach(Thread::run);
+//        threads.parallelStream().forEach((thread) -> {
+//            try {
+//                thread.join();
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        });
+
+        System.out.println("numFailures = " + numFailures);
+        System.out.println("numOk.get() = " + numOk.get());
     }
 
     @Test
