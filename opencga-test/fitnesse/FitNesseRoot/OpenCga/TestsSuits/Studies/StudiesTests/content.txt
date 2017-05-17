@@ -7,6 +7,7 @@
 |let|sName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|sAlias|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|groupId|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|emptyGroup|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 
 !3 Create Study 
 !|Table: Rest Fixture | $baseURL |
@@ -74,6 +75,16 @@
 | setBody | {"groupId" : "$groupId",  "users" : "$userA,$userB"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/studies/$studyId/groups/create?sid=$sessionId |200|  Content-Type: application/json ||
+
+!3 Create Empty Group
+!|Table: Rest Fixture | $baseURL |
+| setBody | {"groupId" : "$emptyGroup"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/studies/$studyId/groups/create?sid=$sessionId |200|  Content-Type: application/json ||
+
+!3 Get Empty Group 
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/studies/$studyId/groups/$emptyGroup/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds.length == '0.0'|
 
 #@groupId in above line is exception to handle groups
 

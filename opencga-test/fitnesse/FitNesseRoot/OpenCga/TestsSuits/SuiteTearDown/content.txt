@@ -1,9 +1,5 @@
 !define TEST_SYSTEM {slim}
 
-!3 Delete ACL for User (userA)
-!|Table: Rest Fixture | $baseURL  |
-| GET | /v1/studies/$study/acl/$userA/delete?sid=$sessionId |200|  Content-Type: application/json ||
-
 !3 Login userA 
 !|Table: Rest Fixture | $baseURL  |
 | setBody | {"password" : "p@ssword"}|
@@ -28,6 +24,6 @@
 
 #uncomment after delete is implemented
 #!3 Delete User
-#!|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/  |
+#!|Table: Rest Fixture | $baseURL  |
 #| GET | /v1/users/$user/delete?&sid=$sessionId |200|  Content-Type: application/json ||
 
