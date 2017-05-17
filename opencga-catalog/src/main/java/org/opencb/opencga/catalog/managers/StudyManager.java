@@ -249,7 +249,6 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                                      String description, Status status, String cipher, String uriScheme, URI uri,
                                      Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes,
                                      QueryOptions options, String sessionId) throws CatalogException {
-
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(alias, "alias");
         ParamUtils.checkObj(type, "type");
@@ -886,6 +885,8 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
     @Override
     public QueryResult<Group> createGroup(String studyStr, String groupId, String users, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(groupId, "groupId");
+
         String userId = catalogManager.getUserManager().getId(sessionId);
         long studyId = getId(userId, studyStr);
         studyDBAdaptor.checkId(studyId);
@@ -900,7 +901,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
         // Create the list of users
         List<String> userList;
-        if (users != null && !users.isEmpty()) {
+        if (StringUtils.isNotEmpty(users)) {
             userList = Arrays.asList(users.split(","));
         } else {
             userList = Collections.emptyList();

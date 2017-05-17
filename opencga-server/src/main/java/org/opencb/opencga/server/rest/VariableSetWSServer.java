@@ -81,7 +81,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{variablesetId}/info")
+    @Path("/{variableset}/info")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Get VariableSet info", position = 2, response = VariableSet.class)
     @ApiImplicitParams({
@@ -93,7 +93,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     public Response variablesetInfo(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value = "Variable set id or name", required = true) @PathParam("variablesetId") String variableset) {
+            @ApiParam(value = "Variable set id or name", required = true) @PathParam("variableset") String variableset) {
         try {
             QueryResult<VariableSet> queryResult =
                     catalogManager.getStudyManager().getVariableSet(studyStr, variableset, queryOptions, sessionId);
@@ -104,13 +104,13 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{variablesetId}/summary")
+    @Path("/{variableset}/summary")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Get VariableSet summary", position = 2, response = VariableSetSummary.class)
     public Response variablesetSummary(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value = "Variable set id or name", required = true) @PathParam("variablesetId") String variablesetId) {
+            @ApiParam(value = "Variable set id or name", required = true) @PathParam("variableset") String variablesetId) {
         try {
             QueryResult<VariableSetSummary> queryResult = catalogManager.getStudyManager().getVariableSetSummary(studyStr, variablesetId,
                     sessionId);
@@ -165,22 +165,22 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{variablesetId}/update")
+    @Path("/{variableset}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some variableset attributes using POST method [PENDING]", position = 3, response = VariableSet.class)
     public Response updateByPost(
-            @ApiParam(value = "Variable set id or name", required = true) @PathParam("variablesetId") String variablesetId,
+            @ApiParam(value = "Variable set id or name", required = true) @PathParam("variableset") String variablesetId,
             @ApiParam(value="JSON containing the parameters to be updated", required = true) VariableSetUpdateParameters params) {
         return createErrorResponse("update - POST", "PENDING");
     }
 
     @GET
-    @Path("/{variablesetId}/delete")
+    @Path("/{variableset}/delete")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Delete an unused variable Set", position = 4)
     public Response delete(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Variable set id or name", required = true) @PathParam("variablesetId") String variablesetId) {
+            @ApiParam(value = "Variable set id or name", required = true) @PathParam("variableset") String variablesetId) {
         try {
             QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().deleteVariableSet(studyStr, variablesetId, sessionId);
             return createOkResponse(queryResult);
@@ -190,12 +190,12 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{variablesetId}/field/add")
+    @Path("/{variableset}/field/add")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Add a new field in a variable set", position = 5)
     public Response addFieldToVariableSet(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Variable set id or name", required = true) @PathParam("variablesetId") String variablesetId,
+            @ApiParam(value = "Variable set id or name", required = true) @PathParam("variableset") String variablesetId,
             @ApiParam(value = "Variable to be added", required = true) Variable variable) {
         try {
             QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().addFieldToVariableSet(studyStr, variablesetId,
@@ -207,11 +207,11 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{variablesetId}/field/delete")
+    @Path("/{variableset}/field/delete")
     @ApiOperation(value = "Delete one field from a variable set", position = 6)
     public Response renameFieldInVariableSet(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Variable set id or name", required = true) @PathParam("variablesetId") String variablesetId,
+            @ApiParam(value = "Variable set id or name", required = true) @PathParam("variableset") String variablesetId,
             @ApiParam(value = "Variable name to delete", required = true) @QueryParam("name") String name) {
         try {
             QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().removeFieldFromVariableSet(studyStr, variablesetId,
@@ -223,11 +223,11 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{variablesetId}/field/rename")
+    @Path("/{variableset}/field/rename")
     @ApiOperation(value = "Rename the field id of a field in a variable set", position = 7)
     public Response renameFieldInVariableSet(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Variable set id or name", required = true) @PathParam("variablesetId") String variablesetId,
+            @ApiParam(value = "Variable set id or name", required = true) @PathParam("variableset") String variablesetId,
             @ApiParam(value = "Variable name to rename", required = true) @QueryParam("oldName") String oldName,
             @ApiParam(value = "New name for the variable", required = true) @QueryParam("newName") String newName) {
         try {

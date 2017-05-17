@@ -17,12 +17,12 @@ public class CommonModels {
 
     public static class AnnotationSetParams {
         public String name;
-        public String variableSetId;
+        public String variableSet;
         public Map<String, Object> annotations;
         public Map<String, Object> attributes;
 
         public AnnotationSet toAnnotationSet(String studyStr, IStudyManager studyManager, String sessionId) throws CatalogException {
-            AbstractManager.MyResourceId resource = studyManager.getVariableSetId(this.variableSetId, studyStr, sessionId);
+            AbstractManager.MyResourceId resource = studyManager.getVariableSetId(this.variableSet, studyStr, sessionId);
             Set<Annotation> annotationSet = new HashSet<>();
             for (Map.Entry<String, Object> entry : annotations.entrySet()) {
                 annotationSet.add(new Annotation(entry.getKey(), entry.getValue()));

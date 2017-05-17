@@ -484,7 +484,6 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         studiesCommandOptions.groupsCreateCommandOptions.study =
                 getSingleValidStudy(studiesCommandOptions.groupsCreateCommandOptions.study);
 
-        QueryOptions queryOptions = new QueryOptions();
         return openCGAClient.getStudyClient().createGroup(studiesCommandOptions.groupsCreateCommandOptions.study,
                 studiesCommandOptions.groupsCreateCommandOptions.groupId, studiesCommandOptions.groupsCreateCommandOptions.users);
     }
@@ -534,13 +533,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 getSingleValidStudy(studiesCommandOptions.aclsCommandOptions.study);
 
         ObjectMap params = new ObjectMap();
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.aclsCommandOptions.memberId)) {
-            return openCGAClient.getStudyClient().getAcl(studiesCommandOptions.aclsCommandOptions.study,
-                    studiesCommandOptions.aclsCommandOptions.memberId, params);
-        } else {
-            return openCGAClient.getStudyClient().getAcls(studiesCommandOptions.aclsCommandOptions.study, params);
-        }
+        params.putIfNotEmpty("member", studiesCommandOptions.aclsCommandOptions.memberId);
+        return openCGAClient.getStudyClient().getAcls(studiesCommandOptions.aclsCommandOptions.study, params);
     }
 
     private QueryResponse<StudyAclEntry> updateAcl() throws IOException, CatalogException {

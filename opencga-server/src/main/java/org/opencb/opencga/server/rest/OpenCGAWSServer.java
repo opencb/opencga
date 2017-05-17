@@ -101,7 +101,7 @@ public class OpenCGAWSServer {
 
     @DefaultValue("")
     @QueryParam("sid")
-    @ApiParam(value = "Session Id")
+    @ApiParam(value = "Session id")
     protected String sessionId;
 
     protected UriInfo uriInfo;
@@ -354,6 +354,10 @@ public class OpenCGAWSServer {
             query.remove("status");
         }
 
+        if (query.containsKey("variableSet")) {
+            query.put("variableSetId", query.get("variableSet"));
+            query.remove("variableSet");
+        }
         if (query.containsKey("variableSetId")) {
             try {
                 AbstractManager.MyResourceId resource = catalogManager.getStudyManager().getVariableSetId(query.getString

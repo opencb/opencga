@@ -130,7 +130,7 @@ public class FamilyCommandOptions {
         @Parameter(names = {"--ontologies"}, description = "Ontology terms", arity = 1)
         public String ontologies;
         
-        @Parameter(names = {"--variable-set-id"}, description = "Variable set id or name", arity = 1)
+        @Parameter(names = {"--variable-set"}, description = "Variable set id or name", arity = 1)
         public String variableSetId;
 
         @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name", arity = 1)

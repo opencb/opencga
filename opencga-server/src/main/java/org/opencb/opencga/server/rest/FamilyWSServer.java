@@ -1,6 +1,7 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -85,7 +86,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
                                        children,
                            @ApiParam(value = "Ontology terms") @QueryParam("ontologies") String ontologies,
                            @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
-                           @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,
+                           @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
+                           @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
                            @ApiParam(value = "annotation") @QueryParam("annotation") String annotation,
                            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
@@ -146,14 +148,18 @@ public class FamilyWSServer extends OpenCGAWSServer {
     public Response searchAnnotationSetGET(
             @ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Variable set id or name") @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "Variable set id or name") @QueryParam("variableSet") String variableSet,
             @ApiParam(value = "annotation") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
+            if (StringUtils.isNotEmpty(variableSetId)) {
+                variableSet = variableSetId;
+            }
             if (asMap) {
-                return createOkResponse(familyManager.searchAnnotationSetAsMap(familyStr, studyStr, variableSetId, annotation, sessionId));
+                return createOkResponse(familyManager.searchAnnotationSetAsMap(familyStr, studyStr, variableSet, annotation, sessionId));
             } else {
-                return createOkResponse(familyManager.searchAnnotationSet(familyStr, studyStr, variableSetId, annotation, sessionId));
+                return createOkResponse(familyManager.searchAnnotationSet(familyStr, studyStr, variableSet, annotation, sessionId));
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -187,11 +193,15 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "FamilyId", required = true) @PathParam("family") String familyStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value = "Variable set id or name", required = true) @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "Variable set id or name", required = true) @QueryParam("variableSet") String variableSet,
             @ApiParam(value="JSON containing the annotation set name and the array of annotations. The name should be unique for the "
                     + "family", required = true) CohortWSServer.AnnotationsetParameters params) {
         try {
-            QueryResult<AnnotationSet> queryResult = familyManager.createAnnotationSet(familyStr, studyStr, variableSetId, params.name,
+            if (StringUtils.isNotEmpty(variableSetId)) {
+                variableSet = variableSetId;
+            }
+            QueryResult<AnnotationSet> queryResult = familyManager.createAnnotationSet(familyStr, studyStr, variableSet, params.name,
                     params.annotations, Collections.emptyMap(), sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
@@ -263,27 +273,18 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{families}/acl")
-    @ApiOperation(value = "Returns the acl of the families", position = 18)
+    @ApiOperation(value = "Returns the acl of the families. If member is provided, it will only return the acl for the member.", position = 18)
     public Response getAcls(@ApiParam(value = "Comma separated list of family IDs or names", required = true) @PathParam("families")
                                     String familyIdsStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                            @QueryParam("study") String studyStr) {
+                            @QueryParam("study") String studyStr,
+                            @ApiParam(value = "User or group id") @QueryParam("member") String member) {
         try {
-            return createOkResponse(catalogManager.getAllFamilyAcls(familyIdsStr, studyStr, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{family}/acl/{memberIds}/info")
-    @ApiOperation(value = "Returns the set of permissions granted for the members", position = 20)
-    public Response getAcl(@ApiParam(value = "Family id or name", required = true) @PathParam("family") String familyIdStr,
-                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                           @QueryParam("study") String studyStr,
-                           @ApiParam(value = "Member ids", required = true) @PathParam("memberIds") String memberId) {
-        try {
-            return createOkResponse(catalogManager.getFamilyAcl(familyIdStr, studyStr, memberId, sessionId));
+            if (StringUtils.isEmpty(member)) {
+                return createOkResponse(catalogManager.getAllFamilyAcls(familyIdsStr, studyStr, sessionId));
+            } else {
+                return createOkResponse(catalogManager.getFamilyAcl(familyIdsStr, studyStr, member, sessionId));
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }

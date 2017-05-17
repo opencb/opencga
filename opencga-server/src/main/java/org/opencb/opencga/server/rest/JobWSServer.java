@@ -249,10 +249,15 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{jobIds}/acl")
-    @ApiOperation(value = "Return the acl of the job", position = 18)
-    public Response getAcls(@ApiParam(value = "Comma separated list of job ids", required = true) @PathParam("jobIds") String jobIdsStr) {
+    @ApiOperation(value = "Return the acl of the job. If member is provided, it will only return the acl for the member.", position = 18)
+    public Response getAcls(@ApiParam(value = "Comma separated list of job ids", required = true) @PathParam("jobIds") String jobIdsStr,
+                            @ApiParam(value = "User or group id") @QueryParam("member") String member) {
         try {
-            return createOkResponse(catalogManager.getAllJobAcls(jobIdsStr, sessionId));
+            if (StringUtils.isEmpty(member)) {
+                return createOkResponse(catalogManager.getAllJobAcls(jobIdsStr, sessionId));
+            } else {
+                return createOkResponse(catalogManager.getJobAcl(jobIdsStr, member, sessionId));
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -269,6 +274,7 @@ public class JobWSServer extends OpenCGAWSServer {
                                        required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
             AclParams aclParams = getAclParams(permissions, null, null);
+            aclParams.setAction(AclParams.Action.SET);
             return createOkResponse(jobManager.updateAcl(jobIdsStr, null, members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -286,6 +292,7 @@ public class JobWSServer extends OpenCGAWSServer {
                     StudyWSServer.CreateAclCommands params) {
         try {
             AclParams aclParams = getAclParams(params.permissions, null, null);
+            aclParams.setAction(AclParams.Action.SET);
             return createOkResponse(jobManager.updateAcl(jobIdsStr, null, params.members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -294,7 +301,9 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{jobId}/acl/{memberId}/info")
-    @ApiOperation(value = "Return the set of permissions granted for the member", position = 20)
+    @ApiOperation(value = "Return the set of permissions granted for the member [DEPRECATED]", position = 20,
+            notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
+                    + "/acl entrypoint.")
     public Response getAcl(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String jobIdStr,
                            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
         try {

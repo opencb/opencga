@@ -45,8 +45,8 @@ public class AclCommandOptions {
         @Parameter(names = {"--id"}, description = "Id of the resource", required = true, arity = 1)
         public String id;
 
-        @Parameter(names = {"--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*'). If provided, only returns acls given "
-                + "to the member.", arity = 1)
+        @Parameter(names = {"-m", "--member"}, description = "Member id  ('userId', '@groupId' or '*'). If provided, only returns acls "
+                + "given to the member.", arity = 1)
         public String memberId;
     }
 
@@ -59,7 +59,7 @@ public class AclCommandOptions {
         @Parameter(names = {"--id"}, description = "Comma separated list of ids or names", arity = 1)
         public String id;
 
-        @Parameter(names = {"-m", "--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
+        @Parameter(names = {"-m", "--member"}, description = "Member id  ('userId', '@groupId' or '*')", required = true, arity = 1)
         public String memberId;
 
         @Parameter(names = {"-p", "--permissions"}, description = "Comma separated list of accepted permissions for the resource",

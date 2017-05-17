@@ -1425,12 +1425,17 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{files}/acl")
-    @ApiOperation(value = "Return the acl defined for the file or folder", position = 18, response = QueryResponse.class)
+    @ApiOperation(value = "Return the acl defined for the file or folder. If member is provided, it will only return the acl for the member.", position = 18, response = QueryResponse.class)
     public Response getAcls(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("files") String fileIdStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                            @QueryParam("study") String studyStr) {
+                            @QueryParam("study") String studyStr,
+                            @ApiParam(value = "User or group id") @QueryParam("member") String member) {
         try {
-            return createOkResponse(catalogManager.getAllFileAcls(fileIdStr, studyStr, sessionId));
+            if (StringUtils.isEmpty(member)) {
+                return createOkResponse(catalogManager.getAllFileAcls(fileIdStr, studyStr, sessionId));
+            } else {
+                return createOkResponse(catalogManager.getFileAcl(fileIdStr, studyStr, member, sessionId));
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1484,6 +1489,7 @@ public class FileWSServer extends OpenCGAWSServer {
                                       required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
             File.FileAclParams aclParams = getAclParams(permissions, null, null);
+            aclParams.setAction(AclParams.Action.SET);
             return createOkResponse(fileManager.updateAcl(fileIdStr, studyStr, members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1503,6 +1509,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     StudyWSServer.CreateAclCommands params) {
         try {
             File.FileAclParams aclParams = getAclParams(params.permissions, null, null);
+            aclParams.setAction(AclParams.Action.SET);
             return createOkResponse(fileManager.updateAcl(fileIdStr, studyStr, params.members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1511,7 +1518,10 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{file}/acl/{memberId}/info")
-    @ApiOperation(value = "Return the permissions granted for the user or group", position = 20, response = QueryResponse.class)
+    @ApiOperation(value = "Return the permissions granted for the user or group [DEPRECATED]", position = 20,
+            response = QueryResponse.class,
+            notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
+                    + "/acl entrypoint.")
     public Response getAcl(@ApiParam(value = "File id", required = true) @PathParam("file") String fileIdStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                            @QueryParam("study") String studyStr,
