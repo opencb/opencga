@@ -61,6 +61,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.MULTI;
+import static org.opencb.commons.datastore.mongodb.MongoDBCollection.NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getReturnedFiles;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getSamplesMetadata;
@@ -932,14 +933,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, 1),
-                onBackgroundSparse);
+                new ObjectMap(onBackgroundSparse).append(NAME, "pop_freq"));
         // Clinical clinvar : SPARSE
         variantsCollection.createIndex(new Document()
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.CLINICAL_DATA_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.CLINICAL_CLINVAR_FIELD
                                 + ".clinicalSignificance", 1),
-                onBackgroundSparse);
+                new ObjectMap(onBackgroundSparse).append(NAME, "clinvar"));
 
         // Conserved region score (phastCons, phylop, gerp)
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
