@@ -8,7 +8,7 @@
 
 !3 Create New Project
 !|Table: Rest Fixture | $baseURL |
-| setBody |{ "name" : "$pName", "alias" : "$pAlias", "organism.scientificName" : "Homo sapiens", "organism.assembly" : "${O.Assembly}"}|
+| setBody |{ "name" : "$pName", "alias" : "$pAlias", "organism" : {"scientificName" : "Homo sapiens", "assembly" : "${O.Assembly}"}}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/projects/create?sid=$sessionId |200|  Content-Type: application/json ||
 |let|projectdId|js|response.jsonbody.response[0].result[0].id||
@@ -16,7 +16,7 @@
 
 !3 (Negative) Create Project With Existing Name
 !|Table: Rest Fixture | $baseURL |
-| setBody |{ "name" : "$pName", "alias" : "$pAlias", "organism.scientificName" : "Homo sapiens", "organism.assembly" : "${O.Assembly}"}|
+| setBody |{ "name" : "$pName", "alias" : "$pAlias", "organism" : {"scientificName" : "Homo sapiens", "assembly" : "${O.Assembly}"}}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/projects/create?sid=$sessionId |500|  Content-Type: application/json |jsonbody.error === 'Project {alias:\"$pAlias\"} already exists for this user'|
 

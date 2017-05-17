@@ -320,7 +320,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testModifyUser() throws CatalogException, InterruptedException {
+    public void testModifyUser() throws CatalogException, InterruptedException, IOException {
         ObjectMap params = new ObjectMap();
         String newName = "Changed Name " + StringUtils.randomString(10);
         String newPassword = StringUtils.randomString(10);
@@ -353,12 +353,15 @@ public class CatalogManagerTest extends GenericTest {
         assertTrue(!userPre.getLastModified().equals(userPost.getLastModified()));
         assertEquals(userPost.getName(), newName);
         assertEquals(userPost.getEmail(), newEmail);
-        assertEquals(userPost.getPassword(), CatalogAuthenticationManager.cypherPassword(newPassword));
+        assertEquals(null, userPost.getPassword());
+
+        catalogManager.getUserManager().login("user", newPassword, "localhost");
         for (Map.Entry<String, Object> entry : attributes.entrySet()) {
             assertEquals(userPost.getAttributes().get(entry.getKey()), entry.getValue());
         }
 
         catalogManager.changePassword("user", newPassword, PASSWORD);
+        catalogManager.getUserManager().login("user", PASSWORD, "localhost");
 
         try {
             params = new ObjectMap();
@@ -890,10 +893,15 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals(0, numResults);
 
         numResults = catalogManager.getStudyManager().searchVariableSets(Long.toString(studyId),
-                new Query(StudyDBAdaptor.VariableSetParams.ID.key(), vs1.getId() + "," + vs3.getId()), QueryOptions.empty(),
-                sessionIdUser).getNumResults();
-        assertEquals(2, numResults);
+                new Query(StudyDBAdaptor.VariableSetParams.ID.key(), vs1.getName()), QueryOptions.empty(), sessionIdUser).getNumResults();
+        assertEquals(1, numResults);
+//        numResults = catalogManager.getStudyManager().searchVariableSets(Long.toString(studyId),
+//                new Query(StudyDBAdaptor.VariableSetParams.ID.key(), vs1.getId() + "," + vs3.getId()), QueryOptions.empty(),
+//                sessionIdUser).getNumResults();
 
+        numResults = catalogManager.getStudyManager().searchVariableSets(Long.toString(studyId),
+                new Query(StudyDBAdaptor.VariableSetParams.ID.key(), vs3.getName()), QueryOptions.empty(), sessionIdUser).getNumResults();
+        assertEquals(1, numResults);
     }
 
     @Test

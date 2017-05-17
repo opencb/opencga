@@ -1645,7 +1645,17 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     public QueryResult<File> link(URI uriOrigin, String pathDestiny, long studyId, ObjectMap params, String sessionId)
             throws CatalogException, IOException {
+        // We make two attempts to link to ensure the behaviour remains even if it is being called at the same time link from different
+        // threads
+        try {
+            return privateLink(uriOrigin, pathDestiny, studyId, params, sessionId);
+        } catch (CatalogException | IOException e) {
+            return privateLink(uriOrigin, pathDestiny, studyId, params, sessionId);
+        }
+    }
 
+    private QueryResult<File> privateLink(URI uriOrigin, String pathDestiny, long studyId, ObjectMap params, String sessionId)
+            throws CatalogException, IOException {
         CatalogIOManager ioManager = catalogIOManagerFactory.get(uriOrigin);
         if (!ioManager.exists(uriOrigin)) {
             throw new CatalogIOException("File " + uriOrigin + " does not exist");
@@ -1960,7 +1970,6 @@ public class FileManager extends AbstractManager implements IFileManager {
 
             return fileDBAdaptor.get(query, queryOptions);
         }
-
     }
 
     public QueryResult<File> unlink(String fileIdStr, @Nullable String studyStr, String sessionId) throws CatalogException, IOException {

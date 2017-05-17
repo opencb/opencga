@@ -143,7 +143,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         return mongoDataStoreManager.exists(database);
     }
 
-    private void delete() throws CatalogException {
+    private void delete() throws CatalogException, URISyntaxException {
         setCatalogDatabaseCredentials(catalogCommandOptions.deleteCatalogCommandOptions.databaseHost,
                 catalogCommandOptions.deleteCatalogCommandOptions.prefix, catalogCommandOptions.deleteCatalogCommandOptions.databaseUser,
                 catalogCommandOptions.deleteCatalogCommandOptions.databasePassword,

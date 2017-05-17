@@ -23,6 +23,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Study;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,8 +44,9 @@ public final class CatalogDemo {
      * @param configuration Catalog configuration file.
      * @param force Used in the case where a database already exists with the same name. When force = true, it will override it.
      * @throws CatalogException when there is already a database with the same name and force is false.
+     * @throws URISyntaxException when there is a problem parsing the URI read from the configuration file.
      */
-    public static void createDemoDatabase(Configuration configuration, boolean force) throws CatalogException {
+    public static void createDemoDatabase(Configuration configuration, boolean force) throws CatalogException, URISyntaxException {
         CatalogManager catalogManager = new CatalogManager(configuration);
         if (catalogManager.existsCatalogDB()) {
             if (force) {

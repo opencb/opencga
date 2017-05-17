@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -80,21 +81,16 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
         // First we populate the organism information using the client configuration
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), projectsCommandOptions.createCommandOptions.name);
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ALIAS.key(), projectsCommandOptions.createCommandOptions.alias);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(),
-                clientConfiguration.getOrganism().getScientificName());
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), clientConfiguration.getOrganism().getCommonName());
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(),
-                Integer.toString(clientConfiguration.getOrganism().getTaxonomyCode()));
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), clientConfiguration.getOrganism().getAssembly());
 
-        // We overwrite the organism information with what the user has given
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(),
-                projectsCommandOptions.createCommandOptions.scientificName);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(),
-                projectsCommandOptions.createCommandOptions.commonName);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(),
-                projectsCommandOptions.createCommandOptions.taxonomyCode);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), projectsCommandOptions.createCommandOptions.assembly);
+        ProjectCommandOptions.CreateCommandOptions commandOptions = projectsCommandOptions.createCommandOptions;
+        Project.Organism organism = clientConfiguration.getOrganism();
+        organism.setAssembly(StringUtils.isNotEmpty(commandOptions.assembly) ? commandOptions.assembly : organism.getAssembly());
+        organism.setCommonName(StringUtils.isNotEmpty(commandOptions.commonName) ? commandOptions.commonName : organism.getCommonName());
+        organism.setScientificName(StringUtils.isNotEmpty(commandOptions.scientificName)
+                ? commandOptions.scientificName : organism.getScientificName());
+        organism.setTaxonomyCode(StringUtils.isNotEmpty(commandOptions.taxonomyCode)
+                ? Integer.getInteger(commandOptions.taxonomyCode) : organism.getTaxonomyCode());
+        params.put(ProjectDBAdaptor.QueryParams.ORGANISM.key(), organism);
 
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.createCommandOptions.description);
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), projectsCommandOptions.createCommandOptions.organization);

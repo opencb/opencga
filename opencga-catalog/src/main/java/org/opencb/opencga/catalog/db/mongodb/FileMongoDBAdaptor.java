@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.DuplicateKeyException;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
@@ -100,7 +100,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
         try {
             fileCollection.insert(fileDocument, null);
-        } catch (DuplicateKeyException e) {
+        } catch (MongoWriteException e) {
             throw CatalogDBException.alreadyExists("File", studyId, "path", file.getPath(), e);
         }
 

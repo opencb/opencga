@@ -260,7 +260,7 @@ public class CohortWSServer extends OpenCGAWSServer {
         try {
             AbstractManager.MyResourceId resource = cohortManager.getId(cohortStr, studyStr, sessionId);
             long cohortId = resource.getResourceId();
-            Cohort cohort = catalogManager.getCohort(cohortId, queryOptions, sessionId).first();
+            Cohort cohort = catalogManager.getCohort(cohortId, QueryOptions.empty(), sessionId).first();
             if (cohort.getSamples() == null || cohort.getSamples().size() == 0) {
                 return createOkResponse(new QueryResult<>("Samples from cohort " + cohortStr, -1, 0, 0, "The cohort has no samples", "",
                         Collections.emptyList()));
@@ -442,13 +442,13 @@ public class CohortWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{cohort}/annotationsets/{annotationsetName}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update the annotations [NOT TESTED]", position = 15)
+    @ApiOperation(value = "Update the annotations", position = 15)
     public Response updateAnnotationGET(
             @ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName") String annotationsetName,
-            Map<String, Object> annotations) {
+            @ApiParam(value="JSON containing key:value annotations to update", required = true) Map<String, Object> annotations) {
         try {
             QueryResult<AnnotationSet> queryResult = cohortManager.updateAnnotationSet(cohortIdStr, studyStr, annotationsetName,
                     annotations, sessionId);
