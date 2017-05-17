@@ -17,7 +17,6 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -33,7 +32,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -77,14 +75,14 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @POST
     @Path("/create")
     @ApiOperation(value = "Create a new project", response = Project.class)
-    public Response createProjectPOST(@ApiParam(value = "JSON containing the mandatory parameters 'name', 'alias', "
-            + "'organism.scientificName' and 'organism.assembly', and optionally, the parameters 'description', 'organization', "
-            + "'organism.commonName' and 'organism.taxonomyCode'", required = true) ObjectMap map) {
+    public Response createProjectPOST(@ApiParam(value = "JSON containing the mandatory parameters", required = true) ProjectCreateParams project) {
         try {
             QueryResult queryResult = catalogManager.getProjectManager()
-                    .create(map.getString("name"), map.getString("alias"), map.getString("description"), map.getString("organization"),
-                            map.getString("organism.scientificName"), map.getString("organism.commonName"),
-                            map.getString("organism.taxonomyCode"), map.getString("organism.assembly"), queryOptions, sessionId);
+                    .create(project.name, project.alias, project.description, project.organization,
+                            project.organism != null ? project.organism.getScientificName() : null,
+                            project.organism != null ? project.organism.getCommonName() : null,
+                            project.organism != null ? Integer.toString(project.organism.getTaxonomyCode()) : null,
+                            project.organism != null ? project.organism.getAssembly() : null, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -182,13 +180,13 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some project attributes", response = Project.class)
     public Response updateByPost(@ApiParam(value = "Project id or alias", required = true) @PathParam("project") String projectStr,
-                                 @ApiParam(value = "JSON containing the params to be updated. Supported keys can be found in the update "
-                                         + "via GET", required = true) ObjectMap params)
+                                 @ApiParam(value = "JSON containing the params to be updated.", required = true) ProjectUpdateParams updateParams)
             throws IOException {
         try {
             String userId = catalogManager.getUserManager().getId(sessionId);
             long projectId = catalogManager.getProjectManager().getId(userId, projectStr);
 
+            ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(updateParams));
             QueryResult result = catalogManager.getProjectManager().update(projectId, params, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -201,6 +199,21 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Delete a project [PENDING]", position = 5)
     public Response delete(@ApiParam(value = "Project ID or alias", required = true) @PathParam("project") String projectId) {
         return createErrorResponse("delete", "PENDING");
+    }
+
+    protected static class ProjectParams {
+        public String name;
+        public String description;
+        public String organization;
+        public Project.Organism organism;
+    }
+
+    protected static class ProjectCreateParams extends ProjectParams {
+        public String alias;
+    }
+
+    protected static class ProjectUpdateParams extends ProjectParams {
+        public Map<String, Object> attributes;
     }
 
 }

@@ -101,7 +101,7 @@ public class OpenCGAWSServer {
 
     @DefaultValue("")
     @QueryParam("sid")
-    @ApiParam(value = "Session Id")
+    @ApiParam(value = "Session id")
     protected String sessionId;
 
     protected UriInfo uriInfo;
