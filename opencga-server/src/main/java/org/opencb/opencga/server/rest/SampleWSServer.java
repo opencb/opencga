@@ -423,13 +423,12 @@ public class SampleWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{sample}/annotationsets/{annotationsetName}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update the annotations [NOT TESTED]", position = 15)
-    public Response updateAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleIdStr,
-                                        @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                        @QueryParam("study") String studyStr,
-                                        @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName") String annotationsetName,
-//                                        @ApiParam(value = "reset", required = false) @QueryParam("reset") String reset,
-                                        Map<String, Object> annotations) {
+    @ApiOperation(value = "Update the annotations", position = 15)
+    public Response updateAnnotationGET(
+            @ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleIdStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+            @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName") String annotationsetName,
+            @ApiParam(value="JSON containing key:value annotations to update", required = true) Map<String, Object> annotations) {
         try {
             QueryResult<AnnotationSet> queryResult = sampleManager.updateAnnotationSet(sampleIdStr, studyStr, annotationsetName,
                     annotations, sessionId);
