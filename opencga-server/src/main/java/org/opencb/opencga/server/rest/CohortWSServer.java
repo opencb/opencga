@@ -260,7 +260,7 @@ public class CohortWSServer extends OpenCGAWSServer {
         try {
             AbstractManager.MyResourceId resource = cohortManager.getId(cohortStr, studyStr, sessionId);
             long cohortId = resource.getResourceId();
-            Cohort cohort = catalogManager.getCohort(cohortId, queryOptions, sessionId).first();
+            Cohort cohort = catalogManager.getCohort(cohortId, QueryOptions.empty(), sessionId).first();
             if (cohort.getSamples() == null || cohort.getSamples().size() == 0) {
                 return createOkResponse(new QueryResult<>("Samples from cohort " + cohortStr, -1, 0, 0, "The cohort has no samples", "",
                         Collections.emptyList()));
