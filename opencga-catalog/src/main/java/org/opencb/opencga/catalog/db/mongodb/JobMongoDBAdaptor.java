@@ -64,6 +64,13 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         this.jobConverter = new JobConverter();
     }
 
+    /**
+     *
+     * @return MongoDB connection to the job collection.
+     */
+    public MongoDBCollection getJobCollection() {
+        return jobCollection;
+    }
 
     @Override
     public QueryResult<Job> insert(Job job, long studyId, QueryOptions options) throws CatalogDBException {

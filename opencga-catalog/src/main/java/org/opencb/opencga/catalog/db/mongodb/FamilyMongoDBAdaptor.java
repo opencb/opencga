@@ -44,6 +44,14 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         this.familyConverter = new FamilyConverter();
     }
 
+    /**
+     *
+     * @return MongoDB connection to the family collection.
+     */
+    public MongoDBCollection getFamilyCollection() {
+        return familyCollection;
+    }
+
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
         Bson bson = parseQuery(query, false);

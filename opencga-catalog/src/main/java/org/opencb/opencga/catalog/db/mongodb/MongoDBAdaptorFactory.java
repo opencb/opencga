@@ -32,7 +32,6 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -284,7 +283,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public FamilyDBAdaptor getCatalogFamilyDBAdaptor() {
+    public FamilyMongoDBAdaptor getCatalogFamilyDBAdaptor() {
         return familyDBAdaptor;
     }
 
