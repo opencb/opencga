@@ -38,7 +38,7 @@
 
 !3 Create Project 
 !|Table: Rest Fixture | $baseURL |
-| setBody |{  "name": "$project",  "alias": "$project","organism.scientificName": "Homo sapiens", "organism.assembly": "GRCh37"}|
+| setBody |{  "name": "$project",  "alias": "$project","organism" : { "scientificName": "Homo sapiens", "assembly": "GRCh37"}}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/projects/create?sid=$sessionId |200|  Content-Type: application/json ||
 |let|projectId|js|response.jsonbody.response[0].result[0].id.toString()||

@@ -2,14 +2,14 @@
 
 !3 Create Project A 
 !|Table: Rest Fixture | $baseURL |
-| setBody |{  "name": "$projectA",  "alias": "$projectAAlias","organism.scientificName": "Homo sapiens", "organism.assembly": "GRCh37"}|
+| setBody |{  "name": "$projectA",  "alias": "$projectAAlias","organism" : {"scientificName": "Homo sapiens", "assembly": "GRCh37"}}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/projects/create?sid=$sessionId |200|  Content-Type: application/json ||
 |let|projectAId|js|response.jsonbody.response[0].result[0].id||
 
 !3 Create Project B 
 !|Table: Rest Fixture | $baseURL |
-| setBody |{  "name": "$projectB",  "alias": "$projectBAlias","organism.scientificName": "Homo sapiens", "organism.assembly": "GRCh37"}|
+| setBody |{  "name": "$projectB",  "alias": "$projectBAlias","organism" :{"scientificName": "Homo sapiens", "assembly": "GRCh37"}}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/projects/create?sid=$sessionId |200|  Content-Type: application/json ||
 |let|projectBId|js|response.jsonbody.response[0].result[0].id||
