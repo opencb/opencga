@@ -21,7 +21,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
-import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +41,7 @@ import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEn
  */
 public class VariantMongoDBQueryParser {
 
+    public static final VariantStringIdConverter STRING_ID_CONVERTER = new VariantStringIdConverter();
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBQueryParser.class);
     private final StudyConfigurationManager studyConfigurationManager;
 //    private final CellBaseUtils cellBaseUtils;
@@ -82,7 +82,7 @@ public class VariantMongoDBQueryParser {
                 for (String value : idsList) {
                     Variant variant = toVariant(value);
                     if (variant != null) {
-                        mongoIds.add(MongoDBVariantStageLoader.STRING_ID_CONVERTER.buildId(variant));
+                        mongoIds.add(STRING_ID_CONVERTER.buildId(variant));
                     } else {
                         otherIds.add(value);
                     }
@@ -105,7 +105,7 @@ public class VariantMongoDBQueryParser {
                 for (String value : xrefs) {
                     Variant variant = toVariant(value);
                     if (variant != null) {
-                        mongoIds.add(MongoDBVariantStageLoader.STRING_ID_CONVERTER.buildId(variant));
+                        mongoIds.add(STRING_ID_CONVERTER.buildId(variant));
                     } else {
                         if (isVariantAccession(value) || isClinicalAccession(value) || isGeneAccession(value)) {
                             otherXrefs.add(value);
