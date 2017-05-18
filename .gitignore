@@ -47,6 +47,9 @@ local.properties
 .settings/
 .loadpath
 
+#python
+*.pyc
+
 # NetBeans
 nb*.xml
 
