@@ -138,7 +138,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
         long partialCount2 = dbAdaptor.count(new Query(VariantQueryParam.REGION.key(), "1:15030-60000")).first();
 
 
-        long count = Arrays.stream(VariantMergerTableMapper.getTargetVariantType())
+        long count = VariantMergerTableMapper.getTargetVariantType().stream()
                 .map(type -> source.getStats().getVariantTypeCount(type))
                 .reduce((a, b) -> a + b)
                 .orElse(0).longValue();
@@ -223,7 +223,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
         });
         System.out.println("End query from HBase : " + DB_NAME);
         System.out.println(source.getStats().getVariantTypeCounts());
-        long count = Arrays.stream(VariantMergerTableMapper.getTargetVariantType())
+        long count = VariantMergerTableMapper.getTargetVariantType().stream()
                 .map(type -> source.getStats().getVariantTypeCount(type))
                 .reduce((a, b) -> a + b).orElse(0).longValue();
         count  -= 1; // Deletion is in conflict with other variant: 1:10403:ACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC:A

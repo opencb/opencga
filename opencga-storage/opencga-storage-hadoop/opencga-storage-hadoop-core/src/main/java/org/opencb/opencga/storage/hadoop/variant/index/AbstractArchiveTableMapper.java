@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 import com.google.common.collect.BiMap;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Mutation;
@@ -27,15 +28,13 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.variant.merge.VariantMerger;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.AbstractHBaseVariantMapper;
 import org.opencb.opencga.storage.hadoop.variant.AnalysisTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,23 +51,18 @@ import java.util.stream.Stream;
  */
 public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMapper<ImmutableBytesWritable, Mutation> {
     public static final String SPECIFIC_PUT = "opencga.storage.hadoop.hbase.merge.use_specific_put";
-    public static final String ARCHIVE_GET_BATCH_SIZE = "opencga.storage.hadoop.hbase.merge.archive.scan.batchsize";
+
     private Logger logger = LoggerFactory.getLogger(AbstractArchiveTableMapper.class);
 
     protected ArchiveResultToVariantConverter resultConverter;
-    protected VariantMerger variantMerger;
-    protected Set<String> currentIndexingSamples;
-    protected Integer archiveBatchSize;
     private ArchiveRowKeyFactory rowKeyFactory;
+    private boolean specificPut;
 
 
     protected ArchiveResultToVariantConverter getResultConverter() {
         return resultConverter;
     }
 
-    protected VariantMerger getVariantMerger() {
-        return variantMerger;
-    }
 
 
     /**
@@ -84,7 +78,9 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
                 .collect(Collectors.toSet());
     }
 
-    protected List<Variant> parseCurrentVariantsRegion(List<Cell> variantCells, String chromosome) {
+    protected List<Variant> parseCurrentVariantsRegion(VariantMapReduceContext ctx) {
+        String chromosome = ctx.getChromosome();
+        List<Cell> variantCells = GenomeHelper.getVariantColumns(ctx.getValue().rawCells());
         List<VariantTableStudyRow> tableStudyRows = parseVariantStudyRowsFromArchive(variantCells, chromosome);
         HBaseToVariantConverter converter = getHbaseToVariantConverter();
         List<Variant> variants = new ArrayList<>(tableStudyRows.size());
@@ -119,39 +115,52 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
 
     /**
      * Load (if available) current data, merge information and store new object in DB.
-     *
      * @param context Context
      * @param analysisVar Analysis variants
      * @param rows Variant Table rows
      * @param newSampleIds Sample Ids currently processed
+     * @return pair of numbers with the nano time of creating the put and writing it
      */
-    protected void updateOutputTable(Context context, Collection<Variant> analysisVar,
-            List<VariantTableStudyRow> rows, Set<Integer> newSampleIds) {
+    protected Pair<Long, Long> updateOutputTable(Context context, Collection<Variant> analysisVar,
+                                                 List<VariantTableStudyRow> rows, Set<Integer> newSampleIds) {
         int studyId = getStudyConfiguration().getStudyId();
         BiMap<String, Integer> idMapping = getStudyConfiguration().getSampleIds();
+        List<Put> puts = new ArrayList<>(analysisVar.size());
+        long start = System.nanoTime();
         for (Variant variant : analysisVar) {
-            VariantTableStudyRow row = updateOutputTable(context, studyId, idMapping, variant, newSampleIds);
+            VariantTableStudyRow row = new VariantTableStudyRow(variant, studyId, idMapping);
             rows.add(row);
+            Put put = createPut(variant, newSampleIds, row);
+            if (put != null) {
+                puts.add(put);
+            }
         }
+        long mid = System.nanoTime();
+        ImmutableBytesWritable keyout = new ImmutableBytesWritable(getHelper().getAnalysisTable());
+        for (Put put : puts) {
+            try {
+                context.write(keyout, put);
+            } catch (IOException | InterruptedException e) {
+                throw new IllegalStateException("Problems updating "
+                        + VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(put.getRow()), e);
+            }
+        }
+        context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(puts.size());
+        long createPutNanoTime = mid - start;
+        long writePutNanoTime = System.nanoTime() - mid;
+        return Pair.of(createPutNanoTime, writePutNanoTime);
     }
 
-    protected VariantTableStudyRow updateOutputTable(Context context, int studyId, BiMap<String, Integer> idMapping,
-                                                     Variant variant, Set<Integer> newSampleIds) {
+    protected Put createPut(Variant variant, Set<Integer> newSampleIds, VariantTableStudyRow row) {
         try {
-            VariantTableStudyRow row = new VariantTableStudyRow(variant, studyId, idMapping);
-            boolean specificPut = context.getConfiguration().getBoolean(SPECIFIC_PUT, true);
-            Put put = null;
+            Put put;
             if (specificPut && null != newSampleIds) {
                 put = row.createSpecificPut(getHelper(), newSampleIds);
             } else {
                 put = row.createPut(getHelper());
             }
-            if (put != null) {
-                context.write(new ImmutableBytesWritable(getHelper().getAnalysisTable()), put);
-                context.getCounter(AnalysisTableMapReduceHelper.COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
-            }
-            return row;
-        } catch (RuntimeException | InterruptedException | IOException e) {
+            return put;
+        } catch (RuntimeException e) {
             throw new IllegalStateException("Problems updating " + variant, e);
         }
     }
@@ -196,34 +205,11 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
     protected void setup(Context context) throws IOException,
             InterruptedException {
         super.setup(context);
-        this.archiveBatchSize = context.getConfiguration().getInt(ARCHIVE_GET_BATCH_SIZE, 500);
+        this.specificPut = context.getConfiguration().getBoolean(SPECIFIC_PUT, true);
 
         // Load VCF meta data for columns
         int studyId = getStudyConfiguration().getStudyId();
         resultConverter = new ArchiveResultToVariantConverter(studyId, getHelper().getColumnFamily(), this.getStudyConfiguration());
-        variantMerger = new VariantMerger(true);
-        variantMerger.setStudyId(Integer.toString(studyId));
-
-        Set<Integer> filesToIndex = context.getConfiguration().getStringCollection(AbstractAnalysisTableDriver.CONFIG_VARIANT_FILE_IDS)
-                .stream()
-                .map(Integer::valueOf)
-                .collect(Collectors.toSet());
-        if (filesToIndex.size() == 0) {
-            throw new IllegalStateException(
-                    "File IDs to be indexed not found in configuration: " + AbstractAnalysisTableDriver.CONFIG_VARIANT_FILE_IDS);
-        }
-        Set<String> samplesToIndex = new HashSet<>();
-        BiMap<Integer, String> sampleIdToSampleName = StudyConfiguration.inverseMap(getStudyConfiguration().getSampleIds());
-        for (BiMap.Entry<Integer, LinkedHashSet<Integer>> entry : getStudyConfiguration().getSamplesInFiles().entrySet()) {
-            if (filesToIndex.contains(entry.getKey())) {
-                entry.getValue().forEach(sid -> samplesToIndex.add(sampleIdToSampleName.get(sid)));
-            }
-        }
-        variantMerger.setExpectedSamples(getIndexedSamples().keySet());
-        // Add all samples which are currently being indexed.
-
-        this.currentIndexingSamples = new HashSet<>(samplesToIndex);
-        variantMerger.addExpectedSamples(samplesToIndex);
 
         rowKeyFactory = new ArchiveRowKeyFactory(getHelper().getChunkSize(), getHelper().getSeparator());
     }
@@ -235,7 +221,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
     }
 
     @Override
-    protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
+    protected final void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
         logger.info("Start mapping key: " + Bytes.toString(key.get()));
         startStep();
         if (value.isEmpty()) {
@@ -277,7 +263,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
 
         /* *********************************** */
         /* ********* CALL concrete class ***** */
-        doMap(ctx);
+        map(ctx);
         /* *********************************** */
 
         // Clean up of this slice
@@ -286,7 +272,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         logger.info("Finished mapping key: " + Bytes.toString(key.get()));
     }
 
-    abstract void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException;
+    abstract void map(VariantMapReduceContext ctx) throws IOException, InterruptedException;
 
     protected static class VariantMapReduceContext {
         public VariantMapReduceContext(byte[] currRowKey, Context context, Result value, Set<Integer> fileIds,
