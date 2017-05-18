@@ -85,6 +85,8 @@ public interface AuthorizationManager {
         return EnumSet.noneOf(StudyAclEntry.StudyPermissions.class);
     }
 
+    boolean isPublicRegistration();
+
     void checkProjectPermission(long projectId, String userId, StudyAclEntry.StudyPermissions permission) throws CatalogException;
 
     void checkStudyPermission(long studyId, String userId, StudyAclEntry.StudyPermissions permission) throws CatalogException;

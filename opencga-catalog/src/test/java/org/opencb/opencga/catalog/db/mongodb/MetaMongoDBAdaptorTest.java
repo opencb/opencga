@@ -36,11 +36,4 @@ public class MetaMongoDBAdaptorTest extends MongoDBAdaptorTest {
         catalogDBAdaptor.getCatalogMetaDBAdaptor().createIndexes();
     }
 
-    @Test
-    public void getAcl() throws CatalogDBException {
-        QueryResult<StudyAclEntry> aclQueryResult = catalogDBAdaptor.getCatalogMetaDBAdaptor().getDaemonAcl(Arrays.asList("admin"));
-        assertEquals(1, aclQueryResult.getNumResults());
-        assertEquals("admin", aclQueryResult.first().getMember());
-    }
-
 }
