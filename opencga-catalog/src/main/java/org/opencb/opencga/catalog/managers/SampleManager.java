@@ -1104,7 +1104,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     @Override
     public QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, String variableSetId,
                                                           @Nullable String annotation, String sessionId) throws CatalogException {
-        QueryResult<Sample> sampleQueryResult = commonSearchAnnotationSet(id, null, variableSetId, annotation, sessionId);
+        QueryResult<Sample> sampleQueryResult = commonSearchAnnotationSet(id, studyStr, variableSetId, annotation, sessionId);
         List<AnnotationSet> annotationSets;
 
         if (sampleQueryResult == null || sampleQueryResult.getNumResults() == 0) {
@@ -1128,7 +1128,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         authorizationManager.checkSamplePermission(resourceId.getResourceId(), resourceId.getUser(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
 
-        Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), id);
+        Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), resourceId.getResourceId());
 
         long variableSetId = -1;
         if (StringUtils.isNotEmpty(variableSetStr)) {

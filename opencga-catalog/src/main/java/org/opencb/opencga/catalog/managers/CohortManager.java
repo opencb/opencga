@@ -694,7 +694,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         authorizationManager.checkCohortPermission(resource.getResourceId(), resource.getUser(),
                 CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS);
 
-        Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), id);
+        Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), resource.getResourceId());
 
         long variableSetId = -1;
         if (StringUtils.isNotEmpty(variableSetStr)) {

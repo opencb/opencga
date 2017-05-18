@@ -67,10 +67,10 @@ public class AnnotationCommandOptions {
     @Parameters(commandNames = {"annotation-sets-search"}, commandDescription = "Search annotation sets from the resource")
     public class AnnotationSetsSearchCommandOptions extends BaseCommandOptions {
 
-        @Parameter(names = {"--variable-set-id"}, description = "Variable set id", arity = 1)
+        @Parameter(names = {"--variable-set"}, description = "Variable set id or name", arity = 1)
         public String variableSetId;
 
-        @Parameter(names = {"--annotation"}, description = "Annotation",  arity = 1)
+        @Parameter(names = {"--annotation"}, description = "Annotation, e.g: key1=value(,key2=value)",  arity = 1)
         public String annotation;
     }
 

@@ -203,7 +203,7 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 1)
         public String annotationSetName;
 
-        @Parameter(names = {"--annotation"}, description = "annotation", required = false, arity = 1)
+        @Parameter(names = {"--annotation"}, description = "Annotation, e.g: key1=value(,key2=value)", required = false, arity = 1)
         public String annotation;
 
     }
@@ -315,7 +315,7 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 0)
         public String annotationSetName;
 
-        @Parameter(names = {"--annotation"}, description = "Annotation", required = false, arity = 1)
+        @Parameter(names = {"--annotation"}, description = "Annotation, e.g: key1=value(,key2=value)", required = false, arity = 1)
         public String annotation;
     }
 

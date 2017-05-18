@@ -385,7 +385,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             QueryOptions queryOptions = new QueryOptions();
             QueryResult<VariableSet> variableSetQueryResult = studyDBAdaptor.getVariableSets(query, queryOptions);
             if (variableSetQueryResult.getNumResults() == 0) {
-                throw new CatalogException("Variable set" + variableStr + " not found in study " + studyStr);
+                throw new CatalogException("Variable set " + variableStr + " not found in study " + studyStr);
             } else if (variableSetQueryResult.getNumResults() > 1) {
                 throw new CatalogException("More than one variable set found under " + variableStr + " in study " + studyStr);
             }
