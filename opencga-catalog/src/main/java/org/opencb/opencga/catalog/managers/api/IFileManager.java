@@ -318,14 +318,8 @@ public interface IFileManager extends ResourceManager<Long, File> {
     void setUri(long fileId, String uri, String sessionId) throws CatalogException;
 
     // -------------- ACLs -------------------
-    List<QueryResult<FileAclEntry>> createAcls(String fileIdsStr, @Nullable String studyStr, String members, String permissions,
-                                               String sessionId) throws CatalogException;
 
-    List<QueryResult<FileAclEntry>> updateAcls(String fileIdsStr, @Nullable String studyStr, String member, @Nullable String addPermissions,
-                                               @Nullable String removePermissions, @Nullable String setPermissions, String sessionId)
-            throws CatalogException;
-
-    List<QueryResult<FileAclEntry>> removeFileAcls(String fileIdsStr, @Nullable String studyStr, String members, String sessionId)
-            throws CatalogException;
+    List<QueryResult<FileAclEntry>> updateAcl(String file, String studyStr, String memberId, File.FileAclParams fileAclParams,
+                                                String sessionId) throws CatalogException;
 
 }

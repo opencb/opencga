@@ -29,10 +29,6 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.io.compress.Compression;
-import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
@@ -44,6 +40,7 @@ import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.avro.VariantFileMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantToVcfSliceMapper;
@@ -96,7 +93,7 @@ public class ArchiveDriver extends Configured implements Tool {
         GenomeHelper genomeHelper = new GenomeHelper(conf);
 
 /*  SERVER details  */
-        if (createArchiveTableIfNeeded(genomeHelper, tableName)) {
+        if (ArchiveTableHelper.createArchiveTableIfNeeded(genomeHelper, tableName)) {
             LOGGER.info(String.format("Create table '%s' in hbase!", tableName));
         } else {
             LOGGER.info(String.format("Table '%s' exists in hbase!", tableName));
@@ -151,21 +148,6 @@ public class ArchiveDriver extends Configured implements Tool {
         return succeed ? 0 : 1;
     }
 
-    public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName) throws IOException {
-        try (Connection con = ConnectionFactory.createConnection(genomeHelper.getConf())) {
-            return createArchiveTableIfNeeded(genomeHelper, tableName, con);
-        }
-    }
-
-    public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con) throws IOException {
-        Algorithm compression = Compression.getCompressionAlgorithmByName(
-                genomeHelper.getConf().get(CONFIG_ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName()));
-        int nSplits = genomeHelper.getConf().getInt(CONFIG_ARCHIVE_TABLE_PRESPLIT_SIZE, 100);
-        List<byte[]> preSplits = GenomeHelper.generateBootPreSplitsHuman(nSplits,
-                (chr, pos) -> genomeHelper.generateBlockIdAsBytes(chr, pos));
-        return HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(), preSplits, compression);
-    }
-
     private void storeMetaData(VcfMeta meta, Configuration conf) throws IOException {
         try (HadoopVariantSourceDBAdaptor manager = new HadoopVariantSourceDBAdaptor(conf)) {
             manager.updateVcfMetaData(meta);
@@ -209,19 +191,8 @@ public class ArchiveDriver extends Configured implements Tool {
                 .append(outputTable).append(' ')
                 .append(studyId).append(' ')
                 .append(fileId);
-        addOtherParams(other, stringBuilder);
+        AbstractAnalysisTableDriver.addOtherParams(other, stringBuilder);
         return stringBuilder.toString();
-    }
-
-    public static void addOtherParams(Map<String, Object> other, StringBuilder stringBuilder) {
-        for (Map.Entry<String, Object> entry : other.entrySet()) {
-            Object value = entry.getValue();
-            if (value != null && (value instanceof Number
-                    || value instanceof Boolean
-                    || value instanceof String && !((String) value).contains(" ") && !((String) value).isEmpty())) {
-                stringBuilder.append(' ').append(entry.getKey()).append(' ').append(value);
-            }
-        }
     }
 
     public static void main(String[] args) throws Exception {

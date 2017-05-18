@@ -25,6 +25,7 @@ import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.tools.variant.converters.proto.VcfSliceToVariantListConverter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -37,10 +38,10 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -89,42 +90,44 @@ public class ArchiveResultToVariantConverter {
     }
 
     public List<Variant> convert(Result value, boolean resolveConflict) throws IllegalStateException {
-        return convert(value, resolveConflict, Variant -> true); // Default -> use all
+        return convert(value, resolveConflict, v -> true); // Default -> use all
     }
 
-    public List<Variant> convert(Result value, boolean resolveConflict, Predicate<Variant> positionFilter) throws IllegalStateException {
+    public List<Variant> convert(Result value, boolean resolveConflict, Predicate<Variant> variantFilter) throws IllegalStateException {
+        return convert(value, resolveConflict, null, variantFilter, new AtomicLong());
+    }
+
+    public List<Variant> convert(Result value, boolean resolveConflict, Predicate<VcfSliceProtos.VcfRecord> vcfRecordFilter,
+                                 Predicate<Variant> variantFilter, AtomicLong protoTime) throws IllegalStateException {
         Stream<Cell> cellStream =
                 Arrays.stream(value.rawCells()).filter(c -> Bytes.equals(CellUtil.cloneFamily(c), columnFamily))
                         .filter(c -> !Bytes.startsWith(CellUtil.cloneQualifier(c), GenomeHelper.VARIANT_COLUMN_B_PREFIX));
 
         Function<Cell, Stream<? extends Variant>> cellStreamFunction = c -> {
+            VcfSlice vcfSlice;
             try {
-                final List<Variant> variants = archiveCellToVariants(
-                        CellUtil.cloneQualifier(c),
-                        CellUtil.cloneValue(c));
-                if (resolveConflict) {
-                   return resolveConflicts(variants).stream().filter(positionFilter);
-                }
-                return variants.stream().filter(positionFilter);
+                long startTime = System.nanoTime();
+                vcfSlice = VcfSlice.parseFrom(CellUtil.cloneValue(c));
+                protoTime.addAndGet(System.nanoTime() - startTime);
             } catch (InvalidProtocolBufferException e) {
                 throw new IllegalStateException(e);
             }
+            int fileId = ArchiveTableHelper.getFileIdFromColumnName(CellUtil.cloneQualifier(c));
+            VcfSliceToVariantListConverter converter = getConverter(fileId);
+            List<Variant> variants = converter.convert(vcfSlice, vcfRecordFilter);
+            if (resolveConflict) {
+               return resolveConflicts(variants).stream().filter(variantFilter);
+            } else {
+                return variants.stream().filter(variantFilter);
+            }
         };
-        Collector<Variant, ?, List<Variant>> toList = Collectors.toCollection(CopyOnWriteArrayList::new);
         if (this.isParallel()) { // if parallel
-            return cellStream.parallel().flatMap(cellStreamFunction).collect(toList);
+            cellStream = cellStream.parallel();
         }
-        return cellStream.flatMap(cellStreamFunction).collect(toList);
+        return cellStream.flatMap(cellStreamFunction).collect(Collectors.toCollection(CopyOnWriteArrayList::new));
     }
 
-    private List<Variant> archiveCellToVariants(byte[] key, byte[] value) throws InvalidProtocolBufferException {
-        int fileId = ArchiveHelper.getFileIdFromColumnName(key);
-        VcfSliceToVariantListConverter converter = loadConverter(fileId);
-        VcfSlice vcfSlice = VcfSlice.parseFrom(value);
-        return converter.convert(vcfSlice);
-    }
-
-    private VcfSliceToVariantListConverter loadConverter(int fileId) {
+    private VcfSliceToVariantListConverter getConverter(int fileId) {
         return fileidToConverter.computeIfAbsent(fileId, key -> {
             LinkedHashSet<Integer> sampleIds = getSc().getSamplesInFiles().get(fileId);
             Map<String, Integer> thisFileSamplePositions = new LinkedHashMap<>();

@@ -18,7 +18,6 @@ package org.opencb.opencga.app.cli;
 
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -75,7 +74,7 @@ public class GeneralCliOptions {
         public boolean noHeader = false;
 
         @DynamicParameter(names = "-D", description = "Storage engine specific parameters go here comma separated, ie. -Dmongodb" +
-                ".compression=snappy", hidden = false)
+                ".compression=snappy", hidden = true)
         public Map<String, String> params = new HashMap<>(); //Dynamic parameters must be initialized
     }
 

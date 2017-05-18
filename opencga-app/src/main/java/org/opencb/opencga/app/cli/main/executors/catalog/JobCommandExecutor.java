@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -24,12 +25,15 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.JobCommandOptions;
+import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by imedina on 03/06/16.
@@ -74,20 +78,8 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
             case "acl":
                 queryResponse = aclCommandExecutor.acls(jobsCommandOptions.aclsCommandOptions, openCGAClient.getJobClient());
                 break;
-            case "acl-create":
-                queryResponse = aclCommandExecutor.aclsCreate(jobsCommandOptions.aclsCreateCommandOptions, openCGAClient.getJobClient());
-                break;
-            case "acl-member-delete":
-                queryResponse = aclCommandExecutor.aclMemberDelete(jobsCommandOptions.aclsMemberDeleteCommandOptions,
-                        openCGAClient.getJobClient());
-                break;
-            case "acl-member-info":
-                queryResponse = aclCommandExecutor.aclMemberInfo(jobsCommandOptions.aclsMemberInfoCommandOptions,
-                        openCGAClient.getJobClient());
-                break;
-            case "acl-member-update":
-                queryResponse = aclCommandExecutor.aclMemberUpdate(jobsCommandOptions.aclsMemberUpdateCommandOptions,
-                        openCGAClient.getJobClient());
+            case "acl-update":
+                queryResponse = updateAcl();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -100,23 +92,44 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Job> create() throws CatalogException, IOException {
         logger.debug("Creating a new job");
 
-        String studyId = jobsCommandOptions.createCommandOptions.study;
-        String name = jobsCommandOptions.createCommandOptions.name;
-        String toolId = jobsCommandOptions.createCommandOptions.toolId;
+        String studyId = resolveStudy(jobsCommandOptions.createCommandOptions.study);
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), jobsCommandOptions.createCommandOptions.study);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.EXECUTION.key(), jobsCommandOptions.createCommandOptions.execution);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.NAME.key(), jobsCommandOptions.createCommandOptions.name);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.TOOL_NAME.key(), jobsCommandOptions.createCommandOptions.toolName);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.DESCRIPTION.key(), jobsCommandOptions.createCommandOptions.description);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.EXECUTION.key(), jobsCommandOptions.createCommandOptions.execution);
+        if (jobsCommandOptions.createCommandOptions.startTime > 0) {
+            params.put(JobDBAdaptor.QueryParams.START_TIME.key(), jobsCommandOptions.createCommandOptions.startTime);
+        }
+        if (jobsCommandOptions.createCommandOptions.endTime > 0) {
+            params.put(JobDBAdaptor.QueryParams.END_TIME.key(), jobsCommandOptions.createCommandOptions.endTime);
+        }
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.COMMAND_LINE.key(), jobsCommandOptions.createCommandOptions.commandLine);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.OUT_DIR_ID.key(), jobsCommandOptions.createCommandOptions.outDir);
+        if (StringUtils.isNotEmpty(jobsCommandOptions.createCommandOptions.input)) {
+            List<Long> list = new ArrayList<>();
+            for (String aux : jobsCommandOptions.createCommandOptions.input.split(",")) {
+                list.add(Long.parseLong(aux));
+            }
+            params.put(JobDBAdaptor.QueryParams.INPUT.key(), list);
+        }
+        if (StringUtils.isNotEmpty(jobsCommandOptions.createCommandOptions.output)) {
+            List<Long> list = new ArrayList<>();
+            for (String aux : jobsCommandOptions.createCommandOptions.output.split(",")) {
+                list.add(Long.parseLong(aux));
+            }
+            params.put(JobDBAdaptor.QueryParams.OUTPUT.key(), list);
+        }
 
-        return openCGAClient.getJobClient().create(studyId, name, toolId, params);
+        return openCGAClient.getJobClient().create(studyId, params);
     }
 
     private QueryResponse<Job> info() throws CatalogException, IOException {
         logger.debug("Getting job information");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), jobsCommandOptions.infoCommandOptions.study);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(jobsCommandOptions.infoCommandOptions.study));
         params.putIfNotEmpty(QueryOptions.INCLUDE, jobsCommandOptions.infoCommandOptions.dataModelOptions.include);
         params.putIfNotEmpty(QueryOptions.EXCLUDE, jobsCommandOptions.infoCommandOptions.dataModelOptions.exclude);
         return openCGAClient.getJobClient().get(jobsCommandOptions.infoCommandOptions.job, params);
@@ -126,7 +139,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Searching job");
 
         Query query = new Query();
-        query.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), jobsCommandOptions.searchCommandOptions.study);
+        query.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(jobsCommandOptions.searchCommandOptions.study));
         query.putIfNotEmpty(JobDBAdaptor.QueryParams.NAME.key(), jobsCommandOptions.searchCommandOptions.name);
         query.putIfNotEmpty(JobDBAdaptor.QueryParams.TOOL_NAME.key(), jobsCommandOptions.searchCommandOptions.toolName);
         query.putIfNotEmpty(JobDBAdaptor.QueryParams.STATUS_NAME.key(), jobsCommandOptions.searchCommandOptions.status);
@@ -148,7 +161,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Job> visit() throws CatalogException, IOException {
         logger.debug("Visiting a job");
         Query query = new Query();
-        query.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), jobsCommandOptions.visitCommandOptions.study);
+        query.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(jobsCommandOptions.visitCommandOptions.study));
         return openCGAClient.getJobClient().visit(jobsCommandOptions.visitCommandOptions.job, query);
     }
 
@@ -156,7 +169,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Deleting job");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), jobsCommandOptions.deleteCommandOptions.study);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(jobsCommandOptions.deleteCommandOptions.study));
         params.put("deleteFiles", jobsCommandOptions.deleteCommandOptions.deleteFiles);
         return openCGAClient.getJobClient().delete(jobsCommandOptions.deleteCommandOptions.job, params);
     }
@@ -165,7 +178,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Group by job");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), jobsCommandOptions.groupByCommandOptions.study);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(jobsCommandOptions.groupByCommandOptions.study));
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.ID.key(), jobsCommandOptions.groupByCommandOptions.id);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.NAME.key(), jobsCommandOptions.groupByCommandOptions.name);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.OUT_DIR_ID.key(), jobsCommandOptions.groupByCommandOptions.path);
@@ -177,6 +190,20 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
 
         return openCGAClient.getJobClient().groupBy(jobsCommandOptions.groupByCommandOptions.study,
                 jobsCommandOptions.groupByCommandOptions.fields,params);
+    }
+
+
+    private QueryResponse<JobAclEntry> updateAcl() throws IOException, CatalogException {
+        AclCommandOptions.AclsUpdateCommandOptions commandOptions = jobsCommandOptions.aclsUpdateCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+
+        ObjectMap bodyParams = new ObjectMap();
+        bodyParams.putIfNotNull("permissions", commandOptions.permissions);
+        bodyParams.putIfNotNull("action", commandOptions.action);
+        bodyParams.putIfNotNull("job", commandOptions.id);
+
+        return openCGAClient.getJobClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
     }
 
 }

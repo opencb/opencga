@@ -20,7 +20,11 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.catalog.models.tool.Execution;
+import org.opencb.opencga.catalog.models.tool.InputParam;
+import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.catalog.models.tool.Manifest;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -35,6 +39,10 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Created on 26/11/15.
@@ -46,12 +54,14 @@ import java.io.InputStream;
 public abstract class OpenCGAAnalysis {
 
     private Logger logger;
-    private ObjectMap configuration;
+    private ObjectMap params;
     private CatalogManager catalogManager;
     private String sessionId;
     private boolean initialized;
     private StorageEngineFactory storageEngineFactory;
     private long studyId;
+    private String execution;
+    private VariantStorageManager variantStorageManager;
 
     public Manifest getManifest() {
         try {
@@ -82,24 +92,50 @@ public abstract class OpenCGAAnalysis {
         }
     }
 
+    /**
+     * Get analysis identifier.
+     *
+     * @return Analysis identifier
+     */
     public abstract String getIdentifier();
 
-    public abstract int run() throws Exception;
+    public int run() throws Exception {
+        Execution execution = getManifest().getExecutions().get(0);
+        for (Execution e : getManifest().getExecutions()) {
+            if (e.getId().equals(this.execution)) {
+                execution = e;
+                break;
+            }
+        }
+        Map<String, Path> inputParams = new LinkedHashMap<>();
+        Path outdir = Paths.get(params.getString(execution.getOutputParam()));
+        for (InputParam inputParam : execution.getInputParams()) {
+            String inputParamValue = params.getString(inputParam.getName());
+            if (StringUtils.isNotEmpty(inputParamValue)) {
+                inputParams.put(inputParam.getName(), Paths.get(inputParamValue));
+            }
+        }
+        return run(inputParams, outdir, params);
+    }
+
+    public abstract int run(Map<String, Path> input, Path outdir, ObjectMap params) throws Exception;
 
     /*
      *  Util methods
      */
 
     final void init(Logger logger, ObjectMap configuration, CatalogManager catalogManager,
-                    StorageEngineFactory storageEngineFactory, long studyId, String sessionId) {
+                    StorageEngineFactory storageEngineFactory, long studyId, String execution, String sessionId) {
         if (initialized) {
             throw new IllegalStateException("The plugin was already initialized! Can't init twice");
         }
         this.logger = logger;
-        this.configuration = configuration;
+        this.params = configuration;
         this.catalogManager = catalogManager;
         this.storageEngineFactory = storageEngineFactory;
+        this.variantStorageManager = new VariantStorageManager(catalogManager, this.storageEngineFactory);
         this.studyId = studyId;
+        this.execution = execution;
         this.sessionId = sessionId;
         initialized = true;
     }
@@ -108,8 +144,8 @@ public abstract class OpenCGAAnalysis {
         return logger;
     }
 
-    protected final ObjectMap getConfiguration() {
-        return configuration;
+    protected final ObjectMap getParams() {
+        return params;
     }
 
     protected final CatalogManager getCatalogManager() {
@@ -120,18 +156,8 @@ public abstract class OpenCGAAnalysis {
         return sessionId;
     }
 
-    //TODO: Return a VariantDBAdaptor which checks catalog permissions
-    protected final VariantDBAdaptor getVariantDBAdaptor(long studyId)
-            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException,
-            StorageEngineException {
-
-        StorageEngineFactory storageEngineFactory = this.storageEngineFactory;
-        
-        DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
-        String storageEngine = dataStore.getStorageEngine();
-        String dbName = dataStore.getDbName();
-
-        return storageEngineFactory.getVariantStorageEngine(storageEngine).getDBAdaptor(dbName);
+    protected final VariantStorageManager getVariantStorageManager() {
+        return variantStorageManager;
     }
 
     //TODO: Return an AlignmentDBAdaptor which checks catalog permissions
@@ -141,5 +167,9 @@ public abstract class OpenCGAAnalysis {
 
     protected final long getStudyId() {
         return studyId;
+    }
+
+    public String getExecution() {
+        return execution;
     }
 }

@@ -75,12 +75,15 @@ public class AnalysisCliOptionsParser {
         jCommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jCommander.getCommands().get("variant");
         variantSubCommands.addCommand("index", variantCommandOptions.indexVariantCommandOptions);
+        variantSubCommands.addCommand("index-search", variantCommandOptions.variantIndexSearchCommandOptions);
         variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantCommandOptions);
         variantSubCommands.addCommand("annotate", variantCommandOptions.annotateVariantCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
         variantSubCommands.addCommand("export-frequencies", variantCommandOptions.exportVariantStatsCommandOptions);
         variantSubCommands.addCommand("import", variantCommandOptions.importVariantCommandOptions);
         variantSubCommands.addCommand("ibs", variantCommandOptions.ibsVariantCommandOptions);
+        variantSubCommands.addCommand("samples", variantCommandOptions.samplesFilterCommandOptions);
+        variantSubCommands.addCommand("histogram", variantCommandOptions.histogramCommandOptions);
 
         alignmentCommandOptions = new AlignmentCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("alignment", alignmentCommandOptions);

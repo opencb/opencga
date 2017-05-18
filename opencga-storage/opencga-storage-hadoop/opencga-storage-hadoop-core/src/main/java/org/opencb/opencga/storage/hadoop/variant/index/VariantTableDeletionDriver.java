@@ -17,28 +17,53 @@
 package org.opencb.opencga.storage.hadoop.variant.index;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.mapreduce.MultiTableOutputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
+import org.apache.hadoop.mapreduce.Job;
+import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.List;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
-public class VariantTableDeletionDriver extends AbstractVariantTableDriver {
+public class VariantTableDeletionDriver extends AbstractAnalysisTableDriver {
 
     public static final String JOB_OPERATION_NAME = "Delete";
-    protected static final Logger LOGGER = LoggerFactory.getLogger(VariantTableDeletionDriver.class);
+    protected final Logger logger = LoggerFactory.getLogger(VariantTableDeletionDriver.class);
 
-    public VariantTableDeletionDriver() { /* nothing */}
+    public VariantTableDeletionDriver() {
+        super();
+    }
 
     public VariantTableDeletionDriver(Configuration conf) {
         super(conf);
     }
 
     @Override
+    protected void parseAndValidateParameters() {
+    }
+
+    @Override
+    protected Job setupJob(Job job, String archiveTable, String variantTable, List<Integer> files) throws IOException {
+        // QUERY design
+        Scan scan = createArchiveTableScan(files);
+
+        // set other scan attrs
+        initMapReduceJob(job, getMapperClass(), archiveTable, variantTable, scan);
+        job.setOutputFormatClass(MultiTableOutputFormat.class);
+
+        return job;
+    }
+
+    @Override
     protected Class<? extends TableMapper> getMapperClass() {
-        return VariantTableDeletionMapReduce.class;
+        return VariantTableDeletionMapper.class;
     }
 
     @Override
@@ -48,27 +73,10 @@ public class VariantTableDeletionDriver extends AbstractVariantTableDriver {
 
     public static void main(String[] args) throws Exception {
         try {
-            System.exit(privateMain(args, null));
+            System.exit(new VariantTableDeletionDriver().privateMain(args));
         } catch (Exception e) {
-            LOGGER.error("Error: ", e);
+            e.printStackTrace();
             System.exit(1);
         }
-    }
-
-    public static int privateMain(String[] args, Configuration conf) throws Exception {
-        if (conf == null) {
-            conf = new Configuration();
-        }
-        VariantTableDeletionDriver driver = new VariantTableDeletionDriver();
-        driver.setConf(conf);
-        String[] toolArgs = configure(args, driver);
-        if (null == toolArgs) {
-            return -1;
-        }
-
-        /* Alternative to using tool runner */
-//      int exitCode = ToolRunner.run(conf,new GenomeVariantDriver(), args);
-        int exitCode = driver.run(toolArgs);
-        return exitCode;
     }
 }

@@ -22,7 +22,6 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.DiseasePanel;
-import org.opencb.opencga.catalog.models.acls.permissions.DiseasePanelAclEntry;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +31,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * Created by pfurio on 01/06/16.
  */
-public interface PanelDBAdaptor extends AclDBAdaptor<DiseasePanel, DiseasePanelAclEntry> {
+public interface PanelDBAdaptor extends DBAdaptor<DiseasePanel> {
 
     enum QueryParams implements QueryParam {
         ID("id", INTEGER, ""),
@@ -114,14 +113,5 @@ public interface PanelDBAdaptor extends AclDBAdaptor<DiseasePanel, DiseasePanelA
     QueryResult<DiseasePanel> get(long diseasePanelId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long panelId) throws CatalogDBException;
-
-    /**
-     * Remove all the Acls defined for the member in the resource.
-     *
-     * @param studyId study id where the Acls will be removed from.
-     * @param member member from whom the Acls will be removed.
-     * @throws CatalogDBException if any problem occurs during the removal.
-     */
-    void removeAclsFromStudy(long studyId, String member) throws CatalogDBException;
 
 }

@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 
 import javax.annotation.Nullable;
@@ -110,25 +111,6 @@ public interface IJobManager extends ResourceManager<Long, Job> {
     List<QueryResult<Job>> delete(String ids, @Nullable String studyStr, QueryOptions options, String sessionId)
             throws CatalogException, IOException;
 
-    /**
-     * Retrieve the job Acls for the given members in the job.
-     *
-     * @param jobStr Job id of which the acls will be obtained.
-     * @param members userIds/groupIds for which the acls will be retrieved. When this is null, it will obtain all the acls.
-     * @param sessionId Session of the user that wants to retrieve the acls.
-     * @return A queryResult containing the job acls.
-     * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
-     * the job id is not valid or the members given do not exist.
-     */
-    QueryResult<JobAclEntry> getAcls(String jobStr, List<String> members, String sessionId) throws CatalogException;
-    default List<QueryResult<JobAclEntry>> getAcls(List<String> jobIds, List<String> members, String sessionId) throws CatalogException {
-        List<QueryResult<JobAclEntry>> result = new ArrayList<>(jobIds.size());
-        for (String jobId : jobIds) {
-            result.add(getAcls(jobId, members, sessionId));
-        }
-        return result;
-    }
-
     QueryResult<ObjectMap> visit(long jobId, String sessionId) throws CatalogException;
 
     QueryResult<Job> create(long studyId, String name, String toolName, String description, String executor, Map<String, String> params,
@@ -199,4 +181,6 @@ public interface IJobManager extends ResourceManager<Long, Job> {
                            List<Long> input, List<Long> output, long outDirId, String userId, Map<String, Object> attributes)
             throws CatalogException;
 
+    List<QueryResult<JobAclEntry>> updateAcl(String job, String studyStr, String memberId, AclParams aclParams, String sessionId)
+            throws CatalogException;
 }

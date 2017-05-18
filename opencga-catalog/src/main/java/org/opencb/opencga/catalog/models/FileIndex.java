@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.models;
 
-import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -39,7 +38,6 @@ public class FileIndex {
 
 
     public FileIndex() {
-        this(null, null, new IndexStatus(), -1, Collections.emptyMap());
     }
 
     public FileIndex(String userId, String creationDate, IndexStatus status, long jobId, Map<String, Object> attributes) {

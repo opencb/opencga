@@ -37,7 +37,6 @@ public class Tool extends AbstractAcl<ToolAclEntry> {
 //    private List<ToolAclEntry> acl;
 
     public Tool() {
-        this("", "", "", null, null, "");
     }
 
     public Tool(String alias, String name, String description, Object manifest, Object result, String path) {

@@ -28,8 +28,11 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
+import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.acls.AclParams;
+import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -41,8 +44,8 @@ import java.util.Map;
 @Deprecated
 public interface ICohortManager extends ResourceManager<Long, Cohort>, IAnnotationSetManager {
 
-    QueryResult<Cohort> create(long studyId, String name, Study.Type type, String description, List<Long> sampleIds,
-                                            Map<String, Object> attributes, String sessionId) throws CatalogException;
+    QueryResult<Cohort> create(long studyId, String name, Study.Type type, String description, List<Long> sampleIds, List<AnnotationSet>
+            annotationSetList, Map<String, Object> attributes, String sessionId) throws CatalogException;
 
     Long getStudyId(long cohortId) throws CatalogException;
 
@@ -166,5 +169,8 @@ public interface ICohortManager extends ResourceManager<Long, Cohort>, IAnnotati
         }
         return rank(studyId, query, field, numResults, asc, sessionId);
     }
+
+    List<QueryResult<CohortAclEntry>> updateAcl(String cohort, String studyStr, String memberId, AclParams aclParams, String sessionId)
+            throws CatalogException;
 
 }

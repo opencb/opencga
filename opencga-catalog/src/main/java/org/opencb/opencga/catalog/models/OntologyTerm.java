@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.catalog.models;
 
-import java.util.Map;
-
 /**
  * Created by imedina on 03/07/16.
  */
@@ -26,18 +24,14 @@ public class OntologyTerm {
     private String id;
     private String name;
     private String source;
-    private String ageOfOnset;
-    private Map<String, String> modifiers;
 
     public OntologyTerm() {
     }
 
-    public OntologyTerm(String id, String name, String source, String ageOfOnset, Map<String, String> modifiers) {
+    public OntologyTerm(String id, String name, String source) {
         this.id = id;
         this.name = name;
         this.source = source;
-        this.ageOfOnset = ageOfOnset;
-        this.modifiers = modifiers;
     }
 
     @Override
@@ -46,8 +40,6 @@ public class OntologyTerm {
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", source='").append(source).append('\'');
-        sb.append(", ageOfOnset='").append(ageOfOnset).append('\'');
-        sb.append(", modifiers=").append(modifiers);
         sb.append('}');
         return sb.toString();
     }
@@ -79,21 +71,4 @@ public class OntologyTerm {
         return this;
     }
 
-    public String getAgeOfOnset() {
-        return ageOfOnset;
-    }
-
-    public OntologyTerm setAgeOfOnset(String ageOfOnset) {
-        this.ageOfOnset = ageOfOnset;
-        return this;
-    }
-
-    public Map<String, String> getModifiers() {
-        return modifiers;
-    }
-
-    public OntologyTerm setModifiers(Map<String, String> modifiers) {
-        this.modifiers = modifiers;
-        return this;
-    }
 }

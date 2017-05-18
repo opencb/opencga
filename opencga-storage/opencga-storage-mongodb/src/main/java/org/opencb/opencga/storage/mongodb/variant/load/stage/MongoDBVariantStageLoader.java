@@ -26,6 +26,7 @@ import org.bson.conversions.Bson;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
@@ -59,7 +60,9 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
     private final MongoDBCollection collection;
     private final String fieldName;
     private final boolean resumeStageLoad;
-    private final Logger logger = LoggerFactory.getLogger(MongoDBVariantStageLoader.class);
+    private final String studyFile;
+    private final String studyIdStr;
+    private static final Logger LOGGER = LoggerFactory.getLogger(MongoDBVariantStageLoader.class);
 
     private final MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult();
 
@@ -70,7 +73,19 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
     public MongoDBVariantStageLoader(MongoDBCollection collection, int studyId, int fileId, boolean resumeStageLoad) {
         this.collection = collection;
         fieldName = studyId + "." + fileId;
+        studyFile = studyId + "_" + fileId;
+        studyIdStr = String.valueOf(studyId);
         this.resumeStageLoad = resumeStageLoad;
+    }
+
+    @Override
+    public boolean pre() {
+
+        Document index = new Document(STUDY_FILE_FIELD, 1);
+//        index.put(ID_FIELD, 1);
+        collection.createIndex(index, new ObjectMap(MongoDBCollection.BACKGROUND, true));
+
+        return true;
     }
 
     @Override
@@ -131,16 +146,18 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
         List<Bson> queries = new LinkedList<>();
         List<Bson> updates = new LinkedList<>();
         for (Document id : values.keySet()) {
-            if (retryIds == null || retryIds.contains(id.getString("_id"))) {
+            if (retryIds == null || retryIds.contains(id.getString(ID_FIELD))) {
                 List<Binary> binaryList = values.get(id);
-                queries.add(eq("_id", id.getString("_id")));
+                queries.add(eq(ID_FIELD, id.getString(ID_FIELD)));
                 if (binaryList.size() == 1) {
                     updates.add(combine(resumeStageLoad ? addToSet(fieldName, binaryList.get(0)) : push(fieldName, binaryList.get(0)),
+                            addEachToSet(STUDY_FILE_FIELD, Arrays.asList(studyIdStr, studyFile)),
                             setOnInsert(END_FIELD, id.get(END_FIELD)),
                             setOnInsert(REF_FIELD, id.get(REF_FIELD)),
                             setOnInsert(ALT_FIELD, id.get(ALT_FIELD))));
                 } else {
                     updates.add(combine(resumeStageLoad ? addEachToSet(fieldName, binaryList) : pushEach(fieldName, binaryList),
+                            addEachToSet(STUDY_FILE_FIELD, Arrays.asList(studyIdStr, studyFile)),
                             setOnInsert(END_FIELD, id.get(END_FIELD)),
                             setOnInsert(REF_FIELD, id.get(REF_FIELD)),
                             setOnInsert(ALT_FIELD, id.get(ALT_FIELD))));
@@ -159,7 +176,7 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
 
             if (retryIds != null) {
                 // If retryIds != null, means that this this was the second attempt to update. In this case, do fail.
-                logger.error("BulkWriteErrors when retrying the updates");
+                LOGGER.error("BulkWriteErrors when retrying the updates");
                 throw e;
             }
 
@@ -170,10 +187,10 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
                     if (matcher.find()) {
                         String id = matcher.group(1);
                         nonInsertedIds.add(id);
-                        logger.warn("Catch error : {}",  writeError.toString());
-                        logger.warn("DupKey exception inserting '{}'. Retry!", id);
+                        LOGGER.warn("Catch error : {}",  writeError.toString());
+                        LOGGER.warn("DupKey exception inserting '{}'. Retry!", id);
                     } else {
-                        logger.error("WriteError with code {} does not match with the pattern {}",
+                        LOGGER.error("WriteError with code {} does not match with the pattern {}",
                                 writeError.getCode(), DUP_KEY_WRITE_RESULT_ERROR_PATTERN.pattern());
                         throw e;
                     }
@@ -201,16 +218,14 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
         return modifiedCount;
     }
 
-    public static long cleanStageCollection(MongoDBCollection stageCollection, int studyId, List<Integer> fileIds) {
-        return cleanStageCollection(stageCollection, studyId, fileIds, null);
-    }
-
     public static long cleanStageCollection(MongoDBCollection stageCollection, int studyId, List<Integer> fileIds,
-                                            Collection<String> chromosomes) {
+                                            Collection<String> chromosomes, MongoDBVariantWriteResult result) {
+        boolean removeDuplicatedVariants = result == null || result.getNonInsertedVariants() > 0;
         // Delete those new studies that have duplicated variants. Those are not inserted, so they are not new variants.
         // i.e: For each file, or the file has not been loaded (empty), or the file has more than one element.
         //     { $or : [ { <study>.<file>.0 : {$exists:false} }, { <study>.<file>.1 : {$exists:true} } ] }
         List<Bson> filters = new ArrayList<>();
+        long modifiedCount = 0;
         Bson chrFilter;
         if (chromosomes != null && !chromosomes.isEmpty()) {
             List<Bson> chrFilters = new ArrayList<>();
@@ -222,24 +237,48 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
             chrFilter = new Document();
         }
 
-        filters.add(exists(studyId + "." + NEW_STUDY_FIELD, false));
+        List<String> studyFiles = new ArrayList<>(fileIds.size());
         for (Integer fileId : fileIds) {
-            filters.add(or(exists(studyId + "." + fileId + ".0", false), exists(studyId + "." + fileId + ".1")));
+            String studyFile = studyId + "_" + fileId;
+            studyFiles.add(studyFile);
         }
-        long modifiedCount = stageCollection.update(
-                and(chrFilter, and(filters)), unset(Integer.toString(studyId)),
-                new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
-
+        if (removeDuplicatedVariants) {
+            // TODO: This variants should be removed while loading data. This operation is taking too much time.
+            filters.add(exists(studyId + "." + NEW_STUDY_FIELD, false));
+            List<Bson> unsets = new ArrayList<>(fileIds.size() + 1);
+            for (Integer fileId : fileIds) {
+                String studyFile = studyId + "_" + fileId;
+                unsets.add(unset(studyId + "." + fileId));
+                filters.add(
+                        or(
+                                ne(STUDY_FILE_FIELD, studyFile),
+                                and(
+                                        eq(STUDY_FILE_FIELD, studyFile),
+                                        exists(studyId + "." + fileId + ".1")
+                                )
+                        )
+                );
+            }
+            unsets.add(pullAll(STUDY_FILE_FIELD, studyFiles));
+            Bson filter = and(in(STUDY_FILE_FIELD, studyFiles), chrFilter, and(filters));
+            LOGGER.info("Clean studies from stage where all the files where duplicated");
+            modifiedCount += stageCollection.update(
+                    filter, combine(unsets),
+                    new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
+        }
 
         filters.clear();
+        filters.add(in(STUDY_FILE_FIELD, studyFiles));
+        filters.add(chrFilter);
         List<Bson> updates = new LinkedList<>();
         for (Integer fileId : fileIds) {
-            filters.add(exists(studyId + "." + fileId));
-//            updates.add(unset(studyId + "." + fileId));
-            updates.add(set(studyId + "." + fileId, null));
+            updates.add(unset(studyId + "." + fileId));
+//            updates.add(set(studyId + "." + fileId, null));
         }
         updates.add(set(studyId + "." + NEW_STUDY_FIELD, false));
-        modifiedCount += stageCollection.update(and(chrFilter, or(filters)), combine(updates),
+        updates.add(pullAll(STUDY_FILE_FIELD, studyFiles));
+        LOGGER.info("Cleaning files {} from stage collection", fileIds);
+        modifiedCount += stageCollection.update(and(filters), combine(updates),
                 new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
 
         return modifiedCount;

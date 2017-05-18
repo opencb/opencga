@@ -22,8 +22,10 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.api.IJobManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -36,15 +38,16 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-///opencga/rest/v1/jobs/create?analysisId=23&tool=samtools
 @Path("/{version}/jobs")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Jobs", position = 5, description = "Methods for working with 'jobs' endpoint")
 public class JobWSServer extends OpenCGAWSServer {
 
+    private IJobManager jobManager;
 
     public JobWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(uriInfo, httpServletRequest);
+        jobManager = catalogManager.getJobManager();
     }
 
 
@@ -246,10 +249,15 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{jobIds}/acl")
-    @ApiOperation(value = "Return the acl of the job", position = 18)
-    public Response getAcls(@ApiParam(value = "Comma separated list of job ids", required = true) @PathParam("jobIds") String jobIdsStr) {
+    @ApiOperation(value = "Return the acl of the job. If member is provided, it will only return the acl for the member.", position = 18)
+    public Response getAcls(@ApiParam(value = "Comma separated list of job ids", required = true) @PathParam("jobIds") String jobIdsStr,
+                            @ApiParam(value = "User or group id") @QueryParam("member") String member) {
         try {
-            return createOkResponse(catalogManager.getAllJobAcls(jobIdsStr, sessionId));
+            if (StringUtils.isEmpty(member)) {
+                return createOkResponse(catalogManager.getAllJobAcls(jobIdsStr, sessionId));
+            } else {
+                return createOkResponse(catalogManager.getJobAcl(jobIdsStr, member, sessionId));
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -265,7 +273,9 @@ public class JobWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
                                        required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
-            return createOkResponse(catalogManager.createJobAcls(jobIdsStr, members, permissions, sessionId));
+            AclParams aclParams = getAclParams(permissions, null, null);
+            aclParams.setAction(AclParams.Action.SET);
+            return createOkResponse(jobManager.updateAcl(jobIdsStr, null, members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -273,13 +283,17 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{jobIds}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of members", position = 19)
+    @ApiOperation(value = "Define a set of permissions for a list of members [DEPRECATED]", position = 19,
+            notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
+                    + "/acl/{members}/update entrypoint.")
     public Response createRolePOST(
             @ApiParam(value = "Comma separated list of job ids", required = true) @PathParam("jobIds") String jobIdsStr,
             @ApiParam(value="JSON containing the parameters defined in GET. Mandatory keys: 'members'", required = true)
                     StudyWSServer.CreateAclCommands params) {
         try {
-            return createOkResponse(catalogManager.createJobAcls(jobIdsStr, params.members, params.permissions, sessionId));
+            AclParams aclParams = getAclParams(params.permissions, null, null);
+            aclParams.setAction(AclParams.Action.SET);
+            return createOkResponse(jobManager.updateAcl(jobIdsStr, null, params.members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -287,7 +301,9 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{jobId}/acl/{memberId}/info")
-    @ApiOperation(value = "Return the set of permissions granted for the member", position = 20)
+    @ApiOperation(value = "Return the set of permissions granted for the member [DEPRECATED]", position = 20,
+            notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
+                    + "/acl entrypoint.")
     public Response getAcl(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String jobIdStr,
                            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
         try {
@@ -309,8 +325,8 @@ public class JobWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "Comma separated list of permissions to set", required = false)
                                   @QueryParam("set") String setPermissions) {
         try {
-            return createOkResponse(catalogManager.updateJobAcl(jobIdStr, memberId, addPermissions, removePermissions, setPermissions,
-                    sessionId));
+            AclParams aclParams = getAclParams(addPermissions, removePermissions, setPermissions);
+            return createOkResponse(jobManager.updateAcl(jobIdStr, null, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -318,14 +334,34 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{jobId}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    @ApiOperation(value = "Update the set of permissions granted for the member [WARNING]", position = 21,
+            notes = "WARNING: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
+                    + "to also support changing permissions using queries.")
     public Response updateAclPOST(
             @ApiParam(value = "jobId", required = true) @PathParam("jobId") String jobIdStr,
             @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
-            @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true)
-                    StudyWSServer.MemberAclUpdate params) {
+            @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true) StudyWSServer.MemberAclUpdateOld params) {
         try {
-            return createOkResponse(catalogManager.updateJobAcl(jobIdStr, memberId, params.add, params.remove, params.set, sessionId));
+            AclParams aclParams = getAclParams(params.add, params.remove, params.set);
+            return createOkResponse(jobManager.updateAcl(jobIdStr, null, memberId, aclParams, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    public static class JobAcl extends AclParams {
+        public String job;
+    }
+
+    @POST
+    @Path("/acl/{memberIds}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    public Response updateAcl(
+            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("memberIds") String memberId,
+            @ApiParam(value="JSON containing the parameters to add ACLs", required = true) JobAcl params) {
+        try {
+            AclParams aclParams = new AclParams(params.getPermissions(), params.getAction());
+            return createOkResponse(jobManager.updateAcl(params.job, null, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -333,11 +369,14 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{jobIds}/acl/{memberId}/delete")
-    @ApiOperation(value = "Remove all the permissions granted for the member", position = 22)
+    @ApiOperation(value = "Remove all the permissions granted for the member [DEPRECATED]", position = 22,
+            notes = "DEPRECATED: The usage of this webservice is discouraged. A RESET action has been added to the /acl/{members}/update "
+                    + "entrypoint.")
     public Response deleteAcl(@ApiParam(value = "Comma separated list of job ids", required = true) @PathParam("jobIds") String jobIdsStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(catalogManager.removeJobAcl(jobIdsStr, memberId, sessionId));
+            AclParams aclParams = new AclParams(null, AclParams.Action.RESET);
+            return createOkResponse(jobManager.updateAcl(jobIdsStr, null, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

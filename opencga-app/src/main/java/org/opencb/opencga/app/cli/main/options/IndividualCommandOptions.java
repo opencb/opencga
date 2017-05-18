@@ -29,7 +29,7 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 /**
  * Created by sgallego on 6/14/16.
  */
-@Parameters(commandNames = {"individuals"}, commandDescription = "Individuals commands")
+@Parameters(commandNames = {"individuals"}, commandDescription = "Individual commands")
 public class IndividualCommandOptions {
 
     public CreateCommandOptions createCommandOptions;
@@ -40,11 +40,8 @@ public class IndividualCommandOptions {
     public GroupByCommandOptions groupByCommandOptions;
     public SampleCommandOptions sampleCommandOptions;
 
-    public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
-    public AclCommandOptions.AclsCreateCommandOptions aclsCreateCommandOptions;
-    public AclCommandOptions.AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
-    public AclCommandOptions.AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
-    public AclCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
+    public IndividualAclCommandOptions.AclsCommandOptions aclsCommandOptions;
+    public IndividualAclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
     public AnnotationCommandOptions.AnnotationSetsCreateCommandOptions annotationCreateCommandOptions;
     public AnnotationCommandOptions.AnnotationSetsAllInfoCommandOptions annotationAllInfoCommandOptions;
@@ -58,11 +55,8 @@ public class IndividualCommandOptions {
     public DataModelOptions commonDataModelOptions;
     public NumericOptions commonNumericOptions;
 
-    private AclCommandOptions aclCommandOptions;
-    private AnnotationCommandOptions annotationCommandOptions;
-
-    public IndividualCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions, NumericOptions numericOptions,
-                                    JCommander jCommander) {
+    public IndividualCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions,
+                                    NumericOptions numericOptions, JCommander jCommander) {
 
         this.commonCommandOptions = commonCommandOptions;
         this.commonDataModelOptions = dataModelOptions;
@@ -77,20 +71,17 @@ public class IndividualCommandOptions {
         this.groupByCommandOptions = new GroupByCommandOptions();
         this.sampleCommandOptions = new SampleCommandOptions();
 
-        this.annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
-        this.annotationCreateCommandOptions = this.annotationCommandOptions.getCreateCommandOptions();
-        this.annotationAllInfoCommandOptions = this.annotationCommandOptions.getAllInfoCommandOptions();
-        this.annotationSearchCommandOptions = this.annotationCommandOptions.getSearchCommandOptions();
-        this.annotationDeleteCommandOptions = this.annotationCommandOptions.getDeleteCommandOptions();
-        this.annotationInfoCommandOptions = this.annotationCommandOptions.getInfoCommandOptions();
-        this.annotationUpdateCommandOptions = this.annotationCommandOptions.getUpdateCommandOptions();
+        AnnotationCommandOptions annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
+        this.annotationCreateCommandOptions = annotationCommandOptions.getCreateCommandOptions();
+        this.annotationAllInfoCommandOptions = annotationCommandOptions.getAllInfoCommandOptions();
+        this.annotationSearchCommandOptions = annotationCommandOptions.getSearchCommandOptions();
+        this.annotationDeleteCommandOptions = annotationCommandOptions.getDeleteCommandOptions();
+        this.annotationInfoCommandOptions = annotationCommandOptions.getInfoCommandOptions();
+        this.annotationUpdateCommandOptions = annotationCommandOptions.getUpdateCommandOptions();
 
-        this.aclCommandOptions = new AclCommandOptions(commonCommandOptions);
+        IndividualAclCommandOptions aclCommandOptions = new IndividualAclCommandOptions(commonCommandOptions);
         this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
-        this.aclsCreateCommandOptions = aclCommandOptions.getAclsCreateCommandOptions();
-        this.aclsMemberDeleteCommandOptions = aclCommandOptions.getAclsMemberDeleteCommandOptions();
-        this.aclsMemberInfoCommandOptions = aclCommandOptions.getAclsMemberInfoCommandOptions();
-        this.aclsMemberUpdateCommandOptions = aclCommandOptions.getAclsMemberUpdateCommandOptions();
+        this.aclsUpdateCommandOptions = aclCommandOptions.getAclsUpdateCommandOptions();
     }
 
     public class BaseIndividualsCommand extends StudyOption {
@@ -127,15 +118,6 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
         public String ethnicity;
 
-        @Parameter(names = {"--species-taxonomy-code"}, description = "Taxonomy code of the species", required = false, arity = 1)
-        public String speciesTaxonomyCode;
-
-        @Parameter(names = {"--species-scientific-name"}, description = "Scientific name of the species", required = false, arity = 1)
-        public String speciesScientificName;
-
-        @Parameter(names = {"--species-common-name"}, description = "Common name of the species", required = false, arity = 1)
-        public String speciesCommonName;
-
         @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
         public String populationName;
 
@@ -153,6 +135,9 @@ public class IndividualCommandOptions {
 
         @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
         public String affectationStatus;
+
+        @Parameter(names = {"-dob", "--date-of-birth"}, description = "Date of birth. Format: yyyyMMdd", arity = 1)
+        public String dateOfBirth;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get individual information")
@@ -191,21 +176,8 @@ public class IndividualCommandOptions {
         public String ethnicity;
 
         @Deprecated
-        @Parameter(names = {"--species"}, description = "[DEPRECATED] species", required = false, arity = 1)
-        public String species;
-
-        @Deprecated
         @Parameter(names = {"--population"}, description = "[DEPRECATED] population", required = false, arity = 1)
         public String population;
-
-        @Parameter(names = {"--species-taxonomy-code"}, description = "Taxonomy code of the species", required = false, arity = 1)
-        public String speciesTaxonomyCode;
-
-        @Parameter(names = {"--species-scientific-name"}, description = "Scientific name of the species", required = false, arity = 1)
-        public String speciesScientificName;
-
-        @Parameter(names = {"--species-common-name"}, description = "Common name of the species", required = false, arity = 1)
-        public String speciesCommonName;
 
         @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
         public String populationName;
@@ -225,7 +197,7 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
         public String affectationStatus;
 
-        @Parameter(names = {"--variable-set-id"}, description = "variableSetId", required = false, arity = 1)
+        @Parameter(names = {"--variable-set"}, description = "Variable set id or name", required = false, arity = 1)
         public String variableSetId;
 
         @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 1)
@@ -257,15 +229,6 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
         public String ethnicity;
 
-        @Parameter(names = {"--species-taxonomy-code"}, description = "Taxonomy code of the species", required = false, arity = 1)
-        public String speciesTaxonomyCode;
-
-        @Parameter(names = {"--species-scientific-name"}, description = "Scientific name of the species", required = false, arity = 1)
-        public String speciesScientificName;
-
-        @Parameter(names = {"--species-common-name"}, description = "Common name of the species", required = false, arity = 1)
-        public String speciesCommonName;
-
         @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
         public String populationName;
 
@@ -284,6 +247,8 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
         public String affectationStatus;
 
+        @Parameter(names = {"-dob", "--date-of-birth"}, description = "Date of birth. Format: yyyyMMdd", arity = 1)
+        public String dateOfBirth;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete individual information")
@@ -323,21 +288,8 @@ public class IndividualCommandOptions {
         public String ethnicity;
 
         @Deprecated
-        @Parameter(names = {"--species"}, description = "[DEPRECATED] species", required = false, arity = 1)
-        public String species;
-
-        @Deprecated
         @Parameter(names = {"--population"}, description = "[DEPRECATED] population", required = false, arity = 1)
         public String population;
-
-        @Parameter(names = {"--species-taxonomy-code"}, description = "Taxonomy code of the species", required = false, arity = 1)
-        public String speciesTaxonomyCode;
-
-        @Parameter(names = {"--species-scientific-name"}, description = "Scientific name of the species", required = false, arity = 1)
-        public String speciesScientificName;
-
-        @Parameter(names = {"--species-common-name"}, description = "Common name of the species", required = false, arity = 1)
-        public String speciesCommonName;
 
         @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
         public String populationName;
@@ -357,7 +309,7 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
         public String affectationStatus;
 
-        @Parameter(names = {"--variable-set-id"}, description = "Variable set ids", required = false, arity = 1)
+        @Parameter(names = {"--variable-set"}, description = "Variable set id or name", required = false, arity = 1)
         public String variableSetId;
 
         @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 0)
@@ -378,6 +330,36 @@ public class IndividualCommandOptions {
 
         @Parameter(names = {"--individual"}, description = "List of individual ids or names", required = true, arity = 1)
         public String individual;
+    }
+
+    public class IndividualAclCommandOptions extends AclCommandOptions {
+
+        private AclsUpdateCommandOptions aclsUpdateCommandOptions;
+
+        public IndividualAclCommandOptions(CommonCommandOptions commonCommandOptions) {
+            super(commonCommandOptions);
+        }
+
+        @Parameters(commandNames = {"acl-update"}, commandDescription = "Update the permissions set for a member")
+        public class AclsUpdateCommandOptions extends AclCommandOptions.AclsUpdateCommandOptions {
+
+//            @Parameter(names = {"--individual"}, description = "Comma separated list of individual ids or names", arity = 1)
+//            public String individual;
+
+            @Parameter(names = {"--sample"}, description = "Comma separated list of sample ids or names", arity = 1)
+            public String sample;
+
+            @Parameter(names = {"--propagate"}, description = "Boolean parameter indicating whether to propagate the permissions to the " +
+                    "samples related to the individual(s).", arity = 0)
+            public boolean propagate;
+        }
+
+        public AclsUpdateCommandOptions getAclsUpdateCommandOptions() {
+            if (this.aclsUpdateCommandOptions == null) {
+                this.aclsUpdateCommandOptions = new AclsUpdateCommandOptions();
+            }
+            return aclsUpdateCommandOptions;
+        }
     }
 
 }

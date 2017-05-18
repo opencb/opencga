@@ -10,7 +10,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.opencga.core.common.ProgressLogger;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -46,24 +46,33 @@ public class MongoVariantImporter extends VariantImporter {
 
 
     @Override
-    public void importData(URI inputUri, ExportMetadata exportMetadata) throws StorageEngineException, IOException {
+    public void importData(URI inputUri, ExportMetadata remappedMetadata, Map<StudyConfiguration, StudyConfiguration> studiesOldNewMap)
+            throws StorageEngineException, IOException {
 
         Path input = Paths.get(inputUri.getPath());
 
+        Map<String, String> studyIdMapping = new HashMap<>(studiesOldNewMap.size() * 2);
+        studiesOldNewMap.forEach((old, newer) -> {
+            studyIdMapping.put(old.getStudyName(), newer.getStudyName());
+            studyIdMapping.put(String.valueOf(old.getStudyId()), newer.getStudyName());
+        });
 //        VariantReader variantReader = VariantReaderUtils.getVariantReader(input, null);
         //TODO: Read returned samples from Metadata
         Map<String, LinkedHashMap<String, Integer>> samplesPositions = new HashMap<>();
-        for (StudyConfiguration sc : exportMetadata.getStudies()) {
+        for (StudyConfiguration sc : remappedMetadata.getStudies()) {
             LinkedHashMap<String, Integer> map = StudyConfiguration.getSortedIndexedSamplesPosition(sc);
 //            LinkedHashMap<String, Integer> map = new LinkedHashMap<>();
             samplesPositions.put(sc.getStudyName(), map);
             samplesPositions.put(String.valueOf(sc.getStudyId()), map);
+            studyIdMapping.entrySet().stream()
+                    .filter(entry -> entry.getValue().equals(sc.getStudyName()))
+                    .forEach(entry -> samplesPositions.put(entry.getKey(), map));
         }
         VariantReader variantReader = new VariantAvroReader(input.toAbsolutePath().toFile(), samplesPositions);
 
         ProgressLogger progressLogger = new ProgressLogger("Loaded variants");
         ParallelTaskRunner.Task<Variant, Document> converterTask =
-                new VariantToDocumentConverter(exportMetadata.getStudies(), progressLogger);
+                new VariantToDocumentConverter(studiesOldNewMap, progressLogger);
 
         DataWriter<Document> writer = new MongoDBVariantDocumentDBWriter(variantsCollection);
 
@@ -83,18 +92,21 @@ public class MongoVariantImporter extends VariantImporter {
      */
     private static class VariantToDocumentConverter implements ParallelTaskRunner.Task<Variant, Document> {
         private final DocumentToVariantConverter variantConverter;
-        private final Map<String, String> studies;
+        private final Map<String, String> studiesIdRemap;
         private ProgressLogger progressLogger;
 
-        VariantToDocumentConverter(List<StudyConfiguration> studies, ProgressLogger progressLogger) {
+        VariantToDocumentConverter(Map<StudyConfiguration, StudyConfiguration> studiesOldNewMap, ProgressLogger progressLogger) {
+            List<StudyConfiguration> studies = new ArrayList<>(studiesOldNewMap.values());
             DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(studies);
             DocumentToStudyVariantEntryConverter studyConverter = new DocumentToStudyVariantEntryConverter(false, samplesConverter);
             DocumentToVariantStatsConverter statsConverter = new DocumentToVariantStatsConverter(studies);
             variantConverter = new DocumentToVariantConverter(studyConverter, statsConverter);
-            this.studies = studies.stream()
-                    .collect(Collectors.toMap(
-                            StudyConfiguration::getStudyName,
-                            (studyConfiguration) -> String.valueOf(studyConfiguration.getStudyId())));
+            this.studiesIdRemap = new HashMap<>();
+            studiesOldNewMap.forEach((old, newer) -> {
+                this.studiesIdRemap.put(old.getStudyName(), String.valueOf(newer.getStudyId()));
+                this.studiesIdRemap.put(String.valueOf(old.getStudyId()), String.valueOf(newer.getStudyId()));
+                this.studiesIdRemap.put(newer.getStudyName(), String.valueOf(newer.getStudyId()));
+            });
             this.progressLogger = progressLogger;
         }
 
@@ -103,7 +115,7 @@ public class MongoVariantImporter extends VariantImporter {
             progressLogger.increment(batch.size(), () -> "up to position " + batch.get(batch.size() - 1));
             return batch.stream().map(variant -> {
                 for (StudyEntry studyEntry : variant.getStudies()) {
-                    studyEntry.setStudyId(studies.getOrDefault(studyEntry.getStudyId(), studyEntry.getStudyId()));
+                    studyEntry.setStudyId(studiesIdRemap.getOrDefault(studyEntry.getStudyId(), studyEntry.getStudyId()));
                     for (FileEntry file : studyEntry.getFiles()) {
                         if (file.getFileId().isEmpty()) {
                             file.setFileId("-1");

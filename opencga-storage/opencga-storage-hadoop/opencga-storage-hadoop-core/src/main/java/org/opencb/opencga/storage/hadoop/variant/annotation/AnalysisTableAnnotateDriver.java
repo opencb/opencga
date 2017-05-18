@@ -3,7 +3,6 @@ package org.opencb.opencga.storage.hadoop.variant.annotation;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
-import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.phoenix.mapreduce.util.PhoenixMapReduceUtil;
@@ -13,6 +12,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHel
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by mh719 on 15/12/2016.
@@ -20,7 +20,9 @@ import java.util.Arrays;
 public class AnalysisTableAnnotateDriver extends AbstractAnalysisTableDriver {
     public static final String CONFIG_VARIANT_TABLE_ANNOTATE_PARALLEL = "opencga.variant.table.annotate.parallel";
 
-    public AnalysisTableAnnotateDriver() { /* nothing */ }
+    public AnalysisTableAnnotateDriver() {
+        super();
+    }
 
     public AnalysisTableAnnotateDriver(Configuration conf) {
         super(conf);
@@ -34,25 +36,36 @@ public class AnalysisTableAnnotateDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected Class<? extends TableMapper> getMapperClass() {
+    protected Class<AnalysisAnnotateMapper> getMapperClass() {
         return AnalysisAnnotateMapper.class;
     }
 
     @Override
-    protected void initMapReduceJob(String inTable, Job job, Scan scan, boolean addDependencyJar) throws IOException {
-        TableMapReduceUtil.setScannerCaching(job, 200);
+    protected Job setupJob(Job job, String archiveTable, String variantTable, List<Integer> files) throws IOException {
+        // QUERY design
+        Scan scan = createVariantsTableScan();
 
-        super.initMapReduceJob(inTable, job, scan, addDependencyJar);
-        String[] fieldNames = Arrays.stream(VariantColumn.values()).map(v -> v.toString()).toArray(String[]::new);
-        PhoenixMapReduceUtil.setOutput(job, SchemaUtil.getEscapedFullTableName(inTable), fieldNames);
+        // set other scan attrs
+        TableMapReduceUtil.setScannerCaching(job, 200);
+        initMapReduceJob(job, getMapperClass(), variantTable, scan);
+
+        String[] fieldNames = Arrays.stream(VariantColumn.values()).map(VariantColumn::toString).toArray(String[]::new);
+        PhoenixMapReduceUtil.setOutput(job, SchemaUtil.getEscapedFullTableName(variantTable), fieldNames);
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(PhoenixVariantAnnotationWritable.class);
         job.setNumReduceTasks(0);
+
+        return job;
+    }
+
+    @Override
+    protected String getJobOperationName() {
+        return "Annotate";
     }
 
     public static void main(String[] args) throws Exception {
         try {
-            System.exit(privateMain(args, null, new AnalysisTableAnnotateDriver()));
+            System.exit(new AnalysisTableAnnotateDriver().privateMain(args));
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);

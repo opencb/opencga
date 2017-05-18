@@ -439,10 +439,26 @@ class MongoDBUtils {
         return filteredOptions;
     }
 
+    static void filterBooleanParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams) {
+        for (String s : acceptedParams) {
+            if (parameters.containsKey(s)) {
+                filteredParams.put(s, parameters.getBoolean(s));
+            }
+        }
+    }
+
     static void filterStringParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams) {
         for (String s : acceptedParams) {
             if (parameters.containsKey(s)) {
                 filteredParams.put(s, parameters.getString(s));
+            }
+        }
+    }
+
+    static void filterStringListParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams) {
+        for (String s : acceptedParams) {
+            if (parameters.containsKey(s)) {
+                filteredParams.put(s, parameters.getAsStringList(s));
             }
         }
     }
@@ -655,7 +671,7 @@ class MongoDBUtils {
             if (variableType == Variable.VariableType.BOOLEAN) {
                 type = QueryParam.Type.BOOLEAN;
 
-            } else if (variableType == Variable.VariableType.NUMERIC) {
+            } else if (variableType == Variable.VariableType.DOUBLE) {
                 type = QueryParam.Type.DECIMAL;
             }
         }
@@ -721,7 +737,7 @@ class MongoDBUtils {
                 if (variableType == Variable.VariableType.BOOLEAN) {
                     type = AbstractDBAdaptor.FilterOption.Type.BOOLEAN;
 
-                } else if (variableType == Variable.VariableType.NUMERIC) {
+                } else if (variableType == Variable.VariableType.DOUBLE) {
                     type = AbstractDBAdaptor.FilterOption.Type.NUMERICAL;
                 }
             }

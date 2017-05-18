@@ -152,9 +152,9 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
     }
 
     public QueryResponse<ObjectMap> createGroup(String studyId, String groupId, String users) throws CatalogException, IOException {
-        ObjectMap bodyParams = new ObjectMap()
-                .append("groupId", groupId)
-                .append("users", users);
+        ObjectMap bodyParams = new ObjectMap();
+        bodyParams.putIfNotEmpty("groupId", groupId);
+        bodyParams.putIfNotEmpty("users", users);
         return execute(STUDY_URL, studyId, "groups", null, "create", new ObjectMap("body", bodyParams), POST, ObjectMap.class);
     }
 

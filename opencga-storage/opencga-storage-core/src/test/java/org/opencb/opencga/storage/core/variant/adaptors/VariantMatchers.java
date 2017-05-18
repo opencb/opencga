@@ -107,7 +107,9 @@ public class VariantMatchers {
                         missingValues.add(expectedValue);
                     }
                 }
-                mismatchDescription.appendText(" has " + item.getNumResults() + " values");
+                mismatchDescription.appendText(" has " + item.getNumResults() + " values "
+                        + '(' + missingValues.size() + " missing, " + extraValues.size() + " extra)");
+
                 if (!missingValues.isEmpty()) {
                     mismatchDescription.appendValueList(" , missing values [", ", ", "] ", missingValues);
                 }
@@ -117,6 +119,10 @@ public class VariantMatchers {
                 return false;
             }
         };
+    }
+
+    public static Matcher<Variant> overlaps(Variant variant) {
+        return overlaps(new Region(variant.getChromosome(), variant.getStart(), variant.getEnd()), true);
     }
 
     public static Matcher<Variant> overlaps(Region region) {
@@ -297,6 +303,33 @@ public class VariantMatchers {
             @Override
             protected StudyEntry featureValueOf(Variant actual) {
                 return actual.getStudy(study);
+            }
+        };
+    }
+
+    public static Matcher<? super StudyEntry> withSamples(Set<String> samples) {
+        return new FeatureMatcher<StudyEntry, Set<String>>(is(equalTo(samples)), "with samples " + samples, "Samples") {
+            @Override
+            protected Set<String> featureValueOf(StudyEntry actual) {
+                return actual.getSamplesName();
+            }
+        };
+    }
+
+    public static Matcher<? super StudyEntry> withSamples(List<String> samples) {
+        return new FeatureMatcher<StudyEntry, List<String>>(is(equalTo(samples)), "with samples " + samples, "Samples") {
+            @Override
+            protected List<String> featureValueOf(StudyEntry actual) {
+                return actual.getOrderedSamplesName();
+            }
+        };
+    }
+
+    public static Matcher<? super StudyEntry> withSampleData(String sampleName, String formatField, Matcher<String> subMatcher) {
+        return new FeatureMatcher<StudyEntry, String>(subMatcher, "with sample " + sampleName + " with " + formatField, "SampleData") {
+            @Override
+            protected String featureValueOf(StudyEntry actual) {
+                return actual.getSampleData(sampleName, formatField);
             }
         };
     }

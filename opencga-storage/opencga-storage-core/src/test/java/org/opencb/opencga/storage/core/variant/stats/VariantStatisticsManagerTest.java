@@ -70,13 +70,13 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         clearDB(DB_NAME);
         runDefaultETL(inputUri, getVariantStorageEngine(), studyConfiguration,
                 new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false));
-        dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME);
+        dbAdaptor = getVariantStorageEngine().getDBAdaptor();
     }
 
     @Test
     public void calculateStatsMultiCohortsTest() throws Exception {
         //Calculate stats for 2 cohorts at one time
-        DefaultVariantStatisticsManager vsm = (DefaultVariantStatisticsManager) variantStorageManager.newVariantStatisticsManager(dbAdaptor);
+        DefaultVariantStatisticsManager vsm = (DefaultVariantStatisticsManager) variantStorageEngine.newVariantStatisticsManager();
 
         checkCohorts(dbAdaptor, studyConfiguration);
 
@@ -112,7 +112,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
     @Test
     public void calculateStatsSeparatedCohortsTest() throws Exception {
         //Calculate stats for 2 cohorts separately
-        DefaultVariantStatisticsManager vsm = (DefaultVariantStatisticsManager) variantStorageManager.newVariantStatisticsManager(dbAdaptor);
+        DefaultVariantStatisticsManager vsm = (DefaultVariantStatisticsManager) variantStorageEngine.newVariantStatisticsManager();
 
         int studyId = studyConfiguration.getStudyId();
         String studyName = studyConfiguration.getStudyName();
@@ -123,7 +123,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         StudyConfiguration studyConfiguration;
 
         /** Create first cohort **/
-        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, null).first();
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, QueryOptions.empty()).first();
         HashSet<String> cohort1 = new HashSet<>();
         cohort1.add(iterator.next());
         cohort1.add(iterator.next());
@@ -144,7 +144,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         checkCohorts(dbAdaptor, studyConfiguration);
 
         /** Create second cohort **/
-        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, null).first();
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, QueryOptions.empty()).first();
         HashSet<String> cohort2 = new HashSet<>();
         cohort2.add(iterator.next());
         cohort2.add(iterator.next());
@@ -163,7 +163,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         checkCohorts(dbAdaptor, studyConfiguration);
 
         //Try to recalculate stats for cohort2. Will fail
-        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, null).first();
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, QueryOptions.empty()).first();
         thrown.expect(StorageEngineException.class);
         stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort2.stats"), cohorts, cohortIds, studyConfiguration, options);
         vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);

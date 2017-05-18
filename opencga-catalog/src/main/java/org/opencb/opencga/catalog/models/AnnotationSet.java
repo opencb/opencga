@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.core.common.TimeUtils;
+
 import java.util.Map;
 import java.util.Set;
 
@@ -35,6 +37,10 @@ public class AnnotationSet {
 
 
     public AnnotationSet() {
+    }
+
+    public AnnotationSet(String name, long variableSetId, Set<Annotation> annotations, Map<String, Object> attributes) {
+        this(name, variableSetId, annotations, TimeUtils.getTime(), attributes);
     }
 
     public AnnotationSet(String name, long variableSetId, Set<Annotation> annotations, String creationDate,

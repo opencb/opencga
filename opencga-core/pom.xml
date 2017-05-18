@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>1.0.0-final</version>
+        <version>1.1.0-dev</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -104,6 +104,9 @@
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
             </resource>
+            <resource>
+                <directory>target/generated-resources</directory>
+            </resource>
         </resources>
         <testResources>
             <testResource>
@@ -131,7 +134,7 @@
                     <generateGitPropertiesFile>true</generateGitPropertiesFile>
 
                     <!-- The path for the to be generated properties file, it's relative to ${project.basedir} -->
-                    <generateGitPropertiesFilename>src/main/resources/git.properties</generateGitPropertiesFilename>
+                    <generateGitPropertiesFilename>target/generated-resources/org/opencb/opencga/core/git.properties</generateGitPropertiesFilename>
                     <gitDescribe>
 
                         <!-- don't generate the describe property -->

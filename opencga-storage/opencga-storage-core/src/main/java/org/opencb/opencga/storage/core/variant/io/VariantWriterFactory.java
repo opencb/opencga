@@ -25,8 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.RETURNED_SAMPLES;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.RETURNED_STUDIES;
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.*;
 
 /**
@@ -172,7 +172,7 @@ public class VariantWriterFactory {
             outputStream = new BufferedOutputStream(outputStream);
         }
 
-        logger.debug("using %s output stream", gzip ? "gzipped" : "plain");
+        logger.debug("using {} output stream", gzip ? "gzipped" : "plain");
 
         return outputStream;
     }
@@ -192,7 +192,7 @@ public class VariantWriterFactory {
                     }
 
                     VariantSourceDBAdaptor sourceDBAdaptor = dbAdaptor.getVariantSourceDBAdaptor();
-                    exporter = new VariantVcfDataWriter(studyConfiguration, sourceDBAdaptor, outputStream, queryOptions);
+                    exporter = new VariantVcfDataWriter(studyConfiguration, sourceDBAdaptor, outputStream, query, queryOptions);
                 } else {
                     throw new IllegalArgumentException("No study found named " + query.getAsStringList(RETURNED_STUDIES.key()).get(0));
                 }

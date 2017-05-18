@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant.adaptors;
 
+import org.junit.After;
 import org.junit.Before;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorLargeTest;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
@@ -27,7 +28,12 @@ public class VariantMongoDBAdaptorLargeTest extends VariantDBAdaptorLargeTest im
 
     @Before
     public void setUpLoggers() throws Exception {
-        logLevelDebug();
+        logLevel("debug");
+    }
+
+    @After
+    public void resetLoggers() throws Exception {
+        logLevel("info");
     }
 
     @Override

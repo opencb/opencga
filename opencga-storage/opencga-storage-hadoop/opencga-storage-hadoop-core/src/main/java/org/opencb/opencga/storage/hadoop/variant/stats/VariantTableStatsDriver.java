@@ -3,7 +3,6 @@ package org.opencb.opencga.storage.hadoop.variant.stats;
 import com.google.common.collect.BiMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -12,18 +11,25 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Created by mh719 on 21/11/2016.
  */
 public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
 
-    public VariantTableStatsDriver() { /* nothing */ }
+    private final Logger logger = LoggerFactory.getLogger(VariantTableStatsDriver.class);
+
+    public VariantTableStatsDriver() {
+        super();
+    }
 
     public VariantTableStatsDriver(Configuration conf) {
         super(conf);
@@ -31,7 +37,7 @@ public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
 
     @Override
     protected void parseAndValidateParameters() {
-    // nothing to do
+        // nothing to do
     }
 
     @Override
@@ -40,15 +46,19 @@ public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected void initMapReduceJob(String inTable, Job job, Scan scan, boolean addDependencyJar) throws IOException {
-        super.initMapReduceJob(inTable, job, scan, addDependencyJar);
-        TableMapReduceUtil.initTableReducerJob(
-                inTable,      // output table
-                null,             // reducer class
-                job,
-                null, null, null, null,
-                addDependencyJar);
-        job.setNumReduceTasks(0);
+    protected Job setupJob(Job job, String archiveTable, String variantTable, List<Integer> files) throws IOException {
+        // QUERY design
+        Scan scan = createVariantsTableScan();
+
+        // Read and write into the same table
+        initMapReduceJob(job, getMapperClass(), variantTable, variantTable, scan);
+
+        return job;
+    }
+
+    @Override
+    protected String getJobOperationName() {
+        return "Calculate stats";
     }
 
     @Override
@@ -60,7 +70,7 @@ public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
         long lock = getStudyConfigurationManager().lockStudy(studyId);
         StudyConfiguration sc = null;
         try {
-            sc = loadStudyConfiguration();
+            sc = readStudyConfiguration();
             BiMap<String, Integer> indexedSamples = StudyConfiguration.getIndexedSamples(sc);
 
             final Integer defaultCohortId;
@@ -87,7 +97,7 @@ public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
         try (Connection connection = variantPhoenixHelper.newJdbcConnection()) {
             variantPhoenixHelper.updateStatsColumns(connection, variantTable, sc);
         } catch (SQLException | ClassNotFoundException e) {
-            getLog().error("Problems updating PHOENIX table!!!", e);
+            logger.error("Problems updating PHOENIX table!!!", e);
             throw new IllegalStateException("Problems updating PHOENIX table", e);
         }
     }
@@ -99,7 +109,7 @@ public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
             int studyId = getHelper().getStudyId();
             long lock = getStudyConfigurationManager().lockStudy(studyId);
             try {
-                StudyConfiguration sc = loadStudyConfiguration();
+                StudyConfiguration sc = readStudyConfiguration();
                 sc.setCalculatedStats(sc.getCohortIds().values()); // update
                 sc.setInvalidStats(Collections.emptySet());
                 getStudyConfigurationManager().updateStudyConfiguration(sc, new QueryOptions());
@@ -111,7 +121,7 @@ public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
 
     public static void main(String[] args) throws Exception {
         try {
-            System.exit(privateMain(args, null, new VariantTableStatsDriver()));
+            System.exit(new VariantTableStatsDriver().privateMain(args));
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);

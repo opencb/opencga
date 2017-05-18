@@ -31,7 +31,9 @@ import java.util.List;
  * Created on 09/11/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
+ * @deprecated Use {@link org.opencb.commons.io.avro.AvroDataReader}
  */
+@Deprecated
 public class AvroDataReader<T extends GenericRecord> implements DataReader<T> {
 
     private final Class<T> clazz;

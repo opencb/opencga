@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.NamespaceExistException;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.PTable;
@@ -24,8 +25,8 @@ import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.schema.types.*;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper.Column;
@@ -36,8 +37,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.ANNOT_FUNCTIONAL_SCORE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_CONSERVATION;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_FUNCTIONAL_SCORE;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.*;
 
 /**
@@ -271,8 +272,16 @@ public class VariantPhoenixHelper {
 
     public void createSchemaIfNeeded(Connection con, String schema) throws SQLException {
         String sql = "CREATE SCHEMA IF NOT EXISTS \"" + schema + "\"";
-        logger.info(sql);
-        phoenixHelper.execute(con, sql);
+        logger.debug(sql);
+        try {
+            phoenixHelper.execute(con, sql);
+        } catch (SQLException e) {
+            if (e.getCause() != null && e.getCause() instanceof NamespaceExistException) {
+                logger.debug("Namespace already exists", e);
+            } else {
+                throw e;
+            }
+        }
     }
 
     public void createTableIfNeeded(Connection con, String table) throws SQLException {
@@ -431,7 +440,7 @@ public class VariantPhoenixHelper {
         for (Map.Entry<String, String> entry : MAPPING_POPULATION_SUDIES.entrySet()) {
             studyPopulation = studyPopulation.replace(entry.getKey(), entry.getValue());
         }
-        String studyPopFreq = studyPopulation.replace(VariantDBAdaptorUtils.STUDY_POP_FREQ_SEPARATOR, STUDY_POP_FREQ_SEPARATOR);
+        String studyPopFreq = studyPopulation.replace(VariantQueryUtils.STUDY_POP_FREQ_SEPARATOR, STUDY_POP_FREQ_SEPARATOR);
         return Column.build(POPULATION_FREQUENCY_PREFIX + studyPopFreq, PFloatArray.INSTANCE);
     }
 

@@ -10,6 +10,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -31,7 +32,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         }
 
         if (queryResponse.getResponse().size() == 0 || ((QueryResult) queryResponse.getResponse().get(0)).getNumResults() == 0) {
-            ps.print("No results found for the query.");
+            ps.println("No results found for the query.");
             return;
         }
 
@@ -62,6 +63,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 break;
             case "Individual":
                 printIndividual(queryResponse.getResponse());
+                break;
+            case "Family":
+                printFamily(queryResponse.getResponse());
                 break;
             case "Job":
                 printJob(queryResponse.getResponse());
@@ -134,10 +138,11 @@ public class TextOutputWriter extends AbstractOutputWriter {
                             for (Study study : project.getStudies()) {
                                 sb.append(String.format("    - %s\t%s\t%s\t%s\t%d\t%s\t%d\n", study.getAlias(), study.getName(),
                                         study.getType(), study.getDescription(), study.getId(),
-                                        StringUtils.join(study.getGroups().stream().map(Group::getName).collect(Collectors.toList()), ", "),
+                                        study.getGroups() == null ? ""
+                                                : study.getGroups().stream().map(Group::getName).collect(Collectors.joining(",")),
                                         study.getSize()));
 
-                                if (study.getGroups().size() > 0) {
+                                if (study.getGroups() != null && study.getGroups().size() > 0) {
                                     sb.append("       Groups:\n");
                                     for (Group group : study.getGroups()) {
                                         printGroup(group, sb, "        + ");
@@ -231,9 +236,13 @@ public class TextOutputWriter extends AbstractOutputWriter {
     private void printFiles(List<File> files, StringBuilder sb, String format) {
         // # name	type	format	bioformat	description	path	id	status	size	index status	related files   samples
         for (File file : files) {
+            String indexStatus = "NA";
+            if (file.getIndex() != null && file.getIndex().getStatus() != null && file.getIndex().getStatus().getName() != null) {
+                indexStatus = file.getIndex().getStatus().getName();
+            }
             sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%d\t%s\t%s\t%s\n", format, file.getName(), file.getType(),
                     file.getFormat(), file.getBioformat(), file.getDescription(), file.getPath(), file.getUri(), file.getId(),
-                    file.getStatus().getName(), file.getSize(), file.getIndex() != null ? file.getIndex().getStatus().getName() : "NA",
+                    file.getStatus().getName(), file.getSize(), indexStatus,
                     StringUtils.join(file.getRelatedFiles().stream().map(File.RelatedFile::getFileId).collect(Collectors.toList()), ", "),
                     StringUtils.join(file.getSampleIds().stream().collect(Collectors.toList()), ", ")));
         }
@@ -316,6 +325,38 @@ public class TextOutputWriter extends AbstractOutputWriter {
                         individual.getLifeStatus(), individual.getStatus().getName(),
                         individual.getFatherId() > 0 ? Long.toString(individual.getFatherId()) : "NA",
                         individual.getMotherId() > 0 ? Long.toString(individual.getMotherId()) : "NA", individual.getCreationDate()));
+            }
+        }
+
+        ps.println(sb.toString());
+    }
+
+    private void printFamily(List<QueryResult<Family>> queryResultList) {
+        StringBuilder sb = new StringBuilder();
+        for (QueryResult<Family> queryResult : queryResultList) {
+            // Write header
+            if (writerConfiguration.isHeader()) {
+                sb.append("#NAME\tID\tMOTHER\tFATHER\tPARENTAL_CONSANGUINITY\tCHILDREN\tSTATUS\tCREATION_DATE\n");
+            }
+
+            for (Family family : queryResult.getResult()) {
+                String mother = (family.getMother() != null && StringUtils.isNotEmpty(family.getMother().getName()))
+                        ? family.getMother().getName() + "(" + family.getMother().getId() + ")"
+                        : "NA";
+                String father = (family.getFather() != null && StringUtils.isNotEmpty(family.getFather().getName()))
+                        ? family.getFather().getName() + "(" + family.getFather().getId() + ")"
+                        : "NA";
+                String children = family.getChildren() != null
+                        ? StringUtils.join(
+                                family.getChildren().stream()
+                                    .filter(Objects::nonNull)
+                                    .filter(individual -> StringUtils.isNotEmpty(individual.getName()))
+                                    .map(individual -> individual.getName() + "(" + individual.getId() + ")")
+                                    .collect(Collectors.toList()), ", ")
+                        : "NA";
+                sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n",
+                        family.getName(), family.getId(), mother, father, family.isParentalConsanguinity() ? "true" : "false", children,
+                        family.getStatus().getName(), family.getCreationDate()));
             }
         }
 

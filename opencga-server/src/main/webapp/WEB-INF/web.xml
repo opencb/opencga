@@ -77,7 +77,7 @@
         <servlet-class>io.swagger.jersey.config.JerseyJaxrsConfig</servlet-class>
         <init-param>
             <param-name>api.version</param-name>
-            <param-value>1.0.0</param-value>
+            <param-value>1.0.1</param-value>
         </init-param>
         <init-param>
             <param-name>swagger.api.basepath</param-name>

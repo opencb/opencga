@@ -24,8 +24,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.core.results.LdapImportResult;
 
-import javax.naming.NamingException;
 import java.io.IOException;
 import java.util.List;
 
@@ -61,20 +61,49 @@ public interface IUserManager extends ResourceManager<String, User> {
     QueryResult<User> create(String userId, String name, String email, String password, String organization, Long quota, String type,
                              QueryOptions options) throws CatalogException;
 
+//    /**
+//     * This method can only be run by the admin user. It will import users from other authentication origins such as LDAP, Kerberos, etc
+//     * into catalog.
+//     *
+//     * @param authOrigin Id present in the catalog configuration of the authentication origin.
+//     * @param accountType Type of the account to be created for the imported users (guest, full).
+//     * @param params Object map containing other parameters that are useful to import users.
+//     * @param adminPassword Admin password.
+//     * @return A list of users that have been imported.
+//     * @throws CatalogException catalogException
+//     * @throws NamingException NamingException
+//     */
+//    List<QueryResult<User>> importFromExternalAuthOriginOld(String authOrigin, String accountType, ObjectMap params, String adminPassword)
+//            throws CatalogException, NamingException;
+
     /**
-     * This method can only be run by the admin user. It will import users from other authentication origins such as LDAP, Kerberos, etc
-     * into catalog.
+     * This method can only be run by the admin user. It will import users and groups from other authentication origins such as LDAP,
+     * Kerberos, etc into catalog.
      *
      * @param authOrigin Id present in the catalog configuration of the authentication origin.
      * @param accountType Type of the account to be created for the imported users (guest, full).
      * @param params Object map containing other parameters that are useful to import users.
      * @param adminPassword Admin password.
-     * @return A list of users that have been imported.
      * @throws CatalogException catalogException
-     * @throws NamingException NamingException
+     * @return LdapImportResult Object containing a summary of the actions performed.
      */
-    List<QueryResult<User>> importFromExternalAuthOrigin(String authOrigin, String accountType, ObjectMap params, String adminPassword)
-            throws CatalogException, NamingException;
+    LdapImportResult importFromExternalAuthOrigin(String authOrigin, String accountType, ObjectMap params, String adminPassword)
+            throws CatalogException;
+
+//    /**
+//     * This method can only be run by the admin user. It will import users from groups from other authentication origins such as LDAP,
+//     * Kerberos, etc into catalog.
+//     *
+//     * @param authOrigin Id present in the catalog configuration of the authentication origin.
+//     * @param accountType Type of the account to be created for the imported users (guest, full).
+//     * @param params Object map containing other parameters that are useful to import users.
+//     * @param adminPassword Admin password.
+//     * @throws CatalogException catalogException
+//     * @throws NamingException NamingException
+//     * @throws IOException IOException
+//     */
+//    void importGroupsFromExternalAuthOrigin(String authOrigin, String accountType, ObjectMap params, String adminPassword)
+//            throws CatalogException, NamingException, IOException;
 
     /**
      * Delete entries from Catalog.

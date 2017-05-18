@@ -28,10 +28,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.catalog.managers.CatalogFileUtils;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 
 import java.io.IOException;
@@ -96,15 +96,15 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
     @Test
     public void testLoadPedigree_GivenVariableSet() throws Exception {
         HashSet<Variable> variables = new HashSet<>();
-        variables.add(new Variable("id", "", Variable.VariableType.NUMERIC, null, true, false, Collections.<String>emptyList(), 0, null,
+        variables.add(new Variable("id", "", Variable.VariableType.DOUBLE, null, true, false, Collections.<String>emptyList(), 0, null,
                 "", null, null));
         variables.add(new Variable("name", "", Variable.VariableType.TEXT, null, true, false, Collections.<String>emptyList(), 0, null,
                 "", null, null));
-        variables.add(new Variable("fatherId", "", Variable.VariableType.NUMERIC, null, false, false, Collections.<String>emptyList(), 0,
+        variables.add(new Variable("fatherId", "", Variable.VariableType.DOUBLE, null, false, false, Collections.<String>emptyList(), 0,
                 null, "", null, null));
         variables.add(new Variable("Population", "", Variable.VariableType.CATEGORICAL, null, true, false, populations, 0, null, "",
                 null, null));
-        variables.add(new Variable("NonExistingField", "", Variable.VariableType.NUMERIC, "", false, false, Collections.emptyList(), 0, null, "",
+        variables.add(new Variable("NonExistingField", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, null, "",
                 null, null));
 
         VariableSet variableSet = new VariableSet(5, "", false, "", variables, null);

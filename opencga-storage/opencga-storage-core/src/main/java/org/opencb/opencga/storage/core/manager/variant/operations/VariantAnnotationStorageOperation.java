@@ -18,8 +18,8 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
@@ -112,10 +112,10 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
 
             Query annotationQuery = new Query(query);
             if (!options.getBoolean(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, false)) {
-                annotationQuery.put(VariantQueryParams.ANNOTATION_EXISTS.key(), false);
+                annotationQuery.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
             }
             if (studyIds != null && !studyIds.isEmpty()) {
-                annotationQuery.put(VariantQueryParams.STUDIES.key(), studyIds);
+                annotationQuery.put(VariantQueryParam.STUDIES.key(), studyIds);
             }
 
             QueryOptions annotationOptions = new QueryOptions(options)
@@ -135,7 +135,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
             }
             if (organism == null) {
                 annotationOptions.putIfAbsent(VariantAnnotationManager.SPECIES, "hsapiens");
-                annotationOptions.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRc37");
+                annotationOptions.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRch37");
             } else {
                 String scientificName = organism.getScientificName();
                 scientificName = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(scientificName);
@@ -145,8 +145,10 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
 
 //            StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyId, dataStore);
 
-            VariantStorageEngine variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine());
-            variantStorageEngine.annotate(dataStore.getDbName(), annotationQuery, annotationOptions);
+            System.out.println("dataStore = " + dataStore);
+            VariantStorageEngine variantStorageEngine =
+                    storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+            variantStorageEngine.annotate(annotationQuery, annotationOptions);
 
             if (catalogOutDirId != null) {
                 newFiles = copyResults(Paths.get(outdirUri), catalogOutDirId, sessionId);
@@ -170,14 +172,14 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
 
     private String buildOutputFileName(String alias, Query query) {
         List<Region> regions = new ArrayList<>();
-        if (VariantDBAdaptorUtils.isValidParam(query, VariantQueryParams.REGION)) {
-            List<Region> c = Region.parseRegions(query.getString(VariantQueryParams.REGION.key()));
+        if (VariantQueryUtils.isValidParam(query, VariantQueryParam.REGION)) {
+            List<Region> c = Region.parseRegions(query.getString(VariantQueryParam.REGION.key()));
             if (c != null) {
                 regions.addAll(c);
             }
         }
-        if (VariantDBAdaptorUtils.isValidParam(query, VariantQueryParams.CHROMOSOME)) {
-            List<Region> c = Region.parseRegions(query.getString(VariantQueryParams.CHROMOSOME.key()));
+        if (VariantQueryUtils.isValidParam(query, VariantQueryParam.CHROMOSOME)) {
+            List<Region> c = Region.parseRegions(query.getString(VariantQueryParam.CHROMOSOME.key()));
             if (c != null) {
                 regions.addAll(c);
             }

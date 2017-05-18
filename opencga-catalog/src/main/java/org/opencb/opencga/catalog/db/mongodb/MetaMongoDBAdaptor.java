@@ -127,7 +127,8 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         createIndexes(dbAdaptorFactory.getCatalogFileDBAdaptor().getFileCollection(), indexes.get("file"));
         createIndexes(dbAdaptorFactory.getCatalogCohortDBAdaptor().getCohortCollection(), indexes.get("cohort"));
         createIndexes(dbAdaptorFactory.getCatalogDatasetDBAdaptor().getDatasetCollection(), indexes.get("dataset"));
-//        createIndexes(dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection(), indexes.get("job"));
+        createIndexes(dbAdaptorFactory.getCatalogJobDBAdaptor().getJobCollection(), indexes.get("job"));
+        createIndexes(dbAdaptorFactory.getCatalogFamilyDBAdaptor().getFamilyCollection(), indexes.get("family"));
 
     }
 
@@ -234,6 +235,16 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         }
 
         return endQuery("Login", startTime, Collections.singletonList(session));
+    }
+
+    @Override
+    public void logout(String sessionId) throws CatalogDBException {
+        Bson query = new Document("_id", "METADATA");
+        Bson update = new Document("$pull", new Document("admin.sessions", new Document("id", sessionId)));
+        QueryResult<UpdateResult> updateQueryResult = metaCollection.update(query, update, null);
+        if (updateQueryResult.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("Internal error: Could not remove closed session for admin");
+        }
     }
 
     @Override

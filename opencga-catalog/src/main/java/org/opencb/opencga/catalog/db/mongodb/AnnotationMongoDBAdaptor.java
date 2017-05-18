@@ -191,8 +191,6 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         return getCollection().aggregate(aggregation, getConverter(), null);
     }
 
-
-
     public QueryResult<AnnotationSet> updateAnnotationSet(long id, AnnotationSet annotationSet) throws CatalogDBException {
         long startTime = startQuery();
 
@@ -216,8 +214,8 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         Bson update = new Document("$set", new Document(AnnotationSetParams.ANNOTATION_SETS.key() + ".$", document));
         QueryResult<UpdateResult> queryResult = getCollection().update(query, update, null);
 
-        if (queryResult.first().getModifiedCount() != 1) {
-            throw new CatalogDBException("The annotation set could not be updated.");
+        if (queryResult.first().getMatchedCount() == 0) {
+            throw new CatalogDBException("The annotation set could not be updated. No match found.");
         }
 
         return endQuery("Update annotation set", startTime, getAnnotationSet(id, annotationSet.getName()));

@@ -23,8 +23,10 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.catalog.models.Group;
+import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.Variable;
+import org.opencb.opencga.catalog.models.VariableSet;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -35,7 +37,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface StudyDBAdaptor extends AclDBAdaptor<Study, StudyAclEntry> {
+public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
     /*
      * Study methods
@@ -144,6 +146,8 @@ public interface StudyDBAdaptor extends AclDBAdaptor<Study, StudyAclEntry> {
      */
     void deleteGroup(long studyId, String groupId) throws CatalogDBException;
 
+    void updateSyncFromGroup(long studyId, String groupId, Group.Sync syncedFrom) throws CatalogDBException;
+
     /*
      * VariableSet Methods
      * ***************************
@@ -228,6 +232,7 @@ public interface StudyDBAdaptor extends AclDBAdaptor<Study, StudyAclEntry> {
         GROUPS("groups", TEXT_ARRAY, ""),
         GROUP_NAME("groups.name", TEXT_ARRAY, ""),
         GROUP_USER_IDS("groups.userIds", TEXT_ARRAY, ""),
+        GROUP_SYNCED_FROM("groups.syncedFrom", TEXT_ARRAY, ""),
 
         ROLES("roles", TEXT_ARRAY, ""),
         ROLES_ID("roles.id", TEXT, ""),

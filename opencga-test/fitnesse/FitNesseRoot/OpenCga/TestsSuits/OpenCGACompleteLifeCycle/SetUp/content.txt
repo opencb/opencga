@@ -1,0 +1,88 @@
+!define TEST_SYSTEM {slim}
+
+
+!|Table: Rest Fixture | $baseURL |
+|let|analyst|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|ROU|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|admin|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|projectA|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|projectAAlias|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|projectB|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|projectBAlias|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|studyA|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|studyAAlias|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|studyB|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|studyBAlias|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|iA1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)|| 
+|let|iA2|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|iA3|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|iB1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|sA1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)|| 
+|let|sA2|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|sA3|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|sB1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|vsA1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)|| 
+|let|vsA2|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|vsA3|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|vsB1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|cA1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)|| 
+|let|cA2|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|cA3|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|cB1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|asA1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|asA2|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|asA3|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|asB1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+
+!3 Create Analyst User
+!|Table: Rest Fixture  | $baseURL |
+| setBody |  { "name": "$analyst", "userId": "$analyst","email": "test@test.com", "password" : "p@ssword" }|
+| setHeader|Content-Type:application/json|
+| POST | /v1/users/create?sid=$sessionId |200| Content-Type : application/json| jsonbody.error === '' |
+
+!3 Create Read Only User (ROU)
+!|Table: Rest Fixture  | $baseURL |
+| setBody |  { "name": "$ROU", "userId": "$ROU","email": "test@test.com", "password" : "p@ssword" }|
+| setHeader|Content-Type:application/json|
+| POST | /v1/users/create?sid=$sessionId |200| Content-Type : application/json| jsonbody.error === '' |
+
+!3 Create Admin User
+!|Table: Rest Fixture  | $baseURL |
+| setBody |  { "name": "$admin", "userId": "$admin","email": "test@test.com", "password" : "p@ssword" }|
+| setHeader|Content-Type:application/json|
+| POST | /v1/users/create?sid=$sessionId |200| Content-Type : application/json| jsonbody.error === '' |
+
+!3 Login Admin 
+!|Table: Rest Fixture | $baseURL  |
+| setBody | {"password" : "p@ssword"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/users/$admin/login |200|  Content-Type: application/json ||
+|let|adminSessionId|js|response.jsonbody.response[0].result[0].sessionId||
+
+!3 Login Analyst 
+!|Table: Rest Fixture | $baseURL  |
+| setBody | {"password" : "p@ssword"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/users/$analyst/login |200|  Content-Type: application/json ||
+|let|analystSessionId|js|response.jsonbody.response[0].result[0].sessionId||
+
+!3 Login Read Only User 
+!|Table: Rest Fixture | $baseURL  |
+| setBody | {"password" : "p@ssword"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/users/$ROU/login |200|  Content-Type: application/json ||
+|let|ROUSessionId|js|response.jsonbody.response[0].result[0].sessionId||
+
+!3 Login user A 
+!|Table: Rest Fixture | $baseURL  |
+| setBody | {"password" : "p@ssword"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/users/$userA/login |200|  Content-Type: application/json ||
+|let|userASessionId|js|response.jsonbody.response[0].result[0].sessionId||
+
+!3 Login user B 
+!|Table: Rest Fixture | $baseURL  |
+| setBody | {"password" : "p@ssword"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/users/$userB/login |200|  Content-Type: application/json ||
+|let|userBSessionId|js|response.jsonbody.response[0].result[0].sessionId||

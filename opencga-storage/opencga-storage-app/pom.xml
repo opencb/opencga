@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage</artifactId>
-        <version>1.0.0-final</version>
+        <version>1.1.0-dev</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -43,6 +43,10 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-server</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-benchmark</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>com.beust</groupId>
@@ -60,6 +64,10 @@
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-servlet-core</artifactId>
             <version>${jersey.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
         </dependency>
     </dependencies>
 
@@ -92,7 +100,7 @@
                     <repositoryName>libs</repositoryName>
                     <repositoryLayout>flat</repositoryLayout>
                     <useWildcardClassPath>true</useWildcardClassPath>
-                    <extraJvmArguments>-Xms256m -Xmx4096m</extraJvmArguments>
+                    <extraJvmArguments>-Xms256m -Xmx16384m -Dfile.encoding=UTF-8</extraJvmArguments>
                     <!-- -Dlog4j.debug -->
                     <environmentSetupFileName>${opencga.env.file}</environmentSetupFileName>
                     <programs>
@@ -104,8 +112,8 @@
                             </platforms>
                         </program>
                         <program>
-                            <mainClass>org.opencb.opencga.storage.app.StorageServerMain</mainClass>
-                            <name>opencga-storage-server.sh</name>
+                            <mainClass>org.opencb.opencga.storage.app.StorageAdminMain</mainClass>
+                            <name>opencga-storage-admin.sh</name>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
@@ -161,6 +169,13 @@
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/../opencga-storage-core/target/classes/${storage.configuration.file}"/>
                                     <arg value="${build.dir}/conf"/>
+                                </exec>
+
+                                <echo>Coping configuration file</echo>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-storage-benchmark/target/classes/benchmark"/>
+                                    <arg value="${build.dir}"/>
                                 </exec>
                             </target>
                         </configuration>

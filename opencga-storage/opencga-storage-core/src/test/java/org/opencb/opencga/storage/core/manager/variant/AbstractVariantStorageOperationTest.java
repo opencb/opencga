@@ -36,8 +36,8 @@ import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
+import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
@@ -47,10 +47,10 @@ import org.opencb.opencga.storage.core.manager.OpenCGATestExternalResource;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStoragePipeline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,6 +86,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     protected final String userId = "user";
 
     protected long projectId;
+    protected String projectAlias;
     protected long studyId;
     protected String studyStr;
     protected long outputId;
@@ -135,10 +136,9 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         StorageEngineFactory factory = StorageEngineFactory.get(storageConfiguration);
         factory.unregisterVariantStorageManager(DummyVariantStorageEngine.STORAGE_ENGINE_ID);
 
-        DummyStudyConfigurationManager.clear();
+        DummyStudyConfigurationAdaptor.clear();
 
         variantManager = new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, factory);
-        clearDB(dbName);
 
         fileMetadataReader = FileMetadataReader.get(catalogManager);
         catalogFileUtils = new CatalogFileUtils(catalogManager);
@@ -147,7 +147,8 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
         User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
         sessionId = catalogManager.login(userId, "user", "localhost").first().getId();
-        projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
+        projectAlias = "p1";
+        projectId = catalogManager.getProjectManager().create(projectAlias, projectAlias, "Project 1", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
         studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, "Study 1", null,
                 null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)), null,
@@ -170,7 +171,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
     @After
     public void tearDown() throws Exception {
-        DummyStudyConfigurationManager.writeAndClear(opencga.getOpencgaHome());
+        DummyStudyConfigurationAdaptor.writeAndClear(opencga.getOpencgaHome());
     }
 
     protected String getStorageEngine() {
@@ -178,13 +179,6 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     }
 
     protected abstract VariantSource.Aggregation getAggregation();
-
-    protected void clearDB(String dbName) {
-        logger.info("Cleaning MongoDB {}" , dbName);
-        MongoDataStoreManager mongoManager = new MongoDataStoreManager("localhost", 27017);
-        MongoDataStore mongoDataStore = mongoManager.get(dbName);
-        mongoManager.drop(dbName);
-    }
 
     protected File getFile(int index) throws IOException, CatalogException {
         if (files.get(index) == null) {
@@ -333,7 +327,10 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
     protected DummyVariantStorageEngine mockVariantStorageManager() {
         DummyVariantStorageEngine vsm = spy(new DummyVariantStorageEngine());
-        vsm.setConfiguration(opencga.getStorageConfiguration(), DummyVariantStorageEngine.STORAGE_ENGINE_ID);
+        vsm.setConfiguration(opencga.getStorageConfiguration(), DummyVariantStorageEngine.STORAGE_ENGINE_ID,
+                StorageOperation.buildDatabaseName(catalogManager.getConfiguration().getDatabasePrefix(), userId, projectAlias));
+        StorageEngineFactory.get(opencga.getStorageConfiguration()).registerStorageManager(vsm);
+        vsm.setConfiguration(opencga.getStorageConfiguration(), DummyVariantStorageEngine.STORAGE_ENGINE_ID, DB_NAME);
         StorageEngineFactory.get(opencga.getStorageConfiguration()).registerStorageManager(vsm);
         return vsm;
     }
@@ -346,7 +343,6 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     protected DummyVariantDBAdaptor mockVariantDBAdaptor(DummyVariantStorageEngine vsm) throws StorageEngineException {
         DummyVariantDBAdaptor dbAdaptor = spy(new DummyVariantDBAdaptor(""));
         doReturn(dbAdaptor).when(vsm).getDBAdaptor();
-        doReturn(dbAdaptor).when(vsm).getDBAdaptor(anyString());
         return dbAdaptor;
     }
 

@@ -41,12 +41,13 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.hpg.bigdata.core.io.ProtoFileWriter;
-import org.opencb.opencga.core.common.ProgressLogger;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -58,15 +59,16 @@ import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbaseTransformTask;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -92,6 +94,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     protected final HBaseCredentials archiveTableCredentials;
     protected final HBaseCredentials variantsTableCredentials;
     protected MRExecutor mrExecutor = null;
+    private final Logger logger = LoggerFactory.getLogger(AbstractHadoopVariantStoragePipeline.class);
 
     // Do not create phoenix indexes. Testing purposes only
     public static final String SKIP_CREATE_PHOENIX_INDEXES = "skip.create.phoenix.indexes";
@@ -102,7 +105,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             VariantReaderUtils variantReaderUtils, ObjectMap options,
             HBaseCredentials archiveCredentials, MRExecutor mrExecutor,
             Configuration conf) {
-        super(configuration, storageEngineId, logger, dbAdaptor, variantReaderUtils, options);
+        super(configuration, storageEngineId, dbAdaptor, variantReaderUtils, options);
         this.archiveTableCredentials = archiveCredentials;
         this.mrExecutor = mrExecutor;
         this.dbAdaptor = dbAdaptor;
@@ -173,7 +176,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
         // Transformer
         VcfMeta meta = new VcfMeta(source);
-        ArchiveHelper helper = new ArchiveHelper(conf, meta);
+        ArchiveTableHelper helper = new ArchiveTableHelper(conf, meta);
         ProgressLogger progressLogger = new ProgressLogger("Transform proto:").setBatchSize(100000);
 
         logger.info("Generating output file {}", outputVariantsFile);
@@ -337,13 +340,13 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         }
 
         try {
-            ArchiveDriver.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableCredentials.getTable(),
+            ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableCredentials.getTable(),
                     dbAdaptor.getConnection());
         } catch (IOException e) {
             throw new StorageHadoopException("Issue creating table " + archiveTableCredentials.getTable(), e);
         }
         try {
-            VariantTableDriver.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), variantsTableCredentials.getTable(),
+            VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), variantsTableCredentials.getTable(),
                     dbAdaptor.getConnection());
         } catch (IOException e) {
             throw new StorageHadoopException("Issue creating table " + variantsTableCredentials.getTable(), e);
@@ -433,11 +436,11 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                 Integer readFileId = Integer.parseInt(readSource.getFileId());
                 logger.debug("Found source for file id {} with registered id {} ", loadedFileId, readFileId);
                 if (!studyConfiguration.getFileIds().inverse().containsKey(readFileId)) {
-                    checkNewFile(studyConfiguration, readFileId, readSource.getFileName());
+                    StudyConfigurationManager.checkNewFile(studyConfiguration, readFileId, readSource.getFileName());
                     studyConfiguration.getFileIds().put(readSource.getFileName(), readFileId);
 //                    studyConfiguration.getHeaders().put(readFileId, readSource.getMetadata()
 //                            .get(VariantFileUtils.VARIANT_FILE_HEADER).toString());
-                    checkAndUpdateStudyConfiguration(studyConfiguration, readFileId, readSource, options);
+                    StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, readFileId, readSource, options);
                     missingFilesDetected = true;
                 }
                 if (!studyConfiguration.getIndexedFiles().contains(readFileId)) {
@@ -446,7 +449,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             }
             logger.info("Found pending in DB: " + pendingFiles);
 
-            fileId = checkNewFile(studyConfiguration, fileId, source.getFileName());
+            fileId = StudyConfigurationManager.checkNewFile(studyConfiguration, fileId, source.getFileName());
 
             if (!loadArch) {
                 //If skip archive loading, input fileId must be already in archiveTable, so "pending to be loaded"
@@ -483,7 +486,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             BatchFileOperation op = addBatchOperation(studyConfiguration, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles, resume,
                     BatchFileOperation.Type.LOAD);
             options.put(HADOOP_LOAD_VARIANT_STATUS, op.currentStatus());
-            options.put(AbstractVariantTableDriver.TIMESTAMP, op.getTimestamp());
+            options.put(AbstractAnalysisTableDriver.TIMESTAMP, op.getTimestamp());
 
         }
     }
@@ -572,8 +575,8 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
         boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
 
-        ArchiveHelper.setChunkSize(conf, conf.getInt(ArchiveDriver.CONFIG_ARCHIVE_CHUNK_SIZE, ArchiveDriver.DEFAULT_CHUNK_SIZE));
-        ArchiveHelper.setStudyId(conf, studyId);
+        ArchiveTableHelper.setChunkSize(conf, conf.getInt(ArchiveDriver.CONFIG_ARCHIVE_CHUNK_SIZE, ArchiveDriver.DEFAULT_CHUNK_SIZE));
+        ArchiveTableHelper.setStudyId(conf, studyId);
 
         if (loadArch) {
             Set<Integer> loadedFiles = dbAdaptor.getVariantSourceDBAdaptor().getLoadedFiles(studyId);
@@ -629,9 +632,11 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                 throw new StorageEngineException("Error loading files " + pendingFiles + " into variant table \""
                         + variantsTableCredentials.getTable() + "\"");
             }
-            setStatus(BatchFileOperation.Status.DONE, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles);
+            getStudyConfigurationManager()
+                    .atomicSetStatus(getStudyId(), BatchFileOperation.Status.DONE, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles);
         } catch (Exception e) {
-            setStatus(BatchFileOperation.Status.ERROR, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles);
+            getStudyConfigurationManager()
+                    .atomicSetStatus(getStudyId(), BatchFileOperation.Status.ERROR, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles);
             throw e;
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
@@ -654,7 +659,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     }
 
     @Override
-    protected void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration, ObjectMap options) throws
+    protected void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration) throws
             StorageEngineException {
         logger.warn("Skip check loaded variants");
     }
@@ -680,8 +685,8 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     @Override
     public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
         super.securePostLoad(fileIds, studyConfiguration);
-        BatchFileOperation.Status status = secureSetStatus(studyConfiguration, BatchFileOperation.Status.READY,
-                VariantTableDriver.JOB_OPERATION_NAME, fileIds);
+        BatchFileOperation.Status status = dbAdaptor.getStudyConfigurationManager()
+                .setStatus(studyConfiguration, BatchFileOperation.Status.READY, VariantTableDriver.JOB_OPERATION_NAME, fileIds);
         if (status != BatchFileOperation.Status.DONE) {
             logger.warn("Unexpected status " + status);
         }

@@ -74,8 +74,8 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         List<Long> sampleIds = file.getSampleIds();
 
         for (int i = 0; i < coh.length; i++) {
-            coh[i] = catalogManager.createCohort(studyId, "coh" + i, Study.Type.CONTROL_SET, "",
-                    sampleIds.subList(sampleIds.size() / coh.length * i, sampleIds.size() / coh.length * (i + 1)), null, sessionId).first().getId();
+            coh[i] = catalogManager.getCohortManager().create(studyId, "coh" + i, Study.Type.CONTROL_SET, "", sampleIds.subList(sampleIds
+                    .size() / coh.length * i, sampleIds.size() / coh.length * (i + 1)), null, null, sessionId).first().getId();
         }
         QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false);
         queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
@@ -124,7 +124,8 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         Set<String> catalogCohorts = cohorts.keySet();
         for (String cohortName : VariantAggregatedStatsCalculator.getCohorts(tagmap)) {
             if (!catalogCohorts.contains(cohortName)) {
-                QueryResult<Cohort> cohort = catalogManager.createCohort(studyId, cohortName, Study.Type.COLLECTION, "", Collections.emptyList(), null, sessionId);
+                QueryResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, cohortName, Study.Type.COLLECTION, "",
+                        Collections.emptyList(), null, null, sessionId);
                 queryResults.add(cohort.first());
             } else {
                 logger.warn("cohort {} was already created", cohortName);
@@ -264,7 +265,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         DummyVariantStorageEngine vsm = mockVariantStorageManager();
         String message = "Error";
-        doThrow(new StorageEngineException(message)).when(vsm).calculateStats(any(), any(), any(), any());
+        doThrow(new StorageEngineException(message)).when(vsm).calculateStats(any(), any(), any());
 
         try {
             calculateStats(coh[1]);
@@ -444,7 +445,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
     }
 
     public static void checkCalculatedStats(Map<String, Cohort> cohorts, CatalogManager catalogManager, String dbName, String sessionId) throws Exception {
-        VariantDBAdaptor dbAdaptor = StorageEngineFactory.get().getVariantStorageEngine().getDBAdaptor(dbName);
+        VariantDBAdaptor dbAdaptor = StorageEngineFactory.get().getVariantStorageEngine(null, dbName).getDBAdaptor();
 
         for (Variant variant : dbAdaptor) {
             for (StudyEntry sourceEntry : variant.getStudies()) {
@@ -466,7 +467,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
     }
 
     public static void checkCalculatedAggregatedStats(Set<String> cohortNames, String dbName) throws Exception {
-        VariantDBAdaptor dbAdaptor = StorageEngineFactory.get().getVariantStorageEngine().getDBAdaptor(dbName);
+        VariantDBAdaptor dbAdaptor = StorageEngineFactory.get().getVariantStorageEngine(null, dbName).getDBAdaptor();
 
         for (Variant variant : dbAdaptor) {
             for (StudyEntry sourceEntry : variant.getStudies()) {

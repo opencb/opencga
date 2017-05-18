@@ -25,7 +25,6 @@ import org.opencb.opencga.app.cli.main.options.ToolCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Tool;
 
-
 import java.io.IOException;
 
 /**

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
@@ -34,25 +35,28 @@ public class Sample extends Annotable<SampleAclEntry> {
     private String creationDate;
     private Status status;
     private String description;
+    private String type;
+    private boolean somatic;
     private List<OntologyTerm> ontologyTerms;
 
     private Map<String, Object> attributes;
 
 
     public Sample() {
-        this(-1, null, null, new Individual(), null);
     }
 
     public Sample(long id, String name, String source, Individual individual, String description) {
-        this(id, name, source, individual, description, Collections.emptyList(), new LinkedList<>(), new HashMap<>());
+        this(id, name, source, individual, description, "", false, Collections.emptyList(), new LinkedList<>(), new HashMap<>());
     }
 
-    public Sample(long id, String name, String source, Individual individual, String description, List<SampleAclEntry> acl,
-                  List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+    public Sample(long id, String name, String source, Individual individual, String description, String type, boolean somatic,
+                  List<SampleAclEntry> acl, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.source = source;
         this.individual = individual;
+        this.type = type;
+        this.somatic = somatic;
         this.creationDate = TimeUtils.getTime();
         this.status = new Status();
         this.description = description;
@@ -65,13 +69,17 @@ public class Sample extends Annotable<SampleAclEntry> {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Sample{");
-        sb.append("id=").append(id);
+        sb.append("acl=").append(acl);
+        sb.append(", id=").append(id);
         sb.append(", name='").append(name).append('\'');
         sb.append(", source='").append(source).append('\'');
         sb.append(", individual=").append(individual);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status=").append(status);
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", description='").append(description).append('\'');
+        sb.append(", type='").append(type).append('\'');
+        sb.append(", somatic=").append(somatic);
         sb.append(", ontologyTerms=").append(ontologyTerms);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -141,6 +149,24 @@ public class Sample extends Annotable<SampleAclEntry> {
         return this;
     }
 
+    public boolean isSomatic() {
+        return somatic;
+    }
+
+    public Sample setSomatic(boolean somatic) {
+        this.somatic = somatic;
+        return this;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public Sample setType(String type) {
+        this.type = type;
+        return this;
+    }
+
     public List<OntologyTerm> getOntologyTerms() {
         return ontologyTerms;
     }
@@ -162,6 +188,63 @@ public class Sample extends Annotable<SampleAclEntry> {
     public Sample setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
+    }
+
+    // Acl params to communicate the WS and the sample manager
+    public static class SampleAclParams extends AclParams {
+
+        private String individual;
+        private String file;
+        private String cohort;
+
+        public SampleAclParams() {
+        }
+
+        public SampleAclParams(String permissions, Action action, String individual, String file, String cohort) {
+            super(permissions, action);
+            this.individual = individual;
+            this.file = file;
+            this.cohort = cohort;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("SampleAclParams{");
+            sb.append("permissions='").append(permissions).append('\'');
+            sb.append(", action=").append(action);
+            sb.append(", individual='").append(individual).append('\'');
+            sb.append(", file='").append(file).append('\'');
+            sb.append(", cohort='").append(cohort).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getIndividual() {
+            return individual;
+        }
+
+        public SampleAclParams setIndividual(String individual) {
+            this.individual = individual;
+            return this;
+        }
+
+        public String getFile() {
+            return file;
+        }
+
+        public SampleAclParams setFile(String file) {
+            this.file = file;
+            return this;
+        }
+
+        public String getCohort() {
+            return cohort;
+        }
+
+        public SampleAclParams setCohort(String cohort) {
+            this.cohort = cohort;
+            return this;
+        }
     }
 
 }

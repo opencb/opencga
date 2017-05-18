@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -56,14 +57,19 @@ public class UserWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Create a new user [WARNING]", response = User.class,
     notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
             + "is not tested and this can be deprecated in a future version.")
-    public Response createUser(@ApiParam(value = "User id", required = true) @QueryParam("userId") String userId,
-                               @ApiParam(value = "User name", required = true) @QueryParam("name") String name,
-                               @ApiParam(value = "User's email", required = true) @QueryParam("email") String email,
-                               @ApiParam(value = "User's password", required = true) @QueryParam("password") String password,
-                               @ApiParam(value = "User's organization") @QueryParam("organization") String organization) {
+    public Response createUser(
+            @ApiParam(value = "User id", hidden = true) @QueryParam("userId") String userId,
+            @ApiParam(value = "User id", required = true) @QueryParam("id") String id,
+            @ApiParam(value = "User name", required = true) @QueryParam("name") String name,
+            @ApiParam(value = "User's email", required = true) @QueryParam("email") String email,
+            @ApiParam(value = "User's password", required = true) @QueryParam("password") String password,
+            @ApiParam(value = "User's organization") @QueryParam("organization") String organization) {
         try {
             queryOptions.remove("password");
-            QueryResult queryResult = catalogManager.createUser(userId, name, email, password, organization, null, queryOptions);
+            if (StringUtils.isNotEmpty(userId)) {
+                id = userId;
+            }
+            QueryResult queryResult = catalogManager.createUser(id, name, email, password, organization, null, queryOptions);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -74,21 +80,13 @@ public class UserWSServer extends OpenCGAWSServer {
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a new user", response = User.class)
-    public Response createUserPost(@ApiParam(value = "JSON containing the parameters 'userId', 'name', 'email' and 'password' "
-            + "and, optionally, 'organization'", required = true) Map<String, String> map) {
+    public Response createUserPost(@ApiParam(value = "JSON containing the parameters", required = true) UserCreatePOST user) {
         try {
-            if (!map.containsKey("userId") || !map.containsKey("name") || !map.containsKey("email")
-                    || !map.containsKey("password")) {
-                createErrorResponse(new CatalogException("userId, name, email or password not present"));
+            if (!user.checkValidParams()) {
+                createErrorResponse(new CatalogException("id, name, email or password not present"));
             }
 
-            String userId = map.get("userId");
-            String name = map.get("name");
-            String email = map.get("email");
-            String password = map.get("password");
-            String organization = map.containsKey("organization") ? map.get("organization") : "";
-
-            QueryResult queryResult = catalogManager.createUser(userId, name, email, password, organization, null, queryOptions);
+            QueryResult queryResult = catalogManager.createUser(user.id, user.name, user.email, user.password, user.organization, null, queryOptions);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -120,7 +118,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @Deprecated
     @GET
     @Path("/{user}/login")
-    @ApiOperation(value = "Get identified and gain access to the system [DEPRECATED]")
+    @ApiOperation(value = "Get identified and gain access to the system [DEPRECATED]" , hidden = true)
     public Response login(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                           @ApiParam(value = "User password", required = true) @QueryParam("password") String password) {
         sessionIp = httpServletRequest.getRemoteAddr();
@@ -209,7 +207,8 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{user}/reset-password")
-    @ApiOperation(value = "Reset password", notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.")
+    @ApiOperation(value = "Reset password", hidden = true,
+            notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.")
     public Response resetPassword(@ApiParam(value = "User id", required = true) @PathParam("user") String userId) {
         try {
             QueryResult result = catalogManager.getUserManager().resetPassword(userId, sessionId);
@@ -233,14 +232,16 @@ public class UserWSServer extends OpenCGAWSServer {
     })
     public Response getAllProjects(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                                    @ApiParam(value = "When false, it will return only the projects and studies belonging to the user. "
-                                           + "However, if this parameter is set to true, only the projects and studies shared with the "
-                                           + "user will be shown.", defaultValue = "false") @QueryParam ("shared") boolean shared) {
+                                           + "However, if this parameter is set to true, it will also show the projects and studies " +
+                                           "shared with the user.", defaultValue = "false") @QueryParam ("shared") boolean shared) {
         try {
-            QueryResult queryResult;
-            if (!shared) {
-                queryResult = catalogManager.getAllProjects(userId, queryOptions, sessionId);
-            } else {
-                queryResult = catalogManager.getProjectManager().getSharedProjects(userId, queryOptions, sessionId);
+            QueryResult<Project> queryResult = catalogManager.getAllProjects(userId, queryOptions, sessionId);
+            if (shared) {
+                QueryResult<Project> sharedResults = catalogManager.getProjectManager().getSharedProjects(userId, queryOptions, sessionId);
+                queryResult.getResult().addAll(sharedResults.getResult());
+                queryResult.setNumTotalResults(queryResult.getNumTotalResults() + sharedResults.getNumTotalResults());
+                queryResult.setNumResults(queryResult.getNumResults() + sharedResults.getNumResults());
+                queryResult.setDbTime(queryResult.getDbTime() + sharedResults.getDbTime());
             }
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -278,9 +279,10 @@ public class UserWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some user attributes", position = 9, response = User.class)
     public Response updateByPost(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                                 @ApiParam(name = "params", value = "JSON containing the params to be updated. Supported keys " +
-                                         "are: 'name', 'email', 'organization' and 'attributes'", required = true) ObjectMap params) {
+                                 @ApiParam(name = "params", value = "JSON containing the params to be updated.", required = true)
+                                         UserUpdatePOST parameters) {
         try {
+            ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
             QueryResult result = catalogManager.modifyUser(userId, params, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -504,6 +506,38 @@ public class UserWSServer extends OpenCGAWSServer {
             return createOkResponse(catalogManager.getUserManager().getAllFilters(userId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
+        }
+    }
+
+    protected static class UserUpdatePOST {
+        public String name;
+        public String email;
+        public String organization;
+        public Map<String, Object> attributes;
+    }
+
+    protected static class UserCreatePOST {
+        @Deprecated
+        public String userId;
+        @JsonProperty(required = true)
+        public String id;
+        @JsonProperty(required = true)
+        public String name;
+        @JsonProperty(required = true)
+        public String email;
+        @JsonProperty(required = true)
+        public String password;
+        public String organization;
+
+        public boolean checkValidParams() {
+            if (StringUtils.isNotEmpty(userId) && StringUtils.isEmpty(id)) {
+                id = userId;
+            }
+            if (StringUtils.isEmpty("id") || StringUtils.isEmpty("name") || StringUtils.isEmpty("email")
+                    || StringUtils.isEmpty("password")) {
+                return false;
+            }
+            return true;
         }
     }
 

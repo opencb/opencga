@@ -236,7 +236,8 @@ public class DocumentToVariantAnnotationConverterTest {
                                 ANY
                         )))
                 .append(XREFS_FIELD, ANY_LIST)
-                .append(POPULATION_FREQUENCIES_FIELD, ANY_LIST);
+                .append(POPULATION_FREQUENCIES_FIELD, ANY_LIST)
+                .append(GENE_SO_FIELD, ANY_LIST);
 
 //        Document drugDBObject = new Document(DRUG_NAME_FIELD, "TOMM40")
 //                .append(DRUG_NAME_FIELD, "PA164712505")

@@ -166,7 +166,12 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("User info");
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty("userId", cliSession.getUserId());
+        if (StringUtils.isNotEmpty(usersCommandOptions.infoCommandOptions.userParam.user)) {
+            queryOptions.putIfNotEmpty("userId", usersCommandOptions.infoCommandOptions.userParam.user);
+        } else if (StringUtils.isNotEmpty(cliSession.getUserId())) {
+            queryOptions.putIfNotEmpty("userId", cliSession.getUserId());
+        }
+
         queryOptions.putIfNotEmpty(UserDBAdaptor.QueryParams.LAST_MODIFIED.key(), usersCommandOptions.infoCommandOptions.lastModified);
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, usersCommandOptions.infoCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, usersCommandOptions.infoCommandOptions.dataModelOptions.exclude);
@@ -196,8 +201,8 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.put(QueryOptions.LIMIT, usersCommandOptions.projectsCommandOptions.numericOptions.limit);
         queryOptions.put(QueryOptions.SKIP, usersCommandOptions.projectsCommandOptions.numericOptions.skip);
 
-        if (StringUtils.isNotEmpty(usersCommandOptions.projectsCommandOptions.user)) {
-            queryOptions.putIfNotEmpty("userId", usersCommandOptions.projectsCommandOptions.user);
+        if (StringUtils.isNotEmpty(usersCommandOptions.projectsCommandOptions.userParam.user)) {
+            queryOptions.putIfNotEmpty("userId", usersCommandOptions.projectsCommandOptions.userParam.user);
         } else {
             queryOptions.putIfNotEmpty("userId", cliSession.getUserId());
         }

@@ -23,11 +23,13 @@ import org.opencb.biodata.models.variant.VariantSource;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface VariantStorageTest {
+public interface VariantStorageTest extends AutoCloseable {
 
     VariantStorageEngine getVariantStorageEngine() throws Exception;
 
     void clearDB(String dbName) throws Exception;
+
+    default void close() throws Exception {}
 
     default int getExpectedNumLoadedVariants(VariantSource source) throws Exception {
         return source.getStats().getNumRecords();

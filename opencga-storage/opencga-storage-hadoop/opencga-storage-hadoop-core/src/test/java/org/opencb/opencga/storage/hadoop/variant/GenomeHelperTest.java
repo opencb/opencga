@@ -27,6 +27,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -46,6 +48,7 @@ public class GenomeHelperTest {
 
     public static final int CHUNK_SIZE = 200;
     private GenomeHelper genomeHelper;
+    private ArchiveRowKeyFactory keyFactory;
 
     @Before
     public void setUp() throws Exception {
@@ -53,13 +56,14 @@ public class GenomeHelperTest {
         GenomeHelper.setChunkSize(conf, CHUNK_SIZE);
         genomeHelper = new GenomeHelper(conf);
 
+        keyFactory = new ArchiveRowKeyFactory(CHUNK_SIZE, '_');
     }
 
     @Test
     public void testBlockRowKey() throws Exception {
-        Assert.assertEquals("2", genomeHelper.extractChromosomeFromBlockId("2_222"));
-        Assert.assertEquals(222, genomeHelper.extractSliceFromBlockId("2_222").longValue());
-        Assert.assertEquals(222 * CHUNK_SIZE, genomeHelper.extractPositionFromBlockId("2_222").longValue());
+        Assert.assertEquals("2", keyFactory.extractChromosomeFromBlockId("2_222"));
+        Assert.assertEquals(222, keyFactory.extractSliceFromBlockId("2_222").longValue());
+        Assert.assertEquals(222 * CHUNK_SIZE, keyFactory.extractPositionFromBlockId("2_222").longValue());
     }
 
     @Test
@@ -73,8 +77,8 @@ public class GenomeHelperTest {
     }
 
     public void checkVariantRowKeyGeneration(Variant variant) {
-        byte[] variantRowkey = genomeHelper.generateVariantRowKey(variant);
-        Variant generatedVariant = genomeHelper.extractVariantFromVariantRowKey(variantRowkey);
+        byte[] variantRowkey = VariantPhoenixKeyFactory.generateVariantRowKey(variant);
+        Variant generatedVariant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(variantRowkey);
         byte[] phoenixRowKey = generateVariantRowKeyPhoenix(variant.getChromosome(), variant.getStart(), variant.getReference(), variant.getAlternate());
         assertArrayEquals(variant.toString(), phoenixRowKey, variantRowkey);
         assertEquals(variant, generatedVariant);
@@ -82,12 +86,12 @@ public class GenomeHelperTest {
 
     @Test
     public void testGenerateSplitArchive() throws Exception {
-        assertOrder(GenomeHelper.generateBootPreSplitsHuman(30, genomeHelper::generateBlockIdAsBytes));
+        assertOrder(GenomeHelper.generateBootPreSplitsHuman(30, keyFactory::generateBlockIdAsBytes));
     }
 
     @Test
     public void testGenerateSplitVariants() throws Exception {
-        assertOrder(GenomeHelper.generateBootPreSplitsHuman(30, genomeHelper::generateVariantRowKey));
+        assertOrder(GenomeHelper.generateBootPreSplitsHuman(30, (chrom, position) -> VariantPhoenixKeyFactory.generateVariantRowKey(chrom, position)));
     }
 
     void assertOrder(List<byte[]> bytes) {

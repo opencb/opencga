@@ -43,7 +43,7 @@ public abstract class VariantDBAdaptorPhasedTest extends VariantStorageBaseTest 
                 .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DP,PS");
         runDefaultETL(getResourceUri("variant-test-phased.vcf"), variantStorageManager, newStudyConfiguration(), options);
 
-        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
+        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor();
         for (Variant variant : dbAdaptor) {
             System.out.println("variant = " + variant.toJson());
         }
@@ -52,7 +52,7 @@ public abstract class VariantDBAdaptorPhasedTest extends VariantStorageBaseTest 
 
     @Test
     public void queryPhased() throws Exception {
-        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
+        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
         QueryResult<Variant> result;
 
         result = dbAdaptor.getPhased("1:819411:A:G", STUDY_NAME, "SAMPLE_1", new QueryOptions(), 1000);

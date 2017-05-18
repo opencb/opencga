@@ -5,24 +5,22 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 /**
  * Created by pfurio on 02/12/16.
  */
 public class CatalogUtils {
 
-    private final CatalogManager catalogManager;
+    protected final CatalogManager catalogManager;
 
     public CatalogUtils(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
@@ -34,53 +32,19 @@ public class CatalogUtils {
     public static final Pattern ANNOTATION_PATTERN = Pattern.compile("^([a-zA-Z\\\\.]+)([\\^=<>~!$]+.*)$");
 
     /**
-     * Transforms a high level Query to a query fully understandable by storage.
-     * @param query     High level query. Will be modified by the method.
-     * @param sessionId User's session id
-     * @return          Modified input query (same instance)
-     * @throws CatalogException if there is any catalog error
-     */
-    public Query parseQuery(Query query, String sessionId) throws CatalogException {
-        if (query == null) {
-            // Nothing to do!
-            return null;
-        }
-        List<Long> studies = getStudies(query, VariantQueryParams.STUDIES, sessionId);
-        String defaultStudyStr;
-        if (studies.size() == 1) {
-            defaultStudyStr = String.valueOf(studies.get(0));
-        } else {
-            defaultStudyStr = null;
-        }
-
-        transformFilter(query, VariantQueryParams.STUDIES, value -> catalogManager.getStudyId(value, sessionId));
-        transformFilter(query, VariantQueryParams.RETURNED_STUDIES, value -> catalogManager.getStudyId(value, sessionId));
-        transformFilter(query, VariantQueryParams.COHORTS, value ->
-                catalogManager.getCohortManager().getId(value, defaultStudyStr, sessionId).getResourceId());
-        transformFilter(query, VariantQueryParams.FILES, value ->
-                catalogManager.getFileId(value, defaultStudyStr, sessionId));
-        transformFilter(query, VariantQueryParams.RETURNED_FILES, value ->
-                catalogManager.getFileId(value, defaultStudyStr, sessionId));
-
-        // TODO: Parse sample filter and add genotype filter
-
-        return query;
-    }
-
-    /**
      * Parse a generic string with comma separated key=values and obtain a query understandable by catalog.
      *
-     * @param myString String of the kind age>20;ontologies=hpo:123,hpo:456;name=smith
+     * @param value String of the kind age>20;ontologies=hpo:123,hpo:456;name=smith
      * @param getParam Get param function that will return null if the key string is not one of the accepted keys in catalog. For those
      *                 cases, they will be treated as annotations.
      * @return A query object.
      */
-    protected static Query parseSampleAnnotationQuery(String myString, Function<String, QueryParam> getParam) {
+    protected static Query parseSampleAnnotationQuery(String value, Function<String, QueryParam> getParam) {
 
         Query query = new Query();
 
         List<String> annotationList = new ArrayList<>();
-        List<String> params = Arrays.asList(myString.replaceAll("\\s+", "").split(";"));
+        List<String> params = Arrays.asList(value.replaceAll("\\s+", "").split(";"));
         for (String param : params) {
             Matcher matcher = ANNOTATION_PATTERN.matcher(param);
             String key;
@@ -105,7 +69,7 @@ public class CatalogUtils {
     }
 
     @FunctionalInterface
-    private interface CatalogIdResolver {
+    protected interface CatalogIdResolver {
         Long get(String value) throws CatalogException;
     }
 
@@ -116,14 +80,18 @@ public class CatalogUtils {
      * @param toId      Method to translate from String to numerical ID
      * @throws CatalogException if there is any catalog error
      */
-    private void transformFilter(Query query, VariantQueryParams param, CatalogIdResolver toId) throws CatalogException {
-        if (VariantDBAdaptorUtils.isValidParam(query, param)) {
+    protected void transformFilter(Query query, VariantQueryParam param, CatalogIdResolver toId) throws CatalogException {
+        if (VariantQueryUtils.isValidParam(query, param)) {
             String valuesStr = query.getString(param.key());
-            VariantDBAdaptorUtils.QueryOperation queryOperation = VariantDBAdaptorUtils.checkOperator(valuesStr);
-            if (queryOperation == null) {
-                queryOperation = VariantDBAdaptorUtils.QueryOperation.OR;
+            // Do not try to transform ALL or NONE values
+            if (isNoneOrAll(valuesStr)) {
+                return;
             }
-            List<String> values = VariantDBAdaptorUtils.splitValue(valuesStr, queryOperation);
+            VariantQueryUtils.QueryOperation queryOperation = VariantQueryUtils.checkOperator(valuesStr);
+            if (queryOperation == null) {
+                queryOperation = VariantQueryUtils.QueryOperation.OR;
+            }
+            List<String> values = VariantQueryUtils.splitValue(valuesStr, queryOperation);
             StringBuilder sb = new StringBuilder();
             for (String value : values) {
                 if (sb.length() > 0) {
@@ -147,22 +115,41 @@ public class CatalogUtils {
     /**
      * Get the list of studies. Discards negated studies (starting with '!').
      *
-     * @see VariantDBAdaptorUtils#getStudyIds(List, org.opencb.commons.datastore.core.QueryOptions)
+     * @see VariantQueryUtils#getStudyIds(List, org.opencb.commons.datastore.core.QueryOptions)
      * @param query     Query with the values
-     * @param param     Param to check. {@link VariantQueryParams#STUDIES} or {@link VariantQueryParams#RETURNED_STUDIES}
      * @param sessionId User's sessionId
      * @return          List of positive studies.
      * @throws CatalogException if there is an error with catalog
      */
-    public List<Long> getStudies(Query query, VariantQueryParams param, String sessionId)
+    public Set<Long> getStudies(Query query, String sessionId) throws CatalogException {
+        List<Long> studies = getStudies(query, VariantQueryParam.STUDIES, sessionId);
+        studies.addAll(getStudies(query, VariantQueryParam.RETURNED_STUDIES, sessionId));
+        // Use a set to remove duplicated
+        return new HashSet<>(studies);
+    }
+
+    /**
+     * Get the list of studies. Discards negated studies (starting with '!').
+     *
+     * @see VariantQueryUtils#getStudyIds(List, org.opencb.commons.datastore.core.QueryOptions)
+     * @param query     Query with the values
+     * @param param     Param to check. {@link VariantQueryParam#STUDIES} or {@link VariantQueryParam#RETURNED_STUDIES}
+     * @param sessionId User's sessionId
+     * @return          List of positive studies.
+     * @throws CatalogException if there is an error with catalog
+     */
+    public List<Long> getStudies(Query query, VariantQueryParam param, String sessionId)
             throws CatalogException {
         List<Long> studies = new ArrayList<>();
         if (isValidParam(query, param)) {
             String value = query.getString(param.key());
-            VariantDBAdaptorUtils.QueryOperation op = checkOperator(value);
+            if (isNoneOrAll(value)) {
+                return studies;
+            }
+            VariantQueryUtils.QueryOperation op = checkOperator(value);
             List<String> values = splitValue(value, op);
             for (String id : values) {
-                if (!VariantDBAdaptorUtils.isNegated(id) && !id.isEmpty()) {
+                if (!VariantQueryUtils.isNegated(id) && !id.isEmpty()) {
                     studies.add(catalogManager.getStudyId(id, sessionId));
                 }
             }
@@ -178,9 +165,9 @@ public class CatalogUtils {
      * @throws CatalogException if there is a catalog error or the study is missing
      */
     public long getAnyStudyId(Query query, String sessionId) throws CatalogException {
-        Long id = getAnyStudyId(query, VariantQueryParams.STUDIES, sessionId);
+        Long id = getAnyStudyId(query, VariantQueryParam.STUDIES, sessionId);
         if (id == null) {
-            id = getAnyStudyId(query, VariantQueryParams.RETURNED_STUDIES, sessionId);
+            id = getAnyStudyId(query, VariantQueryParam.RETURNED_STUDIES, sessionId);
             if (id == null) {
                 id = catalogManager.getStudyId(null, sessionId);
                 if (id < 0) {
@@ -191,7 +178,7 @@ public class CatalogUtils {
         return id;
     }
 
-    private Long getAnyStudyId(Query query, VariantQueryParams param, String sessionId)
+    private Long getAnyStudyId(Query query, VariantQueryParam param, String sessionId)
             throws CatalogException {
         List<Long> studies = getStudies(query, param, sessionId);
         if (studies.isEmpty()) {

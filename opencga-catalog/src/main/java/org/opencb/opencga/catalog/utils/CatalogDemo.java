@@ -17,13 +17,17 @@
 package org.opencb.opencga.catalog.utils;
 
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Study;
 
 import java.io.IOException;
-import java.util.*;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by pfurio on 08/06/16.
@@ -40,8 +44,9 @@ public final class CatalogDemo {
      * @param configuration Catalog configuration file.
      * @param force Used in the case where a database already exists with the same name. When force = true, it will override it.
      * @throws CatalogException when there is already a database with the same name and force is false.
+     * @throws URISyntaxException when there is a problem parsing the URI read from the configuration file.
      */
-    public static void createDemoDatabase(Configuration configuration, boolean force) throws CatalogException {
+    public static void createDemoDatabase(Configuration configuration, boolean force) throws CatalogException, URISyntaxException {
         CatalogManager catalogManager = new CatalogManager(configuration);
         if (catalogManager.existsCatalogDB()) {
             if (force) {

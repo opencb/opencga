@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory.generateVariantRowKey;
 
 /**
  * Created on 01/12/15.
@@ -104,6 +105,22 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter
                 if (consequenceType.getProteinVariantAnnotation().getKeywords() != null) {
                     proteinKeywords.addAll(consequenceType.getProteinVariantAnnotation().getKeywords());
                 }
+                addNotNull(xrefs, consequenceType.getProteinVariantAnnotation().getUniprotName());
+                addNotNull(xrefs, consequenceType.getProteinVariantAnnotation().getUniprotAccession());
+                addNotNull(xrefs, consequenceType.getProteinVariantAnnotation().getUniprotVariantId());
+            }
+        }
+
+        if (variantAnnotation.getVariantTraitAssociation() != null) {
+            if (variantAnnotation.getVariantTraitAssociation().getCosmic() != null) {
+                for (Cosmic cosmic : variantAnnotation.getVariantTraitAssociation().getCosmic()) {
+                    addNotNull(xrefs, cosmic.getMutationId());
+                }
+            }
+            if (variantAnnotation.getVariantTraitAssociation().getClinvar() != null) {
+                for (ClinVar clinVar : variantAnnotation.getVariantTraitAssociation().getClinvar()) {
+                    addNotNull(xrefs, clinVar.getAccession());
+                }
             }
         }
 
@@ -122,6 +139,7 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter
                 addNotNull(hpo, geneTrait.getHpo());
             }
         }
+        xrefs.addAll(hpo);
 
         if (variantAnnotation.getGeneDrugInteraction() != null) {
             for (GeneDrugInteraction drug : variantAnnotation.getGeneDrugInteraction()) {
@@ -170,9 +188,7 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter
             }
         }
 
-        VariantType variantType = Variant.inferType(variantAnnotation.getReference(),
-                variantAnnotation.getAlternate(),
-                variantAnnotation.getReference().length());
+        VariantType variantType = Variant.inferType(variantAnnotation.getReference(), variantAnnotation.getAlternate());
         if (StringUtils.isNotBlank(variantAnnotation.getId())) {
             if (variantType.equals(VariantType.SNV)) {
                 variantType = VariantType.SNP;
@@ -187,7 +203,7 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter
 
     Put buildPut(VariantAnnotation variantAnnotation, Map<PhoenixHelper.Column, ?> map) {
 
-        byte[] bytesRowKey = genomeHelper.generateVariantRowKey(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
+        byte[] bytesRowKey = generateVariantRowKey(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
                 variantAnnotation.getReference(), variantAnnotation.getAlternate());
         Put put = new Put(bytesRowKey);
 

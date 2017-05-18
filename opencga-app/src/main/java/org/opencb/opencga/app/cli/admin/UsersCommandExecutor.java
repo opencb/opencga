@@ -17,17 +17,21 @@
 package org.opencb.opencga.app.cli.admin;
 
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.config.AuthenticationOrigin;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.models.Group;
+import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.core.results.LdapImportResult;
 
 import javax.naming.NamingException;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -42,8 +46,6 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         this.usersCommandOptions = usersCommandOptions;
     }
 
-
-
     @Override
     public void execute() throws Exception {
         logger.debug("Executing variant command line");
@@ -54,7 +56,10 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                 create();
                 break;
             case "import":
-                importUsers();
+                importUsersAndGroups();
+                break;
+            case "sync":
+                syncGroups();
                 break;
             case "delete":
                 delete();
@@ -66,84 +71,156 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                 logger.error("Subcommand not valid");
                 break;
         }
-
     }
 
-    private void importUsers() throws CatalogException, NamingException {
-        AdminCliOptionsParser.ImportUserCommandOptions executor = usersCommandOptions.importUserCommandOptions;
-        if (executor.databaseUser != null) {
-            configuration.getCatalog().getDatabase().setUser(executor.databaseUser);
-        }
-        if (executor.databasePassword != null) {
-            configuration.getCatalog().getDatabase().setPassword(executor.databasePassword);
-        }
-        if (executor.prefix != null) {
-            configuration.setDatabasePrefix(executor.prefix);
-        }
-        if (executor.databaseHost != null) {
-            configuration.getCatalog().getDatabase().setHosts(Collections.singletonList(executor.databaseHost));
-        }
-        if (executor.commonOptions.adminPassword != null) {
-            configuration.getAdmin().setPassword(executor.commonOptions.adminPassword);
-        }
+    private void syncGroups() throws CatalogException, NamingException, IOException {
+        AdminCliOptionsParser.SyncCommandOptions executor = usersCommandOptions.syncCommandOptions;
 
-        if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
-            throw new CatalogException("No admin password found. Please, insert the OpenCGA admin password.");
-        }
+        setCatalogDatabaseCredentials(executor.databaseHost, executor.prefix, executor.databaseUser, executor.databasePassword,
+                executor.commonOptions.adminPassword);
 
-        if (executor.groups != null) {
-            throw new CatalogException("Groups option is pending. Use users instead.");
-        }
+        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+            QueryResult<Session> login = catalogManager.login("admin", configuration.getAdmin().getPassword(), "localhost");
+            String sessionId = login.first().getId();
 
-        if (executor.users == null) {
-            throw new CatalogException("At least, users or groups should be provided to start importing.");
+            if (executor.syncAll) {
+                QueryResult<Group> allGroups = catalogManager.getStudyManager().getAllGroups(executor.study, sessionId);
+
+                boolean foundAny = false;
+                for (Group group : allGroups.getResult()) {
+                    if (group.getSyncedFrom() != null && group.getSyncedFrom().getAuthOrigin().equals(executor.authOrigin)) {
+                        foundAny = true;
+                        logger.info("Synchronising users from {} to {}", group.getSyncedFrom().getRemoteGroup(), group.getName());
+
+                        // Sync
+                        QueryResult<Group> deleteUsers = catalogManager.getStudyManager().updateGroup(executor.study, group.getName(), null,
+                                StringUtils.join(group.getUserIds(), ","), null, sessionId);
+                        if (deleteUsers.first().getUserIds().size() > 0) {
+                            logger.error("Could not sync. An internal error happened. {} users could not be removed from {}.",
+                                    deleteUsers.first().getUserIds().size(), deleteUsers.first().getName());
+                            return;
+                        }
+
+                        ObjectMap params = new ObjectMap();
+                        params.putIfNotNull("group", group.getSyncedFrom().getRemoteGroup());
+                        params.putIfNotNull("study-group", group.getName());
+                        params.putIfNotNull("study", executor.study);
+                        params.putIfNotNull("expirationDate", executor.expDate);
+                        LdapImportResult ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,
+                                executor.type, params, configuration.getAdmin().getPassword());
+
+                        printImportReport(ldapImportResult);
+                    }
+                }
+                if (!foundAny) {
+                    logger.info("No groups to sync found under study {}", executor.study);
+                }
+            } else {
+                try {
+                    QueryResult<Group> group = catalogManager.getStudyManager().getGroup(executor.study, executor.to, sessionId);
+                    if (group.first().getSyncedFrom() != null && (!group.first().getSyncedFrom().getRemoteGroup().equals(executor.from)
+                            || !group.first().getSyncedFrom().getAuthOrigin().equals(executor.authOrigin))) {
+                        // Sync with different group or different authentication origin
+                        logger.error("Cannot synchronise with group {}. The group is already synchronised with the group {} from the "
+                                + "authentication origin {}", executor.to, group.first().getSyncedFrom().getRemoteGroup(),
+                                group.first().getSyncedFrom().getAuthOrigin());
+                        return;
+                    } else if (group.first().getSyncedFrom() == null && !executor.force) {
+                        logger.error("Cannot synchronise with group {}. The group already exists. You can use --force to force the "
+                                + "synchronisation with this group.", executor.to);
+                        return;
+                    }
+
+                    // Remove all users from the group
+                    QueryResult<Group> deleteUsers = catalogManager.getStudyManager().updateGroup(executor.study, executor.to, null,
+                            StringUtils.join(group.first().getUserIds(), ","), null, sessionId);
+                    if (deleteUsers.first().getUserIds().size() > 0) {
+                        logger.error("Could not sync. An internal error happened. {} users could not be removed from {}.",
+                                deleteUsers.first().getUserIds().size(), deleteUsers.first().getName());
+                        return;
+                    }
+
+                } catch (CatalogException e) {
+                    logger.info("{} group does not exist.", executor.to, e.getMessage());
+                }
+
+                ObjectMap params = new ObjectMap();
+                params.putIfNotNull("group", executor.from);
+                params.putIfNotNull("study-group", executor.to);
+                params.putIfNotNull("study", executor.study);
+                params.putIfNotNull("expirationDate", executor.expDate);
+                LdapImportResult ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,
+                        executor.type, params, configuration.getAdmin().getPassword());
+
+                printImportReport(ldapImportResult);
+
+                if (StringUtils.isEmpty(ldapImportResult.getErrorMsg()) && StringUtils.isEmpty(ldapImportResult.getWarningMsg())) {
+                    Group.Sync sync = new Group.Sync(executor.authOrigin, executor.from);
+                    catalogManager.getStudyManager().syncGroupWith(executor.study, executor.to, sync, sessionId);
+
+                    logger.info("{} synchronised with {}", executor.from, executor.to);
+                }
+            }
+
+            catalogManager.logout("admin", sessionId);
         }
+    }
+
+    private void importUsersAndGroups() throws CatalogException, NamingException {
+        AdminCliOptionsParser.ImportCommandOptions executor = usersCommandOptions.importCommandOptions;
+
+        setCatalogDatabaseCredentials(executor.databaseHost, executor.prefix, executor.databaseUser, executor.databasePassword,
+                executor.commonOptions.adminPassword);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             ObjectMap params = new ObjectMap();
-            params.putIfNotNull("users", executor.users);
-            params.putIfNotNull("groups", executor.groups);
+            params.putIfNotNull("users", executor.user);
+            params.putIfNotNull("group", executor.group);
+            params.putIfNotNull("study", executor.study);
+            params.putIfNotNull("study-group", executor.studyGroup);
             params.putIfNotNull("expirationDate", executor.expDate);
-            params.putIfNotNull("studies", executor.studies);
-            List<QueryResult<User>> resultList = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,
-                    executor.type, params, configuration.getAdmin().getPassword());
+            LdapImportResult ldapImportResult = catalogManager.getUserManager()
+                    .importFromExternalAuthOrigin(executor.authOrigin, executor.type, params, configuration.getAdmin().getPassword());
 
+            printImportReport(ldapImportResult);
+        }
+    }
 
-            System.out.println("\n" + resultList.size() + " users have been imported");
-            // Print the user names if less than 10 users have been imported.
-            if (resultList.size() <= 10) {
-                for (QueryResult<User> userQueryResult : resultList) {
-                    if (userQueryResult.getNumResults() == 0) {
-                        System.out.println(userQueryResult.getErrorMsg());
-                    } else {
-                        System.out.println(userQueryResult.first().getName() + " user account created.");
-                    }
+    private void printImportReport(LdapImportResult ldapImportResult) {
+        if (ldapImportResult.getResult() != null) {
+            LdapImportResult.SummaryResult userSummary = ldapImportResult.getResult().getUserSummary();
+            if (userSummary != null) {
+                if (userSummary.getNewUsers().size() > 0) {
+                    System.out.println("New users registered: " + StringUtils.join(userSummary.getNewUsers(), ", "));
+                }
+                if (userSummary.getExistingUsers().size() > 0) {
+                    System.out.println("Users already registered: " + StringUtils.join(userSummary.getExistingUsers(), ", "));
+                }
+                if (userSummary.getNonExistingUsers().size() > 0) {
+                    System.out.println("Users not found in origin: " + StringUtils.join(userSummary.getNonExistingUsers(), ", "));
                 }
             }
+            List<String> usersInGroup = ldapImportResult.getResult().getUsersInGroup();
+            if (usersInGroup != null) {
+                System.out.println("Users registered in group " + ldapImportResult.getInput().getStudyGroup() + " from "
+                        + ldapImportResult.getInput().getStudy() + ": " + StringUtils.join(usersInGroup, ", "));
+            }
+        }
+
+        if (StringUtils.isNotEmpty(ldapImportResult.getWarningMsg())) {
+            System.out.println("WARNING: " + ldapImportResult.getWarningMsg());
+        }
+
+        if (StringUtils.isNotEmpty(ldapImportResult.getErrorMsg())) {
+            System.out.println("ERROR: " + ldapImportResult.getErrorMsg());
         }
     }
 
     private void create() throws CatalogException, IOException {
-        if (usersCommandOptions.createUserCommandOptions.databaseUser != null) {
-            configuration.getCatalog().getDatabase().setUser(usersCommandOptions.createUserCommandOptions.databaseUser);
-        }
-        if (usersCommandOptions.createUserCommandOptions.databasePassword != null) {
-            configuration.getCatalog().getDatabase().setPassword(usersCommandOptions.createUserCommandOptions.databasePassword);
-        }
-        if (usersCommandOptions.createUserCommandOptions.prefix != null) {
-            configuration.setDatabasePrefix(usersCommandOptions.createUserCommandOptions.prefix);
-        }
-        if (usersCommandOptions.createUserCommandOptions.databaseHost != null) {
-            configuration.getCatalog().getDatabase()
-                    .setHosts(Collections.singletonList(usersCommandOptions.createUserCommandOptions.databaseHost));
-        }
-        if (usersCommandOptions.commonOptions.adminPassword != null) {
-            configuration.getAdmin().setPassword(usersCommandOptions.commonOptions.adminPassword);
-        }
-
-        if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
-            throw new CatalogException("No admin password found. Please, insert the OpenCGA admin password.");
-        }
+        setCatalogDatabaseCredentials(usersCommandOptions.createUserCommandOptions.databaseHost,
+                usersCommandOptions.createUserCommandOptions.prefix, usersCommandOptions.createUserCommandOptions.databaseUser,
+                usersCommandOptions.createUserCommandOptions.databasePassword,
+                usersCommandOptions.createUserCommandOptions.commonOptions.adminPassword);
 
         long userQuota;
         if (usersCommandOptions.createUserCommandOptions.userQuota != null) {
@@ -166,26 +243,10 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
     }
 
     private void delete() throws CatalogException, IOException {
-        if (usersCommandOptions.deleteUserCommandOptions.databaseUser != null) {
-            configuration.getCatalog().getDatabase().setUser(usersCommandOptions.deleteUserCommandOptions.databaseUser);
-        }
-        if (usersCommandOptions.deleteUserCommandOptions.databasePassword != null) {
-            configuration.getCatalog().getDatabase().setPassword(usersCommandOptions.deleteUserCommandOptions.databasePassword);
-        }
-        if (usersCommandOptions.deleteUserCommandOptions.prefix != null) {
-            configuration.setDatabasePrefix(usersCommandOptions.deleteUserCommandOptions.prefix);
-        }
-        if (usersCommandOptions.deleteUserCommandOptions.databaseHost != null) {
-            configuration.getCatalog().getDatabase()
-                    .setHosts(Collections.singletonList(usersCommandOptions.deleteUserCommandOptions.databaseHost));
-        }
-        if (usersCommandOptions.commonOptions.adminPassword != null) {
-            configuration.getAdmin().setPassword(usersCommandOptions.commonOptions.adminPassword);
-        }
-
-        if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
-            throw new CatalogException("No admin password found. Please, insert your password.");
-        }
+        setCatalogDatabaseCredentials(usersCommandOptions.deleteUserCommandOptions.databaseHost,
+                usersCommandOptions.deleteUserCommandOptions.prefix, usersCommandOptions.deleteUserCommandOptions.databaseUser,
+                usersCommandOptions.deleteUserCommandOptions.databasePassword,
+                usersCommandOptions.deleteUserCommandOptions.commonOptions.adminPassword);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             catalogManager.getUserManager().validatePassword("admin", configuration.getAdmin().getPassword(), true);
@@ -204,26 +265,10 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
     }
 
     private void setQuota() throws CatalogException {
-        if (usersCommandOptions.QuotaUserCommandOptions.databaseUser != null) {
-            configuration.getCatalog().getDatabase().setUser(usersCommandOptions.QuotaUserCommandOptions.databaseUser);
-        }
-        if (usersCommandOptions.QuotaUserCommandOptions.databasePassword != null) {
-            configuration.getCatalog().getDatabase().setPassword(usersCommandOptions.QuotaUserCommandOptions.databasePassword);
-        }
-        if (usersCommandOptions.QuotaUserCommandOptions.prefix != null) {
-            configuration.setDatabasePrefix(usersCommandOptions.QuotaUserCommandOptions.prefix);
-        }
-        if (usersCommandOptions.QuotaUserCommandOptions.databaseHost != null) {
-            configuration.getCatalog().getDatabase()
-                    .setHosts(Collections.singletonList(usersCommandOptions.QuotaUserCommandOptions.databaseHost));
-        }
-        if (usersCommandOptions.commonOptions.adminPassword != null) {
-            configuration.getAdmin().setPassword(usersCommandOptions.commonOptions.adminPassword);
-        }
-
-        if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
-            throw new CatalogException("No admin password found. Please, insert your password.");
-        }
+        setCatalogDatabaseCredentials(usersCommandOptions.QuotaUserCommandOptions.databaseHost,
+                usersCommandOptions.QuotaUserCommandOptions.prefix, usersCommandOptions.QuotaUserCommandOptions.databaseUser,
+                usersCommandOptions.QuotaUserCommandOptions.databasePassword,
+                usersCommandOptions.QuotaUserCommandOptions.commonOptions.adminPassword);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             catalogManager.getUserManager().validatePassword("admin", configuration.getAdmin().getPassword(), true);
@@ -234,6 +279,17 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
 
             System.out.println("The disk quota has been properly updated: " + user.toString());
         }
+    }
+
+    private AuthenticationOrigin getAuthenticationOrigin(String authOrigin) {
+        if (configuration.getAuthenticationOrigins() != null) {
+            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthenticationOrigins()) {
+                if (authOrigin.equals(authenticationOrigin.getId())) {
+                    return authenticationOrigin;
+                }
+            }
+        }
+        return null;
     }
 
 }

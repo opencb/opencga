@@ -22,7 +22,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.analysis.storage.variant.CatalogVariantDBAdaptor;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.StudyCommandOptions;
@@ -38,6 +37,7 @@ import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.client.rest.catalog.StudyClient;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -109,17 +109,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
             case "acl":
                 queryResponse = getAcl();
                 break;
-            case "acl-create":
-                queryResponse = createAcl();
-                break;
-            case "acl-member-delete":
-                queryResponse = deleteAcl();
-                break;
-            case "acl-member-info":
-                queryResponse = getMemberAcl();
-                break;
-            case "acl-member-update":
-                queryResponse = updateMemberAcl();
+            case "acl-update":
+                queryResponse = updateAcl();
                 break;
             case "groups":
                 queryResponse = groups();
@@ -154,7 +145,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
     private String getSingleValidStudy(String study) throws CatalogException {
         // First, check the study parameter, if is not empty we just return it, this the user's selection.
         if (StringUtils.isNotEmpty(study)) {
-            return study;
+            return resolveStudy(study);
         } else {
             // Second, check if there is a default study in the client configuration.
             if (StringUtils.isNotEmpty(clientConfiguration.getDefaultStudy())) {
@@ -382,75 +373,75 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putAll(studiesCommandOptions.commonCommandOptions.params);
 
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ID.key(), studiesCommandOptions.variantsCommandOptions.ids);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.REGION.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.ID.key(), studiesCommandOptions.variantsCommandOptions.ids);
+        queryOptions.putIfNotEmpty(VariantQueryParam.REGION.key(),
                 studiesCommandOptions.variantsCommandOptions.region);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.CHROMOSOME.key(),
                 studiesCommandOptions.variantsCommandOptions.chromosome);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.GENE.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.GENE.key(),
                 studiesCommandOptions.variantsCommandOptions.gene);
-        queryOptions.putIfNotNull(CatalogVariantDBAdaptor.VariantQueryParams.TYPE.key(), studiesCommandOptions.variantsCommandOptions.type);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.REFERENCE.key(),
+        queryOptions.putIfNotNull(VariantQueryParam.TYPE.key(), studiesCommandOptions.variantsCommandOptions.type);
+        queryOptions.putIfNotEmpty(VariantQueryParam.REFERENCE.key(),
                 studiesCommandOptions.variantsCommandOptions.reference);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ALTERNATE.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.ALTERNATE.key(),
                 studiesCommandOptions.variantsCommandOptions.alternate);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.RETURNED_STUDIES.key(),
                 studiesCommandOptions.variantsCommandOptions.returnedStudies);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.RETURNED_SAMPLES.key(),
                 studiesCommandOptions.variantsCommandOptions.returnedSamples);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.RETURNED_FILES.key(),
                 studiesCommandOptions.variantsCommandOptions.returnedFiles);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.FILES.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.FILES.key(),
                 studiesCommandOptions.variantsCommandOptions.files);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.STATS_MAF.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.STATS_MAF.key(),
                 studiesCommandOptions.variantsCommandOptions.maf);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.STATS_MGF.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.STATS_MGF.key(),
                 studiesCommandOptions.variantsCommandOptions.mgf);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.MISSING_ALLELES.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.MISSING_ALLELES.key(),
                 studiesCommandOptions.variantsCommandOptions.missingAlleles);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.MISSING_GENOTYPES.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.MISSING_GENOTYPES.key(),
                 studiesCommandOptions.variantsCommandOptions.missingGenotypes);
 //        queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(),
 //                studiesCommandOptions.variantsCommandOptions.annotationExists);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.GENOTYPE.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.GENOTYPE.key(),
                 studiesCommandOptions.variantsCommandOptions.genotype);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(),
                 studiesCommandOptions.variantsCommandOptions.annot_ct);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_XREF.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.ANNOT_XREF.key(),
                 studiesCommandOptions.variantsCommandOptions.annot_xref);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_BIOTYPE.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.ANNOT_BIOTYPE.key(),
                 studiesCommandOptions.variantsCommandOptions.annot_biotype);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POLYPHEN.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.ANNOT_POLYPHEN.key(),
                 studiesCommandOptions.variantsCommandOptions.polyphen);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_SIFT.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.ANNOT_SIFT.key(),
                 studiesCommandOptions.variantsCommandOptions.sift);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.ANNOT_CONSERVATION.key(),
                 studiesCommandOptions.variantsCommandOptions.conservation);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),
                 studiesCommandOptions.variantsCommandOptions.annotPopulationMaf);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
                 studiesCommandOptions.variantsCommandOptions.alternate_frequency);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_REFERENCE_FREQUENCY.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.ANNOT_POPULATION_REFERENCE_FREQUENCY.key(),
                 studiesCommandOptions.variantsCommandOptions.reference_frequency);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_TRANSCRIPTION_FLAGS.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.ANNOT_TRANSCRIPTION_FLAGS.key(),
                 studiesCommandOptions.variantsCommandOptions.transcriptionFlags);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_ID.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.ANNOT_GENE_TRAITS_ID.key(),
                 studiesCommandOptions.variantsCommandOptions.geneTraitId);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_NAME.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.ANNOT_GENE_TRAITS_NAME.key(),
                 studiesCommandOptions.variantsCommandOptions.geneTraitName);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_HPO.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.ANNOT_HPO.key(),
                 studiesCommandOptions.variantsCommandOptions.hpo);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_GO.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.ANNOT_GO.key(),
                 studiesCommandOptions.variantsCommandOptions.go);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_EXPRESSION.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.ANNOT_EXPRESSION.key(),
                 studiesCommandOptions.variantsCommandOptions.expression);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_KEYWORDS.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.ANNOT_PROTEIN_KEYWORDS.key(),
                 studiesCommandOptions.variantsCommandOptions.proteinKeyword);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_DRUG.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.ANNOT_DRUG.key(),
                 studiesCommandOptions.variantsCommandOptions.drug);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.ANNOT_FUNCTIONAL_SCORE.key(),
                 studiesCommandOptions.variantsCommandOptions.functionalScore);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.UNKNOWN_GENOTYPE.key(),
+        queryOptions.putIfNotEmpty(VariantQueryParam.UNKNOWN_GENOTYPE.key(),
                 studiesCommandOptions.variantsCommandOptions.unknownGenotype);
         queryOptions.put(QueryOptions.SORT, studiesCommandOptions.variantsCommandOptions.sort);
 //        queryOptions.putIfNotEmpty("merge", studiesCommandOptions.variantsCommandOptions.merge);
@@ -493,7 +484,6 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         studiesCommandOptions.groupsCreateCommandOptions.study =
                 getSingleValidStudy(studiesCommandOptions.groupsCreateCommandOptions.study);
 
-        QueryOptions queryOptions = new QueryOptions();
         return openCGAClient.getStudyClient().createGroup(studiesCommandOptions.groupsCreateCommandOptions.study,
                 studiesCommandOptions.groupsCreateCommandOptions.groupId, studiesCommandOptions.groupsCreateCommandOptions.users);
     }
@@ -543,56 +533,20 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 getSingleValidStudy(studiesCommandOptions.aclsCommandOptions.study);
 
         ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty("member", studiesCommandOptions.aclsCommandOptions.memberId);
         return openCGAClient.getStudyClient().getAcls(studiesCommandOptions.aclsCommandOptions.study, params);
     }
 
-    private QueryResponse<StudyAclEntry> createAcl() throws IOException, CatalogException {
-        logger.debug("Create Acl");
-        studiesCommandOptions.aclsCreateCommandOptions.study =
-                getSingleValidStudy(studiesCommandOptions.aclsCreateCommandOptions.study);
+    private QueryResponse<StudyAclEntry> updateAcl() throws IOException, CatalogException {
+        StudyCommandOptions.AclsUpdateCommandOptions commandOptions = studiesCommandOptions.aclsUpdateCommandOptions;
 
-        ObjectMap params = new ObjectMap();
-        params.putIfNotNull("permissions", studiesCommandOptions.aclsCreateCommandOptions.permissions);
-        params.putIfNotNull("templateId", studiesCommandOptions.aclsCreateCommandOptions.templateId);
-        return openCGAClient.getStudyClient().createAcl(studiesCommandOptions.aclsCreateCommandOptions.study,
-                studiesCommandOptions.aclsCreateCommandOptions.members, params);
-    }
+        ObjectMap bodyParams = new ObjectMap();
+        bodyParams.putIfNotNull("permissions", commandOptions.permissions);
+        bodyParams.putIfNotNull("action", commandOptions.action);
+        bodyParams.putIfNotNull("study", commandOptions.study);
+        bodyParams.putIfNotNull("template", commandOptions.template);
 
-    private QueryResponse<StudyAclEntry> deleteAcl() throws IOException, CatalogException {
-        logger.debug("Delete Acl");
-        studiesCommandOptions.aclsMemberDeleteCommandOptions.study =
-                getSingleValidStudy(studiesCommandOptions.aclsMemberDeleteCommandOptions.study);
-
-        ObjectMap params = new ObjectMap();
-        return openCGAClient.getStudyClient().deleteAcl(studiesCommandOptions.aclsMemberDeleteCommandOptions.study,
-                studiesCommandOptions.aclsMemberDeleteCommandOptions.memberId, params);
-    }
-
-    private QueryResponse<StudyAclEntry> getMemberAcl() throws IOException, CatalogException {
-        logger.debug("Get member Acl");
-        studiesCommandOptions.aclsMemberInfoCommandOptions.study =
-                getSingleValidStudy(studiesCommandOptions.aclsMemberInfoCommandOptions.study);
-
-        ObjectMap params = new ObjectMap();
-        return openCGAClient.getStudyClient().getAcl(studiesCommandOptions.aclsMemberInfoCommandOptions.study,
-                studiesCommandOptions.aclsMemberInfoCommandOptions.memberId, params);
-    }
-
-    private QueryResponse<StudyAclEntry> updateMemberAcl() throws IOException, CatalogException {
-        logger.debug("Update member Acl");
-        studiesCommandOptions.aclsMemberUpdateCommandOptions.study =
-                getSingleValidStudy(studiesCommandOptions.aclsMemberUpdateCommandOptions.study);
-
-        ObjectMap params = new ObjectMap();
-        params.putIfNotNull(StudyClient.AclParams.ADD.key(),
-                studiesCommandOptions.aclsMemberUpdateCommandOptions.addPermissions);
-        params.putIfNotNull(StudyClient.AclParams.REMOVE.key(),
-                studiesCommandOptions.aclsMemberUpdateCommandOptions.removePermissions);
-        params.putIfNotNull(StudyClient.AclParams.SET.key(),
-                studiesCommandOptions.aclsMemberUpdateCommandOptions.setPermissions);
-
-        return openCGAClient.getStudyClient().updateAcl(studiesCommandOptions.aclsMemberUpdateCommandOptions.study,
-                studiesCommandOptions.aclsMemberUpdateCommandOptions.memberId, params);
+        return openCGAClient.getStudyClient().updateAcl(commandOptions.memberId, new ObjectMap(), bodyParams);
     }
 
 }

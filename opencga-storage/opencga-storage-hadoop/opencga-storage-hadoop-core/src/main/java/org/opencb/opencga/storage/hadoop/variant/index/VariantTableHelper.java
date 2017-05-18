@@ -22,15 +22,25 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationManager;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.sql.SQLException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -40,8 +50,8 @@ public class VariantTableHelper extends GenomeHelper {
 
     public static final String OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_OUTPUT = "opencga.storage.hadoop.vcf.transform.table.output";
     public static final String OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT = "opencga.storage.hadoop.vcf.transform.table.input";
-    private final AtomicReference<byte[]> outtable = new AtomicReference<>();
-    private final AtomicReference<byte[]> intable = new AtomicReference<>();
+    private final AtomicReference<byte[]> analysisTable = new AtomicReference<>();
+    private final AtomicReference<byte[]> archiveTable = new AtomicReference<>();
 
     public VariantTableHelper(Configuration conf) {
         this(conf, null);
@@ -53,62 +63,103 @@ public class VariantTableHelper extends GenomeHelper {
     }
 
 
-    public VariantTableHelper(Configuration conf, String intable, String outTable, Connection con) {
-        super(conf, con);
-        if (StringUtils.isEmpty(outTable)) {
-            throw new IllegalArgumentException("Property for Output Table name missing or empty!!!");
+    public VariantTableHelper(Configuration conf, String archiveTable, String analysisTable, Connection con) {
+        super(conf);
+        if (StringUtils.isEmpty(analysisTable)) {
+            throw new IllegalArgumentException("Property for Analysis Table name missing or empty!!!");
         }
-        if (StringUtils.isEmpty(intable)) {
-            throw new IllegalArgumentException("Property for Input Table name missing or empty!!!");
+        if (StringUtils.isEmpty(archiveTable)) {
+            throw new IllegalArgumentException("Property for Archive Table name missing or empty!!!");
         }
-        setOutputTable(outTable);
-        setInputTable(intable);
+        setAnalysisTable(analysisTable);
+        setArchiveTable(archiveTable);
     }
 
-    public StudyConfiguration loadMeta() throws IOException {
-        HBaseStudyConfigurationManager scm = new HBaseStudyConfigurationManager(this,
-                Bytes.toString(outtable.get()), this.hBaseManager.getConf(), null);
-        QueryResult<StudyConfiguration> query = scm.getStudyConfiguration(getStudyId(), new QueryOptions());
-        if (query.getResult().size() != 1) {
-            throw new IllegalStateException("Only one study configuration expected for study");
+    public boolean createVariantTableIfNeeded(Connection con) throws IOException {
+        return createVariantTableIfNeeded(this, getAnalysisTableAsString(), con);
+    }
+
+    public boolean createVariantTableIfNeeded() throws IOException {
+        return createVariantTableIfNeeded(this, getAnalysisTableAsString());
+    }
+
+    public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName) throws IOException {
+        try (Connection con = ConnectionFactory.createConnection(genomeHelper.getConf())) {
+            return createVariantTableIfNeeded(genomeHelper, tableName, con);
         }
-        return query.first();
+    }
+    public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con)
+            throws IOException {
+        VariantPhoenixHelper variantPhoenixHelper = new VariantPhoenixHelper(genomeHelper);
+
+        String namespace = SchemaUtil.getSchemaNameFromFullName(tableName);
+        if (StringUtils.isNotEmpty(namespace)) {
+//            HBaseManager.createNamespaceIfNeeded(con, namespace);
+            try (java.sql.Connection jdbcConnection = variantPhoenixHelper.newJdbcConnection()) {
+                variantPhoenixHelper.createSchemaIfNeeded(jdbcConnection, namespace);
+                LoggerFactory.getLogger(AbstractAnalysisTableDriver.class).info("Phoenix connection is autoclosed ... " + jdbcConnection);
+            } catch (ClassNotFoundException | SQLException e) {
+                throw new IOException(e);
+            }
+        }
+
+        int nsplits = genomeHelper.getConf().getInt(AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_PRESPLIT_SIZE, 100);
+        List<byte[]> splitList = generateBootPreSplitsHuman(
+                nsplits,
+                (chr, pos) -> VariantPhoenixKeyFactory.generateVariantRowKey(chr, pos, "", ""));
+        boolean newTable = HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
+                splitList, Compression.getCompressionAlgorithmByName(
+                        genomeHelper.getConf().get(
+                                AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_COMPRESSION,
+                                Compression.Algorithm.SNAPPY.getName())));
+        if (newTable) {
+            try (java.sql.Connection jdbcConnection = variantPhoenixHelper.newJdbcConnection()) {
+                variantPhoenixHelper.createTableIfNeeded(jdbcConnection, tableName);
+                LoggerFactory.getLogger(AbstractAnalysisTableDriver.class).info("Phoenix connection is autoclosed ... " + jdbcConnection);
+            } catch (ClassNotFoundException | SQLException e) {
+                throw new IOException(e);
+            }
+        }
+        return newTable;
     }
 
-    public byte[] getOutputTable() {
-        return outtable.get();
+    public StudyConfiguration readStudyConfiguration() throws IOException {
+        try (StudyConfigurationManager scm = new StudyConfigurationManager(
+                new HBaseStudyConfigurationDBAdaptor(getAnalysisTableAsString(), getConf(), null, null))) {
+            QueryResult<StudyConfiguration> query = scm.getStudyConfiguration(getStudyId(), new QueryOptions());
+            if (query.getResult().size() != 1) {
+                throw new IllegalStateException("Only one study configuration expected for study");
+            }
+            return query.first();
+        }
     }
 
-    public byte[] getIntputTable() {
-        return intable.get();
+    public byte[] getAnalysisTable() {
+        return analysisTable.get();
     }
 
-    public void act(Connection con, HBaseManager.HBaseTableConsumer func) throws IOException {
-        hBaseManager.act(con, getOutputTable(), func);
+    public byte[] getArchiveTable() {
+        return archiveTable.get();
     }
 
-    public <T> T actOnTable(Connection con, HBaseManager.HBaseTableAdminFunction<T> func) throws IOException {
-        return hBaseManager.act(con, getOutputTableAsString(), func);
+    public String getAnalysisTableAsString() {
+        return Bytes.toString(getAnalysisTable());
     }
 
-    public String getOutputTableAsString() {
-        return Bytes.toString(getOutputTable());
+    private void setAnalysisTable(String tableName) {
+        this.analysisTable.set(Bytes.toBytes(tableName));
     }
 
-    private void setOutputTable(String tableName) {
-        this.outtable.set(Bytes.toBytes(tableName));
+    private void setArchiveTable(String tableName) {
+        this.archiveTable.set(Bytes.toBytes(tableName));
     }
 
-    private void setInputTable(String tableName) {
-        this.intable.set(Bytes.toBytes(tableName));
+    public static void setAnalysisTable(Configuration conf, String analysisTable) {
+        conf.set(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_OUTPUT, analysisTable);
     }
 
-    public static void setOutputTableName(Configuration conf, String outTable) {
-        conf.set(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_OUTPUT, outTable);
-    }
-
-    public static void setInputTableName(Configuration conf, String inTable) {
-        conf.set(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT, inTable);
+    public static void setArchiveTable(Configuration conf, String archiveTable) {
+        conf.set(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT, archiveTable);
     }
 
 }

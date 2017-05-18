@@ -7,7 +7,7 @@ import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.opencga.core.common.ProgressLogger;
+import org.opencb.commons.ProgressLogger;
 
 import java.util.Collections;
 import java.util.List;

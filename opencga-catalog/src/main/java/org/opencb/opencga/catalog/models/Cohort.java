@@ -18,7 +18,10 @@ package org.opencb.opencga.catalog.models;
 
 import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -37,22 +40,25 @@ public class Cohort extends Annotable<CohortAclEntry> {
     private List<Long> samples;
     private Family family;
 
-//    private List<CohortAclEntry> acl;
-//    private List<AnnotationSet> annotationSets;
-
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
 
     public Cohort() {
-        this(null, null, null, null, new LinkedList<>(), new HashMap<>());
     }
 
     public Cohort(String name, Study.Type type, String creationDate, String description, List<Long> samples,
                   Map<String, Object> attributes) {
-        this(-1, name, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(), Collections.emptyList(),
-                Collections.emptyMap(), attributes);
+        this(-1, name, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(),
+                Collections.emptyList(), Collections.emptyMap(), attributes);
     }
+
+    public Cohort(String name, Study.Type type, String creationDate, String description, List<Long> samples,
+                  List<AnnotationSet> annotationSetList, Map<String, Object> attributes) {
+        this(-1, name, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(),
+                annotationSetList, Collections.emptyMap(), attributes);
+    }
+
     public Cohort(long id, String name, Study.Type type, String creationDate, CohortStatus status, String description,
                   List<Long> samples, Family family, List<CohortAclEntry> acl, List<AnnotationSet> annotationSets,
                   Map<String, Object> stats, Map<String, Object> attributes) {

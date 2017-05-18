@@ -42,7 +42,7 @@ import java.util.Map;
  */
 @Path("/{version}/tools")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Tools", position = 11, description = "Methods for working with 'tools' endpoint")
+@Api(value = "Tools", hidden = true, position = 11, description = "Methods for working with 'tools' endpoint")
 public class ToolWSServer extends OpenCGAWSServer {
 
 

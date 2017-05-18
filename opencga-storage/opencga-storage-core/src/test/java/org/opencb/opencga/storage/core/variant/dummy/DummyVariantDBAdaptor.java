@@ -11,7 +11,6 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -19,14 +18,15 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Consumer;
 
 /**
  * Created on 28/11/16.
@@ -141,16 +141,6 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public void forEach(Consumer<? super Variant> action) {
-
-    }
-
-    @Override
-    public void forEach(Query query, Consumer<? super Variant> action, QueryOptions options) {
-
-    }
-
-    @Override
     public QueryResult getFrequency(Query query, Region region, int regionIntervalSize) {
         return null;
     }
@@ -195,11 +185,6 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     // Unsupported methods
 
     @Override
-    public QueryResult insert(List<Variant> variants, String studyName, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public QueryResult delete(Query query, QueryOptions options) {
         throw new UnsupportedOperationException();
     }
@@ -226,17 +211,6 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult deleteStats(String studyName, String cohortName, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    @Deprecated
-    public QueryResult addAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions) {
         throw new UnsupportedOperationException();
     }
 
@@ -272,22 +246,12 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public StudyConfigurationManager getStudyConfigurationManager() {
-        return new DummyStudyConfigurationManager();
+        return new StudyConfigurationManager(new DummyStudyConfigurationAdaptor());
     }
 
     @Override
     public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
 
-    }
-
-    @Override
-    public CellBaseClient getCellBaseClient() {
-        return null;
-    }
-
-    @Override
-    public VariantDBAdaptorUtils getDBAdaptorUtils() {
-        return new VariantDBAdaptorUtils(this);
     }
 
     @Override

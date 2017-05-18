@@ -107,11 +107,11 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
      */
     QueryResult<Individual> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
+    QueryResult<Individual> create(String studyStr, Individual individual, QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Sex sex,
-                                   String ethnicity, String speciesCommonName, String speciesScientificName, String speciesTaxonomyCode,
-                                   String populationName, String populationSubpopulation, String populationDescription,
-                                   Individual.KaryotypicSex karyotypicSex, Individual.LifeStatus lifeStatus,
+                                   String ethnicity, String populationName, String populationSubpopulation, String populationDescription,
+                                   String dateOfBirth, Individual.KaryotypicSex karyotypicSex, Individual.LifeStatus lifeStatus,
                                    Individual.AffectationStatus affectationStatus, QueryOptions options, String sessionId)
             throws CatalogException;
 
@@ -130,28 +130,6 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
             throws CatalogException, IOException;
 
     QueryResult<Individual> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
-
-    /**
-     * Retrieve the individual Acls for the given members in the individual.
-     *
-     * @param individualStr Individual id of which the acls will be obtained.
-     * @param members userIds/groupIds for which the acls will be retrieved. When this is null, it will obtain all the acls.
-     * @param sessionId Session of the user that wants to retrieve the acls.
-     * @return A queryResult containing the individual acls.
-     * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
-     * the individual id is not valid or the members given do not exist.
-     */
-    @Deprecated
-    QueryResult<IndividualAclEntry> getAcls(String individualStr, List<String> members, String sessionId) throws CatalogException;
-    @Deprecated
-    default List<QueryResult<IndividualAclEntry>> getAcls(List<String> individualIds, List<String> members, String sessionId)
-            throws CatalogException {
-        List<QueryResult<IndividualAclEntry>> result = new ArrayList<>(individualIds.size());
-        for (String individualStr : individualIds) {
-            result.add(getAcls(individualStr, members, sessionId));
-        }
-        return result;
-    }
 
     @Deprecated
     QueryResult<AnnotationSet> annotate(long individualId, String annotationSetName, long variableSetId, Map<String, Object> annotations,
@@ -205,5 +183,8 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
     default QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
         throw new NotImplementedException("Group by has to be called passing the study string");
     }
+
+    List<QueryResult<IndividualAclEntry>> updateAcl(String individual, String studyStr, String memberIds,
+                                                    Individual.IndividualAclParams aclParams, String sessionId) throws CatalogException;
 
 }

@@ -34,13 +34,14 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationManager;
-import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.SampleList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.Map.Entry;
+
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory.extractVariantFromVariantRowKey;
 
 /**
  * Created on 20/11/15.
@@ -67,17 +70,19 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     private final Map<Integer, LinkedHashMap<String, Integer>> returnedSamplesPositionMap = new HashMap<>();
     private final Logger logger = LoggerFactory.getLogger(HBaseToVariantConverter.class);
 
-    private List<String> returnedSamples = Collections.emptyList();
+    private List<String> returnedSamples = null;
 
     private static boolean failOnWrongVariants = false; //FIXME
     private boolean studyNameAsStudyId = false;
     private boolean mutableSamplesPosition = true;
     private boolean failOnEmptyVariants = false;
     private boolean simpleGenotypes = false;
+    private Set<VariantField> variantFields = null;
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
-        this(variantTableHelper, new HBaseStudyConfigurationManager(variantTableHelper.getOutputTableAsString(),
-                variantTableHelper.getConf(), new ObjectMap()));
+        this(variantTableHelper, new StudyConfigurationManager(
+                new HBaseStudyConfigurationDBAdaptor(
+                        variantTableHelper.getAnalysisTableAsString(), variantTableHelper.getConf(), new ObjectMap())));
     }
 
     public HBaseToVariantConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
@@ -89,6 +94,12 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
     public HBaseToVariantConverter setReturnedSamples(List<String> returnedSamples) {
         this.returnedSamples = returnedSamples;
+        return this;
+    }
+
+    public HBaseToVariantConverter setReturnedFields(Set<VariantField> fields) {
+        variantFields = fields;
+        annotationConverter.setReturnedFields(fields);
         return this;
     }
 
@@ -116,7 +127,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     public Variant convert(Result result) {
         VariantAnnotation annotation = annotationConverter.convert(result);
         Map<Integer, Map<Integer, VariantStats>> stats = statsConverter.convert(result);
-        return convert(genomeHelper.extractVariantFromVariantRowKey(result.getRow()), VariantTableStudyRow.parse(result, genomeHelper),
+        return convert(extractVariantFromVariantRowKey(result.getRow()), VariantTableStudyRow.parse(result, genomeHelper),
                 stats, annotation);
     }
 
@@ -367,7 +378,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     private LinkedHashMap<String, Integer> getReturnedSamplesPosition(StudyConfiguration studyConfiguration) {
         if (!returnedSamplesPositionMap.containsKey(studyConfiguration.getStudyId())) {
             LinkedHashMap<String, Integer> samplesPosition = StudyConfiguration.getReturnedSamplesPosition(studyConfiguration,
-                    new LinkedHashSet<>(this.returnedSamples), StudyConfiguration::getIndexedSamples);
+                    returnedSamples == null ? null : new LinkedHashSet<>(returnedSamples), StudyConfiguration::getIndexedSamples);
             returnedSamplesPositionMap.put(studyConfiguration.getStudyId(), samplesPosition);
         }
         return returnedSamplesPositionMap.get(studyConfiguration.getStudyId());

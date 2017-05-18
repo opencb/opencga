@@ -26,29 +26,29 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConverter;
 import org.opencb.biodata.tools.variant.converters.proto.VcfSliceToVariantListConverter;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
  */
 public class VcfSliceCombiner extends Reducer<ImmutableBytesWritable, VcfSliceWritable, ImmutableBytesWritable, VcfSliceWritable> {
 
-    private final AtomicReference<ArchiveHelper> helper = new AtomicReference<>();
-
     private VcfSliceToVariantListConverter converterFromSlice;
     private VariantToVcfSliceConverter converterToSlice;
+    private ArchiveRowKeyFactory keyFactory;
 
     @Override
     protected void setup(Context context) throws IOException,
             InterruptedException {
-        this.helper.set(new ArchiveHelper(context.getConfiguration()));
-        converterFromSlice = new VcfSliceToVariantListConverter(helper.get().getMeta());
+        ArchiveTableHelper helper = new ArchiveTableHelper(context.getConfiguration());
+        converterFromSlice = new VcfSliceToVariantListConverter(helper.getMeta());
         converterToSlice = new VariantToVcfSliceConverter();
+        keyFactory = helper.getKeyFactory();
     }
 
     @Override
@@ -62,7 +62,7 @@ public class VcfSliceCombiner extends Reducer<ImmutableBytesWritable, VcfSliceWr
         }
 
         String keyStr = Bytes.toString(key.get());
-        int position = getHelper().extractPositionFromBlockId(keyStr).intValue();
+        int position = keyFactory.extractPositionFromBlockId(keyStr).intValue();
         VcfSlice slice = converterToSlice.convert(variants, position);
         cxt.getCounter("OPENCGA.HBASE", "VCF_SLICE_SIZE").increment(slice.getRecordsCount());
 
@@ -70,7 +70,4 @@ public class VcfSliceCombiner extends Reducer<ImmutableBytesWritable, VcfSliceWr
         cxt.write(key, new VcfSliceWritable(slice));
     }
 
-    public ArchiveHelper getHelper() {
-        return helper.get();
-    }
 }

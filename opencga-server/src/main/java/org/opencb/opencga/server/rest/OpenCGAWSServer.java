@@ -37,7 +37,9 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -99,7 +101,7 @@ public class OpenCGAWSServer {
 
     @DefaultValue("")
     @QueryParam("sid")
-    @ApiParam(value = "Session Id")
+    @ApiParam(value = "Session id")
     protected String sessionId;
 
     protected UriInfo uriInfo;
@@ -155,7 +157,8 @@ public class OpenCGAWSServer {
     }
 
 
-    public OpenCGAWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+    public OpenCGAWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+            throws IOException, VersionException {
         this(uriInfo.getPathParameters().getFirst("version"), uriInfo, httpServletRequest);
     }
 
@@ -170,6 +173,11 @@ public class OpenCGAWSServer {
         // This is only executed the first time to initialize configuration and some variables
         if (initialized.compareAndSet(false, true)) {
             init();
+        }
+
+        if (catalogManager == null) {
+            throw new IllegalStateException("OpenCGA was not properly initialized. Please, check if the configuration files are reachable "
+                    + "or properly defined.");
         }
 
         query = new Query();
@@ -269,57 +277,6 @@ public class OpenCGAWSServer {
         }
     }
 
-//
-//    /**
-//     * Builds the query and the queryOptions based on the query parameters.
-//     *
-//     * @param params Map of parameters.
-//     * @param getParam Method that returns the QueryParams object based on the key.
-//     * @param query Query where parameters parsing the getParam function will be inserted.
-//     * @param queryOptions QueryOptions where parameters not parsing the getParam function will be inserted.
-//     */
-//    @Deprecated
-//    protected static void parseQueryParams(Map<String, List<String>> params,
-//                                           Function<String, org.opencb.commons.datastore.core.QueryParam> getParam,
-//                                           ObjectMap query, QueryOptions queryOptions) {
-//        for (Map.Entry<String, List<String>> entry : params.entrySet()) {
-//            String param = entry.getKey();
-//            int indexOf = param.indexOf('.');
-//            param = indexOf > 0 ? param.substring(0, indexOf) : param;
-//
-//            if (getParam.apply(param) != null) {
-//                query.put(entry.getKey(), entry.getValue().get(0));
-//            } else {
-//                queryOptions.add(param, entry.getValue().get(0));
-//            }
-//
-//            // Exceptions
-//            if (param.equalsIgnoreCase("status")) {
-//                query.put("status.name", entry.getValue().get(0));
-//                query.remove("status");
-//                queryOptions.remove("status");
-//            }
-//
-//            if (param.equalsIgnoreCase("jobId")) {
-//                query.put("job.id", entry.getValue().get(0));
-//                query.remove("jobId");
-//                queryOptions.remove("jobId");
-//            }
-//
-//            if (param.equalsIgnoreCase("individualId")) {
-//                query.put("individual.id", entry.getValue().get(0));
-//                query.remove("individualId");
-//                queryOptions.remove("individualId");
-//            }
-//
-//            if (param.equalsIgnoreCase("sid")) {
-//                query.remove("sid");
-//                queryOptions.remove("sid");
-//            }
-//        }
-//        logger.debug("parseQueryParams: Query {}, queryOptions {}", query.safeToString(), queryOptions.safeToString());
-//    }
-
     private void parseParams() throws VersionException {
         // If by any reason 'version' is null we try to read it from the URI path, if not present an Exception is thrown
         if (version == null) {
@@ -376,6 +333,11 @@ public class OpenCGAWSServer {
                     lazy = Boolean.parseBoolean(value);
                     queryOptions.put(entry.getKey(), lazy);
                     break;
+                case QueryOptions.FACET:
+                case QueryOptions.FACET_RANGE:
+                case QueryOptions.FACET_INTERSECTION:
+                    queryOptions.put(entry.getKey(), value);
+                    break;
                 default:
                     // Query
                     query.put(entry.getKey(), value);
@@ -390,6 +352,20 @@ public class OpenCGAWSServer {
         if (query.containsKey("status")) {
             query.put("status.name", query.get("status"));
             query.remove("status");
+        }
+
+        if (query.containsKey("variableSet")) {
+            query.put("variableSetId", query.get("variableSet"));
+            query.remove("variableSet");
+        }
+        if (query.containsKey("variableSetId")) {
+            try {
+                AbstractManager.MyResourceId resource = catalogManager.getStudyManager().getVariableSetId(query.getString
+                        ("variableSetId"), query.getString("study"), sessionId);
+                query.put("variableSetId", resource.getResourceId());
+            } catch (CatalogException e) {
+                logger.warn("VariableSetId parameter found, but proper id could not be found: {}", e.getMessage(), e);
+            }
         }
 
         try {
@@ -423,12 +399,45 @@ public class OpenCGAWSServer {
         }
     }
 
+    // Temporal method used by deprecated methods. This will be removed at some point.
+    protected AclParams getAclParams(
+            @ApiParam(value = "Comma separated list of permissions to add", required = false) @QueryParam("add") String addPermissions,
+            @ApiParam(value = "Comma separated list of permissions to remove", required = false) @QueryParam("remove") String removePermissions,
+            @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("set") String setPermissions)
+            throws CatalogException {
+        int count = 0;
+        count += StringUtils.isNotEmpty(setPermissions) ? 1 : 0;
+        count += StringUtils.isNotEmpty(addPermissions) ? 1 : 0;
+        count += StringUtils.isNotEmpty(removePermissions) ? 1 : 0;
+        if (count > 1) {
+            throw new CatalogException("Only one of add, remove or set parameters are allowed.");
+        } else if (count == 0) {
+            throw new CatalogException("One of add, remove or set parameters is expected.");
+        }
+
+        String permissions = null;
+        AclParams.Action action = null;
+        if (StringUtils.isNotEmpty(addPermissions)) {
+            permissions = addPermissions;
+            action = AclParams.Action.ADD;
+        }
+        if (StringUtils.isNotEmpty(setPermissions)) {
+            permissions = setPermissions;
+            action = AclParams.Action.SET;
+        }
+        if (StringUtils.isNotEmpty(removePermissions)) {
+            permissions = removePermissions;
+            action = AclParams.Action.REMOVE;
+        }
+        return new AclParams(permissions, action);
+    }
+
     @Deprecated
     @GET
     @Path("/help")
-    @ApiOperation(value = "Help", position = 1)
+    @ApiOperation(value = "Help", hidden = true, position = 1)
     public Response help() {
-        return createOkResponse("No help available");
+        return createErrorResponse("help", "No help available");
     }
 
     protected Response createErrorResponse(Exception e) {

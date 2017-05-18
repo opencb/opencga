@@ -18,14 +18,15 @@ package org.opencb.opencga.app.cli.main.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.app.cli.CliSession;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.io.*;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created on 27/05/16.
@@ -35,7 +36,6 @@ import java.io.IOException;
 public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
     protected OpenCGAClient openCGAClient;
-    protected CatalogManager catalogManager;
 
     protected AbstractOutputWriter writer;
 
@@ -73,7 +73,14 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
 //            CliSession cliSession = loadCliSessionFile();
             logger.debug("sessionFile = " + cliSession);
-            if (cliSession != null) {
+            if (StringUtils.isNotEmpty(options.sessionId)) {
+                // Ignore session file. Overwrite with command line information (just sessionId)
+                cliSession = new CliSession(null, options.sessionId);
+                sessionId = options.sessionId;
+                userId = null;
+
+                openCGAClient = new OpenCGAClient(options.sessionId, clientConfiguration);
+            } else if (cliSession != null) {
                 // 'logout' field is only null or empty while no logout is executed
                 if (StringUtils.isEmpty(cliSession.getLogout())) {
                     // no timeout checks
@@ -102,8 +109,6 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                             if (options.sessionId == null) {
                                 options.sessionId = cliSession.getSessionId();
                             }
-                            // Some operations such as copy and link are run in the server side and need Catalog Manager
-                            catalogManager = new CatalogManager(configuration);
                         }
                     }
                 } else {
@@ -114,11 +119,34 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 logger.debug("No Session file");
                 openCGAClient = new OpenCGAClient(clientConfiguration);
             }
-        } catch (IOException | CatalogException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+
+    protected String resolveStudy(String study) {
+        if (StringUtils.isEmpty(study)) {
+            if (StringUtils.isNotEmpty(clientConfiguration.getDefaultStudy())) {
+                return clientConfiguration.getDefaultStudy();
+            }
+        } else {
+            // study is not empty, let's check if it is an alias
+            if (clientConfiguration.getAlias() != null && clientConfiguration.getAlias().size() > 0) {
+                String[] studies = study.split(",");
+                List<String> studyList = new ArrayList<>(studies.length);
+                for (String s : studies) {
+                    if (clientConfiguration.getAlias().containsKey(s)) {
+                        studyList.add(clientConfiguration.getAlias().get(study));
+                    } else {
+                        studyList.add(s);
+                    }
+                }
+                return StringUtils.join(studyList, ",");
+            }
+        }
+        return study;
+    }
 
     public void createOutput(QueryResponse queryResponse) {
         if (queryResponse != null) {

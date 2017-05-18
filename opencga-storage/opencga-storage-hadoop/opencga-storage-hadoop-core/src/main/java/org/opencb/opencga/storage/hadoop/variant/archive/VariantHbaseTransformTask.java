@@ -44,7 +44,8 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
     protected final Logger logger = LoggerFactory.getLogger(VariantHbaseTransformTask.class);
     private static final List<VcfSlice> EMPTY_LIST = Collections.emptyList();
     private final VariantToVcfSliceConverter converter;
-    private final ArchiveHelper helper;
+    private final ArchiveRowKeyFactory keyFactory;
+    private final ArchiveTableHelper helper;
 
     private final Set<String> storedChr;
     private final Set<String> lookup;
@@ -59,10 +60,10 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
     private BufferedMutator tableMutator;
 
     /**
-     * @param helper {@link ArchiveHelper}
+     * @param helper {@link ArchiveTableHelper}
      * @param table  {@link String} HBase table name
      */
-    public VariantHbaseTransformTask(ArchiveHelper helper, String table) {
+    public VariantHbaseTransformTask(ArchiveTableHelper helper, String table) {
         converter = new VariantToVcfSliceConverter();
         this.helper = helper;
         storedChr = new HashSet<>();
@@ -70,6 +71,7 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
         buffer = new HashMap<>();
         lookupOrder = new LinkedList<>();
         this.tableName = table == null ? null : TableName.valueOf(table);
+        keyFactory = new ArchiveRowKeyFactory(helper.getChunkSize(), helper.getSeparator());
     }
 
     public void setBufferSize(Integer size) {
@@ -137,7 +139,7 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
                     lookup.clear(); // clear for each Chromosome
                     lookup.addAll(lookupOrder);
                 }
-                long sliceStart = getHelper().extractPositionFromBlockId(key);
+                long sliceStart = keyFactory.extractPositionFromBlockId(key);
                 // List<Variant> varLst = data.stream().map(v -> new
                 // Variant(v)).collect(Collectors.toList());
 
@@ -151,7 +153,7 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
     }
 
     private SortedMap<Long, String> orderKeys(LinkedList<String> lookupOrder, Set<String> storedChr, int chunkSize) {
-        List<String> currentChr = lookupOrder.stream().filter(s -> storedChr.contains(getHelper().splitBlockId(s)[0]))
+        List<String> currentChr = lookupOrder.stream().filter(s -> storedChr.contains(keyFactory.splitBlockId(s)[0]))
                 .collect(Collectors.toList());
         // first finish off current chromosome
         if (currentChr.isEmpty()) {
@@ -161,7 +163,7 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
         // find min position
         TreeMap<Long, String> idx = new TreeMap<>();
         for (String slice : currentChr) {
-            Long extr = getHelper().extractPositionFromBlockId(slice);
+            Long extr = keyFactory.extractPositionFromBlockId(slice);
             idx.put(extr, slice);
         }
         return idx;
@@ -171,7 +173,7 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
         String chromosome = var.getChromosome();
         long[] coveredSlicePositions = getCoveredSlicePositions(var);
         for (long slicePos : coveredSlicePositions) {
-            String blockKey = getHelper().generateBlockId(chromosome, slicePos);
+            String blockKey = keyFactory.generateBlockId(chromosome, slicePos);
             addVariant(blockKey, var);
         }
     }
@@ -253,7 +255,7 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
         }
     }
 
-    private ArchiveHelper getHelper() {
+    private ArchiveTableHelper getHelper() {
         return this.helper;
     }
 }

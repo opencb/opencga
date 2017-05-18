@@ -82,21 +82,8 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
             case "acl":
                 queryResponse = aclCommandExecutor.acls(individualsCommandOptions.aclsCommandOptions, openCGAClient.getIndividualClient());
                 break;
-            case "acl-create":
-                queryResponse = aclCommandExecutor.aclsCreate(individualsCommandOptions.aclsCreateCommandOptions,
-                        openCGAClient.getIndividualClient());
-                break;
-            case "acl-member-delete":
-                queryResponse = aclCommandExecutor.aclMemberDelete(individualsCommandOptions.aclsMemberDeleteCommandOptions,
-                        openCGAClient.getIndividualClient());
-                break;
-            case "acl-member-info":
-                queryResponse = aclCommandExecutor.aclMemberInfo(individualsCommandOptions.aclsMemberInfoCommandOptions,
-                        openCGAClient.getIndividualClient());
-                break;
-            case "acl-member-update":
-                queryResponse = aclCommandExecutor.aclMemberUpdate(individualsCommandOptions.aclsMemberUpdateCommandOptions,
-                        openCGAClient.getIndividualClient());
+            case "acl-update":
+                queryResponse = updateAcl();
                 break;
             case "annotation-sets-create":
                 queryResponse = annotationCommandExecutor.createAnnotationSet(individualsCommandOptions.annotationCreateCommandOptions,
@@ -152,18 +139,6 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
 
         IndividualCommandOptions.CreateCommandOptions commandOptions = individualsCommandOptions.createCommandOptions;
 
-        Individual.Species species = new Individual.Species();
-        if (commandOptions.speciesCommonName != null) {
-            species.setCommonName(commandOptions.speciesCommonName);
-        }
-        if (commandOptions.speciesScientificName != null) {
-            species.setScientificName(commandOptions.speciesScientificName);
-        }
-        if (commandOptions.speciesTaxonomyCode != null) {
-            species.setTaxonomyCode(commandOptions.speciesTaxonomyCode);
-        }
-        params.put(IndividualDBAdaptor.QueryParams.SPECIES.key(), species);
-
         Individual.Population population = new Individual.Population();
         if (commandOptions.populationName != null) {
             population.setName(commandOptions.populationName);
@@ -179,15 +154,16 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), commandOptions.karyotypicSex);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(), commandOptions.lifeStatus);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), commandOptions.affectationStatus);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), commandOptions.dateOfBirth);
 
-        return openCGAClient.getIndividualClient().create(commandOptions.study, params);
+        return openCGAClient.getIndividualClient().create(resolveStudy(commandOptions.study), params);
     }
 
     private QueryResponse<Individual> info() throws CatalogException, IOException {
         logger.debug("Getting individual information");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), individualsCommandOptions.infoCommandOptions.study);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), resolveStudy(individualsCommandOptions.infoCommandOptions.study));
         params.putIfNotNull(QueryOptions.INCLUDE, individualsCommandOptions.infoCommandOptions.dataModelOptions.include);
         params.putIfNotNull(QueryOptions.EXCLUDE, individualsCommandOptions.infoCommandOptions.dataModelOptions.exclude);
         return openCGAClient.getIndividualClient().get(individualsCommandOptions.infoCommandOptions.individual, params);
@@ -197,7 +173,8 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Searching individuals");
 
         Query query = new Query();
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), individualsCommandOptions.searchCommandOptions.study);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(),
+                resolveStudy(individualsCommandOptions.searchCommandOptions.study));
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.searchCommandOptions.name);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.searchCommandOptions.fatherId);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.searchCommandOptions.motherId);
@@ -205,16 +182,8 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.searchCommandOptions.sex);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.searchCommandOptions.ethnicity);
         // TODO: Remove these 2 deprecated parameters in future release
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(),
-                individualsCommandOptions.searchCommandOptions.species);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                 individualsCommandOptions.searchCommandOptions.population);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(),
-                individualsCommandOptions.searchCommandOptions.speciesCommonName);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_TAXONOMY_CODE.key(),
-                individualsCommandOptions.searchCommandOptions.speciesTaxonomyCode);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_SCIENTIFIC_NAME.key(),
-                individualsCommandOptions.searchCommandOptions.speciesScientificName);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                 individualsCommandOptions.searchCommandOptions.populationName);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key(),
@@ -252,6 +221,8 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.updateCommandOptions.family);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.updateCommandOptions.fatherId);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.updateCommandOptions.motherId);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(),
+                individualsCommandOptions.updateCommandOptions.dateOfBirth);
 
         String sex = individualsCommandOptions.updateCommandOptions.sex;
         if (individualsCommandOptions.updateCommandOptions.sex != null) {
@@ -264,12 +235,6 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         }
 
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.updateCommandOptions.ethnicity);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_TAXONOMY_CODE.key(),
-                individualsCommandOptions.updateCommandOptions.speciesTaxonomyCode);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(),
-                individualsCommandOptions.updateCommandOptions.speciesCommonName);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_SCIENTIFIC_NAME.key(),
-                individualsCommandOptions.updateCommandOptions.speciesScientificName);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                 individualsCommandOptions.updateCommandOptions.populationName);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_DESCRIPTION.key(),
@@ -284,13 +249,13 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
                 individualsCommandOptions.updateCommandOptions.affectationStatus);
 
         return openCGAClient.getIndividualClient().update(individualsCommandOptions.updateCommandOptions.individual,
-                individualsCommandOptions.updateCommandOptions.study, params);
+                resolveStudy(individualsCommandOptions.updateCommandOptions.study), params);
     }
 
     private QueryResponse<Individual> delete() throws CatalogException, IOException {
         logger.debug("Deleting individual information");
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), individualsCommandOptions.deleteCommandOptions.study);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), resolveStudy(individualsCommandOptions.deleteCommandOptions.study));
         return openCGAClient.getIndividualClient().delete(individualsCommandOptions.deleteCommandOptions.individual, params);
     }
 
@@ -298,7 +263,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Group by individuals");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), individualsCommandOptions.groupByCommandOptions.study);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), resolveStudy(individualsCommandOptions.groupByCommandOptions.study));
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.groupByCommandOptions.id);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.groupByCommandOptions.name);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.groupByCommandOptions.fatherId);
@@ -306,17 +271,9 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.groupByCommandOptions.family);
         params.put(IndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.groupByCommandOptions.sex);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.groupByCommandOptions.ethnicity);
-        // TODO: Remove these 2 deprecated parameters in future release
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(),
-                individualsCommandOptions.groupByCommandOptions.species);
+        // TODO: Remove this deprecated parameters in future release
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                 individualsCommandOptions.groupByCommandOptions.population);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_TAXONOMY_CODE.key(),
-                individualsCommandOptions.groupByCommandOptions.speciesTaxonomyCode);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(),
-                individualsCommandOptions.groupByCommandOptions.speciesCommonName);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_SCIENTIFIC_NAME.key(),
-                individualsCommandOptions.groupByCommandOptions.speciesScientificName);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                 individualsCommandOptions.groupByCommandOptions.populationName);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_DESCRIPTION.key(),
@@ -344,7 +301,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Getting samples of individual(s)");
 
         Query query = new Query();
-        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), individualsCommandOptions.sampleCommandOptions.study);
+        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(individualsCommandOptions.sampleCommandOptions.study));
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualsCommandOptions.sampleCommandOptions.individual);
 
         QueryOptions options = new QueryOptions();
@@ -352,6 +309,23 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         options.putIfNotNull(QueryOptions.EXCLUDE, individualsCommandOptions.sampleCommandOptions.dataModelOptions.exclude);
 
         return openCGAClient.getSampleClient().search(query, options);
+    }
+
+    private QueryResponse<IndividualAclEntry> updateAcl() throws IOException, CatalogException {
+        IndividualCommandOptions.IndividualAclCommandOptions.AclsUpdateCommandOptions commandOptions =
+                individualsCommandOptions.aclsUpdateCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotNull("study", commandOptions.study);
+
+        ObjectMap bodyParams = new ObjectMap();
+        bodyParams.putIfNotNull("permissions", commandOptions.permissions);
+        bodyParams.putIfNotNull("action", commandOptions.action);
+        bodyParams.putIfNotNull("propagate", commandOptions.propagate);
+        bodyParams.putIfNotNull("individual", commandOptions.id);
+        bodyParams.putIfNotNull("sample", commandOptions.sample);
+
+        return openCGAClient.getIndividualClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
     }
 
 }

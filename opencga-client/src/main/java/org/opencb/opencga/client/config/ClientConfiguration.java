@@ -23,6 +23,7 @@ import org.opencb.opencga.catalog.models.Project;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Map;
 
 /**
  * Created by imedina on 04/05/16.
@@ -38,9 +39,12 @@ public class ClientConfiguration {
     private Project.Organism organism;
     private String defaultStudy;
 
+    private Map<String, String> alias;
+
     private RestConfig rest;
     private GrpcConfig grpc;
 
+    private VariantClientConfiguration variant;
 
     public ClientConfiguration() {
     }
@@ -78,7 +82,6 @@ public class ClientConfiguration {
         jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOutputStream, this);
     }
 
-
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClientConfiguration{");
@@ -88,8 +91,10 @@ public class ClientConfiguration {
         sb.append(", sessionDuration=").append(sessionDuration);
         sb.append(", organism=").append(organism);
         sb.append(", defaultStudy='").append(defaultStudy).append('\'');
+        sb.append(", alias=").append(alias);
         sb.append(", rest=").append(rest);
         sb.append(", grpc=").append(grpc);
+        sb.append(", variant=").append(variant);
         sb.append('}');
         return sb.toString();
     }
@@ -148,6 +153,15 @@ public class ClientConfiguration {
         return this;
     }
 
+    public Map<String, String> getAlias() {
+        return alias;
+    }
+
+    public ClientConfiguration setAlias(Map<String, String> alias) {
+        this.alias = alias;
+        return this;
+    }
+
     public RestConfig getRest() {
         return rest;
     }
@@ -163,6 +177,15 @@ public class ClientConfiguration {
 
     public ClientConfiguration setGrpc(GrpcConfig grpc) {
         this.grpc = grpc;
+        return this;
+    }
+
+    public VariantClientConfiguration getVariant() {
+        return variant;
+    }
+
+    public ClientConfiguration setVariant(VariantClientConfiguration variant) {
+        this.variant = variant;
         return this;
     }
 }

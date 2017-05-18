@@ -15,6 +15,8 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 
 import java.util.List;
 
+import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.SAMPLE_FILTER_DESC;
+
 /**
  * Created by pfurio on 23/11/16.
  */
@@ -22,6 +24,7 @@ import java.util.List;
 public class VariantCommandOptions {
 
     public VariantIndexCommandOptions indexVariantCommandOptions;
+    public VariantIndexSearchCommandOptions variantIndexSearchCommandOptions;
 //    public QueryVariantCommandOptionsOld queryVariantCommandOptionsOld;
     public VariantQueryCommandOptions queryVariantCommandOptions;
     public VariantStatsCommandOptions statsVariantCommandOptions;
@@ -29,6 +32,8 @@ public class VariantCommandOptions {
     public VariantExportStatsCommandOptions exportVariantStatsCommandOptions;
     public VariantImportCommandOptions importVariantCommandOptions;
     public VariantIbsCommandOptions ibsVariantCommandOptions;
+    public VariantSamplesFilterCommandOptions samplesFilterCommandOptions;
+    public VariantHistogramCommandOptions histogramCommandOptions;
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
@@ -43,6 +48,7 @@ public class VariantCommandOptions {
         this.jCommander = jCommander;
 
         this.indexVariantCommandOptions = new VariantIndexCommandOptions();
+        this.variantIndexSearchCommandOptions = new VariantIndexSearchCommandOptions();
 //        this.queryVariantCommandOptionsOld = new QueryVariantCommandOptionsOld();
         this.queryVariantCommandOptions = new VariantQueryCommandOptions();
         this.statsVariantCommandOptions = new VariantStatsCommandOptions();
@@ -50,6 +56,8 @@ public class VariantCommandOptions {
         this.exportVariantStatsCommandOptions = new VariantExportStatsCommandOptions();
         this.importVariantCommandOptions = new VariantImportCommandOptions();
         this.ibsVariantCommandOptions = new VariantIbsCommandOptions();
+        this.samplesFilterCommandOptions = new VariantSamplesFilterCommandOptions();
+        this.histogramCommandOptions = new VariantHistogramCommandOptions();
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
@@ -76,6 +84,16 @@ public class VariantCommandOptions {
         public String catalogPath = null;
     }
 
+    @Parameters(commandNames = {"index-search"}, commandDescription = "Index variants file")
+    public class VariantIndexSearchCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-p", "--project-id"}, description = "Project to index.", arity = 1)
+        public String project;
+
+    }
 
     @Deprecated
     public class IndexVariantCommandOptionsOld extends GeneralCliOptions.StudyOption {
@@ -347,6 +365,10 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
+        @Parameter(names = {"--sample-filter"}, description = SAMPLE_FILTER_DESC)
+        public String sampleFilter;
+
+        // FIXME: This param should not be in the ANALYSIS command line!
         @Parameter(names = {"--mode"}, description = "Communication mode. grpc|rest|auto.")
         public String mode = "auto";
 
@@ -567,10 +589,78 @@ public class VariantCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"ibs"}, commandDescription = "[PENDING] ")
-    public class VariantIbsCommandOptions { //extends CatalogDatabaseCommandOptions {
+    @Parameters(commandNames = {"ibs"}, commandDescription = "[EXPERIMENTAL] Identity By State Clustering")
+    public class VariantIbsCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
+        public String study;
+
+        @Parameter(names = {"--sample"}, description = "List of samples to check. By default, all samples")
+        public String samples;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir = "-";
+    }
+
+    @Parameters(commandNames = {"samples"}, commandDescription = "Get samples given a set of variants")
+    public class VariantSamplesFilterCommandOptions {
+
+        @ParametersDelegate
+        public StorageVariantCommandOptions.BasicVariantQueryOptions variantQueryOptions = new StorageVariantCommandOptions.BasicVariantQueryOptions();
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
+        public String study;
+
+        //TODO
+//        @Parameter(names = {"--sample-filter"}, description = SAMPLE_FILTER_DESC)
+//        public String sampleFilter;
+
+        @Parameter(names = {"--sample"}, description = "List of samples to check. By default, all samples")
+        public String samples;
+
+        @Parameter(names = {"--all"}, description = "Samples must be present in ALL variants or in ANY variant.")
+        public boolean all;
+
+        @Parameter(names = {"--genotypes"}, description = "Genotypes that the sample must have to be selected")
+        public String genotypes = "0/1,1/1";
+
+
+
+//        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
+//        public String output;
+    }
+
+    @Parameters(commandNames = {"histogram"}, commandDescription = "")
+    public class VariantHistogramCommandOptions {
+
+        @ParametersDelegate
+        public StorageVariantCommandOptions.BasicVariantQueryOptions variantQueryOptions = new StorageVariantCommandOptions.BasicVariantQueryOptions();
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
+        public String study;
+
+        @Parameter(names = {"--sample"}, description = "List of samples to check. By default, all samples")
+        public String samples;
+
+        @Parameter(names = {"--interval"}, description = "")
+        public Integer interval = 1000;
+
+        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
+        public String outdir;
     }
 }

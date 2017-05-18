@@ -29,11 +29,14 @@ import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.api.IFileManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.AclParams;
+import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.*;
@@ -43,6 +46,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -183,9 +192,9 @@ public class FileManagerTest extends GenericTest {
         variables.addAll(Arrays.asList(
                 new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null,
                         Collections.<String, Object>emptyMap()),
-                new Variable("AGE", "", Variable.VariableType.NUMERIC, null, true, false, Collections.singletonList("0:130"), 1, "", "",
+                new Variable("AGE", "", Variable.VariableType.DOUBLE, null, true, false, Collections.singletonList("0:130"), 1, "", "",
                         null, Collections.<String, Object>emptyMap()),
-                new Variable("HEIGHT", "", Variable.VariableType.NUMERIC, "1.5", false, false, Collections.singletonList("0:"), 2, "",
+                new Variable("HEIGHT", "", Variable.VariableType.DOUBLE, "1.5", false, false, Collections.singletonList("0:"), 2, "",
                         "", null, Collections.<String, Object>emptyMap()),
                 new Variable("ALIVE", "", Variable.VariableType.BOOLEAN, "", true, false, Collections.<String>emptyList(), 3, "", "",
                         null, Collections.<String, Object>emptyMap()),
@@ -390,6 +399,78 @@ public class FileManagerTest extends GenericTest {
         thrown.expect(CatalogIOException.class);
         thrown.expectMessage("does not exist");
         catalogManager.link(uri, "test/myLinkedFolder/", Long.toString(studyId), params, sessionIdUser);
+    }
+
+    // The VCF file that is going to be linked contains names with "." Issue: #570
+    @Test
+    public void testLinkFile() throws CatalogException, IOException, URISyntaxException {
+        URI uri = getClass().getResource("/biofiles/variant-test-file-dot-names.vcf.gz").toURI();
+        QueryResult<File> link = fileManager.link(uri, ".", studyId, new ObjectMap(), sessionIdUser);
+
+        assertEquals(4, link.first().getSampleIds().size());
+
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ID.key(), link.first().getSampleIds())
+                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(query, QueryOptions.empty(), sessionIdUser);
+
+        assertEquals(4, sampleQueryResult.getNumResults());
+        List<String> sampleNames = sampleQueryResult.getResult().stream().map(Sample::getName).collect(Collectors.toList());
+        assertTrue(sampleNames.contains("test-name.bam"));
+        assertTrue(sampleNames.contains("NA19660"));
+        assertTrue(sampleNames.contains("NA19661"));
+        assertTrue(sampleNames.contains("NA19685"));
+    }
+
+    @Test
+    public void stressTestLinkFile() throws Exception {
+        URI uri = getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI();
+        AtomicInteger numFailures = new AtomicInteger();
+        AtomicInteger numOk = new AtomicInteger();
+        int numThreads = 10;
+        int numOperations = 500;
+
+        ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
+
+        for (int i = 0; i < numOperations; i++) {
+            executorService.submit(() -> {
+                try {
+                    fileManager.link(uri, ".", studyId, new ObjectMap(), sessionIdUser);
+                    int num = numOk.incrementAndGet();
+                    System.out.println("i = " + num);
+                } catch (Exception ignore) {
+                    ignore.printStackTrace();
+                    numFailures.incrementAndGet();
+                }
+            });
+
+        }
+//        executorService.shutdown();
+        executorService.awaitTermination(30, TimeUnit.SECONDS);
+        executorService.shutdown();
+
+        int unexecuted = executorService.shutdownNow().size();
+        System.out.println("Do not execute " + unexecuted + " tasks!");
+//        for (int i = 0; i < numThreads; i++) {
+//            threads.add(new Thread(() -> {
+//                try {
+//                    fileManager.link(uri, ".", studyId, new ObjectMap(), sessionIdUser);
+//                } catch (IOException | CatalogException ignore) {
+//                    numFailures.incrementAndGet();
+//                }
+//            }));
+//        }
+//        threads.parallelStream().forEach(Thread::run);
+//        threads.parallelStream().forEach((thread) -> {
+//            try {
+//                thread.join();
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        });
+
+        System.out.println("numFailures = " + numFailures);
+        System.out.println("numOk.get() = " + numOk.get());
     }
 
     @Test
@@ -1478,6 +1559,29 @@ public class FileManagerTest extends GenericTest {
 
         for (File subFile : allFilesInFolder) {
             assertTrue(subFile.getStatus().getName().equals(File.FileStatus.TRASHED));
+        }
+    }
+
+    @Test
+    public void assignPermissionsRecursively() throws Exception {
+        Path folderPath = Paths.get("data", "new", "folder");
+        catalogManager.getFileManager().createFolder(Long.toString(studyId), folderPath.toString(), null, true, null,
+                QueryOptions.empty(), sessionIdUser).first();
+
+        Path filePath = Paths.get("data", "file1.txt");
+        fileManager.create(Long.toString(studyId), File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, filePath.toString(),
+                "", "", new File.FileStatus(), 10, -1, null, -1, null, null, true,
+                "My content", null, sessionIdUser);
+
+        catalogManager.createStudyAcls(Long.toString(studyId), "user2", "", null, sessionIdUser);
+        List<QueryResult<FileAclEntry>> queryResults = fileManager.updateAcl("data/new/," + filePath.toString(),
+                Long.toString(studyId), "user2", new File.FileAclParams("VIEW", AclParams.Action.SET, null), sessionIdUser);
+
+        assertEquals(3, queryResults.size());
+        for (QueryResult<FileAclEntry> queryResult : queryResults) {
+            assertEquals("user2", queryResult.getResult().get(0).getMember());
+            assertEquals(1, queryResult.getResult().get(0).getPermissions().size());
+            assertEquals(FileAclEntry.FilePermissions.VIEW, queryResult.getResult().get(0).getPermissions().iterator().next());
         }
     }
 

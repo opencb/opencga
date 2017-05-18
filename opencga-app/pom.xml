@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>1.0.0-final</version>
+        <version>1.1.0-dev</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -48,6 +48,12 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-app</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>opencga-storage-benchmark</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -178,7 +184,7 @@
                     <configurationDirectory>conf</configurationDirectory>
                     <!--Do we need to include the configuration folder in the classpath?-->
                     <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
-                    <extraJvmArguments>-Xms256m -Xmx2048m</extraJvmArguments>
+                    <extraJvmArguments>-Xms256m -Xmx2048m -Dfile.encoding=UTF-8</extraJvmArguments>
                     <environmentSetupFileName>${opencga.env.file}</environmentSetupFileName>
                     <programs>
                         <program>
@@ -289,6 +295,11 @@
                                     <arg value="${project.basedir}/../opencga-test/fitnesse"/>
                                     <arg value="${build.dir}/test"/>
                                 </exec>
+				<exec executable="sed">
+                                    <arg value="-i"/>
+                                    <arg value="s/target\/appassembler\/dependencies/dependencies/"/>
+                                    <arg value="${build.dir}/test/fitnesse/FitNesseRoot/OpenCga/TestsSuits/SuiteSetUp/content.txt"/>
+                                </exec>
                             </target>
                         </configuration>
                         <goals>
@@ -306,6 +317,14 @@
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>opencga-storage-benchmark</artifactId>
+                    <version>${opencga.version}</version>
+                </dependency>
+            </dependencies>
             <build>
                 <plugins>
                     <plugin>
@@ -321,6 +340,7 @@
                                         <exec executable="cp">
                                             <arg value="-r"/>
                                             <arg value="${project.basedir}/../opencga-storage/build/bin"/>
+                                            <arg value="${project.basedir}/../opencga-storage/build/benchmark"/>
                                             <arg value="${build.dir}"/>
                                         </exec>
                                     </target>

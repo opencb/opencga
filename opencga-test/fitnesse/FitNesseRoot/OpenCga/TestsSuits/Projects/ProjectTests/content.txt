@@ -1,16 +1,22 @@
 !define TEST_SYSTEM {slim}
-!define user {test}
-!define baseURL {http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/}
-!define O.S.Name {OS}
-!define O.Assembly {OA}
+!define O.S.Name {Homo sapiens}
+!define O.Assembly {GRCh37}
+
+!|Table: Rest Fixture | $baseURL |
+|let|pName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|pAlias|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 
 !3 Create New Project
+!|Table: Rest Fixture | $baseURL |
+| setBody |{ "name" : "$pName", "alias" : "$pAlias", "organism" : {"scientificName" : "Homo sapiens", "assembly" : "${O.Assembly}"}}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/projects/create?sid=$sessionId |200|  Content-Type: application/json ||
+|let|projectdId|js|response.jsonbody.response[0].result[0].id||
 
-!|Table: Rest Fixture | ${baseURL} |
-| GET | /v1/projects/create?sid=$sessionId&name=$projectName&alias=$projectAlias&organism.scientificName=${O.S.Name}&organism.assembly=${O.Assembly} |200|  Content-Type: application/json |jsonbody.response[0].result[0].name === '$projectName'|
 
-!3 Negative: Create Project With Existing Name
-
-!|Table: Rest Fixture | ${baseURL} |
-| GET | /v1/projects/create?sid=$sessionId&name=$projectName&alias=$projectAlias&organism.scientificName=${O.S.Name}&organism.assembly=${O.Assembly} |500|  Content-Type: application/json |jsonbody.error === 'Project {alias:\"$projectAlias\"} already exists in this user'|
+!3 (Negative) Create Project With Existing Name
+!|Table: Rest Fixture | $baseURL |
+| setBody |{ "name" : "$pName", "alias" : "$pAlias", "organism" : {"scientificName" : "Homo sapiens", "assembly" : "${O.Assembly}"}}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/projects/create?sid=$sessionId |500|  Content-Type: application/json |jsonbody.error === 'Project {alias:\"$pAlias\"} already exists for this user'|
 

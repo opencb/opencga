@@ -63,7 +63,7 @@ public class AnnotationCommandExecutor<T,U> {
             AnnotationCommandOptions.AnnotationSetsSearchCommandOptions searchCommandOptions, AnnotationClient<T,U> client)
             throws IOException {
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull("variableSetId", searchCommandOptions.variableSetId);
+        params.putIfNotNull("variableSet", searchCommandOptions.variableSetId);
         params.putIfNotNull("annotation", searchCommandOptions.annotation);
         params.putIfNotNull("study", searchCommandOptions.study);
         return client.searchAnnotationSets(searchCommandOptions.id, params);

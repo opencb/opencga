@@ -38,11 +38,9 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.IndividualConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -57,14 +55,12 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
 
     private final MongoDBCollection individualCollection;
     private IndividualConverter individualConverter;
-    private AclMongoDBAdaptor<IndividualAclEntry> aclDBAdaptor;
 
     public IndividualMongoDBAdaptor(MongoDBCollection individualCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(IndividualMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.individualCollection = individualCollection;
         this.individualConverter = new IndividualConverter();
-        this.aclDBAdaptor = new AclMongoDBAdaptor<>(individualCollection, individualConverter, logger);
     }
 
     @Override
@@ -110,96 +106,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         return endQuery("createIndividual", startQuery, Collections.singletonList(individual));
     }
 
-    @Deprecated
     @Override
     public QueryResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException {
         checkId(individualId);
         return get(new Query(QueryParams.ID.key(), individualId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED), options);
-//        long startQuery = startQuery();
-//
-//        QueryResult<Document> result = individualCollection.find(new Document(PRIVATE_ID, individualId), filterOptions(options,
-//                FILTER_ROUTE_INDIVIDUALS));
-//        Individual individual = parseObject(result, Individual.class);
-//        if (individual == null) {
-//            throw CatalogDBException.idNotFound("Individual", individualId);
-//        }
-//
-//        return endQuery("getIndividual", startQuery, Collections.singletonList(individual));
     }
-
-//    @Deprecated
-//    @Override
-//    public QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options) throws CatalogDBException {
-//        int variableSetId = query.getInt(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key());
-//        Map<String, Variable> variableMap = null;
-//        if (variableSetId > 0) {
-//            variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
-//                    .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
-//        }
-//        return getAllIndividuals(query, options, variableMap);
-//    }
-
-//    @Deprecated
-//    public QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options, Map<String, Variable> variableMap)
-//            throws CatalogDBException {
-//        long startTime = startQuery();
-//
-//        List<Bson> mongoQueryList = new LinkedList<>();
-//        List<Bson> annotationSetFilter = new LinkedList<>();
-//        for (Map.Entry<String, Object> entry : query.entrySet()) {
-//            String key = entry.getKey().split("\\.")[0];
-//            try {
-//                if (isDataStoreOption(key) || isOtherKnownOption(key)) {
-//                    continue;   //Exclude DataStore options
-//                }
-//                CatalogIndividualDBAdaptor.QueryParams option = CatalogIndividualDBAdaptor.QueryParams.getParam(key);
-//                switch (option) {
-//                    case ID:
-//                        addCompQueryFilter(option, option.name(), PRIVATE_ID, query, mongoQueryList);
-//                        break;
-//                    case STUDY_ID:
-//                        addCompQueryFilter(option, option.name(), PRIVATE_STUDY_ID, query, mongoQueryList);
-//                        break;
-//                    case ANNOTATION_SET_NAME:
-//                        addCompQueryFilter(option, option.name(), "id", query, annotationSetFilter);
-//                        break;
-//                    case VARIABLE_SET_ID:
-//                        addCompQueryFilter(option, option.name(), option.key(), query, annotationSetFilter);
-//                        break;
-//                    case ANNOTATION:
-//                        addAnnotationQueryFilter(option.name(), query, variableMap, annotationSetFilter);
-//                        break;
-//                    default:
-//                        String queryKey = entry.getKey().replaceFirst(option.name(), option.key());
-//                        addCompQueryFilter(option, entry.getKey(), queryKey, query, mongoQueryList);
-//                        break;
-//                }
-//            } catch (IllegalArgumentException e) {
-//                throw new CatalogDBException(e);
-//            }
-//        }
-//
-//        Document mongoQuery = new Document();
-//        if (!mongoQueryList.isEmpty()) {
-//            mongoQuery.put("$and", mongoQueryList);
-//        }
-//        if (!annotationSetFilter.isEmpty()) {
-//            mongoQuery.put("annotationSets", new Document("$elemMatch", new Document("$and", annotationSetFilter)) {
-//            });
-//        }
-//        QueryResult<Document> result = individualCollection.find(mongoQuery, filterOptions(options, FILTER_ROUTE_INDIVIDUALS));
-//        List<Individual> individuals = parseObjects(result, Individual.class);
-//        return endQuery("getAllIndividuals", startTime, individuals);
-//    }
-
-//    @Deprecated
-//    @Override
-//    public QueryResult<Individual> getAllIndividualsInStudy(long studyId, QueryOptions options) throws CatalogDBException {
-//        long startTime = startQuery();
-//        Query query = new Query(QueryParams.STUDY_ID.key(), studyId);
-//        List<Individual> result = get(query, options).getResult();
-//        return endQuery("Get all files", startTime, result);
-//    }
 
     @Override
     public QueryResult<AnnotationSet> annotate(long individualId, AnnotationSet annotationSet, boolean overwrite)
@@ -423,9 +334,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         Map<String, Object> individualParameters = new HashMap<>();
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.FAMILY.key(), QueryParams.ETHNICITY.key(), QueryParams.SEX.key(),
-                QueryParams.SPECIES_TAXONOMY_CODE.key(), QueryParams.SPECIES_SCIENTIFIC_NAME.key(), QueryParams.SPECIES_COMMON_NAME.key(),
                 QueryParams.POPULATION_NAME.key(), QueryParams.POPULATION_SUBPOPULATION.key(), QueryParams.POPULATION_DESCRIPTION.key(),
-                QueryParams.KARYOTYPIC_SEX.key(), QueryParams.LIFE_STATUS.key(), QueryParams.AFFECTATION_STATUS.key(), };
+                QueryParams.KARYOTYPIC_SEX.key(), QueryParams.LIFE_STATUS.key(), QueryParams.AFFECTATION_STATUS.key(),
+                QueryParams.DATE_OF_BIRTH.key(), };
         filterStringParams(parameters, individualParameters, acceptedParams);
 
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.SEX.key()), Individual.Sex.class);
@@ -773,15 +684,12 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
                     case FATHER_ID:
                     case MOTHER_ID:
                     case FAMILY:
+                    case DATE_OF_BIRTH:
                     case SEX:
                     case ETHNICITY:
                     case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
-                    case SPECIES:
-                    case SPECIES_TAXONOMY_CODE:
-                    case SPECIES_SCIENTIFIC_NAME:
-                    case SPECIES_COMMON_NAME:
                     case POPULATION_NAME:
                     case POPULATION_SUBPOPULATION:
                     case POPULATION_DESCRIPTION:
@@ -888,91 +796,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         count = dbAdaptorFactory.getCatalogSampleDBAdaptor()
                 .update(query, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1)).first();
         logger.debug("Individual id {} extracted from {} samples", individualId, count);
-    }
-
-    @Override
-    public QueryResult<IndividualAclEntry> createAcl(long id, IndividualAclEntry acl) throws CatalogDBException {
-        long startTime = startQuery();
-//        CatalogMongoDBUtils.setAcl(id, acl, individualCollection, "IndividualAcl");
-        return endQuery("create individual Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
-    }
-
-    @Override
-    public void createAcl(Query query, List<IndividualAclEntry> aclEntryList) throws CatalogDBException {
-        Bson queryDocument = parseQuery(query, true);
-        aclDBAdaptor.setAcl(queryDocument, aclEntryList);
-    }
-
-    @Override
-    public QueryResult<IndividualAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
-        long startTime = startQuery();
-//
-//        List<IndividualAclEntry> acl = null;
-//        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, individualCollection, logger);
-//        Individual individual = individualConverter.convertToDataModelType(aggregate.first());
-//
-//        if (individual != null) {
-//            acl = individual.getAcl();
-//        }
-
-        return endQuery("get individual Acl", startTime, aclDBAdaptor.getAcl(id, members));
-    }
-
-    @Override
-    public void removeAcl(long id, String member) throws CatalogDBException {
-//        CatalogMongoDBUtils.removeAcl(id, member, individualCollection);
-        aclDBAdaptor.removeAcl(id, member);
-    }
-
-    @Override
-    public QueryResult<IndividualAclEntry> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
-        long startTime = startQuery();
-//        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, individualCollection);
-        return endQuery("Set Acls to member", startTime, Arrays.asList(aclDBAdaptor.setAclsToMember(id, member, permissions)));
-    }
-
-    @Override
-    public QueryResult<IndividualAclEntry> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
-        long startTime = startQuery();
-//        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, individualCollection);
-        return endQuery("Add Acls to member", startTime, Arrays.asList(aclDBAdaptor.addAclsToMember(id, member, permissions)));
-    }
-
-    @Override
-    public void addAclsToMember(Query query, List<String> members, List<String> permissions) throws CatalogDBException {
-        QueryResult<Individual> individualQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
-        List<Long> individualIds = individualQueryResult.getResult().stream().map(individual -> individual.getId())
-                .collect(Collectors.toList());
-
-        if (individualIds == null || individualIds.size() == 0) {
-            throw new CatalogDBException("No matches found for query when attempting to add new permissions");
-        }
-
-        aclDBAdaptor.addAclsToMembers(individualIds, members, permissions);
-    }
-
-    @Override
-    public QueryResult<IndividualAclEntry> removeAclsFromMember(long id, String member, List<String> permissions)
-            throws CatalogDBException {
-//        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, individualCollection);
-        long startTime = startQuery();
-        return endQuery("Remove Acls from member", startTime, Arrays.asList(aclDBAdaptor.removeAclsFromMember(id, member, permissions)));
-    }
-
-    @Override
-    public void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException {
-        QueryResult<Individual> individualQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
-        List<Long> individualIds = individualQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList());
-
-        if (individualIds == null || individualIds.size() == 0) {
-            throw new CatalogDBException("No matches found for query when attempting to remove permissions");
-        }
-
-        aclDBAdaptor.removeAclsFromMembers(individualIds, members, permissions);
-    }
-
-    public void removeAclsFromStudy(long studyId, String member) throws CatalogDBException {
-        aclDBAdaptor.removeAclsFromStudy(studyId, member);
     }
 
 }
