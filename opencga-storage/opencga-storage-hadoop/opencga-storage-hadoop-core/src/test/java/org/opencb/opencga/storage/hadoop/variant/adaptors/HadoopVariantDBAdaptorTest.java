@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
@@ -122,6 +123,12 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     public void testGetAllVariants_missingAllele() throws Exception {
         Assume.assumeTrue(MISSING_ALLELE);
         super.testGetAllVariants_missingAllele();
+    }
+
+    @Override
+    public void testGetAllVariants_negatedGenotypesMixed() {
+        thrown.expect(VariantQueryException.class);
+        super.testGetAllVariants_negatedGenotypesMixed();
     }
 
     @Override
