@@ -182,16 +182,13 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "source") @QueryParam("source") String source,
                            @ApiParam(value = "type") @QueryParam("type") String type,
                            @ApiParam(value = "somatic") @QueryParam("somatic") Boolean somatic,
-//                                  @ApiParam(value = "acls") @QueryParam("acls") String acls,
-//                                  @ApiParam(value = "acls.users") @QueryParam("acls.users") String acl_userIds,
-                           @ApiParam(value = "DEPRECATED: use individual.id instead", hidden = true) @QueryParam("individualId")
-                                       String individualIdOld,
-                           @ApiParam(value = "Individual id or name") @QueryParam("individual.id") String individual,
+                           @ApiParam(value = "Individual id or name", hidden = true) @QueryParam("individual.id") String individualId,
+                           @ApiParam(value = "Individual id or name") @QueryParam("individual") String individual,
                            @ApiParam(value = "Ontology terms") @QueryParam("ontologies") String ontologies,
                            @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
                            @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
                            @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
-                           @ApiParam(value = "annotation") @QueryParam("annotation") String annotation,
+                           @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
                            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
@@ -201,9 +198,11 @@ public class SampleWSServer extends OpenCGAWSServer {
             }
 
             // TODO: individualId is deprecated. Remember to remove this if after next release
-            if (query.containsKey("individualId") && !query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
-                query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), query.get("individualId"));
-                query.remove("individualId");
+            if (query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
+                if (!query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL.key())) {
+                    query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), query.get(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()));
+                }
+                query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
             }
 
             QueryResult<Sample> queryResult = sampleManager.search(studyStr, query, queryOptions, sessionId);
@@ -225,18 +224,19 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
                            @ApiParam(value = "source", required = false) @QueryParam("source") String source,
                            @ApiParam(value = "somatic", defaultValue = "false") @QueryParam("somatic") boolean somatic,
-                           @ApiParam(value = "DEPRECATED: use individual.id instead", hidden = true) @QueryParam("individualId")
-                                       String individualIdOld,
-                           @ApiParam(value = "Individual id or name", required = false) @QueryParam("individual.id") String individualId,
+                           @ApiParam(value = "Individual id or name", hidden = true) @QueryParam("individual.id") String individualId,
+                           @ApiParam(value = "Individual id or name") @QueryParam("individual") String individual,
                            @ApiParam(value = "Attributes", required = false) @QueryParam("attributes") String attributes) {
         try {
             AbstractManager.MyResourceId resourceId = catalogManager.getSampleManager().getId(sampleStr, studyStr, sessionId);
 
             ObjectMap params = new ObjectMap(query);
             // TODO: individualId is deprecated. Remember to remove this if after next release
-            if (params.containsKey("individualId") && !params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
-                params.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), params.get("individualId"));
-                params.remove("individualId");
+            if (params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
+                if (!params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL.key())) {
+                    params.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), params.get(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()));
+                }
+                params.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
             }
             params.remove(SampleDBAdaptor.QueryParams.STUDY.key());
 //            params.putIfNotNull(SampleDBAdaptor.QueryParams.NAME.key(), name);
@@ -264,9 +264,11 @@ public class SampleWSServer extends OpenCGAWSServer {
             AbstractManager.MyResourceId resourceId = catalogManager.getSampleManager().getId(sampleStr, studyStr, sessionId);
 
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
-            if (params.get("individualId") != null) {
-                params.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), params.get("individualId"));
-                params.remove("individualId");
+            if (params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
+                if (!params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL.key())) {
+                    params.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), params.get(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()));
+                }
+                params.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
             }
 
             if (params.size() == 0) {
@@ -308,22 +310,23 @@ public class SampleWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "DEPRECATED: Comma separated list of ids.", hidden = true) @QueryParam("id") String id,
                             @ApiParam(value = "Comma separated list of names.") @QueryParam("name") String name,
                             @ApiParam(value = "source") @QueryParam("source") String source,
-                            @ApiParam(value = "DEPRECATED: use indiviudal.id instead", hidden = true) @QueryParam("individualId")
-                                        String individualIdOld,
-                            @ApiParam(value = "Individual id or name") @QueryParam("individual.id") String individualId,
+                            @ApiParam(value = "Individual id or name", hidden = true) @QueryParam("individual.id") String individualId,
+                            @ApiParam(value = "Individual id or name") @QueryParam("individual") String individual,
                             @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
                             @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
                             @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
-                            @ApiParam(value = "annotation") @QueryParam("annotation") String annotation) {
+                            @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
 
             // TODO: individualId is deprecated. Remember to remove this if after next release
-            if (query.containsKey("individualId") && !query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
-                query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), query.get("individualId"));
-                query.remove("individualId");
+            if (query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
+                if (!query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL.key())) {
+                    query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), query.get(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()));
+                }
+                query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
             }
             QueryResult result = sampleManager.groupBy(studyStr, query, queryOptions, fields, sessionId);
             return createOkResponse(result);
@@ -340,7 +343,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId") String variableSetId,
             @ApiParam(value = "Variable set id or name") @QueryParam("variableSet") String variableSet,
-            @ApiParam(value = "annotation") @QueryParam("annotation") String annotation,
+            @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
             if (StringUtils.isNotEmpty(variableSetId)) {
@@ -663,6 +666,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     public static class UpdateSamplePOST extends SamplePOST {
         @JsonProperty("individual.id")
         public String individualId;
+        public String individual;
     }
 
     private static class CreateSamplePOST extends SamplePOST {

@@ -21,7 +21,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
-import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +41,7 @@ import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEn
  */
 public class VariantMongoDBQueryParser {
 
+    public static final VariantStringIdConverter STRING_ID_CONVERTER = new VariantStringIdConverter();
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBQueryParser.class);
     private final StudyConfigurationManager studyConfigurationManager;
 //    private final CellBaseUtils cellBaseUtils;
@@ -82,7 +82,7 @@ public class VariantMongoDBQueryParser {
                 for (String value : idsList) {
                     Variant variant = toVariant(value);
                     if (variant != null) {
-                        mongoIds.add(MongoDBVariantStageLoader.STRING_ID_CONVERTER.buildId(variant));
+                        mongoIds.add(STRING_ID_CONVERTER.buildId(variant));
                     } else {
                         otherIds.add(value);
                     }
@@ -105,7 +105,7 @@ public class VariantMongoDBQueryParser {
                 for (String value : xrefs) {
                     Variant variant = toVariant(value);
                     if (variant != null) {
-                        mongoIds.add(MongoDBVariantStageLoader.STRING_ID_CONVERTER.buildId(variant));
+                        mongoIds.add(STRING_ID_CONVERTER.buildId(variant));
                     } else {
                         if (isVariantAccession(value) || isClinicalAccession(value) || isGeneAccession(value)) {
                             otherXrefs.add(value);
@@ -563,7 +563,7 @@ public class VariantMongoDBQueryParser {
                     for (String genotype : genotypes) {
                         boolean negated = isNegated(genotype);
                         if (negated) {
-                            genotype = genotype.substring(1);
+                            genotype = removeNegation(genotype);
                         }
                         if (defaultGenotypes.contains(genotype)) {
                             List<String> otherGenotypes = Arrays.asList(
@@ -807,8 +807,8 @@ public class VariantMongoDBQueryParser {
         }
 
         if (operation == null) {
-            if (value.startsWith("!")) {
-                T mapped = map.apply(value.substring(1));
+            if (isNegated(value)) {
+                T mapped = map.apply(removeNegation(value));
                 if (mapped instanceof Collection) {
                     auxBuilder.and(key).notIn(mapped);
                 } else {
@@ -826,7 +826,7 @@ public class VariantMongoDBQueryParser {
             String[] array = value.split(OR);
             List list = new ArrayList(array.length);
             for (String elem : array) {
-                if (elem.startsWith("!")) {
+                if (isNegated(elem)) {
                     throw new VariantQueryException("Unable to use negate (!) operator in OR sequences (<it_1>(,<it_n>)*)");
                 } else {
                     T mapped = map.apply(elem);
@@ -845,8 +845,8 @@ public class VariantMongoDBQueryParser {
             List listNotIs = new ArrayList(array.length);
 
             for (String elem : array) {
-                if (elem.startsWith("!")) {
-                    T mapped = map.apply(elem.substring(1));
+                if (isNegated(elem)) {
+                    T mapped = map.apply(removeNegation(elem));
                     if (mapped instanceof Collection) {
                         listNotIs.addAll(((Collection) mapped));
                     } else {

@@ -6,14 +6,14 @@ import org.bson.Document;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.ProgressLogger;
+import org.opencb.commons.run.ParallelTaskRunner;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.STRING_ID_CONVERTER;
+import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.STAGE_TO_VARIANT_CONVERTER;
 import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.VARIANT_CONVERTER_DEFAULT;
 
 /**
@@ -49,7 +49,7 @@ public class MongoDBVariantStageConverterTask implements ParallelTaskRunner.Task
                 continue;
             }
             Binary binary = VARIANT_CONVERTER_DEFAULT.convertToStorageType(variant);
-            Document id = STRING_ID_CONVERTER.convertToStorageType(variant);
+            Document id = STAGE_TO_VARIANT_CONVERTER.convertToStorageType(variant);
 
             ids.put(id, binary);
         }

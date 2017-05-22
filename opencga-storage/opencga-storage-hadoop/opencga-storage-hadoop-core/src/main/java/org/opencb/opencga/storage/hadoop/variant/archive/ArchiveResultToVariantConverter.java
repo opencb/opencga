@@ -40,7 +40,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -94,37 +93,46 @@ public class ArchiveResultToVariantConverter {
     }
 
     public List<Variant> convert(Result value, boolean resolveConflict, Predicate<Variant> variantFilter) throws IllegalStateException {
-        return convert(value, resolveConflict, null, variantFilter, new AtomicLong());
+        return convert(value, resolveConflict, null, variantFilter, null, null, null);
     }
 
-    public List<Variant> convert(Result value, boolean resolveConflict, Predicate<VcfSliceProtos.VcfRecord> vcfRecordFilter,
-                                 Predicate<Variant> variantFilter, AtomicLong protoTime) throws IllegalStateException {
-        Stream<Cell> cellStream =
-                Arrays.stream(value.rawCells()).filter(c -> Bytes.equals(CellUtil.cloneFamily(c), columnFamily))
-                        .filter(c -> !Bytes.startsWith(CellUtil.cloneQualifier(c), GenomeHelper.VARIANT_COLUMN_B_PREFIX));
-
-        Function<Cell, Stream<? extends Variant>> cellStreamFunction = c -> {
+    public List<Variant> convert(Result value, boolean resolveConflict,
+                                 Predicate<VcfSliceProtos.VcfRecord> vcfRecordFilter, Predicate<Variant> variantFilter,
+                                 AtomicLong protoTime, AtomicLong resolveConflictTime, AtomicLong convertTime)
+            throws IllegalStateException {
+        Stream<Cell> cellStream = Arrays.stream(value.rawCells())
+                .filter(c -> Bytes.equals(CellUtil.cloneFamily(c), columnFamily))
+                .filter(c -> !Bytes.startsWith(CellUtil.cloneQualifier(c), GenomeHelper.VARIANT_COLUMN_B_PREFIX));
+        if (this.isParallel()) { // if parallel
+            cellStream = cellStream.parallel();
+        }
+        return cellStream.flatMap(c -> {
             VcfSlice vcfSlice;
             try {
-                long startTime = System.nanoTime();
+                long startProtoTime = System.nanoTime();
                 vcfSlice = VcfSlice.parseFrom(CellUtil.cloneValue(c));
-                protoTime.addAndGet(System.nanoTime() - startTime);
+                if (protoTime != null) {
+                    protoTime.addAndGet(System.nanoTime() - startProtoTime);
+                }
             } catch (InvalidProtocolBufferException e) {
                 throw new IllegalStateException(e);
             }
             int fileId = ArchiveTableHelper.getFileIdFromColumnName(CellUtil.cloneQualifier(c));
             VcfSliceToVariantListConverter converter = getConverter(fileId);
+            long startConvert = System.nanoTime();
             List<Variant> variants = converter.convert(vcfSlice, vcfRecordFilter);
+            convertTime.addAndGet(System.nanoTime() - startConvert);
             if (resolveConflict) {
-               return resolveConflicts(variants).stream().filter(variantFilter);
+                long startConflict = System.nanoTime();
+                List<Variant> resolved = resolveConflicts(variants);
+                if (resolveConflictTime != null) {
+                    resolveConflictTime.addAndGet(System.nanoTime() - startConflict);
+                }
+                return resolved.stream().filter(variantFilter);
             } else {
                 return variants.stream().filter(variantFilter);
             }
-        };
-        if (this.isParallel()) { // if parallel
-            cellStream = cellStream.parallel();
-        }
-        return cellStream.flatMap(cellStreamFunction).collect(Collectors.toCollection(CopyOnWriteArrayList::new));
+        }).collect(Collectors.toCollection(CopyOnWriteArrayList::new));
     }
 
     private VcfSliceToVariantListConverter getConverter(int fileId) {

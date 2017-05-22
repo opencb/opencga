@@ -170,7 +170,7 @@ public class UserManager extends AbstractManager implements IUserManager {
             accountType, QueryOptions options) throws CatalogException {
 
         // Check if the users can be registered publicly or just the admin.
-        if (!catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().isRegisterOpen()) {
+        if (!authorizationManager.isPublicRegistration()) {
             String adminPassword = configuration.getAdmin().getPassword();
             if (adminPassword != null && !adminPassword.isEmpty()) {
                 authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", adminPassword, true);

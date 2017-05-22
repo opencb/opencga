@@ -189,7 +189,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                       @ApiParam(value = "Variable set id or name") @QueryParam("variableSet") String variableSet,
                                       @ApiParam(value = "annotationsetName", required = false) @QueryParam("annotationsetName")
                                                   String annotationsetName,
-                                      @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
+                                      @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)", required = false) @QueryParam("annotation") String annotation,
                                       @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
@@ -248,7 +248,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId") String variableSetId,
             @ApiParam(value = "Variable set id or name") @QueryParam("variableSet") String variableSet,
-            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
+            @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)", required = false) @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
             if (StringUtils.isNotEmpty(variableSetId)) {

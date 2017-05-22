@@ -17,9 +17,7 @@
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import org.apache.commons.lang.StringUtils;
-import org.bson.Document;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.utils.CryptoUtils;
 
 /**
@@ -36,38 +34,20 @@ import org.opencb.commons.utils.CryptoUtils;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantStringIdConverter implements ComplexTypeConverter<Variant, Document> {
+public class VariantStringIdConverter {
 
     public static final String SEPARATOR = ":";
     public static final char SEPARATOR_CHAR = ':';
-    public static final String ID_FIELD = "_id";
-    public static final String END_FIELD = "end";
-    public static final String REF_FIELD = "ref";
-    public static final String ALT_FIELD = "alt";
-    public static final String STUDY_FILE_FIELD = "_i";
 
     public Variant convertToDataModelType(String object) {
         String[] split = object.split(SEPARATOR, -1);
         return new Variant(split[0].trim(), Integer.parseInt(split[1].trim()), split[2], split[3]);
     }
 
-    @Override
-    public Variant convertToDataModelType(Document object) {
-        String[] split = object.getString(ID_FIELD).split(SEPARATOR, -1);
-        return new Variant(split[0].trim(), Integer.parseInt(split[1].trim()),
-                object.getInteger(END_FIELD),
-                object.getString(REF_FIELD),
-                object.getString(ALT_FIELD));
+    public Variant buildVariant(String variantId, int end, String reference, String alternate) {
+        String[] split = variantId.split(SEPARATOR, -1);
+        return new Variant(split[0].trim(), Integer.parseInt(split[1].trim()), end, reference, alternate);
     }
-
-    @Override
-    public Document convertToStorageType(Variant variant) {
-        return new Document(ID_FIELD, buildId(variant))
-                .append(REF_FIELD, variant.getReference())
-                .append(ALT_FIELD, variant.getAlternate())
-                .append(END_FIELD, variant.getEnd());
-    }
-
 
     public String buildId(Variant variant) {
         return buildId(variant.getChromosome(), variant.getStart(), variant.getReference(), variant.getAlternate());

@@ -473,11 +473,12 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
         // FIXME: Although the search method is multi-study, we can only use the smart resolutor for one study at the moment.
-        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()))
+        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))
                 && studyIds.size() == 1) {
             MyResourceIds resourceIds = catalogManager.getIndividualManager().getIds(
-                    query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()), Long.toString(studyIds.get(0)), sessionId);
+                    query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()), Long.toString(studyIds.get(0)), sessionId);
             query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), resourceIds.getResourceIds());
+            query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
         }
 
         QueryResult<Sample> queryResult = null;
@@ -752,7 +753,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                     ParamUtils.checkAlias(parameters.getString(queryParam.key()), "name", configuration.getCatalog().getOffset());
                     break;
                 case SOURCE:
-                case INDIVIDUAL_ID:
+                case INDIVIDUAL:
                 case TYPE:
                 case SOMATIC:
                 case DESCRIPTION:
@@ -763,8 +764,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             }
         }
 
-        if (StringUtils.isNotEmpty(parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()))) {
-            String individualStr = parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
+        if (StringUtils.isNotEmpty(parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {
+            String individualStr = parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
             if (NumberUtils.isCreatable(individualStr) && Long.parseLong(individualStr) <= 0) {
                 parameters.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1);
             } else {
@@ -772,6 +773,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                 MyResourceId resource = catalogManager.getIndividualManager().getId(individualStr, Long.toString(studyId), sessionId);
                 parameters.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), resource.getResourceId());
             }
+            parameters.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
         }
 
         QueryResult<Sample> queryResult = sampleDBAdaptor.update(sampleId, parameters);
@@ -818,6 +820,17 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         // Add study id to the query
         query.put(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
+        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {
+            String individualStr = query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
+            if (NumberUtils.isCreatable(individualStr) && Long.parseLong(individualStr) <= 0) {
+                query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1);
+            } else {
+                MyResourceId resource = catalogManager.getIndividualManager().getId(individualStr, Long.toString(studyId), sessionId);
+                query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), resource.getResourceId());
+            }
+            query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
+        }
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -1091,7 +1104,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     @Override
     public QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, String variableSetId,
                                                           @Nullable String annotation, String sessionId) throws CatalogException {
-        QueryResult<Sample> sampleQueryResult = commonSearchAnnotationSet(id, null, variableSetId, annotation, sessionId);
+        QueryResult<Sample> sampleQueryResult = commonSearchAnnotationSet(id, studyStr, variableSetId, annotation, sessionId);
         List<AnnotationSet> annotationSets;
 
         if (sampleQueryResult == null || sampleQueryResult.getNumResults() == 0) {
@@ -1115,7 +1128,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         authorizationManager.checkSamplePermission(resourceId.getResourceId(), resourceId.getUser(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
 
-        Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), id);
+        Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), resourceId.getResourceId());
 
         long variableSetId = -1;
         if (StringUtils.isNotEmpty(variableSetStr)) {

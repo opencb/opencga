@@ -7,11 +7,11 @@ import com.mongodb.bulk.BulkWriteResult;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.commons.ProgressLogger;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.slf4j.Logger;
@@ -22,17 +22,25 @@ import java.util.regex.Matcher;
 
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
-import static com.mongodb.client.model.Updates.combine;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.FILEID_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.FILES_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.STUDIES_FIELD;
-import static org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter.ID_FIELD;
-import static org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter.STUDY_FILE_FIELD;
+import static org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter.ID_FIELD;
+import static org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter.STUDY_FILE_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.DUP_KEY_WRITE_RESULT_ERROR_PATTERN;
 import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.NEW_STUDY_FIELD;
 
 /**
  * Created on 21/11/16.
+ *
+ * Loads data into the VARIANTS collection
+ *   New variants
+ *   New study in a existing variant
+ *   New data in a existing study
+ * Cleans (if needed/wanted) the STAGE collection.
+ *   Removes the files from the indexed field. {@link STUDY_FILE_FIELD}
+ *   Sets {studyId}.{fileId} fields to NULL.
+ *   Do NOT remove ($unset) the field. See {@link MongoDBVariantMerger#alreadyProcessedStageDocument}
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -78,8 +86,8 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         }
         List<Bson> cleanStageDuplicatedList = new ArrayList<>(fileIds.size() + 1);
         for (Integer fileId : fileIds) {
-            cleanStageDuplicatedList.add(unset(studyId + "." + fileId));
-//            defaultFileUpdates.add(set(studyId + "." + fileId, null));
+            // Can not unset value!
+            cleanStageDuplicatedList.add(set(studyId + "." + fileId, null));
         }
         cleanStageDuplicatedList.add(pullAll(STUDY_FILE_FIELD, studyFileToPull));
 

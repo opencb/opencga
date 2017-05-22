@@ -60,6 +60,7 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 /**
  * Tests that all the VariantDBAdaptor filters and methods work correctly.
@@ -186,6 +187,19 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @After
     public void after() throws IOException {
         dbAdaptor.close();
+    }
+
+
+    protected String getHetGT() {
+        return "0|1,1|0";
+    }
+
+    protected String getHomRefGT() {
+        return "0|0";
+    }
+
+    protected String getHomAltGT() {
+        return "1|1";
     }
 
     protected ObjectMap getOtherParams() {
@@ -1315,7 +1329,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Test
     public void testIterator() {
         int numVariants = 0;
-        Query query = new Query(RETURNED_FILES.key(), 6);
+        Query query = new Query();
         for (VariantDBIterator iterator = dbAdaptor.iterator(query, new QueryOptions()); iterator.hasNext(); ) {
             Variant variant = iterator.next();
             numVariants++;
@@ -1332,59 +1346,59 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         Integer na19600 = studyConfiguration.getSampleIds().get("NA19600");
         Integer na19685 = studyConfiguration.getSampleIds().get("NA19685");
 
-        Query query = new Query(GENOTYPE.key(), na19600 + ":1|1");
+        String homAlt = getHomAltGT();
+        String homRef = getHomRefGT();
+        String het = getHetGT();
+
+        Query query = new Query(GENOTYPE.key(), na19600 + IS + homAlt);
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertEquals(282, queryResult.getNumTotalResults());
-        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT")
+        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals(homAlt, vse.getSampleData("NA19600", "GT")
         )));
 
-        query = new Query(GENOTYPE.key(), STUDY_NAME + ":NA19600:1|1");
+        query = new Query(GENOTYPE.key(), STUDY_NAME + ":NA19600" + IS + homAlt);
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertEquals(282, queryResult.getNumTotalResults());
-        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT")
+        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals(homAlt, vse.getSampleData("NA19600", "GT")
         )));
 
-        query = new Query(GENOTYPE.key(), "NA19600:1|1")
+        query = new Query(GENOTYPE.key(), "NA19600" + IS + homAlt)
                 .append(STUDIES.key(), STUDY_NAME);
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertEquals(282, queryResult.getNumTotalResults());
-        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT")
+        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals(homAlt, vse.getSampleData("NA19600", "GT")
         )));
 
-        query = new Query(GENOTYPE.key(), "NA19600:1|1");
+        query = new Query(GENOTYPE.key(), "NA19600" + IS + homAlt);
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertEquals(282, queryResult.getNumTotalResults());
-        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT")
+        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals(homAlt, vse.getSampleData("NA19600", "GT")
         )));
 
 
         //get for each genotype. Should return all variants
-        query = new Query(GENOTYPE.key(), na19600 + ":0|0,0|1,1|0,1|1,./.");
+        query = new Query(GENOTYPE.key(), na19600 + IS + homRef + OR + het + OR + homAlt + OR + "./.");
         long numResults = dbAdaptor.count(null).first();
         assertEquals(NUM_VARIANTS, numResults);
 
         //Get all missing genotypes for sample na19600
-        query = new Query(GENOTYPE.key(), na19600 + ":./.");
+        query = new Query(GENOTYPE.key(), na19600 + IS + "./.");
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertEquals(9, queryResult.getNumTotalResults());
-        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("./.", vse.getSampleData("NA19600", "GT")
-        )));
-
-//        //This works, but is incorrect. Better use "./."
-//        query = new Query(GENOTYPE.key(), na19600 + ":-1/-1");
-//        queryResult = dbAdaptor.get(query, new QueryOptions());
-//        assertEquals(9, queryResult.getNumTotalResults());
-//        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("./.", vse.getSampleData("NA19600", "GT")
-//        )));
-
+        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> {
+            assertThat(Arrays.asList(".", "./."), hasItem(vse.getSampleData("NA19600", "GT")));
+        }));
 
         //Get all variants with 1|1 for na19600 and 0|0 or 1|0 for na19685
-        query = new Query(GENOTYPE.key(), na19600 + ":1|1" + ";" + na19685 + ":0|0,1|0");
+        query = new Query(GENOTYPE.key(), na19600 + IS + homAlt + AND + na19685 + IS + homRef + OR + het);
         queryResult = dbAdaptor.get(query, new QueryOptions());
-        assertEquals(14, queryResult.getNumTotalResults());
+        assertEquals(40, queryResult.getNumTotalResults());
+        Set<String> refHet = new HashSet<>();
+        refHet.add(homRef);
+        refHet.addAll(Arrays.asList(het.split(OR)));
         queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> {
-            assertEquals("1|1", vse.getSampleData("NA19600", "GT"));
-            assertTrue(Arrays.asList("0|0", "1|0").contains(vse.getSampleData("NA19685", "GT")));
+            assertEquals(homAlt, vse.getSampleData("NA19600", "GT"));
+            assertTrue(refHet.contains(vse.getSampleData("NA19685", "GT")));
         }));
     }
 
@@ -1394,31 +1408,38 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         Integer na19600 = studyConfiguration.getSampleIds().get("NA19600");
         Integer na19685 = studyConfiguration.getSampleIds().get("NA19685");
 
+        String homAlt = getHomAltGT();
+        String homRef = getHomRefGT();
+        String het = getHetGT();
+        String[] hetGts = het.split(",");
+        String het1 = hetGts[0];
+        String het2 = hetGts[hetGts.length - 1];
+
         //Get all variants with not 1|1 for na19600
-        query = new Query(GENOTYPE.key(), na19600 + ":!1|1");
+        query = new Query(GENOTYPE.key(), na19600 + IS + NOT + homAlt);
         queryResult = dbAdaptor.get(query, new QueryOptions());
-        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", not(is("1|1"))))));
+        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", not(is(homAlt))))));
 
         //Get all variants with not 0/0 for na19600
-        query = new Query(GENOTYPE.key(), na19600 + ":!0/0");
+        query = new Query(GENOTYPE.key(), na19600 + IS + NOT + homRef);
         queryResult = dbAdaptor.get(query, new QueryOptions());
-        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", not(is("0/0"))))));
+        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", not(is(homRef))))));
 
         //Get all variants with not 0/0 or 0|1 for na19600
-        query = new Query(GENOTYPE.key(), na19600 + ":!0/0,!0|1");
+        query = new Query(GENOTYPE.key(), na19600 + IS + NOT + homRef + OR + NOT + het1);
         queryResult = dbAdaptor.get(query, new QueryOptions());
-        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", allOf(not(is("0/0")), not(is("0|1")))))));
+        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", allOf(not(is(homRef)), not(is(het1)))))));
 
-        query = new Query(GENOTYPE.key(), na19600 + ":!0/0,0|1");
+        query = new Query(GENOTYPE.key(), na19600 + IS + NOT + homRef + OR + het1);
         queryResult = dbAdaptor.get(query, new QueryOptions());
-        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", is("0|1")))));
+        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", is(het1)))));
 
         //Get all variants with 1|1 for na19600 and 0|0 or 1|0 for na19685
-        query = new Query(GENOTYPE.key(), na19600 + ":1|1" + ';' + na19685 + ":!0|0,!1|0");
+        query = new Query(GENOTYPE.key(), na19600 + IS + homAlt + AND + na19685 + IS + NOT + homRef + OR + NOT + het2);
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, allOf(
-                withSampleData("NA19600", "GT", is("1|1")),
-                withSampleData("NA19685", "GT", allOf(not(is("0/0")), not(is("1|0"))))))));
+                withSampleData("NA19600", "GT", is(homAlt)),
+                withSampleData("NA19685", "GT", allOf(not(is(homRef)), not(is(het2))))))));
 
     }
 

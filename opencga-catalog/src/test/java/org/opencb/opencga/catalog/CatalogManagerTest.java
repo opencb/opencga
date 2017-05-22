@@ -1464,7 +1464,7 @@ public class CatalogManagerTest extends GenericTest {
                 sessionIdUser).first().getId();
 
         Sample sample = catalogManager.getSampleManager()
-                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId), null, sessionIdUser)
+                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), individualId), null, sessionIdUser)
                 .first();
 
         assertEquals(individualId, sample.getIndividual().getId());
@@ -1497,7 +1497,7 @@ public class CatalogManagerTest extends GenericTest {
 
         thrown.expect(CatalogDBException.class);
         catalogManager.getSampleManager()
-                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), 4), null, sessionIdUser);
+                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), 4), null, sessionIdUser);
     }
 
     @Test
@@ -1506,10 +1506,10 @@ public class CatalogManagerTest extends GenericTest {
                 sessionIdUser).first().getId();
 
         catalogManager.getSampleManager()
-                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1), null, sessionIdUser);
+                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), -1), null, sessionIdUser);
 
         Sample sample = catalogManager.getSampleManager()
-                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -2), null, sessionIdUser).first();
+                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), -2), null, sessionIdUser).first();
         assertEquals(-1, sample.getIndividual().getId());
     }
 

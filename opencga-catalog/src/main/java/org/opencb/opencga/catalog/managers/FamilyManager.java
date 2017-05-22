@@ -651,7 +651,7 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
     @Override
     public QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, String variableSetId,
                                                           @Nullable String annotation, String sessionId) throws CatalogException {
-        QueryResult<Family> familyQueryResult = commonSearchAnnotationSet(id, null, variableSetId, annotation, sessionId);
+        QueryResult<Family> familyQueryResult = commonSearchAnnotationSet(id, studyStr, variableSetId, annotation, sessionId);
         List<AnnotationSet> annotationSets;
 
         if (familyQueryResult == null || familyQueryResult.getNumResults() == 0) {
@@ -694,7 +694,7 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         authorizationManager.checkPermissions(resourceId, FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS,
                 MongoDBAdaptorFactory.FAMILY_COLLECTION);
 
-        Query query = new Query(FamilyDBAdaptor.QueryParams.ID.key(), id);
+        Query query = new Query(FamilyDBAdaptor.QueryParams.ID.key(), resourceId.getResourceId());
 
         long variableSetId = -1;
         if (StringUtils.isNotEmpty(variableSetStr)) {

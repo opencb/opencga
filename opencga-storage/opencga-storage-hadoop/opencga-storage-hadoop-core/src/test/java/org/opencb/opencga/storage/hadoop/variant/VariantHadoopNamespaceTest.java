@@ -55,25 +55,26 @@ public class VariantHadoopNamespaceTest extends VariantStorageBaseTest implement
     @Test
     public void testNamespace() throws Exception {
         HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
+        variantStorageManager.getOptions().put(HadoopVariantStorageEngine.HBASE_NAMESPACE, "opencga");
         VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor();
         Admin admin = dbAdaptor.getConnection().getAdmin();
         admin.createNamespace(NamespaceDescriptor.create("opencga").build());
 
 
-        runDefaultETL(smallInputUri, variantStorageManager, newStudyConfiguration(),
+        runDefaultETL(getResourceUri("s1.genome.vcf"), variantStorageManager, newStudyConfiguration(),
                 new ObjectMap()
-                        .append(HadoopVariantStorageEngine.OPENCGA_STORAGE_HADOOP_VARIANT_HBASE_NAMESPACE, "opencga")
+                        .append(HadoopVariantStorageEngine.HBASE_NAMESPACE, "opencga")
                         .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
                         .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true));
 
         NamespaceDescriptor[] namespaceDescriptors = admin.listNamespaceDescriptors();
         for (NamespaceDescriptor namespaceDescriptor : namespaceDescriptors) {
             System.out.println("namespaceDescriptor = " + namespaceDescriptor);
-            if (namespaceDescriptor.getName().equals("opencga")) {
-                Assert.assertEquals(2, admin.listTableNamesByNamespace(namespaceDescriptor.getName()).length);
-            }
             for (TableName tableName : admin.listTableNamesByNamespace(namespaceDescriptor.getName())) {
                 System.out.println("\ttableName = " + tableName);
+            }
+            if (namespaceDescriptor.getName().equals("opencga")) {
+                Assert.assertEquals(2, admin.listTableNamesByNamespace(namespaceDescriptor.getName()).length);
             }
         }
 
@@ -84,7 +85,7 @@ public class VariantHadoopNamespaceTest extends VariantStorageBaseTest implement
     public void testNoNamespace() throws Exception {
         runDefaultETL(smallInputUri, getVariantStorageEngine(), newStudyConfiguration(),
                 new ObjectMap()
-                        .append(HadoopVariantStorageEngine.OPENCGA_STORAGE_HADOOP_VARIANT_HBASE_NAMESPACE, "")
+                        .append(HadoopVariantStorageEngine.HBASE_NAMESPACE, "")
                         .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
                         .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true));
 

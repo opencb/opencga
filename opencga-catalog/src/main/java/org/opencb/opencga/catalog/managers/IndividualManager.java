@@ -1185,7 +1185,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
 
-        Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), id);
+        Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), resource.getResourceId());
 
         long variableSetId = -1;
         if (StringUtils.isNotEmpty(variableSetStr)) {
