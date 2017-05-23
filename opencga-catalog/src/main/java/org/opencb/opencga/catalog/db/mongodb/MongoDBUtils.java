@@ -82,7 +82,7 @@ class MongoDBUtils {
             "includeStudies", "includeFiles", "includeJobs", "includeSamples").stream().collect(Collectors.toSet());
     //    public static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
     public static final Pattern OPERATION_PATTERN = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
-    public static final Pattern ANNOTATION_PATTERN = Pattern.compile("^([a-zA-Z\\\\.]+)([\\^=<>~!$]+.*)$");
+    public static final Pattern ANNOTATION_PATTERN = Pattern.compile("^([^=^<>~!$]+)([=^<>~!$]+.*)$");
     static final String TO_REPLACE_DOTS = "&#46;";
     private static ObjectMapper jsonObjectMapper;
     private static ObjectWriter jsonObjectWriter;
