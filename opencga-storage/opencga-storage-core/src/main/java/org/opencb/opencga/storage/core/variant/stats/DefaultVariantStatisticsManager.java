@@ -225,6 +225,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
                     cohorts.keySet().stream().map((cohort) -> NOT + studyConfiguration.getStudyName() + ":" + cohort).collect(Collectors
                             .joining(AND)));
         }
+        readerQuery.append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), ".");
         logger.info("ReaderQuery: " + readerQuery.toJson());
         QueryOptions readerOptions = new QueryOptions(QueryOptions.SORT, true)
                 .append(QueryOptions.EXCLUDE, VariantField.ANNOTATION);
