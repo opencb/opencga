@@ -97,7 +97,8 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
         List<Variant> nonStructuralVariants = new ArrayList<>(variants.size());
         for (Variant variant : variants) {
             // If Variant is SV some work is needed
-            if (variant.getAlternate().length() + variant.getReference().length() > CELLBASE_VARIANT_THRESHOLD) {// TODO: Manage SV variants
+            // TODO:Manage larger SV variants
+            if (variant.getAlternate().length() + variant.getReference().length() > CELLBASE_VARIANT_THRESHOLD) {
 //                logger.info("Skip variant! {}", genomicVariant);
                 logger.info("Skip variant! {}", variant.getChromosome() + ":" + variant.getStart() + ":"
                         + (variant.getReference().length() > 10
