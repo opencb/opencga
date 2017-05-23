@@ -189,23 +189,8 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
             if (annotQuery != null) {
                 filter.putAll(annotQuery);
             }
-//            for (Map.Entry<String, Object> objectEntry: query.entrySet()) {
-//                addAnnotationQueryFilter(objectEntry.getKey(), query, variableMap, annotationList);
-//            }
-//            if (annotationList.size() > 0) {
-//                Bson projection = Filters.eq(AnnotationSetParams.ANNOTATION_SETS.key(), Filters.and(annotationList));
-//                filters.add(projection);
-//            }
         }
 
-//        Bson query = null;
-//        if (filter.size() > 0) {
-//            if (filters.size() > 1) {
-//                query = Filters.and(filters);
-//            } else {
-//                query = filters.get(0);
-//            }
-//        }
         return commonGetAnnotationSet(id, filter, null);
     }
 
@@ -324,6 +309,14 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
 
         if (annotationSetName != null && !annotationSetName.isEmpty()) {
             aggregation.add(Aggregates.match(new Document(AnnotationSetParams.ANNOTATION_SETS_NAME.key(), annotationSetName)));
+        }
+
+        for (Bson bson : aggregation) {
+            try {
+                logger.debug("Get annotation: {}", bson.toBsonDocument(Document.class, com.mongodb.MongoClient.getDefaultCodecRegistry()));
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+            }
         }
 
         return getCollection().aggregate(aggregation, getConverter(), null);
