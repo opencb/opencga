@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.core.variant;
 
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.avro.VariantType;
 
 /**
  * Created on 26/10/15
@@ -31,7 +32,10 @@ public interface VariantStorageTest extends AutoCloseable {
 
     default void close() throws Exception {}
 
-    default int getExpectedNumLoadedVariants(VariantSource source) throws Exception {
-        return source.getStats().getNumRecords();
+    default int getExpectedNumLoadedVariants(VariantSource source) {
+        int numRecords = source.getStats().getNumRecords();
+        return numRecords
+                - source.getStats().getVariantTypeCount(VariantType.SYMBOLIC)
+                - source.getStats().getVariantTypeCount(VariantType.NO_VARIATION);
     }
 }

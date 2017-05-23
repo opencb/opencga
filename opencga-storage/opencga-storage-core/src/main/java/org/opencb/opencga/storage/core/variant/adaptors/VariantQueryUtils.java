@@ -49,6 +49,7 @@ public class VariantQueryUtils {
     public static final String OR = ",";
     public static final String AND = ";";
     public static final String IS = ":";
+    public static final String NOT = "!";
     public static final String STUDY_POP_FREQ_SEPARATOR = ":";
 
     public static final String NONE = "none";
@@ -102,7 +103,11 @@ public class VariantQueryUtils {
      * @return If the value is negated
      */
     public static boolean isNegated(String value) {
-        return value.startsWith("!");
+        return value.startsWith(NOT);
+    }
+
+    public static String removeNegation(String value) {
+        return value.substring(NOT.length());
     }
 
     public static boolean isNoneOrAll(String value) {

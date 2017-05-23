@@ -328,14 +328,16 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
             throw new IllegalArgumentException("Wrong number of arguments!");
         }
 
+        // Get first other args to avoid overwrite the fixed position args.
+        for (int i = fixedSizeArgs; i < args.length; i = i + 2) {
+            getConf().set(args[i], args[i + 1]);
+        }
+
         getConf().set(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, args[1]);
         getConf().set(CONFIG_VARIANT_TABLE_NAME, args[2]);
         getConf().set(VariantStorageEngine.Options.STUDY_ID.key(), args[3]);
         getConf().setStrings(VariantStorageEngine.Options.FILE_ID.key(), args[4].split(","));
 
-        for (int i = fixedSizeArgs; i < args.length; i = i + 2) {
-            getConf().set(args[i], args[i + 1]);
-        }
     }
 
     public int privateMain(String[] args) throws Exception {

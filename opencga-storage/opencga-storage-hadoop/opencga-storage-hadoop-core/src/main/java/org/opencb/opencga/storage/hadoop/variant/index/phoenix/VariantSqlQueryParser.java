@@ -161,10 +161,11 @@ public class VariantSqlQueryParser {
 
             Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
 
-            List<Integer> studyIds = studyConfigurationManager.getStudyIds(options.getAsList(RETURNED_STUDIES.key()), options);
-            if (studyIds == null || studyIds.isEmpty()) {
-                studyIds = studyConfigurationManager.getStudyIds(options);
-            }
+            List<Integer> studyIds = VariantQueryUtils.getReturnedStudies(query, options, studyConfigurationManager);
+//            List<Integer> studyIds = studyConfigurationManager.getStudyIds(options.getAsList(RETURNED_STUDIES.key()), options);
+//            if (studyIds == null || studyIds.isEmpty()) {
+//                studyIds = studyConfigurationManager.getStudyIds(options);
+//            }
 
             sb.append(VariantColumn.CHROMOSOME).append(',')
                     .append(VariantColumn.POSITION).append(',')
@@ -516,8 +517,8 @@ public class VariantSqlQueryParser {
         if (isValidParam(query, COHORTS)) {
             for (String cohort : query.getAsStringList(COHORTS.key())) {
                 boolean negated = false;
-                if (cohort.startsWith("!")) {
-                    cohort = cohort.substring(1);
+                if (isNegated(cohort)) {
+                    cohort = removeNegation(cohort);
                     negated = true;
                 }
                 String[] studyCohort = cohort.split(":");
@@ -533,9 +534,9 @@ public class VariantSqlQueryParser {
                 int cohortId = studyConfigurationManager.getCohortId(cohort, studyConfiguration);
                 Column column = VariantPhoenixHelper.getStatsColumn(studyConfiguration.getStudyId(), cohortId);
                 if (negated) {
-                    filters.add(column + " IS NULL");
+                    filters.add("\"" + column + "\" IS NULL");
                 } else {
-                    filters.add(column + " IS NOT NULL");
+                    filters.add("\"" + column + "\" IS NOT NULL");
                 }
             }
         }
@@ -564,18 +565,34 @@ public class VariantSqlQueryParser {
                 List<String> genotypes = entry.getValue();
 
                 List<String> gts = new ArrayList<>(genotypes.size());
+                final boolean negated;
+                if (genotypes.stream().allMatch(VariantQueryUtils::isNegated)) {
+                    negated = true;
+                } else if (genotypes.stream().anyMatch(VariantQueryUtils::isNegated)) {
+                    throw VariantQueryException.malformedParam(GENOTYPE, query.getString(GENOTYPE.key()),
+                            "Can not mix negated and not negated genotypes");
+                } else {
+                    negated = false;
+                }
                 for (String genotype : genotypes) {
-                    boolean negated = false;
                     if (isNegated(genotype)) {
-                        genotype = genotype.substring(1);
-                        negated = true;
+                        genotype = removeNegation(genotype);
+                    }
+                    if (genotype.equals("./.")) {
+                        genotype = NOCALL;
                     }
                     switch (genotype) {
                         case HET_REF:
                         case HOM_VAR:
                         case NOCALL:
 //                        0 = any("1_.")
-                            gts.add((negated ? " NOT " : " ") + sampleId + " = ANY(\"" + buildColumnKey(studyId, genotype) + "\") ");
+                            if (negated) {
+                                gts.add(" ( NOT " + sampleId + " = ANY(\"" + buildColumnKey(studyId, genotype) + "\") "
+                                        + " OR \"" + buildColumnKey(studyId, genotype) + "\" IS NULL"
+                                        + " ) ");
+                            } else {
+                                gts.add(sampleId + " = ANY(\"" + buildColumnKey(studyId, genotype) + "\") ");
+                            }
                             break;
                         case HOM_REF:
                             if (negated) {
@@ -598,7 +615,11 @@ public class VariantSqlQueryParser {
                             break;
                     }
                 }
-                filters.add(gts.stream().collect(Collectors.joining(" OR ", " ( ", " ) ")));
+                if (!negated) {
+                    filters.add(gts.stream().collect(Collectors.joining(" OR ", " ( ", " ) ")));
+                } else {
+                    filters.add(gts.stream().collect(Collectors.joining(" AND ", " ( ", " ) ")));
+                }
             }
         }
 

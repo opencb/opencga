@@ -21,17 +21,16 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.rules.ExternalResource;
+import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
-import org.opencb.opencga.storage.hadoop.variant.AbstractHadoopVariantStoragePipeline;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
-
-import java.util.Map;
 
 
 /**
@@ -42,6 +41,11 @@ import java.util.Map;
 public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements HadoopVariantStorageTest {
 
 
+    private static final boolean FILES = false;
+    private static final boolean GROUP_BY = false;
+    private static final boolean CT_GENES = false;
+    protected static final boolean MISSING_ALLELE = false;
+
     @Before
     @Override
     public void before() throws Exception {
@@ -51,7 +55,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
         } finally {
             try {
                 if (!fileIndexed) {
-                    VariantHbaseTestUtils.printVariantsFromVariantsTable((VariantHadoopDBAdaptor) dbAdaptor);
+                    VariantHbaseTestUtils.printVariants(studyConfiguration, (VariantHadoopDBAdaptor) dbAdaptor, newOutputUri());
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -68,6 +72,21 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     public static ExternalResource externalResource = new HadoopExternalResource();
 
     @Override
+    protected String getHetGT() {
+        return Genotype.HET_REF;
+    }
+
+    @Override
+    protected String getHomRefGT() {
+        return Genotype.HOM_REF;
+    }
+
+    @Override
+    protected String getHomAltGT() {
+        return Genotype.HOM_VAR;
+    }
+
+    @Override
     protected ObjectMap getOtherParams() {
         return new ObjectMap()
                 .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto")
@@ -82,57 +101,68 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     @Override
     @Ignore
     public void rank_gene() throws Exception {
-        Assume.assumeTrue(false);
+        Assume.assumeTrue(GROUP_BY);
         super.rank_gene();
     }
 
     @Override
     @Ignore
     public void testExcludeFiles() {
-        Assume.assumeTrue(false);
+        Assume.assumeTrue(FILES);
         super.testExcludeFiles();
+    }
+
+    @Override
+    public void testReturnNoneFiles() {
+        Assume.assumeTrue(FILES);
+        super.testReturnNoneFiles();
     }
 
     @Override
     @Ignore
     public void testGetAllVariants_missingAllele() throws Exception {
-        Assume.assumeTrue(false);
+        Assume.assumeTrue(MISSING_ALLELE);
         super.testGetAllVariants_missingAllele();
+    }
+
+    @Override
+    public void testGetAllVariants_negatedGenotypesMixed() {
+        thrown.expect(VariantQueryException.class);
+        super.testGetAllVariants_negatedGenotypesMixed();
     }
 
     @Override
     @Ignore
     public void groupBy_gene_limit_0() throws Exception {
-        Assume.assumeTrue(false);
+        Assume.assumeTrue(GROUP_BY);
         super.groupBy_gene_limit_0();
     }
 
     @Override
     @Ignore
     public void groupBy_gene() throws Exception {
-        Assume.assumeTrue(false);
+        Assume.assumeTrue(GROUP_BY);
         super.groupBy_gene();
     }
 
     @Override
     @Ignore
     public void testGetAllVariants_files() {
-        Assume.assumeTrue(false);
+        Assume.assumeTrue(FILES);
         super.testGetAllVariants_files();
+    }
+
+    @Override
+    public void testGetAllVariants_filter() {
+        Assume.assumeTrue(FILES);
+        super.testGetAllVariants_filter();
     }
 
     @Override
     @Ignore
     public void rank_ct() throws Exception {
-        Assume.assumeTrue(false);
+        Assume.assumeTrue(GROUP_BY);
         super.rank_ct();
-    }
-
-    @Override
-    @Ignore
-    public void testGetAllVariants() {
-        Assume.assumeTrue(false);
-        super.testGetAllVariants();
     }
 
     @Override
@@ -142,30 +172,16 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     }
 
     @Override
+    public void testGetAllVariants_ct_gene() {
+        Assume.assumeTrue(CT_GENES);
+        super.testGetAllVariants_ct_gene();
+    }
+
+    @Override
     @Ignore
     public void testInclude() {
-        Assume.assumeTrue(false);
+        Assume.assumeTrue(FILES);
         super.testInclude();
     }
 
-    @Override
-    @Ignore
-    public void testGetAllVariants_genotypes() {
-        Assume.assumeTrue(false);
-        super.testGetAllVariants_genotypes();
-    }
-
-    @Override
-    @Ignore
-    public void testGetAllVariants_cohorts() throws Exception {
-        Assume.assumeTrue(false);
-        super.testGetAllVariants_cohorts();
-    }
-
-    @Override
-    @Ignore
-    public void testIterator() {
-        Assume.assumeTrue(false);
-        super.testIterator();
-    }
 }
