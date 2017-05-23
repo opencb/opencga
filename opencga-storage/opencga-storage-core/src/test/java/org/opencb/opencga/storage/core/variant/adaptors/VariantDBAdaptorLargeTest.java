@@ -86,7 +86,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
             studyConfiguration2 = new StudyConfiguration(2, "Study2");
             studyConfiguration3 = new StudyConfiguration(3, "Study3");
 
-            ObjectMap options = new ObjectMap()
+            ObjectMap options = getExtraOptions()
                     .append(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.CONTROL)
                     .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)
                     .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
@@ -121,6 +121,10 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
             numVariants = allVariants.getNumResults();
         }
         dbAdaptor = getVariantStorageEngine().getDBAdaptor();
+    }
+
+    public ObjectMap getExtraOptions() {
+        return new ObjectMap();
     }
 
 
@@ -313,7 +317,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(study, allOf(
                 withSampleData(s1, "GT", is("1|1")),
-                withSampleData(s2, "GT", allOf(not(is("0/0")), not(is("1|0"))))))));
+                withSampleData(s2, "GT", allOf(not(is("0|0")), not(is("1|0"))))))));
 
     }
 
@@ -554,6 +558,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
                 .append(RETURNED_FILES.key(), VariantQueryUtils.ALL)
                 .append(STUDIES.key(), studyConfiguration1.getStudyId())
                 .append(RETURNED_STUDIES.key(), VariantQueryUtils.ALL)
+                .append(RETURNED_SAMPLES.key(), VariantQueryUtils.ALL)
                 .append(FILTER.key(), "PASS");
         queryResult = dbAdaptor.get(query, null);
         assertThat(queryResult, everyResult(allVariants,

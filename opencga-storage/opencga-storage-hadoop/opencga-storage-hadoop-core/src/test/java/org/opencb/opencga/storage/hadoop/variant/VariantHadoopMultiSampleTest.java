@@ -477,7 +477,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
 
 
-        int maxFilesLoaded = 3;
+        int maxFilesLoaded = 4;
         for (int fileId = 12877; fileId <= 12893; fileId++) {
             VariantSource source = loadFile("platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration);
 
@@ -496,8 +496,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
             }
         }
 
-
-        printVariantsFromArchiveTable(dbAdaptor, studyConfiguration);
+        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
 
         for (Variant variant : dbAdaptor) {
             System.out.println("variant = " + variant);
@@ -516,16 +515,16 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         List<VariantSource> sources = new LinkedList<>();
         Set<String> expectedVariants = new HashSet<>();
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-        List<Integer> fileIds = IntStream.range(12877, 12894).mapToObj(i -> i).collect(Collectors.toList());
+        List<Integer> fileIds = IntStream.range(12877, 12894).boxed().collect(Collectors.toList());
 
-        for (Integer fileId : fileIds.subList(0,fileIds.size()-1)) {
+        for (Integer fileId : fileIds.subList(0, fileIds.size() - 1)) {
             VariantSource source = loadFile("platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration,
                     new ObjectMap(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT, false));
             sources.add(source);
             expectedVariants.addAll(checkArchiveTableLoadedVariants(studyConfiguration, dbAdaptor, source));
             assertFalse(studyConfiguration.getIndexedFiles().contains(fileId));
         }
-        Integer fileId = fileIds.get(fileIds.size()-1);
+        Integer fileId = fileIds.get(fileIds.size() - 1);
         VariantSource source = loadFile("platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration,
                 new ObjectMap(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT, true)
                 .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_PENDING_FILES, StringUtils.join(fileIds, ","))
@@ -543,11 +542,12 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
             assertTrue(studyConfiguration.getIndexedFiles().contains(fileId));
         }
 
+        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
+
         for (Variant variant : dbAdaptor) {
             System.out.println(variant);
         }
 
-//        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
         checkArchiveTableTimeStamp(dbAdaptor);
         checkLoadedVariants(expectedVariants, dbAdaptor, PLATINUM_SKIP_VARIANTS);
 
@@ -589,7 +589,9 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         Set<String> variants = getVariants(dbAdaptor, studyConfiguration, fileId);
         int expected = source.getStats().getVariantTypeCounts().entrySet().stream()
                 .filter(entry -> VARIANT_TYPES.contains(VariantType.valueOf(entry.getKey())))
-                .map(Map.Entry::getValue).reduce((i1, i2) -> i1 + i2).orElse(0).intValue();
+                .map(Map.Entry::getValue)
+                .reduce(Integer::sum)
+                .orElse(0);
         assertEquals(expected, variants.size());
         return variants;
     }

@@ -82,7 +82,7 @@ class MongoDBUtils {
             "includeStudies", "includeFiles", "includeJobs", "includeSamples").stream().collect(Collectors.toSet());
     //    public static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
     public static final Pattern OPERATION_PATTERN = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
-    public static final Pattern ANNOTATION_PATTERN = Pattern.compile("^([a-zA-Z\\\\.]+)([\\^=<>~!$]+.*)$");
+    public static final Pattern ANNOTATION_PATTERN = Pattern.compile("^([^=^<>~!$]+)([=^<>~!$]+.*)$");
     static final String TO_REPLACE_DOTS = "&#46;";
     private static ObjectMapper jsonObjectMapper;
     private static ObjectWriter jsonObjectWriter;
@@ -673,10 +673,12 @@ class MongoDBUtils {
 
             } else if (variableType == Variable.VariableType.DOUBLE) {
                 type = QueryParam.Type.DECIMAL;
+            } else if (variableType == Variable.VariableType.INTEGER) {
+                type = QueryParam.Type.INTEGER;
             }
         }
 
-        List<Bson> valueList = addCompQueryFilter(type, "value" + route, Arrays.asList(values), new ArrayList<>());
+        List<Document> valueList = addCompQueryFilter(type, "value" + route, Arrays.asList(values), new ArrayList<>());
         annotationSetFilter.add(
                 Filters.elemMatch("annotations", Filters.and(
                         Filters.eq("name", variableId),
@@ -752,8 +754,8 @@ class MongoDBUtils {
         }
     }
 
-    static List<Bson> addCompQueryFilter(QueryParam option, String optionKey, String queryKey, ObjectMap
-            options, List<Bson> andQuery) throws CatalogDBException {
+    static List<Document> addCompQueryFilter(QueryParam option, String optionKey, String queryKey,
+                                         ObjectMap options, List<Document> andQuery) throws CatalogDBException {
         List<String> optionsList = options.getAsStringList(optionKey);
         if (queryKey == null) {
             queryKey = "";
@@ -761,10 +763,10 @@ class MongoDBUtils {
         return addCompQueryFilter(option.type(), queryKey, optionsList, andQuery);
     }
 
-    private static List<Bson> addCompQueryFilter(QueryParam.Type type, String queryKey, List<String> optionsList,
-                                                     List<Bson> andQuery) throws CatalogDBException {
+    public static List<Document> addCompQueryFilter(QueryParam.Type type, String queryKey, List<String> optionsList,
+                                                     List<Document> andQuery) throws CatalogDBException {
 
-        ArrayList<Bson> or = new ArrayList<>(optionsList.size());
+        ArrayList<Document> or = new ArrayList<>(optionsList.size());
         for (String option : optionsList) {
             Matcher matcher = OPERATION_PATTERN.matcher(option);
             String operator;
@@ -789,6 +791,15 @@ class MongoDBUtils {
                 throw new CatalogDBException("Unknown filter operation: " + option + " . Missing key");
             }
             switch (type) {
+                case INTEGER:
+                case INTEGER_ARRAY:
+                    try {
+                        int intValue = Integer.parseInt(filter);
+                        or.add(addNumberOperationQueryFilter(key, operator, intValue));
+                    } catch (NumberFormatException e) {
+                        throw new CatalogDBException(e);
+                    }
+                    break;
                 case DECIMAL:
                 case DOUBLE:
                 case DECIMAL_ARRAY:

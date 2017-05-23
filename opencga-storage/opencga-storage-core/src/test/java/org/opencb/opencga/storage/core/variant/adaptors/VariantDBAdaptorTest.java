@@ -88,6 +88,11 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     protected QueryResult<Variant> queryResult;
     protected QueryResult<Variant> allVariants;
     private static Logger logger = LoggerFactory.getLogger(VariantDBAdaptorTest.class);
+    private String homAlt;
+    private String homRef;
+    private String het;
+    private String het1;
+    private String het2;
 
     @BeforeClass
     public static void beforeClass() throws IOException {
@@ -182,6 +187,13 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         }
         allVariants = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.SORT, true));
         options = new QueryOptions();
+
+        homAlt = getHomAltGT();
+        homRef = getHomRefGT();
+        het = getHetGT();
+        String[] hetGts = het.split(",");
+        het1 = hetGts[0];
+        het2 = hetGts[hetGts.length - 1];
     }
 
     @After
@@ -1346,10 +1358,6 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         Integer na19600 = studyConfiguration.getSampleIds().get("NA19600");
         Integer na19685 = studyConfiguration.getSampleIds().get("NA19685");
 
-        String homAlt = getHomAltGT();
-        String homRef = getHomRefGT();
-        String het = getHetGT();
-
         Query query = new Query(GENOTYPE.key(), na19600 + IS + homAlt);
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertEquals(282, queryResult.getNumTotalResults());
@@ -1408,13 +1416,6 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         Integer na19600 = studyConfiguration.getSampleIds().get("NA19600");
         Integer na19685 = studyConfiguration.getSampleIds().get("NA19685");
 
-        String homAlt = getHomAltGT();
-        String homRef = getHomRefGT();
-        String het = getHetGT();
-        String[] hetGts = het.split(",");
-        String het1 = hetGts[0];
-        String het2 = hetGts[hetGts.length - 1];
-
         //Get all variants with not 1|1 for na19600
         query = new Query(GENOTYPE.key(), na19600 + IS + NOT + homAlt);
         queryResult = dbAdaptor.get(query, new QueryOptions());
@@ -1430,10 +1431,6 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", allOf(not(is(homRef)), not(is(het1)))))));
 
-        query = new Query(GENOTYPE.key(), na19600 + IS + NOT + homRef + OR + het1);
-        queryResult = dbAdaptor.get(query, new QueryOptions());
-        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", is(het1)))));
-
         //Get all variants with 1|1 for na19600 and 0|0 or 1|0 for na19685
         query = new Query(GENOTYPE.key(), na19600 + IS + homAlt + AND + na19685 + IS + NOT + homRef + OR + NOT + het2);
         queryResult = dbAdaptor.get(query, new QueryOptions());
@@ -1441,6 +1438,16 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                 withSampleData("NA19600", "GT", is(homAlt)),
                 withSampleData("NA19685", "GT", allOf(not(is(homRef)), not(is(het2))))))));
 
+    }
+
+    @Test
+    public void testGetAllVariants_negatedGenotypesMixed() {
+        Query query;
+        Integer na19600 = studyConfiguration.getSampleIds().get("NA19600");
+
+        query = new Query(GENOTYPE.key(), na19600 + IS + NOT + homRef + OR + het1);
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withSampleData("NA19600", "GT", is(het1)))));
     }
 
     @Test

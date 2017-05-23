@@ -565,12 +565,18 @@ public class VariantSqlQueryParser {
                 List<String> genotypes = entry.getValue();
 
                 List<String> gts = new ArrayList<>(genotypes.size());
-                List<String> gtsNegate = new ArrayList<>(genotypes.size());
+                final boolean negated;
+                if (genotypes.stream().allMatch(VariantQueryUtils::isNegated)) {
+                    negated = true;
+                } else if (genotypes.stream().anyMatch(VariantQueryUtils::isNegated)) {
+                    throw VariantQueryException.malformedParam(GENOTYPE, query.getString(GENOTYPE.key()),
+                            "Can not mix negated and not negated genotypes");
+                } else {
+                    negated = false;
+                }
                 for (String genotype : genotypes) {
-                    boolean negated = false;
                     if (isNegated(genotype)) {
                         genotype = removeNegation(genotype);
-                        negated = true;
                     }
                     if (genotype.equals("./.")) {
                         genotype = NOCALL;
@@ -581,16 +587,16 @@ public class VariantSqlQueryParser {
                         case NOCALL:
 //                        0 = any("1_.")
                             if (negated) {
-                                gts.add(" NOT " + sampleId + " = ANY(\"" + buildColumnKey(studyId, genotype) + "\") "
-                                        + " OR \"" + buildColumnKey(studyId, genotype) + "\" IS NULL ");
+                                gts.add(" ( NOT " + sampleId + " = ANY(\"" + buildColumnKey(studyId, genotype) + "\") "
+                                        + " OR \"" + buildColumnKey(studyId, genotype) + "\" IS NULL"
+                                        + " ) ");
                             } else {
-                                gtsNegate.add(sampleId + " = ANY(\"" + buildColumnKey(studyId, genotype) + "\") "
-                                        + " OR \"" + buildColumnKey(studyId, genotype) + "\" IS NULL ");
+                                gts.add(sampleId + " = ANY(\"" + buildColumnKey(studyId, genotype) + "\") ");
                             }
                             break;
                         case HOM_REF:
                             if (negated) {
-                                gtsNegate.add(" ( " + sampleId + " = ANY(\"" + buildColumnKey(studyId, HET_REF) + "\") "
+                                gts.add(" ( " + sampleId + " = ANY(\"" + buildColumnKey(studyId, HET_REF) + "\") "
                                         + " OR " + sampleId + " = ANY(\"" + buildColumnKey(studyId, HOM_VAR) + "\") "
                                         + " OR " + sampleId + " = ANY(\"" + buildColumnKey(studyId, NOCALL) + "\") "
                                         + " OR " + sampleId + " = ANY(\"" + buildColumnKey(studyId, OTHER) + "\") "
@@ -609,11 +615,10 @@ public class VariantSqlQueryParser {
                             break;
                     }
                 }
-                if (!gts.isEmpty()) {
+                if (!negated) {
                     filters.add(gts.stream().collect(Collectors.joining(" OR ", " ( ", " ) ")));
-                }
-                if (!gtsNegate.isEmpty()) {
-                    filters.add(gtsNegate.stream().collect(Collectors.joining(" AND ", " ( ", " ) ")));
+                } else {
+                    filters.add(gts.stream().collect(Collectors.joining(" AND ", " ( ", " ) ")));
                 }
             }
         }
