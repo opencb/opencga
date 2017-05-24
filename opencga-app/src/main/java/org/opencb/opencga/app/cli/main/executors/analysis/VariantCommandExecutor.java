@@ -337,7 +337,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             if (study.contains(":")) {
                 study = study.split(":")[1];
             } else {
-                if (clientConfiguration.getAlias().get(study) != null) {
+                if (clientConfiguration.getAlias() != null && clientConfiguration.getAlias().get(study) != null) {
                     study = clientConfiguration.getAlias().get(study);
                     if (study.contains(":")) {
                         study = study.split(":")[1];
@@ -354,7 +354,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
 
         // Prepare other VCF fields
-        List<String> cohorts = Arrays.asList("ALL", "MXL");
+        List<String> cohorts = new ArrayList<>(); // Arrays.asList("ALL", "MXL");
         List<String> formats = new ArrayList<>();
         List<String> formatTypes = new ArrayList<>();
         List<Integer> formatArities = new ArrayList<>();
