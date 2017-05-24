@@ -25,7 +25,9 @@ import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
 import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.variant.converters.VariantContextToAvroVariantConverter;
 import org.opencb.commons.datastore.core.*;
@@ -417,6 +419,12 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         VariantContextToAvroVariantConverter variantContextToAvroVariantConverter = new VariantContextToAvroVariantConverter(study, samples, annotations);
         variantContextWriter.writeHeader(vcfHeader);
         for (Variant variant : variantQueryResult.getResult()) {
+            // FIXME: This should not be needed! VariantContextToAvroVariantConverter must be fixed
+            if (variant.getStudies().isEmpty()) {
+                StudyEntry studyEntry = new StudyEntry(study);
+                studyEntry.getFiles().add(new FileEntry("", null, Collections.emptyMap()));
+                variant.addStudyEntry(studyEntry);
+            }
             VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
             variantContextWriter.add(variantContext);
         }
