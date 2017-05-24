@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.metadata;
 
+import com.google.common.collect.BiMap;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -179,6 +180,30 @@ public class StudyConfigurationManagerTest {
         studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Arrays.asList(20, 21, 22, 23, 24, 25, 0)));
         thrown.expect(StorageEngineException.class);
         StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+    }
+
+    @Test
+    public void getIndexedSamplesPositionTest() {
+        StudyConfiguration studyConfiguration = new StudyConfiguration(1, "study");
+        studyConfiguration.getIndexedFiles().add(1);
+        studyConfiguration.getSamplesInFiles().put(1, new LinkedHashSet<>(Arrays.asList(0, 1, 2, 3)));
+        studyConfiguration.getIndexedFiles().add(2);
+        studyConfiguration.getSamplesInFiles().put(2, new LinkedHashSet<>(Arrays.asList(2, 3, 4)));
+        studyConfiguration.getSampleIds().put("s0", 0);
+        studyConfiguration.getSampleIds().put("s1", 1);
+        studyConfiguration.getSampleIds().put("s2", 2);
+        studyConfiguration.getSampleIds().put("s3", 3);
+        studyConfiguration.getSampleIds().put("s4", 4);
+        studyConfiguration.getSampleIds().put("s5", 5);
+        BiMap<String, Integer> indexedSamplesPosition = StudyConfiguration.getIndexedSamplesPosition(studyConfiguration);
+        assertEquals(5, indexedSamplesPosition.size());
+        assertEquals(0, indexedSamplesPosition.get("s0").intValue());
+        assertEquals(1, indexedSamplesPosition.get("s1").intValue());
+        assertEquals(2, indexedSamplesPosition.get("s2").intValue());
+        assertEquals(3, indexedSamplesPosition.get("s3").intValue());
+        assertEquals(4, indexedSamplesPosition.get("s4").intValue());
+        assertEquals(null, indexedSamplesPosition.get("s5"));
+
     }
 
     protected VariantSource createVariantSource(StudyConfiguration studyConfiguration, Integer fileId) {

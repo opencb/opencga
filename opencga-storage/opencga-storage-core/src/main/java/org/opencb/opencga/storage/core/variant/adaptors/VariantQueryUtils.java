@@ -398,9 +398,7 @@ public class VariantQueryUtils {
                 @SuppressWarnings("unchecked")
                 T[] a = (T[]) new Object[returnedSamplesPosition.size()];
                 sampleNames = Arrays.asList(a);
-                returnedSamplesPosition.forEach((sample, position) -> {
-                    sampleNames.set(position, getSample.apply(sc, sample));
-                });
+                returnedSamplesPosition.forEach((sample, position) -> sampleNames.set(position, getSample.apply(sc, sample)));
             } else {
                 Set<T> sampleSet = new LinkedHashSet<>();
                 for (Integer fileId : fileIds) {
