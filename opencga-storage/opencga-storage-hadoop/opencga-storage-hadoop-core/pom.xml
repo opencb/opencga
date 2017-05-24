@@ -36,7 +36,7 @@
 
         <dependency>
             <groupId>org.opencb.hpg-bigdata</groupId>
-            <artifactId>hpg-bigdata-tools</artifactId>
+            <artifactId>hpg-bigdata-analysis</artifactId>
             <version>${hpg-bigdata.version}</version>
             <exclusions>
                 <exclusion>
