@@ -75,6 +75,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
         public boolean load;
 
+        @Parameter(names = {"--merge"}, description = "Currently two levels of merge are supported: \"basic\" mode merge genotypes of the same variants while \"advanced\" merge multiallelic and overlapping variants.")
+        public VariantStorageEngine.MergeMode merge = VariantStorageEngine.Options.MERGE_MODE.defaultValue();
+
         @Deprecated
         @Parameter(names = {"--include-stats"}, description = "Save statistics information available on the input file")
         public boolean includeStats;
