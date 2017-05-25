@@ -859,17 +859,20 @@ class OpenCGAClient(object):
         self.files = Files(self.configuration, self.session_id, self._login_handler)
         self.samples = Samples(self.configuration, self.session_id, self._login_handler)
         self.cohorts = Cohorts(self.configuration, self.session_id, self._login_handler)
+        self.families = Families(self.configuration, self.session_id, self._login_handler)
         self.jobs = Jobs(self.configuration, self.session_id, self._login_handler)
         self.individuals = Individuals(self.configuration, self.session_id, self._login_handler)
         self.variable_sets = VariableSets(self.configuration, self.session_id, self._login_handler)
         self.analysis_alignment = AnalysisAlignment(self.configuration, self.session_id, self._login_handler)
         self.analysis_variant = AnalysisVariant(self.configuration, self.session_id, self._login_handler)
         self.ga4gh = GA4GH(self.configuration, self.session_id, self._login_handler)
+        self.meta = Meta(self.configuration, self.session_id, self._login_handler)
 
         self.clients = [self.users, self.projects, self.studies, self.files,
-                        self.samples, self.cohorts, self.jobs, self.individuals,
-                        self.variable_sets, self.analysis_alignment, self.analysis_variant,
-                        self.ga4gh]
+                        self.samples, self.cohorts, self.families, self.jobs,
+                        self.individuals, self.variable_sets,
+                        self.analysis_alignment, self.analysis_variant,
+                        self.ga4gh, self.meta]
 
         for client in self.clients:
             client.on_retry = self.on_retry
