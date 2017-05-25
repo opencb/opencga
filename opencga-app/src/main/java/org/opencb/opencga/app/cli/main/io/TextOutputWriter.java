@@ -439,7 +439,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                     indent.isEmpty() ? "" : indent + (iterator.hasNext() ? "├──" : "└──"),
                     file.getType() == File.Type.FILE ? file.getName() : file.getName() + "/",
                     file.getId(),
-                    file.getStatus().getName(),
+                    file.getStatus() != null ? file.getStatus().getName() : "",
                     humanReadableByteCount(file.getSize(), false)));
 
             if (file.getType() == File.Type.DIRECTORY) {

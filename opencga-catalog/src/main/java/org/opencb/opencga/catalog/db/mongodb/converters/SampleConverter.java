@@ -33,7 +33,6 @@ public class SampleConverter extends GenericDocumentComplexConverter<Sample> {
 
     @Override
     public Sample convertToDataModelType(Document object) {
-        System.out.println("object: " + object.toBsonDocument(Document.class, com.mongodb.MongoClient.getDefaultCodecRegistry()));
         if (object.get("individual") != null) {
             if (object.get("individual") instanceof List) {
                 if (((List) object.get("individual")).size() > 0) {
