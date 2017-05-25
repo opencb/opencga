@@ -39,6 +39,7 @@ import java.util.*;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_CONSERVATION;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_FUNCTIONAL_SCORE;
+import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.COLUMN_KEY_SEPARATOR;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.*;
 
 /**
@@ -54,6 +55,7 @@ public class VariantPhoenixHelper {
     public static final String POPULATION_FREQUENCY_PREFIX = ANNOTATION_PREFIX + "PF_";
     public static final String FUNCTIONAL_SCORE_PREFIX = ANNOTATION_PREFIX + "FS_";
     public static final String STATS_PROTOBUF_SUFIX = "_PB";
+    public static final String SAMPLE_DATA_SUFIX = "_S";
     public static final byte[] STATS_PROTOBUF_SUFIX_BYTES = Bytes.toBytes(STATS_PROTOBUF_SUFIX);
     public static final String MAF_SUFIX = "_MAF";
     public static final String MGF_SUFIX = "_MGF";
@@ -487,6 +489,15 @@ public class VariantPhoenixHelper {
 
     public static Column getMgfColumn(int studyId, int cohortId) {
         return Column.build(STATS_PREFIX + studyId + "_" + cohortId + MGF_SUFIX, PFloat.INSTANCE);
+    }
+
+    public static byte[] buildSampleColumnKey(int studyId, int sampleId) {
+        return Bytes.toBytes(new StringBuilder()
+                .append(studyId).append(COLUMN_KEY_SEPARATOR).append(sampleId).append(SAMPLE_DATA_SUFIX).toString());
+    }
+
+    public static Column getSampleColumn(int studyId, int sampleId) {
+        return Column.build(buildSampleColumnKey(studyId, sampleId), PFloat.INSTANCE);
     }
 
 }

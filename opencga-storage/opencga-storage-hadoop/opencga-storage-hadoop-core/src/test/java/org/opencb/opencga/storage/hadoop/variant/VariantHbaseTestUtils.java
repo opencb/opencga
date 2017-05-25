@@ -66,6 +66,7 @@ import java.util.Map;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getTmpRootDir;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest.configuration;
+import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.COLUMN_KEY_SEPARATOR;
 
 /**
  *  Utility class for VariantStorage hadoop tests
@@ -152,35 +153,40 @@ public class VariantHbaseTestUtils {
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", "
                                 + column.getPDataType().toObject(entry.getValue()));
                     } else if (key.endsWith(VariantPhoenixHelper.STATS_PROTOBUF_SUFIX)
-                            || key.endsWith("_" + VariantTableStudyRow.FILTER_OTHER)
-                            || key.endsWith("_" + VariantTableStudyRow.COMPLEX)) {
+                            || key.endsWith(COLUMN_KEY_SEPARATOR + VariantTableStudyRow.FILTER_OTHER)
+                            || key.endsWith(COLUMN_KEY_SEPARATOR + VariantTableStudyRow.COMPLEX)) {
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", " + Arrays.toString(entry.getValue()));
                     } else if (key.startsWith(VariantPhoenixHelper.POPULATION_FREQUENCY_PREFIX)) {
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", " + PFloatArray.INSTANCE.toObject(entry.getValue()));
-                    } else if (key.endsWith("_" + VariantTableStudyRow.HET_REF)
-                            || key.endsWith("_" + VariantTableStudyRow.HOM_VAR)
-                            || key.endsWith("_" + VariantTableStudyRow.NOCALL)
-                            || key.endsWith("_" + VariantTableStudyRow.OTHER)) {
+                    } else if (key.endsWith(COLUMN_KEY_SEPARATOR + VariantTableStudyRow.HET_REF)
+                            || key.endsWith(COLUMN_KEY_SEPARATOR + VariantTableStudyRow.HOM_VAR)
+                            || key.endsWith(COLUMN_KEY_SEPARATOR + VariantTableStudyRow.NOCALL)
+                            || key.endsWith(COLUMN_KEY_SEPARATOR + VariantTableStudyRow.OTHER)) {
                         os.println("\t" + key + " = " +  PUnsignedIntArray.INSTANCE.toObject(entry.getValue()));
-                    } else if (key.endsWith("_" + VariantTableStudyRow.HOM_REF)
-                            || key.endsWith("_" + VariantTableStudyRow.CALL_CNT)
-                            || key.endsWith("_" + VariantTableStudyRow.PASS_CNT)) {
+                    } else if (key.endsWith(COLUMN_KEY_SEPARATOR + VariantTableStudyRow.HOM_REF)
+                            || key.endsWith(COLUMN_KEY_SEPARATOR + VariantTableStudyRow.CALL_CNT)
+                            || key.endsWith(COLUMN_KEY_SEPARATOR + VariantTableStudyRow.PASS_CNT)) {
                         os.println("\t" + key + " = " + PUnsignedInt.INSTANCE.toObject(entry.getValue()));
-                    } else if (key.endsWith(VariantPhoenixHelper.MAF_SUFIX)
-                            || key.endsWith(VariantPhoenixHelper.MGF_SUFIX)) {
-                        os.println("\t" + key + " = " + PFloat.INSTANCE.toObject(entry.getValue()));
-                    } else if (entry.getValue().length == 4) {
-                        Object o = null;
-                        try {
-                            o = PUnsignedInt.INSTANCE.toObject(entry.getValue());
-                        } catch (IllegalDataException ignore) {}
-                        os.println("\t" + key + " = "
-                                + PInteger.INSTANCE.toObject(entry.getValue()) + " , "
-                                + o + " , "
-                                + PFloat.INSTANCE.toObject(entry.getValue()) + " , ");
+                    } else if (key.endsWith(VariantPhoenixHelper.SAMPLE_DATA_SUFIX)) {
+                        os.println("\t" + key + " = " + PVarcharArray.INSTANCE.toObject(entry.getValue()));
                     } else {
-                        os.println("\t" + key + " ~ " + length(entry.getValue()) + ", "
-                                + Bytes.toString(entry.getValue()));
+                        if (key.endsWith(VariantPhoenixHelper.MAF_SUFIX)
+                                || key.endsWith(VariantPhoenixHelper.MGF_SUFIX)) {
+                            os.println("\t" + key + " = " + PFloat.INSTANCE.toObject(entry.getValue()));
+                        } else if (entry.getValue().length == 4) {
+                            Object o = null;
+                            try {
+                                o = PUnsignedInt.INSTANCE.toObject(entry.getValue());
+                            } catch (IllegalDataException ignore) {
+                            }
+                            os.println("\t" + key + " = "
+                                    + PInteger.INSTANCE.toObject(entry.getValue()) + " , "
+                                    + o + " , "
+                                    + PFloat.INSTANCE.toObject(entry.getValue()) + " , ");
+                        } else {
+                            os.println("\t" + key + " ~ " + length(entry.getValue()) + ", "
+                                    + Bytes.toString(entry.getValue()));
+                        }
                     }
 
                 }

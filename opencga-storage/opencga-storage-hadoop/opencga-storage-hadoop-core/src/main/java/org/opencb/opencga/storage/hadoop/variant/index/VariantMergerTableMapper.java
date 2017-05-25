@@ -114,8 +114,23 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
             }
         }
 
-        // TODO: Allow other fields! Read from configuration
-        expectedFormats = Arrays.asList(VariantMerger.GT_KEY, VariantMerger.GENOTYPE_FILTER_KEY);
+        List<String> extraGenotypes = getStudyConfiguration().getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
+        // TODO: Allow exclude genotypes! Read from configuration
+        boolean excludeGenotypes = false;
+//        boolean excludeGenotypes = getStudyConfiguration().getAttributes()
+//                .getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
+
+        if (extraGenotypes.isEmpty()) {
+            extraGenotypes = Collections.singletonList(VariantMerger.GENOTYPE_FILTER_KEY);
+        }
+        if (excludeGenotypes) {
+            expectedFormats = extraGenotypes;
+        } else {
+            expectedFormats = new ArrayList<>(1 + extraGenotypes.size());
+            expectedFormats.add(VariantMerger.GT_KEY);
+            expectedFormats.addAll(extraGenotypes);
+        }
+
 
         variantMerger = new VariantMerger(collapseDeletions);
         variantMerger.setStudyId(Integer.toString(getStudyConfiguration().getStudyId()));

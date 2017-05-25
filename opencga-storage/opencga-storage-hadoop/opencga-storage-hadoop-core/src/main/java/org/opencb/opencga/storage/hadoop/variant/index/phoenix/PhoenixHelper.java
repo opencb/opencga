@@ -268,6 +268,10 @@ public class PhoenixHelper {
             return new ColumnImpl(column, pDataType, false);
         }
 
+        static Column build(byte[] column, PDataType pDataType) {
+            return new ColumnImpl(column, pDataType, false);
+        }
+
         static Column build(String column, PDataType pDataType, boolean nullable) {
             return new ColumnImpl(column, pDataType, nullable);
         }
@@ -284,7 +288,15 @@ public class PhoenixHelper {
         private boolean nullable;
 
         ColumnImpl(String column, PDataType pDataType, boolean nullable) {
-            this.bytes = Bytes.toBytes(column);
+            this(column, Bytes.toBytes(column), pDataType, nullable);
+        }
+
+        ColumnImpl(byte[] bytes, PDataType pDataType, boolean nullable) {
+            this(Bytes.toString(bytes), bytes, pDataType, nullable);
+        }
+
+        ColumnImpl(String column, byte[] bytes, PDataType pDataType, boolean nullable) {
+            this.bytes = bytes;
             this.column = column;
             this.pDataType = pDataType;
             this.nullable = nullable;

@@ -241,7 +241,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         testMultipleFilesConcurrent(false);
     }
 
-    public void testMultipleFilesConcurrent(boolean specificput) throws Exception {
+    public void testMultipleFilesConcurrent(boolean specificPut) throws Exception {
 
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
@@ -259,16 +259,16 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         options.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto");
         options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
         options.put(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
-        options.put(AbstractArchiveTableMapper.SPECIFIC_PUT, specificput);
+        options.put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "PF,DP,AD");
+        options.put(AbstractArchiveTableMapper.SPECIFIC_PUT, specificPut);
         List<StoragePipelineResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
 
         for (StoragePipelineResult storagePipelineResult : index) {
             System.out.println(storagePipelineResult);
         }
 
-        try(PrintStream out = new PrintStream(new FileOutputStream(outputUri.resolve("platinum.merged.archive.json").getPath()))){
-            printVariantsFromArchiveTable(dbAdaptor, studyConfiguration, out);
-        }
+        URI outputUri = newOutputUri();
+        printVariants(studyConfiguration, dbAdaptor, outputUri);
 
 //        checkLoadedVariants(expectedVariants, dbAdaptor, PLATINUM_SKIP_VARIANTS);
 
@@ -291,7 +291,6 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
             assertNotNull(vcfMeta);
         }
 
-        URI outputUri = newOutputUri();
         FileStudyConfigurationAdaptor.write(studyConfiguration, new File(outputUri.resolve("study_configuration.json").getPath()).toPath());
         try (FileOutputStream out = new FileOutputStream(outputUri.resolve("platinum.merged.vcf").getPath())) {
             VariantVcfDataWriter.htsExport(dbAdaptor.iterator(new Query(), new QueryOptions(QueryOptions.SORT, true)),
@@ -488,6 +487,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
             sources.add(source);
             expectedVariants.addAll(variants);
             assertTrue(studyConfiguration.getIndexedFiles().contains(fileId));
+//            printVariants(studyConfiguration, dbAdaptor, newOutputUri());
 
 //            checkLoadedVariants(expectedVariants, dbAdaptor, PLATINUM_SKIP_VARIANTS);
             checkArchiveTableTimeStamp(dbAdaptor);
