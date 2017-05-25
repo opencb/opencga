@@ -233,6 +233,14 @@
 | POST | /v1/samples/$sA1Id/annotationsets/create?sid=$adminSessionId&variableSetId=$vsAId1&study=$studyAId |200| Content-Type : application/json||
 |let|asSA1Name|js|response.jsonbody.response[0].result[0].name||
 
+!3 Search Annotation Set 
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/$sA1Id/annotationsets/search?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].name == '$asA1'|
+
+!3 Search Annotation Set By Annotation
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/$sA1Id/annotationsets/search?sid=$sessionId&variableSet=$vsAId1&annotation=variable1=FALSE|200|  Content-Type: application/json |jsonbody.response[0].result[0].annotations[0].name == 'variable1'|
+
 !3 Create Annotation Set Individual A1 With Analyst
 !|Table: Rest Fixture  | $baseURL |
 | setBody | {  "name": "$asA1",  "annotations": {"variable1": "TRUE"}}|

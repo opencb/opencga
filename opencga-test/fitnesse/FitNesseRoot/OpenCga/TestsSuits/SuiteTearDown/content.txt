@@ -22,6 +22,10 @@
 !|Table: Rest Fixture | $baseURL  |
 | GET | /v1/users/$userB/delete?&sid=$userBSessionId |200|  Content-Type: application/json |jsonbody.error === ''|
 
+!3 Delete Global Variable Set  
+!|Table: Rest Fixture  | $baseURL |
+| GET | /v1/variableset/$gVariableSetId/delete?sid=$sessionId&projectId=$projectId |200| Content-Type : application/json|jsonbody.error === ''|
+
 #uncomment after delete is implemented
 #!3 Delete User
 #!|Table: Rest Fixture | $baseURL  |
