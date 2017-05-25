@@ -675,7 +675,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         if (!__returnedSamplesPosition.containsKey(studyConfiguration.getStudyId())) {
             LinkedHashMap<String, Integer> samplesPosition;
             samplesPosition = StudyConfiguration.getReturnedSamplesPosition(studyConfiguration,
-                    this.returnedSamples.get(studyConfiguration.getStudyId()), sc -> getIndexedSamplesIdMap(sc.getStudyId()));
+                    this.returnedSamples.get(studyConfiguration.getStudyId()));
             __returnedSamplesPosition.put(studyConfiguration.getStudyId(), samplesPosition);
         }
         return __returnedSamplesPosition.get(studyConfiguration.getStudyId());

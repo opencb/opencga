@@ -402,7 +402,7 @@ public class StudyConfiguration {
      */
     public static LinkedHashMap<String, Integer> getReturnedSamplesPosition(
             StudyConfiguration studyConfiguration,
-            LinkedHashSet<String> returnedSamples) {
+            LinkedHashSet<?> returnedSamples) {
         return getReturnedSamplesPosition(studyConfiguration, returnedSamples, StudyConfiguration::getIndexedSamplesPosition);
     }
 
