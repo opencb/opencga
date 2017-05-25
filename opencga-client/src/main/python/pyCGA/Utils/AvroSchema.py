@@ -53,7 +53,7 @@ class AvroSchemaFile:
         if isinstance(field_type, dict):
             self.process_complex_field(default, desc, field, field_name, field_type, multi, required, variable_set)
 
-        elif field_type not in ['record', 'string', 'int', 'double', 'map', 'enum', 'boolean']:
+        elif field_type not in ['record', 'string', 'int', 'float', 'double', 'map', 'enum', 'boolean']:
             external_type = self.get_external_reference(field_type)
             field["type"] = external_type
             field_type = external_type
@@ -98,8 +98,13 @@ class AvroSchemaFile:
             if default is not None:
                 variable_set[-1]["defaultValue"] = default
 
-        elif field_type == "int" or field_type == "double":
-            variable_set.append({"name": field_name, "required": required, "type": 'NUMERIC', "description": desc, "multiValue": multi})
+        elif field_type == "float" or field_type == "double":
+            variable_set.append({"name": field_name, "required": required, "type": 'DOUBLE', "description": desc, "multiValue": multi})
+            if default is not None:
+                variable_set[-1]["defaultValue"] = default
+
+        elif field_type == "int":
+            variable_set.append({"name": field_name, "required": required, "type": 'INTEGER', "description": desc, "multiValue": multi})
             if default is not None:
                 variable_set[-1]["defaultValue"] = default
 
