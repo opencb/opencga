@@ -159,13 +159,13 @@
 !3 Delete Annotation Set
 !|Table: Rest Fixture  | $baseURL |
 | setHeader|Content-Type:application/json|
-#| GET | /v1/families/$familyId/annotationsets/$asName2/delete?sid=$sessionId&study=$studyId |200| Content-Type : application/json||
+| GET | /v1/families/$familyId/annotationsets/$asName2/delete?sid=$sessionId&study=$studyId |200| Content-Type : application/json||
 
 !3 Delete Annotation Set Created With VS Name
 !|Table: Rest Fixture  | $baseURL |
 | setHeader|Content-Type:application/json|
-#| GET | /v1/families/$familyId/annotationsets/$annotationSetName/delete?sid=$sessionId&study=$studyId |200| Content-Type : application/json||
+| GET | /v1/families/$familyId/annotationsets/$annotationSetName/delete?sid=$sessionId&study=$studyId |200| Content-Type : application/json||
 
 !3 Search Annotation Set After Delete
 !|Table: Rest Fixture | $baseURL |
-#| GET | /v1/families/$familyId/annotationsets/search?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result.length == '0.0'|
+| GET | /v1/families/$familyId/annotationsets/search?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result.length == '0.0'|
