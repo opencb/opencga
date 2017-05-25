@@ -106,46 +106,15 @@ class _ParentAclRestClient(_ParentRestClient):
 
         return self._get('acl', query_id=query_id, **options)
 
-    def acl_create(self, query_id, data, **options):
+    def acl_update(self, memberId, data, **options):
         """
-        create acl
+        update acl
 
         :param query_id:
         :param options:
         """
 
-        return self._post('acl', query_id=query_id, subcategory='create', data=data, **options)
-
-    def acl_delete(self, query_id, memberId, **options):
-        """
-        delete acl
-
-        :param query_id:
-        :param options:
-        """
-
-        return self._get('acl', query_id=query_id, subcategory='delete', second_query_id=memberId, **options)
-
-    def acl_info(self, query_id, memberId, **options):
-        """
-        info acl
-
-        :param query_id:
-        :param options:
-        """
-
-        return self._get('acl', query_id=query_id, subcategory='info', second_query_id=memberId, **options)
-
-    def acl_update(self, query_id, memberId, data, **options):
-        """
-        info acl
-
-        :param query_id:
-        :param options:
-        """
-
-        return self._post('acl', query_id=query_id, subcategory='update', second_query_id=memberId, data=data,
-                          **options)
+        return self._post('acl', subcategory='update', second_query_id=memberId, data=data, **options)
 
 
 class _ParentAnnotationSetRestClient(_ParentRestClient):
