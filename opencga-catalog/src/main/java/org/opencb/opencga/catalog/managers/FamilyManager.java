@@ -630,41 +630,39 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
     }
 
     @Override
-    public QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, String variableSetId,
+    public QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, String variableSetStr,
                                                            @Nullable String annotation, String sessionId) throws CatalogException {
-        QueryResult<Family> familyQueryResult = commonSearchAnnotationSet(id, studyStr, variableSetId, annotation, sessionId);
-        List<ObjectMap> annotationSets;
+        ParamUtils.checkParameter(id, "id");
 
-        if (familyQueryResult == null || familyQueryResult.getNumResults() == 0) {
-            logger.debug("No families found");
-            annotationSets = Collections.emptyList();
-        } else {
-            logger.debug("Found {} family with {} annotationSets", familyQueryResult.getNumResults(),
-                    familyQueryResult.first().getAnnotationSets().size());
-            annotationSets = familyQueryResult.first().getAnnotationSetAsMap();
+        AbstractManager.MyResourceId resourceId = getId(id, studyStr, sessionId);
+        authorizationManager.checkPermissions(resourceId, FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS,
+                MongoDBAdaptorFactory.FAMILY_COLLECTION);
+
+        long variableSetId = -1;
+        if (StringUtils.isNotEmpty(variableSetStr)) {
+            variableSetId = catalogManager.getStudyManager().getVariableSetId(variableSetStr, Long.toString(resourceId.getStudyId()),
+                    sessionId).getResourceId();
         }
 
-        return new QueryResult<>("Search annotation sets", familyQueryResult.getDbTime(), annotationSets.size(), annotationSets.size(),
-                familyQueryResult.getWarningMsg(), familyQueryResult.getErrorMsg(), annotationSets);
+        return familyDBAdaptor.searchAnnotationSetAsMap(resourceId.getResourceId(), variableSetId, annotation);
     }
 
     @Override
-    public QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, String variableSetId,
+    public QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, String variableSetStr,
                                                           @Nullable String annotation, String sessionId) throws CatalogException {
-        QueryResult<Family> familyQueryResult = commonSearchAnnotationSet(id, studyStr, variableSetId, annotation, sessionId);
-        List<AnnotationSet> annotationSets;
+        ParamUtils.checkParameter(id, "id");
 
-        if (familyQueryResult == null || familyQueryResult.getNumResults() == 0) {
-            logger.debug("No families found");
-            annotationSets = Collections.emptyList();
-        } else {
-            logger.debug("Found {} family with {} annotationSets", familyQueryResult.getNumResults(),
-                    familyQueryResult.first().getAnnotationSets().size());
-            annotationSets = familyQueryResult.first().getAnnotationSets();
+        AbstractManager.MyResourceId resourceId = getId(id, studyStr, sessionId);
+        authorizationManager.checkPermissions(resourceId, FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS,
+                MongoDBAdaptorFactory.FAMILY_COLLECTION);
+
+        long variableSetId = -1;
+        if (StringUtils.isNotEmpty(variableSetStr)) {
+            variableSetId = catalogManager.getStudyManager().getVariableSetId(variableSetStr, Long.toString(resourceId.getStudyId()),
+                    sessionId).getResourceId();
         }
 
-        return new QueryResult<>("Search annotation sets", familyQueryResult.getDbTime(), annotationSets.size(), annotationSets.size(),
-                familyQueryResult.getWarningMsg(), familyQueryResult.getErrorMsg(), annotationSets);
+        return familyDBAdaptor.searchAnnotationSet(resourceId.getResourceId(), variableSetId, annotation);
     }
 
     private long commonGetAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
@@ -683,48 +681,6 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         authorizationManager.checkPermissions(resourceId, FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS,
                 MongoDBAdaptorFactory.FAMILY_COLLECTION);
         return resourceId.getResourceId();
-    }
-
-
-    private QueryResult<Family> commonSearchAnnotationSet(String id, @Nullable String studyStr, String variableSetStr,
-                                                          @Nullable String annotation, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(id, "id");
-
-        AbstractManager.MyResourceId resourceId = getId(id, studyStr, sessionId);
-        authorizationManager.checkPermissions(resourceId, FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS,
-                MongoDBAdaptorFactory.FAMILY_COLLECTION);
-
-        Query query = new Query(FamilyDBAdaptor.QueryParams.ID.key(), resourceId.getResourceId());
-
-        long variableSetId = -1;
-        if (StringUtils.isNotEmpty(variableSetStr)) {
-            variableSetId = catalogManager.getStudyManager().getVariableSetId(variableSetStr, Long.toString(resourceId.getStudyId()),
-                    sessionId).getResourceId();
-            query.append(FamilyDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId);
-        }
-        if (annotation != null) {
-            query.append(FamilyDBAdaptor.QueryParams.ANNOTATION.key(), annotation);
-        }
-
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key());
-        logger.debug("Query: {}, \t QueryOptions: {}", query.safeToString(), queryOptions.safeToString());
-        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions);
-
-        // Filter out annotation sets only from the variable set id specified
-        for (Family family : familyQueryResult.getResult()) {
-            List<AnnotationSet> finalAnnotationSets = new ArrayList<>();
-            for (AnnotationSet annotationSet : family.getAnnotationSets()) {
-                if (variableSetId > -1 && annotationSet.getVariableSetId() == variableSetId) {
-                    finalAnnotationSets.add(annotationSet);
-                }
-            }
-
-            if (finalAnnotationSets.size() > 0) {
-                family.setAnnotationSets(finalAnnotationSets);
-            }
-        }
-
-        return familyQueryResult;
     }
 
     public List<QueryResult<FamilyAclEntry>> updateAcl(String family, String studyStr, String memberIds, AclParams familyAclParams,

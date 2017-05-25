@@ -219,15 +219,17 @@ public class ArchiveDriver extends Configured implements Tool {
             return -1;
         }
 
+        // Get first other args to avoid overwrite the fixed position args.
+        for (int i = fixedSizeArgs; i < toolArgs.length; i = i + 2) {
+            conf.set(toolArgs[i], toolArgs[i + 1]);
+        }
+
         conf.set(CONFIG_ARCHIVE_INPUT_FILE_VCF, toolArgs[0]);
         conf.set(CONFIG_ARCHIVE_INPUT_FILE_VCF_META, toolArgs[1]);
         conf = HBaseManager.addHBaseSettings(conf, toolArgs[2]);
         conf.set(CONFIG_ARCHIVE_TABLE_NAME, toolArgs[3]);
         conf.set(VariantStorageEngine.Options.STUDY_ID.key(), toolArgs[4]);
         conf.set(VariantStorageEngine.Options.FILE_ID.key(), toolArgs[5]);
-        for (int i = fixedSizeArgs; i < toolArgs.length; i = i + 2) {
-            conf.set(toolArgs[i], toolArgs[i + 1]);
-        }
         //set the configuration back, so that Tool can configure itself
         driver.setConf(conf);
 

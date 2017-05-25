@@ -26,17 +26,18 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.commons.ProgressLogger;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine.MergeMode;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
@@ -99,21 +100,30 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         super.securePreLoad(studyConfiguration, source);
         int fileId = options.getInt(Options.FILE_ID.key());
 
-
-        if (studyConfiguration.getAttributes().containsKey(MERGE_IGNORE_OVERLAPPING_VARIANTS.key())) {
+        if (studyConfiguration.getAttributes().containsKey(Options.MERGE_MODE.key())
+                || studyConfiguration.getAttributes().containsKey(MERGE_IGNORE_OVERLAPPING_VARIANTS.key())) {
             if (studyConfiguration.getAttributes().getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key())) {
-                logger.debug("Do not merge variants, as said in the StudyConfiguration");
+                studyConfiguration.getAttributes().put(Options.MERGE_MODE.key(), MergeMode.BASIC);
+                logger.debug("Do not merge overlapping variants, as said in the StudyConfiguration");
             } else {
-                logger.debug("Merge variants, as said in the StudyConfiguration");
+                studyConfiguration.getAttributes().put(Options.MERGE_MODE.key(), MergeMode.ADVANCED);
+                logger.debug("Merge overlapping variants, as said in the StudyConfiguration");
             }
         } else {
-            boolean ignoreOverlapping = options.getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(),
-                    MERGE_IGNORE_OVERLAPPING_VARIANTS.defaultValue());
-            studyConfiguration.getAttributes().put(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(), ignoreOverlapping);
-            if (ignoreOverlapping) {
-                // When ignoring overlapping variants, the default genotype MUST be the UNKNOWN_GENOTYPE (?/?).
-                // Otherwise, a "fillGaps" step will be needed
-                studyConfiguration.getAttributes().put(DEFAULT_GENOTYPE.key(), DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
+            MergeMode mergeMode = MergeMode.from(options);
+            studyConfiguration.getAttributes().put(Options.MERGE_MODE.key(), mergeMode);
+            switch (mergeMode) {
+                case BASIC:
+                    studyConfiguration.getAttributes().put(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(), true);
+                    // When ignoring overlapping variants, the default genotype MUST be the UNKNOWN_GENOTYPE (?/?).
+                    // Otherwise, a "fillGaps" step will be needed afterwards
+                    studyConfiguration.getAttributes().put(DEFAULT_GENOTYPE.key(), DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
+                    break;
+                case ADVANCED:
+                    studyConfiguration.getAttributes().put(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(), false);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown merge mode: " + mergeMode);
             }
         }
         if (studyConfiguration.getAttributes().containsKey(DEFAULT_GENOTYPE.key())) {
@@ -655,9 +665,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stageCollection, studyConfiguration.getStudyId(),
                 chromosomeToLoad == null ? Collections.emptyList() : Collections.singletonList(chromosomeToLoad));
-        boolean ignoreOverlapping = studyConfiguration.getAttributes().getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(),
-                MERGE_IGNORE_OVERLAPPING_VARIANTS.defaultValue());
-        if (ignoreOverlapping) {
+        MergeMode mergeMode = MergeMode.from(options);
+        if (mergeMode.equals(MergeMode.BASIC)) {
+            // Read only files to load when MergeMode is BASIC
             reader.setFileIds(fileIds);
         }
         boolean resume = isResumeMerge(options);
@@ -665,6 +675,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", reader::countNumVariants, 200);
         progressLogger.setApproximateTotalCount(reader.countAproxNumVariants());
 
+        boolean ignoreOverlapping = studyConfiguration.getAttributes().getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(),
+                MERGE_IGNORE_OVERLAPPING_VARIANTS.defaultValue());
         MongoDBVariantMerger variantMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds, indexedFiles, resume,
                 ignoreOverlapping);
         MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(dbAdaptor.getVariantsCollection(), stageCollection,

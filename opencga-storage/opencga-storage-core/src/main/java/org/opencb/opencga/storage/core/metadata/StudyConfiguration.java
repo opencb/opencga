@@ -367,16 +367,15 @@ public class StudyConfiguration {
     public static BiMap<String, Integer> getIndexedSamplesPosition(StudyConfiguration studyConfiguration, int ... fileIds) {
         Objects.requireNonNull(studyConfiguration, "StudyConfiguration is required");
         BiMap<String, Integer> samplesPosition = HashBiMap.create(studyConfiguration.getSampleIds().size());
-        int position = 0;
         BiMap<Integer, String> idSamples = studyConfiguration.sampleIds.inverse();
         for (Integer indexedFileId : studyConfiguration.getIndexedFiles()) {
             for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(indexedFileId)) {
-                samplesPosition.putIfAbsent(idSamples.get(sampleId), position++);
+                samplesPosition.putIfAbsent(idSamples.get(sampleId), samplesPosition.size());
             }
         }
         for (int fileId : fileIds) {
             for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
-                samplesPosition.putIfAbsent(idSamples.get(sampleId), position++);
+                samplesPosition.putIfAbsent(idSamples.get(sampleId), samplesPosition.size());
             }
         }
         return samplesPosition;
@@ -403,7 +402,7 @@ public class StudyConfiguration {
      */
     public static LinkedHashMap<String, Integer> getReturnedSamplesPosition(
             StudyConfiguration studyConfiguration,
-            LinkedHashSet<String> returnedSamples) {
+            LinkedHashSet<?> returnedSamples) {
         return getReturnedSamplesPosition(studyConfiguration, returnedSamples, StudyConfiguration::getIndexedSamplesPosition);
     }
 
@@ -414,7 +413,7 @@ public class StudyConfiguration {
         LinkedHashMap<String, Integer> samplesPosition;
         // If null, return ALL samples
         if (returnedSamples == null) {
-            BiMap<Integer, String> unorderedSamplesPosition = getIndexedSamplesPosition(studyConfiguration).inverse();
+            BiMap<Integer, String> unorderedSamplesPosition = getIndexedSamplesPosition.apply(studyConfiguration).inverse();
             samplesPosition = new LinkedHashMap<>(unorderedSamplesPosition.size());
             for (int i = 0; i < unorderedSamplesPosition.size(); i++) {
                 samplesPosition.put(unorderedSamplesPosition.get(i), i);

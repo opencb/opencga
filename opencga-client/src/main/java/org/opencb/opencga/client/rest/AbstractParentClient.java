@@ -17,6 +17,7 @@
 package org.opencb.opencga.client.rest;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.lang3.StringUtils;
@@ -80,6 +81,7 @@ public abstract class AbstractParentClient {
         this.logger = LoggerFactory.getLogger(this.getClass().toString());
         this.client = ClientBuilder.newClient();
         jsonObjectMapper = new ObjectMapper();
+        jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         if (configuration.getRest() != null) {
             if (configuration.getRest().getTimeout() > 0) {

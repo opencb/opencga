@@ -50,7 +50,6 @@ import java.io.FileInputStream;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 import static org.junit.Assert.*;

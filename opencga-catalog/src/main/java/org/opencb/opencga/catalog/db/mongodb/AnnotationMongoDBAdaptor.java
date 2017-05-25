@@ -22,12 +22,10 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.collections.map.LinkedMap;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -41,8 +39,12 @@ import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.addCompQueryFilter;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.fixAnnotationQuery;
 
 /**
  * Created by pfurio on 07/07/16.
@@ -142,10 +144,138 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         return endQuery("Create annotation set", startTime, getAnnotationSet(id, annotationSet.getName()));
     }
 
+    public QueryResult<AnnotationSet> searchAnnotationSet(long id, long variableSetId, @Nullable String annotation)
+            throws CatalogDBException {
+        long startTime = startQuery();
+
+        QueryResult<? extends Annotable> aggregate = baseSearchAnnotationSet(id, variableSetId, annotation);
+        List<AnnotationSet> annotationSets = new ArrayList<>(aggregate.getNumResults());
+        for (Annotable annotable : aggregate.getResult()) {
+            annotationSets.add((AnnotationSet) annotable.getAnnotationSets().get(0));
+        }
+
+        return endQuery("Search annotation set", startTime, annotationSets);
+    }
+
+    public QueryResult<ObjectMap> searchAnnotationSetAsMap(long id, long variableSetId, @Nullable String annotation)
+            throws CatalogDBException {
+        long startTime = startQuery();
+
+        QueryResult<? extends Annotable> aggregate = baseSearchAnnotationSet(id, variableSetId, annotation);
+        List<ObjectMap> annotationSets = new ArrayList<>(aggregate.getNumResults());
+        for (Annotable annotable : aggregate.getResult()) {
+            annotationSets.add((ObjectMap) annotable.getAnnotationSetAsMap().get(0));
+        }
+
+        return endQuery("Search annotation set", startTime, annotationSets);
+    }
+
+    private QueryResult<? extends Annotable> baseSearchAnnotationSet(long id, long variableSetId, @Nullable String annotation)
+            throws CatalogDBException {
+        Map<String, Variable> variableMap = null;
+        Document filter = new Document();
+
+        if (variableSetId > 0) {
+            filter.append(AnnotationSetParams.ANNOTATION_SETS_VARIABLE_SET_ID.key(), variableSetId);
+            if (StringUtils.isNotEmpty(annotation)) {
+                variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
+                        .getVariables().stream().collect(Collectors.toMap(Variable::getName, Function.identity()));
+            }
+        }
+        if (StringUtils.isNotEmpty(annotation)) {
+            Query query = new Query("annotation", annotation);
+            fixAnnotationQuery(query);
+            Document annotQuery = createAnnotationQueryFilter(query, variableMap);
+            if (annotQuery != null) {
+                filter.putAll(annotQuery);
+            }
+        }
+
+        return commonGetAnnotationSet(id, filter, null);
+    }
+
+    private Document createAnnotationQueryFilter(Query query, Map<String, Variable> variableMap) throws CatalogDBException {
+        // Annotation Filter
+        final String sepOr = ",";
+
+        List<Document> annotationFilterList = new ArrayList<>(query.size());
+        for (Map.Entry<String, Object> objectEntry : query.entrySet()) {
+            String annotationKey;
+            if (objectEntry.getKey().startsWith("annotation.")) {
+                annotationKey = objectEntry.getKey().substring("annotation.".length());
+            } else {
+                throw new CatalogDBException("Wrong annotation query. Expects: {\"annotation.<variable>\" , <operator><value> } ");
+            }
+            String annotationValue = query.getString(objectEntry.getKey());
+
+            final String variableId;
+            final String route;
+            if (annotationKey.contains(".")) {
+                String[] variableIdRoute = annotationKey.split("\\.", 2);
+                variableId = variableIdRoute[0];
+                route = "." + variableIdRoute[1];
+            } else {
+                variableId = annotationKey;
+                route = "";
+            }
+            String[] values = annotationValue.split(sepOr);
+
+            QueryParam.Type type = QueryParam.Type.TEXT;
+
+            if (variableMap != null) {
+                Variable variable = variableMap.get(variableId);
+                if (variable == null) {
+                    throw new CatalogDBException("Variable \"" + variableId + "\" not found in variableSet ");
+                }
+                Variable.VariableType variableType = variable.getType();
+                if (variable.getType() == Variable.VariableType.OBJECT) {
+                    String[] routes = route.split("\\.");
+                    for (String r : routes) {
+                        if (variable.getType() != Variable.VariableType.OBJECT) {
+                            throw new CatalogDBException("Unable to query variable " + annotationKey);
+                        }
+                        if (variable.getVariableSet() != null) {
+                            Map<String, Variable> subVariableMap = variable.getVariableSet().stream()
+                                    .collect(Collectors.toMap(Variable::getName, Function.<Variable>identity()));
+                            if (subVariableMap.containsKey(r)) {
+                                variable = subVariableMap.get(r);
+                                variableType = variable.getType();
+                            }
+                        } else {
+                            variableType = Variable.VariableType.TEXT;
+                            break;
+                        }
+                    }
+                } else if (variableType == Variable.VariableType.BOOLEAN) {
+                    type = QueryParam.Type.BOOLEAN;
+                } else if (variableType == Variable.VariableType.DOUBLE) {
+                    type = QueryParam.Type.DECIMAL;
+                } else if (variableType == Variable.VariableType.INTEGER) {
+                    type = QueryParam.Type.INTEGER;
+                }
+            }
+
+            List<Document> valueList = addCompQueryFilter(type, AnnotationSetParams.VALUE.key() + route, Arrays.asList(values),
+                    new ArrayList<>());
+
+            annotationFilterList.add(
+                    new Document("$elemMatch", valueList.get(0).append(AnnotationSetParams.NAME.key(), variableId))
+            );
+        }
+        if (annotationFilterList.size() > 0) {
+            return new Document(AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS.key(),
+                    new Document("$all", annotationFilterList));
+
+//                    Filters.all(AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS.key(), annotationFilterList);
+        }
+
+        return null;
+    }
+
     public QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException {
         long startTime = startQuery();
 
-        QueryResult<? extends Annotable> aggregate = commonGetAnnotationSet(id, annotationSetName);
+        QueryResult<? extends Annotable> aggregate = commonGetAnnotationSet(id, null, annotationSetName);
 
         List<AnnotationSet> annotationSets = new ArrayList<>(aggregate.getNumResults());
         for (Annotable annotable : aggregate.getResult()) {
@@ -158,7 +288,7 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
     public QueryResult<ObjectMap> getAnnotationSetAsMap(long id, @Nullable String annotationSetName) throws CatalogDBException {
         long startTime = startQuery();
 
-        QueryResult<? extends Annotable> aggregate = commonGetAnnotationSet(id, annotationSetName);
+        QueryResult<? extends Annotable> aggregate = commonGetAnnotationSet(id, null, annotationSetName);
 
         List<ObjectMap> annotationSets = new ArrayList<>(aggregate.getNumResults());
         for (Annotable annotable : aggregate.getResult()) {
@@ -168,24 +298,25 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         return endQuery("Get annotation set", startTime, annotationSets);
     }
 
-    private QueryResult<? extends Annotable> commonGetAnnotationSet(long id, @Nullable String annotationSetName) {
+    private QueryResult<? extends Annotable> commonGetAnnotationSet(long id, Bson queryAnnotation, @Nullable String annotationSetName) {
         List<Bson> aggregation = new ArrayList<>();
-        aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, id)));
-        aggregation.add(Aggregates.project(Projections.include(AnnotationSetParams.ID.key(), AnnotationSetParams.ANNOTATION_SETS.key())));
+        aggregation.add(Aggregates.match(new Document(PRIVATE_ID, id)));
+//        aggregation.add(Aggregates.project(Projections.include(AnnotationSetParams.ID.key(), AnnotationSetParams.ANNOTATION_SETS.key())));
         aggregation.add(Aggregates.unwind("$" + AnnotationSetParams.ANNOTATION_SETS.key()));
-
-        List<Bson> filters = new ArrayList<>();
-        if (annotationSetName != null && !annotationSetName.isEmpty()) {
-            filters.add(Filters.eq(AnnotationSetParams.ANNOTATION_SETS_NAME.key(), annotationSetName));
+        if (queryAnnotation != null) {
+            aggregation.add(Aggregates.match(queryAnnotation));
         }
 
-        if (filters.size() > 0) {
-            Bson filter = filters.size() == 1 ? filters.get(0) : Filters.and(filters);
-            aggregation.add(Aggregates.match(filter));
+        if (annotationSetName != null && !annotationSetName.isEmpty()) {
+            aggregation.add(Aggregates.match(new Document(AnnotationSetParams.ANNOTATION_SETS_NAME.key(), annotationSetName)));
         }
 
         for (Bson bson : aggregation) {
-            logger.debug("Get annotation: {}", bson.toBsonDocument(Document.class, com.mongodb.MongoClient.getDefaultCodecRegistry()));
+            try {
+                logger.debug("Get annotation: {}", bson.toBsonDocument(Document.class, com.mongodb.MongoClient.getDefaultCodecRegistry()));
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+            }
         }
 
         return getCollection().aggregate(aggregation, getConverter(), null);

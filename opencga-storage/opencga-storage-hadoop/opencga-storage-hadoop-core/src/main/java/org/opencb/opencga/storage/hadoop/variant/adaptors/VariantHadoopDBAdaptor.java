@@ -396,11 +396,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
             logger.debug("Table name = " + variantTable);
             String sql = queryParser.parse(query, options);
+            logger.info("Query : " + query.toJson());
             logger.info(sql);
             logger.debug("Creating {} iterator", VariantHBaseResultSetIterator.class);
             try {
                 if (options.getBoolean("explain", true)) {
-                    logger.info("Query : " + query.toJson());
                     logger.info("---- " + "EXPLAIN " + sql);
                     phoenixHelper.getPhoenixHelper().explain(getJdbcConnection(), sql, Logger::info);
                 }

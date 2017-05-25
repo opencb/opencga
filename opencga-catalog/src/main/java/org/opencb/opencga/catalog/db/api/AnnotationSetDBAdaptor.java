@@ -51,6 +51,28 @@ public interface AnnotationSetDBAdaptor<T> extends DBAdaptor<T> {
     QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException;
 
     /**
+     * Obtains all the annotation sets matching the parameters provided.
+     *
+     * @param id id of the entity where the annotations are stored.
+     * @param variableSetId Variable set id.
+     * @param annotation Annotations that will be queried.
+     * @return a queryResult containing the mathching annotation sets.
+     * @throws CatalogDBException when the annotation set could not be retrieved due to a database error.
+     */
+    QueryResult<AnnotationSet> searchAnnotationSet(long id, long variableSetId, @Nullable String annotation) throws CatalogDBException;
+
+    /**
+     * Obtains all the annotation sets matching the parameters provided.
+     *
+     * @param id id of the entity where the annotations are stored.
+     * @param variableSetId Variable set id.
+     * @param annotation Annotations that will be queried.
+     * @return a queryResult containing the mathching annotation sets.
+     * @throws CatalogDBException when the annotation set could not be retrieved due to a database error.
+     */
+    QueryResult<ObjectMap> searchAnnotationSetAsMap(long id, long variableSetId, @Nullable String annotation) throws CatalogDBException;
+
+    /**
      * Obtains all the annotation sets from id or just the one matching with the annotationSetName if provided.
      *
      * @param id id of the entity where the annotations are stored.
