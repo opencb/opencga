@@ -174,7 +174,7 @@ public class CatalogAnnotationsValidator {
                 Annotation defaultAnnotation = getDefaultAnnotation(variable);
                 if (defaultAnnotation == null) {
                     if (variable.isRequired()) {
-                        throw new CatalogException("Variable " + variable + " is required.");
+                        throw new CatalogException("Missing required variable " + variable.getName());
                     }
                 } else {
                     defaultAnnotations.add(defaultAnnotation);
@@ -213,6 +213,10 @@ public class CatalogAnnotationsValidator {
             }
             case DOUBLE: {
                 Double numericValue = getNumericValue(defaultValue);
+                return numericValue == null ? null : new Annotation(variable.getName(), numericValue);
+            }
+            case INTEGER: {
+                Integer numericValue = getIntegerValue(defaultValue);
                 return numericValue == null ? null : new Annotation(variable.getName(), numericValue);
             }
             case CATEGORICAL:
