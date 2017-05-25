@@ -675,6 +675,26 @@ class Cohorts(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSet
         return self._get('samples', query_id=cohorts, **options)
 
 
+class Families(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient):
+    """
+    This class contains method for Families ws (i.e, update, create)
+    """
+
+    def __init__(self, configuration, session_id=None, login_handler=None):
+        _category = "families"
+        super(Families, self).__init__(configuration, _category, session_id, login_handler)
+
+    def search(self, study, **options):
+        """
+
+        Method to search Families based in a dictionary "options"
+
+        :param study: study id
+        :param options: Kargs where the keys are the name of the Families properties used to search.
+        """
+        return self._get('search', study=study, **options)
+
+
 class VariableSets(_ParentBasicCRUDClient, _ParentRestClient):
     """
     This class contains method for VariableSets ws (i.e, update, create)
@@ -807,6 +827,34 @@ class GA4GH(_ParentRestClient):
 
     def variant_search(self, data, **options):
         return self._post('variant', subcategory='search', data=data, **options)
+
+
+class Meta(_ParentRestClient):
+    """
+    This class contains method for Meta ws
+    """
+
+    def __init__(self, configuration, session_id=None, login_handler=None):
+        _category = "meta"
+        super(Meta, self).__init__(configuration, _category, session_id, login_handler)
+
+    def about(self, **options):
+        """
+        Get OpenCGA instance info (e.g. version)
+        """
+        return self._get('about', **options)
+
+    def ping(self, **options):
+        """
+        Ping OpenCGA instance
+        """
+        return self._get('ping', **options)
+
+    def status(self, **options):
+        """
+        Get OpenCGA instance status
+        """
+        return self._get('status', **options)
 
 
 class OpenCGAClient(object):
