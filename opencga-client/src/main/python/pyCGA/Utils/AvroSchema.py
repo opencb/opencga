@@ -98,8 +98,13 @@ class AvroSchemaFile:
             if default is not None:
                 variable_set[-1]["defaultValue"] = default
 
-        elif field_type == "int" or field_type == "double":
-            variable_set.append({"name": field_name, "required": required, "type": 'NUMERIC', "description": desc, "multiValue": multi})
+        elif field_type == "float" or field_type == "double":
+            variable_set.append({"name": field_name, "required": required, "type": 'DOUBLE', "description": desc, "multiValue": multi})
+            if default is not None:
+                variable_set[-1]["defaultValue"] = default
+
+        elif field_type == "int":
+            variable_set.append({"name": field_name, "required": required, "type": 'INTEGER', "description": desc, "multiValue": multi})
             if default is not None:
                 variable_set[-1]["defaultValue"] = default
 
