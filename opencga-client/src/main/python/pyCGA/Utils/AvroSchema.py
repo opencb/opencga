@@ -53,7 +53,7 @@ class AvroSchemaFile:
         if isinstance(field_type, dict):
             self.process_complex_field(default, desc, field, field_name, field_type, multi, required, variable_set)
 
-        elif field_type not in ['record', 'string', 'int', 'double', 'map', 'enum', 'boolean']:
+        elif field_type not in ['record', 'string', 'int', 'float', 'double', 'map', 'enum', 'boolean']:
             external_type = self.get_external_reference(field_type)
             field["type"] = external_type
             field_type = external_type
