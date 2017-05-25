@@ -17,13 +17,26 @@
 | POST | /v1/samples/create?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
 |let|sampleId|js|response.jsonbody.response[0].result[0].id||
 
-!3 Create Second Sample Including Individual 
+!3 Create Second Sample Including Individual And Annotation 
 !|Table: Rest Fixture | $baseURL |
-| setBody | {"name" : "$sName2", "individual" : {"name":"$iName"}}|
+| setBody | {"name" : "$sName2", "individual" : {"name":"$iName"}, "annotationSets":[{"name": "string", "variableSet": "$gVariableSetId",  "annotations": {"var_int": "10"}}]}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/samples/create?sid=$sessionId&study=$study |200|  Content-Type: application/json ||
 |let|sampleId2|js|response.jsonbody.response[0].result[0].id||
 |let|individualId|js|response.jsonbody.response[0].result[0].individual.id||
+|let||js|response.jsonbody.response[0].result[0].annotationSets[0].annotations[1].value|10|
+
+!3 (Negative) Create Sample Including Individual And Annotation With Invalid Variable Set 
+!|Table: Rest Fixture | $baseURL |
+| setBody | {"name" : "$sName2", "individual" : {"name":"$iName"}, "annotationSets":[{"name": "string", "variableSet": "variableSetId",  "annotations": {"var_int": "10"}}]}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/samples/create?sid=$sessionId&study=$study |500|  Content-Type: application/json ||
+
+!3 (Negative) Create Sample Including Annotation With Missing Variable Value
+!|Table: Rest Fixture | $baseURL |
+| setBody | {"name" : "$sName2", "individual" : {"name":"$iName"}, "annotationSets":[{"name": "string", "variableSet": "$gVariableSetId",  "annotations": {"var_double": "100.5"}}]}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/samples/create?sid=$sessionId&study=$study |500|  Content-Type: application/json ||
 
 !3 Create Sample (GET)
 !|Table: Rest Fixture | $baseURL |

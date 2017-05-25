@@ -9,8 +9,8 @@
 |let|motherName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|updatedName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|iName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
-|let|vsName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|asName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|asName2|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 
 !3 Create Individual
 !|Table: Rest Fixture | $baseURL |
@@ -108,25 +108,24 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/families/25152/acl?sid=$sessionId|500|  Content-Type: application/json |jsonbody.error == 'Family id \'25152\' does not exist'|
 
-!3 Create Variable Set  
-!|Table: Rest Fixture  | $baseURL |
-| setBody |  {  "unique": false,  "name": "$vsName",  "description": "string",  "variables": [{"name": "var_int", "type" : "INTEGER", "defaultValue" : "10" , "required" : false,"multiValue": false } , {"name": "var_double", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }]}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/variableset/create?sid=$sessionId&study=$study |200| Content-Type : application/json||
-|let|variableSetId|js|response.jsonbody.response[0].result[0].id||
-
 !3 Create Annotation Set
 !|Table: Rest Fixture  | $baseURL |
 | setBody | {  "name": "$asName",  "annotations": {"var_int": "10"}}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/families/$familyId/annotationsets/create?sid=$sessionId&variableSetId=$variableSetId&study=$studyId |200| Content-Type : application/json|jsonbody.response[0].result[0].annotations.length == '2.0'|
+| POST | /v1/families/$familyId/annotationsets/create?sid=$sessionId&variableSetId=$gVariableSetId&study=$studyId |200| Content-Type : application/json|jsonbody.response[0].result[0].annotations.length == '2.0'|
 |let|annotationSetName|js|response.jsonbody.response[0].result[0].name||
+
+!3 Create Annotation Set Using Variable Set Name
+!|Table: Rest Fixture  | $baseURL |
+| setBody | {  "name": "$asName2",  "annotations": {"var_int": "50"}}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/families/$familyId/annotationsets/create?sid=$sessionId&variableSet=$gvsName&study=$studyId |200| Content-Type : application/json|jsonbody.response[0].result[0].annotations.length == '2.0'|
 
 !3 (Negative) Create Annotation Set with Invalid Data Type
 !|Table: Rest Fixture  | $baseURL |
 | setBody | {  "name": "dummyName",  "annotations": {"var_int": "TRUE"}}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/families/$familyId/annotationsets/create?sid=$sessionId&variableSetId=$variableSetId&study=$studyId |500| Content-Type : application/json|jsonbody.error == 'Value TRUE is not an integer number'|
+| POST | /v1/families/$familyId/annotationsets/create?sid=$sessionId&variableSetId=$gVariableSetId&study=$studyId |500| Content-Type : application/json|jsonbody.error == 'Value TRUE is not an integer number'|
 
 !3 Get Annotation Set 
 !|Table: Rest Fixture | $baseURL |
@@ -136,22 +135,37 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/families/$familyId/annotationsets/search?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].name == '$annotationSetName'|
 
-# Not yet implemented
-#!3 Update Annotation Set
-#!|Table: Rest Fixture  | $baseURL |
-#| setBody |{"annotations": {"var_double": "100.50"}}|
-#| setHeader|Content-Type:application/json|
-#| POST | /v1/families/$familyId/annotationsets/$annotationSetName/update?sid=$sessionId&study=$studyId |200| Content-Type : application/json||
+!3 Search Annotation Set By Annotation
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/families/$familyId/annotationsets/search?sid=$sessionId&variableSet=$gVariableSetId&annotation=var_int=10|200|  Content-Type: application/json |jsonbody.response[0].result[0].annotations[1].name == 'var_int'|
+
+!3 Update Annotation Set
+!|Table: Rest Fixture  | $baseURL |
+| setBody |{"var_double": "100.50"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/families/$familyId/annotationsets/$annotationSetName/update?sid=$sessionId&study=$studyId |200| Content-Type : application/json||
+
+# https://github.com/opencb/opencga/commit/41d44fe94d86d3b94a419ebe6d7ba951469acd27
+!3 Apply Empty Update On Annotation Set
+!|Table: Rest Fixture  | $baseURL |
+| setBody |{}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/families/$familyId/annotationsets/$annotationSetName/update?sid=$sessionId&study=$studyId |200| Content-Type : application/json||
 
 !3 Get Annotation Set After Update
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/families/$familyId/annotationsets/$annotationSetName/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].annotations.length == '2.0'|
+| GET | /v1/families/$familyId/annotationsets/$annotationSetName/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].annotations[1].value == '100.5'|
 
 !3 Delete Annotation Set
 !|Table: Rest Fixture  | $baseURL |
 | setHeader|Content-Type:application/json|
-| GET | /v1/families/$familyId/annotationsets/$annotationSetName/delete?sid=$sessionId&study=$studyId |200| Content-Type : application/json||
+#| GET | /v1/families/$familyId/annotationsets/$asName2/delete?sid=$sessionId&study=$studyId |200| Content-Type : application/json||
+
+!3 Delete Annotation Set Created With VS Name
+!|Table: Rest Fixture  | $baseURL |
+| setHeader|Content-Type:application/json|
+#| GET | /v1/families/$familyId/annotationsets/$annotationSetName/delete?sid=$sessionId&study=$studyId |200| Content-Type : application/json||
 
 !3 Search Annotation Set After Delete
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/families/$familyId/annotationsets/search?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result.length == '0.0'|
+#| GET | /v1/families/$familyId/annotationsets/search?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result.length == '0.0'|
