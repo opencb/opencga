@@ -121,10 +121,10 @@ public class PhoenixHelper {
         execute(con, buildDropTable(tableName, ifExists, cascade));
     }
 
-    public void addMissingColumns(Connection con, String tableName, Collection<Column> annotColumns, boolean oneCall)
+    public void addMissingColumns(Connection con, String tableName, Collection<Column> newColumns, boolean oneCall)
             throws SQLException {
         Set<String> columns = getColumns(con, tableName).stream().map(Column::column).collect(Collectors.toSet());
-        List<Column> missingColumns = annotColumns.stream()
+        List<Column> missingColumns = newColumns.stream()
                 .filter(column -> !columns.contains(column.column()))
                 .collect(Collectors.toList());
         if (!missingColumns.isEmpty()) {

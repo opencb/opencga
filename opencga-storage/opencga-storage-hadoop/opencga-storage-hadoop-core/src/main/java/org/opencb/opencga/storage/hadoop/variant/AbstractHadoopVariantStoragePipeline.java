@@ -36,20 +36,20 @@ import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
 import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConverter;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.hpg.bigdata.core.io.ProtoFileWriter;
-import org.opencb.commons.ProgressLogger;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
@@ -666,13 +666,30 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     @Override
     public URI postLoad(URI input, URI output) throws StorageEngineException {
         if (options.getBoolean(HADOOP_LOAD_VARIANT)) {
-            // Current StudyConfiguration may be outdated. Remove it.
-            options.remove(VariantStorageEngine.Options.STUDY_CONFIGURATION.key());
+            List<Integer> fileIds = options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES);
+            options.put(VariantStorageEngine.Options.FILE_ID.key(), fileIds);
+            // Current StudyConfiguration may be outdated. Force fetch.
+            StudyConfiguration studyConfiguration = getStudyConfiguration(true);
 
-//            HadoopCredentials dbCredentials = getDbCredentials();
-//            VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor(dbCredentials);
+            VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
+            try {
+                Connection jdbcConnection = dbAdaptor.getJdbcConnection();
+                String tableName = variantsTableCredentials.getTable();
 
-            options.put(VariantStorageEngine.Options.FILE_ID.key(), options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES));
+                Set<Integer> previouslyIndexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration).values();
+                Set<Integer> newSamples = new HashSet<>();
+                for (Integer fileId : fileIds) {
+                    for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
+                        if (!previouslyIndexedSamples.contains(sampleId)) {
+                            newSamples.add(sampleId);
+                        }
+                    }
+                }
+
+                phoenixHelper.registerNewSamples(jdbcConnection, tableName, studyConfiguration.getStudyId(), newSamples);
+            } catch (SQLException e) {
+                throw new StorageEngineException("Error registering new samples", e);
+            }
 
             return super.postLoad(input, output);
         } else {
