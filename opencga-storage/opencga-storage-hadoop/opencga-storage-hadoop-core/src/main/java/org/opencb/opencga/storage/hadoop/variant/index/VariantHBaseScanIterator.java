@@ -65,9 +65,9 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
                 .setMutableSamplesPosition(false)
                 .setStudyNameAsStudyId(true)
                 .setSimpleGenotypes(true)
-                .setReadFullSamplesData(false)
+                .setReadFullSamplesData(true)
                 .setReturnedSamples(returnedSamplesList);
-        setLimit(options.getLong("limit"));
+        setLimit(options.getLong(QueryOptions.LIMIT));
     }
 
     @Override
