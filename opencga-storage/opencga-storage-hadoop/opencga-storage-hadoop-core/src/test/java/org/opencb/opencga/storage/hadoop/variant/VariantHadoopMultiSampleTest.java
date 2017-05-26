@@ -58,7 +58,10 @@ import org.opencb.opencga.storage.hadoop.variant.index.AbstractArchiveTableMappe
 import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -68,7 +71,8 @@ import java.util.stream.IntStream;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
-import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.*;
+import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariants;
+import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariantsFromVariantsTable;
 
 /**
  * Created on 21/01/16
@@ -236,6 +240,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     public void testMultipleFilesConcurrentSpecificPut() throws Exception {
         testMultipleFilesConcurrent(true);
     }
+
     @Test
     public void testMultipleFilesConcurrentFullPut() throws Exception {
         testMultipleFilesConcurrent(false);
@@ -259,7 +264,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         options.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto");
         options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
         options.put(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
-        options.put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "PF,DP,AD");
+        options.put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,AD");
         options.put(AbstractArchiveTableMapper.SPECIFIC_PUT, specificPut);
         List<StoragePipelineResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
 
@@ -267,7 +272,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
             System.out.println(storagePipelineResult);
         }
 
-        URI outputUri = newOutputUri();
+        URI outputUri = newOutputUri(1);
         printVariants(studyConfiguration, dbAdaptor, outputUri);
 
 //        checkLoadedVariants(expectedVariants, dbAdaptor, PLATINUM_SKIP_VARIANTS);

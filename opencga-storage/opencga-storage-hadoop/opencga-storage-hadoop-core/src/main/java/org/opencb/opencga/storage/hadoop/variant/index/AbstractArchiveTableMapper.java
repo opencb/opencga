@@ -34,7 +34,7 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
-import org.opencb.opencga.storage.hadoop.variant.converters.VariantToHBaseConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.samples.SamplesDataToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 import org.slf4j.Logger;
@@ -58,7 +58,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
     protected ArchiveResultToVariantConverter resultConverter;
     private ArchiveRowKeyFactory rowKeyFactory;
     private boolean specificPut;
-    private VariantToHBaseConverter variantToHBaseConverter;
+    private SamplesDataToHBaseConverter samplesDataToHBaseConverter;
 
 
     protected ArchiveResultToVariantConverter getResultConverter() {
@@ -135,9 +135,9 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
             Put put = createPut(variant, newSampleIds, row);
             if (put != null) {
                 if (specificPut) {
-                    variantToHBaseConverter.convert(variant, put, newSampleIds);
+                    samplesDataToHBaseConverter.convert(variant, put, newSampleIds);
                 } else {
-                    variantToHBaseConverter.convert(variant, put);
+                    samplesDataToHBaseConverter.convert(variant, put);
                 }
                 puts.add(put);
             }
@@ -213,7 +213,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
             InterruptedException {
         super.setup(context);
         this.specificPut = context.getConfiguration().getBoolean(SPECIFIC_PUT, true);
-        variantToHBaseConverter = new VariantToHBaseConverter(getHelper().getColumnFamily(), getStudyConfiguration());
+        samplesDataToHBaseConverter = new SamplesDataToHBaseConverter(getHelper().getColumnFamily(), getStudyConfiguration());
 
         // Load VCF meta data for columns
         int studyId = getStudyConfiguration().getStudyId();

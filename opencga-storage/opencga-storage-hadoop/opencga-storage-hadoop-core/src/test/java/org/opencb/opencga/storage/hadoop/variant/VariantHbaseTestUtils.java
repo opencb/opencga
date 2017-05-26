@@ -66,7 +66,7 @@ import java.util.Map;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getTmpRootDir;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest.configuration;
-import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.COLUMN_KEY_SEPARATOR;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.COLUMN_KEY_SEPARATOR;
 
 /**
  *  Utility class for VariantStorage hadoop tests

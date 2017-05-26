@@ -111,7 +111,7 @@ public class VariantSqlQueryParser {
         }
 
         if (options.getBoolean(QueryOptions.SORT)) {
-            sb.append(" ORDER BY ").append(VariantColumn.CHROMOSOME.column()).append(",").append(VariantColumn.POSITION.column());
+            sb.append(" ORDER BY ").append(VariantColumn.CHROMOSOME.column()).append(',').append(VariantColumn.POSITION.column());
 
             String order = options.getString(QueryOptions.ORDER, QueryOptions.ASCENDING);
             if (order.equalsIgnoreCase(QueryOptions.ASCENDING) || order.equalsIgnoreCase("ASC")) {
@@ -161,11 +161,8 @@ public class VariantSqlQueryParser {
 
             Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
 
-            List<Integer> studyIds = VariantQueryUtils.getReturnedStudies(query, options, studyConfigurationManager);
-//            List<Integer> studyIds = studyConfigurationManager.getStudyIds(options.getAsList(RETURNED_STUDIES.key()), options);
-//            if (studyIds == null || studyIds.isEmpty()) {
-//                studyIds = studyConfigurationManager.getStudyIds(options);
-//            }
+            Map<Integer, List<Integer>> returnedSamples = VariantQueryUtils.getReturnedSamples(query, options, studyConfigurationManager);
+            Collection<Integer> studyIds = returnedSamples.keySet();
 
             sb.append(VariantColumn.CHROMOSOME).append(',')
                     .append(VariantColumn.POSITION).append(',')
@@ -193,6 +190,15 @@ public class VariantSqlQueryParser {
                         }
                     }
                 }
+            }
+            if (returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
+                returnedSamples.forEach((studyId, sampleIds) -> {
+                    for (Integer sampleId : sampleIds) {
+                        sb.append(",\"");
+                        VariantPhoenixHelper.buildSampleColumnKey(studyId, sampleId, sb);
+                        sb.append('"');
+                    }
+                });
             }
 
             if (returnedFields.contains(VariantField.ANNOTATION)) {

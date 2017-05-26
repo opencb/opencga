@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.converters;
+package org.opencb.opencga.storage.hadoop.variant.converters.samples;
 
 import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -6,6 +6,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.converters.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 
@@ -19,13 +20,13 @@ import java.util.Set;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantToHBaseConverter extends AbstractPhoenixConverter implements Converter<Variant, Put> {
+public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implements Converter<Variant, Put> {
 
 
     private final Set<String> defaultGenotypes = new HashSet<>();
     private final StudyConfiguration studyConfiguration;
 
-    public VariantToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration) {
+    public SamplesDataToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration) {
         super(columnFamily);
         this.studyConfiguration = studyConfiguration;
         defaultGenotypes.add("0/0");

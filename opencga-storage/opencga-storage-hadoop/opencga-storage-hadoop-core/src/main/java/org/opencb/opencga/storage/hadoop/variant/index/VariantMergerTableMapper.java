@@ -39,6 +39,7 @@ import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,22 +115,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
             }
         }
 
-        List<String> extraGenotypes = getStudyConfiguration().getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
-        // TODO: Allow exclude genotypes! Read from configuration
-        boolean excludeGenotypes = false;
-//        boolean excludeGenotypes = getStudyConfiguration().getAttributes()
-//                .getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
-
-        if (extraGenotypes.isEmpty()) {
-            extraGenotypes = Collections.singletonList(VariantMerger.GENOTYPE_FILTER_KEY);
-        }
-        if (excludeGenotypes) {
-            expectedFormats = extraGenotypes;
-        } else {
-            expectedFormats = new ArrayList<>(1 + extraGenotypes.size());
-            expectedFormats.add(VariantMerger.GT_KEY);
-            expectedFormats.addAll(extraGenotypes);
-        }
+        expectedFormats = HBaseToVariantConverter.getFormat(getStudyConfiguration());
 
 
         variantMerger = new VariantMerger(collapseDeletions);

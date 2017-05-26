@@ -56,6 +56,7 @@ public class VariantPhoenixHelper {
     public static final String FUNCTIONAL_SCORE_PREFIX = ANNOTATION_PREFIX + "FS_";
     public static final String STATS_PROTOBUF_SUFIX = "_PB";
     public static final String SAMPLE_DATA_SUFIX = "_S";
+    public static final byte[] SAMPLE_DATA_SUFIX_BYTES = Bytes.toBytes(SAMPLE_DATA_SUFIX);
     public static final byte[] STATS_PROTOBUF_SUFIX_BYTES = Bytes.toBytes(STATS_PROTOBUF_SUFIX);
     public static final String MAF_SUFIX = "_MAF";
     public static final String MGF_SUFIX = "_MGF";
