@@ -106,46 +106,15 @@ class _ParentAclRestClient(_ParentRestClient):
 
         return self._get('acl', query_id=query_id, **options)
 
-    def acl_create(self, query_id, data, **options):
+    def acl_update(self, memberId, data, **options):
         """
-        create acl
+        update acl
 
         :param query_id:
         :param options:
         """
 
-        return self._post('acl', query_id=query_id, subcategory='create', data=data, **options)
-
-    def acl_delete(self, query_id, memberId, **options):
-        """
-        delete acl
-
-        :param query_id:
-        :param options:
-        """
-
-        return self._get('acl', query_id=query_id, subcategory='delete', second_query_id=memberId, **options)
-
-    def acl_info(self, query_id, memberId, **options):
-        """
-        info acl
-
-        :param query_id:
-        :param options:
-        """
-
-        return self._get('acl', query_id=query_id, subcategory='info', second_query_id=memberId, **options)
-
-    def acl_update(self, query_id, memberId, data, **options):
-        """
-        info acl
-
-        :param query_id:
-        :param options:
-        """
-
-        return self._post('acl', query_id=query_id, subcategory='update', second_query_id=memberId, data=data,
-                          **options)
+        return self._post('acl', subcategory='update', second_query_id=memberId, data=data, **options)
 
 
 class _ParentAnnotationSetRestClient(_ParentRestClient):
@@ -675,6 +644,26 @@ class Cohorts(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSet
         return self._get('samples', query_id=cohorts, **options)
 
 
+class Families(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient):
+    """
+    This class contains method for Families ws (i.e, update, create)
+    """
+
+    def __init__(self, configuration, session_id=None, login_handler=None):
+        _category = "families"
+        super(Families, self).__init__(configuration, _category, session_id, login_handler)
+
+    def search(self, study, **options):
+        """
+
+        Method to search Families based in a dictionary "options"
+
+        :param study: study id
+        :param options: Kargs where the keys are the name of the Families properties used to search.
+        """
+        return self._get('search', study=study, **options)
+
+
 class VariableSets(_ParentBasicCRUDClient, _ParentRestClient):
     """
     This class contains method for VariableSets ws (i.e, update, create)
@@ -809,6 +798,34 @@ class GA4GH(_ParentRestClient):
         return self._post('variant', subcategory='search', data=data, **options)
 
 
+class Meta(_ParentRestClient):
+    """
+    This class contains method for Meta ws
+    """
+
+    def __init__(self, configuration, session_id=None, login_handler=None):
+        _category = "meta"
+        super(Meta, self).__init__(configuration, _category, session_id, login_handler)
+
+    def about(self, **options):
+        """
+        Get OpenCGA instance info (e.g. version)
+        """
+        return self._get('about', **options)
+
+    def ping(self, **options):
+        """
+        Ping OpenCGA instance
+        """
+        return self._get('ping', **options)
+
+    def status(self, **options):
+        """
+        Get OpenCGA instance status
+        """
+        return self._get('status', **options)
+
+
 class OpenCGAClient(object):
     def __init__(self, configuration, user=None, pwd=None, session_id=None, on_retry=None):
         """
@@ -842,17 +859,20 @@ class OpenCGAClient(object):
         self.files = Files(self.configuration, self.session_id, self._login_handler)
         self.samples = Samples(self.configuration, self.session_id, self._login_handler)
         self.cohorts = Cohorts(self.configuration, self.session_id, self._login_handler)
+        self.families = Families(self.configuration, self.session_id, self._login_handler)
         self.jobs = Jobs(self.configuration, self.session_id, self._login_handler)
         self.individuals = Individuals(self.configuration, self.session_id, self._login_handler)
         self.variable_sets = VariableSets(self.configuration, self.session_id, self._login_handler)
         self.analysis_alignment = AnalysisAlignment(self.configuration, self.session_id, self._login_handler)
         self.analysis_variant = AnalysisVariant(self.configuration, self.session_id, self._login_handler)
         self.ga4gh = GA4GH(self.configuration, self.session_id, self._login_handler)
+        self.meta = Meta(self.configuration, self.session_id, self._login_handler)
 
         self.clients = [self.users, self.projects, self.studies, self.files,
-                        self.samples, self.cohorts, self.jobs, self.individuals,
-                        self.variable_sets, self.analysis_alignment, self.analysis_variant,
-                        self.ga4gh]
+                        self.samples, self.cohorts, self.families, self.jobs,
+                        self.individuals, self.variable_sets,
+                        self.analysis_alignment, self.analysis_variant,
+                        self.ga4gh, self.meta]
 
         for client in self.clients:
             client.on_retry = self.on_retry
