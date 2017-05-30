@@ -1475,11 +1475,11 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                 withSampleData("NA19600", "GT", containsString("1")),
                 withSampleData("NA19685", "GT", containsString("1"))))));
 
-        query = new Query(SAMPLES.key(), "NA19600").append(GENOTYPE.key(), "NA19685:0|0").append(RETURNED_SAMPLES.key(), "NA19600,NA19685");
+        query = new Query(SAMPLES.key(), "NA19600").append(GENOTYPE.key(), "NA19685" + IS + homRef).append(RETURNED_SAMPLES.key(), "NA19600,NA19685");
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, allOf(
                 withSampleData("NA19600", "GT", containsString("1")),
-                withSampleData("NA19685", "GT", is("0|0"))))));
+                withSampleData("NA19685", "GT", is(homRef))))));
     }
 
     @Test

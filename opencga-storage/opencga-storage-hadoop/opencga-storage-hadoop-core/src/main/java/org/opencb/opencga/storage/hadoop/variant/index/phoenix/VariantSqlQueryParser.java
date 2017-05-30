@@ -560,7 +560,11 @@ public class VariantSqlQueryParser {
             QueryOperation op = checkOperator(value);
             List<String> samples = splitValue(value, op);
             for (String sample : samples) {
-                genotypesMap.put(sample, Arrays.asList(HET_REF, HOM_VAR, OTHER));
+                if (genotypesFromSampleColumns) {
+                    genotypesMap.put(sample, Arrays.asList(NOT + HOM_REF, NOT + NOCALL, NOT + "./."));
+                } else {
+                    genotypesMap.put(sample, Arrays.asList(HET_REF, HOM_VAR, OTHER));
+                }
             }
         }
 
