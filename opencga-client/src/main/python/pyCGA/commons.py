@@ -15,8 +15,6 @@ _NUM_THREADS_DEFAULT = 4
 class OpenCGAResponse(list):
 
     def __init__(self, response):
-        # self.action_id = response['id']
-        self.time = response['time']
         self.dbTime = response['dbTime']
         self.numResults = response['numResults']
         self.numTotalResults = response['numTotalResults']
