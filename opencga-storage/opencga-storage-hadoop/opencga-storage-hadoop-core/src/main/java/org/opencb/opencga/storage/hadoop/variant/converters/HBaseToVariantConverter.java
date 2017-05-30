@@ -261,7 +261,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
             // Read values from sample columns
             if (fullSamplesData != null) {
-                Map<Integer, List<String>> studySampleData = fullSamplesData.get(studyId);
+                Map<Integer, List<String>> studySampleData = fullSamplesData.getOrDefault(studyId, Collections.emptyMap());
                 for (Entry<Integer, List<String>> entry : studySampleData.entrySet()) {
                     Integer sampleId = entry.getKey();
                     List<String> sampleData = entry.getValue();
