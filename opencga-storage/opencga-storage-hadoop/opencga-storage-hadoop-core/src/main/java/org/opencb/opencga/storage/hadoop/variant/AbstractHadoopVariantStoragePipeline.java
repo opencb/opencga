@@ -358,6 +358,15 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         return input;
     }
 
+    @Override
+    protected void securePreLoad(StudyConfiguration studyConfiguration, VariantSource source) throws StorageEngineException {
+        super.securePreLoad(studyConfiguration, source);
+        if (!studyConfiguration.getAttributes().containsKey(MERGE_LOAD_SAMPLE_COLUMNS)) {
+            boolean loadSampleColumns = getOptions().getBoolean(MERGE_LOAD_SAMPLE_COLUMNS, DEFAULT_MERGE_LOAD_SAMPLE_COLUMNS);
+            studyConfiguration.getAttributes().put(MERGE_LOAD_SAMPLE_COLUMNS, loadSampleColumns);
+        }
+    }
+
     protected void preMerge(URI input) throws StorageEngineException {
         int studyId = getStudyId();
 
@@ -671,24 +680,26 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             // Current StudyConfiguration may be outdated. Force fetch.
             StudyConfiguration studyConfiguration = getStudyConfiguration(true);
 
-            VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
-            try {
-                Connection jdbcConnection = dbAdaptor.getJdbcConnection();
-                String tableName = variantsTableCredentials.getTable();
+            if (studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SAMPLE_COLUMNS)) {
+                VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
+                try {
+                    Connection jdbcConnection = dbAdaptor.getJdbcConnection();
+                    String tableName = variantsTableCredentials.getTable();
 
-                Set<Integer> previouslyIndexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration).values();
-                Set<Integer> newSamples = new HashSet<>();
-                for (Integer fileId : fileIds) {
-                    for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
-                        if (!previouslyIndexedSamples.contains(sampleId)) {
-                            newSamples.add(sampleId);
+                    Set<Integer> previouslyIndexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration).values();
+                    Set<Integer> newSamples = new HashSet<>();
+                    for (Integer fileId : fileIds) {
+                        for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
+                            if (!previouslyIndexedSamples.contains(sampleId)) {
+                                newSamples.add(sampleId);
+                            }
                         }
                     }
-                }
 
-                phoenixHelper.registerNewSamples(jdbcConnection, tableName, studyConfiguration.getStudyId(), newSamples);
-            } catch (SQLException e) {
-                throw new StorageEngineException("Error registering new samples", e);
+                    phoenixHelper.registerNewSamples(jdbcConnection, tableName, studyConfiguration.getStudyId(), newSamples);
+                } catch (SQLException e) {
+                    throw new StorageEngineException("Error registering new samples", e);
+                }
             }
 
             return super.postLoad(input, output);

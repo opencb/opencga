@@ -31,6 +31,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.AbstractHBaseVariantMapper;
 import org.opencb.opencga.storage.hadoop.variant.AnalysisTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
@@ -51,13 +52,13 @@ import java.util.stream.Stream;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  */
 public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMapper<ImmutableBytesWritable, Mutation> {
-    public static final String SPECIFIC_PUT = "opencga.storage.hadoop.hbase.merge.use_specific_put";
 
     private Logger logger = LoggerFactory.getLogger(AbstractArchiveTableMapper.class);
 
     protected ArchiveResultToVariantConverter resultConverter;
     private ArchiveRowKeyFactory rowKeyFactory;
     private boolean specificPut;
+    private boolean loadSampleColumns;
     private SamplesDataToHBaseConverter samplesDataToHBaseConverter;
 
 
@@ -134,10 +135,12 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
             rows.add(row);
             Put put = createPut(variant, newSampleIds, row);
             if (put != null) {
-                if (specificPut) {
-                    samplesDataToHBaseConverter.convert(variant, put, newSampleIds);
-                } else {
-                    samplesDataToHBaseConverter.convert(variant, put);
+                if (loadSampleColumns) {
+                    if (specificPut) {
+                        samplesDataToHBaseConverter.convert(variant, put, newSampleIds);
+                    } else {
+                        samplesDataToHBaseConverter.convert(variant, put);
+                    }
                 }
                 puts.add(put);
             }
@@ -212,7 +215,8 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
     protected void setup(Context context) throws IOException,
             InterruptedException {
         super.setup(context);
-        this.specificPut = context.getConfiguration().getBoolean(SPECIFIC_PUT, true);
+        this.specificPut = context.getConfiguration().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SPECIFIC_PUT, true);
+        this.loadSampleColumns = context.getConfiguration().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SAMPLE_COLUMNS, true);
         samplesDataToHBaseConverter = new SamplesDataToHBaseConverter(getHelper().getColumnFamily(), getStudyConfiguration());
 
         // Load VCF meta data for columns

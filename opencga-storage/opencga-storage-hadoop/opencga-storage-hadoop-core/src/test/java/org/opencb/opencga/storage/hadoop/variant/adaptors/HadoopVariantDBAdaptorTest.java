@@ -27,6 +27,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
@@ -70,20 +71,20 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
 
-    @Override
-    protected String getHetGT() {
-        return Genotype.HET_REF;
-    }
-
+//    @Override
+//    protected String getHetGT() {
+//        return Genotype.HET_REF;
+//    }
+//
     @Override
     protected String getHomRefGT() {
         return Genotype.HOM_REF;
     }
-
-    @Override
-    protected String getHomAltGT() {
-        return Genotype.HOM_VAR;
-    }
+//
+//    @Override
+//    protected String getHomAltGT() {
+//        return Genotype.HOM_VAR;
+//    }
 
     @Override
     protected ObjectMap getOtherParams() {
@@ -185,6 +186,20 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
             count++;
         }
         Assert.assertEquals(dbAdaptor.count(new Query()).first().intValue(), count);
+    }
+
+    @Test
+    public void testArchiveIterator() {
+        int count = 0;
+        Query query = new Query(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())
+                .append(VariantQueryParam.FILES.key(), 6);
+
+        for (VariantDBIterator iterator = dbAdaptor.iterator(query, new QueryOptions("archive", true)); iterator.hasNext(); ) {
+            Variant variant = iterator.next();
+//            System.out.println(variant.toJson());
+            count++;
+        }
+        Assert.assertEquals(source.getStats().getNumRecords(), count);
     }
 
 }

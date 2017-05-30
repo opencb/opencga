@@ -47,7 +47,6 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfDataWriter;
@@ -55,7 +54,6 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.AbstractArchiveTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
@@ -266,7 +264,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
         options.put(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
         options.put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,AD");
-        options.put(AbstractArchiveTableMapper.SPECIFIC_PUT, specificPut);
+        options.put(HadoopVariantStorageEngine.MERGE_LOAD_SPECIFIC_PUT, specificPut);
         List<StoragePipelineResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
 
         for (StoragePipelineResult storagePipelineResult : index) {
@@ -408,6 +406,9 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
                             expected = ".";
                         }
                         String actual = variants.get(key).getStudy(studyName).getSampleData(sample, formatKey);
+                        if (actual.equals("./.")) {
+                            actual = ".";
+                        }
                         if (!expected.equals(actual)) {
                             errors.add("In variant " + key + " wrong " + formatKey + " for sample " + sample + ". Expected: " + expected + ", Actual: " + actual);
                         }

@@ -29,6 +29,7 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +54,7 @@ public class VariantTableDeletionMapper extends AbstractArchiveTableMapper {
     @Override
     protected void setup(Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Mutation>.Context context) throws IOException,
             InterruptedException {
+        context.getConfiguration().setBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SAMPLE_COLUMNS, false);
         super.setup(context);
         Connection connection = getHBaseManager().getConnection();
         this.analysisTable = connection.getTable(TableName.valueOf(getHelper().getAnalysisTable()));
