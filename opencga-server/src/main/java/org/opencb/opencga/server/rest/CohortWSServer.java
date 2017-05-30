@@ -107,7 +107,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create a cohort [WARNING]", position = 1, notes = "WARNING: the usage of this web service is discouraged, "
+    @ApiOperation(value = "Create a cohort [DEPRECATED]", position = 1, notes = "DEPRECATED: the usage of this web service is discouraged, "
             + "please use the POST version instead. Be aware that this is web service is not tested and this can be deprecated in a "
             + "future version. <br>"
             + "A cohort can be created by providing a list of SampleIds, "
@@ -289,8 +289,8 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohort}/update")
-    @ApiOperation(value = "Update some user attributes using GET method [WARNING]", position = 4, response = Cohort.class,
-        notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web "
+    @ApiOperation(value = "Update some user attributes using GET method [DEPRECATED]", position = 4, response = Cohort.class,
+        notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web "
                 + "service is not tested and this can be deprecated in a future version.")
     public Response update(@ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")

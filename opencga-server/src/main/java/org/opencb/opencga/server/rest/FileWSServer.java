@@ -130,8 +130,8 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create-folder")
-    @ApiOperation(value = "Create a folder in the catalog environment [WARNING]", position = 2, response = File.class,
-            notes = "WARNING: the usage of this web service is discouraged, please use the POST /create version instead. Be aware that "
+    @ApiOperation(value = "Create a folder in the catalog environment [DEPRECATED]", position = 2, response = File.class,
+            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST /create version instead. Be aware that "
                     + "this is web service is not tested and this can be deprecated in a future version.")
     public Response createFolder(@ApiParam(value = "(DEPRECATED) Use study instead", hidden = true)
                                  @QueryParam("studyId") String studyIdStr,
@@ -1133,8 +1133,8 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{file}/update")
-    @ApiOperation(value = "Update fields of a file [WARNING]", position = 16, response = File.class,
-            notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web "
+    @ApiOperation(value = "Update fields of a file [DEPRECATED]", position = 16, response = File.class,
+            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web "
                     + "service is not tested and this can be deprecated in a future version.")
     public Response update(@ApiParam(value = "File id") @PathParam(value = "file") String fileIdStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
