@@ -87,7 +87,7 @@ public class ArchiveTableHelper extends GenomeHelper {
         keyFactory = new ArchiveRowKeyFactory(getChunkSize(), getSeparator());
     }
 
-    public ArchiveTableHelper(GenomeHelper helper, VariantSource source) throws IOException {
+    public ArchiveTableHelper(GenomeHelper helper, VariantSource source) {
         super(helper);
         this.meta.set(new VcfMeta(source));
         column = Bytes.toBytes(getColumnName(source));
