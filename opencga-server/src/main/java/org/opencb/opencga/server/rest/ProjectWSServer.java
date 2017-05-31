@@ -17,8 +17,10 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Study;
@@ -180,13 +182,30 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some project attributes", response = Project.class)
     public Response updateByPost(@ApiParam(value = "Project id or alias", required = true) @PathParam("project") String projectStr,
-                                 @ApiParam(value = "JSON containing the params to be updated.", required = true) ProjectUpdateParams updateParams)
+                                 @ApiParam(value = "JSON containing the params to be updated. It will be only possible to update organism "
+                                         + "fields not previously defined.", required = true) ProjectUpdateParams updateParams)
             throws IOException {
         try {
             String userId = catalogManager.getUserManager().getId(sessionId);
             long projectId = catalogManager.getProjectManager().getId(userId, projectStr);
 
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(updateParams));
+            if (updateParams.organism != null) {
+                if (StringUtils.isNotEmpty(updateParams.organism.getAssembly())) {
+                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), updateParams.organism.getAssembly());
+                }
+                if (StringUtils.isNotEmpty(updateParams.organism.getCommonName())) {
+                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), updateParams.organism.getCommonName());
+                }
+                if (StringUtils.isNotEmpty(updateParams.organism.getScientificName())) {
+                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(), updateParams.organism.getScientificName());
+                }
+                if (updateParams.organism.getTaxonomyCode() > 0) {
+                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), updateParams.organism.getTaxonomyCode());
+                }
+                params.remove("organism");
+            }
+
             QueryResult result = catalogManager.getProjectManager().update(projectId, params, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
