@@ -1356,7 +1356,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{file}/delete")
-    @ApiOperation(value = "Delete file", position = 23, response = QueryResponse.class)
+    @ApiOperation(value = "Delete file [NOT TESTED]", position = 23, response = QueryResponse.class)
     public Response deleteGET(@ApiParam(value = "File id") @PathParam(value = "file") String fileIdStr,
                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                               @QueryParam("study") String studyStr,

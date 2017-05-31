@@ -242,7 +242,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individual}/annotationsets/search")
-    @ApiOperation(value = "Search annotation sets [NOT TESTED]", position = 11)
+    @ApiOperation(value = "Search annotation sets", position = 11)
     public Response searchAnnotationSetGET(
             @ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
@@ -268,7 +268,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individual}/annotationsets/info")
-    @ApiOperation(value = "Return all the annotation sets of the individual [NOT TESTED]", position = 12)
+    @ApiOperation(value = "Return all the annotation sets of the individual", position = 12)
     public Response infoAnnotationSetGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                                                  + "alias") @QueryParam("study") String studyStr,
@@ -288,7 +288,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{individual}/annotationsets/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create an annotation set for the individual [NOT TESTED]", position = 13)
+    @ApiOperation(value = "Create an annotation set for the individual", position = 13)
     public Response annotateSamplePOST(
             @ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
@@ -311,7 +311,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individual}/annotationsets/{annotationsetName}/delete")
-    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [NOT TESTED]", position = 14)
+    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set", position = 14)
     public Response deleteAnnotationGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                                                 + "alias") @QueryParam("study") String studyStr,
@@ -352,7 +352,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individual}/annotationsets/{annotationsetName}/info")
-    @ApiOperation(value = "Return the annotation set [NOT TESTED]", position = 16)
+    @ApiOperation(value = "Return the annotation set", position = 16)
     public Response infoAnnotationGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                       @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                                               + "alias") @QueryParam("study") String studyStr,
@@ -443,7 +443,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individuals}/delete")
-    @ApiOperation(value = "Delete individual information", position = 7)
+    @ApiOperation(value = "Delete individual information [NOT TESTED]", position = 7)
     public Response deleteIndividual(@ApiParam(value = "Comma separated list of individual IDs or names", required = true)
                                          @PathParam ("individuals") String individualIds,
                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")

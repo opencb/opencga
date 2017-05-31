@@ -144,7 +144,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{family}/annotationsets/search")
-    @ApiOperation(value = "Search annotation sets [NOT TESTED]", position = 11)
+    @ApiOperation(value = "Search annotation sets", position = 11)
     public Response searchAnnotationSetGET(
             @ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
@@ -168,7 +168,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{family}/annotationsets/info")
-    @ApiOperation(value = "Return the annotation sets of the family [NOT TESTED]", position = 12)
+    @ApiOperation(value = "Return the annotation sets of the family", position = 12)
     public Response infoAnnotationSetGET(@ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
                                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                          @QueryParam("study") String studyStr,
@@ -188,7 +188,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{family}/annotationsets/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create an annotation set for the family [NOT TESTED]", position = 13)
+    @ApiOperation(value = "Create an annotation set for the family", position = 13)
     public Response annotateFamilyPOST(
             @ApiParam(value = "FamilyId", required = true) @PathParam("family") String familyStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
@@ -211,7 +211,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{family}/annotationsets/{annotationsetName}/delete")
-    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [NOT TESTED]", position = 14)
+    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set", position = 14)
     public Response deleteAnnotationGET(@ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
                                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                         @QueryParam("study") String studyStr,
@@ -250,7 +250,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{family}/annotationsets/{annotationsetName}/info")
-    @ApiOperation(value = "Return the annotation set [NOT TESTED]", position = 16)
+    @ApiOperation(value = "Return the annotation set", position = 16)
     public Response infoAnnotationGET(@ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
                                       @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                       @QueryParam("study") String studyStr,
