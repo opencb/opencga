@@ -87,7 +87,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     // Variants that are wrong in the platinum files that should not be included
     private static final HashSet<String> PLATINUM_SKIP_VARIANTS = new HashSet<>();
-    private Map<String, Boolean> notCollapseDeletions = Collections.singletonMap(HadoopVariantStorageEngine.MERGE_COLLAPSE_DELETIONS, false);
+    private Map<String, Object> notCollapseDeletions = Collections.singletonMap(HadoopVariantStorageEngine.MERGE_COLLAPSE_DELETIONS, false);
 
     @Before
     public void setUp() throws Exception {
@@ -237,15 +237,15 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     @Test
     public void testMultipleFilesConcurrentSpecificPut() throws Exception {
-        testMultipleFilesConcurrent(true);
+        testMultipleFilesConcurrent(new ObjectMap(HadoopVariantStorageEngine.MERGE_LOAD_SPECIFIC_PUT, true));
     }
 
     @Test
     public void testMultipleFilesConcurrentFullPut() throws Exception {
-        testMultipleFilesConcurrent(false);
+        testMultipleFilesConcurrent(new ObjectMap(HadoopVariantStorageEngine.MERGE_LOAD_SPECIFIC_PUT, false));
     }
 
-    public void testMultipleFilesConcurrent(boolean specificPut) throws Exception {
+    public void testMultipleFilesConcurrent(ObjectMap extraParams) throws Exception {
 
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
@@ -264,7 +264,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
         options.put(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
         options.put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,AD");
-        options.put(HadoopVariantStorageEngine.MERGE_LOAD_SPECIFIC_PUT, specificPut);
+        options.putAll(extraParams);
         List<StoragePipelineResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
 
         for (StoragePipelineResult storagePipelineResult : index) {
@@ -474,6 +474,24 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     @Test
     public void testPlatinumFilesOneByOne() throws Exception {
+        testPlatinumFilesOneByOne(new ObjectMap(), 4);
+    }
+
+    @Test
+    public void testPlatinumFilesOneByOne_extraFields() throws Exception {
+        testPlatinumFilesOneByOne(new ObjectMap()
+                .append(HadoopVariantStorageEngine.MERGE_ARCHIVE_SCAN_BATCH_SIZE, 2)
+                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ"), 6);
+    }
+
+    @Test
+    public void testPlatinumFilesOneByOne_extraFields_noCollapseDels() throws Exception {
+        testPlatinumFilesOneByOne(new ObjectMap()
+                .append(HadoopVariantStorageEngine.MERGE_COLLAPSE_DELETIONS, false)
+                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ"), 4);
+    }
+
+    public void testPlatinumFilesOneByOne(ObjectMap otherParams, int maxFilesLoaded) throws Exception {
 
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         List<VariantSource> sources = new LinkedList<>();
@@ -483,9 +501,11 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
 
 
-        int maxFilesLoaded = 4;
         for (int fileId = 12877; fileId <= 12893; fileId++) {
-            VariantSource source = loadFile("platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration);
+            ObjectMap params = new ObjectMap();
+            params.putAll(otherParams);
+            String resourceName = "platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz";
+            VariantSource source = loadFile(resourceName, fileId, studyConfiguration, params);
 
             studyConfiguration = scm.getStudyConfiguration(studyConfiguration.getStudyId(), new QueryOptions()).first();
             System.out.println(studyConfiguration);
