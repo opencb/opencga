@@ -87,8 +87,8 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create sample [WARNING]", position = 2, response = Sample.class,
-    notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+    @ApiOperation(value = "Create sample [DEPRECATED]", position = 2, response = Sample.class,
+    notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
             + "is not tested and this can be deprecated in a future version.")
     public Response createSample(@ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -214,8 +214,8 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{sample}/update")
-    @ApiOperation(value = "Update some sample attributes using GET method [WARNING]", position = 6, response = Sample.class,
-    notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+    @ApiOperation(value = "Update some sample attributes using GET method [DEPRECATED]", position = 6, response = Sample.class,
+    notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
             + "is not tested and this can be deprecated in a future version.")
     public Response update(@ApiParam(value = "Sample id or name", required = true) @PathParam("sample") String sampleStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -285,7 +285,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{samples}/delete")
-    @ApiOperation(value = "Delete a sample", position = 9)
+    @ApiOperation(value = "Delete a sample [NOT TESTED]", position = 9)
     public Response delete(@ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("samples")
                                        String sampleStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -337,7 +337,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{sample}/annotationsets/search")
-    @ApiOperation(value = "Search annotation sets [NOT TESTED]", position = 11)
+    @ApiOperation(value = "Search annotation sets", position = 11)
     public Response searchAnnotationSetGET(
             @ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
@@ -361,7 +361,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{sample}/annotationsets/info")
-    @ApiOperation(value = "Return the annotation sets of the sample [NOT TESTED]", position = 12)
+    @ApiOperation(value = "Return the annotation sets of the sample", position = 12)
     public Response infoAnnotationSetGET(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
                                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                          @QueryParam("study") String studyStr,
@@ -381,7 +381,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{sample}/annotationsets/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create an annotation set for the sample [NOT TESTED]", position = 13)
+    @ApiOperation(value = "Create an annotation set for the sample", position = 13)
     public Response annotateSamplePOST(
             @ApiParam(value = "SampleId", required = true) @PathParam("sample") String sampleStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
@@ -404,7 +404,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{sample}/annotationsets/{annotationsetName}/delete")
-    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [NOT TESTED]", position = 14)
+    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set", position = 14)
     public Response deleteAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
                                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                         @QueryParam("study") String studyStr,
@@ -443,7 +443,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{sample}/annotationsets/{annotationsetName}/info")
-    @ApiOperation(value = "Return the annotation set [NOT TESTED]", position = 16)
+    @ApiOperation(value = "Return the annotation set", position = 16)
     public Response infoAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
                                       @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                       @QueryParam("study") String studyStr,
