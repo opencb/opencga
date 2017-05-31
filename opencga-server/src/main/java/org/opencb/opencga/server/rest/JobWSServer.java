@@ -202,7 +202,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{jobIds}/delete")
-    @ApiOperation(value = "Delete job", position = 4)
+    @ApiOperation(value = "Delete job [NOT TESTED]", position = 4)
     public Response delete(@ApiParam(value = "Comma separated list of job ids or names", required = true) @PathParam("jobIds")
                                        String jobIds,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")

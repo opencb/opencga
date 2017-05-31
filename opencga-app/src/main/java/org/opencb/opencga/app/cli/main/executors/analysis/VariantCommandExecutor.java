@@ -26,7 +26,9 @@ import io.grpc.internal.ManagedChannelImpl;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
 import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.variant.converters.VariantContextToAvroVariantConverter;
 import org.opencb.biodata.tools.variant.converters.VariantContextToProtoVariantConverter;
@@ -42,6 +44,7 @@ import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -100,11 +103,12 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         o.putIfNotNull("load", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.load);
         o.putIfNotNull(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.excludeGenotype);
         o.putIfNotNull("includeExtraFields", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.extraFields);
+        o.putIfNotNull("merge", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.merge);
         o.putIfNotNull("aggregated", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.aggregated);
         o.putIfNotNull(VariantStorageEngine.Options.CALCULATE_STATS.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.calculateStats);
         o.putIfNotNull(VariantStorageEngine.Options.ANNOTATE.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.annotate);
         o.putIfNotNull(VariantStorageEngine.Options.RESUME.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.resume);
-//        o.putIfNotNull("overwrite", variantCommandOptions.indexCommandOptions.overwriteAnnotations);
+        o.putIfNotNull(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.overwriteAnnotations);
         o.putAll(variantCommandOptions.commonCommandOptions.params);
 
 //        return openCGAClient.getFileClient().index(fileIds, o);
@@ -333,7 +337,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
     private void printVcf(VariantQueryResult<Variant> variantQueryResult, Iterator<VariantProto.Variant> variantIterator, String study, List<String> samples, List<String> annotations, PrintStream outputStream) {
 //        logger.debug("Samples from variantQueryResult: {}", variantQueryResult.getSamples());
-
+//
 //        Map<String, List<String>> samplePerStudy = new HashMap<>();
 //        // Aggregated studies do not contain samples
 //        if (variantQueryResult.getSamples() != null) {
@@ -355,7 +359,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 //            if (study.contains(":")) {
 //                study = study.split(":")[1];
 //            } else {
-//                if (clientConfiguration.getAlias().get(study) != null) {
+//                if (clientConfiguration.getAlias() != null && clientConfiguration.getAlias().get(study) != null) {
 //                    study = clientConfiguration.getAlias().get(study);
 //                    if (study.contains(":")) {
 //                        study = study.split(":")[1];
@@ -370,9 +374,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 //            samples = new ArrayList<>();
 //        }
 
-
         // Prepare other VCF fields
-        List<String> cohorts = Arrays.asList("ALL", "MXL");
+        List<String> cohorts = new ArrayList<>(); // Arrays.asList("ALL", "MXL");
         List<String> formats = new ArrayList<>();
         List<String> formatTypes = new ArrayList<>();
         List<Integer> formatArities = new ArrayList<>();
@@ -436,18 +439,22 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         if (variantQueryResult != null) {
             VariantContextToAvroVariantConverter variantContextToAvroVariantConverter = new VariantContextToAvroVariantConverter(study, samples, annotations);
             for (Variant variant : variantQueryResult.getResult()) {
+                // FIXME: This should not be needed! VariantContextToAvroVariantConverter must be fixed
+                if (variant.getStudies().isEmpty()) {
+                    StudyEntry studyEntry = new StudyEntry(study);
+                    studyEntry.getFiles().add(new FileEntry("", null, Collections.emptyMap()));
+                    variant.addStudyEntry(studyEntry);
+                }
+
                 VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
                 variantContextWriter.add(variantContext);
             }
         } else {
             VariantContextToProtoVariantConverter variantContextToProtoVariantConverter = new VariantContextToProtoVariantConverter(study, samples, annotations);
-//            try (PrintStream printStream = new PrintStream(System.out)) {
                 while (variantIterator.hasNext()) {
                     VariantProto.Variant next = variantIterator.next();
-//                    printStream.println(variantContextToProtoVariantConverter.from(next));
                     variantContextWriter.add(variantContextToProtoVariantConverter.from(next));
                 }
-//            }
         }
         variantContextWriter.close();
         outputStream.close();
@@ -475,7 +482,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             if (study.contains(":")) {
                 study = study.split(":")[1];
             } else {
-                if (clientConfiguration.getAlias().get(study) != null) {
+                if (clientConfiguration.getAlias() != null && clientConfiguration.getAlias().get(study) != null) {
                     study = clientConfiguration.getAlias().get(study);
                     if (study.contains(":")) {
                         study = study.split(":")[1];

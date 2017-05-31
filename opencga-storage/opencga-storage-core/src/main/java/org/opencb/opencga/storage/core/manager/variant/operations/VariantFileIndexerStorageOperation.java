@@ -709,7 +709,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             }
 
             if (file.getFormat().equals(File.Format.VCF) || file.getFormat().equals(File.Format.GVCF)) {
-                String status = file.getIndex() == null ? FileIndex.IndexStatus.NONE : file.getIndex().getStatus().getName();
+                String status = file.getIndex() == null || file.getIndex().getStatus() == null ? FileIndex.IndexStatus.NONE
+                        : file.getIndex().getStatus().getName();
                 switch (status) {
                     case FileIndex.IndexStatus.NONE:
                         if (transformedFiles != null) {

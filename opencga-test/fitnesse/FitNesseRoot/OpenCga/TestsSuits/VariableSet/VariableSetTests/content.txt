@@ -49,8 +49,10 @@
 !|Table: Rest Fixture  | $baseURL |
 | GET | /v1/variableset/$variableSetId1/field/delete?sid=$sessionId&name=$vsName1|200| Content-Type : application/json|jsonbody.error == ''|
 
-!3 Delete A UnUsed Variable Set  
+!3 Delete Un-Used Variable Set  
 !|Table: Rest Fixture  | $baseURL |
 | GET | /v1/variableset/$variableSetId1/delete?sid=$sessionId |200| Content-Type : application/json|jsonbody.error == ''|
 
-
+!3 Search Deleted Variable Set  
+!|Table: Rest Fixture  | $baseURL |
+| GET | /v1/variableset/search?sid=$sessionId&study=$study&id=$variableSetId1 |500| Content-Type : application/json|jsonbody.error == 'Variable set $variableSetId1 not found' && jsonbody.response[0].result.length == '0.0'|

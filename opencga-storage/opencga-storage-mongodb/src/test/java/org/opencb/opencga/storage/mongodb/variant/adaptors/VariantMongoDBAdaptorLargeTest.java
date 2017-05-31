@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.mongodb.variant.adaptors;
 import org.junit.After;
 import org.junit.Before;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorLargeTest;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
@@ -45,6 +46,6 @@ public class VariantMongoDBAdaptorLargeTest extends VariantDBAdaptorLargeTest im
 
     @Override
     public ObjectMap getExtraOptions() {
-        return new ObjectMap(MongoDBVariantStorageEngine.MongoDBVariantOptions.MERGE_IGNORE_OVERLAPPING_VARIANTS.key(), true);
+        return new ObjectMap(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
     }
 }
