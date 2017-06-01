@@ -83,7 +83,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
     }
 
     @Override
-    protected void setup(Context context) throws IOException, InterruptedException {
+    public void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
         int cores = context.getConfiguration().getInt(MRJobConfig.MAP_CPU_VCORES, 1);
         int parallelism = ForkJoinPool.getCommonPoolParallelism();
@@ -142,7 +142,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
     }
 
     @Override
-    protected void cleanup(Context context) throws IOException, InterruptedException {
+    public void cleanup(Context context) throws IOException, InterruptedException {
         super.cleanup(context);
     }
 

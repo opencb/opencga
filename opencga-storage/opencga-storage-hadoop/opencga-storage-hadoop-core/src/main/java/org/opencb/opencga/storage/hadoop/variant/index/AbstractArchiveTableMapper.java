@@ -233,7 +233,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
     }
 
     @Override
-    protected final void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
+    public final void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
         logger.info("Start mapping key: " + Bytes.toString(key.get()));
         startStep();
         if (value.isEmpty()) {
