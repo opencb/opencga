@@ -159,6 +159,10 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         return newOutputUri(1, outputUri);
     }
 
+    public URI newOutputUri(int extraCalls) throws IOException {
+        return newOutputUri(1 + extraCalls, outputUri);
+    }
+
     public static URI newOutputUri(int extraCalls, URI outputUri) throws IOException {
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
         // stackTrace[0] = "Thread.currentThread"

@@ -468,7 +468,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         private AtomicBoolean hadFail = new AtomicBoolean();
 
         @Override
-        protected void setup(Context context) throws IOException, InterruptedException {
+        public void setup(Context context) throws IOException, InterruptedException {
             super.setup(context);
 
             hadFail.set(false);

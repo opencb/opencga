@@ -54,11 +54,13 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.AbstractArchiveTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -68,7 +70,8 @@ import java.util.stream.IntStream;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
-import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.*;
+import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariants;
+import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariantsFromVariantsTable;
 
 /**
  * Created on 21/01/16
@@ -84,7 +87,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     // Variants that are wrong in the platinum files that should not be included
     private static final HashSet<String> PLATINUM_SKIP_VARIANTS = new HashSet<>();
-    private Map<String, Boolean> notCollapseDeletions = Collections.singletonMap(HadoopVariantStorageEngine.MERGE_COLLAPSE_DELETIONS, false);
+    private Map<String, Object> notCollapseDeletions = Collections.singletonMap(HadoopVariantStorageEngine.MERGE_COLLAPSE_DELETIONS, false);
 
     @Before
     public void setUp() throws Exception {
@@ -234,14 +237,15 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     @Test
     public void testMultipleFilesConcurrentSpecificPut() throws Exception {
-        testMultipleFilesConcurrent(true);
-    }
-    @Test
-    public void testMultipleFilesConcurrentFullPut() throws Exception {
-        testMultipleFilesConcurrent(false);
+        testMultipleFilesConcurrent(new ObjectMap(HadoopVariantStorageEngine.MERGE_LOAD_SPECIFIC_PUT, true));
     }
 
-    public void testMultipleFilesConcurrent(boolean specificput) throws Exception {
+    @Test
+    public void testMultipleFilesConcurrentFullPut() throws Exception {
+        testMultipleFilesConcurrent(new ObjectMap(HadoopVariantStorageEngine.MERGE_LOAD_SPECIFIC_PUT, false));
+    }
+
+    public void testMultipleFilesConcurrent(ObjectMap extraParams) throws Exception {
 
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
@@ -259,16 +263,16 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         options.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto");
         options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
         options.put(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
-        options.put(AbstractArchiveTableMapper.SPECIFIC_PUT, specificput);
+        options.put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,AD");
+        options.putAll(extraParams);
         List<StoragePipelineResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
 
         for (StoragePipelineResult storagePipelineResult : index) {
             System.out.println(storagePipelineResult);
         }
 
-        try(PrintStream out = new PrintStream(new FileOutputStream(outputUri.resolve("platinum.merged.archive.json").getPath()))){
-            printVariantsFromArchiveTable(dbAdaptor, studyConfiguration, out);
-        }
+        URI outputUri = newOutputUri(1);
+        printVariants(studyConfiguration, dbAdaptor, outputUri);
 
 //        checkLoadedVariants(expectedVariants, dbAdaptor, PLATINUM_SKIP_VARIANTS);
 
@@ -291,7 +295,6 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
             assertNotNull(vcfMeta);
         }
 
-        URI outputUri = newOutputUri();
         FileStudyConfigurationAdaptor.write(studyConfiguration, new File(outputUri.resolve("study_configuration.json").getPath()).toPath());
         try (FileOutputStream out = new FileOutputStream(outputUri.resolve("platinum.merged.vcf").getPath())) {
             VariantVcfDataWriter.htsExport(dbAdaptor.iterator(new Query(), new QueryOptions(QueryOptions.SORT, true)),
@@ -403,6 +406,9 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
                             expected = ".";
                         }
                         String actual = variants.get(key).getStudy(studyName).getSampleData(sample, formatKey);
+                        if (actual.equals("./.")) {
+                            actual = ".";
+                        }
                         if (!expected.equals(actual)) {
                             errors.add("In variant " + key + " wrong " + formatKey + " for sample " + sample + ". Expected: " + expected + ", Actual: " + actual);
                         }
@@ -468,6 +474,24 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     @Test
     public void testPlatinumFilesOneByOne() throws Exception {
+        testPlatinumFilesOneByOne(new ObjectMap(), 4);
+    }
+
+    @Test
+    public void testPlatinumFilesOneByOne_extraFields() throws Exception {
+        testPlatinumFilesOneByOne(new ObjectMap()
+                .append(HadoopVariantStorageEngine.MERGE_ARCHIVE_SCAN_BATCH_SIZE, 2)
+                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ"), 6);
+    }
+
+    @Test
+    public void testPlatinumFilesOneByOne_extraFields_noCollapseDels() throws Exception {
+        testPlatinumFilesOneByOne(new ObjectMap()
+                .append(HadoopVariantStorageEngine.MERGE_COLLAPSE_DELETIONS, false)
+                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ"), 4);
+    }
+
+    public void testPlatinumFilesOneByOne(ObjectMap otherParams, int maxFilesLoaded) throws Exception {
 
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         List<VariantSource> sources = new LinkedList<>();
@@ -477,9 +501,11 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
 
 
-        int maxFilesLoaded = 4;
         for (int fileId = 12877; fileId <= 12893; fileId++) {
-            VariantSource source = loadFile("platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration);
+            ObjectMap params = new ObjectMap();
+            params.putAll(otherParams);
+            String resourceName = "platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz";
+            VariantSource source = loadFile(resourceName, fileId, studyConfiguration, params);
 
             studyConfiguration = scm.getStudyConfiguration(studyConfiguration.getStudyId(), new QueryOptions()).first();
             System.out.println(studyConfiguration);
@@ -488,6 +514,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
             sources.add(source);
             expectedVariants.addAll(variants);
             assertTrue(studyConfiguration.getIndexedFiles().contains(fileId));
+//            printVariants(studyConfiguration, dbAdaptor, newOutputUri());
 
 //            checkLoadedVariants(expectedVariants, dbAdaptor, PLATINUM_SKIP_VARIANTS);
             checkArchiveTableTimeStamp(dbAdaptor);

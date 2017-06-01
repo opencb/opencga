@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
@@ -56,15 +57,17 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
     }
 
     public VariantHBaseScanIterator(ResultScanner resultScanner, GenomeHelper genomeHelper, StudyConfigurationManager scm,
-                                    QueryOptions options) throws IOException {
+                                    QueryOptions options, List<String> returnedSamplesList) throws IOException {
         this.resultScanner = resultScanner;
         this.genomeHelper = genomeHelper;
         iterator = resultScanner.iterator();
         converter = new HBaseToVariantConverter(genomeHelper, scm)
                 .setMutableSamplesPosition(false)
                 .setStudyNameAsStudyId(true)
-                .setSimpleGenotypes(true);
-        setLimit(options.getLong("limit"));
+                .setSimpleGenotypes(true)
+                .setReadFullSamplesData(true)
+                .setReturnedSamples(returnedSamplesList);
+        setLimit(options.getLong(QueryOptions.LIMIT));
     }
 
     @Override
