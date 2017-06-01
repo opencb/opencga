@@ -681,12 +681,6 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         return __returnedSamplesPosition.get(studyConfiguration.getStudyId());
     }
 
-    public static LinkedHashMap<String, Integer> getReturnedSamplesPosition(
-            StudyConfiguration studyConfiguration,
-            LinkedHashSet<String> returnedSamples) {
-        return StudyConfiguration.getReturnedSamplesPosition(studyConfiguration, returnedSamples, StudyConfiguration::getIndexedSamples);
-    }
-
     public static String genotypeToDataModelType(String genotype) {
         return genotype.replace("-1", ".");
     }

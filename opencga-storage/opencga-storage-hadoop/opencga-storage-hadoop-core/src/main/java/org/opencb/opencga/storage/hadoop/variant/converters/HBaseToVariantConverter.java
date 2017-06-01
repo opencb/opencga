@@ -449,8 +449,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     private Integer getSamplePosition(LinkedHashMap<String, Integer> returnedSamplesPosition, BiMap<Integer, String> mapSampleIds,
                                       Integer sampleId) {
         String sampleName = mapSampleIds.get(sampleId);
-        Integer samplePosition = returnedSamplesPosition.get(sampleName);
-        return samplePosition;
+        return returnedSamplesPosition.get(sampleName);
     }
 
     /**
@@ -462,7 +461,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     private LinkedHashMap<String, Integer> getReturnedSamplesPosition(StudyConfiguration studyConfiguration) {
         if (!returnedSamplesPositionMap.containsKey(studyConfiguration.getStudyId())) {
             LinkedHashMap<String, Integer> samplesPosition = StudyConfiguration.getReturnedSamplesPosition(studyConfiguration,
-                    returnedSamples == null ? null : new LinkedHashSet<>(returnedSamples), StudyConfiguration::getIndexedSamples);
+                    returnedSamples == null ? null : new LinkedHashSet<>(returnedSamples), StudyConfiguration::getIndexedSamplesPosition);
             returnedSamplesPositionMap.put(studyConfiguration.getStudyId(), samplesPosition);
         }
         return returnedSamplesPositionMap.get(studyConfiguration.getStudyId());
