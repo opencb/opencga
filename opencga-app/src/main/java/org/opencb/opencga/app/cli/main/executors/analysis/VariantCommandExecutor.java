@@ -22,6 +22,7 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFHeader;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.internal.ManagedChannelImpl;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
 import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
@@ -30,6 +31,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.variant.converters.VariantContextToAvroVariantConverter;
+import org.opencb.biodata.tools.variant.converters.VariantContextToProtoVariantConverter;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
@@ -48,6 +50,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 /**
  * Created by pfurio on 15/08/16.
@@ -188,8 +191,15 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         params.put("histogram", queryCommandOptions.genericVariantQueryOptions.histogram);
         params.put("interval", queryCommandOptions.genericVariantQueryOptions.interval);
 
-        boolean grpc = usingGrpcMode(queryCommandOptions.mode);
+        List<String> annotations = queryCommandOptions.genericVariantQueryOptions.annotations == null
+                ? Collections.singletonList("gene")
+                : Arrays.asList(queryCommandOptions.genericVariantQueryOptions.annotations.split(","));
 
+
+        // Let's hide some STDOUT verbose messages from ManagedChannelImpl class
+        Logger.getLogger(ManagedChannelImpl.class.getName()).setLevel(java.util.logging.Level.WARNING);
+
+        boolean grpc = usingGrpcMode(queryCommandOptions.mode);
         if (!grpc) {
             if (queryCommandOptions.numericOptions.count) {
                 return openCGAClient.getVariantClient().count(params, options);
@@ -202,10 +212,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 if (queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("vcf")
                         || queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("text")) {
                     VariantQueryResult<Variant> variantQueryResult = openCGAClient.getVariantClient().query2(params, options);
-                    List<String> annotations = queryCommandOptions.genericVariantQueryOptions.annotations == null
-                            ? Collections.singletonList("gene")
-                            : Arrays.asList(queryCommandOptions.genericVariantQueryOptions.annotations.split(","));
-                    printVcf(variantQueryResult, queryCommandOptions.study, annotations, System.out);
+
+                    List<String> samples = getSamplesFromVariantQueryResult(variantQueryResult, study);
+                    printVcf(variantQueryResult, null, study, samples, annotations, System.out);
                     return null;
                 } else {
                     return openCGAClient.getVariantClient().query(params, options);
@@ -236,7 +245,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                     .setSessionId(sessionId == null ? "" : sessionId)
                     .build();
 
-            QueryResponse queryResponse;
+            QueryResponse queryResponse = null;
             if (queryCommandOptions.numericOptions.count) {
                 ServiceTypesModel.LongResponse countResponse = variantServiceBlockingStub.count(request);
                 ServiceTypesModel.Response response = countResponse.getResponse();
@@ -248,14 +257,25 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = openCGAClient.getVariantClient().genericQuery(params, options);
             } else {
                 Iterator<VariantProto.Variant> variantIterator = variantServiceBlockingStub.get(request);
-                JsonFormat.Printer printer = JsonFormat.printer();
-                try (PrintStream printStream = new PrintStream(System.out)) {
-                    while (variantIterator.hasNext()) {
-                        VariantProto.Variant next = variantIterator.next();
-                        printStream.println(printer.print(next));
+                if (queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("vcf")
+                        || queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("text")) {
+                    options.put(QueryOptions.SKIP_COUNT, true);
+                    options.put(QueryOptions.LIMIT, 1);
+                    params.put(VariantQueryParam.SAMPLES_METADATA.key(), true);
+                    VariantQueryResult<Variant> variantQueryResult = openCGAClient.getVariantClient().query2(params, options);
+
+                    List<String> samples = getSamplesFromVariantQueryResult(variantQueryResult, study);
+                    printVcf(null, variantIterator, study, samples, annotations, System.out);
+                } else {
+                    JsonFormat.Printer printer = JsonFormat.printer();
+                    try (PrintStream printStream = new PrintStream(System.out)) {
+                        while (variantIterator.hasNext()) {
+                            VariantProto.Variant next = variantIterator.next();
+                            printStream.println(printer.print(next));
+                        }
                     }
+                    queryResponse = null;
                 }
-                queryResponse = null;
             }
             channel.shutdown().awaitTermination(2, TimeUnit.SECONDS);
             return queryResponse;
@@ -315,45 +335,44 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         }
     }
 
-    private void printVcf(VariantQueryResult<Variant> variantQueryResult, String study, List<String> annotations, PrintStream outputStream) {
-        logger.debug("Samples from variantQueryResult: {}", variantQueryResult.getSamples());
-
-        Map<String, List<String>> samplePerStudy = new HashMap<>();
-        // Aggregated studies do not contain samples
-        if (variantQueryResult.getSamples() != null) {
-            // We have to remove the user and project from the Study name
-            variantQueryResult.getSamples().forEach((st, sampleList) -> {
-                String study1 = st.split(":")[1];
-                samplePerStudy.put(study1, sampleList);
-            });
-        }
-
-        // Prepare samples for the VCF header
-        List<String> samples = null;
-        if (StringUtils.isEmpty(study)) {
-            if (samplePerStudy.size() == 1) {
-                study = samplePerStudy.keySet().iterator().next();
-                samples = samplePerStudy.get(study);
-            }
-        } else {
-            if (study.contains(":")) {
-                study = study.split(":")[1];
-            } else {
-                if (clientConfiguration.getAlias() != null && clientConfiguration.getAlias().get(study) != null) {
-                    study = clientConfiguration.getAlias().get(study);
-                    if (study.contains(":")) {
-                        study = study.split(":")[1];
-                    }
-                }
-            }
-            samples = samplePerStudy.get(study);
-        }
-
-        // TODO move this to biodata
-        if (samples == null) {
-            samples = new ArrayList<>();
-        }
-
+    private void printVcf(VariantQueryResult<Variant> variantQueryResult, Iterator<VariantProto.Variant> variantIterator, String study, List<String> samples, List<String> annotations, PrintStream outputStream) {
+//        logger.debug("Samples from variantQueryResult: {}", variantQueryResult.getSamples());
+//
+//        Map<String, List<String>> samplePerStudy = new HashMap<>();
+//        // Aggregated studies do not contain samples
+//        if (variantQueryResult.getSamples() != null) {
+//            // We have to remove the user and project from the Study name
+//            variantQueryResult.getSamples().forEach((st, sampleList) -> {
+//                String study1 = st.split(":")[1];
+//                samplePerStudy.put(study1, sampleList);
+//            });
+//        }
+//
+//        // Prepare samples for the VCF header
+//        List<String> samples = null;
+//        if (StringUtils.isEmpty(study)) {
+//            if (samplePerStudy.size() == 1) {
+//                study = samplePerStudy.keySet().iterator().next();
+//                samples = samplePerStudy.get(study);
+//            }
+//        } else {
+//            if (study.contains(":")) {
+//                study = study.split(":")[1];
+//            } else {
+//                if (clientConfiguration.getAlias() != null && clientConfiguration.getAlias().get(study) != null) {
+//                    study = clientConfiguration.getAlias().get(study);
+//                    if (study.contains(":")) {
+//                        study = study.split(":")[1];
+//                    }
+//                }
+//            }
+//            samples = samplePerStudy.get(study);
+//        }
+//
+//        // TODO move this to biodata
+//        if (samples == null) {
+//            samples = new ArrayList<>();
+//        }
 
         // Prepare other VCF fields
         List<String> cohorts = new ArrayList<>(); // Arrays.asList("ALL", "MXL");
@@ -415,21 +434,68 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         // TODO: modify VcfUtils in biodata project to take into account the formatArities
         VCFHeader vcfHeader = VcfUtils.createVCFHeader(cohorts, annotations, formats, formatTypes, formatDescriptions, samples, null);
         VariantContextWriter variantContextWriter = VcfUtils.createVariantContextWriter(outputStream, vcfHeader.getSequenceDictionary(), null);
-
-        VariantContextToAvroVariantConverter variantContextToAvroVariantConverter = new VariantContextToAvroVariantConverter(study, samples, annotations);
         variantContextWriter.writeHeader(vcfHeader);
-        for (Variant variant : variantQueryResult.getResult()) {
-            // FIXME: This should not be needed! VariantContextToAvroVariantConverter must be fixed
-            if (variant.getStudies().isEmpty()) {
-                StudyEntry studyEntry = new StudyEntry(study);
-                studyEntry.getFiles().add(new FileEntry("", null, Collections.emptyMap()));
-                variant.addStudyEntry(studyEntry);
+
+        if (variantQueryResult != null) {
+            VariantContextToAvroVariantConverter variantContextToAvroVariantConverter = new VariantContextToAvroVariantConverter(study, samples, annotations);
+            for (Variant variant : variantQueryResult.getResult()) {
+                // FIXME: This should not be needed! VariantContextToAvroVariantConverter must be fixed
+                if (variant.getStudies().isEmpty()) {
+                    StudyEntry studyEntry = new StudyEntry(study);
+                    studyEntry.getFiles().add(new FileEntry("", null, Collections.emptyMap()));
+                    variant.addStudyEntry(studyEntry);
+                }
+
+                VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
+                variantContextWriter.add(variantContext);
             }
-            VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
-            variantContextWriter.add(variantContext);
+        } else {
+            VariantContextToProtoVariantConverter variantContextToProtoVariantConverter = new VariantContextToProtoVariantConverter(study, samples, annotations);
+                while (variantIterator.hasNext()) {
+                    VariantProto.Variant next = variantIterator.next();
+                    variantContextWriter.add(variantContextToProtoVariantConverter.from(next));
+                }
         }
         variantContextWriter.close();
         outputStream.close();
     }
 
+    private List<String> getSamplesFromVariantQueryResult(VariantQueryResult<Variant> variantQueryResult, String study) {
+        Map<String, List<String>> samplePerStudy = new HashMap<>();
+        // Aggregated studies do not contain samples
+        if (variantQueryResult.getSamples() != null) {
+            // We have to remove the user and project from the Study name
+            variantQueryResult.getSamples().forEach((st, sampleList) -> {
+                String study1 = st.split(":")[1];
+                samplePerStudy.put(study1, sampleList);
+            });
+        }
+
+        // Prepare samples for the VCF header
+        List<String> samples = null;
+        if (StringUtils.isEmpty(study)) {
+            if (samplePerStudy.size() == 1) {
+                study = samplePerStudy.keySet().iterator().next();
+                samples = samplePerStudy.get(study);
+            }
+        } else {
+            if (study.contains(":")) {
+                study = study.split(":")[1];
+            } else {
+                if (clientConfiguration.getAlias() != null && clientConfiguration.getAlias().get(study) != null) {
+                    study = clientConfiguration.getAlias().get(study);
+                    if (study.contains(":")) {
+                        study = study.split(":")[1];
+                    }
+                }
+            }
+            samples = samplePerStudy.get(study);
+        }
+
+        // TODO move this to biodata
+        if (samples == null) {
+            samples = new ArrayList<>();
+        }
+        return samples;
+    }
 }

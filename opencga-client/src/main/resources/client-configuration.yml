@@ -2,7 +2,8 @@
 logLevel: "INFO"
 logFile: null
 
-sessionDuration: 12000  # number of seconds that session remains open
+# Number of seconds that session remains open without any activity [20 min]
+sessionDuration: 1200
 
 # Default study when -s, --study are empty, e.g. "reference_grch37:1kG_phase3"
 defaultStudy: ""
@@ -12,7 +13,8 @@ defaultStudy: ""
 #  1kg_grch37: hgvauser@reference_grch37:1kG_phase3
 #  1kg_grch38: reference_grch38:1kG_phase3
 
-# The default organism values can be defined here.
+
+# The default organism values can be defined here, this useful when creating a new Project
 organism:
   taxonomyCode: ${OPENCGA.CLIENT.ORGANISM.TAXONOMY_CODE}
   scientificName: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
@@ -27,9 +29,11 @@ rest:
   timeout: ${OPENCGA.CLIENT.REST.TIMEOUT}
   defaultLimit: 2000
 
+
 ## gRPC configuration options
 grpc:
   host: "${OPENCGA.CLIENT.GRPC.HOST}"
+
 
 ## Configure the default behaviour when query variants
 variant:
