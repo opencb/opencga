@@ -437,7 +437,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         variantContextWriter.writeHeader(vcfHeader);
 
         if (variantQueryResult != null) {
-            VariantContextToAvroVariantConverter variantContextToAvroVariantConverter = new VariantContextToAvroVariantConverter(study, samples, annotations);
+            VariantContextToAvroVariantConverter variantContextToAvroVariantConverter = new VariantContextToAvroVariantConverter(study, samples, formats, annotations);
             for (Variant variant : variantQueryResult.getResult()) {
                 // FIXME: This should not be needed! VariantContextToAvroVariantConverter must be fixed
                 if (variant.getStudies().isEmpty()) {
@@ -450,7 +450,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 variantContextWriter.add(variantContext);
             }
         } else {
-            VariantContextToProtoVariantConverter variantContextToProtoVariantConverter = new VariantContextToProtoVariantConverter(study, samples, annotations);
+            VariantContextToProtoVariantConverter variantContextToProtoVariantConverter = new VariantContextToProtoVariantConverter(study, samples, formats, annotations);
                 while (variantIterator.hasNext()) {
                     VariantProto.Variant next = variantIterator.next();
                     variantContextWriter.add(variantContextToProtoVariantConverter.from(next));
