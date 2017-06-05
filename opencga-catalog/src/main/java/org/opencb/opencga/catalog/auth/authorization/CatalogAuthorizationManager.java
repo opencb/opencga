@@ -943,6 +943,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 return (E) studyPermission.getDiseasePanelPermission();
             case MongoDBAdaptorFactory.SAMPLE_COLLECTION:
                 return (E) studyPermission.getSamplePermission();
+            case MongoDBAdaptorFactory.CLINICAL_ANALYSIS_COLLECTION:
+                return (E) studyPermission.getClinicalAnalysisPermission();
             default:
                 throw new CatalogAuthorizationException("Internal error. Entity " + entity + " not found.");
         }
@@ -966,6 +968,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 return new DiseasePanelAclEntry(null, new ArrayList<>());
             case MongoDBAdaptorFactory.SAMPLE_COLLECTION:
                 return new SampleAclEntry(null, new ArrayList<>());
+            case MongoDBAdaptorFactory.CLINICAL_ANALYSIS_COLLECTION:
+                return new ClinicalAnalysisAclEntry(null, new ArrayList<>());
             default:
                 throw new CatalogAuthorizationException("Internal error. Entity " + entity + " not found.");
         }
@@ -1293,6 +1297,45 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             if (!datasetAcl.getPermissions().contains(DatasetAclEntry.DatasetPermissions.VIEW)) {
                 datasetIterator.remove();
             }
+        }
+    }
+
+    @Override
+    public void filterClinicalAnalysis(String userId, long studyId, List<ClinicalAnalysis> clinicalAnalysis) throws CatalogException {
+        if (clinicalAnalysis == null || clinicalAnalysis.isEmpty()) {
+            return;
+        }
+        if (userId.equals(ADMIN)) {
+            return;
+        }
+        if (isStudyOwner(studyId, userId)) {
+            return;
+        }
+
+        Iterator<ClinicalAnalysis> clinicalIterator = clinicalAnalysis.iterator();
+        while (clinicalIterator.hasNext()) {
+            ClinicalAnalysis clinicalAnal = clinicalIterator.next();
+            AbstractManager.MyResourceId resource = new AbstractManager.MyResourceId(userId, studyId, clinicalAnal.getId());
+            ClinicalAnalysisAclEntry clinicalAclEntry =
+                    (ClinicalAnalysisAclEntry) resolvePermissions(resource, MongoDBAdaptorFactory.CLINICAL_ANALYSIS_COLLECTION);
+            if (!clinicalAclEntry.getPermissions().contains(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW)) {
+                clinicalIterator.remove();
+                continue;
+            }
+
+            List<Family> families = Arrays.asList(clinicalAnal.getFamily());
+            filterFamilies(userId, studyId, families);
+            clinicalAnal.setFamily(families.size() > 0 ? families.get(0) : null);
+
+            List<Individual> probands = Arrays.asList(clinicalAnal.getProband());
+            filterIndividuals(userId, studyId, probands);
+            clinicalAnal.setProband(probands.size() > 0 ? probands.get(0) : null);
+
+            List<Sample> samples = Arrays.asList(clinicalAnal.getSample());
+            filterSamples(userId, studyId, samples);
+            clinicalAnal.setSample(samples.size() > 0 ? samples.get(0) : null);
+
+            clinicalAnal.setAcl(null);
         }
     }
 

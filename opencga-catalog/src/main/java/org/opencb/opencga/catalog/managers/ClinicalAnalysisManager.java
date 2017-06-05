@@ -202,4 +202,53 @@ public class ClinicalAnalysisManager extends AbstractManager {
 
         return queryResults;
     }
+
+    public QueryResult<ClinicalAnalysis> search(String studyStr, Query query, QueryOptions options, String sessionId)
+            throws CatalogException {
+        String userId = catalogManager.getUserManager().getId(sessionId);
+        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
+
+        // Check any permission in studies
+        for (Long studyId : studyIds) {
+            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
+        }
+
+        // FIXME: Although the search method is multi-study, we can only use the smart resolutor for one study at the moment.
+        if (query.containsKey("family")) {
+            MyResourceId familyResource = catalogManager.getFamilyManager().getId(query.getString("family"),
+                    Long.toString(studyIds.get(0)), sessionId);
+            query.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY_ID.key(), familyResource.getResourceId());
+            query.remove("family");
+        }
+        if (query.containsKey("sample")) {
+            MyResourceId sampleResource = catalogManager.getSampleManager().getId(query.getString("sample"),
+                    Long.toString(studyIds.get(0)), sessionId);
+            query.put(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE_ID.key(), sampleResource.getResourceId());
+            query.remove("sample");
+        }
+        if (query.containsKey("proband")) {
+            MyResourceId probandResource = catalogManager.getIndividualManager().getId(query.getString("proband"),
+                    Long.toString(studyIds.get(0)), sessionId);
+            query.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_ID.key(), probandResource.getResourceId());
+            query.remove("proband");
+        }
+
+        QueryResult<ClinicalAnalysis> queryResult = null;
+        for (Long studyId : studyIds) {
+            query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+            QueryResult<ClinicalAnalysis> queryResultAux = clinicalDBAdaptor.get(query, options);
+            authorizationManager.filterClinicalAnalysis(userId, studyId, queryResultAux.getResult());
+
+            if (queryResult == null) {
+                queryResult = queryResultAux;
+            } else {
+                queryResult.getResult().addAll(queryResultAux.getResult());
+                queryResult.setNumTotalResults(queryResult.getNumTotalResults() + queryResultAux.getNumTotalResults());
+                queryResult.setDbTime(queryResult.getDbTime() + queryResultAux.getDbTime());
+            }
+        }
+        queryResult.setNumResults(queryResult.getResult().size());
+
+        return queryResult;
+    }
 }
