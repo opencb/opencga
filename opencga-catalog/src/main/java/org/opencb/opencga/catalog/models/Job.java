@@ -104,6 +104,12 @@ public class Job extends AbstractAcl<JobAclEntry> {
                 -1, outDirId, input, output, new ArrayList<>(), params, new HashMap<>(), new HashMap<>(), "", "");
     }
 
+    public Job(String name, String userId, String toolName, String execution, Map<String, String> params) {
+        this(-1, name, userId, toolName, Type.TOOL, TimeUtils.getTime(), "", -1, -1, "", execution, "", "", 0,
+                new JobStatus(JobStatus.PREPARED), -1, -1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
+                params, new HashMap<>(), new HashMap<>(), "", "");
+    }
+
     public Job(String name, String userId, String toolName, String description, String commandLine, long outDirId, List<Long> input) {
         // FIXME: Modify this to take into account both toolName and executable for RC2
         this(-1, name, userId, toolName, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", null, commandLine,

@@ -306,6 +306,24 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
+    public QueryResult<Job> create(String studyStr, String jobName, String toolId, String executionId, Map<String, String> params,
+                                   String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(toolId, "toolId");
+        ParamUtils.checkObj(params, "params");
+        ParamUtils.defaultString(jobName, toolId);
+        String userId = userManager.getId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
+
+        Job job = new Job(jobName, userId, toolId, executionId, params);
+        QueryResult<Job> queryResult = jobDBAdaptor.insert(job, studyId, QueryOptions.empty());
+        auditManager.recordAction(AuditRecord.Resource.job, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+        return queryResult;
+    }
+
+    @Override
     public QueryResult<Job> create(long studyId, String name, String toolName, String description, String executor,
                                    Map<String, String> params, String commandLine, URI tmpOutDirUri, long outDirId,
                                    List<Long> inputFiles, List<Long> outputFiles, Map<String, Object> attributes,

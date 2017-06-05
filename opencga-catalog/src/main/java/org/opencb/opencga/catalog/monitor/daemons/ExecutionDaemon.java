@@ -116,9 +116,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.RUNNING, Job.JobStatus.READY);
 
         try {
-//            catalogManager.getJobManager().update(
-//                    job.getId(), new ObjectMap(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.READY),
-//                    new QueryOptions(), sessionId);
             catalogManager.getJobManager().setStatus(Long.toString(job.getId()), Job.JobStatus.READY, null, sessionId);
         } catch (CatalogException e) {
             logger.error("Could not update job {}. {}", job.getId(), e.getMessage());
@@ -132,9 +129,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         try {
             logger.info("Running job {}" + job.getName());
 
-//            catalogManager.getJobManager().update(
-//                    job.getId(), new ObjectMap(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING),
-//                    new QueryOptions(), sessionId);
             catalogManager.getJobManager().setStatus(Long.toString(job.getId()), Job.JobStatus.RUNNING, null, sessionId);
         } catch (CatalogException e) {
             logger.error("Could not update job {}. {}", job.getId(), e.getMessage());
@@ -156,9 +150,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         logger.info("Updating job {} from {} to {}", commandLine.toString(), Job.JobStatus.PREPARED, Job.JobStatus.QUEUED);
 
         try {
-//            catalogManager.getJobManager().update(
-//                    job.getId(), new ObjectMap(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED),
-//                    new QueryOptions(), sessionId);
             catalogManager.getJobManager().setStatus(Long.toString(job.getId()), Job.JobStatus.QUEUED, null, sessionId);
         } catch (CatalogException e) {
             logger.error("Could not update job {}. {}", job.getId(), e.getMessage());

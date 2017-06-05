@@ -113,6 +113,10 @@ public interface IJobManager extends ResourceManager<Long, Job> {
 
     QueryResult<ObjectMap> visit(long jobId, String sessionId) throws CatalogException;
 
+    QueryResult<Job> create(String studyStr, String jobName, String toolId, String executionId, Map<String, String> params,
+                            String sessionId) throws CatalogException;
+
+
     QueryResult<Job> create(long studyId, String name, String toolName, String description, String executor, Map<String, String> params,
                             String commandLine, URI tmpOutDirUri, long outDirId, List<Long> inputFiles, List<Long> outputFiles,
                             Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, Job.JobStatus status,

@@ -31045,7 +31045,7 @@ SwaggerUi.Views.MainView = Backbone.View.extend({
         // Nacho: this small hack sorts the API endpoints. Old code is left to ensure that new API methods are also displayed
         var apiOrderMap = {"Users": "a", "Projects": "b", "Studies": "c", "Files": "d", "Jobs": "e", "Families (BETA)": "f",
          "Individuals": "g", "Samples": "h", "Cohorts": "i", "VariableSet": "j", "Panels": "k", "Analysis - Alignment": "l",
-         "Analysis - Variant": "m", "Tools": "n", "GA4GH": "o", "test": "z"};
+         "Analysis - Variant": "m", "Analysis - Tool": "n", "GA4GH": "o", "test": "z"};
 
         if (typeof(apiOrderMap[a.name]) != "undefined" && typeof(apiOrderMap[b.name]) != "undefined") {
             return apiOrderMap[a.name].localeCompare(apiOrderMap[b.name]);
