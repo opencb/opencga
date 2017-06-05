@@ -242,6 +242,9 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     // Other parameter that can be queried.
                     case NAME:
                     case TYPE:
+                    case SAMPLE_ID:
+                    case PROBAND_ID:
+                    case FAMILY_ID:
                     case CREATION_DATE:
                     case DESCRIPTION:
                     case STATUS:
