@@ -63,6 +63,7 @@ public abstract class AbstractManager {
     protected final DatasetDBAdaptor datasetDBAdaptor;
     protected final JobDBAdaptor jobDBAdaptor;
     protected final PanelDBAdaptor panelDBAdaptor;
+    protected final ClinicalAnalysisDBAdaptor clinicalDBAdaptor;
 
     @Deprecated
     public AbstractManager(AuthorizationManager authorizationManager, AuditManager auditManager,
@@ -81,6 +82,7 @@ public abstract class AbstractManager {
         this.familyDBAdaptor = catalogDBAdaptorFactory.getCatalogFamilyDBAdaptor();
         this.datasetDBAdaptor = catalogDBAdaptorFactory.getCatalogDatasetDBAdaptor();
         this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
+        this.clinicalDBAdaptor = catalogDBAdaptorFactory.getClinicalAnalysisDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
         this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
         this.catalogManager = null;
@@ -104,6 +106,7 @@ public abstract class AbstractManager {
         this.familyDBAdaptor = catalogDBAdaptorFactory.getCatalogFamilyDBAdaptor();
         this.datasetDBAdaptor = catalogDBAdaptorFactory.getCatalogDatasetDBAdaptor();
         this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
+        this.clinicalDBAdaptor = catalogDBAdaptorFactory.getClinicalAnalysisDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
         this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
         this.catalogManager = catalogManager;
@@ -128,6 +131,7 @@ public abstract class AbstractManager {
         this.familyDBAdaptor = catalogDBAdaptorFactory.getCatalogFamilyDBAdaptor();
         this.datasetDBAdaptor = catalogDBAdaptorFactory.getCatalogDatasetDBAdaptor();
         this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
+        this.clinicalDBAdaptor = catalogDBAdaptorFactory.getClinicalAnalysisDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
         this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
         this.catalogManager = null;

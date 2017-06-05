@@ -31043,12 +31043,18 @@ SwaggerUi.Views.MainView = Backbone.View.extend({
     alpha   : function(a,b){
 
         // Nacho: this small hack sorts the API endpoints. Old code is left to ensure that new API methods are also displayed
-        var apiOrderMap = {"Users": "a", "Projects": "b", "Studies": "c", "Files": "d", "Jobs": "e", "Families (BETA)": "f",
-         "Individuals": "g", "Samples": "h", "Cohorts": "i", "VariableSet": "j", "Panels": "k", "Analysis - Alignment": "l",
-         "Analysis - Variant": "m", "Tools": "n", "GA4GH": "o", "test": "z"};
+        var apiOrderMap = {"Users": 1, "Projects": 2, "Studies": 3, "Files": 4, "Jobs": 5, "Families (BETA)": 6,
+         "Individuals": 7, "Samples": 8, "Cohorts": 9, "Clinical Analysis (BETA)": 10, "VariableSet": 11, "Panels": 12,
+            "Analysis - Alignment": 13, "Analysis - Variant": 14, "Tools": 15, "GA4GH": 16, "test": 17};
 
         if (typeof(apiOrderMap[a.name]) != "undefined" && typeof(apiOrderMap[b.name]) != "undefined") {
-            return apiOrderMap[a.name].localeCompare(apiOrderMap[b.name]);
+            if (apiOrderMap[a.name] > apiOrderMap[b.name]) {
+                return 1;
+            } else if (apiOrderMap[b.name] > apiOrderMap[a.name]) {
+                return -1;
+            } else {
+                return 0;
+            }
         } else {
             // Nacho: this line is the original method implementation, it is left here just in case any new WS is added
             return a.name.localeCompare(b.name);

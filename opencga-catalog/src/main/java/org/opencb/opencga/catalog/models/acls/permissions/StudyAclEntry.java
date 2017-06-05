@@ -63,6 +63,7 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
     private static final int DATASET = 6;
     private static final int DISEASE_PANEL = 7;
     private static final int FAMILY = 8;
+    private static final int CLINICAL_ANALYSIS = 9;
 
     public enum StudyPermissions {
         VIEW_STUDY,
@@ -134,7 +135,13 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         VIEW_PANELS(DiseasePanelAclEntry.DiseasePanelPermissions.VIEW.name(), DISEASE_PANEL),
         WRITE_PANELS(DiseasePanelAclEntry.DiseasePanelPermissions.UPDATE.name(), DISEASE_PANEL),
         DELETE_PANELS(DiseasePanelAclEntry.DiseasePanelPermissions.DELETE.name(), DISEASE_PANEL),
-        SHARE_PANELS(DiseasePanelAclEntry.DiseasePanelPermissions.SHARE.name(), DISEASE_PANEL);
+        SHARE_PANELS(DiseasePanelAclEntry.DiseasePanelPermissions.SHARE.name(), DISEASE_PANEL),
+
+        // CLINICAL ANALYSIS
+        VIEW_CLINICAL_ANALYSIS(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name(), CLINICAL_ANALYSIS),
+        WRITE_CLINICAL_ANALYSIS(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE.name(), CLINICAL_ANALYSIS),
+        DELETE_CLINICAL_ANALYSIS(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.DELETE.name(), CLINICAL_ANALYSIS),
+        SHARE_CLINICAL_ANALYSIS(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.SHARE.name(), CLINICAL_ANALYSIS);
 
         private String permission;
         private int type;
@@ -200,6 +207,13 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         public DiseasePanelAclEntry.DiseasePanelPermissions getDiseasePanelPermission() {
             if (this.type == DISEASE_PANEL) {
                 return DiseasePanelAclEntry.DiseasePanelPermissions.valueOf(this.permission);
+            }
+            return null;
+        }
+
+        public ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions getClinicalAnalysisPermission() {
+            if (this.type == DISEASE_PANEL) {
+                return ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.valueOf(this.permission);
             }
             return null;
         }

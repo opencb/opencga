@@ -184,7 +184,6 @@ public class OpenCGAWSServer {
         queryOptions = new QueryOptions();
 
         parseParams();
-
         // take the time for calculating the whole duration of the call
         startTime = System.currentTimeMillis();
     }
