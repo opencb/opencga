@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.managers.api.ISampleManager;
 import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.OntologyTerm;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
@@ -659,6 +660,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         public String type;
         public String source;
         public boolean somatic;
+        public List<OntologyTerm> ontologyTerms;
         public List<CommonModels.AnnotationSetParams> annotationSets;
         public Map<String, Object> attributes;
     }
@@ -683,7 +685,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             }
 
             return new Sample(-1, name, source, individual != null ? individual.toIndividual(studyStr, studyManager, sessionId) : null,
-                    description, type, somatic, null, annotationSetList, attributes);
+                    description, type, somatic, null, annotationSetList, ontologyTerms, attributes);
         }
     }
 }

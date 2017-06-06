@@ -348,6 +348,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, individualParameters, acceptedMapParams);
 
+        final String[] acceptedObjectParams = {QueryParams.ONTOLOGY_TERMS.key()};
+        filterObjectParams(parameters, individualParameters, acceptedObjectParams);
+
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
             individualParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             individualParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());

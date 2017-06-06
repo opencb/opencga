@@ -524,8 +524,17 @@ class MongoDBUtils {
             if (parameters.containsKey(s)) {
                 Document document = null;
                 try {
-                    document = getMongoDBDocument(parameters.get(s), s);
-                    filteredParams.put(s, document);
+                    if (parameters.get(s) instanceof List<?>) {
+                        List<Object> originalList = parameters.getAsList(s);
+                        List<Document> documentList = new ArrayList<>(originalList.size());
+                        for (Object object : originalList) {
+                            documentList.add(getMongoDBDocument(object, s));
+                        }
+                        filteredParams.put(s, documentList);
+                    } else {
+                        document = getMongoDBDocument(parameters.get(s), s);
+                        filteredParams.put(s, document);
+                    }
                 } catch (CatalogDBException e) {
                     e.printStackTrace();
                 }

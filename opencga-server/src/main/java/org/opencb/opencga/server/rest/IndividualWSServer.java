@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.managers.api.IIndividualManager;
 import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.OntologyTerm;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.core.exception.VersionException;
 
@@ -714,6 +715,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public Individual.LifeStatus lifeStatus;
         public Individual.AffectationStatus affectationStatus;
         public List<CommonModels.AnnotationSetParams> annotationSets;
+        public List<OntologyTerm> ontologyTerms;
         public Map<String, Object> attributes;
 
 
@@ -728,7 +730,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             }
 
             return new Individual(-1, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, population, lifeStatus,
-                    affectationStatus, dateOfBirth, annotationSetList);
+                    affectationStatus, dateOfBirth, annotationSetList, ontologyTerms);
         }
     }
 

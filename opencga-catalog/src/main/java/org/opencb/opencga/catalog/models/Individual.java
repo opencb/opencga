@@ -101,10 +101,10 @@ public class Individual extends Annotable<IndividualAclEntry> {
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
-                String ethnicity, Population population, LifeStatus lifeStatus, AffectationStatus affectationStatus,
-                String dateOfBirth, List<AnnotationSet> annotationSets) {
+                      String ethnicity, Population population, LifeStatus lifeStatus, AffectationStatus affectationStatus,
+                      String dateOfBirth, List<AnnotationSet> annotationSets, List<OntologyTerm> ontologyTermList) {
         this(id, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, population, dateOfBirth, TimeUtils.getTime(),
-                new Status(), lifeStatus, affectationStatus, new LinkedList<>(), new LinkedList<>(), annotationSets,
+                new Status(), lifeStatus, affectationStatus, ontologyTermList, new LinkedList<>(), annotationSets,
                 Collections.emptyMap());
 
         if (sex == null) {

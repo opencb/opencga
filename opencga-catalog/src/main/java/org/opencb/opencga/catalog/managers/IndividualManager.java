@@ -110,7 +110,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
         Individual individual = new Individual(0, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity,
                 new Individual.Population(populationName, populationSubpopulation, populationDescription), lifeStatus, affectationStatus,
-                dateOfBirth, Collections.emptyList());
+                dateOfBirth, Collections.emptyList(), new ArrayList<>());
 
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
 //      auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
@@ -754,6 +754,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                 case POPULATION_DESCRIPTION:
                 case POPULATION_NAME:
                 case POPULATION_SUBPOPULATION:
+                case ONTOLOGY_TERMS:
                 case KARYOTYPIC_SEX:
                 case LIFE_STATUS:
                 case AFFECTATION_STATUS:
