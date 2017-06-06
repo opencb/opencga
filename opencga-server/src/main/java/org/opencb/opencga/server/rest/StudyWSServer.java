@@ -69,7 +69,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create a new study [DEPRECATED]", response = Study.class,
+    @ApiOperation(value = "Create a new study [DEPRECATED]", response = Study.class, hidden = true,
             notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web "
                     + "service is not tested and this can be deprecated in a future version.")
     public Response createStudy(@ApiParam(value = "Project id or alias", required = true) @QueryParam("projectId") String projectIdStr,
@@ -173,7 +173,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/update")
-    @ApiOperation(value = "Update some study attributes [DEPRECATED]", response = Study.class,
+    @ApiOperation(value = "Update some study attributes [DEPRECATED]", response = Study.class, hidden = true,
             notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
                     + "is not tested and this can be deprecated in a future version.")
     public Response update(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
@@ -904,7 +904,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{study}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of users or groups [DEPRECATED]",
+    @ApiOperation(value = "Define a set of permissions for a list of users or groups [DEPRECATED]", hidden = true,
             notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
                     + "/acl/{members}/update entrypoint.")
     public Response createRolePOST(
@@ -923,8 +923,8 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/acl/{memberId}/info")
-    @ApiOperation(value = "Return the set of permissions granted for the user or group [DEPRECATED]", position = 20,
-        notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
+    @ApiOperation(value = "Return the set of permissions granted for the user or group [DEPRECATED]", position = 20, hidden = true,
+            notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
                 + "/acl entrypoint.")
     public Response getAcl(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr,
@@ -1000,7 +1000,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/acl/{memberId}/delete")
-    @ApiOperation(value = "Delete all the permissions granted for the user or group [DEPRECATED]", position = 22,
+    @ApiOperation(value = "Delete all the permissions granted for the user or group [DEPRECATED]", position = 22, hidden = true,
             notes = "DEPRECATED: The usage of this webservice is discouraged. A RESET action has been added to the /acl/{members}/update "
                     + "entrypoint.")
     public Response deleteAcl(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",

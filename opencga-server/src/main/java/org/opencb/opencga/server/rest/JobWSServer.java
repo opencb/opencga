@@ -283,7 +283,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{jobIds}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of members [DEPRECATED]", position = 19,
+    @ApiOperation(value = "Define a set of permissions for a list of members [DEPRECATED]", position = 19, hidden = true,
             notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
                     + "/acl/{members}/update entrypoint.")
     public Response createRolePOST(
@@ -301,7 +301,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{jobId}/acl/{memberId}/info")
-    @ApiOperation(value = "Return the set of permissions granted for the member [DEPRECATED]", position = 20,
+    @ApiOperation(value = "Return the set of permissions granted for the member [DEPRECATED]", position = 20, hidden = true,
             notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
                     + "/acl entrypoint.")
     public Response getAcl(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String jobIdStr,
@@ -369,7 +369,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{jobIds}/acl/{memberId}/delete")
-    @ApiOperation(value = "Remove all the permissions granted for the member [DEPRECATED]", position = 22,
+    @ApiOperation(value = "Remove all the permissions granted for the member [DEPRECATED]", position = 22, hidden = true,
             notes = "DEPRECATED: The usage of this webservice is discouraged. A RESET action has been added to the /acl/{members}/update "
                     + "entrypoint.")
     public Response deleteAcl(@ApiParam(value = "Comma separated list of job ids", required = true) @PathParam("jobIds") String jobIdsStr,
