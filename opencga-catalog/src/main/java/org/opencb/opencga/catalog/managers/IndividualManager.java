@@ -110,7 +110,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
         Individual individual = new Individual(0, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity,
                 new Individual.Population(populationName, populationSubpopulation, populationDescription), lifeStatus, affectationStatus,
-                dateOfBirth, Collections.emptyList(), new ArrayList<>());
+                dateOfBirth, false, Collections.emptyList(), new ArrayList<>());
 
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
 //      auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
@@ -617,6 +617,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         individual.setAnnotationSets(ParamUtils.defaultObject(individual.getAnnotationSets(), Collections.emptyList()));
         individual.setAnnotationSets(AnnotationManager.validateAnnotationSets(individual.getAnnotationSets(), studyDBAdaptor));
         individual.setAttributes(ParamUtils.defaultObject(individual.getAttributes(), Collections.emptyMap()));
+        individual.setSamples(Collections.emptyList());
         individual.setAcl(Collections.emptyList());
         individual.setStatus(new Status());
         individual.setCreationDate(TimeUtils.getTime());
@@ -626,7 +627,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
 
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
-//      auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
         auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.create, AuditRecord.Magnitude.low,
                 queryResult.first().getId(), userId, null, queryResult.first(), null, null);
         return queryResult;

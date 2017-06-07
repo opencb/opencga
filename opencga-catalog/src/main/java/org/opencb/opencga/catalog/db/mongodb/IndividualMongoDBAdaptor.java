@@ -273,7 +273,28 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         }
         qOptions = filterOptions(qOptions, FILTER_ROUTE_INDIVIDUALS);
         QueryResult<Individual> individualQueryResult = individualCollection.find(bson, individualConverter, qOptions);
+        addSamples(individualQueryResult);
         return endQuery("Get Individual", startTime, individualQueryResult.getResult());
+    }
+
+    private void addSamples(QueryResult<Individual> queryResult) {
+        if (queryResult.getNumResults() == 0) {
+            return;
+        }
+
+        QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
+        for (Individual individual : queryResult.getResult()) {
+            if (individual == null || individual.getId() <= 0) {
+                continue;
+            }
+            Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individual.getId());
+            try {
+                QueryResult<Sample> sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+                individual.setSamples(sampleQueryResult.getResult());
+            } catch (CatalogDBException e) {
+                logger.warn("Could not retrieve samples for individual {}", individual.getId(), e);
+            }
+        }
     }
 
     @Override

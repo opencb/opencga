@@ -709,6 +709,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public long motherId;
         public Individual.Sex sex;
         public String ethnicity;
+        public Boolean parentalConsanguinity;
         public Individual.Population population;
         public String dateOfBirth;
         public Individual.KaryotypicSex karyotypicSex;
@@ -730,7 +731,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
             }
 
             return new Individual(-1, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, population, lifeStatus,
-                    affectationStatus, dateOfBirth, annotationSetList, ontologyTerms);
+                    affectationStatus, dateOfBirth, parentalConsanguinity != null ? parentalConsanguinity : false, annotationSetList,
+                    ontologyTerms);
         }
     }
 
