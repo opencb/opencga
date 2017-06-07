@@ -185,6 +185,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "somatic") @QueryParam("somatic") Boolean somatic,
                            @ApiParam(value = "Individual id or name", hidden = true) @QueryParam("individual.id") String individualId,
                            @ApiParam(value = "Individual id or name") @QueryParam("individual") String individual,
+                           @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
                            @ApiParam(value = "Ontology terms") @QueryParam("ontologies") String ontologies,
                            @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
                            @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,

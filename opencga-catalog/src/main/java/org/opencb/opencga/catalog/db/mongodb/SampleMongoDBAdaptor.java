@@ -710,6 +710,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     case ONTOLOGY_TERMS_AGE_OF_ONSET:
                     case ONTOLOGY_TERMS_MODIFIERS:
                     case ANNOTATION_SETS:
+                    case CREATION_DATE:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     default:

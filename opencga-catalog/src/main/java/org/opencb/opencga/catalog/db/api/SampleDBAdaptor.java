@@ -51,6 +51,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
+        CREATION_DATE("creationDate", TEXT, ""),
 
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.

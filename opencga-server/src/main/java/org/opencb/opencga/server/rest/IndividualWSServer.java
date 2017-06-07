@@ -185,6 +185,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                                   Individual.LifeStatus lifeStatus,
                                       @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
                                                   Individual.AffectationStatus affectationStatus,
+                                      @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
                                       @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId")
                                                   String variableSetId,
                                       @ApiParam(value = "Variable set id or name") @QueryParam("variableSet") String variableSet,
