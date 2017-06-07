@@ -92,10 +92,10 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     protected final HBaseCredentials archiveTableCredentials;
     protected final HBaseCredentials variantsTableCredentials;
     protected MRExecutor mrExecutor = null;
-    private final Logger logger = LoggerFactory.getLogger(AbstractHadoopVariantStoragePipeline.class);
+    protected boolean loadArch;
+    protected boolean loadVar;
 
-    // Do not create phoenix indexes. Testing purposes only
-    public static final String SKIP_CREATE_PHOENIX_INDEXES = "skip.create.phoenix.indexes";
+    private final Logger logger = LoggerFactory.getLogger(AbstractHadoopVariantStoragePipeline.class);
 
     public AbstractHadoopVariantStoragePipeline(
             StorageConfiguration configuration, String storageEngineId,
@@ -109,6 +109,16 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         this.dbAdaptor = dbAdaptor;
         this.variantsTableCredentials = dbAdaptor == null ? null : dbAdaptor.getCredentials();
         this.conf = new Configuration(conf);
+
+        loadArch = this.options.getBoolean(HADOOP_LOAD_ARCHIVE, false);
+        loadVar = this.options.getBoolean(HADOOP_LOAD_VARIANT, false);
+
+        if (!loadArch && !loadVar) {
+            loadArch = true;
+            loadVar = true;
+            this.options.put(HADOOP_LOAD_ARCHIVE, loadArch);
+            this.options.put(HADOOP_LOAD_VARIANT, loadVar);
+        }
     }
 
     @Override
@@ -281,15 +291,6 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
     @Override
     public URI preLoad(URI input, URI output) throws StorageEngineException {
-        boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE, false);
-        boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT, false);
-
-        if (!loadArch && !loadVar) {
-            loadArch = true;
-            loadVar = true;
-            options.put(HADOOP_LOAD_ARCHIVE, loadArch);
-            options.put(HADOOP_LOAD_VARIANT, loadVar);
-        }
 
         if (loadArch) {
             super.preLoad(input, output);
@@ -379,9 +380,6 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     }
 
     protected void securePreMerge(StudyConfiguration studyConfiguration, VariantSource source) throws StorageEngineException {
-
-        boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
-        boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
 
         if (loadVar) {
             // Load into variant table
@@ -554,9 +552,6 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         int studyId = getStudyId();
         int fileId = options.getInt(Options.FILE_ID.key());
 
-        boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
-        boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
-
         ArchiveTableHelper.setChunkSize(conf, conf.getInt(ARCHIVE_CHUNK_SIZE, DEFAULT_ARCHIVE_CHUNK_SIZE));
         ArchiveTableHelper.setStudyId(conf, studyId);
 
@@ -668,7 +663,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             }
         }
 
-        if (!options.getBoolean(SKIP_CREATE_PHOENIX_INDEXES, false)) {
+        if (!options.getBoolean(VARIANT_TABLE_INDEXES_SKIP, false)) {
             try {
                 if (options.getString(VariantAnnotationManager.SPECIES, "hsapiens").equalsIgnoreCase("hsapiens")) {
                     List<PhoenixHelper.Column> columns = VariantPhoenixHelper.getHumanPopulationFrequenciesColumns();

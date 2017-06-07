@@ -4,6 +4,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.hadoop.conf.Configuration;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.converters.proto.VcfSliceToVariantListConverter;
 import org.opencb.commons.ProgressLogger;
@@ -29,7 +30,6 @@ import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
@@ -65,8 +65,9 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
                                                   HBaseCredentials archiveCredentials, VariantReaderUtils variantReaderUtils,
                                                   ObjectMap options) {
         super(configuration, storageEngineId, dbAdaptor, mrExecutor, conf, archiveCredentials, variantReaderUtils, options);
+        loadArch = loadArch | loadVar;
+        loadVar = false;
     }
-
 
 
     @Override
@@ -150,12 +151,16 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
     }
 
     @Override
-    protected void preMerge(URI input) throws StorageEngineException {
+    protected void securePreMerge(StudyConfiguration studyConfiguration, VariantSource source) throws StorageEngineException {
     }
 
     @Override
     public void merge(int studyId, List<Integer> pendingFiles) throws StorageEngineException {
-        logger.info("Skip merge step");
+        logger.info("Nothing else to merge!");
+    }
+
+    @Override
+    protected void securePostMerge(List<Integer> fileIds, StudyConfiguration studyConfiguration) {
     }
 
     @Override
@@ -167,10 +172,6 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
             fileIds = Collections.emptyList();
         }
         return fileIds;
-    }
-
-    @Override
-    protected void securePostMerge(List<Integer> fileIds, StudyConfiguration studyConfiguration) {
     }
 
     protected static class GroupedVariantsTask implements Task<ImmutablePair<Long, List<Variant>>, VcfSlice> {

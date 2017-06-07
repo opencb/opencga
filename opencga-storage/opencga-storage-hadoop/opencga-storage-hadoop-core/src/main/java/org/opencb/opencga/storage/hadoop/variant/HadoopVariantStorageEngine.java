@@ -126,6 +126,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     // Variant table configuration
     public static final String VARIANT_TABLE_COMPRESSION = "opencga.variant.table.compression";
     public static final String VARIANT_TABLE_PRESPLIT_SIZE = "opencga.variant.table.presplit.size";
+    // Do not create phoenix indexes. Testing purposes only
+    public static final String VARIANT_TABLE_INDEXES_SKIP = "opencga.variant.table.indexes.skip";
 
     // Archive table configuration
     public static final String ARCHIVE_TABLE_PREFIX = "opencga.storage.hadoop.variant.archive.table.prefix";
@@ -192,7 +194,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         for (URI inputFile : inputFiles) {
             //Provide a connected storageETL if load is required.
 
-            VariantStoragePipeline storageETL = newStorageETL(doLoad, new ObjectMap(extraOptions));
+            VariantStoragePipeline storageETL = newStoragePipeline(doLoad, new ObjectMap(extraOptions));
             futures.add(executorService.submit(() -> {
                 try {
                     Thread.currentThread().setName(Paths.get(inputFile).getFileName().toString());
@@ -286,8 +288,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                                 .append(HADOOP_LOAD_ARCHIVE, false)
                                 .append(HADOOP_LOAD_VARIANT, true)
                                 .append(HADOOP_LOAD_VARIANT_PENDING_FILES, filesToMerge);
-
-                        AbstractHadoopVariantStoragePipeline localEtl = newStorageETL(doLoad, extraOptions);
+                        AbstractHadoopVariantStoragePipeline localEtl = newStoragePipeline(doLoad, extraOptions);
 
                         int studyId = getOptions().getInt(Options.STUDY_ID.key());
                         localEtl.preLoad(inputFiles.get(i), outdirUri);
@@ -322,7 +323,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public AbstractHadoopVariantStoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException {
-        return newStorageETL(connected, null);
+        return newStoragePipeline(connected, null);
     }
 
     @Override
@@ -335,7 +336,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         return new HadoopDefaultVariantStatisticsManager(getDBAdaptor());
     }
 
-    public AbstractHadoopVariantStoragePipeline newStorageETL(boolean connected, Map<? extends String, ?> extraOptions)
+    public AbstractHadoopVariantStoragePipeline newStoragePipeline(boolean connected, Map<? extends String, ?> extraOptions)
             throws StorageEngineException {
         ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
         if (extraOptions != null) {
