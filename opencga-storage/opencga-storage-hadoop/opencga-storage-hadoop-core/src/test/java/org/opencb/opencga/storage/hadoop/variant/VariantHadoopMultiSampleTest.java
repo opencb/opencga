@@ -244,6 +244,13 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     public void testMultipleFilesConcurrentFullPut() throws Exception {
         testMultipleFilesConcurrent(new ObjectMap(HadoopVariantStorageEngine.MERGE_LOAD_SPECIFIC_PUT, false));
     }
+    @Test
+    public void testMultipleFilesConcurrentMergeBasic() throws Exception {
+        testMultipleFilesConcurrent(new ObjectMap(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
+                .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
+                .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_BATCH_SIZE, 1)
+                .append(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE_BATCH_SIZE, 1));
+    }
 
     public void testMultipleFilesConcurrent(ObjectMap extraParams) throws Exception {
 
@@ -491,6 +498,15 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
                 .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ"), 4);
     }
 
+    @Test
+    public void testPlatinumFilesOneByOne_MergeBasic() throws Exception {
+        testPlatinumFilesOneByOne(new ObjectMap()
+                .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
+                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
+                .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT, false)
+                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ"), 20);
+    }
+
     public void testPlatinumFilesOneByOne(ObjectMap otherParams, int maxFilesLoaded) throws Exception {
 
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
@@ -658,6 +674,9 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         GenomeHelper helper = dbAdaptor.getGenomeHelper();
 
+        if (studyConfiguration.getBatches().isEmpty()) {
+            return;
+        }
         long ts = studyConfiguration.getBatches().get(studyConfiguration.getBatches().size() - 1).getTimestamp();
 
         hm.act(tableName, table -> {

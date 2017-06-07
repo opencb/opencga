@@ -75,9 +75,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPInputStream;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.checkOperator;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isValidParam;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.splitValue;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 /**
  * Created by mh719 on 16/06/15.
@@ -112,6 +110,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String MERGE_COLLAPSE_DELETIONS      = "opencga.storage.hadoop.hbase.merge.collapse-deletions";
     public static final boolean DEFAULT_MERGE_COLLAPSE_DELETIONS = true;
     public static final String MERGE_LOAD_SPECIFIC_PUT       = "opencga.storage.hadoop.hbase.merge.use_specific_put";
+//    public static final String MERGE_LOAD_STUDY_COLUMNS      = "opencga.storage.hadoop.hbase.merge.study_columns";
     public static final String MERGE_LOAD_SAMPLE_COLUMNS     = "opencga.storage.hadoop.hbase.merge.sample_columns";
     public static final boolean DEFAULT_MERGE_LOAD_SAMPLE_COLUMNS = true;
 
@@ -342,16 +341,21 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         if (extraOptions != null) {
             options.putAll(extraOptions);
         }
+        MergeMode mergeMode = MergeMode.from(options);
         boolean directLoad = options.getBoolean(HADOOP_LOAD_DIRECT, HADOOP_LOAD_DIRECT_DEFAULT);
         VariantHadoopDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
         Configuration hadoopConfiguration = null == dbAdaptor ? null : dbAdaptor.getConfiguration();
         hadoopConfiguration = hadoopConfiguration == null ? getHadoopConfiguration(options) : hadoopConfiguration;
         hadoopConfiguration.setIfUnset(ARCHIVE_TABLE_COMPRESSION, Algorithm.SNAPPY.getName());
 
-        HBaseCredentials archiveCredentials = buildCredentials(getArchiveTableName(options.getInt(Options.STUDY_ID.key()), options));
+        int studyId = options.getInt(Options.STUDY_ID.key());
+        HBaseCredentials archiveCredentials = buildCredentials(getArchiveTableName(studyId, options));
 
-        AbstractHadoopVariantStoragePipeline storageETL = null;
-        if (directLoad) {
+        AbstractHadoopVariantStoragePipeline storageETL;
+        if (mergeMode.equals(MergeMode.BASIC)) {
+            storageETL = new HadoopMergeBasicVariantStoragePipeline(configuration, storageEngineId, dbAdaptor, getMRExecutor(options),
+                    hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
+        } else if (directLoad) {
             storageETL = new HadoopDirectVariantStoragePipeline(configuration, storageEngineId, dbAdaptor, getMRExecutor(options),
                     hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
         } else {

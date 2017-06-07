@@ -47,7 +47,7 @@ public class HadoopVariantStoragePipeline extends AbstractHadoopVariantStoragePi
             VariantHadoopDBAdaptor dbAdaptor, MRExecutor mrExecutor,
             Configuration conf, HBaseCredentials archiveCredentials,
             VariantReaderUtils variantReaderUtils, ObjectMap options) {
-        super(configuration, storageEngineId, LoggerFactory.getLogger(HadoopVariantStoragePipeline.class), dbAdaptor, variantReaderUtils,
+        super(configuration, storageEngineId, dbAdaptor, variantReaderUtils,
                 options, archiveCredentials, mrExecutor, conf);
     }
 

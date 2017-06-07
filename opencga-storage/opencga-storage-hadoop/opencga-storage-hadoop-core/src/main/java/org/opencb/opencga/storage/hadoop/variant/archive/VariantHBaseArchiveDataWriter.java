@@ -33,19 +33,19 @@ import java.util.List;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
-public class VariantHbasePutTask implements DataWriter<VcfSlice> {
-    protected final Logger logger = LoggerFactory.getLogger(VariantHbasePutTask.class);
+public class VariantHBaseArchiveDataWriter implements DataWriter<VcfSlice> {
+    protected final Logger logger = LoggerFactory.getLogger(VariantHBaseArchiveDataWriter.class);
     private final ArchiveTableHelper helper;
     private final TableName tableName;
     private final HBaseManager hBaseManager;
     private boolean closeHBaseManager;
     private BufferedMutator tableMutator;
 
-    public VariantHbasePutTask(ArchiveTableHelper helper, String tableName) {
+    public VariantHBaseArchiveDataWriter(ArchiveTableHelper helper, String tableName) {
         this(helper, tableName, null);
     }
 
-    public VariantHbasePutTask(ArchiveTableHelper helper, String tableName, HBaseManager hBaseManager) {
+    public VariantHBaseArchiveDataWriter(ArchiveTableHelper helper, String tableName, HBaseManager hBaseManager) {
         this.helper = helper;
         this.tableName = TableName.valueOf(tableName);
         if (hBaseManager == null) {

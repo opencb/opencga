@@ -34,7 +34,6 @@ import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
-import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConverter;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -99,7 +98,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     public static final String SKIP_CREATE_PHOENIX_INDEXES = "skip.create.phoenix.indexes";
 
     public AbstractHadoopVariantStoragePipeline(
-            StorageConfiguration configuration, String storageEngineId, Logger logger,
+            StorageConfiguration configuration, String storageEngineId,
             VariantHadoopDBAdaptor dbAdaptor,
             VariantReaderUtils variantReaderUtils, ObjectMap options,
             HBaseCredentials archiveCredentials, MRExecutor mrExecutor,
@@ -188,17 +187,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
             // Use a supplier to avoid concurrent modifications of non thread safe objects.
             Supplier<ParallelTaskRunner.TaskWithException<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice, ?>> supplier =
-                    () -> {
-                        VariantToVcfSliceConverter converter = new VariantToVcfSliceConverter();
-                        return batch -> {
-                            List<VcfSliceProtos.VcfSlice> slices = new ArrayList<>(batch.size());
-                            for (ImmutablePair<Long, List<Variant>> pair : batch) {
-                                slices.add(converter.convert(pair.getRight(), pair.getLeft().intValue()));
-                                progressLogger.increment(pair.getRight().size());
-                            }
-                            return slices;
-                        };
-                    };
+                    () -> new VariantToVcfSliceConverterTask(progressLogger);
 
             ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
                     .setNumTasks(options.getInt(Options.TRANSFORM_THREADS.key(), 1))
@@ -292,8 +281,8 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
     @Override
     public URI preLoad(URI input, URI output) throws StorageEngineException {
-        boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
-        boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
+        boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE, false);
+        boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT, false);
 
         if (!loadArch && !loadVar) {
             loadArch = true;
@@ -365,30 +354,15 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             boolean loadSampleColumns = getOptions().getBoolean(MERGE_LOAD_SAMPLE_COLUMNS, DEFAULT_MERGE_LOAD_SAMPLE_COLUMNS);
             studyConfiguration.getAttributes().put(MERGE_LOAD_SAMPLE_COLUMNS, loadSampleColumns);
         }
+        MergeMode mergeMode;
+        if (!studyConfiguration.getAttributes().containsKey(Options.MERGE_MODE.key())) {
+            mergeMode = MergeMode.from(options);
+            studyConfiguration.getAttributes().put(Options.MERGE_MODE.key(), mergeMode);
+        }
     }
 
     protected void preMerge(URI input) throws StorageEngineException {
         int studyId = getStudyId();
-
-        VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
-        try {
-            Connection jdbcConnection = dbAdaptor.getJdbcConnection();
-            String tableName = variantsTableCredentials.getTable();
-            phoenixHelper.registerNewStudy(jdbcConnection, tableName, studyId);
-            if (!options.getBoolean(SKIP_CREATE_PHOENIX_INDEXES, false)) {
-                if (options.getString(VariantAnnotationManager.SPECIES, "hsapiens").equalsIgnoreCase("hsapiens")) {
-                    List<PhoenixHelper.Column> columns = VariantPhoenixHelper.getHumanPopulationFrequenciesColumns();
-                    phoenixHelper.getPhoenixHelper().addMissingColumns(jdbcConnection, tableName, columns, true);
-                    List<PhoenixHelper.Index> popFreqIndices = VariantPhoenixHelper.getPopFreqIndices(tableName);
-                    phoenixHelper.getPhoenixHelper().createIndexes(jdbcConnection, tableName, popFreqIndices, false);
-                }
-                phoenixHelper.createVariantIndexes(jdbcConnection, tableName);
-            } else {
-                logger.info("Skip create indexes!!");
-            }
-        } catch (SQLException e) {
-            throw new StorageEngineException("Unable to register study in Phoenix", e);
-        }
 
         long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
 
@@ -674,44 +648,81 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
     @Override
     public URI postLoad(URI input, URI output) throws StorageEngineException {
-        if (options.getBoolean(HADOOP_LOAD_VARIANT)) {
-            List<Integer> fileIds = options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES);
-            options.put(VariantStorageEngine.Options.FILE_ID.key(), fileIds);
-            // Current StudyConfiguration may be outdated. Force fetch.
-            StudyConfiguration studyConfiguration = getStudyConfiguration(true);
-
-            if (studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SAMPLE_COLUMNS)) {
-                VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
-                try {
-                    Connection jdbcConnection = dbAdaptor.getJdbcConnection();
-                    String tableName = variantsTableCredentials.getTable();
-
-                    Set<Integer> previouslyIndexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration).values();
-                    Set<Integer> newSamples = new HashSet<>();
-                    for (Integer fileId : fileIds) {
-                        for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
-                            if (!previouslyIndexedSamples.contains(sampleId)) {
-                                newSamples.add(sampleId);
-                            }
-                        }
-                    }
-
-                    phoenixHelper.registerNewSamples(jdbcConnection, tableName, studyConfiguration.getStudyId(), newSamples);
-                } catch (SQLException e) {
-                    throw new StorageEngineException("Error registering new samples", e);
-                }
-            }
-
-            return super.postLoad(input, output);
-        } else {
+        final List<Integer> fileIds = getLoadedFiles();
+        if (fileIds.isEmpty()) {
             logger.debug("Skip post load");
             return input;
         }
+
+        // Current StudyConfiguration may be outdated. Force fetch.
+        StudyConfiguration studyConfiguration = getStudyConfiguration(true);
+
+        VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
+        Connection jdbcConnection = dbAdaptor.getJdbcConnection();
+        String tableName = variantsTableCredentials.getTable();
+        if (MergeMode.from(studyConfiguration.getAttributes()).equals(MergeMode.ADVANCED)) {
+            try {
+                phoenixHelper.registerNewStudy(jdbcConnection, tableName, studyConfiguration.getStudyId());
+            } catch (SQLException e) {
+                throw new StorageEngineException("Unable to register study in Phoenix", e);
+            }
+        }
+
+        if (!options.getBoolean(SKIP_CREATE_PHOENIX_INDEXES, false)) {
+            try {
+                if (options.getString(VariantAnnotationManager.SPECIES, "hsapiens").equalsIgnoreCase("hsapiens")) {
+                    List<PhoenixHelper.Column> columns = VariantPhoenixHelper.getHumanPopulationFrequenciesColumns();
+                    phoenixHelper.getPhoenixHelper().addMissingColumns(jdbcConnection, tableName, columns, true);
+                    List<PhoenixHelper.Index> popFreqIndices = VariantPhoenixHelper.getPopFreqIndices(tableName);
+                    phoenixHelper.getPhoenixHelper().createIndexes(jdbcConnection, tableName, popFreqIndices, false);
+                }
+                phoenixHelper.createVariantIndexes(jdbcConnection, tableName);
+            } catch (SQLException e) {
+                throw new StorageEngineException("Unable to create Phoenix Indexes", e);
+            }
+        } else {
+            logger.info("Skip create indexes!!");
+        }
+
+        if (studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SAMPLE_COLUMNS)) {
+            try {
+                Set<Integer> previouslyIndexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration).values();
+                Set<Integer> newSamples = new HashSet<>();
+                for (Integer fileId : fileIds) {
+                    for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
+                        if (!previouslyIndexedSamples.contains(sampleId)) {
+                            newSamples.add(sampleId);
+                        }
+                    }
+                }
+                phoenixHelper.registerNewSamples(jdbcConnection, tableName, studyConfiguration.getStudyId(), newSamples);
+            } catch (SQLException e) {
+                throw new StorageEngineException("Unable to register samples in Phoenix", e);
+            }
+        }
+
+
+        return super.postLoad(input, output);
+    }
+
+    protected List<Integer> getLoadedFiles() {
+        List<Integer> fileIds;
+        if (options.getBoolean(HADOOP_LOAD_VARIANT)) {
+            fileIds = options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES);
+            options.put(Options.FILE_ID.key(), fileIds);
+        } else {
+            fileIds = Collections.emptyList();
+        }
+        return fileIds;
     }
 
     @Override
     public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
         super.securePostLoad(fileIds, studyConfiguration);
+        securePostMerge(fileIds, studyConfiguration);
+    }
+
+    protected void securePostMerge(List<Integer> fileIds, StudyConfiguration studyConfiguration) {
         BatchFileOperation.Status status = dbAdaptor.getStudyConfigurationManager()
                 .setStatus(studyConfiguration, BatchFileOperation.Status.READY, VariantTableDriver.JOB_OPERATION_NAME, fileIds);
         if (status != BatchFileOperation.Status.DONE) {
