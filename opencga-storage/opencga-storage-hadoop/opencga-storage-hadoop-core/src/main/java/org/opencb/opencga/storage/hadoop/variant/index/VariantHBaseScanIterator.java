@@ -47,17 +47,8 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
     private long limit = Long.MAX_VALUE;
     private long count = 0;
 
-    public VariantHBaseScanIterator(ResultScanner resultScanner, VariantTableHelper variantTableHelper, QueryOptions options)
-            throws IOException {
-        this.resultScanner = resultScanner;
-        this.genomeHelper = variantTableHelper;
-        iterator = resultScanner.iterator();
-        converter = new HBaseToVariantConverter(variantTableHelper);
-        setLimit(options.getLong("limit"));
-    }
-
     public VariantHBaseScanIterator(ResultScanner resultScanner, GenomeHelper genomeHelper, StudyConfigurationManager scm,
-                                    QueryOptions options, List<String> returnedSamplesList) throws IOException {
+                                    QueryOptions options, List<String> returnedSamplesList, String unknownGenotype) throws IOException {
         this.resultScanner = resultScanner;
         this.genomeHelper = genomeHelper;
         iterator = resultScanner.iterator();
@@ -66,6 +57,7 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
                 .setStudyNameAsStudyId(true)
                 .setSimpleGenotypes(true)
                 .setReadFullSamplesData(true)
+                .setUnknownGenotype(unknownGenotype)
                 .setReturnedSamples(returnedSamplesList);
         setLimit(options.getLong(QueryOptions.LIMIT));
     }

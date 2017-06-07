@@ -475,9 +475,9 @@ public class VariantTableStudyRow {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        if (studyIds.isEmpty()) {
-            throw new IllegalStateException("No studies found!!!");
-        }
+//        if (studyIds.isEmpty()) {
+//            throw new IllegalStateException("No studies found!!!");
+//        }
         List<VariantTableStudyRow> rows = new ArrayList<>(studyIds.size());
         for (Integer studyId : studyIds) {
             Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow());

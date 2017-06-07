@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant.converters;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.BiMap;
+import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Result;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -34,6 +35,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -64,6 +66,7 @@ import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPho
  */
 public class HBaseToVariantConverter {
 
+    private static final String UNKNOWN_GENOTYPE = "?/?";
     private final StudyConfigurationManager scm;
     private final HBaseToVariantAnnotationConverter annotationConverter;
     private final HBaseToVariantStatsConverter statsConverter;
@@ -83,6 +86,7 @@ public class HBaseToVariantConverter {
     private boolean simpleGenotypes = false;
     private boolean readFullSamplesData = true;
     private Set<VariantField> variantFields = null;
+    private String unknownGenotype = UNKNOWN_GENOTYPE;
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
         this(variantTableHelper, new StudyConfigurationManager(
@@ -153,6 +157,15 @@ public class HBaseToVariantConverter {
 
     public HBaseToVariantConverter setReadFullSamplesData(boolean readFullSamplesData) {
         this.readFullSamplesData = readFullSamplesData;
+        return this;
+    }
+
+    public HBaseToVariantConverter setUnknownGenotype(String unknownGenotype) {
+        if (StringUtils.isEmpty(unknownGenotype)) {
+            this.unknownGenotype = UNKNOWN_GENOTYPE;
+        } else {
+            this.unknownGenotype = unknownGenotype;
+        }
         return this;
     }
 
@@ -282,9 +295,10 @@ public class HBaseToVariantConverter {
                 List<String> defaultSampleData = new ArrayList<>(format.size());
                 for (String f : format) {
                     if (f.equals(VariantMerger.GT_KEY)) {
-                        defaultSampleData.add("0/0"); // Read from default genotype
+                        String defaultGenotype = getDefaultGenotype(studyConfiguration);
+                        defaultSampleData.add(defaultGenotype); // Read from default genotype
                     } else {
-                        defaultSampleData.add(".");
+                        defaultSampleData.add(VCFConstants.MISSING_VALUE_v4);
                     }
                 }
                 for (int i = 0; i < samplesDataArray.length; i++) {
@@ -415,6 +429,16 @@ public class HBaseToVariantConverter {
         return variant;
     }
 
+    private String getDefaultGenotype(StudyConfiguration studyConfiguration) {
+        String defaultGenotype;
+        if (VariantStorageEngine.MergeMode.from(studyConfiguration.getAttributes()).equals(VariantStorageEngine.MergeMode.ADVANCED)) {
+            defaultGenotype = "0/0";
+        } else {
+            defaultGenotype = unknownGenotype;
+        }
+        return defaultGenotype;
+    }
+
     private List<AlternateCoordinate> getAlternateCoordinates(Variant variant, Integer studyId, Map<Integer, VariantTableStudyRow> rowsMap,
                                                               Map<Integer, Map<Integer, List<String>>> fullSamplesData) {
         List<AlternateCoordinate> secAltArr;
@@ -437,7 +461,8 @@ public class HBaseToVariantConverter {
                 }
             }
         } else {
-            throw new IllegalArgumentException("Missing study " + studyId);
+//            throw new IllegalArgumentException("Missing study " + studyId);
+            secAltArr = Collections.emptyList();
         }
         return secAltArr;
     }

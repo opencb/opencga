@@ -402,8 +402,12 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             try {
                 Table table = getConnection().getTable(TableName.valueOf(variantTable));
                 ResultScanner resScan = table.getScanner(scan);
+                String unknownGenotype = null;
+                if (isValidParam(query, UNKNOWN_GENOTYPE)) {
+                    unknownGenotype = query.getString(UNKNOWN_GENOTYPE.key());
+                }
                 return new VariantHBaseScanIterator(resScan, genomeHelper, studyConfigurationManager.get(), options,
-                        getReturnedSamplesList(query, options));
+                        getReturnedSamplesList(query, options), unknownGenotype);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -425,8 +429,12 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 ResultSet resultSet = statement.executeQuery(sql); // RS closed by iterator
                 Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
                 List<String> returnedSamples = getReturnedSamplesList(query, returnedFields);
+                String unknownGenotype = null;
+                if (isValidParam(query, UNKNOWN_GENOTYPE)) {
+                    unknownGenotype = query.getString(UNKNOWN_GENOTYPE.key());
+                }
                 VariantHBaseResultSetIterator iterator = new VariantHBaseResultSetIterator(statement,
-                        resultSet, genomeHelper, getStudyConfigurationManager(), returnedSamples, returnedFields, options);
+                        resultSet, genomeHelper, getStudyConfigurationManager(), returnedSamples, returnedFields, unknownGenotype, options);
 
                 if (clientSideSkip) {
                     // Client side skip!
