@@ -82,20 +82,9 @@ public class Individual extends Annotable<IndividualAclEntry> {
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Population population,
                       Status status, List<IndividualAclEntry> acl, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, fatherId, motherId, family, sex, KaryotypicSex.UNKNOWN, ethnicity, population, "", TimeUtils.getTime(), status,
+        this(id, name, fatherId, motherId, family, sex, null, ethnicity, population, "", TimeUtils.getTime(), status,
                 false, LifeStatus.UNKNOWN, AffectationStatus.UNKNOWN, Collections.emptyList(), new ArrayList<>(), acl, annotationSets,
                 attributes);
-
-        if (sex == null) {
-            this.sex = Sex.UNKNOWN;
-        }
-        if (this.sex.equals(Sex.MALE)) {
-            this.karyotypicSex = KaryotypicSex.XY;
-        } else if (this.sex.equals(Sex.FEMALE)) {
-            this.karyotypicSex = KaryotypicSex.XX;
-        } else {
-            this.karyotypicSex = KaryotypicSex.UNKNOWN;
-        }
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
@@ -105,15 +94,6 @@ public class Individual extends Annotable<IndividualAclEntry> {
         this(id, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, population, dateOfBirth, TimeUtils.getTime(),
                 new Status(), parentalConsanguinity, lifeStatus, affectationStatus, ontologyTermList, new ArrayList<>(), new LinkedList<>(),
                 annotationSets, Collections.emptyMap());
-
-        if (sex == null) {
-            this.sex = Sex.UNKNOWN;
-        }
-
-        if (karyotypicSex == null) {
-            this.karyotypicSex = KaryotypicSex.UNKNOWN;
-        }
-
         if (population == null) {
             new Population();
         }

@@ -64,6 +64,22 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     protected static Logger logger = LoggerFactory.getLogger(IndividualManager.class);
     private IUserManager userManager;
 
+    private static final Map<Individual.KaryotypicSex, Individual.Sex> KARYOTYPIC_SEX_SEX_MAP;
+    static {
+        KARYOTYPIC_SEX_SEX_MAP = new HashMap<>();
+        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.UNKNOWN, Individual.Sex.UNKNOWN);
+        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.XX, Individual.Sex.FEMALE);
+        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.XO, Individual.Sex.FEMALE);
+        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.XXX, Individual.Sex.FEMALE);
+        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.XXXX, Individual.Sex.FEMALE);
+        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.XY, Individual.Sex.MALE);
+        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.XXY, Individual.Sex.MALE);
+        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.XXYY, Individual.Sex.MALE);
+        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.XXXY, Individual.Sex.MALE);
+        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.XYY, Individual.Sex.MALE);
+        KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.OTHER, Individual.Sex.UNDETERMINED);
+    }
+
     @Deprecated
     public IndividualManager(AuthorizationManager authorizationManager, AuditManager auditManager,
                              DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
@@ -605,12 +621,10 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         ParamUtils.checkAlias(individual.getName(), "name", configuration.getCatalog().getOffset());
-        individual.setSex(ParamUtils.defaultObject(individual.getSex(), Individual.Sex.UNKNOWN));
         individual.setFamily(ParamUtils.defaultObject(individual.getFamily(), ""));
         individual.setEthnicity(ParamUtils.defaultObject(individual.getEthnicity(), ""));
         individual.setSpecies(ParamUtils.defaultObject(individual.getSpecies(), Individual.Species::new));
         individual.setPopulation(ParamUtils.defaultObject(individual.getPopulation(), Individual.Population::new));
-        individual.setKaryotypicSex(ParamUtils.defaultObject(individual.getKaryotypicSex(), Individual.KaryotypicSex.UNKNOWN));
         individual.setLifeStatus(ParamUtils.defaultObject(individual.getLifeStatus(), Individual.LifeStatus.UNKNOWN));
         individual.setAffectationStatus(ParamUtils.defaultObject(individual.getAffectationStatus(), Individual.AffectationStatus.UNKNOWN));
         individual.setOntologyTerms(ParamUtils.defaultObject(individual.getOntologyTerms(), Collections.emptyList()));
@@ -621,6 +635,34 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         individual.setAcl(Collections.emptyList());
         individual.setStatus(new Status());
         individual.setCreationDate(TimeUtils.getTime());
+
+        // Validate sex and karyotypic sex
+        if (individual.getSex() != null && individual.getKaryotypicSex() != null) {
+            if (individual.getSex() != KARYOTYPIC_SEX_SEX_MAP.get(individual.getKaryotypicSex())) {
+                throw new CatalogException("Sex and karyotypic sex are not consistent");
+            }
+        } else if (individual.getSex() != null) {
+            switch (individual.getSex()) {
+                case MALE:
+                    individual.setKaryotypicSex(Individual.KaryotypicSex.XY);
+                    break;
+                case FEMALE:
+                    individual.setKaryotypicSex(Individual.KaryotypicSex.XX);
+                    break;
+                case UNDETERMINED:
+                    individual.setKaryotypicSex(Individual.KaryotypicSex.OTHER);
+                    break;
+                default:
+                    individual.setKaryotypicSex(Individual.KaryotypicSex.UNKNOWN);
+                    break;
+
+            }
+        } else if (individual.getKaryotypicSex() != null) {
+            individual.setSex(KARYOTYPIC_SEX_SEX_MAP.get(individual.getKaryotypicSex()));
+        } else {
+            individual.setSex(Individual.Sex.UNKNOWN);
+            individual.setKaryotypicSex(Individual.KaryotypicSex.UNKNOWN);
+        }
 
         String userId = catalogManager.getUserManager().getId(sessionId);
         long studyId = catalogManager.getStudyId(studyStr, sessionId);
@@ -746,16 +788,54 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                         }
                     }
                     break;
+                case KARYOTYPIC_SEX:
+                    Individual.KaryotypicSex karyo = Individual.KaryotypicSex.valueOf((String) param.getValue());
+
+                    if (parameters.containsKey(IndividualDBAdaptor.QueryParams.SEX.key())) {
+                        Individual.Sex sex = Individual.Sex.valueOf(parameters.getString(IndividualDBAdaptor.QueryParams.SEX.key()));
+                        if (sex != KARYOTYPIC_SEX_SEX_MAP.get(karyo)) {
+                            throw new CatalogException("Sex and karyotypic sex are not consistent");
+                        }
+                    } else {
+                        // Get sex of the individual and check it is compatible
+                        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(individualId,
+                                new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SEX.key()));
+                        if (individualQueryResult.getNumResults() < 1) {
+                            throw new CatalogException("Internal error occurred. Could not obtain individual information. Update not "
+                                    + "performed");
+                        } else {
+                            if (individualQueryResult.first().getSex() != KARYOTYPIC_SEX_SEX_MAP.get(karyo)) {
+                                throw new CatalogException("Cannot update karyotypic sex to " + karyo + ". That's inconsistent with "
+                                        + "existing sex " + individualQueryResult.first().getSex());
+                            }
+                        }
+                    }
+                    break;
+                case SEX:
+                    if (!parameters.containsKey(IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key())) {
+                        Individual.Sex sex = Individual.Sex.valueOf((String) param.getValue());
+                        // Get karyotype and check it is compatible
+                        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(individualId,
+                                new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key()));
+                        if (individualQueryResult.getNumResults() < 1) {
+                            throw new CatalogException("Internal error occurred. Could not obtain individual information. Update not "
+                                    + "performed");
+                        } else {
+                            if (sex != KARYOTYPIC_SEX_SEX_MAP.get(individualQueryResult.first().getKaryotypicSex())) {
+                                throw new CatalogException("Cannot update sex to " + sex + ". That's inconsistent with "
+                                        + "existing karyotypic sex " + individualQueryResult.first().getKaryotypicSex());
+                            }
+                        }
+                    }
+                    break;
                 case FATHER_ID:
                 case MOTHER_ID:
                 case FAMILY:
-                case SEX:
                 case ETHNICITY:
                 case POPULATION_DESCRIPTION:
                 case POPULATION_NAME:
                 case POPULATION_SUBPOPULATION:
                 case ONTOLOGY_TERMS:
-                case KARYOTYPIC_SEX:
                 case LIFE_STATUS:
                 case AFFECTATION_STATUS:
                     break;
