@@ -24,7 +24,7 @@ public class ClinicalAnalysis extends AbstractAcl<ClinicalAnalysisAclEntry> {
     private Map<String, Object> attributes;
 
     public enum Type {
-        DUO, TRIO
+        SINGLE, DUO, TRIO, FAMILY, AUTO, MULTISAMPLE
     }
 
     public ClinicalAnalysis() {
