@@ -142,7 +142,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                         new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file" +
                                                 ".vcf", "", new File.FileStatus(File.FileStatus.READY), 1000)
                                 ), Collections.<Job>emptyList(), new LinkedList<Individual>(), new LinkedList<Sample>(), new LinkedList<Dataset>(), new
-                                LinkedList<Cohort>(), Collections.emptyList(), new LinkedList<VariableSet>(), null, null, Collections.<String, Object>emptyMap(), Collections.<String,
+                                LinkedList<Cohort>(), Collections.emptyList(), new LinkedList<VariableSet>(), null, null, 1, Collections.<String, Object>emptyMap(), Collections.<String,
                                 Object>emptyMap()
                         )
                 ), Collections.emptyMap(), Collections.<String, Object>emptyMap(), 1)
@@ -167,7 +167,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                                         "data/alignment.bam", "Tophat alignment file",
                                                         new File.FileStatus(File.FileStatus.READY), 5000)
                                                 ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new
-                                        LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, Collections.emptyMap(), Collections.emptyMap()
+                                        LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, 1, Collections.emptyMap(), Collections.emptyMap()
                                 ),
                                 new Study(-1, "MINECO", "mineco", Study.Type.COLLECTION, "", "", new Status(), "", 0, "", null, null, null,
                                         Arrays.asList(
@@ -178,7 +178,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                                 new File("m_alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
                                                         "data/alignment.bam", "Tophat alignment file",
                                                         new File.FileStatus(File.FileStatus.READY), 5000)
-                                        ), Collections.<Job>emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, Collections.emptyMap(), Collections.emptyMap())
+                                        ), Collections.<Job>emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, 1, Collections.emptyMap(), Collections.emptyMap())
                         ), Collections.emptyMap(), Collections.emptyMap(), 1)
                 ),
                 Collections.<Tool>emptyList(), Collections.<Session>emptyList(), new HashMap<>(), new HashMap<>());

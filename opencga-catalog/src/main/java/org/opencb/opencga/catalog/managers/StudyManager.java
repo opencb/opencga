@@ -302,7 +302,8 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
         Study study = new Study(-1, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
                 0, cipher, new LinkedList<>(), new LinkedList<>(), experiments, files, jobs, new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, datastores, stats, attributes);
+                new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, datastores,
+                getProjectCurrentRelease(projectId), stats, attributes);
 
         /* CreateStudy */
         QueryResult<Study> result = studyDBAdaptor.insert(projectId, study, options);
@@ -333,6 +334,20 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 null, rootFile, null, null);
         userDBAdaptor.updateUserLastModified(userId);
         return result;
+    }
+
+    @Override
+    public int getCurrentRelease(long studyId) throws CatalogException {
+        return getProjectCurrentRelease(studyDBAdaptor.getProjectIdByStudyId(studyId));
+    }
+
+    private int getProjectCurrentRelease(long projectId) throws CatalogException {
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key());
+        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(projectId, options);
+        if (projectQueryResult.getNumResults() == 0) {
+            throw new CatalogException("Internal error. Cannot retrieve current release from project");
+        }
+        return projectQueryResult.first().getCurrentRelease();
     }
 
     @Deprecated

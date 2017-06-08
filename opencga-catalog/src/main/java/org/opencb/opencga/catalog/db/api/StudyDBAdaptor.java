@@ -228,6 +228,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         STATS("stats", TEXT, ""),
         TYPE("type", TEXT, ""),
+        RELEASE("release", INTEGER, ""),
 
         GROUPS("groups", TEXT_ARRAY, ""),
         GROUP_NAME("groups.name", TEXT_ARRAY, ""),
