@@ -64,7 +64,7 @@ public class Individual extends Annotable<IndividualAclEntry> {
     }
 
     public enum AffectationStatus {
-        AFFECTED, UNAFFECTED, UNKNOWN
+        HEALTHY_CONTROL, AFFECTED, UNAFFECTED, UNKNOWN
     }
 
     public enum KaryotypicSex {
