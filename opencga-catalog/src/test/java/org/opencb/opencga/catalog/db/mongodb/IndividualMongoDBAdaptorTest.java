@@ -287,7 +287,8 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         long individualId = catalogIndividualDBAdaptor.insert(new Individual(0, "in1", 0, 0, "", Individual.Sex
                 .UNKNOWN, "", null, Collections.emptyList(), null), studyId, null).first().getId();
-        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(new Sample(0, "Sample", "", new Individual().setId(individualId), ""), studyId,
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(new Sample(0, "Sample", "", new Individual().setId(individualId), "", 1),
+                studyId,
                 null);
 
         thrown.expect(CatalogDBException.class);

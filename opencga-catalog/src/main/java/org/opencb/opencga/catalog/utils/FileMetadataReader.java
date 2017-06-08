@@ -356,7 +356,7 @@ public class FileMetadataReader {
                 if (createMissingSamples) {
                     for (String sampleName : set) {
                         if (simulate) {
-                            sampleList.add(new Sample(-1, sampleName, file.getName(), new Individual(), null));
+                            sampleList.add(new Sample(-1, sampleName, file.getName(), new Individual(), null, 1));
                         } else {
                             try {
                                 sampleList.add(catalogManager.createSample(study.getId(), sampleName, file.getName(),

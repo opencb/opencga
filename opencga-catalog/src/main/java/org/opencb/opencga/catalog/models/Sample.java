@@ -32,6 +32,7 @@ public class Sample extends Annotable<SampleAclEntry> {
     private String source;
     private Individual individual;
 
+    private int release;
     private String creationDate;
     private Status status;
     private String description;
@@ -45,13 +46,13 @@ public class Sample extends Annotable<SampleAclEntry> {
     public Sample() {
     }
 
-    public Sample(long id, String name, String source, Individual individual, String description) {
-        this(id, name, source, individual, description, "", false, Collections.emptyList(), new LinkedList<>(), new
-                ArrayList<>(), new HashMap<>());
+    public Sample(long id, String name, String source, Individual individual, String description, int release) {
+        this(id, name, source, individual, description, "", false, release, Collections.emptyList(), new LinkedList<>(),
+                new ArrayList<>(), new HashMap<>());
     }
 
     public Sample(long id, String name, String source, Individual individual, String description, String type, boolean somatic,
-                  List<SampleAclEntry> acl, List<AnnotationSet> annotationSets, List<OntologyTerm> ontologyTermList,
+                  int release, List<SampleAclEntry> acl, List<AnnotationSet> annotationSets, List<OntologyTerm> ontologyTermList,
                   Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -62,6 +63,7 @@ public class Sample extends Annotable<SampleAclEntry> {
         this.creationDate = TimeUtils.getTime();
         this.status = new Status();
         this.description = description;
+        this.release = release;
         this.ontologyTerms = ontologyTermList;
         this.acl = acl;
         this.annotationSets = annotationSets;
@@ -76,9 +78,10 @@ public class Sample extends Annotable<SampleAclEntry> {
         sb.append(", name='").append(name).append('\'');
         sb.append(", source='").append(source).append('\'');
         sb.append(", individual=").append(individual);
+        sb.append(", release=").append(release);
         sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", status=").append(status);
         sb.append(", annotationSets=").append(annotationSets);
+        sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
         sb.append(", type='").append(type).append('\'');
         sb.append(", somatic=").append(somatic);
@@ -166,6 +169,15 @@ public class Sample extends Annotable<SampleAclEntry> {
 
     public Sample setType(String type) {
         this.type = type;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public Sample setRelease(int release) {
+        this.release = release;
         return this;
     }
 

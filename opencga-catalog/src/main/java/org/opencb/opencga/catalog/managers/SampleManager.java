@@ -148,6 +148,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
 
+        sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));
+
         long individualId = 0;
 
         if (sample.getIndividual() != null) {
@@ -220,8 +222,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             }
         }
 
-        Sample sample = new Sample(-1, name, source, individual, description, type, somatic, Collections.emptyList(),
-                Collections.emptyList(), new ArrayList<>(), attributes);
+        Sample sample = new Sample(-1, name, source, individual, description, type, somatic,
+                catalogManager.getStudyManager().getCurrentRelease(studyId), Collections.emptyList(), Collections.emptyList(),
+                new ArrayList<>(), attributes);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         QueryResult<Sample> queryResult = sampleDBAdaptor.insert(sample, studyId, options);
