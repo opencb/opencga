@@ -276,8 +276,10 @@ public class VariantPhoenixHelper {
     }
 
     public void registerNewSamples(Connection con, String table, Integer studyId, Collection<Integer> sampleIds) throws SQLException {
+        createTableIfNeeded(con, table);
         List<Column> columns = sampleIds.stream().map(sampleId -> getSampleColumn(studyId, sampleId)).collect(Collectors.toList());
         phoenixHelper.addMissingColumns(con, table, columns, true);
+        con.commit();
     }
 
     public void createSchemaIfNeeded(Connection con, String schema) throws SQLException {
