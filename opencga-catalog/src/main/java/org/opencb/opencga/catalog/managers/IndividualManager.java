@@ -126,7 +126,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
         Individual individual = new Individual(0, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity,
                 new Individual.Population(populationName, populationSubpopulation, populationDescription), lifeStatus, affectationStatus,
-                dateOfBirth, false, Collections.emptyList(), new ArrayList<>());
+                dateOfBirth, false, catalogManager.getStudyManager().getCurrentRelease(studyId), Collections.emptyList(),
+                new ArrayList<>());
 
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
 //      auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
@@ -667,6 +668,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         String userId = catalogManager.getUserManager().getId(sessionId);
         long studyId = catalogManager.getStudyId(studyStr, sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
+
+        individual.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));
 
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
         auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.create, AuditRecord.Magnitude.low,
