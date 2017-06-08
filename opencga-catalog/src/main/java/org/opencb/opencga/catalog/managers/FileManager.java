@@ -744,7 +744,8 @@ public class FileManager extends AbstractManager implements IFileManager {
         boolean external = isExternal(studyId, path, uri);
         File file = new File(-1, Paths.get(path).getFileName().toString(), type, format, bioformat, uri, path, TimeUtils.getTime(),
                 TimeUtils.getTime(), description, status, external, size, new Experiment().setId(experimentId), sampleIds,
-                new Job().setId(jobId), Collections.emptyList(), Collections.emptyList(), null, stats, attributes);
+                new Job().setId(jobId), Collections.emptyList(), Collections.emptyList(), null, stats,
+                catalogManager.getStudyManager().getCurrentRelease(studyId), attributes);
 
         //Find parent. If parents == true, create folders.
         String parentPath = getParentPath(file.getPath());
@@ -1639,7 +1640,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         File folder = new File(-1, path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
                 stringPath, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY),
                 false, 0, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(),
-                allFileAcls.getResult(), null, null, null);
+                allFileAcls.getResult(), null, null, catalogManager.getStudyManager().getCurrentRelease(studyId), null);
         fileDBAdaptor.insert(folder, studyId, new QueryOptions());
     }
 
@@ -1800,7 +1801,8 @@ public class FileManager extends AbstractManager implements IFileManager {
                 File subfile = new File(-1, externalPathDestiny.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                         File.Bioformat.NONE, normalizedUri, externalPathDestinyStr, TimeUtils.getTime(), TimeUtils.getTime(), description,
                         new File.FileStatus(File.FileStatus.READY), true, size, new Experiment(), Collections.emptyList(), new Job(),
-                        Collections.emptyList(), allFileAcls.getResult(), null, Collections.emptyMap(), Collections.emptyMap());
+                        Collections.emptyList(), allFileAcls.getResult(), null, Collections.emptyMap(),
+                        catalogManager.getStudyManager().getCurrentRelease(studyId), Collections.emptyMap());
                 QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, studyId, new QueryOptions());
                 File file = fileMetadataReader.setMetadataInformation(queryResult.first(), queryResult.first().getUri(),
                         new QueryOptions(), sessionId, false);
@@ -1864,11 +1866,12 @@ public class FileManager extends AbstractManager implements IFileManager {
                                     File.Bioformat.NONE, dir.toUri(), destinyPath, TimeUtils.getTime(), TimeUtils.getTime(),
                                     description, new File.FileStatus(File.FileStatus.READY), true, 0, new Experiment(),
                                     Collections.emptyList(), new Job(), Collections.emptyList(), allFileAcls.getResult(), null,
-                                    Collections.emptyMap(), Collections.emptyMap());
+                                    Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(studyId),
+                                    Collections.emptyMap());
                             fileDBAdaptor.insert(folder, studyId, new QueryOptions());
                         }
 
-                    } catch (CatalogDBException e) {
+                    } catch (CatalogException e) {
                         logger.error("An error occurred when trying to create folder {}", dir.toString());
 //                        e.printStackTrace();
                     }
@@ -1907,7 +1910,8 @@ public class FileManager extends AbstractManager implements IFileManager {
                                     File.Bioformat.NONE, filePath.toUri(), destinyPath, TimeUtils.getTime(), TimeUtils.getTime(),
                                     description, new File.FileStatus(File.FileStatus.READY), true, size, new Experiment(),
                                     Collections.emptyList(), new Job(), Collections.emptyList(), allFileAcls.getResult(), null,
-                                    Collections.emptyMap(), Collections.emptyMap());
+                                    Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(studyId),
+                                    Collections.emptyMap());
                             QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, studyId, new QueryOptions());
                             File file = fileMetadataReader.setMetadataInformation(queryResult.first(), queryResult.first().getUri(),
                                     new QueryOptions(), sessionId, false);

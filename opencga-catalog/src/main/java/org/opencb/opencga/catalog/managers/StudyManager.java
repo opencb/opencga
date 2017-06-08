@@ -294,7 +294,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         LinkedList<Job> jobs = new LinkedList<>();
 
         File rootFile = new File(".", File.Type.DIRECTORY, null, null, "", "study root folder",
-                new File.FileStatus(File.FileStatus.READY), 0);
+                new File.FileStatus(File.FileStatus.READY), 0, getProjectCurrentRelease(projectId));
         files.add(rootFile);
 
         // We set all the permissions for the owner of the study.
