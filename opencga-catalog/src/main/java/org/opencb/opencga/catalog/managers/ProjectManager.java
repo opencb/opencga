@@ -213,7 +213,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             organism.setCommonName(assembly);
         }
 
-        Project project = new Project(name, alias, description, new Status(), organization, organism);
+        Project project = new Project(name, alias, description, new Status(), organization, organism, 1);
 
         QueryResult<Project> queryResult = projectDBAdaptor.insert(project, userId, options);
         project = queryResult.getResult().get(0);

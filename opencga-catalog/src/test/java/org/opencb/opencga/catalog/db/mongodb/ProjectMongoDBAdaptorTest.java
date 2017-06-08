@@ -37,12 +37,12 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void createProjectTest() throws CatalogException, JsonProcessingException {
-        Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", new Status(), "", 1000, "", null);
+        Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", new Status(), "", 1000, "", null, 1);
         LinkedList<AclEntry> acl = new LinkedList<>();
         System.out.println(catalogProjectDBAdaptor.insert(p, user1.getId(), null));
-        p = new Project("Project about some more genomes", "2000G", "Tomorrow", "Cool", new Status(), "", 3000, "", null);
+        p = new Project("Project about some more genomes", "2000G", "Tomorrow", "Cool", new Status(), "", 3000, "", null, 1);
         System.out.println(catalogProjectDBAdaptor.insert(p, user1.getId(), null));
-        p = new Project("Project management project", "pmp", "yesterday", "it is a system", new Status(), "", 2000, "", null);
+        p = new Project("Project management project", "pmp", "yesterday", "it is a system", new Status(), "", 2000, "", null, 1);
         System.out.println(catalogProjectDBAdaptor.insert(p, user2.getId(), null));
         System.out.println(catalogProjectDBAdaptor.insert(p, user1.getId(), null));
 
@@ -75,7 +75,7 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void deleteProjectTest() throws CatalogException {
-        Project p = new Project("Project about some more genomes", "2000G", "Tomorrow", "Cool", new Status(), "", 3000, "", null);
+        Project p = new Project("Project about some more genomes", "2000G", "Tomorrow", "Cool", new Status(), "", 3000, "", null, 1);
         QueryResult<Project> result = catalogProjectDBAdaptor.insert(p, user1.getId(), null);
         System.out.println(result.first().getStatus());
         p = result.first();
@@ -109,9 +109,9 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void renameProjectTest() throws CatalogException {
         Project p1 = catalogProjectDBAdaptor.insert(new Project("project1", "p1", "Tomorrow", "Cool", new Status(),
-                "", 3000, "", null), user1.getId(), null).first();
+                "", 3000, "", null, 1), user1.getId(), null).first();
         Project p2 = catalogProjectDBAdaptor.insert(new Project("project2", "p2", "Tomorrow", "Cool", new Status(),
-                "", 3000, "", null), user1.getId(), null).first();
+                "", 3000, "", null, 1), user1.getId(), null).first();
         System.out.println(catalogProjectDBAdaptor.renameAlias(p1.getId(), "newpmp"));
 
         try {
