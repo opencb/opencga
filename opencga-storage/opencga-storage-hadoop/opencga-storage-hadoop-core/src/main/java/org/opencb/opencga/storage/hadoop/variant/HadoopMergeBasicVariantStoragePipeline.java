@@ -30,6 +30,7 @@ import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
@@ -139,7 +140,16 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
         }
     }
 
-
+    @Override
+    public URI postLoad(URI input, URI output) throws StorageEngineException {
+        final List<Integer> fileIds = getLoadedFiles();
+        if (fileIds.isEmpty()) {
+            logger.debug("Skip post load");
+            return input;
+        }
+        registerLoadedFiles(fileIds);
+        return input;
+    }
 
     private VariantHadoopDBWriter newVariantHadoopDBWriter() throws StorageEngineException {
         StudyConfiguration studyConfiguration = getStudyConfiguration();
@@ -157,6 +167,11 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
     @Override
     public void merge(int studyId, List<Integer> pendingFiles) throws StorageEngineException {
         logger.info("Nothing else to merge!");
+    }
+
+    @Override
+    public URI postMerge(URI input, URI output) throws StorageEngineException {
+        return input;
     }
 
     @Override

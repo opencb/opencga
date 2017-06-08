@@ -304,7 +304,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         FileStudyConfigurationAdaptor.write(studyConfiguration, new File(outputUri.resolve("study_configuration.json").getPath()).toPath());
         try (FileOutputStream out = new FileOutputStream(outputUri.resolve("platinum.merged.vcf").getPath())) {
-            VariantVcfDataWriter.htsExport(dbAdaptor.iterator(new Query(), new QueryOptions(QueryOptions.SORT, true)),
+            VariantVcfDataWriter.htsExport(dbAdaptor.iterator(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions(QueryOptions.SORT, true)),
                     studyConfiguration, dbAdaptor.getVariantSourceDBAdaptor(), out, new Query(), new QueryOptions());
         }
     }

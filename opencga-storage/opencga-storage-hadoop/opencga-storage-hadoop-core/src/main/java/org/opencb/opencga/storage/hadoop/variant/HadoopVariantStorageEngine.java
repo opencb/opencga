@@ -291,9 +291,13 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                         AbstractHadoopVariantStoragePipeline localEtl = newStoragePipeline(doLoad, extraOptions);
 
                         int studyId = getOptions().getInt(Options.STUDY_ID.key());
-                        localEtl.preLoad(inputFiles.get(i), outdirUri);
+                        URI input = concurrResult.get(i).getPostTransformResult();
+                        if (input == null) {
+                            input = inputFiles.get(i);
+                        }
+                        localEtl.preMerge(input);
                         localEtl.merge(studyId, filesToMerge);
-                        localEtl.postLoad(inputFiles.get(i), outdirUri);
+                        localEtl.postMerge(input, outdirUri);
                         filesToMerge.clear();
                     }
                 }

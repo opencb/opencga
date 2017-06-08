@@ -636,30 +636,71 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     }
 
     @Override
-    protected void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration) throws
+    protected void checkLoadedVariants(int fileId, StudyConfiguration studyConfiguration) throws
             StorageEngineException {
         logger.warn("Skip check loaded variants");
     }
 
     @Override
     public URI postLoad(URI input, URI output) throws StorageEngineException {
+        if (loadArch) {
+            logger.debug("Nothing to do");
+        }
+
+        if (loadVar) {
+            return postMerge(input, output);
+        }
+        return input;
+    }
+
+    public URI postMerge(URI input, URI output) throws StorageEngineException {
         final List<Integer> fileIds = getLoadedFiles();
         if (fileIds.isEmpty()) {
             logger.debug("Skip post load");
             return input;
         }
 
+        registerLoadedFiles(fileIds);
+
+        dbAdaptor.getStudyConfigurationManager().lockAndUpdate(getStudyId(), studyConfiguration -> {
+            securePostMerge(fileIds, studyConfiguration);
+            return studyConfiguration;
+        });
+
+        return input;
+    }
+
+    protected void registerLoadedFiles(List<Integer> fileIds) throws StorageEngineException {
         // Current StudyConfiguration may be outdated. Force fetch.
         StudyConfiguration studyConfiguration = getStudyConfiguration(true);
 
         VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
         Connection jdbcConnection = dbAdaptor.getJdbcConnection();
         String tableName = variantsTableCredentials.getTable();
+
         if (MergeMode.from(studyConfiguration.getAttributes()).equals(MergeMode.ADVANCED)) {
             try {
                 phoenixHelper.registerNewStudy(jdbcConnection, tableName, studyConfiguration.getStudyId());
             } catch (SQLException e) {
                 throw new StorageEngineException("Unable to register study in Phoenix", e);
+            }
+        }
+
+        if (studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SAMPLE_COLUMNS)) {
+            try {
+                Set<Integer> previouslyIndexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration).values();
+                Set<Integer> newSamples = new HashSet<>();
+                for (Integer fileId : fileIds) {
+                    for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
+                        if (!previouslyIndexedSamples.contains(sampleId)) {
+                            newSamples.add(sampleId);
+                        }
+                    }
+                }
+                phoenixHelper.registerNewSamples(jdbcConnection, tableName, studyConfiguration.getStudyId(), newSamples);
+
+            } catch (SQLException e) {
+                throw new StorageEngineException("Unable to register samples in Phoenix", e);
             }
         }
 
@@ -679,25 +720,8 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             logger.info("Skip create indexes!!");
         }
 
-        if (studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SAMPLE_COLUMNS)) {
-            try {
-                Set<Integer> previouslyIndexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration).values();
-                Set<Integer> newSamples = new HashSet<>();
-                for (Integer fileId : fileIds) {
-                    for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
-                        if (!previouslyIndexedSamples.contains(sampleId)) {
-                            newSamples.add(sampleId);
-                        }
-                    }
-                }
-                phoenixHelper.registerNewSamples(jdbcConnection, tableName, studyConfiguration.getStudyId(), newSamples);
-            } catch (SQLException e) {
-                throw new StorageEngineException("Unable to register samples in Phoenix", e);
-            }
-        }
-
-
-        return super.postLoad(input, output);
+        // This method checks the loaded variants (if possible) and adds the loaded files to the studyConfiguration
+        super.postLoad(null, null);
     }
 
     protected List<Integer> getLoadedFiles() {
@@ -709,12 +733,6 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             fileIds = Collections.emptyList();
         }
         return fileIds;
-    }
-
-    @Override
-    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
-        super.securePostLoad(fileIds, studyConfiguration);
-        securePostMerge(fileIds, studyConfiguration);
     }
 
     protected void securePostMerge(List<Integer> fileIds, StudyConfiguration studyConfiguration) {

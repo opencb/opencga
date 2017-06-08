@@ -739,10 +739,10 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     @Override
-    protected void checkLoadedVariants(URI input, List<Integer> fileIds, StudyConfiguration studyConfiguration)
+    protected void checkLoadedVariants(List<Integer> fileIds, StudyConfiguration studyConfiguration)
             throws StorageEngineException {
         if (fileIds.size() == 1) {
-            checkLoadedVariants(input, fileIds.get(0), studyConfiguration);
+            checkLoadedVariants(fileIds.get(0), studyConfiguration);
         } else {
             // FIXME: Check variants in this situation!
             logger.warn("Skip check loaded variants");
@@ -750,11 +750,10 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     @Override
-    protected void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration) throws
+    protected void checkLoadedVariants(int fileId, StudyConfiguration studyConfiguration) throws
             StorageEngineException {
-        VariantSource variantSource = VariantReaderUtils.readVariantSource(Paths.get(input.getPath()), null);
+        VariantSource variantSource = dbAdaptor.getVariantSourceDBAdaptor().get(String.valueOf(fileId), null).first();
 
-//        VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(options.getString(VariantStorageEngine.Options.DB_NAME.key()));
         Long count = dbAdaptor.count(new Query()
                 .append(VariantQueryParam.FILES.key(), fileId)
                 .append(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())).first();
