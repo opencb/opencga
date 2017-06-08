@@ -123,11 +123,7 @@ public class UserManager extends AbstractManager implements IUserManager {
 
     @Override
     public String getId(String sessionId) throws CatalogException {
-        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(sessionId);
-//        if (sessionId == null || sessionId.isEmpty() || sessionId.equalsIgnoreCase("anonymous")) {
-//            return "anonymous";
-//        }
-//        return userDBAdaptor.getUserIdBySessionId(sessionId);
+        return this.catalogManager.getSessionManager().getUserId(sessionId);
     }
 
     @Override
@@ -439,7 +435,7 @@ public class UserManager extends AbstractManager implements IUserManager {
             throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
-        checkSessionId(userId, sessionId);
+        checkSessionId(sessionId);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         QueryResult<User> userQueryResult = userDBAdaptor.get(userId, options, lastModified);
 
@@ -483,7 +479,7 @@ public class UserManager extends AbstractManager implements IUserManager {
 
         if (sessionId != null && !sessionId.isEmpty()) {
             ParamUtils.checkParameter(sessionId, "sessionId");
-            checkSessionId(userId, sessionId);
+            checkSessionId(sessionId);
             for (String s : parameters.keySet()) {
                 if (!s.matches("name|email|organization|attributes")) {
                     throw new CatalogDBException("Parameter '" + s + "' can't be changed");
@@ -515,7 +511,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         for (String userId : userIds) {
             if (sessionId != null && !sessionId.isEmpty()) {
                 ParamUtils.checkParameter(sessionId, "sessionId");
-                checkSessionId(userId, sessionId);
+                checkSessionId(sessionId);
             } else {
                 if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
                     throw new CatalogException("Nor the administrator password nor the session id could be found. The user could not be "
@@ -575,7 +571,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     public QueryResult resetPassword(String userId, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
-        checkSessionId(userId, sessionId);
+        checkSessionId(sessionId);
 
         String authOrigin = getAuthenticationOriginId(userId);
         return authenticationManagerMap.get(authOrigin).resetPassword(userId);
@@ -706,7 +702,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = getId(sessionId);
         ParamUtils.checkParameter(userId, "userId");
-        checkSessionId(userId, sessionId);
+        checkSessionId(sessionId);
 
         logger.info("logout anonymous user. userId: " + userId + " sesionId: " + sessionId);
 
@@ -938,11 +934,8 @@ public class UserManager extends AbstractManager implements IUserManager {
         return null;
     }
 
-    private void checkSessionId(String userId, String sessionId) throws CatalogException {
-        String userIdBySessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!userIdBySessionId.equals(userId)) {
-            throw new CatalogException("Invalid sessionId for user: " + userId);
-        }
+    private void checkSessionId(String jwtToken) throws CatalogException {
+        this.catalogManager.getSessionManager().parseClaims(jwtToken);
     }
 
     private void checkUserExists(String userId) throws CatalogException {

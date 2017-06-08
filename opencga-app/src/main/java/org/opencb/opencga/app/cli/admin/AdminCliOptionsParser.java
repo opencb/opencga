@@ -42,6 +42,7 @@ public class AdminCliOptionsParser {
     private AuditCommandOptions auditCommandOptions;
     private ToolsCommandOptions toolsCommandOptions;
     private ServerCommandOptions serverCommandOptions;
+    private AdminCliOptionsParser.MetaCommandOptions metaCommandOptions;
 
 
     public AdminCliOptionsParser() {
@@ -94,6 +95,11 @@ public class AdminCliOptionsParser {
         JCommander serverSubCommands = jCommander.getCommands().get("server");
         serverSubCommands.addCommand("rest", serverCommandOptions.restServerCommandOptions);
         serverSubCommands.addCommand("grpc", serverCommandOptions.grpcServerCommandOptions);
+
+        this.metaCommandOptions = new AdminCliOptionsParser.MetaCommandOptions();
+        this.jCommander.addCommand("meta", this.metaCommandOptions);
+        JCommander metaSubCommands = this.jCommander.getCommands().get("meta");
+        metaSubCommands.addCommand("key", this.metaCommandOptions.metaKeyCommandOptions);
     }
 
     public void parse(String[] args) throws ParameterException {
@@ -271,7 +277,20 @@ public class AdminCliOptionsParser {
         }
     }
 
+    @Parameters(
+            commandNames = {"meta"},
+            commandDescription = "Manage Meta data"
+    )
+    public class MetaCommandOptions extends AdminCliOptionsParser.CommandOptions {
+        AdminCliOptionsParser.MetaKeyCommandOptions metaKeyCommandOptions;
+        AdminCliOptionsParser.AdminCommonCommandOptions commonOptions;
 
+        public MetaCommandOptions() {
+            super();
+            this.commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+            this.metaKeyCommandOptions = AdminCliOptionsParser.this.new MetaKeyCommandOptions();
+        }
+    }
 
     /**
      * Auxiliary class for Database connection.
@@ -319,9 +338,17 @@ public class AdminCliOptionsParser {
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-//        @Parameter(names = {"--overwrite"}, description = "Reset the database if exists before installing")
-//        public boolean overwrite;
+        @Parameter(
+                names = {"--secret-key"},
+                description = "Secret key needed to authenticate through OpenCGA (JWT).",
+                required = true
+        )
+        public String secretKey;
 
+        public InstallCatalogCommandOptions() {
+            super();
+            this.commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+        }
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete the Catalog database")
@@ -631,6 +658,25 @@ public class AdminCliOptionsParser {
         public boolean stop;
     }
 
+    @Parameters(
+            commandNames = {"key"},
+            commandDescription = "Insert secret key "
+    )
+    public class MetaKeyCommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
+        @ParametersDelegate
+        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions;
+        @Parameter(
+                names = {"--update"},
+                description = "Update secret key in OpenCGA",
+                arity = 1
+        )
+        public String updateSecretKey;
+
+        public MetaKeyCommandOptions() {
+            super();
+            this.commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+        }
+    }
 
     public void printUsage() {
         String parsedCommand = getCommand();
@@ -706,4 +752,8 @@ public class AdminCliOptionsParser {
     public ServerCommandOptions getServerCommandOptions() {
         return serverCommandOptions;
     }
+    public AdminCliOptionsParser.MetaCommandOptions getMetaCommandOptions() {
+        return this.metaCommandOptions;
+    }
+
 }

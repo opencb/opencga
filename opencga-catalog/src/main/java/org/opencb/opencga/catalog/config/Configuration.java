@@ -55,6 +55,7 @@ public class Configuration {
     private Catalog catalog;
 
     private ServerConfiguration server;
+    private Authentication authentication;
 
     protected static Logger logger = LoggerFactory.getLogger(Configuration.class);
 
@@ -272,5 +273,13 @@ public class Configuration {
     public Configuration setServer(ServerConfiguration server) {
         this.server = server;
         return this;
+    }
+
+    public Authentication getAuthentication() {
+        return authentication;
+    }
+
+    public void setAuthentication(Authentication authentication) {
+        this.authentication = authentication;
     }
 }

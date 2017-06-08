@@ -23,7 +23,7 @@ public class Admin {
 
     private String password;
     private String email;
-//    private List<Session> sessions;
+    private String secretKey;
 
     public Admin() {
     }
@@ -31,7 +31,7 @@ public class Admin {
     public Admin(String password, String email) {
         this.password = password;
         this.email = email;
-//        this.sessions = Collections.emptyList();
+        this.secretKey = secretKey;
     }
 
     public String getPassword() {
@@ -52,21 +52,18 @@ public class Admin {
         return this;
     }
 
-//    public List<Session> getSessions() {
-//        return sessions;
-//    }
-//
-//    public Admin setSessions(List<Session> sessions) {
-//        this.sessions = sessions;
-//        return this;
-//    }
+    public String getSecretKey() {
+        return secretKey;
+    }
 
-    @Override
+    public void setSecretKey(String secretKey) {
+        this.secretKey = secretKey;
+    }
+
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Admin{");
-        sb.append("password='").append(password).append('\'');
-        sb.append(", email='").append(email).append('\'');
-//        sb.append(", sessions=").append(sessions);
+        StringBuilder sb = new StringBuilder("Admin{");
+        sb.append("password=\'").append(this.password).append('\'');
+        sb.append(", email=\'").append(this.email).append('\'');
         sb.append('}');
         return sb.toString();
     }

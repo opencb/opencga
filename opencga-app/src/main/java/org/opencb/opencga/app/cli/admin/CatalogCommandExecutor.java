@@ -111,6 +111,8 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             configuration.getAdmin().setPassword(catalogCommandOptions.commonOptions.adminPassword);
         }
 
+        this.configuration.getAdmin().setSecretKey(this.catalogCommandOptions.installCatalogCommandOptions.secretKey);
+
         if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
             throw new CatalogException("No admin password found. Please, insert your password.");
         }

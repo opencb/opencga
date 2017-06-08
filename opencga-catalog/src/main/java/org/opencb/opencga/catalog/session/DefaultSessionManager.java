@@ -16,12 +16,15 @@
 
 package org.opencb.opencga.catalog.session;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogTokenException;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.core.common.TimeUtils;
 
@@ -79,6 +82,16 @@ public class DefaultSessionManager implements SessionManager {
         if (!metaDBAdaptor.checkValidAdminSession(sessionId)) {
             throw new CatalogException("The admin session id is not valid.");
         }
+    }
+
+    @Override
+    public Jws<Claims> parseClaims(String jwtToken) throws CatalogTokenException {
+        return null;
+    }
+
+    @Override
+    public String getUserId(String jwtToken) throws CatalogTokenException {
+        return null;
     }
 
     @Override

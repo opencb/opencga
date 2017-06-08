@@ -157,5 +157,11 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
 
         return qr;
     }
+    public void writeSecretKey(String secretKey) throws CatalogException {
+        this.metaDBAdaptor.writeSecretKey(secretKey);
+    }
 
+    public String readSecretKey(String secretKey) throws CatalogException {
+        return this.metaDBAdaptor.readSecretKey();
+    }
 }

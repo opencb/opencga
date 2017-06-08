@@ -24,10 +24,7 @@ import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -40,9 +37,9 @@ import java.util.Arrays;
 @Api(value = "Panels", hidden = true, position = 10, description = "Methods for working with 'panels' endpoint")
 public class DiseasePanelWSServer extends OpenCGAWSServer {
 
-    public DiseasePanelWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+    public DiseasePanelWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam)
             throws IOException, VersionException {
-        super(uriInfo, httpServletRequest);
+        super(uriInfo, httpServletRequest, headerParam);
     }
 
     @GET

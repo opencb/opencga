@@ -34,4 +34,9 @@ public interface MetaDBAdaptor {
 
     boolean checkValidAdminSession(String id);
 
+    void writeSecretKey(String var1) throws CatalogDBException;
+
+    String readSecretKey() throws CatalogDBException;
+
+
 }

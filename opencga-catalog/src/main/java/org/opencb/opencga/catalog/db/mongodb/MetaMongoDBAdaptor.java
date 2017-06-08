@@ -215,4 +215,17 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         return metaCollection.count(query).first() == 1;
     }
 
+    @Override
+    public void writeSecretKey(String secretKey) throws CatalogDBException {
+        Bson query = Filters.eq("_id", "METADATA");
+        Bson update = Updates.set("admin.secretKey", secretKey);
+        this.metaCollection.update(query, update, QueryOptions.empty());
+    }
+
+    @Override
+    public String readSecretKey() throws CatalogDBException {
+        Bson query = Filters.eq("_id", "METADATA");
+        QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
+        return ((Admin)MongoDBUtils.parseObject((Document)((Document)queryResult.first()).get("admin"), Admin.class)).getSecretKey();
+    }
 }

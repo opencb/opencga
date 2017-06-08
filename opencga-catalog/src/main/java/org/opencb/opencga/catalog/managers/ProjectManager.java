@@ -185,7 +185,8 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
 
         //Only the user can create a project
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        //String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = this.catalogManager.getUserManager().getId(sessionId);
         if (userId.isEmpty()) {
             throw new CatalogException("The session id introduced does not correspond to any registered user.");
         }

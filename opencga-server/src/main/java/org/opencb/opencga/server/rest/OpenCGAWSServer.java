@@ -98,11 +98,16 @@ public class OpenCGAWSServer {
 
     protected boolean count;
     protected boolean lazy;
+    protected String sessionId;
 
     @DefaultValue("")
     @QueryParam("sid")
-    @ApiParam(value = "Session id")
-    protected String sessionId;
+    @ApiParam("Session id")
+    protected String dummySessionId;
+
+    @HeaderParam("auth")
+    @ApiParam("JWT Authentication token")
+    protected String authentication;
 
     protected UriInfo uriInfo;
     protected HttpServletRequest httpServletRequest;
@@ -157,12 +162,12 @@ public class OpenCGAWSServer {
     }
 
 
-    public OpenCGAWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+    public OpenCGAWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam)
             throws IOException, VersionException {
-        this(uriInfo.getPathParameters().getFirst("version"), uriInfo, httpServletRequest);
+        this(uriInfo.getPathParameters().getFirst("version"), uriInfo, httpServletRequest, headerParam);
     }
 
-    public OpenCGAWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+    public OpenCGAWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam)
             throws IOException, VersionException {
         this.version = version;
         this.uriInfo = uriInfo;
@@ -180,6 +185,13 @@ public class OpenCGAWSServer {
                     + "or properly defined.");
         }
 
+        if(headerParam.getRequestHeader("auth") != null) {
+            this.sessionId = headerParam.getRequestHeader("auth").get(0);
+        }
+
+        if(StringUtils.isEmpty(this.sessionId)) {
+            this.sessionId = this.params.getFirst("sid");
+        }
         query = new Query();
         queryOptions = new QueryOptions();
 

@@ -26,10 +26,7 @@ import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,8 +38,8 @@ import java.util.Map;
 @Api(value = "Projects", position = 2, description = "Methods for working with 'projects' endpoint")
 public class ProjectWSServer extends OpenCGAWSServer {
 
-    public ProjectWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(uriInfo, httpServletRequest);
+    public ProjectWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest, headerParam);
     }
 
     @GET

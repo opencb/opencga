@@ -120,7 +120,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void before() throws Exception {
         Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
                 .openStream());
-
+        configuration.getAdmin().setSecretKey("dummy");
         CatalogManagerExternalResource.clearCatalog(configuration);
 
         catalogManager = new CatalogManager(configuration);

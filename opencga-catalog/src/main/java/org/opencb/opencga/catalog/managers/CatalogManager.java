@@ -39,7 +39,7 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.*;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
-import org.opencb.opencga.catalog.session.DefaultSessionManager;
+import org.opencb.opencga.catalog.session.JWTSessionManager;
 import org.opencb.opencga.catalog.session.SessionManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
@@ -114,12 +114,12 @@ public class CatalogManager implements AutoCloseable {
 //        catalogClient = new CatalogDBClient(this);
         //TODO: Check if catalog is empty
         //TODO: Setup catalog if it's empty.
-
+        this.updateSecretKey();
         auditManager = new CatalogAuditManager(catalogDBAdaptorFactory.getCatalogAuditDbAdaptor(), catalogDBAdaptorFactory
                 .getCatalogUserDBAdaptor(), authorizationManager, configuration);
 //        authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager);
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager, this.configuration);
-        sessionManager = new DefaultSessionManager(catalogDBAdaptorFactory);
+        sessionManager = new JWTSessionManager(configuration);
         userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
         fileManager = new FileManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
@@ -138,6 +138,17 @@ public class CatalogManager implements AutoCloseable {
                 catalogIOManagerFactory, configuration);
         familyManager = new FamilyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManagerFactory,
                 configuration);
+    }
+
+    private void updateSecretKey() throws CatalogDBException {
+        if (StringUtils.isEmpty(this.configuration.getAdmin().getSecretKey())) {
+            this.configuration.getAdmin().setSecretKey(this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readSecretKey());
+        }
+
+    }
+
+    public void updateSecretKey(String key) throws CatalogDBException {
+            this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().writeSecretKey(key);
     }
 
     public ObjectMap getDatabaseStatus() {

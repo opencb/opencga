@@ -55,6 +55,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
     public static void beforeClass() throws IOException, CatalogException, URISyntaxException {
         Configuration configuration = Configuration.load(CatalogSampleAnnotationsLoaderTest.class.getClassLoader()
                 .getClass().getResource("/configuration-test.yml").openStream());
+        configuration.getAdmin().setSecretKey("dummy");
         catalogManager = new CatalogManager(configuration);
         catalogManager.deleteCatalogDB(true);
         catalogManager.installCatalogDB();

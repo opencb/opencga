@@ -39,10 +39,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
 
@@ -58,14 +55,14 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 public class VariantAnalysisWSService extends AnalysisWSService {
 
 
-    public VariantAnalysisWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+    public VariantAnalysisWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam)
             throws IOException, VersionException {
-        super(uriInfo, httpServletRequest);
+        super(uriInfo, httpServletRequest, headerParam);
     }
 
-    public VariantAnalysisWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+    public VariantAnalysisWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam)
             throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+        super(version, uriInfo, httpServletRequest, headerParam);
     }
 
 

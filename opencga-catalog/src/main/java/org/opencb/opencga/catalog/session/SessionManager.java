@@ -16,8 +16,11 @@
 
 package org.opencb.opencga.catalog.session;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogTokenException;
 import org.opencb.opencga.catalog.models.Session;
 
 /**
@@ -54,4 +57,10 @@ public interface SessionManager {
      * @throws CatalogException when the session id is not valid.
      */
     void checkAdminSession(String sessionId) throws CatalogException;
+
+    Jws<Claims> parseClaims(String jwtToken) throws CatalogTokenException;
+
+    String getUserId(String jwtToken) throws CatalogTokenException;
+
+
 }
