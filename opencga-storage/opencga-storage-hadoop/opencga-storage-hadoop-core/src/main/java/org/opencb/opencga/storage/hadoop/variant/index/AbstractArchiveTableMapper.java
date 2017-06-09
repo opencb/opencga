@@ -60,12 +60,16 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
     private boolean specificPut;
     private boolean loadSampleColumns;
     private SamplesDataToHBaseConverter samplesDataToHBaseConverter;
+    private HBaseToVariantConverter<VariantTableStudyRow> rowToVariantConverter;
 
 
     protected ArchiveResultToVariantConverter getResultConverter() {
         return resultConverter;
     }
 
+    public HBaseToVariantConverter<VariantTableStudyRow> getRowToVariantConverter() {
+        return rowToVariantConverter;
+    }
 
 
     /**
@@ -85,7 +89,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         String chromosome = ctx.getChromosome();
         List<Cell> variantCells = GenomeHelper.getVariantColumns(ctx.getValue().rawCells());
         List<VariantTableStudyRow> tableStudyRows = parseVariantStudyRowsFromArchive(variantCells, chromosome);
-        HBaseToVariantConverter converter = getHbaseToVariantConverter();
+        HBaseToVariantConverter<VariantTableStudyRow> converter = getRowToVariantConverter();
         List<Variant> variants = new ArrayList<>(tableStudyRows.size());
         for (VariantTableStudyRow tableStudyRow : tableStudyRows) {
             variants.add(converter.convert(tableStudyRow));
@@ -218,7 +222,9 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         this.specificPut = context.getConfiguration().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SPECIFIC_PUT, true);
         this.loadSampleColumns = context.getConfiguration().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SAMPLE_COLUMNS, true);
         samplesDataToHBaseConverter = new SamplesDataToHBaseConverter(getHelper().getColumnFamily(), getStudyConfiguration());
-
+        rowToVariantConverter = HBaseToVariantConverter.fromRow(getHelper())
+                .setFailOnEmptyVariants(true)
+                .setSimpleGenotypes(false);
         // Load VCF meta data for columns
         int studyId = getStudyConfiguration().getStudyId();
         resultConverter = new ArchiveResultToVariantConverter(studyId, getHelper().getColumnFamily(), this.getStudyConfiguration());

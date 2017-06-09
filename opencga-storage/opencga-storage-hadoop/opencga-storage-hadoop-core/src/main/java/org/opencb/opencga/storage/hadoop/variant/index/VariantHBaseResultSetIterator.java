@@ -43,7 +43,7 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
     private final ResultSet resultSet;
     private final GenomeHelper genomeHelper;
     private final StudyConfigurationManager scm;
-    private final HBaseToVariantConverter converter;
+    private final HBaseToVariantConverter<ResultSet> converter;
     private final Logger logger = LoggerFactory.getLogger(VariantHBaseResultSetIterator.class);
 
     private boolean hasNext = false;
@@ -59,7 +59,7 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
         if (options == null) {
             options = QueryOptions.empty();
         }
-        converter = new HBaseToVariantConverter(this.genomeHelper, this.scm)
+        converter = HBaseToVariantConverter.fromResultSet(this.genomeHelper, this.scm)
                 .setReturnedFields(returnedFields)
                 .setReturnedSamples(returnedSamples)
                 .setMutableSamplesPosition(false)

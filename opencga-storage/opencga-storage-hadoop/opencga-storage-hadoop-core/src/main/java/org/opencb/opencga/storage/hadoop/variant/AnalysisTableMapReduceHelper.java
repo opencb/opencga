@@ -1,14 +1,12 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import com.google.common.collect.BiMap;
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +26,7 @@ public class AnalysisTableMapReduceHelper implements AutoCloseable {
     private final Mapper.Context context;
     private final VariantTableHelper helper;
     private final StudyConfiguration studyConfiguration;
-    private final HBaseToVariantConverter hbaseToVariantConverter;
+    private final HBaseToVariantConverter<Result> hbaseToVariantConverter;
     private final long timestamp;
     private final BiMap<String, Integer> indexedSamples;
     private final Map<String, Long> timeSum = new ConcurrentHashMap<>();
@@ -47,10 +45,7 @@ public class AnalysisTableMapReduceHelper implements AutoCloseable {
         this.studyConfiguration = getHelper().readStudyConfiguration(); // Variant meta
 
         hBaseManager = new HBaseManager(context.getConfiguration());
-        StudyConfigurationManager scm = new StudyConfigurationManager(
-                new HBaseStudyConfigurationDBAdaptor(getHelper().getAnalysisTableAsString(), context.getConfiguration(),
-                        new ObjectMap(), hBaseManager));
-        hbaseToVariantConverter = new HBaseToVariantConverter(getHelper(), scm)
+        hbaseToVariantConverter = HBaseToVariantConverter.fromResult(getHelper())
                 .setFailOnEmptyVariants(true)
                 .setSimpleGenotypes(false);
         this.indexedSamples = StudyConfiguration.getIndexedSamples(this.studyConfiguration);
@@ -81,7 +76,7 @@ public class AnalysisTableMapReduceHelper implements AutoCloseable {
         return studyConfiguration;
     }
 
-    public HBaseToVariantConverter getHbaseToVariantConverter() {
+    public HBaseToVariantConverter<Result> getHbaseToVariantConverter() {
         return hbaseToVariantConverter;
     }
 

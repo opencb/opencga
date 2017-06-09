@@ -43,7 +43,7 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
     private final ResultScanner resultScanner;
     private final GenomeHelper genomeHelper;
     private final Iterator<Result> iterator;
-    private final HBaseToVariantConverter converter;
+    private final HBaseToVariantConverter<Result> converter;
     private long limit = Long.MAX_VALUE;
     private long count = 0;
 
@@ -52,7 +52,7 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
         this.resultScanner = resultScanner;
         this.genomeHelper = genomeHelper;
         iterator = resultScanner.iterator();
-        converter = new HBaseToVariantConverter(genomeHelper, scm)
+        converter = HBaseToVariantConverter.fromResult(genomeHelper, scm)
                 .setMutableSamplesPosition(false)
                 .setStudyNameAsStudyId(true)
                 .setSimpleGenotypes(true)
