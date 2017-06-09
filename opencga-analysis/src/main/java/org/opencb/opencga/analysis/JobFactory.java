@@ -49,64 +49,6 @@ public class JobFactory {
         this.catalogManager = catalogManager;
     }
 
-    public QueryResult<Job> createJob(ToolManager toolManager, Map<String, List<String>> params, long studyId, String jobName, String description,
-                                      File outDir, List<Long> inputFiles, String sessionId)
-            throws AnalysisExecutionException, CatalogException {
-        return createJob(toolManager, params, studyId, jobName, description, outDir, inputFiles, sessionId, false);
-    }
-
-    public QueryResult<Job> createAndExecuteJob(ToolManager toolManager, Map<String, List<String>> params, long studyId, String jobName, String description,
-                                      File outDir, List<Long> inputFiles, String sessionId)
-            throws AnalysisExecutionException, CatalogException {
-        return createJob(toolManager, params, studyId, jobName, description, outDir, inputFiles, sessionId, true);
-    }
-
-    /**
-     * Create a catalog Job given a {@link ToolManager} and a set of params.
-     *
-     * Requires a ToolManager to create the command line.
-     *
-     * @param toolManager   {@link ToolManager} of the tool
-     * @param params        Params to use with the tool
-     * @param studyId       StudyId where to create the job
-     * @param jobName       Job name
-     * @param description   Job description
-     * @param outDir        Output directory
-     * @param inputFiles    Input files
-     * @param sessionId     User sessionId
-     * @param execute       Execute job locally before create
-     * @return              New catalog job
-     * @throws AnalysisExecutionException
-     * @throws CatalogException
-     */
-    public QueryResult<Job> createJob(ToolManager toolManager, Map<String, List<String>> params, long studyId, String jobName, String description,
-                                      File outDir, List<Long> inputFiles, String sessionId, boolean execute)
-            throws AnalysisExecutionException, CatalogException {
-        Execution execution = toolManager.getExecution();
-        String executable = execution.getExecutable();
-
-        // Create temporal Outdir
-        String randomString = "J_" + StringUtils.randomString(10);
-        URI temporalOutDirUri = catalogManager.createJobOutDir(studyId, randomString, sessionId);
-        params.put(execution.getOutputParam(), Arrays.asList(temporalOutDirUri.getPath()));
-
-        // Create commandLine
-        String commandLine = toolManager.createCommandLine(executable, params);
-        logger.debug("Command line : {}", commandLine);
-
-        Map<String, String> plainParams = params.entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getKey,
-                entry -> entry.getValue().stream().collect(Collectors.joining(",")))
-        );
-
-        HashMap<String, Object> attributes = new HashMap<>();
-        attributes.put("plugin", toolManager.isPlugin()); //TODO: Save type of tool in a better way
-
-        return createJob(studyId, jobName, toolManager.getAnalysisName(), execution.getId(), plainParams, commandLine, description, outDir,
-                temporalOutDirUri, inputFiles, randomString, attributes, new HashMap<>(), sessionId,
-                false, execute);
-    }
-
     @Deprecated
     public QueryResult<Job> createJob(long studyId, String jobName, String toolName, String description,
                                       File outDir, List<Long> inputFiles, final String sessionId,
@@ -157,10 +99,8 @@ public class JobFactory {
         resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, jobSchedulerName);
         if (simulate) { //Simulate a job. Do not create it.
             jobQueryResult = new QueryResult<>("simulatedJob", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(
-                    new Job(-10, jobName, catalogManager.getUserIdBySessionId(sessionId), toolName,
-                            TimeUtils.getTime(), description, start, System.currentTimeMillis(), "", commandLine, -1,
-                            new Job.JobStatus(Job.JobStatus.PREPARED), -1, outDir.getId(), inputFiles, Collections.emptyList(),
-                            null, attributes, resourceManagerAttributes)));
+                    new Job(jobName, catalogManager.getUserIdBySessionId(sessionId), toolName, description, commandLine, outDir.getId(),
+                            inputFiles)));
         } else {
             if (execute) {
                 /** Create a RUNNING job in CatalogManager **/
