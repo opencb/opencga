@@ -365,7 +365,7 @@ public class SampleMongoDBAdaptorTest {
         Sample hg0097 = new Sample(0, "HG0097", "1000g", new Individual(), "A description", 1);
         QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(hg0097, studyId, null);
         dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(new Cohort("Cohort", Study.Type.COLLECTION, "", "",
-                Collections.singletonList(createResult.first().getId()), null), studyId, null);
+                Collections.singletonList(createResult.first().getId()), 1, null), studyId, null);
 
         thrown.expect(CatalogDBException.class);
         dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getId());
@@ -386,7 +386,7 @@ public class SampleMongoDBAdaptorTest {
                 threads.add(new Thread(() -> {
                     try {
                         dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(new Cohort(cohortName, Study.Type.COLLECTION,
-                                "", "", Collections.emptyList(), null), studyId, null);
+                                "", "", Collections.emptyList(), 1, null), studyId, null);
                     } catch (CatalogException ignore) {
                         numFailures.incrementAndGet();
                     }
