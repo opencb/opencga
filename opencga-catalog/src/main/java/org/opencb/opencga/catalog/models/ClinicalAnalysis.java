@@ -21,6 +21,7 @@ public class ClinicalAnalysis extends AbstractAcl<ClinicalAnalysisAclEntry> {
 
     private String creationDate;
     private Status status;
+    private int release;
     private Map<String, Object> attributes;
 
     public enum Type {
@@ -30,8 +31,8 @@ public class ClinicalAnalysis extends AbstractAcl<ClinicalAnalysisAclEntry> {
     public ClinicalAnalysis() {
     }
 
-    public ClinicalAnalysis(long id, String name, String description, Type type, Family family, Individual proband, Sample sample, String
-            creationDate, Status status, Map<String, Object> attributes) {
+    public ClinicalAnalysis(long id, String name, String description, Type type, Family family, Individual proband, Sample sample,
+                            String creationDate, Status status, int release, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -41,6 +42,7 @@ public class ClinicalAnalysis extends AbstractAcl<ClinicalAnalysisAclEntry> {
         this.sample = sample;
         this.creationDate = creationDate;
         this.status = status;
+        this.release = release;
         this.attributes = attributes;
     }
 
@@ -56,6 +58,7 @@ public class ClinicalAnalysis extends AbstractAcl<ClinicalAnalysisAclEntry> {
         sb.append(", sample=").append(sample);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status=").append(status);
+        sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
         sb.append(", acl=").append(acl);
         sb.append('}');
@@ -140,6 +143,15 @@ public class ClinicalAnalysis extends AbstractAcl<ClinicalAnalysisAclEntry> {
 
     public ClinicalAnalysis setStatus(Status status) {
         this.status = status;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public ClinicalAnalysis setRelease(int release) {
+        this.release = release;
         return this;
     }
 

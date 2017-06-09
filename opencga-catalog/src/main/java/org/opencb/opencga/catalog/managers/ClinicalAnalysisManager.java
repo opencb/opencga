@@ -163,6 +163,7 @@ public class ClinicalAnalysisManager extends AbstractManager {
 
         clinicalAnalysis.setStatus(new Status());
         clinicalAnalysis.setAcl(Collections.emptyList());
+        clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));
         clinicalAnalysis.setAttributes(ParamUtils.defaultObject(clinicalAnalysis.getAttributes(), Collections.emptyMap()));
 
         MyResourceId familyResource = catalogManager.getFamilyManager().getId(clinicalAnalysis.getFamily().getName(),

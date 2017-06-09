@@ -30,6 +30,7 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
+        RELEASE("release", INTEGER, ""),
 
         FAMILY_ID("family.id", INTEGER, ""),
         PROBAND_ID("proband.id", INTEGER, ""),
