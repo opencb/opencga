@@ -176,20 +176,23 @@ public class VariantSqlQueryParser {
 
             if (returnedFields.contains(VariantField.STUDIES)) {
                 for (Integer studyId : studyIds) {
-                    List<String> studyColumns = STUDY_COLUMNS;
-//                    if (returnedFields.contains(SAMPLES_FIELD)) {
-//                        studyColumns = STUDY_COLUMNS;
-//                    } else {
-//                        // If samples are not required, do not fetch all the fields
-//                        studyColumns = Collections.singletonList(HOM_REF);
-//                    }
                     StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null).first();
-                    if (VariantStorageEngine.MergeMode.from(studyConfiguration.getAttributes())
-                            .equals(VariantStorageEngine.MergeMode.ADVANCED)) {
-                        for (String studyColumn : studyColumns) {
-                            sb.append(",\"").append(buildColumnKey(studyId, studyColumn)).append('"');
-                        }
+                    VariantStorageEngine.MergeMode mergeMode = VariantStorageEngine.MergeMode.from(studyConfiguration.getAttributes());
+                    List<String> studyColumns = STUDY_COLUMNS;
+                    if (returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)
+                            && mergeMode.equals(VariantStorageEngine.MergeMode.ADVANCED)) {
+                        studyColumns = STUDY_COLUMNS;
+                    } else {
+                        // If samples are not required, do not fetch all the fields
+                        studyColumns = Collections.singletonList(HOM_REF);
                     }
+                    for (String studyColumn : studyColumns) {
+                        sb.append(",\"").append(buildColumnKey(studyId, studyColumn)).append('"');
+                    }
+//                    if (mergeMode.equals(VariantStorageEngine.MergeMode.ADVANCED)) {
+//                    } else {
+//                        sb.append(",\"").append(buildColumnKey(studyId, HOM_REF)).append('"');
+//                    }
                     if (returnedFields.contains(VariantField.STUDIES_STATS)) {
                         for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
                             Column statsColumn = getStatsColumn(studyId, cohortId);

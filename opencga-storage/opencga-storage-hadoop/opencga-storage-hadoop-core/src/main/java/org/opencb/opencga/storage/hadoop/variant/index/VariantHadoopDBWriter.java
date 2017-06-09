@@ -4,7 +4,6 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.BufferedMutator;
 import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -70,10 +69,10 @@ public class VariantHadoopDBWriter implements DataWriter<Variant> {
     public boolean write(List<Variant> list) {
         List<Put> puts = new ArrayList<>(list.size());
         for (Variant variant : list) {
-            if (!variant.getType().equals(VariantType.NO_VARIATION)) {
+            if (VariantMergerTableMapper.TARGET_VARIANT_TYPE_SET.contains(variant.getType())) {
                 Put put = converter.convert(variant);
                 puts.add(put);
-            } //Discard ref_block variants.
+            } //Discard ref_block and symbolic variants.
         }
         try {
             tableMutator.mutate(puts);

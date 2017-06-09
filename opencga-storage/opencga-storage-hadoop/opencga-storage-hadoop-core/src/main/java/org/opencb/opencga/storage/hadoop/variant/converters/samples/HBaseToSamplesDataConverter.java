@@ -5,6 +5,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PVarcharArray;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 
 import java.sql.Array;
@@ -40,6 +41,9 @@ public class HBaseToSamplesDataConverter extends AbstractPhoenixConverter {
                         Map<Integer, List<String>> studyMap = samplesData.computeIfAbsent(studyId, k -> new HashMap<>());
                         studyMap.put(sampleId, toList(value));
                     }
+                } else if (columnName.endsWith(VariantTableStudyRow.HOM_REF)) {
+                    Integer studyId = VariantTableStudyRow.extractStudyId(columnName, true);
+                    samplesData.computeIfAbsent(studyId, k -> new HashMap<>());
                 }
             }
         } catch (SQLException e) {

@@ -5,7 +5,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.converters.proto.VcfSliceToVariantListConverter;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -36,7 +35,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 import static org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
@@ -98,11 +96,7 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
                 ++counter;
                 archiveWriter.write(slice);
 
-                List<Variant> variants = converter.convert(slice)
-                        .stream()
-                        .filter(variant -> !variant.getType().equals(VariantType.NO_VARIATION))
-                        .collect(Collectors.toList());
-
+                List<Variant> variants = converter.convert(slice);
                 variantsWriter.write(variants);
 
                 progressLogger.increment(slice.getRecordsCount());

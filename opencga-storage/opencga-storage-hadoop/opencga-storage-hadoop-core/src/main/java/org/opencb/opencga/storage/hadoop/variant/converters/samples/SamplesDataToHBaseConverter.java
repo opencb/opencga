@@ -8,10 +8,14 @@ import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 
 /**
@@ -27,10 +31,12 @@ public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implem
     private final Set<String> defaultGenotypes = new HashSet<>();
     private final StudyConfiguration studyConfiguration;
     private final List<String> expectedFormat;
+    private final PhoenixHelper.Column studyColumn;
 
     public SamplesDataToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration) {
         super(columnFamily);
         this.studyConfiguration = studyConfiguration;
+        studyColumn = VariantPhoenixHelper.getStudyColumn(studyConfiguration.getStudyId());
         defaultGenotypes.add("0/0");
         defaultGenotypes.add("0|0");
         expectedFormat = HBaseToVariantConverter.getFormat(studyConfiguration);
@@ -41,6 +47,7 @@ public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implem
         byte[] rowKey = VariantPhoenixKeyFactory.generateVariantRowKey(variant);
         Put put = new Put(rowKey);
         add(put, VariantPhoenixHelper.VariantColumn.TYPE, variant.getType().toString());
+        add(put, studyColumn, 0);
         return convert(variant, put, null);
     }
 

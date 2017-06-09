@@ -69,6 +69,7 @@ public class VariantTableStudyRow {
     public static final String PASS_CNT = "P";
     public static final String FILTER_OTHER = "F";
     public static final String CALL_CNT = "C";
+    private static final String MAIN_STUDY_COLUMN = CALL_CNT;
 
     public static final List<String> STUDY_COLUMNS = Collections.unmodifiableList(
             Arrays.asList(NOCALL, HOM_REF, HET_REF, HOM_VAR, OTHER, COMPLEX, PASS_CNT, CALL_CNT, FILTER_OTHER));
@@ -470,7 +471,7 @@ public class VariantTableStudyRow {
         Set<Integer> studyIds = familyMap.entrySet().stream()
                 .filter(entry -> entry.getValue() != null && entry.getValue().length > 0)
                 .map(entry -> Bytes.toString(entry.getKey()))
-                .filter(key -> key.endsWith(HOM_REF))
+                .filter(key -> key.endsWith(MAIN_STUDY_COLUMN))
                 .map(key -> extractStudyId(key, false))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
@@ -563,7 +564,7 @@ public class VariantTableStudyRow {
         Set<Integer> studyIds = new HashSet<>();
         for (int i = 0; i < metaData.getColumnCount(); i++) {
             String columnName = metaData.getColumnName(i + 1);
-            if (columnName != null && !columnName.isEmpty() && columnName.endsWith(HOM_REF)) {
+            if (columnName != null && !columnName.isEmpty() && columnName.endsWith(MAIN_STUDY_COLUMN)) {
                 if (resultSet.getBytes(columnName) != null) {
                     Integer studyId = extractStudyId(columnName, false);
                     if (studyId != null) {
