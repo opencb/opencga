@@ -89,6 +89,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
     private List<String> tags;
 
     private Map<String, String> params;
+    private int release;
     private Map<String, Object> attributes;
     private Map<String, Object> resourceManagerAttributes;
     private String error;
@@ -99,22 +100,25 @@ public class Job extends AbstractAcl<JobAclEntry> {
     }
 
     public Job(String name, String userId, String executable, Type type, List<Long> input, List<Long> output, long outDirId,
-               Map<String, String> params) {
-        this(-1, name, userId, "", type, TimeUtils.getTime(), "", -1, -1, "", "", executable, "", 0, new JobStatus(JobStatus.PREPARED),
-                -1, outDirId, input, output, new ArrayList<>(), params, new HashMap<>(), new HashMap<>(), "", "");
+               Map<String, String> params, int release) {
+        this(-1, name, userId, "", type, TimeUtils.getTime(), "", -1, -1, "", "", "", "", executable, "", 0,
+                new JobStatus(JobStatus.PREPARED), -1, outDirId, input, output, new ArrayList<>(), params, release, new HashMap<>(),
+                new HashMap<>());
     }
 
-    public Job(String name, String userId, String toolName, String description, String commandLine, long outDirId, List<Long> input) {
+    public Job(String name, String userId, String toolName, String description, String commandLine, long outDirId, List<Long> input,
+               int release) {
         // FIXME: Modify this to take into account both toolName and executable for RC2
-        this(-1, name, userId, toolName, Type.ANALYSIS, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", null,
-                null, commandLine, -1, new JobStatus(JobStatus.PREPARED), 0, outDirId, input, Collections.emptyList(),
-                Collections.emptyList(), new HashMap<>(), new HashMap<>(), new HashMap<>(), ERRNO_NONE, null);
+        this(-1, name, userId, toolName, Type.ANALYSIS, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "",
+                ERRNO_NONE, null, null, null, commandLine, -1, new JobStatus(JobStatus.PREPARED), 0, outDirId, input,
+                Collections.emptyList(), Collections.emptyList(), new HashMap<>(), release, new HashMap<>(), new HashMap<>());
     }
 
     public Job(long id, String name, String userId, String toolName, Type type, String creationDate, String description, long startTime,
-               long endTime, String outputError, String execution, String executable, String commandLine, long visits, JobStatus status,
-               long size, long outDirId, List<Long> input, List<Long> output, List<String> tags, Map<String, String> params,
-               Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error, String errorDescription) {
+               long endTime, String outputError, String error, String errorDescription, String execution, String executable,
+               String commandLine, long visits, JobStatus status, long size, long outDirId, List<Long> input, List<Long> output,
+               List<String> tags, Map<String, String> params, int release, Map<String, Object> attributes,
+               Map<String, Object> resourceManagerAttributes) {
         this.id = id;
         this.name = name;
         this.userId = userId;
@@ -136,6 +140,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
         this.output = output;
         this.tags = tags;
         this.params = params;
+        this.release = release;
         this.attributes = attributes;
         this.resourceManagerAttributes = resourceManagerAttributes;
         if (this.resourceManagerAttributes == null) {
@@ -234,6 +239,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
         sb.append(", output=").append(output);
         sb.append(", tags=").append(tags);
         sb.append(", params=").append(params);
+        sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
         sb.append(", resourceManagerAttributes=").append(resourceManagerAttributes);
         sb.append(", error='").append(error).append('\'');
@@ -424,6 +430,15 @@ public class Job extends AbstractAcl<JobAclEntry> {
 
     public Job setParams(Map<String, String> params) {
         this.params = params;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public Job setRelease(int release) {
+        this.release = release;
         return this;
     }
 

@@ -18,22 +18,18 @@ package org.opencb.opencga.analysis;
 
 import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.utils.StringUtils;
-import org.opencb.opencga.catalog.models.tool.Execution;
 import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Created on 30/11/15
@@ -100,7 +96,7 @@ public class JobFactory {
         if (simulate) { //Simulate a job. Do not create it.
             jobQueryResult = new QueryResult<>("simulatedJob", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(
                     new Job(jobName, catalogManager.getUserIdBySessionId(sessionId), toolName, description, commandLine, outDir.getId(),
-                            inputFiles)));
+                            inputFiles, 1)));
         } else {
             if (execute) {
                 /** Create a RUNNING job in CatalogManager **/

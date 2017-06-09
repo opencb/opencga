@@ -675,6 +675,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case EXECUTION:
                     case COMMAND_LINE:
                     case VISITS:
+                    case RELEASE:
                     case STATUS:
                     case STATUS_NAME:
                     case STATUS_MSG:

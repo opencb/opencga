@@ -340,7 +340,8 @@ public class JobManager extends AbstractManager implements IJobManager {
         }
 
         // FIXME: Pass the toolId
-        Job job = new Job(name, userId, toolName, description, commandLine, outDir.getId(), inputFiles);
+        Job job = new Job(name, userId, toolName, description, commandLine, outDir.getId(), inputFiles,
+                catalogManager.getStudyManager().getCurrentRelease(studyId));
         job.setOutput(outputFiles);
         job.setStatus(status);
         job.setStartTime(startTime);
@@ -592,7 +593,8 @@ public class JobManager extends AbstractManager implements IJobManager {
             throws CatalogException {
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
-        Job job = new Job(jobName, userId, executable, type, input, output, outDirId, params)
+        Job job = new Job(jobName, userId, executable, type, input, output, outDirId, params,
+                catalogManager.getStudyManager().getCurrentRelease(studyId))
                 .setDescription(description)
                 .setAttributes(attributes);
 
