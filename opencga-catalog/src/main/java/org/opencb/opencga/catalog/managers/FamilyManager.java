@@ -165,6 +165,7 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         family.setAnnotationSets(ParamUtils.defaultObject(family.getAnnotationSets(), Collections.emptyList()));
         family.setAnnotationSets(AnnotationManager.validateAnnotationSets(family.getAnnotationSets(), studyDBAdaptor));
         family.setAcl(Collections.emptyList());
+        family.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));
         family.setAttributes(ParamUtils.defaultObject(family.getAttributes(), Collections.emptyMap()));
 
         checkAndCreateAllIndividualsFromFamily(studyId, family, sessionId);

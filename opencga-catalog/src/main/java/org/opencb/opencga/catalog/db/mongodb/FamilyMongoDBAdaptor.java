@@ -449,6 +449,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                         break;
                     case NAME:
                     case DESCRIPTION:
+                    case RELEASE:
                     case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:

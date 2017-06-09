@@ -89,6 +89,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
                            @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
                            @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
+                           @ApiParam(value = "Release value") @QueryParam("release") String release,
                            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
@@ -351,7 +352,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
             return new Family(name, father != null ? father.toIndividual(studyStr, studyManager, sessionId) : null,
                     mother != null ? mother.toIndividual(studyStr, studyManager, sessionId) : null, childrenList,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, description, ontologyTerms, annotationSetList,
+                    parentalConsanguinity != null ? parentalConsanguinity : false, description, ontologyTerms, annotationSetList, 1,
                     attributes);
         }
     }
