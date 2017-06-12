@@ -21,19 +21,19 @@ public class MetaCommandExecutor extends AdminCommandExecutor {
         this.logger.debug("Executing Meta command line");
         String subCommandString = metaCommandOptions.getParsedSubCommand();
         switch (subCommandString) {
-            case "update":
-                insertSecretKey(subCommandString);
+            case "key":
+                insertSecretKey();
                 break;
             default:
-                logger.error("Subcommand not valid");
+                logger.error("Subcommand not valid" + subCommandString);
                 break;
         }
     }
 
-    private void insertSecretKey(String key) throws CatalogException {
+    private void insertSecretKey() throws CatalogException {
         if(this.metaCommandOptions.metaKeyCommandOptions.updateSecretKey != null) {
             CatalogManager catalogManager = new CatalogManager(configuration);
-            catalogManager.updateSecretKey(key);
+            catalogManager.updateSecretKey(this.metaCommandOptions.metaKeyCommandOptions.updateSecretKey);
         }
 
     }

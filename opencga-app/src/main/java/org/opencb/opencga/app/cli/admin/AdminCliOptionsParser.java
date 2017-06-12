@@ -288,7 +288,7 @@ public class AdminCliOptionsParser {
         public MetaCommandOptions() {
             super();
             this.commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
-            this.metaKeyCommandOptions = AdminCliOptionsParser.this.new MetaKeyCommandOptions();
+            this.metaKeyCommandOptions = new MetaKeyCommandOptions();
         }
     }
 
@@ -668,6 +668,7 @@ public class AdminCliOptionsParser {
         @Parameter(
                 names = {"--update"},
                 description = "Update secret key in OpenCGA",
+                required = true,
                 arity = 1
         )
         public String updateSecretKey;
