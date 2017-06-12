@@ -73,8 +73,8 @@ public class UserManager extends AbstractManager implements IUserManager {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
 
         authenticationManagerMap = new HashMap<>();
-        if (configuration.getAuthenticationOrigins() != null) {
-            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthenticationOrigins()) {
+        if (configuration.getAuthentication().getAuthenticationOrigins() != null) {
+            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
                 if (authenticationOrigin.getId() != null) {
                     switch (authenticationOrigin.getType()) {
                         case LDAP:
@@ -95,12 +95,12 @@ public class UserManager extends AbstractManager implements IUserManager {
         authenticationManagerMap.putIfAbsent(INTERNAL_AUTHORIZATION,
                 new CatalogAuthenticationManager(catalogDBAdaptorFactory, configuration));
         AuthenticationOrigin authenticationOrigin = new AuthenticationOrigin();
-        if (configuration.getAuthenticationOrigins() == null) {
-            configuration.setAuthenticationOrigins(Arrays.asList(authenticationOrigin));
+        if (configuration.getAuthentication().getAuthenticationOrigins() == null) {
+            configuration.getAuthentication().setAuthenticationOrigins(Arrays.asList(authenticationOrigin));
         } else {
             // Check if OPENCGA authentication is already present in catalog configuration
             boolean catalogPresent = false;
-            for (AuthenticationOrigin origin : configuration.getAuthenticationOrigins()) {
+            for (AuthenticationOrigin origin : configuration.getAuthentication().getAuthenticationOrigins()) {
                 if (AuthenticationOrigin.AuthenticationType.OPENCGA == origin.getType()) {
                     catalogPresent = true;
                     break;
@@ -108,9 +108,9 @@ public class UserManager extends AbstractManager implements IUserManager {
             }
             if (!catalogPresent) {
                 List<AuthenticationOrigin> linkedList = new LinkedList<>();
-                linkedList.addAll(configuration.getAuthenticationOrigins());
+                linkedList.addAll(configuration.getAuthentication().getAuthenticationOrigins());
                 linkedList.add(authenticationOrigin);
-                configuration.setAuthenticationOrigins(linkedList);
+                configuration.getAuthentication().setAuthenticationOrigins(linkedList);
             }
         }
     }
@@ -151,8 +151,8 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     private AuthenticationOrigin getAuthenticationOrigin(String authOrigin) {
-        if (configuration.getAuthenticationOrigins() != null) {
-            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthenticationOrigins()) {
+        if (configuration.getAuthentication().getAuthenticationOrigins() != null) {
+            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
                 if (authOrigin.equals(authenticationOrigin.getId())) {
                     return authenticationOrigin;
                 }

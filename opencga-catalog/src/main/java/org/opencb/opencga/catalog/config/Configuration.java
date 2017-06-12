@@ -44,7 +44,6 @@ public class Configuration {
     private String toolDir;
 
     private Admin admin;
-    private List<AuthenticationOrigin> authenticationOrigins;
     private Monitor monitor;
     private Execution execution;
     private Audit audit;
@@ -111,7 +110,6 @@ public class Configuration {
         sb.append(", tempJobsDir='").append(tempJobsDir).append('\'');
         sb.append(", toolDir='").append(toolDir).append('\'');
         sb.append(", admin=").append(admin);
-        sb.append(", authenticationOrigins=").append(authenticationOrigins);
         sb.append(", monitor=").append(monitor);
         sb.append(", execution=").append(execution);
         sb.append(", audit=").append(audit);
@@ -119,6 +117,7 @@ public class Configuration {
         sb.append(", email=").append(email);
         sb.append(", catalog=").append(catalog);
         sb.append(", server=").append(server);
+        sb.append(", authentication=").append(authentication);
         sb.append('}');
         return sb.toString();
     }
@@ -201,15 +200,6 @@ public class Configuration {
 
     public Configuration setAdmin(Admin admin) {
         this.admin = admin;
-        return this;
-    }
-
-    public List<AuthenticationOrigin> getAuthenticationOrigins() {
-        return authenticationOrigins;
-    }
-
-    public Configuration setAuthenticationOrigins(List<AuthenticationOrigin> authenticationOrigins) {
-        this.authenticationOrigins = authenticationOrigins;
         return this;
     }
 

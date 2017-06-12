@@ -10,9 +10,6 @@ dataDir: "/tmp/opencga/sessions"
 tempJobsDir: "/tmp/opencga/sessions/jobs"
 toolDir: "tools"
 
-authentication:
-  expiration: 60
-
 admin:
   password: "admin"
   email: "admin@admin.com"
@@ -67,15 +64,16 @@ catalog:
     password: ""
     options:
       authenticationDatabase: ""
-
+authentication:
+  expiration: 60
 #LDAP configuration example
-authenticationOrigins:
-- id: ldap            # Any id
-  type: LDAP          # At the moment, we only support LDAP
-  host: ldap://localhost:9000
-  options:
-    usersSearch: dc=ge,dc=co,dc=uk # Base search to look for the users
-    groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for the groups
+  authenticationOrigins:
+  - id: ldap            # Any id
+    type: LDAP          # At the moment, we only support LDAP
+    host: ldap://localhost:9000
+    options:
+      usersSearch: dc=ge,dc=co,dc=uk # Base search to look for the users
+      groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for the groups
 
 server:
   rest:

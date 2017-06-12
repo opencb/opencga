@@ -62,7 +62,6 @@ public class Admin {
 
     public String toString() {
         StringBuilder sb = new StringBuilder("Admin{");
-        sb.append("password=\'").append(this.password).append('\'');
         sb.append(", email=\'").append(this.email).append('\'');
         sb.append('}');
         return sb.toString();

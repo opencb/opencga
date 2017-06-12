@@ -37,6 +37,7 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogTokenException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.acls.AclParams;
@@ -75,27 +76,10 @@ public class OpenCGAWSServer {
     @PathParam("version")
     @ApiParam(name = "version", value = "OpenCGA major version", allowableValues = "v1", defaultValue = "v1")
     protected String version;
-
-    //    @DefaultValue("")
-//    @QueryParam("exclude")
-//    @ApiParam(name = "exclude", value = "Fields excluded in response. Whole JSON path.")
     protected String exclude;
-
-    //    @DefaultValue("")
-//    @QueryParam("include")
-//    @ApiParam(name = "include", value = "Only fields included in response. Whole JSON path.")
     protected String include;
-
-    //    @DefaultValue("-1")
-//    @QueryParam("limit")
-//    @ApiParam(name = "limit", value = "Maximum number of documents to be returned.")
     protected int limit;
-
-    //    @DefaultValue("0")
-//    @QueryParam("skip")
-//    @ApiParam(name = "skip", value = "Number of documents to be skipped when querying for data.")
     protected long skip;
-
     protected boolean count;
     protected boolean lazy;
     protected String sessionId;
@@ -105,7 +89,8 @@ public class OpenCGAWSServer {
     @ApiParam("Session id")
     protected String dummySessionId;
 
-    @HeaderParam("auth")
+    @HeaderParam("Authorization")
+    @DefaultValue("Bearer ")
     @ApiParam("JWT Authentication token")
     protected String authentication;
 
@@ -124,10 +109,6 @@ public class OpenCGAWSServer {
     protected static ObjectMapper jsonObjectMapper;
 
     protected static Logger logger; // = LoggerFactory.getLogger(this.getClass());
-
-//    @DefaultValue("true")
-//    @QueryParam("metadata")
-//    protected boolean metadata;
 
 
     protected static AtomicBoolean initialized;
@@ -185,15 +166,19 @@ public class OpenCGAWSServer {
                     + "or properly defined.");
         }
 
-        if(headerParam.getRequestHeader("auth") != null) {
-            this.sessionId = headerParam.getRequestHeader("auth").get(0);
+        try {
+            verifyHeaders(headerParam);
+        } catch (CatalogTokenException e) {
+            throw new IllegalStateException(e);
         }
 
-        if(StringUtils.isEmpty(this.sessionId)) {
-            this.sessionId = this.params.getFirst("sid");
-        }
-        query = new Query();
-        queryOptions = new QueryOptions();
+        query = new
+
+        Query();
+
+        queryOptions = new
+
+        QueryOptions();
 
         parseParams();
 
@@ -246,6 +231,7 @@ public class OpenCGAWSServer {
     /**
      * This method loads OpenCGA configuration files and initialize CatalogManager and StorageManagerFactory.
      * This must be only executed once.
+     *
      * @param configDir directory containing the configuration files
      */
     private void initOpenCGAObjects(java.nio.file.Path configDir) {
@@ -314,7 +300,7 @@ public class OpenCGAWSServer {
 
         // Add all the others QueryParams from the URL
         for (Map.Entry<String, List<String>> entry : multivaluedMap.entrySet()) {
-            String value =  entry.getValue().get(0);
+            String value = entry.getValue().get(0);
             switch (entry.getKey()) {
                 case QueryOptions.INCLUDE:
                 case QueryOptions.EXCLUDE:
@@ -389,7 +375,7 @@ public class OpenCGAWSServer {
     }
 
     private void parseIncludeExclude(MultivaluedMap<String, String> multivaluedMap, String key, String value) {
-        if(value != null && !value.isEmpty()) {
+        if (value != null && !value.isEmpty()) {
             queryOptions.put(key, new LinkedList<>(Splitter.on(",").splitToList(value)));
         } else {
             queryOptions.put(key, (multivaluedMap.get(key) != null)
@@ -547,4 +533,18 @@ public class OpenCGAWSServer {
                 .build();
     }
 
+    private void verifyHeaders(HttpHeaders headerParam) throws CatalogTokenException {
+
+        if (headerParam.getRequestHeader("Authorization") != null) {
+            String authorization = headerParam.getRequestHeader("Authorization").get(0);
+            if (!authorization.startsWith("Bearer ")) {
+                throw new CatalogTokenException("Authorization Header must start with Bearer");
+            }
+            this.sessionId = authorization.substring("Bearer".length()).trim();
+        }
+
+        if (StringUtils.isEmpty(this.sessionId)) {
+            this.sessionId = this.params.getFirst("sid");
+        }
+    }
 }
