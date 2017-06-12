@@ -33,7 +33,7 @@ public class MetaCommandExecutor extends AdminCommandExecutor {
     private void insertSecretKey() throws CatalogException {
         if(this.metaCommandOptions.metaKeyCommandOptions.updateSecretKey != null) {
             CatalogManager catalogManager = new CatalogManager(configuration);
-            catalogManager.updateSecretKey(this.metaCommandOptions.metaKeyCommandOptions.updateSecretKey);
+            catalogManager.insertUpdatedSecretKey(this.metaCommandOptions.metaKeyCommandOptions.updateSecretKey);
         }
 
     }

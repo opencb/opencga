@@ -105,7 +105,7 @@ public class CatalogManager implements AutoCloseable {
 //        catalogClient = new CatalogDBClient(this);
         //TODO: Check if catalog is empty
         //TODO: Setup catalog if it's empty.
-        this.updateSecretKey();
+        this.populateSecretKey();
         auditManager = new CatalogAuditManager(catalogDBAdaptorFactory.getCatalogAuditDbAdaptor(), catalogDBAdaptorFactory
                 .getCatalogUserDBAdaptor(), authorizationManager, configuration);
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager, this.configuration);
@@ -130,14 +130,14 @@ public class CatalogManager implements AutoCloseable {
                 configuration);
     }
 
-    private void updateSecretKey() throws CatalogDBException {
+    private void populateSecretKey() throws CatalogDBException {
         if (StringUtils.isEmpty(this.configuration.getAdmin().getSecretKey())) {
             this.configuration.getAdmin().setSecretKey(this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readSecretKey());
         }
 
     }
 
-    public void updateSecretKey(String key) throws CatalogDBException {
+    public void insertUpdatedSecretKey(String key) throws CatalogDBException {
             this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().writeSecretKey(key);
     }
 
@@ -536,19 +536,6 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Group> deleteGroup(String studyStr, String groupId, String sessionId) throws CatalogException {
         return studyManager.deleteGroup(studyStr, groupId, sessionId);
     }
-
-//    @Deprecated
-//    public QueryResult addUsersToGroup(long studyId, String groupId, String userIds, String sessionId) throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        return authorizationManager.addUsersToGroup(userId, studyId, groupId, userIds);
-//    }
-//
-//    @Deprecated
-//    public QueryResult removeUsersFromGroup(long studyId, String groupId, String userIds, String sessionId) throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        authorizationManager.removeUsersFromGroup(userId, studyId, groupId, userIds);
-//        return new QueryResult("removeUsersFromGroup");
-//    }
 
     @Deprecated
     public QueryResult<StudyAclEntry> createStudyAcls(String studyStr, String members, String permissions, @Nullable String templateId,
