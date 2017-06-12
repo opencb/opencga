@@ -130,7 +130,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create-folder")
-    @ApiOperation(value = "Create a folder in the catalog environment [DEPRECATED]", position = 2, response = File.class,
+    @ApiOperation(value = "Create a folder in the catalog environment [DEPRECATED]", hidden = true, position = 2, response = File.class,
             notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST /create version instead. Be aware that "
                     + "this is web service is not tested and this can be deprecated in a future version.")
     public Response createFolder(@ApiParam(value = "(DEPRECATED) Use study instead", hidden = true)
@@ -652,7 +652,7 @@ public class FileWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Comma separated Format values. For existing Formats see files/help", required = false) @DefaultValue("") @QueryParam("format") String formats,
                            @ApiParam(value = "Status", required = false) @DefaultValue("") @QueryParam("status") String status,
                            @ApiParam(value = "Directory under which we want to look for files or folders", required = false) @DefaultValue("") @QueryParam("directory") String directory,
-                           @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)", required = false) @DefaultValue("") @QueryParam("creationDate") String creationDate,
+                           @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
                            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss)", required = false) @DefaultValue("") @QueryParam("modificationDate") String modificationDate,
                            @ApiParam(value = "Description", required = false) @DefaultValue("") @QueryParam("description") String description,
                            @ApiParam(value = "Size", required = false) @DefaultValue("") @QueryParam("size") Long size,
@@ -1133,7 +1133,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{file}/update")
-    @ApiOperation(value = "Update fields of a file [DEPRECATED]", position = 16, response = File.class,
+    @ApiOperation(value = "Update fields of a file [DEPRECATED]", hidden = true, position = 16, response = File.class,
             notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web "
                     + "service is not tested and this can be deprecated in a future version.")
     public Response update(@ApiParam(value = "File id") @PathParam(value = "file") String fileIdStr,
@@ -1498,7 +1498,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{files}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of users or groups [DEPRECATED]", response = QueryResponse.class,
+    @ApiOperation(value = "Define a set of permissions for a list of users or groups [DEPRECATED]", hidden = true, response = QueryResponse.class,
             notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
                     + "/acl/{members}/update entrypoint.")
     public Response createAclPOST(
@@ -1518,7 +1518,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{file}/acl/{memberId}/info")
-    @ApiOperation(value = "Return the permissions granted for the user or group [DEPRECATED]", position = 20,
+    @ApiOperation(value = "Return the permissions granted for the user or group [DEPRECATED]", position = 20, hidden = true,
             response = QueryResponse.class,
             notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
                     + "/acl entrypoint.")
@@ -1598,7 +1598,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{files}/acl/{memberIds}/delete")
-    @ApiOperation(value = "Remove all the permissions granted for the user or group [DEPRECATED]", position = 22,
+    @ApiOperation(value = "Remove all the permissions granted for the user or group [DEPRECATED]", position = 22, hidden = true,
             response = QueryResponse.class,
             notes = "DEPRECATED: The usage of this webservice is discouraged. A RESET action has been added to the /acl/{members}/update "
                     + "entrypoint.")

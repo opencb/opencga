@@ -9,7 +9,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
@@ -17,6 +16,7 @@ import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -67,7 +67,7 @@ public class AuthorizationMongoDBAdaptorTest {
                 SampleAclEntry.SamplePermissions.UPDATE.name()
         ));
         s1 = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(new Sample(0, "s1", "", new Individual(), "", "", false,
-                Arrays.asList(acl_s1_user1, acl_s1_user2), Collections.emptyList(), Collections.emptyMap()), studyId, null).first();
+                Arrays.asList(acl_s1_user1, acl_s1_user2), Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), studyId, null).first();
         acl_s2_user1 = new SampleAclEntry(user1.getId(), Arrays.asList());
         acl_s2_user2 = new SampleAclEntry(user2.getId(), Arrays.asList(
                 SampleAclEntry.SamplePermissions.VIEW.name(),

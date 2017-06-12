@@ -54,8 +54,8 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create a new user [DEPRECATED]", response = User.class,
-    notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+    @ApiOperation(value = "Create a new user [DEPRECATED]", response = User.class, hidden = true,
+            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
             + "is not tested and this can be deprecated in a future version.")
     public Response createUser(
             @ApiParam(value = "User id", hidden = true) @QueryParam("userId") String userId,
@@ -251,8 +251,8 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{user}/update")
-    @ApiOperation(value = "Update some user attributes [DEPRECATED]", response = User.class,
-    notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+    @ApiOperation(value = "Update some user attributes [DEPRECATED]", response = User.class, hidden = true,
+            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
             + "is not tested and this can be deprecated in a future version.")
     public Response update(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                            @ApiParam(value = "User name") @QueryParam("name") String name,

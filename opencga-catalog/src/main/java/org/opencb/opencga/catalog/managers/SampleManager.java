@@ -221,7 +221,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         }
 
         Sample sample = new Sample(-1, name, source, individual, description, type, somatic, Collections.emptyList(),
-                Collections.emptyList(), attributes);
+                Collections.emptyList(), new ArrayList<>(), attributes);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         QueryResult<Sample> queryResult = sampleDBAdaptor.insert(sample, studyId, options);
@@ -758,6 +758,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                 case SOMATIC:
                 case DESCRIPTION:
                 case ATTRIBUTES:
+                case ONTOLOGY_TERMS:
                     break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);

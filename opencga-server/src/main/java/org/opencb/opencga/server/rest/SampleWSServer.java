@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.managers.api.ISampleManager;
 import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.OntologyTerm;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
@@ -87,8 +88,8 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create sample [DEPRECATED]", position = 2, response = Sample.class,
-    notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+    @ApiOperation(value = "Create sample [DEPRECATED]", position = 2, response = Sample.class, hidden = true,
+            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
             + "is not tested and this can be deprecated in a future version.")
     public Response createSample(@ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -184,6 +185,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "somatic") @QueryParam("somatic") Boolean somatic,
                            @ApiParam(value = "Individual id or name", hidden = true) @QueryParam("individual.id") String individualId,
                            @ApiParam(value = "Individual id or name") @QueryParam("individual") String individual,
+                           @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
                            @ApiParam(value = "Ontology terms") @QueryParam("ontologies") String ontologies,
                            @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
                            @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
@@ -214,8 +216,8 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{sample}/update")
-    @ApiOperation(value = "Update some sample attributes using GET method [DEPRECATED]", position = 6, response = Sample.class,
-    notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+    @ApiOperation(value = "Update some sample attributes using GET method [DEPRECATED]", position = 6, response = Sample.class, hidden = true,
+            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
             + "is not tested and this can be deprecated in a future version.")
     public Response update(@ApiParam(value = "Sample id or name", required = true) @PathParam("sample") String sampleStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -505,7 +507,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{samples}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of members [DEPRECATED]", position = 19,
+    @ApiOperation(value = "Define a set of permissions for a list of members [DEPRECATED]", position = 19, hidden = true,
             notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
                     + "/acl/{members}/update entrypoint.")
     public Response createRolePOST(
@@ -525,7 +527,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{sample}/acl/{memberId}/info")
-    @ApiOperation(value = "Returns the set of permissions granted for the member [DEPRECATED]", position = 20,
+    @ApiOperation(value = "Returns the set of permissions granted for the member [DEPRECATED]", position = 20, hidden = true,
             notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
                     + "/acl entrypoint.")
     public Response getAcl(@ApiParam(value = "Sample id or name", required = true) @PathParam("sample") String sampleIdStr,
@@ -637,7 +639,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{samples}/acl/{memberId}/delete")
-    @ApiOperation(value = "Remove all the permissions granted for the member [DEPRECATED]", position = 22,
+    @ApiOperation(value = "Remove all the permissions granted for the member [DEPRECATED]", position = 22, hidden = true,
             notes = "DEPRECATED: The usage of this webservice is discouraged. A RESET action has been added to the /acl/{members}/update "
                     + "entrypoint.")
     public Response deleteAcl(@ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("samples")
@@ -659,6 +661,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         public String type;
         public String source;
         public boolean somatic;
+        public List<OntologyTerm> ontologyTerms;
         public List<CommonModels.AnnotationSetParams> annotationSets;
         public Map<String, Object> attributes;
     }
@@ -683,7 +686,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             }
 
             return new Sample(-1, name, source, individual != null ? individual.toIndividual(studyStr, studyManager, sessionId) : null,
-                    description, type, somatic, null, annotationSetList, attributes);
+                    description, type, somatic, null, annotationSetList, ontologyTerms, attributes);
         }
     }
 }

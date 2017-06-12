@@ -49,8 +49,8 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create a new project [DEPRECATED]", response = Project.class,
-    notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+    @ApiOperation(value = "Create a new project [DEPRECATED]", response = Project.class, hidden = true,
+            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
             + "is not tested and this can be deprecated in a future version.")
     public Response createProject(@ApiParam(value = "Project name", required = true) @QueryParam("name") String name,
                                   @ApiParam(value = "Project alias. Unique name without spaces that will be used to identify the project",
@@ -149,8 +149,8 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{project}/update")
-    @ApiOperation(value = "Update some project attributes [DEPRECATED]", position = 4,
-    notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+    @ApiOperation(value = "Update some project attributes [DEPRECATED]", position = 4, hidden = true,
+            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
             + "is not tested and this can be deprecated in a future version.")
     public Response update(@ApiParam(value = "Project id or alias", required = true) @PathParam("project") String projectStr,
                            @ApiParam(value = "Project name") @QueryParam("name") String name,

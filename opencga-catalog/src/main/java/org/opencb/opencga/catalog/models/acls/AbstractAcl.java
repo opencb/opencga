@@ -31,4 +31,8 @@ public abstract class AbstractAcl<T extends AbstractAclEntry> {
         return acl;
     }
 
+    public AbstractAcl setAcl(List<T> acl) {
+        this.acl = acl;
+        return this;
+    }
 }

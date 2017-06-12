@@ -73,6 +73,7 @@ public class CatalogManager implements AutoCloseable {
     private ISampleManager sampleManager;
     private ICohortManager cohortManager;
     private FamilyManager familyManager;
+    private ClinicalAnalysisManager clinicalAnalysisManager;
 //    private AuthenticationManager authenticationManager;
     private CatalogAuditManager auditManager;
     private SessionManager sessionManager;
@@ -138,6 +139,8 @@ public class CatalogManager implements AutoCloseable {
                 catalogIOManagerFactory, configuration);
         familyManager = new FamilyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManagerFactory,
                 configuration);
+        clinicalAnalysisManager = new ClinicalAnalysisManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
+                catalogIOManagerFactory, configuration);
     }
 
     public ObjectMap getDatabaseStatus() {
@@ -1232,6 +1235,10 @@ public class CatalogManager implements AutoCloseable {
 
     public FamilyManager getFamilyManager() {
         return familyManager;
+    }
+
+    public ClinicalAnalysisManager getClinicalAnalysisManager() {
+        return clinicalAnalysisManager;
     }
 
     public Configuration getConfiguration() {

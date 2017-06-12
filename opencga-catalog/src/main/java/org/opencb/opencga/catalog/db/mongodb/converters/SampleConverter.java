@@ -41,8 +41,6 @@ public class SampleConverter extends GenericDocumentComplexConverter<Sample> {
                     object.put("individual", new Document("id", -1));
                 }
             }
-        } else {
-            object.put("individual", new Document("id", -1));
         }
         return super.convertToDataModelType(object);
     }

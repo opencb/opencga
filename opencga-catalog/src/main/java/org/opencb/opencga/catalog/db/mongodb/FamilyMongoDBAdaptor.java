@@ -121,23 +121,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         }
     }
 
-    private Individual getIndividual(Individual individual) {
-        Individual retIndividual = individual;
-        if (individual != null && individual.getId() > 0) {
-            QueryResult<Individual> individualQueryResult = null;
-            try {
-                individualQueryResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(individual.getId(),
-                        QueryOptions.empty());
-            } catch (CatalogDBException e) {
-                logger.error(e.getMessage(), e);
-            }
-            if (individualQueryResult.getNumResults() == 1) {
-                retIndividual = individualQueryResult.first();
-            }
-        }
-        return retIndividual;
-    }
-
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         if (!query.containsKey(QueryParams.STATUS_NAME.key())) {

@@ -107,7 +107,8 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create a cohort [DEPRECATED]", position = 1, notes = "DEPRECATED: the usage of this web service is discouraged, "
+    @ApiOperation(value = "Create a cohort [DEPRECATED]", hidden = true, notes = "DEPRECATED: the usage of this web service is "
+            + "discouraged, "
             + "please use the POST version instead. Be aware that this is web service is not tested and this can be deprecated in a "
             + "future version. <br>"
             + "A cohort can be created by providing a list of SampleIds, "
@@ -289,7 +290,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohort}/update")
-    @ApiOperation(value = "Update some user attributes using GET method [DEPRECATED]", position = 4, response = Cohort.class,
+    @ApiOperation(value = "Update some user attributes using GET method [DEPRECATED]", hidden = true, position = 4, response = Cohort.class,
         notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web "
                 + "service is not tested and this can be deprecated in a future version.")
     public Response update(@ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
@@ -554,7 +555,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{cohorts}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of members [DEPRECATED]", position = 19,
+    @ApiOperation(value = "Define a set of permissions for a list of members [DEPRECATED]", hidden = true, position = 19,
             notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
                     + "/acl/{members}/update entrypoint.")
     public Response createRolePOST(
@@ -574,7 +575,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohort}/acl/{memberId}/info")
-    @ApiOperation(value = "Return the set of permissions granted for the member [DEPRECATED]", position = 20,
+    @ApiOperation(value = "Return the set of permissions granted for the member [DEPRECATED]", hidden = true, position = 20,
             notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
                     + "/acl entrypoint.")
     public Response getAcl(@ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortIdStr,
@@ -650,7 +651,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohort}/acl/{memberId}/delete")
-    @ApiOperation(value = "Delete all the permissions granted for the member [DEPRECATED]", position = 22,
+    @ApiOperation(value = "Delete all the permissions granted for the member [DEPRECATED]", hidden = true, position = 22,
             notes = "DEPRECATED: The usage of this webservice is discouraged. A RESET action has been added to the /acl/{members}/update "
                     + "entrypoint.")
     public Response deleteAcl(@ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortIdStr,

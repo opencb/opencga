@@ -46,11 +46,13 @@ public class Sample extends Annotable<SampleAclEntry> {
     }
 
     public Sample(long id, String name, String source, Individual individual, String description) {
-        this(id, name, source, individual, description, "", false, Collections.emptyList(), new LinkedList<>(), new HashMap<>());
+        this(id, name, source, individual, description, "", false, Collections.emptyList(), new LinkedList<>(), new
+                ArrayList<>(), new HashMap<>());
     }
 
     public Sample(long id, String name, String source, Individual individual, String description, String type, boolean somatic,
-                  List<SampleAclEntry> acl, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+                  List<SampleAclEntry> acl, List<AnnotationSet> annotationSets, List<OntologyTerm> ontologyTermList,
+                  Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.source = source;
@@ -60,7 +62,7 @@ public class Sample extends Annotable<SampleAclEntry> {
         this.creationDate = TimeUtils.getTime();
         this.status = new Status();
         this.description = description;
-        this.ontologyTerms = Collections.emptyList();
+        this.ontologyTerms = ontologyTermList;
         this.acl = acl;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
