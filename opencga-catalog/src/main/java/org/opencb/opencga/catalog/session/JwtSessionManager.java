@@ -24,13 +24,13 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JWTSessionManager implements SessionManager {
-    protected static Logger logger = LoggerFactory.getLogger(JWTSessionManager.class);
+public class JwtSessionManager implements SessionManager {
+    protected static Logger logger = LoggerFactory.getLogger(JwtSessionManager.class);
     protected Configuration configuration;
     protected String secretKey;
     protected Long expiration;
 
-    public JWTSessionManager(Configuration configuration) {
+    public JwtSessionManager(Configuration configuration) {
         this.configuration = configuration;
         this.secretKey = this.configuration.getAdmin().getSecretKey();
         this.expiration = this.configuration.getAuthentication().getExpiration();

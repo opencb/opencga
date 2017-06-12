@@ -39,7 +39,7 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.*;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
-import org.opencb.opencga.catalog.session.JWTSessionManager;
+import org.opencb.opencga.catalog.session.JwtSessionManager;
 import org.opencb.opencga.catalog.session.SessionManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
@@ -119,7 +119,7 @@ public class CatalogManager implements AutoCloseable {
                 .getCatalogUserDBAdaptor(), authorizationManager, configuration);
 //        authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager);
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager, this.configuration);
-        sessionManager = new JWTSessionManager(configuration);
+        sessionManager = new JwtSessionManager(configuration);
         userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
         fileManager = new FileManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,

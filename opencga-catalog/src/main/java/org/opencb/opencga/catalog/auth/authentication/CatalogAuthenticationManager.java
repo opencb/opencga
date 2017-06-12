@@ -27,7 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
-import org.opencb.opencga.catalog.session.JWTSessionManager;
+import org.opencb.opencga.catalog.session.JwtSessionManager;
 import org.opencb.opencga.catalog.session.SessionManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
@@ -48,7 +48,7 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
         this.userDBAdaptor = dbAdaptorFactory.getCatalogUserDBAdaptor();
         this.metaDBAdaptor = dbAdaptorFactory.getCatalogMetaDBAdaptor();
         this.configuration = configuration;
-        this.sessionManager = new JWTSessionManager(configuration);
+        this.sessionManager = new JwtSessionManager(configuration);
     }
 
     public static String cypherPassword(String password) throws CatalogException {

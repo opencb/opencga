@@ -5,7 +5,6 @@ import io.jsonwebtoken.Jws;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogTokenException;
-import org.opencb.opencga.catalog.models.Session;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -15,10 +14,10 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by wasim on 06/06/17.
  */
-public class JWTSessionManagerTest extends GenericTest {
+public class JwtSessionManagerTest extends GenericTest {
 
     private Configuration configuration;
-    private JWTSessionManager jwtSessionManager;
+    private JwtSessionManager jwtSessionManager;
     private String jwtToken;
     private String ip = "172.20.56.1";
 
@@ -27,7 +26,7 @@ public class JWTSessionManagerTest extends GenericTest {
         configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
                 .openStream());
         configuration.getAdmin().setSecretKey("12345");
-        jwtSessionManager = new JWTSessionManager(configuration);
+        jwtSessionManager = new JwtSessionManager(configuration);
         testCreateJWTToken();
     }
 

@@ -12,6 +12,7 @@ toolDir: "tools"
 
 authentication:
   expiration: 60
+
 admin:
   password: "admin"
   email: "admin@admin.com"
