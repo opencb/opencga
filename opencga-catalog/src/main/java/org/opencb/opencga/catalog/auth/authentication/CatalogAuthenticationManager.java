@@ -128,12 +128,6 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
 
         QueryResult qr = userDBAdaptor.resetPassword(userId, email, newCryptPass);
 
-        /*
-        String mailUser = catalogProperties.getProperty(CatalogManager.CATALOG_MAIL_USER);
-        String mailPassword = catalogProperties.getProperty(CatalogManager.CATALOG_MAIL_PASSWORD);
-        String mailHost = catalogProperties.getProperty(CatalogManager.CATALOG_MAIL_HOST);
-        String mailPort = catalogProperties.getProperty(CatalogManager.CATALOG_MAIL_PORT);
-*/
         String mailUser = configuration.getEmail().getFrom();
         String mailPassword = configuration.getEmail().getPassword();
         String mailHost = configuration.getEmail().getHost();
@@ -142,12 +136,5 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
         MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
 
         return qr;
-    }
-    public void writeSecretKey(String secretKey) throws CatalogException {
-        this.metaDBAdaptor.writeSecretKey(secretKey);
-    }
-
-    public String readSecretKey(String secretKey) throws CatalogException {
-        return this.metaDBAdaptor.readSecretKey();
     }
 }

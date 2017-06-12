@@ -385,23 +385,6 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     @Override
     public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
         throw new NotImplementedException("Project: Operation not yet supported");
-//        ParamUtils.checkParameter(sessionId, "sessionId");
-//        String userId = catalogManager.getUserManager().getId(sessionId);
-//        long projectId = getId(userId, id);
-//        String ownerId = projectDBAdaptor.getOwnerId(projectId);
-//
-//        if (!userId.equals(ownerId)) {
-//            throw new CatalogException("Permission denied: Only the owner of the project can update the status.");
-//        }
-//
-//        if (!Status.isValid(status)) {
-//            throw new CatalogException("The status " + status + " is not valid project status.");
-//        }
-//
-//        ObjectMap param = new ObjectMap(ProjectDBAdaptor.QueryParams.STATUS_NAME.key(), status);
-//        projectDBAdaptor.update(projectId, param);
-//        userDBAdaptor.updateUserLastModified(ownerId);
-//        auditManager.recordUpdate(AuditRecord.Resource.project, projectId, userId, param, null, null);
     }
 
     @Override

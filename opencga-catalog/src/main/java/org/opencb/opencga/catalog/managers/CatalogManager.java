@@ -88,12 +88,6 @@ public class CatalogManager implements AutoCloseable {
         configureIOManager(configuration);
         logger.debug("CatalogManager configureManager");
         configureManagers(configuration);
-//        if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
-//            catalogDBAdaptorFactory.installCatalogDB(catalogConfiguration);
-//            Admin admin = catalogConfiguration.getAdmin();
-//            admin.setPassword(CatalogAuthenticationManager.cipherPassword(admin.getPassword()));
-//            catalogDBAdaptorFactory.initializeCatalogDB(admin);
-//        }
     }
 
     public String getCatalogDatabase() {
@@ -233,20 +227,6 @@ public class CatalogManager implements AutoCloseable {
         }
         folder.delete();
     }
-//
-//    public void testIndices() {
-//        System.out.println("vamos bien");
-//        catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().createIndexes();
-//    }
-//
-//    public CatalogClient client() {
-//        return client("");
-//    }
-//
-//    public CatalogClient client(String sessionId) {
-//        catalogClient.setSessionId(sessionId);
-//        return catalogClient;
-//    }
 
     public CatalogIOManagerFactory getCatalogIOManagerFactory() {
         return catalogIOManagerFactory;
@@ -598,13 +578,6 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.updateAcl(studyStr, member, aclParams, sessionId).get(0);
     }
 
-//    @Deprecated
-//    public QueryResult unshareStudy(long studyId, String members, String sessionId) throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        authorizationManager.removeStudyPermissions(userId, studyId, members);
-//        return new QueryResult("unshareStudy");
-//    }
-
     public List<QueryResult<SampleAclEntry>> getAllSampleAcls(String sampleIdsStr, @Nullable String studyStr, String sessionId)
             throws CatalogException {
         AbstractManager.MyResourceIds resourceId = sampleManager.getIds(sampleIdsStr, studyStr, sessionId);
@@ -797,30 +770,9 @@ public class CatalogManager implements AutoCloseable {
     @Deprecated
     public QueryResult shareFile(String fileIds, String userIds, AclEntry acl, String sessionId) throws CatalogException {
         throw new CatalogException("The method being called is deprecated.");
-//        return authorizationManager.setFileACL(fileIds, userIds, acl, sessionId);
+
     }
 
-//    @Deprecated
-//    public QueryResult shareFile(String fileIds, String members, List<String> permissions, boolean override, String sessionId)
-//            throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        List<Long> fileList = fileManager.getFileIds(userId, fileIds);
-//        return authorizationManager.setFilePermissions(userId, fileList, members, permissions, override);
-//    }
-
-//    public QueryResult unshareFile(String fileIds, String userIds, String sessionId) throws CatalogException {
-//        return authorizationManager.unsetFileACL(fileIds, userIds, sessionId);
-//    }
-
-//    @Deprecated
-//    public QueryResult unshareFile(String fileIds, String members, String permissions, String sessionId) throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        List<Long> fileList = fileManager.getFileIds(userId, fileIds);
-//        List<String> permissionList = permissions != null && !permissions.isEmpty()
-//                ? Arrays.asList(permissions.split(",")) : Collections.emptyList();
-//        authorizationManager.unsetFilePermissions(userId, fileList, members, permissionList);
-//        return new QueryResult("unshareFile");
-//    }
 
     public List<QueryResult<FileAclEntry>> getAllFileAcls(String fileIdsStr, @Nullable String studyStr, String sessionId)
             throws CatalogException {
@@ -877,21 +829,6 @@ public class CatalogManager implements AutoCloseable {
         return fileManager.link(uriOrigin, pathDestiny, studyId, params, sessionId);
     }
 
-//    public QueryResult shareDatasets(String datasetIds, String members, List<String> permissions, String sessionId, boolean override)
-//            throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        List<Long> datasetList = fileManager.getDatasetIds(userId, datasetIds);
-//        return authorizationManager.setDatasetPermissions(userId, datasetList, members, permissions, override);
-//    }
-//
-//    public QueryResult unshareDatasets(String datasetIds, String userIds, String sessionId, String permissions) throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        List<Long> datasetList = fileManager.getDatasetIds(userId, datasetIds);
-//        List<String> permissionList = permissions != null && !permissions.isEmpty()
-//                ? Arrays.asList(permissions.split(",")) : Collections.emptyList();
-//        authorizationManager.unsetDatasetPermissions(userId, datasetList, userIds, permissionList);
-//        return new QueryResult("unshareDatasets");
-//    }
 
     /*
      * **************************

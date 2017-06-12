@@ -83,9 +83,6 @@ public class UserManager extends AbstractManager implements IUserManager {
                             break;
 //                    case OPENCGA:
                         default:
-//                        authenticationManagerMap.put(authenticationOrigin.getId(),
-//                                new CatalogAuthenticationManager(catalogDBAdaptorFactory, catalogConfiguration));
-//                        INTERNAL_AUTHORIZATION = authenticationOrigin.getId();
                             break;
                     }
                 }
