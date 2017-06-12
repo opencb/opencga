@@ -24,7 +24,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JwtSessionManager implements SessionManager {
+public class JwtSessionManager {
     protected static Logger logger = LoggerFactory.getLogger(JwtSessionManager.class);
     protected Configuration configuration;
     protected String secretKey;

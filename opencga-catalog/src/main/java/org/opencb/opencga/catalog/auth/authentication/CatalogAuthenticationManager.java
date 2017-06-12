@@ -28,7 +28,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.session.JwtSessionManager;
-import org.opencb.opencga.catalog.session.SessionManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
 
@@ -42,7 +41,7 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
     protected final UserDBAdaptor userDBAdaptor;
     protected final MetaDBAdaptor metaDBAdaptor;
     protected final Configuration configuration;
-    protected final SessionManager sessionManager;
+    protected final JwtSessionManager sessionManager;
 
     public CatalogAuthenticationManager(DBAdaptorFactory dbAdaptorFactory, Configuration configuration) {
         this.userDBAdaptor = dbAdaptorFactory.getCatalogUserDBAdaptor();

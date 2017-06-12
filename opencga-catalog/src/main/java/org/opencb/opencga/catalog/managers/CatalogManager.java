@@ -40,7 +40,6 @@ import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.*;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.catalog.session.JwtSessionManager;
-import org.opencb.opencga.catalog.session.SessionManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.slf4j.Logger;
@@ -62,7 +61,6 @@ public class CatalogManager implements AutoCloseable {
 
     private DBAdaptorFactory catalogDBAdaptorFactory;
     private CatalogIOManagerFactory catalogIOManagerFactory;
-//    private CatalogClient catalogClient;
 
     private IUserManager userManager;
     private IProjectManager projectManager;
@@ -73,9 +71,8 @@ public class CatalogManager implements AutoCloseable {
     private ISampleManager sampleManager;
     private ICohortManager cohortManager;
     private FamilyManager familyManager;
-//    private AuthenticationManager authenticationManager;
     private CatalogAuditManager auditManager;
-    private SessionManager sessionManager;
+    private JwtSessionManager sessionManager;
     private AuthorizationManager authorizationManager;
 
     private Configuration configuration;
@@ -111,7 +108,6 @@ public class CatalogManager implements AutoCloseable {
         this.updateSecretKey();
         auditManager = new CatalogAuditManager(catalogDBAdaptorFactory.getCatalogAuditDbAdaptor(), catalogDBAdaptorFactory
                 .getCatalogUserDBAdaptor(), authorizationManager, configuration);
-//        authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager);
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager, this.configuration);
         sessionManager = new JwtSessionManager(configuration);
         userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
@@ -1171,7 +1167,7 @@ public class CatalogManager implements AutoCloseable {
         return configuration;
     }
 
-    public SessionManager getSessionManager() {
+    public JwtSessionManager getSessionManager() {
         return sessionManager;
     }
 
