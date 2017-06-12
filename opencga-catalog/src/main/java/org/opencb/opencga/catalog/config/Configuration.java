@@ -95,6 +95,7 @@ public class Configuration {
                 configuration = objectMapper.readValue(configurationInputStream, Configuration.class);
                 break;
         }
+        //TODO : create mandatory fileds check to avoid invalid or incomplete conf
         return configuration;
     }
 

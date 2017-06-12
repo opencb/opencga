@@ -161,8 +161,6 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                     logger.info("{} synchronised with {}", executor.from, executor.to);
                 }
             }
-
-            catalogManager.logout("admin", sessionId);
         }
     }
 

@@ -272,35 +272,6 @@ public abstract class CatalogIOManager {
         deleteDirectory(userUri);
     }
 
-    public URI createAnonymousUser(String anonymousUserId) throws CatalogIOException {
-        checkParam(anonymousUserId);
-
-        URI usersUri = getAnonymousUsersUri();
-        checkDirectoryUri(usersUri, true);
-
-        URI userUri = getAnonymousUserUri(anonymousUserId);
-        try {
-            if (!exists(userUri)) {
-                createDirectory(userUri);
-                createDirectory(userUri.resolve(USER_PROJECTS_FOLDER));
-                createDirectory(userUri.resolve(USER_BIN_FOLDER));
-
-                return userUri;
-            }
-        } catch (CatalogIOException e) {
-            throw e;
-        }
-        return null;
-    }
-
-    public void deleteAnonymousUser(String anonymousUserId) throws CatalogIOException {
-        URI anonymousUserUri = getAnonymousUserUri(anonymousUserId);
-        checkUriExists(anonymousUserUri);
-
-        deleteDirectory(anonymousUserUri);
-//        return anonymousUserPath;
-    }
-
     public URI createProject(String userId, String projectId) throws CatalogIOException {
         checkParam(projectId);
 

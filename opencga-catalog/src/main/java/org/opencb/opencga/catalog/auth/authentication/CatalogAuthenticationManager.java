@@ -27,6 +27,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.catalog.session.JWTSessionManager;
+import org.opencb.opencga.catalog.session.SessionManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
 
@@ -40,11 +42,13 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
     protected final UserDBAdaptor userDBAdaptor;
     protected final MetaDBAdaptor metaDBAdaptor;
     protected final Configuration configuration;
+    protected final SessionManager sessionManager;
 
     public CatalogAuthenticationManager(DBAdaptorFactory dbAdaptorFactory, Configuration configuration) {
         this.userDBAdaptor = dbAdaptorFactory.getCatalogUserDBAdaptor();
         this.metaDBAdaptor = dbAdaptorFactory.getCatalogMetaDBAdaptor();
         this.configuration = configuration;
+        this.sessionManager = new JWTSessionManager(configuration);
     }
 
     public static String cypherPassword(String password) throws CatalogException {
@@ -83,30 +87,12 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
 
     @Override
     public String getUserId(String token) throws CatalogException {
+
         if (token == null || token.isEmpty() || token.equalsIgnoreCase("null")) {
             return "anonymous";
         }
 
-        // Check admin
-        if (token.length() == 40) {
-            // TODO: Replace the dbAdaptor method to return the whole session structure to check if it has expired.
-            if (metaDBAdaptor.checkValidAdminSession(token)) {
-                return "admin";
-            }
-            throw new CatalogException("The session id does not correspond to any user.");
-        }
-
-        // Check user
-        if (token.length() == 20) {
-            // TODO: Replace the dbAdaptor method to return the whole session structure to check if it has expired.
-            String userId = userDBAdaptor.getUserIdBySessionId(token);
-            if (userId.isEmpty()) {
-                throw new CatalogException("The session id does not correspond to any user.");
-            }
-            return userId;
-        }
-
-        throw new CatalogException("The session id introduced is not correct.");
+        return sessionManager.getUserId(token);
     }
 
     @Override

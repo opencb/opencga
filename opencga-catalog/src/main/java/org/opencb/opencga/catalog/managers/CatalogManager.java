@@ -382,23 +382,8 @@ public class CatalogManager implements AutoCloseable {
         return userManager.create(id, name, email, password, organization, quota, Account.FULL, options);
     }
 
-    @Deprecated
-    public QueryResult<ObjectMap> loginAsAnonymous(String sessionIp)
-            throws CatalogException, IOException {
-        return userManager.loginAsAnonymous(sessionIp);
-    }
-
     public QueryResult<Session> login(String userId, String password, String sessionIp) throws CatalogException, IOException {
         return userManager.login(userId, password, sessionIp);
-    }
-
-    public QueryResult logout(String userId, String sessionId) throws CatalogException {
-        return userManager.logout(userId, sessionId);
-    }
-
-    @Deprecated
-    public QueryResult logoutAnonymous(String sessionId) throws CatalogException {
-        return userManager.logoutAnonymous(sessionId);
     }
 
     public QueryResult changePassword(String userId, String oldPassword, String newPassword)

@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.DuplicateKeyException;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
@@ -37,7 +36,6 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.UserConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.Status;
@@ -135,98 +133,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public QueryResult<Session> logout(String userId, String sessionId) throws CatalogDBException {
-        long startTime = startQuery();
-
-        String userIdBySessionId = getUserIdBySessionId(sessionId);
-        if (userIdBySessionId.isEmpty()) {
-            return endQuery("logout", startTime, null, "", "Session not found");
-        }
-
-        List<Session> retSession = Collections.emptyList();
-        if (userIdBySessionId.equals(userId)) {
-            // Get the session object
-            List<Bson> aggregates = new ArrayList<>();
-            aggregates.add(Aggregates.match(Filters.eq("id", userId)));
-            aggregates.add(Aggregates.unwind("$sessions"));
-            aggregates.add(Aggregates.match(Filters.eq("sessions.id", sessionId)));
-            QueryResult<User> aggregate = userCollection.aggregate(aggregates, userConverter, new QueryOptions());
-            if (aggregate.first() != null && aggregate.first().getSessions() != null && aggregate.first().getSessions().size() == 1) {
-                retSession = aggregate.first().getSessions();
-
-                // Remove the session object
-                Bson query = new Document(QueryParams.ID.key(), userId);
-                Bson update = new Document("$pull", new Document("sessions", new Document("id", sessionId)));
-                QueryResult<UpdateResult> updateQueryResult = userCollection.update(query, update, null);
-                if (updateQueryResult.first().getModifiedCount() == 0) {
-                    throw new CatalogDBException("Internal error: Could not remove closed session from user " + userId);
-                }
-            } else {
-                throw new CatalogDBException("Internal error: Could not obtain session object from user " + userId + " when attempting to "
-                        + "logout");
-            }
-//            Bson query = new Document(QueryParams.SESSION_ID.key(), sessionId);
-//            Bson updates = Updates.set("sessions.$.logout", TimeUtils.getTime());
-//            userCollection.update(query, updates, null);
-        } else {
-            throw new CatalogDBException("UserId mismatches with the sessionId");
-        }
-
-        return endQuery("Logout", startTime, retSession);
-    }
-
-    @Override
-    public QueryResult<ObjectMap> loginAsAnonymous(Session session) throws CatalogException {
-        long startTime = startQuery();
-
-        QueryResult<Long> countSessions = count(new Query(QueryParams.SESSION_ID.key(), session.getId()));
-        if (countSessions.getResult().get(0) != 0) {
-            throw new CatalogDBException("Error, sessionID already exists");
-        }
-        String userId = "anonymous_" + session.getId();
-        User user = new User(userId, "Anonymous", "", "", "", User.UserStatus.READY);
-        user.getSessions().add(session);
-//        DBObject anonymous = getDbObject(user, "User");
-        Document anonymous = getMongoDBDocument(user, "User");
-        anonymous.put(PRIVATE_ID, user.getId());
-
-        userCollection.insert(anonymous, null);
-//        try {
-//        } catch (MongoException.DuplicateKey e) {
-//            throw new CatalogDBException("Anonymous user {id:\"" + user.getId() + "\"} already exists");
-//        }
-
-        ObjectMap resultObjectMap = new ObjectMap();
-        resultObjectMap.put("sessionId", session.getId());
-        resultObjectMap.put("userId", userId);
-        return endQuery("Login as anonymous", startTime, Collections.singletonList(resultObjectMap));
-    }
-
-    @Override
-    public QueryResult logoutAnonymous(String sessionId) throws CatalogDBException {
-        long startTime = startQuery();
-        String userId = "anonymous_" + sessionId;
-        logout(userId, sessionId);
-        clean(userId);
-        return endQuery("Logout anonymous", startTime);
-    }
-
-    @Override
     public QueryResult<User> get(String userId, QueryOptions options, String lastModified) throws CatalogDBException {
-//        long startTime = startQuery();
-//        if (!userExists(userId)) {
-//            throw CatalogDBException.idNotFound("User", userId);
-//        }
-//        DBObject query = new BasicDBObject(PRIVATE_ID, userId);
-//        query.put("lastModified", new BasicDBObject("$ne", lastModified));
-//        QueryResult<DBObject> result = userCollection.find(query, options);
-//        User user = parseUser(result);
-//        if (user == null) {
-//            return endQuery("Get user", startTime); // user exists but no different lastModified was found: return empty result
-//        } else {
-//            joinFields(user, options);
-//            return endQuery("Get user", startTime, Collections.singletonList(user));
-//        }
+
         checkId(userId);
         Query query = new Query(QueryParams.ID.key(), userId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
         if (lastModified != null && !lastModified.isEmpty()) {

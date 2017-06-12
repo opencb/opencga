@@ -435,7 +435,7 @@ public class UserManager extends AbstractManager implements IUserManager {
             throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
-        checkSessionId(sessionId);
+        checkSessionId(userId, sessionId);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         QueryResult<User> userQueryResult = userDBAdaptor.get(userId, options, lastModified);
 
@@ -479,7 +479,7 @@ public class UserManager extends AbstractManager implements IUserManager {
 
         if (sessionId != null && !sessionId.isEmpty()) {
             ParamUtils.checkParameter(sessionId, "sessionId");
-            checkSessionId(sessionId);
+            checkSessionId(userId, sessionId);
             for (String s : parameters.keySet()) {
                 if (!s.matches("name|email|organization|attributes")) {
                     throw new CatalogDBException("Parameter '" + s + "' can't be changed");
@@ -511,7 +511,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         for (String userId : userIds) {
             if (sessionId != null && !sessionId.isEmpty()) {
                 ParamUtils.checkParameter(sessionId, "sessionId");
-                checkSessionId(sessionId);
+                checkSessionId(userId, sessionId);
             } else {
                 if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
                     throw new CatalogException("Nor the administrator password nor the session id could be found. The user could not be "
@@ -571,7 +571,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     public QueryResult resetPassword(String userId, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
-        checkSessionId(sessionId);
+        checkSessionId(userId, sessionId);
 
         String authOrigin = getAuthenticationOriginId(userId);
         return authenticationManagerMap.get(authOrigin).resetPassword(userId);
@@ -585,28 +585,6 @@ public class UserManager extends AbstractManager implements IUserManager {
             String authOrigin = getAuthenticationOriginId(userId);
             authenticationManagerMap.get(authOrigin).authenticate(userId, password, throwException);
         }
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult<ObjectMap> loginAsAnonymous(String sessionIp)
-            throws CatalogException, IOException {
-        ParamUtils.checkParameter(sessionIp, "sessionIp");
-        Session session = new Session(sessionIp, 20);
-
-        String userId = "anonymous_" + session.getId();
-
-        // TODO sessionID should be created here
-
-        catalogIOManagerFactory.getDefault().createAnonymousUser(userId);
-
-        try {
-            return userDBAdaptor.loginAsAnonymous(session);
-        } catch (CatalogDBException e) {
-            catalogIOManagerFactory.getDefault().deleteUser(userId);
-            throw e;
-        }
-
     }
 
     @Override
@@ -662,52 +640,6 @@ public class UserManager extends AbstractManager implements IUserManager {
     public QueryResult<Session> getNewUserSession(String sessionId, String userId) throws CatalogException {
         authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", sessionId, true);
         return catalogManager.getSessionManager().createToken(userId, "localhost", Session.Type.SYSTEM);
-    }
-
-    @Override
-    public QueryResult logout(String userId, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-
-        QueryResult<Session> logout = null;
-        try {
-            if (userId.equals("admin")) {
-                catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().logout(sessionId);
-                return logout;
-            } else {
-                logout = userDBAdaptor.logout(userId, sessionId);
-            }
-        } catch (CatalogDBException e) {
-            auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.logout, AuditRecord.Magnitude.high, userId, userId,
-                    null, null, "Unsuccessfully logout attempt", null);
-            throw e;
-        }
-        auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.logout, AuditRecord.Magnitude.low, userId, userId,
-                logout.first(), null, "User successfully logged out", null);
-
-        return logout;
-//        switch (authorizationManager.getUserRole(userId)) {
-//            case ANONYMOUS:
-//                return logoutAnonymous(sessionId);
-//            default:
-////                List<Session> sessions = Collections.singletonList(sessionManager.logout(userId, sessionId));
-////                return new QueryResult<>("logout", 0, 1, 1, "", "", sessions);
-//                return userDBAdaptor.logout(userId, sessionId);
-//        }
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult logoutAnonymous(String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        String userId = getId(sessionId);
-        ParamUtils.checkParameter(userId, "userId");
-        checkSessionId(sessionId);
-
-        logger.info("logout anonymous user. userId: " + userId + " sesionId: " + sessionId);
-
-        catalogIOManagerFactory.getDefault().deleteAnonymousUser(userId);
-        return userDBAdaptor.logoutAnonymous(sessionId);
     }
 
     @Override
@@ -934,8 +866,11 @@ public class UserManager extends AbstractManager implements IUserManager {
         return null;
     }
 
-    private void checkSessionId(String jwtToken) throws CatalogException {
-        this.catalogManager.getSessionManager().parseClaims(jwtToken);
+    private void checkSessionId(String userId, String jwtToken) throws CatalogException {
+
+        if (!userId.equals(catalogManager.getSessionManager().getUserId(jwtToken))) {
+            throw new CatalogException("Invalid sessionId for user: " + userId);
+        }
     }
 
     private void checkUserExists(String userId) throws CatalogException {

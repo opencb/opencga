@@ -240,16 +240,6 @@ public class FileManagerTest extends GenericTest {
 
     @After
     public void tearDown() throws Exception {
-        if (sessionIdUser != null) {
-            catalogManager.logout("user", sessionIdUser);
-        }
-        if (sessionIdUser2 != null) {
-            catalogManager.logout("user2", sessionIdUser2);
-        }
-        if (sessionIdUser3 != null) {
-            catalogManager.logout("user3", sessionIdUser3);
-        }
-//        catalogManager.close();
     }
 
 

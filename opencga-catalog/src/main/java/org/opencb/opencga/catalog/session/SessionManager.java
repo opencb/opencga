@@ -58,9 +58,9 @@ public interface SessionManager {
      */
     void checkAdminSession(String sessionId) throws CatalogException;
 
-    Jws<Claims> parseClaims(String jwtToken) throws CatalogTokenException;
+    Jws<Claims> parseClaims(String token) throws CatalogTokenException;
 
-    String getUserId(String jwtToken) throws CatalogTokenException;
+    String getUserId(String token) throws CatalogTokenException;
 
 
 }

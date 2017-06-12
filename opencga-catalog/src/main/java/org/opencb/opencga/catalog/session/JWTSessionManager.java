@@ -40,12 +40,12 @@ public class JWTSessionManager implements SessionManager {
         String jwt = null;
 
         try {
-            Long e = Long.valueOf(System.currentTimeMillis());
+            Long currentTime = Long.valueOf(System.currentTimeMillis());
             jwt = Jwts.builder()
                     .setSubject(userId)
-                    .setExpiration(new Date(e.longValue() + this.expiration.longValue() * 1000L))
+                    .setExpiration(new Date(currentTime.longValue() + this.expiration.longValue() * 1000L))
                     .setAudience("OpenCGA users")
-                    .setIssuedAt(new Date(e.longValue()))
+                    .setIssuedAt(new Date(currentTime.longValue()))
                     .signWith(SignatureAlgorithm.HS256, this.secretKey.getBytes("UTF-8"))
                     .compact();
         } catch (UnsupportedEncodingException e) {
@@ -69,10 +69,6 @@ public class JWTSessionManager implements SessionManager {
     }
 
     public String getUserId(String jwtKey) throws CatalogTokenException {
-        if (jwtKey == null || jwtKey.isEmpty() || jwtKey.equalsIgnoreCase("null")) {
-            return "anonymous";
-        }
-
         return parseClaims(jwtKey).getBody().getSubject();
     }
 

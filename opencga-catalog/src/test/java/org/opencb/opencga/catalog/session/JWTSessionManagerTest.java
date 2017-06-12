@@ -17,13 +17,14 @@ import static org.junit.Assert.assertEquals;
  */
 public class JWTSessionManagerTest extends GenericTest {
 
+    private Configuration configuration;
     private JWTSessionManager jwtSessionManager;
     private String jwtToken;
     private String ip = "172.20.56.1";
 
     @Before
     public void setUp() throws Exception  {
-        Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
+        configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
                 .openStream());
         configuration.getAdmin().setSecretKey("12345");
         jwtSessionManager = new JWTSessionManager(configuration);
@@ -38,10 +39,7 @@ public class JWTSessionManagerTest extends GenericTest {
     @Test
     public void testParseClaims() throws Exception {
         Jws<Claims> claims = jwtSessionManager.parseClaims(jwtToken);
-        assertEquals(claims.getBody().getSubject(), "OpenCGA Authentication");
         assertEquals(claims.getBody().getSubject(), "testUser");
-        assertEquals(claims.getBody().get("ip"), ip);
-        assertEquals(claims.getBody().get("type"), "USER");
     }
 
     @Test(expected = CatalogTokenException.class)
@@ -58,6 +56,7 @@ public class JWTSessionManagerTest extends GenericTest {
 
     @Test(expected = CatalogTokenException.class)
     public void testInvalidSecretKey() throws CatalogTokenException {
+        jwtSessionManager.setSecretKey("wrongKey");
         jwtSessionManager.parseClaims(jwtToken);
     }
 }

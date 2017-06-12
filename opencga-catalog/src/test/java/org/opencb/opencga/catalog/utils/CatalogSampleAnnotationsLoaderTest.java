@@ -65,9 +65,10 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         URL pedFileURL = CatalogSampleAnnotationsLoader.class.getClassLoader().getResource(pedFileName);
         pedigree = loader.readPedigree(pedFileURL.getPath());
 
-        ObjectMap session = catalogManager.loginAsAnonymous("localHost").getResult().get(0);
-        sessionId = session.getString("sessionId");
-        userId = session.getString("userId");
+        userId = "user1";
+        catalogManager.getUserManager().create(userId, userId, "asdasd@asd.asd", userId, "", -1L, Account.FULL, QueryOptions.empty());
+        QueryResult<Session> login = catalogManager.getUserManager().login(userId, userId, "localhost");
+        sessionId = login.first().getId();
         Project project = catalogManager.getProjectManager().create("default", "def", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).getResult().get(0);
         Study study = catalogManager.createStudy(project.getId(), "default", "def", Study.Type.FAMILY, "", sessionId).getResult().get(0);
