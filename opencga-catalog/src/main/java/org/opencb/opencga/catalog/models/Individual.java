@@ -555,4 +555,97 @@ public class Individual extends Annotable<IndividualAclEntry> {
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        Individual that = (Individual) o;
+
+        if (id != that.id) {
+            return false;
+        }
+        if (fatherId != that.fatherId) {
+            return false;
+        }
+        if (motherId != that.motherId) {
+            return false;
+        }
+        if (parentalConsanguinity != that.parentalConsanguinity) {
+            return false;
+        }
+        if (name != null ? !name.equals(that.name) : that.name != null) {
+            return false;
+        }
+        if (family != null ? !family.equals(that.family) : that.family != null) {
+            return false;
+        }
+        if (sex != that.sex) {
+            return false;
+        }
+        if (karyotypicSex != that.karyotypicSex) {
+            return false;
+        }
+        if (ethnicity != null ? !ethnicity.equals(that.ethnicity) : that.ethnicity != null) {
+            return false;
+        }
+        if (species != null ? !species.equals(that.species) : that.species != null) {
+            return false;
+        }
+        if (population != null ? !population.equals(that.population) : that.population != null) {
+            return false;
+        }
+        if (dateOfBirth != null ? !dateOfBirth.equals(that.dateOfBirth) : that.dateOfBirth != null) {
+            return false;
+        }
+        if (creationDate != null ? !creationDate.equals(that.creationDate) : that.creationDate != null) {
+            return false;
+        }
+        if (status != null ? !status.equals(that.status) : that.status != null) {
+            return false;
+        }
+        if (lifeStatus != that.lifeStatus) {
+            return false;
+        }
+        if (affectationStatus != that.affectationStatus) {
+            return false;
+        }
+        if (ontologyTerms != null ? !ontologyTerms.equals(that.ontologyTerms) : that.ontologyTerms != null) {
+            return false;
+        }
+
+        if (samples != null ? !samples.equals(that.samples) : that.samples != null) {
+            return false;
+        }
+        return attributes != null ? attributes.equals(that.attributes) : that.attributes == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = (int) (id ^ (id >>> 32));
+        result = 31 * result + (name != null ? name.hashCode() : 0);
+        result = 31 * result + (int) (fatherId ^ (fatherId >>> 32));
+        result = 31 * result + (int) (motherId ^ (motherId >>> 32));
+        result = 31 * result + (family != null ? family.hashCode() : 0);
+        result = 31 * result + (sex != null ? sex.hashCode() : 0);
+        result = 31 * result + (karyotypicSex != null ? karyotypicSex.hashCode() : 0);
+        result = 31 * result + (ethnicity != null ? ethnicity.hashCode() : 0);
+        result = 31 * result + (species != null ? species.hashCode() : 0);
+        result = 31 * result + (population != null ? population.hashCode() : 0);
+        result = 31 * result + (dateOfBirth != null ? dateOfBirth.hashCode() : 0);
+        result = 31 * result + (creationDate != null ? creationDate.hashCode() : 0);
+        result = 31 * result + (status != null ? status.hashCode() : 0);
+        result = 31 * result + (lifeStatus != null ? lifeStatus.hashCode() : 0);
+        result = 31 * result + (affectationStatus != null ? affectationStatus.hashCode() : 0);
+        result = 31 * result + (ontologyTerms != null ? ontologyTerms.hashCode() : 0);
+        result = 31 * result + (samples != null ? samples.hashCode() : 0);
+        result = 31 * result + (parentalConsanguinity ? 1 : 0);
+        result = 31 * result + (attributes != null ? attributes.hashCode() : 0);
+        return result;
+    }
 }
