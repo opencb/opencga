@@ -412,7 +412,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     op -> op.getOperationName().equals(MERGE.key()) && !op.currentStatus().equals(BatchFileOperation.Status.READY));
             if (mergeOperation != null) {
                 // Avoid stage new files if there are ongoing merge operations
-                throw MongoVariantStorageEngineException.operationInProgressException(mergeOperation);
+                throw MongoVariantStorageEngineException.otherOperationInProgressException(mergeOperation,
+                        STAGE.key(), Collections.singletonList(fileId));
             }
         }
 
@@ -640,7 +641,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     // Can not merge any file if there is an ongoing MERGE or STAGE operation
                     if (op.getOperationName().equals(MERGE.key()) || op.getOperationName().equals(STAGE.key())) {
                         if (!op.currentStatus().equals(BatchFileOperation.Status.READY)) {
-                            throw MongoVariantStorageEngineException.operationInProgressException(op);
+                            throw MongoVariantStorageEngineException.otherOperationInProgressException(op, MERGE.key(), fileIds);
                         }
                     }
                 }

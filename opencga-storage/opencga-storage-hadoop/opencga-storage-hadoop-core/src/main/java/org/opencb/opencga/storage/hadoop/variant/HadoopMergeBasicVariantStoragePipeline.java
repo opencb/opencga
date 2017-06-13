@@ -12,6 +12,7 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.ParallelTaskRunner.Task;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -47,6 +48,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
 public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantStoragePipeline {
 
     private final Logger logger = LoggerFactory.getLogger(HadoopMergeBasicVariantStoragePipeline.class);
+    private static final String OPERATION_NAME = "Load";
 
     /**
      * @param configuration      {@link StorageConfiguration}
@@ -65,6 +67,58 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
         loadVar = false;
     }
 
+    @Override
+    protected void securePreLoad(StudyConfiguration studyConfiguration, VariantSource source) throws StorageEngineException {
+        super.securePreLoad(studyConfiguration, source);
+
+        int ongoingLoads = 1; // this
+        boolean resume = options.getBoolean(VariantStorageEngine.Options.RESUME.key(), VariantStorageEngine.Options.RESUME.defaultValue());
+        List<Integer> fileIds = Collections.singletonList(options.getInt(VariantStorageEngine.Options.FILE_ID.key()));
+        List<BatchFileOperation> batches = studyConfiguration.getBatches();
+        BatchFileOperation loadOperation = null;
+
+        for (int i = batches.size() - 1; i >= 0; i--) {
+            BatchFileOperation operation = batches.get(i);
+            if (operation.getOperationName().equals(OPERATION_NAME)) {
+                if (operation.getFileIds().equals(fileIds)) {
+                    loadOperation = operation;
+                    switch (operation.currentStatus()) {
+                        case RUNNING:
+                            if (!resume) {
+                                throw StorageEngineException.currentOperationInProgressException(operation);
+                            } else {
+                                operation.addStatus(BatchFileOperation.Status.RUNNING);
+                            }
+                            break;
+                        case DONE:
+                        case READY:
+                            throw StorageEngineException.alreadyLoaded(fileIds.get(0), studyConfiguration);
+                        case ERROR:
+                            operation.addStatus(BatchFileOperation.Status.RUNNING);
+                            break;
+                        default:
+                            throw new IllegalArgumentException("Unknown status " + operation.currentStatus());
+                    }
+                } else if (operation.currentStatus().equals(BatchFileOperation.Status.ERROR)) {
+                    Integer fileId = operation.getFileIds().get(0);
+                    String fileName = studyConfiguration.getFileIds().inverse().get(fileId);
+                    logger.warn("Pending load operation for file " + fileName + " (" + fileId + ')');
+                } else if (operation.currentStatus().equals(BatchFileOperation.Status.RUNNING)) {
+                    ongoingLoads++;
+                }
+            }
+        }
+
+        if (loadOperation == null) {
+            loadOperation = new BatchFileOperation(OPERATION_NAME, fileIds, System.currentTimeMillis(), BatchFileOperation.Type.LOAD);
+            loadOperation.addStatus(BatchFileOperation.Status.RUNNING);
+            studyConfiguration.getBatches().add(loadOperation);
+        }
+
+        if (ongoingLoads > 1) {
+            logger.info("There are " + ongoingLoads + " concurrent load operations");
+        }
+    }
 
     @Override
     protected void loadFromProto(Path input, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
@@ -140,6 +194,19 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
         }
         registerLoadedFiles(fileIds);
         return input;
+    }
+
+    @Override
+    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
+        super.securePostLoad(fileIds, studyConfiguration);
+
+        for (int i = studyConfiguration.getBatches().size() - 1; i >= 0; i--) {
+            BatchFileOperation operation = studyConfiguration.getBatches().get(i);
+            if (operation.getOperationName().equals(OPERATION_NAME) && operation.getFileIds().equals(fileIds)) {
+                operation.addStatus(BatchFileOperation.Status.READY);
+                break;
+            }
+        }
     }
 
     private VariantHadoopDBWriter newVariantHadoopDBWriter() throws StorageEngineException {
