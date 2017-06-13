@@ -59,8 +59,8 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     private IStudyManager studyManager;
 
-    public StudyWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam) throws IOException, VersionException {
-        super(uriInfo, httpServletRequest, headerParam);
+    public StudyWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest, httpHeaders);
         studyManager = catalogManager.getStudyManager();
     }
 

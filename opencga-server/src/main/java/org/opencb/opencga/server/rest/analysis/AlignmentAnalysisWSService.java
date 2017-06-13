@@ -46,14 +46,14 @@ import java.util.Map;
 @Api(value = "Analysis - Alignment", position = 4, description = "Methods for working with 'files' endpoint")
 public class AlignmentAnalysisWSService extends AnalysisWSService {
 
-    public AlignmentAnalysisWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam)
+    public AlignmentAnalysisWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        super(uriInfo, httpServletRequest, headerParam);
+        super(uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public AlignmentAnalysisWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam)
+    public AlignmentAnalysisWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest, headerParam);
+        super(version, uriInfo, httpServletRequest, httpHeaders);
     }
 
     @GET

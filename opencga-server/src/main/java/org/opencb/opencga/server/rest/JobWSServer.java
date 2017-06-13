@@ -42,8 +42,8 @@ public class JobWSServer extends OpenCGAWSServer {
 
     private IJobManager jobManager;
 
-    public JobWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam) throws IOException, VersionException {
-        super(uriInfo, httpServletRequest, headerParam);
+    public JobWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest, httpHeaders);
         jobManager = catalogManager.getJobManager();
     }
 

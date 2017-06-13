@@ -74,9 +74,9 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Optio
 public class FileWSServer extends OpenCGAWSServer {
 
     private IFileManager fileManager;
-    public FileWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam) throws IOException,
+    public FileWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException,
             ClassNotFoundException, IllegalAccessException, InstantiationException, VersionException {
-        super(uriInfo, httpServletRequest, headerParam);
+        super(uriInfo, httpServletRequest, httpHeaders);
         fileManager = catalogManager.getFileManager();
     }
 

@@ -43,8 +43,8 @@ import java.util.Map;
 public class ToolWSServer extends OpenCGAWSServer {
 
 
-    public ToolWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam) throws IOException, VersionException {
-        super(uriInfo, httpServletRequest, headerParam);
+    public ToolWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest, httpHeaders);
     }
 
     @GET

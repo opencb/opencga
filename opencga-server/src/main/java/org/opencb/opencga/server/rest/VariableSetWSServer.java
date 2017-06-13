@@ -42,9 +42,9 @@ import java.util.List;
 public class VariableSetWSServer extends OpenCGAWSServer {
 
 
-    public VariableSetWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam)
+    public VariableSetWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        super(uriInfo, httpServletRequest, headerParam);
+        super(uriInfo, httpServletRequest, httpHeaders);
     }
 
     private static class VariableSetParameters {

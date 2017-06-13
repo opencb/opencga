@@ -29,8 +29,8 @@ import java.util.Map;
 @Api(value = "Meta", description = "Meta RESTful Web Services API")
 public class MetaWSServer extends OpenCGAWSServer {
 
-    public MetaWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam) throws IOException, VersionException {
-        super(uriInfo, httpServletRequest, headerParam);
+    public MetaWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest, httpHeaders);
     }
 
     @GET

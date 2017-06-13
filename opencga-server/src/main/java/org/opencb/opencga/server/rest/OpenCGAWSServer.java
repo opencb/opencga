@@ -143,12 +143,12 @@ public class OpenCGAWSServer {
     }
 
 
-    public OpenCGAWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam)
+    public OpenCGAWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        this(uriInfo.getPathParameters().getFirst("version"), uriInfo, httpServletRequest, headerParam);
+        this(uriInfo.getPathParameters().getFirst("version"), uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public OpenCGAWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam)
+    public OpenCGAWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         this.version = version;
         this.uriInfo = uriInfo;
@@ -167,7 +167,7 @@ public class OpenCGAWSServer {
         }
 
         try {
-            verifyHeaders(headerParam);
+            verifyHeaders(httpHeaders);
         } catch (CatalogTokenException e) {
             throw new IllegalStateException(e);
         }
@@ -532,10 +532,10 @@ public class OpenCGAWSServer {
                 .build();
     }
 
-    private void verifyHeaders(HttpHeaders headerParam) throws CatalogTokenException {
+    private void verifyHeaders(HttpHeaders httpHeaders) throws CatalogTokenException {
 
-        if (headerParam.getRequestHeader("Authorization") != null) {
-            String authorization = headerParam.getRequestHeader("Authorization").get(0);
+        if (httpHeaders.getRequestHeader("Authorization") != null) {
+            String authorization = httpHeaders.getRequestHeader("Authorization").get(0);
             if (!authorization.startsWith("Bearer ")) {
                 throw new CatalogTokenException("Authorization Header must start with Bearer");
             }

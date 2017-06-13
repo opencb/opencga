@@ -51,8 +51,8 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     private ISampleManager sampleManager;
 
-    public SampleWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam) throws IOException, VersionException {
-        super(uriInfo, httpServletRequest, headerParam);
+    public SampleWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest, httpHeaders);
         sampleManager = catalogManager.getSampleManager();
     }
 

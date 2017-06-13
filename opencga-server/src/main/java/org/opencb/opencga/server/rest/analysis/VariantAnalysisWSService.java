@@ -55,14 +55,14 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 public class VariantAnalysisWSService extends AnalysisWSService {
 
 
-    public VariantAnalysisWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam)
+    public VariantAnalysisWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        super(uriInfo, httpServletRequest, headerParam);
+        super(uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public VariantAnalysisWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam)
+    public VariantAnalysisWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest, headerParam);
+        super(version, uriInfo, httpServletRequest, httpHeaders);
     }
 
 

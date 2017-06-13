@@ -58,8 +58,8 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 @Api(value = "GA4GH", position = 13, description = "Global Alliance for Genomics & Health RESTful API")
 public class Ga4ghWSServer extends OpenCGAWSServer {
 
-    public Ga4ghWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam) throws IOException, VersionException {
-        super(uriInfo, httpServletRequest, headerParam);
+    public Ga4ghWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest, httpHeaders);
     }
 
     /* =================    BEACON     ===================*/

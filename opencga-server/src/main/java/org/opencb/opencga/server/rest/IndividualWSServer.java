@@ -49,9 +49,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     private IIndividualManager individualManager;
 
-    public IndividualWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam)
+    public IndividualWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        super(uriInfo, httpServletRequest, headerParam);
+        super(uriInfo, httpServletRequest, httpHeaders);
         individualManager = catalogManager.getIndividualManager();
     }
 

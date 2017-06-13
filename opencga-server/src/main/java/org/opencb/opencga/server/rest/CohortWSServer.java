@@ -48,8 +48,8 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     private ICohortManager cohortManager;
 
-    public CohortWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam) throws IOException, VersionException {
-        super(uriInfo, httpServletRequest, headerParam);
+    public CohortWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest, httpHeaders);
         cohortManager = catalogManager.getCohortManager();
     }
 

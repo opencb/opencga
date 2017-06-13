@@ -40,14 +40,14 @@ public class AnalysisWSService extends OpenCGAWSServer {
 
     protected IJobManager jobManager;
 
-    public AnalysisWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam)
+    public AnalysisWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        this(uriInfo.getPathParameters().getFirst("version"), uriInfo, httpServletRequest, headerParam);
+        this(uriInfo.getPathParameters().getFirst("version"), uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public AnalysisWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam)
+    public AnalysisWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest, headerParam);
+        super(version, uriInfo, httpServletRequest, httpHeaders);
 
         this.jobManager = catalogManager.getJobManager();
     }

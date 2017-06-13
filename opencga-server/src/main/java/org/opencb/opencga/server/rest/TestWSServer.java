@@ -32,8 +32,8 @@ import java.util.Map;
 @Api(value = "test", hidden = true, position = 12, description = "test web services")
 public class TestWSServer extends OpenCGAWSServer {
 
-    public TestWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam) throws IOException, VersionException {
-        super(uriInfo, httpServletRequest, headerParam);
+    public TestWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest, httpHeaders);
     }
 
 
