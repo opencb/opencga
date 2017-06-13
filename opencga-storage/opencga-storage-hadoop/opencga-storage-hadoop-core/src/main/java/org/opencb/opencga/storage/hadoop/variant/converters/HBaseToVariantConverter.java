@@ -194,7 +194,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return new VariantTableStudyRowToVariantConverter(genomeHelper, scm);
     }
 
-    protected <T> Variant convert(T object, Variant variant,
+    protected Variant convert(T object, Variant variant,
                               Collection<Integer> studyIds, Map<Integer, VariantTableStudyRow> rowsMap,
                               Map<Integer, Map<Integer, List<String>>> fullSamplesData,
                               Map<Integer, Map<Integer, VariantStats>> stats, VariantAnnotation annotation) {
@@ -245,7 +245,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
             int loadedSamplesSize = loadedSamples.size();
 
             // Load Secondary Index
-            List<AlternateCoordinate> secAltArr = getAlternateCoordinates(variant, studyId, rowsMap, fullSamplesData);
+            List<AlternateCoordinate> secAltArr = getAlternateCoordinates(variant, studyId, format, rowsMap, fullSamplesData);
 
             Integer nSamples = returnedSamplesPosition.size();
 
@@ -423,32 +423,43 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return defaultGenotype;
     }
 
-    private List<AlternateCoordinate> getAlternateCoordinates(Variant variant, Integer studyId, Map<Integer, VariantTableStudyRow> rowsMap,
+    private List<AlternateCoordinate> getAlternateCoordinates(Variant variant, Integer studyId, List<String> format,
+                                                              Map<Integer, VariantTableStudyRow> rowsMap,
                                                               Map<Integer, Map<Integer, List<String>>> fullSamplesData) {
         List<AlternateCoordinate> secAltArr;
         if (rowsMap.containsKey(studyId)) {
             VariantTableStudyRow row = rowsMap.get(studyId);
-            List<VariantProto.AlternateCoordinate> secondaryAlternates = row.getComplexVariant().getSecondaryAlternatesList();
-            int secondaryAlternatesCount = row.getComplexVariant().getSecondaryAlternatesCount();
-            secAltArr = new ArrayList<>(secondaryAlternatesCount);
-            if (secondaryAlternatesCount > 0) {
-                for (VariantProto.AlternateCoordinate altCoordinate : secondaryAlternates) {
-                    VariantType type = VariantType.valueOf(altCoordinate.getType().name());
-                    String chr = StringUtils.isEmpty(altCoordinate.getChromosome())
-                            ? variant.getChromosome() : altCoordinate.getChromosome();
-                    Integer start = altCoordinate.getStart() == 0 ? variant.getStart() : altCoordinate.getStart();
-                    Integer end = altCoordinate.getEnd() == 0 ? variant.getEnd() : altCoordinate.getEnd();
-                    String reference = StringUtils.isEmpty(altCoordinate.getReference()) ? "" : altCoordinate.getReference();
-                    String alternate = StringUtils.isEmpty(altCoordinate.getAlternate()) ? "" : altCoordinate.getAlternate();
-                    AlternateCoordinate alt = new AlternateCoordinate(chr, start, end, reference, alternate, type);
-                    secAltArr.add(alt);
-                }
-            }
+            secAltArr = getAlternateCoordinates(variant, row);
         } else {
-//            throw new IllegalArgumentException("Missing study " + studyId);
-            secAltArr = Collections.emptyList();
+            secAltArr = getAlternateCoordinatesFromSampleColumns(variant, format, studyId, fullSamplesData);
         }
         return secAltArr;
+    }
+
+    protected List<AlternateCoordinate> getAlternateCoordinates(Variant variant, VariantTableStudyRow row) {
+        List<AlternateCoordinate> secAltArr;
+        List<VariantProto.AlternateCoordinate> secondaryAlternates = row.getComplexVariant().getSecondaryAlternatesList();
+        int secondaryAlternatesCount = row.getComplexVariant().getSecondaryAlternatesCount();
+        secAltArr = new ArrayList<>(secondaryAlternatesCount);
+        if (secondaryAlternatesCount > 0) {
+            for (VariantProto.AlternateCoordinate altCoordinate : secondaryAlternates) {
+                VariantType type = VariantType.valueOf(altCoordinate.getType().name());
+                String chr = StringUtils.isEmpty(altCoordinate.getChromosome())
+                        ? variant.getChromosome() : altCoordinate.getChromosome();
+                Integer start = altCoordinate.getStart() == 0 ? variant.getStart() : altCoordinate.getStart();
+                Integer end = altCoordinate.getEnd() == 0 ? variant.getEnd() : altCoordinate.getEnd();
+                String reference = StringUtils.isEmpty(altCoordinate.getReference()) ? "" : altCoordinate.getReference();
+                String alternate = StringUtils.isEmpty(altCoordinate.getAlternate()) ? "" : altCoordinate.getAlternate();
+                AlternateCoordinate alt = new AlternateCoordinate(chr, start, end, reference, alternate, type);
+                secAltArr.add(alt);
+            }
+        }
+        return secAltArr;
+    }
+
+    protected List<AlternateCoordinate> getAlternateCoordinatesFromSampleColumns(Variant variant, List<String> format, Integer studyId,
+                                                                                 Map<Integer, Map<Integer, List<String>>> fullSamplesData) {
+        return samplesDataConverter.extractSecondaryAlternates(variant, format, fullSamplesData.get(studyId));
     }
 
     private void calculatePassCallRates(VariantTableStudyRow row, Map<String, String> attributesMap, int

@@ -62,6 +62,7 @@ import static org.opencb.biodata.tools.variant.merge.VariantMerger.GT_KEY;
 public class VariantTableStudyRow {
     public static final String NOCALL = ".";
     public static final String HOM_REF = "0/0";
+    public static final byte[] HOM_REF_BYTES = Bytes.toBytes(VariantTableStudyRow.HOM_REF);
     public static final String HET_REF = "0/1";
     public static final String HOM_VAR = "1/1";
     public static final String OTHER = "?";

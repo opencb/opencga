@@ -33,7 +33,7 @@ public class VariantHadoopDBWriter implements DataWriter<Variant> {
 
     public VariantHadoopDBWriter(GenomeHelper helper, String tableName, StudyConfiguration sc, HBaseManager hBaseManager) {
         this.tableName = tableName;
-        converter = new SamplesDataToHBaseConverter(helper.getColumnFamily(), sc);
+        converter = new SamplesDataToHBaseConverter(helper.getColumnFamily(), sc, true);
         if (hBaseManager == null) {
             this.hBaseManager = new HBaseManager(helper.getConf());
         } else {
