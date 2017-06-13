@@ -149,11 +149,6 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             } catch (DuplicateKeyException e) {
                 logger.warn("Trying to replace MetadataObject. DuplicateKey");
             }
-            //Set indexes
-//            BasicDBObject unique = new BasicDBObject("unique", true);
-//            nativeUserCollection.createIndexes(new BasicDBObject("id", 1), unique);
-//            nativeFileCollection.createIndexes(BasicDBObjectBuilder.start("studyId", 1).append("path", 1).get(), unique);
-//            nativeJobCollection.createIndexes(new BasicDBObject("id", 1), unique);
         } else {
             throw new CatalogDBException("Catalog already initialized");
         }

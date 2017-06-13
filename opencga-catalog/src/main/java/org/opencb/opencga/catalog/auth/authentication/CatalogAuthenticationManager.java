@@ -125,7 +125,7 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
 
         String email = user.first().getEmail();
 
-        QueryResult qr = userDBAdaptor.resetPassword(userId, email, newCryptPass);
+        QueryResult queryResult = userDBAdaptor.resetPassword(userId, email, newCryptPass);
 
         String mailUser = configuration.getEmail().getFrom();
         String mailPassword = configuration.getEmail().getPassword();
@@ -134,6 +134,6 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
 
         MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
 
-        return qr;
+        return queryResult;
     }
 }

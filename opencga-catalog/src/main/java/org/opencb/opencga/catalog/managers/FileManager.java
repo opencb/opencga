@@ -385,10 +385,6 @@ public class FileManager extends AbstractManager implements IFileManager {
                     .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), variantPathName)
                     .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
-//                    .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(
-//                            FileIndex.IndexStatus.NONE, FileIndex.IndexStatus.TRANSFORMING, FileIndex.IndexStatus.INDEXING,
-//                            FileIndex.IndexStatus.READY
-//                    ));
 
             QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
 
@@ -400,12 +396,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                         .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                         .append(FileDBAdaptor.QueryParams.NAME.key(), variantFileName)
                         .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
-//                        .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(
-//                                FileIndex.IndexStatus.NONE, FileIndex.IndexStatus.TRANSFORMING, FileIndex.IndexStatus.INDEXING,
-//                                FileIndex.IndexStatus.READY
-//                        ));
-//                        .append(CatalogFileDBAdaptor.QueryParams.INDEX_TRANSFORMED_FILE.key(), null);
-                fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
+            fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
             }
 
             if (fileQueryResult.getNumResults() > 0) {

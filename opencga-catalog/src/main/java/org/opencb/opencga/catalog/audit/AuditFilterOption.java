@@ -16,9 +16,6 @@
 
 package org.opencb.opencga.catalog.audit;
 
-//import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor.FilterOption;
-//
-//import static org.opencb.opencga.catalog.db.api.CatalogDBAdaptor.FilterOption.Type.TEXT;
 
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 

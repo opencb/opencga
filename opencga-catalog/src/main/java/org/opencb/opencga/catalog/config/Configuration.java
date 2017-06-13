@@ -61,15 +61,6 @@ public class Configuration {
     public Configuration() {
     }
 
-//    public CatalogConfiguration(String defaultStorageEngineId, List<StorageEngineConfiguration> storageEngines) {
-//        this.defaultStorageEngineId = defaultStorageEngineId;
-//        this.storageEngines = storageEngines;
-//
-//        this.cellbase = new CellBaseConfiguration();
-//        this.server = new QueryServerConfiguration();
-//    }
-
-
     public void serialize(OutputStream configurationOututStream) throws IOException {
         ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
         yamlMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOututStream, this);

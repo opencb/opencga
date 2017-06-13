@@ -126,9 +126,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             throw new CatalogDBException("An internal error occurred when logging the user" + userId);
         }
 
-//        ObjectMap resultObjectMap = new ObjectMap();
-//        resultObjectMap.put("sessionId", session.getId());
-//        resultObjectMap.put("userId", userId);
         return endQuery("Login", startTime, Collections.singletonList(session));
     }
 
@@ -147,18 +144,12 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     public QueryResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogDBException {
         long startTime = startQuery();
 
-//        BasicDBObject query = new BasicDBObject("id", userId);
-//        query.put("password", oldPassword);
         Query query = new Query(QueryParams.ID.key(), userId);
         query.append(QueryParams.PASSWORD.key(), oldPassword);
         Bson bson = parseQuery(query);
 
-//        BasicDBObject fields = new BasicDBObject("password", newPassword);
-//        BasicDBObject action = new BasicDBObject("$set", fields);
-//        Bson set = Updates.set("password", new Document("password", newPassword));
         Bson set = Updates.set("password", newPassword);
 
-//        QueryResult<WriteResult> update = userCollection.update(bson, set, null);
         QueryResult<UpdateResult> update = userCollection.update(bson, set, null);
         if (update.getResult().get(0).getModifiedCount() == 0) {  //0 query matches.
             throw new CatalogDBException("Bad user or password");
@@ -175,17 +166,12 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     public QueryResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException {
         long startTime = startQuery();
 
-//        BasicDBObject query = new BasicDBObject("id", userId);
-//        query.put("email", email);
         Query query = new Query(QueryParams.ID.key(), userId);
         query.append(QueryParams.EMAIL.key(), email);
         Bson bson = parseQuery(query);
 
-//        BasicDBObject fields = new BasicDBObject("password", newCryptPass);
-//        BasicDBObject action = new BasicDBObject("$set", fields);
         Bson set = Updates.set("password", new Document("password", newCryptPass));
 
-//        QueryResult<WriteResult> update = userCollection.update(query, action, null);
         QueryResult<UpdateResult> update = userCollection.update(bson, set, null);
         if (update.getResult().get(0).getModifiedCount() == 0) {  //0 query matches.
             throw new CatalogDBException("Bad user or email");
@@ -197,19 +183,13 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     public QueryResult<Session> getSession(String userId, String sessionId) throws CatalogDBException {
         long startTime = startQuery();
 
-//        BasicDBObject query = new BasicDBObject("id", userId);
-//        query.put("sessions.id", sessionId);
         Query query1 = new Query(QueryParams.ID.key(), userId)
                 .append(QueryParams.SESSION_ID.key(), sessionId);
         Bson bson = parseQuery(query1);
 
 
-//        BasicDBObject projection = new BasicDBObject("sessions",
-//                new BasicDBObject("$elemMatch",
-//                        new BasicDBObject("id", sessionId)));
         Bson projection = Projections.elemMatch("sessions", Filters.eq("id", sessionId));
 
-//        QueryResult<DBObject> result = userCollection.find(query, projection, null);
         QueryResult<Document> documentQueryResult = userCollection.find(bson, projection, null);
         User user = parseUser(documentQueryResult);
 
@@ -557,31 +537,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     @Override
     public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Remove not yet implemented.");
-//        long startTime = startQuery();
-//
-//        List<User> userList = get(query, new QueryOptions()).getResult();
-//        List<Long> projectIds = new ArrayList<>();
-//        for (User user : userList) {
-//            for (Project project : user.getProjects()) {
-//                projectIds.add(project.getId());
-//            }
-//        }
-//
-//        if (projectIds.size() > 0) {
-//            Query projectIdsQuery = new Query(CatalogProjectDBAdaptor.QueryParams.ID.key(), StringUtils.join(projectIds.toArray(), ","));
-//            dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(projectIdsQuery, , force);
-//        }
-//
-//        query.append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";" + Status.DELETED);
-//        QueryResult<UpdateResult> deleted = userCollection.update(parseQuery(query), Updates.combine(Updates.set(
-//                QueryParams.STATUS_NAME.key(), Status.TRASHED), Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
-//                new QueryOptions());
-//
-//        if (deleted.first().getModifiedCount() == 0) {
-//            throw CatalogDBException.deleteError("User");
-//        } else {
-//            return endQuery("Delete user", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
-//        }
 
     }
 

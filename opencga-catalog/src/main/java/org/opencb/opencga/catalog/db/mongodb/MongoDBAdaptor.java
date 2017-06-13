@@ -200,19 +200,6 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             return groupBy(collection, query, Arrays.asList(groupByField.split(",")), idField, options);
         } else {
             return groupBy(collection, query, Arrays.asList(groupByField), idField, options);
-//            Bson match = Aggregates.match(query);
-//            List<Bson> projections = new ArrayList<>();
-//            addDateProjection(projections, Arrays.asList(groupByField));
-//            projections.add(Projections.include(groupByField, idField));
-//            Bson project = Aggregates.project(Projections.fields(projections));
-////            Bson project = Aggregates.project(Projections.include(groupByField, idField));
-//            Bson group;
-//            if (options.getBoolean("count", false)) {
-//                group = Aggregates.group("$" + groupByField, Accumulators.sum("count", 1));
-//            } else {
-//                group = Aggregates.group("$" + groupByField, Accumulators.addToSet("features", "$" + idField));
-//            }
-//            return collection.aggregate(Arrays.asList(match, project, group), options);
         }
     }
 
@@ -223,10 +210,6 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
 
         List<String> groupByFields = new ArrayList<>(groupByField);
-//        if (groupByField.size() == 1) {
-//            // if only one field then we call to simple groupBy
-//            return groupBy(collection, query, groupByField.get(0), idField, options);
-//        } else {
             Bson match = Aggregates.match(query);
 
             // add all group-by fields to the projection together with the aggregation field name

@@ -31,7 +31,6 @@ public class Admin {
     public Admin(String password, String email) {
         this.password = password;
         this.email = email;
-        this.secretKey = secretKey;
     }
 
     public String getPassword() {

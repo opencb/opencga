@@ -388,114 +388,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         return queryResult;
     }
 
-//    @Override
-//    public QueryResult<Individual> create(String studyStr, ServerUtils.IndividualParameters individualParams, QueryOptions options,
-//                                          String sessionId) throws CatalogException {
-//        ISampleManager sampleManager = catalogManager.getSampleManager();
-//
-//        String userId = catalogManager.getUserManager().getId(sessionId);
-//        long studyId = catalogManager.getStudyId(studyStr, sessionId);
-//        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
-//
-//        List<Sample> samplesToCreate = new ArrayList<>();
-//        List<Long> samplesToUpdateIndividual = new ArrayList<>();
-//
-//        // Check that the samples can be created and if they exist, that they don't point to other individual
-//        if (individualParams.getSamples() != null && individualParams.getSamples().size() > 0) {
-//
-//            for (Sample sample : individualParams.getSamples()) {
-//                if (sample.getId() > 0) {
-//                    // If the id is provided, the sample must exist
-//                    sampleDBAdaptor.checkId(sample.getId());
-//
-//                    // If it exists, it should not be associated to any individual
-//                    QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(sample.getId(),
-//                            new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()));
-//                    if (sampleQueryResult.getNumResults() == 0) {
-//                        throw new CatalogException("Internal error: Sample " + sample.getId() + " could not be found.");
-//                    }
-//                    if (sampleQueryResult.first().getIndividual() != null && sampleQueryResult.first().getIndividual().getId() > 0) {
-//                        throw new CatalogException("Sample " + sample.getId() + " is already associated to one individual with id "
-//                                + sampleQueryResult.first().getIndividual().getId());
-//                    }
-//
-//                    MyResourceId resource = new MyResourceId(userId, studyId, sample.getId());
-//                    authorizationManager.checkPermissions(resource, SampleAclEntry.SamplePermissions.UPDATE,
-//                            MongoDBAdaptorFactory.SAMPLE_COLLECTION);
-//
-//                    // Add sample to update the individual id at the end
-//                    samplesToUpdateIndividual.add(sample.getId());
-//
-//                } else if (StringUtils.isNotEmpty(sample.getName())) {
-//                    // Look by name
-//                    Query query = new Query()
-//                            .append(SampleDBAdaptor.QueryParams.NAME.key(), sample.getName())
-//                            .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-//                    QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE,
-//                            Arrays.asList(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), SampleDBAdaptor.QueryParams.ID.key()));
-//                    QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, qOptions);
-//
-//                    if (sampleQueryResult.getNumResults() == 1) {
-//                        if (sampleQueryResult.first().getIndividual() != null && sampleQueryResult.first().getIndividual().getId() > 0) {
-//                            throw new CatalogException("Sample " + sampleQueryResult.first().getId() + " is already associated to one "
-//                                    + "individual with id " + sampleQueryResult.first().getIndividual().getId());
-//                        }
-//
-//                        MyResourceId resource = new MyResourceId(userId, studyId, sampleQueryResult.first().getId());
-//                        authorizationManager.checkPermissions(resource, SampleAclEntry.SamplePermissions.UPDATE,
-//                                MongoDBAdaptorFactory.SAMPLE_COLLECTION);
-//
-//                        // Add sample to update the individual id at the end
-//                        samplesToUpdateIndividual.add(sampleQueryResult.first().getId());
-//                    } else if (sampleQueryResult.getNumResults() == 0) {
-//                        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
-//
-//                        // Create sample
-//                        samplesToCreate.add(sample);
-//                    } else {
-//                        logger.error("CRITICAL: Found samples {} with the same name in study {}",
-//                                sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList()), studyId);
-//                        throw new CatalogException("Critical error: More than one sample found with the same name for the same study");
-//                    }
-//                } else {
-//                    throw new CatalogException("Missing needed sample parameters. At least sample name or id are mandatory when samples"
-//                            + " are provided.");
-//                }
-//            }
-//        }
-//
-//        if (individualParams.getSpecies() == null) {
-//            individualParams.setSpecies(new Individual.Species("", "", ""));
-//        }
-//        if (individualParams.getPopulation() == null) {
-//            individualParams.setPopulation(new Individual.Population("", "", ""));
-//        }
-//
-//        // Create individual
-//        Individual ind = new Individual(-1, individualParams.getName(), individualParams.getFatherId(), individualParams.getMotherId(),
-//                individualParams.getFamily(), individualParams.getSex(), individualParams.getKaryotypicSex(),
-//                individualParams.getEthnicity(), individualParams.getSpecies(), individualParams.getPopulation(), null, null,
-//                individualParams.getLifeStatus(), individualParams.getAffectationStatus(), null, null, null, null);
-//        QueryResult<Individual> individualQueryResult = create(Long.toString(studyId), ind, options, sessionId);
-//        if (individualQueryResult.getNumResults() == 0) {
-//            throw new CatalogException("Internal error. Individual could not be created.");
-//        }
-//
-//        // Update samples
-//        ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualQueryResult.first().getId());
-//        for (Long sampleId : samplesToUpdateIndividual) {
-//            sampleManager.update(sampleId, params, QueryOptions.empty(), sessionId);
-//        }
-//
-//        // Create new samples
-//        for (Sample sample : samplesToCreate) {
-//            sampleManager.create(Long.toString(studyId), sample.getName(), sample.getSource(), sample.getDescription(),
-//                    individualQueryResult.first(), Collections.emptyMap(), QueryOptions.empty(), sessionId);
-//        }
-//
-//        return individualQueryResult;
-//    }
-
     @Override
     public QueryResult<Individual> create(String studyStr, Individual individual, QueryOptions options, String sessionId)
             throws CatalogException {
@@ -523,7 +415,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
 
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
-//      auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
         auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.create, AuditRecord.Magnitude.low,
                 queryResult.first().getId(), userId, null, queryResult.first(), null, null);
         return queryResult;
@@ -552,9 +443,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                 new QueryOptions("include", Collections.singletonList("projects.studies.individuals.annotationSets")));
 
         List<AnnotationSet> annotationSets = individualQueryResult.getResult().get(0).getAnnotationSets();
-//        if (checkAnnotationSet) {
         CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
-//        }
 
         QueryResult<AnnotationSet> queryResult = individualDBAdaptor.annotate(individualId, annotationSet, false);
         auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, new ObjectMap("annotationSets", queryResult
