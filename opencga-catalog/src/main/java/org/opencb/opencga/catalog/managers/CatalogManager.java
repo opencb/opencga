@@ -148,7 +148,7 @@ public class CatalogManager implements AutoCloseable {
             this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().writeSecretKey(key);
     }
 
-    public void insertAlgorithm(String algorithm) throws CatalogDBException {
+    public void insertUpdatedAlgorithm(String algorithm) throws CatalogDBException {
         this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().writeAlgorithm(algorithm);
     }
 

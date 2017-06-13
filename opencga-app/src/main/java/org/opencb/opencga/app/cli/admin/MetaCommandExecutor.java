@@ -46,7 +46,7 @@ public class MetaCommandExecutor extends AdminCommandExecutor {
 
         if (this.metaCommandOptions.metaAlgorithmCommandOptions.algorithm != null) {
             CatalogManager catalogManager = new CatalogManager(configuration);
-            catalogManager.insertAlgorithm(this.metaCommandOptions.metaAlgorithmCommandOptions.algorithm);
+            catalogManager.insertUpdatedAlgorithm(this.metaCommandOptions.metaAlgorithmCommandOptions.algorithm);
         }
 
     }
