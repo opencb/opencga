@@ -202,6 +202,16 @@ public interface AuthorizationManager {
      */
     void filterDatasets(String userId, long studyId, List<Dataset> datasets) throws CatalogException;
 
+    /**
+     * Removes from the list the clinical analysis that the user can not read.
+     *
+     * @param userId  UserId
+     * @param studyId StudyId
+     * @param clinicalAnalysis Clinical analysis list
+     * @throws CatalogException CatalogException
+     */
+    void filterClinicalAnalysis(String userId, long studyId, List<ClinicalAnalysis> clinicalAnalysis) throws CatalogException;
+
     //------------------------- Study ACL -----------------------------
 
     /**

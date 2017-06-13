@@ -109,8 +109,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     public static final String MERGE_ARCHIVE_SCAN_BATCH_SIZE = "opencga.storage.hadoop.hbase.merge.archive.scan.batchsize";
     public static final int DEFAULT_MERGE_ARCHIVE_SCAN_BATCH_SIZE = 500;
-    public static final String MERGE_COLLAPSE_DELETIONS = "opencga.storage.hadoop.hbase.merge.collapse-deletions";
+    public static final String MERGE_COLLAPSE_DELETIONS      = "opencga.storage.hadoop.hbase.merge.collapse-deletions";
     public static final boolean DEFAULT_MERGE_COLLAPSE_DELETIONS = true;
+    public static final String MERGE_LOAD_SPECIFIC_PUT       = "opencga.storage.hadoop.hbase.merge.use_specific_put";
+    public static final String MERGE_LOAD_SAMPLE_COLUMNS     = "opencga.storage.hadoop.hbase.merge.sample_columns";
+    public static final boolean DEFAULT_MERGE_LOAD_SAMPLE_COLUMNS = true;
 
     //upload HBase jars and jars for any of the configured job classes via the distributed cache (tmpjars).
     public static final String MAPREDUCE_ADD_DEPENDENCY_JARS = "opencga.mapreduce.addDependencyJars";
@@ -135,7 +138,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String ARCHIVE_ROW_KEY_SEPARATOR = "opencga.archive.row_key_sep";
 
     public static final String EXTERNAL_MR_EXECUTOR = "opencga.external.mr.executor";
-
 
     protected Configuration conf = null;
     protected MRExecutor mrExecutor;

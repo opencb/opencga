@@ -42,6 +42,7 @@ public class AnalysisStatsMapper extends AbstractHBaseVariantMapper<ImmutableByt
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
         this.getHbaseToVariantConverter().setSimpleGenotypes(true);
+        this.getHbaseToVariantConverter().setReadFullSamplesData(false);
         studiesRow = VariantPhoenixKeyFactory.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
         variantStatisticsCalculator = new VariantStatisticsCalculator(true);
         this.variantStatisticsCalculator.setAggregationType(VariantSource.Aggregation.NONE, null);

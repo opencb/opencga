@@ -220,7 +220,11 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         if (!create) {
             // Just check everything is fine
 
-            if (individual.getId() > 0) {
+            if (individual.getId() > 0 || (StringUtils.isNotEmpty(individual.getName()) && StringUtils.isNumeric(individual.getName()))
+                    && Long.parseLong(individual.getName()) > 0) {
+                if (individual.getId() <= 0) {
+                    individual.setId(Long.parseLong(individual.getName()));
+                }
                 individualDBAdaptor.checkId(individual.getId());
 
                 // Check studyId of the individual

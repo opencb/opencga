@@ -97,5 +97,7 @@ public interface DBAdaptorFactory {
 
     FamilyDBAdaptor getCatalogFamilyDBAdaptor();
 
+    ClinicalAnalysisDBAdaptor getClinicalAnalysisDBAdaptor();
+
     Map<String, MongoDBCollection> getMongoDBCollectionMap();
 }

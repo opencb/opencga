@@ -7,6 +7,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Created on 13/03/17.
@@ -21,6 +23,10 @@ public interface VariantIterable extends Iterable<Variant> {
     }
 
     VariantDBIterator iterator(Query query, QueryOptions options);
+
+    default Stream<Variant> stream() {
+        return StreamSupport.stream(spliterator(), false);
+    }
 
     @Override
     default void forEach(Consumer<? super Variant> action) {

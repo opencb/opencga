@@ -56,14 +56,10 @@ public class VariantHbasePutTask implements DataWriter<VcfSlice> {
         }
     }
 
-    private ArchiveTableHelper getHelper() {
-        return helper;
-    }
-
     @Override
     public boolean open() {
         try {
-            logger.info("Open connection using " + getHelper().getConf());
+            logger.info("Open connection using " + helper.getConf());
             tableMutator = hBaseManager.getConnection().getBufferedMutator(this.tableName);
         } catch (IOException e) {
             throw new RuntimeException("Failed to connect to Hbase", e);
@@ -80,7 +76,7 @@ public class VariantHbasePutTask implements DataWriter<VcfSlice> {
         try {
             List<Put> putLst = new ArrayList<>(batch.size());
             for (VcfSlice slice : batch) {
-                Put put = getHelper().wrap(slice);
+                Put put = helper.wrap(slice);
                 putLst.add(put);
             }
             tableMutator.mutate(putLst);

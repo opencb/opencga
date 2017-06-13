@@ -11,12 +11,35 @@
 | setBody |{ "name" : "$pName", "alias" : "$pAlias", "organism" : {"scientificName" : "Homo sapiens", "assembly" : "${O.Assembly}"}}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/projects/create?sid=$sessionId |200|  Content-Type: application/json ||
-|let|projectdId|js|response.jsonbody.response[0].result[0].id||
+|let|project|js|response.jsonbody.response[0].result[0].id||
 
+!3 Get Project 
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/projects/$project/info?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == '$project'|
 
 !3 (Negative) Create Project With Existing Name
 !|Table: Rest Fixture | $baseURL |
 | setBody |{ "name" : "$pName", "alias" : "$pAlias", "organism" : {"scientificName" : "Homo sapiens", "assembly" : "${O.Assembly}"}}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/projects/create?sid=$sessionId |500|  Content-Type: application/json |jsonbody.error === 'Project {alias:\"$pAlias\"} already exists for this user'|
+
+!3 Get Project (Suite Set UP)
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/projects/$projectId/info?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == '$projectId'|
+
+!3 Get Studies from Project (Suite Set UP)
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/projects/$projectId/studies?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == '$studyId'|
+
+!3 Update Project
+!|Table: Rest Fixture | $baseURL |
+| setBody |{"description" : "update"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/projects/$project/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.response[0].result[0].description == 'update'|
+
+!3 (Negative) Update Project Mandatory Field ( Not Allowed)
+!|Table: Rest Fixture | $baseURL |
+| setBody |{ "organism" : {"scientificName" : "Homo sapiens update"}}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/projects/$project/update?sid=$sessionId |500|  Content-Type: application/json |jsonbody.error === 'Cannot update organism information that is already filled in'|
 

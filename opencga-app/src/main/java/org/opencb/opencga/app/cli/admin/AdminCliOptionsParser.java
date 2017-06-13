@@ -428,8 +428,6 @@ public class AdminCliOptionsParser {
     /*
      * AUDIT SUB-COMMANDS
      */
-
-
     @Parameters(commandNames = {"query"}, commandDescription = "Query audit data from Catalog database")
     public class QueryAuditCommandOptions extends CatalogDatabaseCommandOptions {
 
@@ -451,7 +449,6 @@ public class AdminCliOptionsParser {
     /*
      * USER SUB-COMMANDS
      */
-
     @Parameters(commandNames = {"create"}, commandDescription = "Create a new user")
     public class CreateUserCommandOptions extends CatalogDatabaseCommandOptions {
 
@@ -643,6 +640,9 @@ public class AdminCliOptionsParser {
 
         @Parameter(names = {"--stop"}, description = "File with the new tool to be installed", arity = 0)
         public boolean stop;
+
+        @Parameter(names = {"--bg", "--background"}, description = "Run the server in background as a daemon", arity = 0)
+        public boolean background;
     }
 
     @Parameters(commandNames = {"grpc"}, commandDescription = "Print a summary list of all tools")
@@ -656,6 +656,9 @@ public class AdminCliOptionsParser {
 
         @Parameter(names = {"--stop"}, description = "File with the new tool to be installed", arity = 0)
         public boolean stop;
+
+        @Parameter(names = {"--bg", "--background"}, description = "Run the server in background as a daemon", arity = 0)
+        public boolean background;
     }
 
     @Parameters(

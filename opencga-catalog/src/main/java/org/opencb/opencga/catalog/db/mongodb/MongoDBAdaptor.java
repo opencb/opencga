@@ -29,6 +29,10 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.models.Family;
+import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.Sample;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -129,6 +133,55 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
     }
 
+    // Auxiliar methods used in family/get and clinicalAnalysis/get to retrieve the whole referenced documents
+    protected Individual getIndividual(Individual individual) {
+        Individual retIndividual = individual;
+        if (individual != null && individual.getId() > 0) {
+            QueryResult<Individual> individualQueryResult = null;
+            try {
+                individualQueryResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(individual.getId(),
+                        QueryOptions.empty());
+            } catch (CatalogDBException e) {
+                logger.error(e.getMessage(), e);
+            }
+            if (individualQueryResult != null && individualQueryResult.getNumResults() == 1) {
+                retIndividual = individualQueryResult.first();
+            }
+        }
+        return retIndividual;
+    }
+
+    protected Sample getSample(Sample sample) {
+        Sample retSample = sample;
+        if (sample != null && sample.getId() > 0) {
+            QueryResult<Sample> sampleQueryResult = null;
+            try {
+                sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(sample.getId(), QueryOptions.empty());
+            } catch (CatalogDBException e) {
+                logger.error(e.getMessage(), e);
+            }
+            if (sampleQueryResult != null && sampleQueryResult.getNumResults() == 1) {
+                retSample = sampleQueryResult.first();
+            }
+        }
+        return retSample;
+    }
+
+    protected Family getFamily(Family family) {
+        Family retFamily = family;
+        if (family != null && family.getId() > 0) {
+            QueryResult<Family> familyQueryResult = null;
+            try {
+                familyQueryResult = dbAdaptorFactory.getCatalogFamilyDBAdaptor().get(family.getId(), QueryOptions.empty());
+            } catch (CatalogDBException e) {
+                logger.error(e.getMessage(), e);
+            }
+            if (familyQueryResult != null && familyQueryResult.getNumResults() == 1) {
+                retFamily = familyQueryResult.first();
+            }
+        }
+        return retFamily;
+    }
 
     protected QueryResult rank(MongoDBCollection collection, Bson query, String groupByField, String idField, int numResults, boolean asc) {
         if (groupByField == null || groupByField.isEmpty()) {

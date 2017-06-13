@@ -47,6 +47,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     private SampleConverter sampleConverter;
     private PanelConverter panelConverter;
     private FamilyConverter familyConverter;
+    private ClinicalAnalysisConverter clinicalConverter;
 
     public AuthorizationMongoDBAdaptor(Configuration configuration) throws CatalogDBException {
         super(LoggerFactory.getLogger(AuthorizationMongoDBAdaptor.class));
@@ -114,6 +115,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         this.sampleConverter = new SampleConverter();
         this.panelConverter = new PanelConverter();
         this.familyConverter = new FamilyConverter();
+        this.clinicalConverter = new ClinicalAnalysisConverter();
     }
 
     private void initCollectionConnections() {
@@ -126,6 +128,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         this.dbCollectionMap.put(SAMPLE_COLLECTION, mongoDataStore.getCollection(SAMPLE_COLLECTION));
         this.dbCollectionMap.put(PANEL_COLLECTION, mongoDataStore.getCollection(PANEL_COLLECTION));
         this.dbCollectionMap.put(FAMILY_COLLECTION, mongoDataStore.getCollection(FAMILY_COLLECTION));
+        this.dbCollectionMap.put(CLINICAL_ANALYSIS_COLLECTION, mongoDataStore.getCollection(CLINICAL_ANALYSIS_COLLECTION));
     }
 
     private void initMongoDatastore(Configuration configuration) throws CatalogDBException {
@@ -178,6 +181,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             case SAMPLE_COLLECTION:
             case PANEL_COLLECTION:
             case FAMILY_COLLECTION:
+            case CLINICAL_ANALYSIS_COLLECTION:
                 return;
             default:
                 throw new CatalogDBException("Unexpected parameter received. " + collection + " has been received.");
@@ -204,6 +208,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 return panelConverter;
             case FAMILY_COLLECTION:
                 return familyConverter;
+            case CLINICAL_ANALYSIS_COLLECTION:
+                return clinicalConverter;
             default:
                 throw new CatalogException("Unexpected parameter received. " + collection + " has been received.");
         }

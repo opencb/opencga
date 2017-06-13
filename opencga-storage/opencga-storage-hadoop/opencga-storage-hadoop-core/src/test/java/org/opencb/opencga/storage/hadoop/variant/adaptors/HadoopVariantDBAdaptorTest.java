@@ -16,18 +16,18 @@
 
 package org.opencb.opencga.storage.hadoop.variant.adaptors;
 
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Ignore;
+import org.junit.*;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
@@ -71,20 +71,20 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
 
-    @Override
-    protected String getHetGT() {
-        return Genotype.HET_REF;
-    }
-
+//    @Override
+//    protected String getHetGT() {
+//        return Genotype.HET_REF;
+//    }
+//
     @Override
     protected String getHomRefGT() {
         return Genotype.HOM_REF;
     }
-
-    @Override
-    protected String getHomAltGT() {
-        return Genotype.HOM_VAR;
-    }
+//
+//    @Override
+//    protected String getHomAltGT() {
+//        return Genotype.HOM_VAR;
+//    }
 
     @Override
     protected ObjectMap getOtherParams() {
@@ -99,14 +99,12 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 
 
     @Override
-    @Ignore
     public void rank_gene() throws Exception {
         Assume.assumeTrue(GROUP_BY);
         super.rank_gene();
     }
 
     @Override
-    @Ignore
     public void testExcludeFiles() {
         Assume.assumeTrue(FILES);
         super.testExcludeFiles();
@@ -119,7 +117,6 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     }
 
     @Override
-    @Ignore
     public void testGetAllVariants_missingAllele() throws Exception {
         Assume.assumeTrue(MISSING_ALLELE);
         super.testGetAllVariants_missingAllele();
@@ -139,14 +136,12 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     }
 
     @Override
-    @Ignore
     public void groupBy_gene() throws Exception {
         Assume.assumeTrue(GROUP_BY);
         super.groupBy_gene();
     }
 
     @Override
-    @Ignore
     public void testGetAllVariants_files() {
         Assume.assumeTrue(FILES);
         super.testGetAllVariants_files();
@@ -159,7 +154,6 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     }
 
     @Override
-    @Ignore
     public void rank_ct() throws Exception {
         Assume.assumeTrue(GROUP_BY);
         super.rank_ct();
@@ -178,10 +172,34 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     }
 
     @Override
-    @Ignore
     public void testInclude() {
         Assume.assumeTrue(FILES);
         super.testInclude();
+    }
+
+    @Test
+    public void testNativeQuery() {
+        int count = 0;
+        for (VariantDBIterator iterator = dbAdaptor.iterator(new Query(), new QueryOptions("native", true)); iterator.hasNext();) {
+            Variant variant = iterator.next();
+//            System.out.println(variant.toJson());
+            count++;
+        }
+        Assert.assertEquals(dbAdaptor.count(new Query()).first().intValue(), count);
+    }
+
+    @Test
+    public void testArchiveIterator() {
+        int count = 0;
+        Query query = new Query(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())
+                .append(VariantQueryParam.FILES.key(), 6);
+
+        for (VariantDBIterator iterator = dbAdaptor.iterator(query, new QueryOptions("archive", true)); iterator.hasNext(); ) {
+            Variant variant = iterator.next();
+//            System.out.println(variant.toJson());
+            count++;
+        }
+        Assert.assertEquals(source.getStats().getNumRecords(), count);
     }
 
 }

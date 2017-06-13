@@ -182,9 +182,4 @@ public class Family extends Annotable<FamilyAclEntry> {
         return this;
     }
 
-    public Family setAcl(List<FamilyAclEntry> acl) {
-        this.acl = acl;
-        return this;
-    }
-
 }

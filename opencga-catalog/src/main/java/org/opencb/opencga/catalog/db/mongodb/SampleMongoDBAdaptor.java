@@ -421,6 +421,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, sampleParameters, acceptedMapParams);
 
+        final String[] acceptedObjectParams = {QueryParams.ONTOLOGY_TERMS.key()};
+        filterObjectParams(parameters, sampleParameters, acceptedObjectParams);
+
         if (parameters.containsKey(QueryParams.NAME.key())) {
             // That can only be done to one sample...
             QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions());
@@ -656,6 +659,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     case ONTOLOGY_TERMS_AGE_OF_ONSET:
                     case ONTOLOGY_TERMS_MODIFIERS:
                     case ANNOTATION_SETS:
+                    case CREATION_DATE:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     default:

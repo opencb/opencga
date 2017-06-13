@@ -31,10 +31,16 @@
 |let||js|response.jsonbody.response[0].result[0].variables[0].defaultValue|20.5|
 |let||js|response.jsonbody.response[0].result[0].variables[1].defaultValue|10|
 
+!3 Update Variable Set  
+!|Table: Rest Fixture  | $baseURL |
+| setBody |  {"name": "updatedName"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/variableset/$variableSetId1/update?sid=$sessionId&study=$study |200| Content-Type : application/json||
+
 !3 Get Variable Set Info 
 !|Table: Rest Fixture  | $baseURL |
-| GET | /v1/variableset/$variableSetId1/info?sid=$sessionId |200| Content-Type : application/json|jsonbody.error == '' && jsonbody.response[0].result[0].id == '$variableSetId1'|
-
+| GET | /v1/variableset/$variableSetId1/info?sid=$sessionId |200| Content-Type : application/json||
+#| GET | /v1/variableset/$variableSetId1/info?sid=$sessionId |200| Content-Type : application/json|jsonbody.error == '' && jsonbody.response[0].result[0].id == '$variableSetId1' && jsonbody.response[0].result[0].name == 'updatedName'|
 !3 Add Field To Variable Set  
 !|Table: Rest Fixture  | $baseURL |
 | setBody |  { "name" : "$variableSetId1" }  ]}|

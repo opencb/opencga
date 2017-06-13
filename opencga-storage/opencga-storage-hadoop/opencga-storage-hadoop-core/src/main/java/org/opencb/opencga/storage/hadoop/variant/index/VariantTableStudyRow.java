@@ -74,8 +74,6 @@ public class VariantTableStudyRow {
             Arrays.asList(NOCALL, HOM_REF, HET_REF, HOM_VAR, OTHER, COMPLEX, PASS_CNT, CALL_CNT, FILTER_OTHER));
     public static final List<String> GENOTYPE_COLUMNS = Collections.unmodifiableList(Arrays.asList(NOCALL, HET_REF, HOM_VAR, OTHER));
 
-    public static final char COLUMN_KEY_SEPARATOR = '_';
-
     private Integer studyId;
     private Integer homRefCount = 0;
     private Integer passCount = 0;
@@ -631,11 +629,11 @@ public class VariantTableStudyRow {
     }
 
     public static String buildColumnKey(Integer sid, String gt) {
-        return String.valueOf(sid) + COLUMN_KEY_SEPARATOR + gt;
+        return String.valueOf(sid) + VariantPhoenixHelper.COLUMN_KEY_SEPARATOR + gt;
     }
 
     public static Integer extractStudyId(String columnKey, boolean failOnMissing) {
-        String study = StringUtils.split(columnKey, COLUMN_KEY_SEPARATOR)[0];
+        String study = StringUtils.split(columnKey, VariantPhoenixHelper.COLUMN_KEY_SEPARATOR)[0];
         if (StringUtils.isNotBlank(columnKey)
                 && Character.isDigit(columnKey.charAt(0))
                 && StringUtils.isNumeric(study)) {
