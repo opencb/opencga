@@ -66,7 +66,7 @@ public class CatalogFileUtilsTest {
         Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
                 .openStream());
         configuration.getAdmin().setSecretKey("dummy");
-
+        configuration.getAdmin().setAlgorithm("HS256");
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
                 .add("username", configuration.getCatalog().getDatabase().getUser())
                 .add("password", configuration.getCatalog().getDatabase().getPassword())

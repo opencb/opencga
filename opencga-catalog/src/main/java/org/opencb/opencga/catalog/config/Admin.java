@@ -24,6 +24,7 @@ public class Admin {
     private String password;
     private String email;
     private String secretKey;
+    private String algorithm;
 
     public Admin() {
     }
@@ -59,11 +60,21 @@ public class Admin {
         this.secretKey = secretKey;
     }
 
+    public String getAlgorithm() {
+        return algorithm;
+    }
+
+    public Admin setAlgorithm(String algorithm) {
+        this.algorithm = algorithm;
+        return this;
+    }
+
+    @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("Admin{");
-        sb.append(", email=\'").append(this.email).append('\'');
+        final StringBuilder sb = new StringBuilder("Admin{");
+        sb.append("email='").append(email).append('\'');
+        sb.append(", algorithm='").append(algorithm).append('\'');
         sb.append('}');
         return sb.toString();
     }
-
 }

@@ -228,4 +228,18 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
         return ((Admin)MongoDBUtils.parseObject((Document)((Document)queryResult.first()).get("admin"), Admin.class)).getSecretKey();
     }
+
+    @Override
+    public void writeAlgorithm(String algorithm) throws CatalogDBException {
+        Bson query = Filters.eq("_id", "METADATA");
+        Bson update = Updates.set("admin.algorithm", algorithm);
+        this.metaCollection.update(query, update, QueryOptions.empty());
+    }
+
+    @Override
+    public String readAlgorithm() throws CatalogDBException {
+        Bson query = Filters.eq("_id", "METADATA");
+        QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
+        return ((Admin)MongoDBUtils.parseObject((Document)((Document)queryResult.first()).get("admin"), Admin.class)).getAlgorithm();
+    }
 }

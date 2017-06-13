@@ -100,6 +100,7 @@ public class AdminCliOptionsParser {
         this.jCommander.addCommand("meta", this.metaCommandOptions);
         JCommander metaSubCommands = this.jCommander.getCommands().get("meta");
         metaSubCommands.addCommand("key", this.metaCommandOptions.metaKeyCommandOptions);
+        metaSubCommands.addCommand("algorithm", this.metaCommandOptions.metaAlgorithmCommandOptions);
     }
 
     public void parse(String[] args) throws ParameterException {
@@ -283,12 +284,14 @@ public class AdminCliOptionsParser {
     )
     public class MetaCommandOptions extends AdminCliOptionsParser.CommandOptions {
         AdminCliOptionsParser.MetaKeyCommandOptions metaKeyCommandOptions;
+        AdminCliOptionsParser.MetaAlgorithmCommandOptions metaAlgorithmCommandOptions;
         AdminCliOptionsParser.AdminCommonCommandOptions commonOptions;
 
         public MetaCommandOptions() {
             super();
             this.commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
             this.metaKeyCommandOptions = new MetaKeyCommandOptions();
+            this.metaAlgorithmCommandOptions = new MetaAlgorithmCommandOptions();
         }
     }
 
@@ -337,13 +340,21 @@ public class AdminCliOptionsParser {
 
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
-
         @Parameter(
                 names = {"--secret-key"},
                 description = "Secret key needed to authenticate through OpenCGA (JWT).",
                 required = true
         )
+
         public String secretKey;
+
+        @Parameter(
+                names = {"--algorithm"},
+                description = "Algorithm to encrypt JWT session token (HS256)",
+                required = true
+        )
+
+        public String algorithm;
 
         public InstallCatalogCommandOptions() {
             super();
@@ -663,7 +674,7 @@ public class AdminCliOptionsParser {
 
     @Parameters(
             commandNames = {"key"},
-            commandDescription = "Insert secret key "
+            commandDescription = "Update secret key "
     )
     public class MetaKeyCommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
         @ParametersDelegate
@@ -681,6 +692,31 @@ public class AdminCliOptionsParser {
             this.commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
         }
     }
+
+    @Parameters(
+            commandNames = {"algorithm"},
+            commandDescription = "update the JWT algorithm"
+    )
+    public class MetaAlgorithmCommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
+        @ParametersDelegate
+        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions;
+        @Parameter(
+                names = {"--update"},
+                description = "Update JWT algorithm in OpenCGA",
+                required = true,
+                arity = 1
+        )
+        public String algorithm;
+
+        public MetaAlgorithmCommandOptions() {
+            super();
+            this.commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+        }
+    }
+
+
+
+
 
     public void printUsage() {
         String parsedCommand = getCommand();

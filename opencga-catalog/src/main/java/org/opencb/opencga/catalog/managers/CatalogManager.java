@@ -72,6 +72,7 @@ public class CatalogManager implements AutoCloseable {
     private ICohortManager cohortManager;
     private FamilyManager familyManager;
     private ClinicalAnalysisManager clinicalAnalysisManager;
+
     private CatalogAuditManager auditManager;
     private JwtSessionManager sessionManager;
     private AuthorizationManager authorizationManager;
@@ -106,7 +107,7 @@ public class CatalogManager implements AutoCloseable {
 //        catalogClient = new CatalogDBClient(this);
         //TODO: Check if catalog is empty
         //TODO: Setup catalog if it's empty.
-        this.populateSecretKey();
+        this.initializeAdmin();
         auditManager = new CatalogAuditManager(catalogDBAdaptorFactory.getCatalogAuditDbAdaptor(), catalogDBAdaptorFactory
                 .getCatalogUserDBAdaptor(), authorizationManager, configuration);
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager, this.configuration);
@@ -133,15 +134,22 @@ public class CatalogManager implements AutoCloseable {
                 catalogIOManagerFactory, configuration);
     }
 
-    private void populateSecretKey() throws CatalogDBException {
+    private void initializeAdmin() throws CatalogDBException {
+
         if (StringUtils.isEmpty(this.configuration.getAdmin().getSecretKey())) {
             this.configuration.getAdmin().setSecretKey(this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readSecretKey());
         }
 
+        if (StringUtils.isEmpty(this.configuration.getAdmin().getAlgorithm())) {
+            this.configuration.getAdmin().setAlgorithm(this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readAlgorithm());
+        }
     }
-
     public void insertUpdatedSecretKey(String key) throws CatalogDBException {
             this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().writeSecretKey(key);
+    }
+
+    public void insertAlgorithm(String algorithm) throws CatalogDBException {
+        this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().writeAlgorithm(algorithm);
     }
 
     public ObjectMap getDatabaseStatus() {

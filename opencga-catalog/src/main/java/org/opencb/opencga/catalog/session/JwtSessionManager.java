@@ -46,7 +46,8 @@ public class JwtSessionManager {
                     .setExpiration(new Date(currentTime.longValue() + this.expiration.longValue() * 1000L))
                     .setAudience("OpenCGA users")
                     .setIssuedAt(new Date(currentTime.longValue()))
-                    .signWith(SignatureAlgorithm.HS256, this.secretKey.getBytes("UTF-8"))
+                    .signWith(SignatureAlgorithm.forName(configuration.getAdmin().getAlgorithm()),
+                            this.secretKey.getBytes("UTF-8"))
                     .compact();
         } catch (UnsupportedEncodingException e) {
             logger.error("error while creating jwt token");

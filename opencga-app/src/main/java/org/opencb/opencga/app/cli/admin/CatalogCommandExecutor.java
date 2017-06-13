@@ -112,6 +112,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         }
 
         this.configuration.getAdmin().setSecretKey(this.catalogCommandOptions.installCatalogCommandOptions.secretKey);
+        this.configuration.getAdmin().setAlgorithm(this.catalogCommandOptions.installCatalogCommandOptions.algorithm);
 
         if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
             throw new CatalogException("No admin password found. Please, insert your password.");
@@ -140,8 +141,6 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             }
         }
         MongoDataStoreManager mongoDataStoreManager = new MongoDataStoreManager(dataStoreServerAddresses);
-//        return mongoDataStoreManager.exists(catalogConfiguration.getDatabase().getDatabase());
-//        return mongoDataStoreManager.exists(catalogConfiguration.getDatabase().getDatabase());
         return mongoDataStoreManager.exists(database);
     }
 
@@ -156,8 +155,6 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         if (!checkDatabaseExists(catalogManager.getCatalogDatabase())) {
             throw new CatalogException("The database " + catalogManager.getCatalogDatabase() + " does not exist.");
         }
-//        System.out.println("\nDeleting " + catalogConfiguration.getDatabase().getDatabase() + " from "
-//                + catalogConfiguration.getDatabase().getHosts() + "\n");
         logger.info("\nDeleting database {} from {}\n", catalogManager.getCatalogDatabase(), configuration.getCatalog().getDatabase()
                 .getHosts());
         catalogManager.deleteCatalogDB(false);
@@ -174,8 +171,6 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             throw new CatalogException("The database " + catalogManager.getCatalogDatabase() + " does not exist.");
         }
 
-//        System.out.println("\nChecking and installing non-existent indexes in" + catalogConfiguration.getDatabase().getDatabase() + " in "
-//                + catalogConfiguration.getDatabase().getHosts() + "\n");
         logger.info("\nChecking and installing non-existent indexes in {} in {}\n",
                 catalogManager.getCatalogDatabase(), configuration.getCatalog().getDatabase().getHosts());
         catalogManager.getUserManager().validatePassword("admin", configuration.getAdmin().getPassword(), true);

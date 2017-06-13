@@ -56,6 +56,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         Configuration configuration = Configuration.load(CatalogSampleAnnotationsLoaderTest.class.getClassLoader()
                 .getClass().getResource("/configuration-test.yml").openStream());
         configuration.getAdmin().setSecretKey("dummy");
+        configuration.getAdmin().setAlgorithm("HS256");
         catalogManager = new CatalogManager(configuration);
         catalogManager.deleteCatalogDB(true);
         catalogManager.installCatalogDB();

@@ -38,5 +38,8 @@ public interface MetaDBAdaptor {
 
     String readSecretKey() throws CatalogDBException;
 
+    void writeAlgorithm(String algorithm) throws CatalogDBException;
+
+    String readAlgorithm() throws CatalogDBException;
 
 }

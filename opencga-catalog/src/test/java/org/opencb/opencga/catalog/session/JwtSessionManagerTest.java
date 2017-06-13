@@ -26,6 +26,7 @@ public class JwtSessionManagerTest extends GenericTest {
         configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
                 .openStream());
         configuration.getAdmin().setSecretKey("12345");
+        configuration.getAdmin().setAlgorithm("HS256");
         jwtSessionManager = new JwtSessionManager(configuration);
         testCreateJWTToken();
     }
