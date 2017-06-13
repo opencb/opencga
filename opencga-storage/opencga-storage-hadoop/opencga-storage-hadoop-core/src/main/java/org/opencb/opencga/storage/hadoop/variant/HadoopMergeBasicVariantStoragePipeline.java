@@ -126,9 +126,12 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
         List<Integer> fileIds = Collections.singletonList(options.getInt(VariantStorageEngine.Options.FILE_ID.key()));
 
         Thread hook = newShutdownHook(OPERATION_NAME, fileIds);
-        Runtime.getRuntime().addShutdownHook(hook);
-        super.loadArch(inputUri);
-        Runtime.getRuntime().removeShutdownHook(hook);
+        try {
+            Runtime.getRuntime().addShutdownHook(hook);
+            super.loadArch(inputUri);
+        } finally {
+            Runtime.getRuntime().removeShutdownHook(hook);
+        }
     }
 
     @Override
