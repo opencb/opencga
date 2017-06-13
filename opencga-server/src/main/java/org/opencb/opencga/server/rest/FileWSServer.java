@@ -119,8 +119,8 @@ public class FileWSServer extends OpenCGAWSServer {
             } else {
                 // Create a file
                 file = fileManager.create(studyStr, File.Type.FILE, File.Format.PLAIN, File.Bioformat.UNKNOWN, params.path, null,
-                        params.description, new File.FileStatus(File.FileStatus.READY), 0, -1, null, -1, null, null, params.parents,
-                        params.content, queryOptions, sessionId);
+                        params.description, new File.FileStatus(File.FileStatus.READY), 0, -1, null, -1, null, null,
+                        params.parents, params.content, queryOptions, sessionId);
             }
             return createOkResponse(file);
         } catch (Exception e) {
@@ -656,8 +656,8 @@ public class FileWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss)", required = false) @DefaultValue("") @QueryParam("modificationDate") String modificationDate,
                            @ApiParam(value = "Description", required = false) @DefaultValue("") @QueryParam("description") String description,
                            @ApiParam(value = "Size", required = false) @DefaultValue("") @QueryParam("size") Long size,
-                           @ApiParam(value = "DEPRECATED: use sample instead", hidden = true) @DefaultValue("") @QueryParam("sampleIds") String sampleIds,
-                           @ApiParam(value = "Comma separated list of sample ids", required = false) @DefaultValue("") @QueryParam("sample") String samples,
+                           @ApiParam(value = "Comma separated list of sample ids", hidden = true) @QueryParam("sample") String sample,
+                           @ApiParam(value = "Comma separated list of sample ids") @QueryParam("samples") String samples,
                            @ApiParam(value = "(DEPRECATED) Job id that created the file(s) or folder(s)", hidden = true) @QueryParam("jobId") String jobIdOld,
                            @ApiParam(value = "Job id that created the file(s) or folder(s)", required = false) @QueryParam("job.id") String jobId,
                            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
@@ -671,8 +671,8 @@ public class FileWSServer extends OpenCGAWSServer {
                 studyStr = studyIdStr;
             }
 
-            if (StringUtils.isNotEmpty(samples)) {
-                query.put("sampleIds", samples);
+            if (StringUtils.isNotEmpty(sample) && !query.containsKey(FileDBAdaptor.QueryParams.SAMPLES.key())) {
+                query.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sample);
             }
 
             if (query.containsKey(FileDBAdaptor.QueryParams.NAME.key())
@@ -1177,6 +1177,7 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
+    @Deprecated
     public static class UpdateFile {
         public String name;
         public File.Format format;
@@ -1405,8 +1406,8 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description")
                                     String description,
                             @ApiParam(value = "size", required = false) @DefaultValue("") @QueryParam("size") Long size,
-                            @ApiParam(value = "Comma separated sampleIds", required = false) @DefaultValue("") @QueryParam("sampleIds")
-                                    String sampleIds,
+                            @ApiParam(value = "Comma separated sampleIds", hidden = true) @QueryParam("sampleIds") String sampleIds,
+                            @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples,
                             @ApiParam(value = "(DEPRECATED) Job id", hidden = true) @QueryParam("jobId") String jobIdOld,
                             @ApiParam(value = "Job id", required = false) @QueryParam("job.id") String jobId,
                             @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
@@ -1415,6 +1416,9 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
+            }
+            if (StringUtils.isNotEmpty(sampleIds) && !query.containsKey(FileDBAdaptor.QueryParams.SAMPLES.key())) {
+                query.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleIds);
             }
             QueryResult result = fileManager.groupBy(studyStr, query, queryOptions, fields, sessionId);
             return createOkResponse(result);

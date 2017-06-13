@@ -48,10 +48,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -407,10 +405,10 @@ public class FileManagerTest extends GenericTest {
         URI uri = getClass().getResource("/biofiles/variant-test-file-dot-names.vcf.gz").toURI();
         QueryResult<File> link = fileManager.link(uri, ".", studyId, new ObjectMap(), sessionIdUser);
 
-        assertEquals(4, link.first().getSampleIds().size());
+        assertEquals(4, link.first().getSamples().size());
 
         Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.ID.key(), link.first().getSampleIds())
+                .append(SampleDBAdaptor.QueryParams.ID.key(), link.first().getSamples())
                 .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(query, QueryOptions.empty(), sessionIdUser);
 
@@ -518,7 +516,8 @@ public class FileManagerTest extends GenericTest {
         try {
             fileManager.create(Long.toString(study.getId()), File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.UNKNOWN,
                     "data/test/myTest/myFile.txt", null, null, new File.FileStatus(File.FileStatus.READY), 0, -1, null, -1,
-                    null, null, false, "This is the content\tof the file", null, sessionIdUser2);
+                    null, null,
+                    false, "This is the content\tof the file", null, sessionIdUser2);
             fail("An error should be raised because parents is false");
         } catch (CatalogException e) {
             System.out.println("Correct");
@@ -526,8 +525,7 @@ public class FileManagerTest extends GenericTest {
 
         QueryResult<File> fileQueryResult = fileManager.create(Long.toString(study.getId()), File.Type.FILE, File.Format.UNKNOWN,
                 File.Bioformat.UNKNOWN, "data/test/myTest/myFile.txt", null, null,
-                new File.FileStatus(File.FileStatus.READY), 0, -1, null, -1, null, null, true, content,
-                null, sessionIdUser2);
+                new File.FileStatus(File.FileStatus.READY), 0, -1, null, -1, null, null, true, content, null, sessionIdUser2);
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(fileQueryResult.first().getUri());
         assertTrue(ioManager.exists(fileQueryResult.first().getUri()));
 
@@ -1333,8 +1331,8 @@ public class FileManagerTest extends GenericTest {
         }
 
         catalogManager.createFile(studyId, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE,
-                "folder/subfolder/subsubfolder/my_staged.txt", null, null, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null,
-                -1, null, null, true, null, sessionIdUser).first();
+                "folder/subfolder/subsubfolder/my_staged.txt", null, null, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1,
+                null, null, true, null, sessionIdUser).first();
 
         thrown.expect(CatalogException.class);
         try {
@@ -1570,8 +1568,7 @@ public class FileManagerTest extends GenericTest {
 
         Path filePath = Paths.get("data", "file1.txt");
         fileManager.create(Long.toString(studyId), File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, filePath.toString(),
-                "", "", new File.FileStatus(), 10, -1, null, -1, null, null, true,
-                "My content", null, sessionIdUser);
+                "", "", new File.FileStatus(), 10, -1, null, -1, null, null, true, "My content", null, sessionIdUser);
 
         catalogManager.createStudyAcls(Long.toString(studyId), "user2", "", null, sessionIdUser);
         List<QueryResult<FileAclEntry>> queryResults = fileManager.updateAcl("data/new/," + filePath.toString(),
@@ -1589,9 +1586,7 @@ public class FileManagerTest extends GenericTest {
     public void testUpdateIndexStatus() throws CatalogException {
         long studyId = catalogManager.getStudyManager().getId("user", "user@1000G:phase1");
         QueryResult<File> fileResult = fileManager.create(Long.toString(studyId), File.Type.FILE, File.Format.VCF,
-                File.Bioformat.VARIANT, "data/test.vcf", "", "description", new File.FileStatus(File.FileStatus.STAGE), 0, -1,
-                Collections.emptyList(), -1, Collections.emptyMap(), Collections.emptyMap(), true, null, new QueryOptions(),
-                sessionIdUser);
+                File.Bioformat.VARIANT, "data/test.vcf", "", "description", new File.FileStatus(File.FileStatus.STAGE), 0, -1, Collections.emptyList(), -1, Collections.emptyMap(), Collections.emptyMap(), true, null, new QueryOptions(), sessionIdUser);
 
         fileManager.updateFileIndexStatus(fileResult.first(), FileIndex.IndexStatus.TRANSFORMED, null, sessionIdUser);
         QueryResult<File> read = fileManager.get(fileResult.first().getId(), new QueryOptions(), sessionIdUser);

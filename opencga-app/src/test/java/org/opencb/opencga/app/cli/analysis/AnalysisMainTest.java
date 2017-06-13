@@ -166,10 +166,10 @@ public class AnalysisMainTest {
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getName());
 
 
-        catalogManager.getCohortManager().create(studyId, "coh1", Study.Type.CONTROL_SET, "", file1.getSampleIds(), null, null,
-                sessionId);
-        catalogManager.getCohortManager().create(studyId, "coh2", Study.Type.CONTROL_SET, "", file2.getSampleIds(), null, null,
-                sessionId);
+        catalogManager.getCohortManager().create(studyId, "coh1", Study.Type.CONTROL_SET, "",
+                file1.getSamples().stream().map(Sample::getId).collect(Collectors.toList()), null, null, sessionId);
+        catalogManager.getCohortManager().create(studyId, "coh2", Study.Type.CONTROL_SET, "",
+                file2.getSamples().stream().map(Sample::getId).collect(Collectors.toList()), null, null, sessionId);
 
         execute(new String[]{"variant", "stats", "--session-id", sessionId, "--study-id", String.valueOf(studyId), "--cohort-ids", "coh1", "--outdir-id", String.valueOf(outdirId)});
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), "coh1"), null, sessionId).first().getStatus().getName());

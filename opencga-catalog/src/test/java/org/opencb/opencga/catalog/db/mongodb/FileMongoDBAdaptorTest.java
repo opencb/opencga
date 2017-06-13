@@ -28,10 +28,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -299,6 +301,42 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertEquals(2, ((Document) groupByBioformat.get(2).get("_id")).size()); // None - Folder
         assertEquals(Arrays.asList("data/"), groupByBioformat.get(2).get("features"));
 
+    }
+
+    @Test
+    public void testAddSamples() throws Exception {
+        File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
+        catalogFileDBAdaptor.addSamplesToFile(file.getId(),
+                Arrays.asList(new Sample().setId(5), new Sample().setId(6)));
+
+        QueryResult<File> fileQueryResult = catalogFileDBAdaptor.get(file.getId(), QueryOptions.empty());
+        assertEquals(2, fileQueryResult.first().getSamples().size());
+        assertTrue(Arrays.asList(5L, 6L).containsAll(
+                fileQueryResult.first().getSamples().stream().map(Sample::getId).collect(Collectors.toList())));
+
+        // Test we avoid duplicities
+        catalogFileDBAdaptor.addSamplesToFile(file.getId(),
+                Arrays.asList(new Sample().setId(6), new Sample().setId(7)));
+        fileQueryResult = catalogFileDBAdaptor.get(file.getId(), QueryOptions.empty());
+        assertEquals(3, fileQueryResult.first().getSamples().size());
+        assertTrue(Arrays.asList(5L, 6L, 7L).containsAll(
+                fileQueryResult.first().getSamples().stream().map(Sample::getId).collect(Collectors.toList())));
+    }
+
+    @Test
+    public void testRemoveSamples() throws Exception {
+        File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
+        catalogFileDBAdaptor.addSamplesToFile(file.getId(), Arrays.asList(new Sample().setId(5), new Sample().setId(6), new Sample().setId(7)));
+
+        QueryResult<File> fileQueryResult = catalogFileDBAdaptor.get(file.getId(), QueryOptions.empty());
+        assertEquals(3, fileQueryResult.first().getSamples().size());
+        assertTrue(Arrays.asList(5L, 6L, 7L).containsAll(fileQueryResult.first().getSamples().stream().map(Sample::getId).collect
+                (Collectors.toList())));
+
+        catalogFileDBAdaptor.extractSampleFromFiles(new Query(FileDBAdaptor.QueryParams.ID.key(), file.getId()), Arrays.asList(5L, 7L));
+        fileQueryResult = catalogFileDBAdaptor.get(file.getId(), QueryOptions.empty());
+        assertEquals(1, fileQueryResult.first().getSamples().size());
+        assertTrue(fileQueryResult.first().getSamples().get(0).getId() == 6);
     }
 
     @Test

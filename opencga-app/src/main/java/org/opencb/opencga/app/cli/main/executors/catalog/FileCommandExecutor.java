@@ -192,11 +192,10 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key(), filesCommandOptions.groupByCommandOptions.modificationDate);
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.DESCRIPTION.key(), filesCommandOptions.searchCommandOptions.description);
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.SIZE.key(), filesCommandOptions.searchCommandOptions.size);
-        query.putIfNotEmpty(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), filesCommandOptions.searchCommandOptions.samples);
+        query.putIfNotEmpty(FileDBAdaptor.QueryParams.SAMPLES.key(), filesCommandOptions.searchCommandOptions.samples);
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_ID.key(), filesCommandOptions.searchCommandOptions.jobId);
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), filesCommandOptions.searchCommandOptions.attributes);
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.NATTRIBUTES.key(), filesCommandOptions.searchCommandOptions.nattributes);
-        query.putIfNotEmpty(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), filesCommandOptions.searchCommandOptions.samples);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, filesCommandOptions.searchCommandOptions.dataModelOptions.include);
@@ -284,7 +283,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.DESCRIPTION.key(), filesCommandOptions.updateCommandOptions.description);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), filesCommandOptions.updateCommandOptions.attributes);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.STATS.key(), filesCommandOptions.updateCommandOptions.stats);
-        params.putIfNotEmpty(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), filesCommandOptions.updateCommandOptions.sampleIds);
+        params.putIfNotEmpty(FileDBAdaptor.QueryParams.SAMPLES.key(), filesCommandOptions.updateCommandOptions.sampleIds);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_ID.key(), filesCommandOptions.updateCommandOptions.jobId);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.PATH.key(), filesCommandOptions.updateCommandOptions.path);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.NAME.key(), filesCommandOptions.updateCommandOptions.name);
@@ -418,7 +417,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 filesCommandOptions.groupByCommandOptions.modificationDate);
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.DESCRIPTION.key(), filesCommandOptions.groupByCommandOptions.description);
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.SIZE.key(), filesCommandOptions.groupByCommandOptions.size);
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), filesCommandOptions.groupByCommandOptions.sampleIds);
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.SAMPLES.key(), filesCommandOptions.groupByCommandOptions.sampleIds);
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_ID.key(), filesCommandOptions.groupByCommandOptions.job);
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), filesCommandOptions.groupByCommandOptions.attributes);
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.NATTRIBUTES.key(), filesCommandOptions.groupByCommandOptions.nattributes);

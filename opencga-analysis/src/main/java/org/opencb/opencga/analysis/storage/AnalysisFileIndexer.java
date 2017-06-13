@@ -275,7 +275,7 @@ public class AnalysisFileIndexer {
 
         /** Get file samples **/
         List<Sample> sampleList;
-        if (originalFile.getSampleIds() == null || originalFile.getSampleIds().isEmpty()) {
+        if (originalFile.getSamples() == null || originalFile.getSamples().isEmpty()) {
             try {
                 sampleList = FileMetadataReader.get(catalogManager).getFileSamples(study, originalFile,
                         catalogManager.getFileUri(originalFile), fileModifyParams,
@@ -284,7 +284,9 @@ public class AnalysisFileIndexer {
                 throw new AnalysisExecutionException(e);
             }
         } else {
-            sampleList = catalogManager.getAllSamples(study.getId(), new Query("id", originalFile.getSampleIds()), new QueryOptions(), sessionId).getResult();
+            sampleList = catalogManager.getAllSamples(study.getId(),
+                    new Query("id", originalFile.getSamples().stream().map(Sample::getId).collect(Collectors.toList())),
+                    new QueryOptions(), sessionId).getResult();
         }
         if (!simulate) {
             Cohort defaultCohort;

@@ -244,7 +244,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                     file.getFormat(), file.getBioformat(), file.getDescription(), file.getPath(), file.getUri(), file.getId(),
                     file.getStatus().getName(), file.getSize(), indexStatus,
                     StringUtils.join(file.getRelatedFiles().stream().map(File.RelatedFile::getFileId).collect(Collectors.toList()), ", "),
-                    StringUtils.join(file.getSampleIds().stream().collect(Collectors.toList()), ", ")));
+                    StringUtils.join(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()), ", ")));
         }
     }
 

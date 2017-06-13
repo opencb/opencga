@@ -690,7 +690,8 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<File> createFile(long studyId, File.Format format, File.Bioformat bioformat, String path, byte[] bytes, String
             description, boolean parents, String sessionId) throws CatalogException, IOException {
         QueryResult<File> queryResult = fileManager.create(Long.toString(studyId), File.Type.FILE, format, bioformat, path, null,
-                description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, null, sessionId);
+                description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, null,
+                sessionId);
         new CatalogFileUtils(this).upload(new ByteArrayInputStream(bytes), queryResult.first(), sessionId, false, false, true);
         return getFile(queryResult.first().getId(), sessionId);
     }
@@ -698,7 +699,8 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<File> createFile(long studyId, File.Format format, File.Bioformat bioformat, String path, URI fileLocation, String
             description, boolean parents, String sessionId) throws CatalogException, IOException {
         QueryResult<File> queryResult = fileManager.create(Long.toString(studyId), File.Type.FILE, format, bioformat, path, null,
-                description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, null, sessionId);
+                description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, null,
+                sessionId);
         new CatalogFileUtils(this).upload(fileLocation, queryResult.first(), null, sessionId, false, false, true, true, Long.MAX_VALUE);
         return getFile(queryResult.first().getId(), sessionId);
     }
@@ -712,11 +714,11 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<File> createFile(long studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
                                         String creationDate, String description, File.FileStatus status, long size, long experimentId,
-                                        List<Long> sampleIds, long jobId, Map<String, Object> stats, Map<String, Object> attributes,
+                                        List<Sample> samples, long jobId, Map<String, Object> stats, Map<String, Object> attributes,
                                         boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {
         return fileManager.create(Long.toString(studyId), type, format, bioformat, path, creationDate, description, status,
-                size, experimentId, sampleIds, jobId, stats, attributes, parents, null, options, sessionId);
+                size, experimentId, samples, jobId, stats, attributes, parents, null, options, sessionId);
     }
 
     @Deprecated

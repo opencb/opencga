@@ -157,9 +157,9 @@ public class CatalogStudyConfigurationFactory {
 
             int fileId = (int) file.getId();
             studyConfiguration.getFileIds().forcePut(file.getName(), fileId);
-            List<Integer> sampleIds = new ArrayList<>(file.getSampleIds().size());
-            for (Long sampleId : file.getSampleIds()) {
-                sampleIds.add(toIntExact(sampleId));
+            List<Integer> sampleIds = new ArrayList<>(file.getSamples().size());
+            for (Sample sample : file.getSamples()) {
+                sampleIds.add(toIntExact(sample.getId()));
             }
             studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(sampleIds));
 

@@ -266,7 +266,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
         Cohort defaultCohort = getDefaultCohort(studyId);
         for (File file : expectedLoadedFiles) {
-            assertTrue(defaultCohort.getSamples().containsAll(file.getSampleIds()));
+            assertTrue(defaultCohort.getSamples().containsAll(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList())));
         }
         if (calculateStats) {
             assertEquals(Cohort.CohortStatus.READY, defaultCohort.getStatus().getName());
@@ -301,7 +301,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
         Cohort defaultCohort = getDefaultCohort(studyId);
         for (File file : expectedLoadedFiles) {
-            assertTrue(defaultCohort.getSamples().containsAll(file.getSampleIds()));
+            assertTrue(defaultCohort.getSamples().containsAll(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList())));
         }
         if (calculateStats) {
             assertEquals(Cohort.CohortStatus.READY, defaultCohort.getStatus().getName());

@@ -162,7 +162,8 @@ public class CatalogStudyConfigurationFactoryTest {
 
             assertEquals(file.getName(), entry.getKey());
             int id = (int) file.getId();
-            assertEquals(file.getSampleIds().stream().map(Long::intValue).collect(Collectors.toSet()), studyConfiguration.getSamplesInFiles().get((id)));
+            assertEquals(file.getSamples().stream().map(Sample::getId).map(Long::intValue).collect(Collectors.toSet()),
+                    studyConfiguration.getSamplesInFiles().get((id)));
             if (file.getIndex() == null || file.getIndex().getStatus() == null || file.getIndex().getStatus().getName() == null
                     || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
                 assertFalse(studyConfiguration.getIndexedFiles().contains(id));

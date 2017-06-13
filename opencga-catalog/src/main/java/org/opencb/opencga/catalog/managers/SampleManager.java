@@ -897,7 +897,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
             Set<Long> sampleSet = new HashSet<>();
             for (File file : fileQueryResult.getResult()) {
-                sampleSet.addAll(file.getSampleIds());
+                sampleSet.addAll(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
             }
             sample = StringUtils.join(sampleSet, ",");
 

@@ -663,8 +663,9 @@ public class FileManager extends AbstractManager implements IFileManager {
     @Override
     public QueryResult<File> create(String studyStr, File.Type type, File.Format format, File.Bioformat bioformat, String path,
                                     String creationDate, String description, File.FileStatus status, long size, long experimentId,
-                                    List<Long> sampleIds, long jobId, Map<String, Object> stats, Map<String, Object> attributes,
-                                    boolean parents, String content, QueryOptions options, String sessionId) throws CatalogException {
+                                    List<Sample> samples, long jobId, Map<String, Object> stats, Map<String, Object> attributes,
+                                    boolean parents, String content, QueryOptions options, String sessionId)
+            throws CatalogException {
         /** Check and set all the params and create a File object **/
         ParamUtils.checkPath(path, "filePath");
         String userId = userManager.getId(sessionId);
@@ -685,11 +686,11 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (experimentId > 0 && !jobDBAdaptor.experimentExists(experimentId)) {
             throw new CatalogException("Experiment { id: " + experimentId + "} does not exist.");
         }
-        sampleIds = ParamUtils.defaultObject(sampleIds, LinkedList<Long>::new);
 
-        for (Long sampleId : sampleIds) {
-            if (!sampleDBAdaptor.exists(sampleId)) {
-                throw new CatalogException("Sample { id: " + sampleId + "} does not exist.");
+        samples = ParamUtils.defaultObject(samples, ArrayList<Sample>::new);
+        for (Sample sample : samples) {
+            if (sample.getId() <= 0 || !sampleDBAdaptor.exists(sample.getId())) {
+                throw new CatalogException("Sample { id: " + sample.getId() + "} does not exist.");
             }
         }
 
@@ -743,7 +744,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         boolean external = isExternal(studyId, path, uri);
         File file = new File(-1, Paths.get(path).getFileName().toString(), type, format, bioformat, uri, path, TimeUtils.getTime(),
-                TimeUtils.getTime(), description, status, external, size, new Experiment().setId(experimentId), sampleIds,
+                TimeUtils.getTime(), description, status, external, size, new Experiment().setId(experimentId), samples,
                 new Job().setId(jobId), Collections.emptyList(), Collections.emptyList(), null, stats, attributes);
 
         //Find parent. If parents == true, create folders.
@@ -755,9 +756,8 @@ public class FileManager extends AbstractManager implements IFileManager {
             if (parents) {
                 newParent = true;
                 parentFileId = create(Long.toString(studyId), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, parentPath,
-                        file.getCreationDate(), "", new File.FileStatus(File.FileStatus.READY), 0, -1,
-                        Collections.<Long>emptyList(), -1, Collections.<String, Object>emptyMap(),
-                        Collections.<String, Object>emptyMap(), true, null, options, sessionId).first().getId();
+                        file.getCreationDate(), "", new File.FileStatus(File.FileStatus.READY), 0, -1, samples, -1,
+                        Collections.emptyMap(), Collections.emptyMap(), true, null, options, sessionId).first().getId();
             } else {
                 throw new CatalogDBException("Directory not found " + parentPath);
             }
@@ -1021,11 +1021,11 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         // The samples introduced could be either ids or names. As so, we should use the smart resolutor to do this.
         // FIXME: Although the search method is multi-study, we can only use the smart resolutor for one study at the moment.
-        if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLE_IDS.key()))
-                && studyIds.size() == 1) {
+        if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key())) && studyIds.size() == 1) {
             MyResourceIds resourceIds = catalogManager.getSampleManager().getIds(
-                    query.getString(FileDBAdaptor.QueryParams.SAMPLE_IDS.key()), Long.toString(studyIds.get(0)), sessionId);
+                    query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()), Long.toString(studyIds.get(0)), sessionId);
             query.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), resourceIds.getResourceIds());
+            query.remove(FileDBAdaptor.QueryParams.SAMPLES.key());
         }
 
 
@@ -1129,8 +1129,8 @@ public class FileManager extends AbstractManager implements IFileManager {
                 case DESCRIPTION:
                 case ATTRIBUTES:
                 case STATS:
-                case SAMPLE_IDS:
                 case JOB_ID:
+                case SAMPLES:
                     break;
                 default:
                     throw new CatalogException("Parameter '" + queryParam + "' cannot be changed.");
@@ -1138,11 +1138,19 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
         // We obtain the numeric ids of the samples given
-        if (StringUtils.isNotEmpty(parameters.getString(FileDBAdaptor.QueryParams.SAMPLE_IDS.key()))) {
-            String sampleIdStr = parameters.getString(FileDBAdaptor.QueryParams.SAMPLE_IDS.key());
+        if (StringUtils.isNotEmpty(parameters.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
+            String sampleIdStr = parameters.getString(FileDBAdaptor.QueryParams.SAMPLES.key());
+//            parameters.remove(FileDBAdaptor.QueryParams.SAMPLES.key());
+
             long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
             MyResourceIds resourceIds = catalogManager.getSampleManager().getIds(sampleIdStr, Long.toString(studyId), sessionId);
-            parameters.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), resourceIds.getResourceIds());
+
+            List<Sample> sampleList = new ArrayList<>(resourceIds.getResourceIds().size());
+            for (Long sampleId : resourceIds.getResourceIds()) {
+                sampleList.add(new Sample().setId(sampleId));
+            }
+//            fileDBAdaptor.addSamplesToFile(fileId, sampleList);
+            parameters.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleList);
         }
 
         //Name must be changed with "rename".
@@ -1638,8 +1646,8 @@ public class FileManager extends AbstractManager implements IFileManager {
         // Create the folder in catalog
         File folder = new File(-1, path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
                 stringPath, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY),
-                false, 0, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(),
-                allFileAcls.getResult(), null, null, null);
+                false, 0, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), allFileAcls.getResult(),
+                null, null, null);
         fileDBAdaptor.insert(folder, studyId, new QueryOptions());
     }
 
@@ -2171,6 +2179,13 @@ public class FileManager extends AbstractManager implements IFileManager {
         String userId = userManager.getId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_FILES);
+
+        if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
+            MyResourceIds resourceIds = catalogManager.getSampleManager().getIds(
+                    query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()), Long.toString(studyId), sessionId);
+            query.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), resourceIds.getResourceIds());
+            query.remove(FileDBAdaptor.QueryParams.SAMPLES.key());
+        }
 
         // Add study id to the query
         query.put(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);

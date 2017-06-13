@@ -264,7 +264,7 @@ public class FileMetadataReader {
         }
 
         List<String> includeSampleNameId = Arrays.asList("projects.studies.samples.id", "projects.studies.samples.name");
-        if (file.getSampleIds() == null || file.getSampleIds().isEmpty()) {
+        if (file.getSamples() == null || file.getSamples().isEmpty()) {
             //Read samples from file
             List<String> sortedSampleNames = null;
             switch (fileModifyParams.containsKey("bioformat") ? (File.Bioformat) fileModifyParams.get("bioformat") : file.getBioformat()) {
@@ -387,14 +387,14 @@ public class FileMetadataReader {
 
         } else {
             //Get samples from file.sampleIds
-            Query query = new Query("id", file.getSampleIds());
+            Query query = new Query("id", file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
             sampleList = catalogManager.getAllSamples(study.getId(), query, new QueryOptions(), sessionId).getResult();
         }
 
         List<Long> sampleIdsList = sampleList.stream().map(Sample::getId).collect(Collectors.toList());
-        fileModifyParams.put("sampleIds", sampleIdsList);
+        fileModifyParams.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleIdsList);
         if (!attributes.isEmpty()) {
-            fileModifyParams.put("attributes", attributes);
+            fileModifyParams.put(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
         }
 
         return sampleList;

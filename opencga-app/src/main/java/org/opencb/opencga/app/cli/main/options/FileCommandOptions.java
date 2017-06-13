@@ -237,7 +237,7 @@ public class FileCommandOptions {
         @Parameter(names = {"--size"}, description = "Size.", required = false, arity = 1)
         public String size;
 
-        @Parameter(names = {"--sample-ids"}, description = "Sample ids", required = false, arity = 1)
+        @Parameter(names = {"--samples"}, description = "Comma separated list of sample ids or names", required = false, arity = 1)
         public String samples;
 
         @Parameter(names = {"--job-id"}, description = "Job id", required = false, arity = 1)
@@ -400,7 +400,7 @@ public class FileCommandOptions {
         @Parameter(names = {"--stats"}, description = "Stats", required = false, arity = 1)
         public String stats;
 
-        @Parameter(names = {"--sample-ids"}, description = "sampleIds", required = false, arity = 1)
+        @Parameter(names = {"--samples"}, description = "Comma separated list of sample names or ids", required = false, arity = 1)
         public String sampleIds;
 
         @Parameter(names = {"--job-id"}, description = "Job id", required = false, arity = 1)
@@ -575,7 +575,7 @@ public class FileCommandOptions {
         @Parameter(names = {"--size"}, description = "Filter by size", required = false, arity = 1)
         public String size;
 
-        @Parameter(names = {"--sample-ids"}, description = "Sample ids", required = false, arity = 1)
+        @Parameter(names = {"--samples"}, description = "Comma separated list of sample ids or names", required = false, arity = 1)
         public String sampleIds;
 
         @Parameter(names = {"--job"}, description = "Job id", required = false, arity = 1)
