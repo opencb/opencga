@@ -100,12 +100,12 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     private final Logger logger = LoggerFactory.getLogger(AbstractHadoopVariantStoragePipeline.class);
 
     public AbstractHadoopVariantStoragePipeline(
-            StorageConfiguration configuration, String storageEngineId,
+            StorageConfiguration configuration,
             VariantHadoopDBAdaptor dbAdaptor,
             VariantReaderUtils variantReaderUtils, ObjectMap options,
             HBaseCredentials archiveCredentials, MRExecutor mrExecutor,
             Configuration conf) {
-        super(configuration, storageEngineId, dbAdaptor, variantReaderUtils, options);
+        super(configuration, STORAGE_ENGINE_ID, dbAdaptor, variantReaderUtils, options);
         this.archiveTableCredentials = archiveCredentials;
         this.mrExecutor = mrExecutor;
         this.dbAdaptor = dbAdaptor;

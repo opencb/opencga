@@ -43,11 +43,11 @@ public class HadoopVariantStoragePipeline extends AbstractHadoopVariantStoragePi
     private final Logger logger = LoggerFactory.getLogger(HadoopVariantStoragePipeline.class);
 
     public HadoopVariantStoragePipeline(
-            StorageConfiguration configuration, String storageEngineId,
+            StorageConfiguration configuration,
             VariantHadoopDBAdaptor dbAdaptor, MRExecutor mrExecutor,
             Configuration conf, HBaseCredentials archiveCredentials,
             VariantReaderUtils variantReaderUtils, ObjectMap options) {
-        super(configuration, storageEngineId, dbAdaptor, variantReaderUtils,
+        super(configuration, dbAdaptor, variantReaderUtils,
                 options, archiveCredentials, mrExecutor, conf);
     }
 

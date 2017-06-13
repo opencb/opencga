@@ -19,7 +19,6 @@ import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHBaseArchiveDataWriter;
-import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHadoopDBWriter;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
 import org.slf4j.Logger;
@@ -51,19 +50,17 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
 
     /**
      * @param configuration      {@link StorageConfiguration}
-     * @param storageEngineId    Id
      * @param dbAdaptor          {@link VariantHadoopDBAdaptor}
-     * @param mrExecutor         {@link MRExecutor}
      * @param conf               {@link Configuration}
      * @param archiveCredentials {@link HBaseCredentials}
      * @param variantReaderUtils {@link VariantReaderUtils}
      * @param options            {@link ObjectMap}
      */
-    public HadoopMergeBasicVariantStoragePipeline(StorageConfiguration configuration, String storageEngineId,
-                                                  VariantHadoopDBAdaptor dbAdaptor, MRExecutor mrExecutor, Configuration conf,
+    public HadoopMergeBasicVariantStoragePipeline(StorageConfiguration configuration,
+                                                  VariantHadoopDBAdaptor dbAdaptor, Configuration conf,
                                                   HBaseCredentials archiveCredentials, VariantReaderUtils variantReaderUtils,
                                                   ObjectMap options) {
-        super(configuration, storageEngineId, dbAdaptor, mrExecutor, conf, archiveCredentials, variantReaderUtils, options);
+        super(configuration, dbAdaptor, null, conf, archiveCredentials, variantReaderUtils, options);
         loadArch = loadArch | loadVar;
         loadVar = false;
     }

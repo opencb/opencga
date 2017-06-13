@@ -358,13 +358,13 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
         AbstractHadoopVariantStoragePipeline storageETL;
         if (mergeMode.equals(MergeMode.BASIC)) {
-            storageETL = new HadoopMergeBasicVariantStoragePipeline(configuration, storageEngineId, dbAdaptor, getMRExecutor(options),
+            storageETL = new HadoopMergeBasicVariantStoragePipeline(configuration, dbAdaptor,
                     hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
         } else if (directLoad) {
-            storageETL = new HadoopDirectVariantStoragePipeline(configuration, storageEngineId, dbAdaptor, getMRExecutor(options),
+            storageETL = new HadoopDirectVariantStoragePipeline(configuration, dbAdaptor, getMRExecutor(options),
                     hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
         } else {
-            storageETL = new HadoopVariantStoragePipeline(configuration, storageEngineId, dbAdaptor, getMRExecutor(options),
+            storageETL = new HadoopVariantStoragePipeline(configuration, dbAdaptor, getMRExecutor(options),
                     hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
         }
         return storageETL;

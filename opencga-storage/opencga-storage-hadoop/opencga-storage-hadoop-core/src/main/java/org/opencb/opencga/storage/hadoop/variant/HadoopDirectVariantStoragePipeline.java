@@ -62,7 +62,6 @@ public class HadoopDirectVariantStoragePipeline extends AbstractHadoopVariantSto
 
     /**
      * @param configuration      {@link StorageConfiguration}
-     * @param storageEngineId    Id
      * @param dbAdaptor          {@link VariantHadoopDBAdaptor}
      * @param mrExecutor         {@link MRExecutor}
      * @param conf               {@link Configuration}
@@ -71,12 +70,12 @@ public class HadoopDirectVariantStoragePipeline extends AbstractHadoopVariantSto
      * @param options            {@link ObjectMap}
      */
     public HadoopDirectVariantStoragePipeline(
-            StorageConfiguration configuration, String storageEngineId,
+            StorageConfiguration configuration,
             VariantHadoopDBAdaptor dbAdaptor,
             MRExecutor mrExecutor, Configuration conf, HBaseCredentials
                     archiveCredentials, VariantReaderUtils variantReaderUtils,
             ObjectMap options) {
-        super(configuration, storageEngineId, dbAdaptor, variantReaderUtils, options, archiveCredentials, mrExecutor, conf);
+        super(configuration, dbAdaptor, variantReaderUtils, options, archiveCredentials, mrExecutor, conf);
     }
 
     @Override
