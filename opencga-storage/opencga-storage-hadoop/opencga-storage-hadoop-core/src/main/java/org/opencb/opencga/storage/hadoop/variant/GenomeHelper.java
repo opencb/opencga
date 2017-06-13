@@ -174,7 +174,12 @@ public class GenomeHelper {
                 .collect(Collectors.toList());
     }
 
-    public static String getVariantcolumn(VariantTableStudyRow row) {
-        return VARIANT_COLUMN_PREFIX + "_" + row.getPos() + "_" + row.getRef() + "_" + row.getAlt();
+    public static String getVariantColumn(VariantTableStudyRow row) {
+        return getVariantColumn(row.getPos(), row.getRef(), row.getAlt());
     }
+
+    public static String getVariantColumn(Integer pos, String reference, String alternate) {
+        return VARIANT_COLUMN_PREFIX + '_' + pos + '_' + reference + '_' + alternate;
+    }
+
 }

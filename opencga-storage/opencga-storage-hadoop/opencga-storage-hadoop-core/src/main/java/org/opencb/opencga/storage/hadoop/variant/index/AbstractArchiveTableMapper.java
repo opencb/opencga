@@ -203,7 +203,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         Put put = new Put(rowKey);
         for (VariantTableStudyRow row : tableStudyRows) {
             byte[] value = VariantTableStudyRow.toProto(Collections.singletonList(row), getTimestamp()).toByteArray();
-            String column = GenomeHelper.getVariantcolumn(row);
+            String column = GenomeHelper.getVariantColumn(row);
             put.addColumn(getHelper().getColumnFamily(), Bytes.toBytes(column), value);
         }
         try {

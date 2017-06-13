@@ -71,7 +71,7 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
             throws StorageEngineException {
         long counter = 0;
 
-        VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, table, dbAdaptor.getHBaseManager());
+        VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, table, dbAdaptor.getHBaseManager(), true);
         VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(helper.getMeta());
         VariantHadoopDBWriter variantsWriter = newVariantHadoopDBWriter();
 
@@ -118,7 +118,7 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(1).setBatchSize(1).build();
 
-        VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, table, dbAdaptor.getHBaseManager());
+        VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, table, dbAdaptor.getHBaseManager(), true);
         VariantHadoopDBWriter hadoopDBWriter = newVariantHadoopDBWriter();
         GroupedVariantsTask task = new GroupedVariantsTask(archiveWriter, hadoopDBWriter, null);
 
