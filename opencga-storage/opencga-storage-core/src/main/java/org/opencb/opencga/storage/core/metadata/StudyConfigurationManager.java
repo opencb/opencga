@@ -647,7 +647,7 @@ public class StudyConfigurationManager implements AutoCloseable {
         return previousStatus[0];
     }
 
-    public BatchFileOperation.Status setStatus(StudyConfiguration studyConfiguration, BatchFileOperation.Status status,
+    public static BatchFileOperation.Status setStatus(StudyConfiguration studyConfiguration, BatchFileOperation.Status status,
                                                String operationName, List<Integer> files) {
         List<BatchFileOperation> batches = studyConfiguration.getBatches();
         BatchFileOperation operation = null;

@@ -14,6 +14,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
@@ -121,6 +122,16 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
     }
 
     @Override
+    protected void loadArch(URI inputUri) throws StorageEngineException {
+        List<Integer> fileIds = Collections.singletonList(options.getInt(VariantStorageEngine.Options.FILE_ID.key()));
+
+        Thread hook = newShutdownHook(OPERATION_NAME, fileIds);
+        Runtime.getRuntime().addShutdownHook(hook);
+        super.loadArch(inputUri);
+        Runtime.getRuntime().removeShutdownHook(hook);
+    }
+
+    @Override
     protected void loadFromProto(Path input, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
             throws StorageEngineException {
         long counter = 0;
@@ -199,14 +210,7 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
     @Override
     public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
         super.securePostLoad(fileIds, studyConfiguration);
-
-        for (int i = studyConfiguration.getBatches().size() - 1; i >= 0; i--) {
-            BatchFileOperation operation = studyConfiguration.getBatches().get(i);
-            if (operation.getOperationName().equals(OPERATION_NAME) && operation.getFileIds().equals(fileIds)) {
-                operation.addStatus(BatchFileOperation.Status.READY);
-                break;
-            }
-        }
+        StudyConfigurationManager.setStatus(studyConfiguration, BatchFileOperation.Status.READY, OPERATION_NAME, fileIds);
     }
 
     private VariantHadoopDBWriter newVariantHadoopDBWriter() throws StorageEngineException {
