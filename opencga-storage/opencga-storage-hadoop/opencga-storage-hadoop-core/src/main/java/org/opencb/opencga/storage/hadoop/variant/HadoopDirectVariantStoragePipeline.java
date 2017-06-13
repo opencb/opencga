@@ -128,9 +128,10 @@ public class HadoopDirectVariantStoragePipeline extends AbstractHadoopVariantSto
 
             ProgressLogger progressLogger;
             if (source.getStats() != null) {
-                progressLogger = new ProgressLogger("Loaded variants:", source.getStats().getNumRecords());
+                progressLogger = new ProgressLogger("Loaded variants for file \"" + input.getFileName() + "\" :",
+                        source.getStats().getNumRecords());
             } else {
-                progressLogger = new ProgressLogger("Loaded variants:");
+                progressLogger = new ProgressLogger("Loaded variants for file \"" + input.getFileName() + "\" :");
             }
 
             loadFromAvro(input, table, helper, progressLogger);
@@ -174,12 +175,12 @@ public class HadoopDirectVariantStoragePipeline extends AbstractHadoopVariantSto
     protected void loadFromAvro(Path input, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
             throws StorageEngineException {
         VariantReader variantReader = VariantReaderUtils.getVariantReader(input, helper.getMeta().getVariantSource());
-        VariantSliceReader sliceReader = new VariantSliceReader(helper.getChunkSize(), variantReader);
+        VariantSliceReader sliceReader = new VariantSliceReader(helper.getChunkSize(), variantReader, progressLogger);
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(1).setBatchSize(1).build();
 
         VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, table, dbAdaptor.getHBaseManager());
-        VariantToVcfSliceConverterTask converterTask = new VariantToVcfSliceConverterTask(progressLogger);
+        VariantToVcfSliceConverterTask converterTask = new VariantToVcfSliceConverterTask();
 
         ParallelTaskRunner<ImmutablePair<Long, List<Variant>>, VcfSlice> ptr =
                 new ParallelTaskRunner<>(sliceReader, converterTask, archiveWriter, config);
