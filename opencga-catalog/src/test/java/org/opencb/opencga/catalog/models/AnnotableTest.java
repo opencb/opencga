@@ -46,8 +46,8 @@ public class AnnotableTest {
         annotationList.add(new Annotation("name4", copy));
 
         List<AnnotationSet> annotationSetList = new ArrayList<>(2);
-        annotationSetList.add(new AnnotationSet("annot1", 1, annotationList, TimeUtils.getTime(), Collections.emptyMap()));
-        annotationSetList.add(new AnnotationSet("annot2", 1, copy, TimeUtils.getTime(), Collections.emptyMap()));
+        annotationSetList.add(new AnnotationSet("annot1", 1, annotationList, TimeUtils.getTime(), 1, Collections.emptyMap()));
+        annotationSetList.add(new AnnotationSet("annot2", 1, copy, TimeUtils.getTime(), 1, Collections.emptyMap()));
 
         annotable.setAnnotationSets(annotationSetList);
 

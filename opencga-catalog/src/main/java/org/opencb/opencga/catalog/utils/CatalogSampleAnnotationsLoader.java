@@ -81,7 +81,7 @@ public class CatalogSampleAnnotationsLoader {
                 annotationSet.add(new Annotation(annotationEntry.getKey(), annotationEntry.getValue()));
             }
             try {
-                CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "",
+                CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "", 1,
                         null), null);
             } catch (CatalogException e) {
                 String message = "Validation with the variableSet {id: " + variableSetId + "} over ped File = {id: " + pedFile.getId()

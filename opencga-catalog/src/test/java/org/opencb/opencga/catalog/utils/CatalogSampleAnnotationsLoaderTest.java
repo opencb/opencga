@@ -160,7 +160,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
             for (Map.Entry<String, Object> annotationEntry : annotation.entrySet()) {
                 annotationSet.add(new Annotation(annotationEntry.getKey(), annotationEntry.getValue()));
             }
-            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "",
+            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "", 1,
                     null), null);
         }
     }

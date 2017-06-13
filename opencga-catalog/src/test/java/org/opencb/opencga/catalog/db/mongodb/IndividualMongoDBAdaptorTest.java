@@ -190,8 +190,8 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         Set<Annotation> annotationSet = Arrays.asList(new Annotation("key", "value"), new Annotation("key2", "value2"), new Annotation
                 ("key3", 3), new Annotation("key4", true)).stream().collect(Collectors.toSet());
 
-        AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", Collections.emptyMap());
-        AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", Collections.emptyMap());
+        AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", 1, Collections.emptyMap());
+        AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", 1, Collections.emptyMap());
         catalogIndividualDBAdaptor.annotate(individualId, annot1, false);
         catalogIndividualDBAdaptor.annotate(individualId, annot2, false);
 
@@ -219,10 +219,10 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .UNKNOWN, "", null, 1, Collections.emptyList(), null), studyId, null).first().getId();
 
         catalogIndividualDBAdaptor.annotate(individualId, new AnnotationSet("annot1", 3, Collections.<Annotation>emptySet(),
-                "", Collections.emptyMap()), false);
+                "", 1, Collections.emptyMap()), false);
         thrown.expect(CatalogDBException.class);
         catalogIndividualDBAdaptor.annotate(individualId, new AnnotationSet("annot1", 3, Collections.<Annotation>emptySet(),
-                "", Collections.emptyMap()), false);
+                "", 1, Collections.emptyMap()), false);
     }
 
     @Test
@@ -232,12 +232,12 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .UNKNOWN, "", null, 1, Collections.emptyList(), null), studyId, null).first().getId();
 
         AnnotationSet annot1 = new AnnotationSet("annot1", 3, new HashSet<>(Arrays.asList(new Annotation("k", "v"), new Annotation("k2",
-                "v2"))), "", Collections.emptyMap());
+                "v2"))), "", 1, Collections.emptyMap());
         QueryResult<AnnotationSet> queryResult = catalogIndividualDBAdaptor.annotate(individualId, annot1, false);
         assertEquals(annot1, queryResult.first());
 
         annot1 = new AnnotationSet("annot1", 3, new HashSet<>(Arrays.asList(new Annotation("k", "v2"), new Annotation("k3", "v3"))), "",
-                Collections.emptyMap());
+                1, Collections.emptyMap());
         queryResult = catalogIndividualDBAdaptor.annotate(individualId, annot1, true);
         assertEquals(annot1, queryResult.first());
     }
@@ -249,7 +249,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .UNKNOWN, "", null, 1, Collections.emptyList(), null), studyId, null).first().getId();
 
         AnnotationSet annot1 = new AnnotationSet("annot1", 3, new HashSet<>(Arrays.asList(new Annotation("k", "v"), new Annotation("k2",
-                "v2"))), "", Collections.emptyMap());
+                "v2"))), "", 1, Collections.emptyMap());
         thrown.expect(CatalogDBException.class);
         catalogIndividualDBAdaptor.annotate(individualId, annot1, true);
     }
