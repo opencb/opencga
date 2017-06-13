@@ -65,6 +65,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -682,7 +683,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         try (Connection jdbcConnection = phoenixHelper.newJdbcConnection()) {
             HBaseLock hBaseLock = new HBaseLock(dbAdaptor.getHBaseManager(), tableName,
                     dbAdaptor.getGenomeHelper().getColumnFamily(),
-                    dbAdaptor.getGenomeHelper().getMetaRowKey());
+                    VariantPhoenixKeyFactory.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0));
             long lock;
             try {
                 long lockDuration = TimeUnit.MINUTES.toMillis(5);
