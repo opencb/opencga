@@ -19,8 +19,14 @@ package org.opencb.opencga.catalog.monitor.daemons;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.catalog.monitor.executors.ExecutorManager;
+import org.opencb.opencga.core.common.UriUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Created by imedina on 16/06/16.
@@ -32,16 +38,20 @@ public abstract class MonitorParentDaemon implements Runnable {
     protected AbstractExecutor executorManager;
 
     protected boolean exit = false;
+    protected Path tempJobFolder;
 
     protected String sessionId;
 
     protected Logger logger;
 
-    public MonitorParentDaemon(int interval, String sessionId, CatalogManager catalogManager) {
+    public MonitorParentDaemon(int interval, String sessionId, CatalogManager catalogManager) throws URISyntaxException {
         this.interval = interval;
         this.catalogManager = catalogManager;
         this.sessionId = sessionId;
         logger = LoggerFactory.getLogger(this.getClass());
+
+        URI uri = UriUtils.createUri(catalogManager.getConfiguration().getTempJobsDir());
+        this.tempJobFolder = Paths.get(uri.getPath());
 
         ExecutorManager executorFactory = new ExecutorManager(catalogManager.getConfiguration());
         this.executorManager = executorFactory.getExecutor();
@@ -62,5 +72,21 @@ public abstract class MonitorParentDaemon implements Runnable {
         this.exit = exit;
     }
 
+    Path getJobTemporaryFolder(long jobId) {
+        return getJobTemporaryFolder(jobId, tempJobFolder);
+    }
+
+    private static Path getJobTemporaryFolder(long jobId, Path tempJobFolder) {
+        return tempJobFolder.resolve(getJobTemporaryFolderName(jobId)).toAbsolutePath();
+    }
+
+    private static Path getJobTemporaryFolder(long jobId, String tempJobFolder) {
+        URI uri = URI.create(tempJobFolder);
+        return Paths.get(uri.getPath()).resolve(getJobTemporaryFolderName(jobId));
+    }
+
+    private static String getJobTemporaryFolderName(long jobId) {
+        return "J_" + jobId;
+    }
 
 }

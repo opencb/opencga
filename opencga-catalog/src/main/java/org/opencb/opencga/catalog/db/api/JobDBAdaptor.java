@@ -135,6 +135,7 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         INPUT("input", INTEGER_ARRAY, ""),
         OUTPUT("output", INTEGER_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
+        PARAMS("params", TEXT_ARRAY, ""),
         ACL("acl", TEXT_ARRAY, ""),
         ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
         ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),

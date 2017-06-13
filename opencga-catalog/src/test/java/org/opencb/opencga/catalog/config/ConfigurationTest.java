@@ -21,6 +21,7 @@ import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**

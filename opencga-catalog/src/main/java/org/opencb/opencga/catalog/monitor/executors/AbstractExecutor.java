@@ -50,6 +50,8 @@ public abstract class AbstractExecutor {
 
     public abstract void execute(Job job) throws Exception;
 
+    public abstract void execute(Job job, String commandline) throws Exception;
+
     public String status(Path jobOutput, Job job) {
         Path jobStatusFilePath = jobOutput.resolve(JOB_STATUS_FILE);
         if (!jobStatusFilePath.toFile().exists()) {

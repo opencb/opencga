@@ -32,10 +32,8 @@ import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -71,15 +69,12 @@ public class IndexDaemon extends MonitorParentDaemon {
 
     private CatalogIOManager catalogIOManager;
     private String binHome;
-    private Path tempJobFolder;
 //    private VariantIndexOutputRecorder variantIndexOutputRecorder;
 
     public IndexDaemon(int interval, String sessionId, CatalogManager catalogManager, String appHome)
-            throws URISyntaxException, CatalogIOException {
+            throws CatalogIOException, URISyntaxException {
         super(interval, sessionId, catalogManager);
         this.binHome = appHome + "/bin/";
-        URI uri = UriUtils.createUri(catalogManager.getConfiguration().getTempJobsDir());
-        this.tempJobFolder = Paths.get(uri.getPath());
         this.catalogIOManager = catalogManager.getCatalogIOManagerFactory().get("file");
 //        this.variantIndexOutputRecorder = new VariantIndexOutputRecorder(catalogManager, catalogIOManager, sessionId);
     }
@@ -198,32 +193,6 @@ public class IndexDaemon extends MonitorParentDaemon {
                     logger.error("Error updating job {} with {}", job.getId(), parameters.toJson(), e);
                 }
             }
-
-
-//            Path jobStatusFile = tmpOutdirPath.resolve(JOB_STATUS_FILE);
-//            if (jobStatusFile.toFile().exists()) {
-//                try {
-//                    jobStatus = objectReader.readValue(jobStatusFile.toFile());
-//                } catch (IOException e) {
-//                    logger.warn("Could not read job status file.");
-//                    return;
-//                    // TODO: Add a maximum number of attempts....
-//                }
-//                if (jobStatus != null && !jobStatus.getName().equalsIgnoreCase(Job.JobStatus.RUNNING)) {
-//                    String sessionId = (String) job.getResourceManagerAttributes().get("sessionId");
-//                    ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
-//                    try {
-//                        outputRecorder.recordJobOutputAndPostProcess(job, jobStatus);
-//
-//                    } catch (CatalogException | IOException e) {
-//                        logger.error(e.getMessage());
-//                    }
-//                }
-//            } else {
-//                // TODO: Call the executor status
-//                logger.debug("Call executor status not yet implemented.");
-////                    executorManager.status(job).equalsIgnoreCase()
-//            }
         }
     }
 
@@ -248,35 +217,6 @@ public class IndexDaemon extends MonitorParentDaemon {
                     logger.warn("Could not update job {} to status running", job.getId());
                 }
             }
-//
-//            Path jobStatusFile = tmpOutdirPath.resolve(JOB_STATUS_FILE);
-//            if (jobStatusFile.toFile().exists()) {
-//                Job.JobStatus jobStatus = null;
-//                try {
-//                    jobStatus = objectReader.readValue(jobStatusFile.toFile());
-//                } catch (IOException e) {
-//                    logger.warn("Could not read job status file.");
-//                    // TODO: Add a maximum number of attempts....
-//                }
-//                if (jobStatus != null && !jobStatus.getName().equalsIgnoreCase(Job.JobStatus.QUEUED)) {
-//                    ObjectMap objectMap = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING);
-//                    try {
-//                        catalogManager.getJobManager().update(job.getId(), objectMap, new QueryOptions(), sessionId);
-//                    } catch (CatalogException e) {
-//                        logger.warn("Could not update job {} to status running", job.getId());
-//                    }
-//                }
-//            } else {
-//                String status = executorManager.status(job);
-//                if (!status.equalsIgnoreCase(Job.JobStatus.QUEUED)) {
-//                    ObjectMap objectMap = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING);
-//                    try {
-//                        catalogManager.getJobManager().update(job.getId(), objectMap, new QueryOptions(), sessionId);
-//                    } catch (CatalogException e) {
-//                        logger.warn("Could not update job {} to status running", job.getId());
-//                    }
-//                }
-//            }
         }
     }
 
@@ -388,23 +328,6 @@ public class IndexDaemon extends MonitorParentDaemon {
             logger.error("Could not update job {}.", job.getId(), e);
         }
 
-    }
-
-    private Path getJobTemporaryFolder(long jobId) {
-        return getJobTemporaryFolder(jobId, tempJobFolder);
-    }
-
-    public static Path getJobTemporaryFolder(long jobId, Path tempJobFolder) {
-        return tempJobFolder.resolve(getJobTemporaryFolderName(jobId));
-    }
-
-    public static Path getJobTemporaryFolder(long jobId, String tempJobFolder) {
-        URI uri = URI.create(tempJobFolder);
-        return Paths.get(uri.getPath()).resolve(getJobTemporaryFolderName(jobId));
-    }
-
-    public static String getJobTemporaryFolderName(long jobId) {
-        return "J_" + jobId;
     }
 
     private long getRunningOrQueuedJobs() throws CatalogException {

@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 
 /**
  * Created by imedina on 16/06/16.
@@ -38,7 +39,7 @@ public class FileDaemon extends MonitorParentDaemon {
 
     private CatalogFileUtils catalogFileUtils;
 
-    public FileDaemon(int period, int deleteDelay, String sessionId, CatalogManager catalogManager) {
+    public FileDaemon(int period, int deleteDelay, String sessionId, CatalogManager catalogManager) throws URISyntaxException {
         super(period, sessionId, catalogManager);
         this.deleteDelay = deleteDelay;
         this.deleteDelayMillis = (long) (deleteDelay * 24 * 60 * 60 * 1000);

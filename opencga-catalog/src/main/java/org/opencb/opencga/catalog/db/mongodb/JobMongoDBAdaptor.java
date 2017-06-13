@@ -522,7 +522,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             }
         }
 
-        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key()};
+        String[] acceptedMapParams = {QueryParams.PARAMS.key(), QueryParams.ATTRIBUTES.key(),
+                QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key(), };
         filterMapParams(parameters, jobParameters, acceptedMapParams);
 
         return jobParameters;

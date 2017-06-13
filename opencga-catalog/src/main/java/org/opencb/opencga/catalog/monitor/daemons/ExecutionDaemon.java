@@ -16,17 +16,27 @@
 
 package org.opencb.opencga.catalog.monitor.daemons;
 
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.hpg.bigdata.analysis.exceptions.AnalysisToolException;
+import org.opencb.hpg.bigdata.analysis.tools.ToolManager;
+import org.opencb.hpg.bigdata.analysis.tools.manifest.Param;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.api.IJobManager;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.common.TimeUtils;
 
-import java.util.Map;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 
 /**
  * Created by imedina on 16/06/16.
@@ -34,11 +44,21 @@ import java.util.Map;
 public class ExecutionDaemon extends MonitorParentDaemon {
 
     private int runningJobs;
+
+    private CatalogIOManager catalogIOManager;
+    private ToolManager toolManager;
     private String binHome;
 
-    public ExecutionDaemon(int interval, String sessionId, CatalogManager catalogManager, String appHome) {
+    public ExecutionDaemon(int interval, String sessionId, CatalogManager catalogManager, String appHome)
+            throws URISyntaxException, CatalogIOException {
         super(interval, sessionId, catalogManager);
         this.binHome = appHome + "/bin/";
+        this.catalogIOManager = catalogManager.getCatalogIOManagerFactory().get("file");
+        try {
+            this.toolManager = new ToolManager(Paths.get(catalogManager.getConfiguration().getToolDir()));
+        } catch (AnalysisToolException e) {
+            throw new IllegalArgumentException("Tool directory does not contain any tools");
+        }
     }
 
     @Override
@@ -128,8 +148,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         try {
             logger.info("Running job {}" + job.getName());
-
             catalogManager.getJobManager().setStatus(Long.toString(job.getId()), Job.JobStatus.RUNNING, null, sessionId);
+
+            runTool(job);
         } catch (CatalogException e) {
             logger.error("Could not update job {}. {}", job.getId(), e.getMessage());
             e.printStackTrace();
@@ -137,17 +158,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private void checkPreparedJob(Job job) {
-        StringBuilder commandLine = new StringBuilder(binHome).append(job.getExecutable()).append(" ");
-        for (Map.Entry<String, String> param : job.getParams().entrySet()) {
-            commandLine
-                    .append("--")
-                    .append(param.getKey())
-                    .append(" ")
-                    .append(param.getValue())
-                    .append(" ");
-        }
-
-        logger.info("Updating job {} from {} to {}", commandLine.toString(), Job.JobStatus.PREPARED, Job.JobStatus.QUEUED);
+        logger.info("Updating job {}({}) from {} to {}", job.getName(), job.getId(), Job.JobStatus.PREPARED, Job.JobStatus.QUEUED);
 
         try {
             catalogManager.getJobManager().setStatus(Long.toString(job.getId()), Job.JobStatus.QUEUED, null, sessionId);
@@ -158,6 +169,62 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     }
 
+    private void runTool(Job job) {
+        // Create the temporal output directory.
+        Path path = getJobTemporaryFolder(job.getId());
+        try {
+            catalogIOManager.createDirectory(path.toUri());
+        } catch (CatalogIOException e) {
+            logger.warn("Could not create the temporal output directory " + path + " to run the job", e);
+            return;
+            // TODO: Maximum attemps ... -> Error !
+        }
 
+        // Check output parameters and change the folder to the temporary folder.
+        try {
+            List<Param> outputParams = toolManager.getOutputParams(job.getToolName(), job.getExecution());
+            int folderCount = 0;
+            for (Param outputParam : outputParams) {
+                if (outputParam.getDataType().equals(Param.Type.FOLDER)) {
+                    folderCount += 1;
+                    job.getParams().put(outputParam.getName(), path.toString());
+                } else if (outputParam.getDataType().equals(Param.Type.FILE)) {
+                    if (StringUtils.isNotEmpty(job.getParams().get(outputParam.getName()))) {
+                        // It has been passed so we need to redirect it to the output folder
+                        String outputFileName = Paths.get(job.getParams().get(outputParam.getName())).getFileName().toString();
+                        job.getParams().put(outputParam.getName(), path.resolve(outputFileName).toString());
+                    }
+                }
+            }
+            if (folderCount > 1) {
+                logger.error("More than one output folder detected. Nothing to do.");
+                return;
+            }
+        } catch (AnalysisToolException e) {
+            logger.error(e.getMessage(), e);
+            return;
+        }
+        // Update the params map from the job entry
+        ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.PARAMS.key(), job.getParams());
+        try {
+            QueryResult<Job> update = catalogManager.getJobManager().update(job.getId(), params, QueryOptions.empty(), sessionId);
+            if (update.getNumResults() == 1) {
+                job = update.first();
+                try {
+                    // Send the command line to the executor
+                    String commandLine = binHome + "opencga-analysis.sh tools run --job " + job.getId();
+                    executorManager.execute(job, commandLine);
+                } catch (Exception e) {
+                    logger.error("Error executing job {}.", job.getId(), e);
+                }
+            } else {
+                logger.error("Could not update nor run job {}" + job.getId());
+            }
+        } catch (CatalogException e) {
+            logger.error("Could not update job {}.", job.getId(), e);
+        }
+
+
+    }
 
 }

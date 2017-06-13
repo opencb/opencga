@@ -316,6 +316,7 @@ public class JobManager extends AbstractManager implements IJobManager {
 
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
+        // TODO: Create new session id for the user to be able to execute the tool afterwards
         Job job = new Job(jobName, userId, toolId, executionId, params);
         QueryResult<Job> queryResult = jobDBAdaptor.insert(job, studyId, QueryOptions.empty());
         auditManager.recordAction(AuditRecord.Resource.job, AuditRecord.Action.create, AuditRecord.Magnitude.low,

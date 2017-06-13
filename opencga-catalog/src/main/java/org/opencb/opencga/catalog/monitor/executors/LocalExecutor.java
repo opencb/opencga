@@ -40,14 +40,13 @@ public class LocalExecutor extends AbstractExecutor {
     }
 
     @Override
-    public void execute(Job job) throws Exception {
+    public void execute(Job job, String commandLine) throws Exception {
         Runnable runnable = () -> {
             ExecutorConfig executorConfig = null;
             try {
                 executorConfig = getExecutorConfig(job);
-
-                logger.info("Ready to run {}", job.getCommandLine());
-                Command com = new Command(job.getCommandLine());
+                logger.info("Ready to run {}", commandLine);
+                Command com = new Command(commandLine);
 
                 DataOutputStream dataOutputStream = new DataOutputStream(new FileOutputStream(executorConfig.getStdout()));
                 com.setOutputOutputStream(dataOutputStream);
@@ -66,7 +65,7 @@ public class LocalExecutor extends AbstractExecutor {
 
                 logger.info("==========================================");
                 logger.info("Executing job {}({})", job.getName(), job.getId());
-                logger.debug("Executing commandLine {}", job.getCommandLine());
+                logger.debug("Executing commandLine {}", commandLine);
                 logger.info("==========================================");
                 System.err.println();
 
@@ -107,6 +106,11 @@ public class LocalExecutor extends AbstractExecutor {
         };
         Thread thread = new Thread(runnable, "LocalExecutor-" + nextThreadNum());
         thread.start();
+    }
+
+    @Override
+    public void execute(Job job) throws Exception {
+        execute(job, job.getCommandLine());
     }
 
     private static synchronized int nextThreadNum() {
