@@ -86,7 +86,11 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             configuration.setDatabasePrefix("demo");
         }
         configuration.setOpenRegister(true);
+
         configuration.getAdmin().setPassword("demo");
+        configuration.getAdmin().setSecretKey("demo");
+        configuration.getAdmin().setAlgorithm("HS256");
+
         CatalogDemo.createDemoDatabase(configuration, catalogCommandOptions.demoCatalogCommandOptions.force);
         CatalogManager catalogManager = new CatalogManager(configuration);
         sessionId = catalogManager.login("user1", "user1_pass", "localhost").first().getId();
