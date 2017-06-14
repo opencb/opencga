@@ -1,3 +1,0 @@
-|OpenCga.TestsSuits.JWT.JWTTests||11:31:47 Wed, Jun 14, 2017|
-|OpenCga.TestsSuits.JWT||11:21:05 Wed, Jun 14, 2017|
-|OpenCga.TestsSuits.Users.UserTests||11:20:05 Wed, Jun 14, 2017|
