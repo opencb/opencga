@@ -99,8 +99,7 @@ public class AdminCliOptionsParser {
         this.metaCommandOptions = new AdminCliOptionsParser.MetaCommandOptions();
         this.jCommander.addCommand("meta", this.metaCommandOptions);
         JCommander metaSubCommands = this.jCommander.getCommands().get("meta");
-        metaSubCommands.addCommand("key", this.metaCommandOptions.metaKeyCommandOptions);
-        metaSubCommands.addCommand("algorithm", this.metaCommandOptions.metaAlgorithmCommandOptions);
+        metaSubCommands.addCommand("update", this.metaCommandOptions.metaKeyCommandOptions);
     }
 
     public void parse(String[] args) throws ParameterException {
@@ -115,7 +114,7 @@ public class AdminCliOptionsParser {
         String parsedCommand = jCommander.getParsedCommand();
         if (jCommander.getCommands().containsKey(parsedCommand)) {
             String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
-            return subCommand != null ? subCommand: "";
+            return subCommand != null ? subCommand : "";
         } else {
             return null;
         }
@@ -139,7 +138,7 @@ public class AdminCliOptionsParser {
      */
     public class CommandOptions {
 
-        @Parameter(names = {"-h", "--help"},  description = "This parameter prints this help", help = true)
+        @Parameter(names = {"-h", "--help"}, description = "This parameter prints this help", help = true)
         public boolean help;
 
         public JCommander getSubCommand() {
@@ -150,7 +149,7 @@ public class AdminCliOptionsParser {
             String parsedCommand = jCommander.getParsedCommand();
             if (jCommander.getCommands().containsKey(parsedCommand)) {
                 String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
-                return subCommand != null ? subCommand: "";
+                return subCommand != null ? subCommand : "";
             } else {
                 return "";
             }
@@ -236,8 +235,8 @@ public class AdminCliOptionsParser {
         AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         public AuditCommandOptions() {
-            this.queryAuditCommandOptions= new QueryAuditCommandOptions();
-            this.statsAuditCommandOptions= new StatsAuditCommandOptions();
+            this.queryAuditCommandOptions = new QueryAuditCommandOptions();
+            this.statsAuditCommandOptions = new StatsAuditCommandOptions();
         }
     }
 
@@ -278,20 +277,14 @@ public class AdminCliOptionsParser {
         }
     }
 
-    @Parameters(
-            commandNames = {"meta"},
-            commandDescription = "Manage Meta data"
-    )
+    @Parameters( commandNames = {"meta"}, commandDescription = "Manage Meta data")
     public class MetaCommandOptions extends AdminCliOptionsParser.CommandOptions {
-        AdminCliOptionsParser.MetaKeyCommandOptions metaKeyCommandOptions;
-        AdminCliOptionsParser.MetaAlgorithmCommandOptions metaAlgorithmCommandOptions;
-        AdminCliOptionsParser.AdminCommonCommandOptions commonOptions;
+
+        MetaKeyCommandOptions metaKeyCommandOptions;
+        AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         public MetaCommandOptions() {
-            super();
-            this.commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
             this.metaKeyCommandOptions = new MetaKeyCommandOptions();
-            this.metaAlgorithmCommandOptions = new MetaAlgorithmCommandOptions();
         }
     }
 
@@ -433,7 +426,6 @@ public class AdminCliOptionsParser {
         @Parameter(names = {"--stop"}, description = "File with the new tool to be installed", arity = 0)
         public boolean stop;
     }
-
 
 
     /*
@@ -672,50 +664,17 @@ public class AdminCliOptionsParser {
         public boolean background;
     }
 
-    @Parameters(
-            commandNames = {"key"},
-            commandDescription = "Update secret key "
-    )
-    public class MetaKeyCommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
+    @Parameters( commandNames = {"update"}, commandDescription = "Update secret key|algorithm" )
+    public class MetaKeyCommandOptions extends CatalogDatabaseCommandOptions {
         @ParametersDelegate
-        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions;
-        @Parameter(
-                names = {"--update"},
-                description = "Update secret key in OpenCGA",
-                required = true,
-                arity = 1
-        )
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+
+        @Parameter( names = {"--key"}, description = "Update secret key in OpenCGA", arity = 1)
         public String updateSecretKey;
 
-        public MetaKeyCommandOptions() {
-            super();
-            this.commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
-        }
-    }
-
-    @Parameters(
-            commandNames = {"algorithm"},
-            commandDescription = "update the JWT algorithm"
-    )
-    public class MetaAlgorithmCommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
-        @ParametersDelegate
-        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions;
-        @Parameter(
-                names = {"--update"},
-                description = "Update JWT algorithm in OpenCGA",
-                required = true,
-                arity = 1
-        )
+        @Parameter( names = {"--algorithm"}, description = "Update JWT algorithm in OpenCGA", arity = 1 )
         public String algorithm;
-
-        public MetaAlgorithmCommandOptions() {
-            super();
-            this.commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
-        }
     }
-
-
-
 
 
     public void printUsage() {
@@ -792,6 +751,7 @@ public class AdminCliOptionsParser {
     public ServerCommandOptions getServerCommandOptions() {
         return serverCommandOptions;
     }
+
     public AdminCliOptionsParser.MetaCommandOptions getMetaCommandOptions() {
         return this.metaCommandOptions;
     }

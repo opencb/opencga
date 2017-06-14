@@ -127,7 +127,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
                 Document keys = new Document();
                 Iterator fieldsIterator = userIndex.get("fields").entrySet().iterator();
                 while (fieldsIterator.hasNext()) {
-                    Map.Entry pair = (Map.Entry)fieldsIterator.next();
+                    Map.Entry pair = (Map.Entry) fieldsIterator.next();
                     keys.append((String) pair.getKey(), pair.getValue());
 
                     if (!indexName.isEmpty()) {
@@ -225,7 +225,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     public String readSecretKey() throws CatalogDBException {
         Bson query = Filters.eq("_id", "METADATA");
         QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
-        return ((Admin)MongoDBUtils.parseObject((Document)((Document)queryResult.first()).get("admin"), Admin.class)).getSecretKey();
+        return ((Admin) MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getSecretKey();
     }
 
     @Override
@@ -239,6 +239,21 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     public String readAlgorithm() throws CatalogDBException {
         Bson query = Filters.eq("_id", "METADATA");
         QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
-        return ((Admin)MongoDBUtils.parseObject((Document)((Document)queryResult.first()).get("admin"), Admin.class)).getAlgorithm();
+        return ((Admin) MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getAlgorithm();
+    }
+
+    @Override
+    public void updateAdmin(Admin admin) throws CatalogDBException {
+        Bson query = Filters.eq("_id", "METADATA");
+        Bson update = null;
+        if (admin.getSecretKey() != null) {
+            update = Updates.set("admin.secretKey", admin.getSecretKey());
+        }
+
+        if (admin.getAlgorithm() != null) {
+            update = Updates.set("admin.algorithm", admin.getAlgorithm());
+        }
+
+        this.metaCollection.update(query, update, QueryOptions.empty());
     }
 }

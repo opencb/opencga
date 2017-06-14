@@ -21,6 +21,7 @@ package org.opencb.opencga.catalog.db.api;
  */
 
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Session;
 
@@ -41,5 +42,7 @@ public interface MetaDBAdaptor {
     void writeAlgorithm(String algorithm) throws CatalogDBException;
 
     String readAlgorithm() throws CatalogDBException;
+
+    void updateAdmin(Admin admin) throws  CatalogDBException;
 
 }

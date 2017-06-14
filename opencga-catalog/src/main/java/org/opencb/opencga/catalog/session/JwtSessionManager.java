@@ -77,7 +77,7 @@ public class JwtSessionManager {
         QueryResult result = new QueryResult();
         String jwtToken = this.createJWTToken(userId);
         Session session = new Session(jwtToken, ip, TimeUtils.getTime(), type);
-        result.addAllResults(Collections.singletonList(session));
+        result.setResult(Collections.singletonList(session));
         return result;
     }
 

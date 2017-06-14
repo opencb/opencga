@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.audit.CatalogAuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
+import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -144,12 +145,10 @@ public class CatalogManager implements AutoCloseable {
             this.configuration.getAdmin().setAlgorithm(this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readAlgorithm());
         }
     }
-    public void insertUpdatedSecretKey(String key) throws CatalogDBException {
-            this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().writeSecretKey(key);
-    }
 
-    public void insertUpdatedAlgorithm(String algorithm) throws CatalogDBException {
-        this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().writeAlgorithm(algorithm);
+    public void insertUpdatedAdmin(Admin admin) throws CatalogDBException {
+
+        this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().updateAdmin(admin);
     }
 
     public ObjectMap getDatabaseStatus() {
