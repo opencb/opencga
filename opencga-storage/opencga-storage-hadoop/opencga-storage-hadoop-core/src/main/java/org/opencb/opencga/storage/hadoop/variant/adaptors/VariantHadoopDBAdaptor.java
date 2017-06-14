@@ -220,30 +220,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult delete(Query query, QueryOptions options) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public QueryResult deleteSamples(String studyName, List<String> sampleNames, QueryOptions options) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public QueryResult deleteFile(String studyName, String fileName, QueryOptions options) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public QueryResult deleteStudy(String studyName, QueryOptions options) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
 
         List<Variant> variants = new LinkedList<>();
@@ -515,12 +491,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             throw new UncheckedIOException(e);
         }
         return new QueryResult<>("Update annotations", (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
-    }
-
-    @Override
-    public QueryResult deleteStats(String studyName, String cohortName, QueryOptions options) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException();
     }
 
     public VariantAnnotationPhoenixDBWriter newAnnotationLoader(QueryOptions options) {

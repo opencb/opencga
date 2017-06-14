@@ -59,7 +59,7 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements M
     @Test
     public void deleteStudyTest() throws Exception {
         fileIndexed = false;
-        dbAdaptor.deleteStudy(studyConfiguration.getStudyName(), new QueryOptions("purge", false));
+        ((VariantMongoDBAdaptor) dbAdaptor).deleteStudy(studyConfiguration.getStudyName(), new QueryOptions("purge", false));
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
                 assertFalse(entry.getValue().getStudyId().equals(studyConfiguration.getStudyId() + ""));
@@ -72,7 +72,7 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements M
     @Test
     public void deleteAndPurgeStudyTest() throws Exception {
         fileIndexed = false;
-        dbAdaptor.deleteStudy(studyConfiguration.getStudyName(), new QueryOptions("purge", true));
+        ((VariantMongoDBAdaptor) dbAdaptor).deleteStudy(studyConfiguration.getStudyName(), new QueryOptions("purge", true));
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
                 assertFalse(entry.getValue().getStudyId().equals(studyConfiguration.getStudyId() + ""));
@@ -86,7 +86,7 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements M
     public void deleteStatsTest() throws Exception {
         fileIndexed = false;
         String deletedCohort = "cohort2";
-        dbAdaptor.deleteStats(studyConfiguration.getStudyName(), deletedCohort, new QueryOptions());
+        ((VariantMongoDBAdaptor) dbAdaptor).deleteStats(studyConfiguration.getStudyName(), deletedCohort, new QueryOptions());
 
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {

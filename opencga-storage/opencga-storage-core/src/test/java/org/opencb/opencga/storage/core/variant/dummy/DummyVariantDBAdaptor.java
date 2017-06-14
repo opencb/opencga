@@ -183,34 +183,8 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     // Unsupported methods
-
-    @Override
-    public QueryResult delete(Query query, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public QueryResult deleteSamples(String studyName, List<String> sampleNames, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public QueryResult deleteFile(String studyName, String fileName, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public QueryResult deleteStudy(String studyName, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public QueryResult deleteStats(String studyName, String cohortName, QueryOptions options) {
         throw new UnsupportedOperationException();
     }
 

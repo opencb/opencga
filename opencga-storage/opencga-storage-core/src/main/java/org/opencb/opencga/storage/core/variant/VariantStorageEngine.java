@@ -455,7 +455,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public abstract void dropFile(String study, int fileId) throws StorageEngineException;
 
-    public abstract void dropStudy(String studyName) throws StorageEngineException;
+    /**
+     * Drops a whole study from the Variant Storage.
+     *
+     * @param study  StudyName or StudyId
+     * @throws StorageEngineException If the file can not be deleted or there was some problem deleting it.
+     */
+    public abstract void dropStudy(String study) throws StorageEngineException;
 
     @Override
     public void testConnection() throws StorageEngineException {}

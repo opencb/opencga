@@ -144,7 +144,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return credentials;
     }
 
-    @Override
+    /**
+     * Delete all the variants from the database resulting of executing the query.
+     *
+     * @param query   Query to be executed in the database
+     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+     * @return A QueryResult with the number of deleted variants
+     */
     public QueryResult delete(Query query, QueryOptions options) {
         Bson mongoQuery = queryParser.parseQuery(query);
         logger.debug("Delete to be executed: '{}'", mongoQuery.toString());
@@ -153,19 +159,39 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return queryResult;
     }
 
-    @Override
+    /**
+     * Delete all the given samples belonging to the study from the database.
+     *
+     * @param studyName   The study name where samples belong to
+     * @param sampleNames Sample names to be deleted, these must belong to the study
+     * @param options     Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+     * @return A QueryResult with a list with all the samples deleted
+     */
     public QueryResult deleteSamples(String studyName, List<String> sampleNames, QueryOptions options) {
         //TODO
         throw new UnsupportedOperationException();
     }
 
-    @Override
+    /**
+     * Delete the given file from the database with all the samples it has.
+     *
+     * @param studyName The study where the file belong
+     * @param fileName  The file name to be deleted, it must belong to the study
+     * @param options   Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+     * @return A QueryResult with the file deleted
+     */
     public QueryResult deleteFile(String studyName, String fileName, QueryOptions options) {
         //TODO
         throw new UnsupportedOperationException();
     }
 
-    @Override
+    /**
+     * Delete the given study from the database.
+     *
+     * @param studyName The study name to delete
+     * @param options   Query modifiers, accepted values are: purge
+     * @return A QueryResult with the study deleted
+     */
     public QueryResult deleteStudy(String studyName, QueryOptions options) {
         if (options == null) {
             options = new QueryOptions();
@@ -722,7 +748,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return new QueryResult<>("", ((int) (System.nanoTime() - start)), writes, writes, "", "", Collections.singletonList(writeResult));
     }
 
-    @Override
     public QueryResult deleteStats(String studyName, String cohortName, QueryOptions options) {
         StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyName, options).first();
         int cohortId = studyConfiguration.getCohortIds().get(cohortName);
