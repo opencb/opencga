@@ -58,7 +58,8 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 
     @Parameter
     public ObjectMap indexParams;
-    private VariantStorageEngine.MergeMode mergeMode;
+
+    public static ObjectMap previousIndexParams = null;
 
     @Parameters
     public static List<Object[]> data() {
@@ -87,20 +88,20 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     public void before() throws Exception {
         boolean fileIndexed = VariantDBAdaptorTest.fileIndexed;
         try {
-            VariantStorageEngine.MergeMode newMergeMode = VariantStorageEngine.MergeMode.from(indexParams);
-            if (mergeMode != newMergeMode) {
+            VariantStorageEngine.MergeMode mergeMode = VariantStorageEngine.MergeMode.from(indexParams);
+            if (!indexParams.equals(previousIndexParams)) {
                 fileIndexed = false;
                 VariantDBAdaptorTest.fileIndexed = false;
                 clearDB(getVariantStorageEngine().getVariantTableName());
                 clearDB(getVariantStorageEngine().getArchiveTableName(STUDY_ID));
             }
-            mergeMode = newMergeMode;
+            previousIndexParams = indexParams;
             System.out.println("Loading with MergeMode : " + mergeMode);
             super.before();
         } finally {
             try {
                 if (!fileIndexed) {
-                    VariantHbaseTestUtils.printVariants(studyConfiguration, (VariantHadoopDBAdaptor) dbAdaptor, newOutputUri());
+                    VariantHbaseTestUtils.printVariants(studyConfiguration, getVariantStorageEngine().getDBAdaptor(), newOutputUri());
                 }
             } catch (Exception e) {
                 e.printStackTrace();
