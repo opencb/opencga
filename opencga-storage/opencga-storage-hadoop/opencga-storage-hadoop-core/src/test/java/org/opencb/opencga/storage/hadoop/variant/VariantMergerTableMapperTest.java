@@ -76,7 +76,6 @@ public class VariantMergerTableMapperTest extends VariantStorageBaseTest impleme
         VariantSource source1 = loadFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
         System.out.println("Query from HBase : " + DB_NAME);
         Configuration conf = configuration.get();
-        HBaseToVariantConverter conv = new HBaseToVariantConverter(dbAdaptor.getGenomeHelper(), buildStudyManager());
         HBaseManager hm = new HBaseManager(conf);
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
         Set<Integer> passPos = new HashSet<>(Arrays.asList(10032,13488));
@@ -101,7 +100,6 @@ public class VariantMergerTableMapperTest extends VariantStorageBaseTest impleme
         VariantSource source2 = loadFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
         System.out.println("Query from HBase : " + DB_NAME);
         Configuration conf = configuration.get();
-        HBaseToVariantConverter conv = new HBaseToVariantConverter(dbAdaptor.getGenomeHelper(), buildStudyManager());
         HBaseManager hm = new HBaseManager(conf);
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
         Set<Integer> passPos = new HashSet<>(Arrays.asList(10032,13488));

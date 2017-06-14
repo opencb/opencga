@@ -1,8 +1,11 @@
 package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.jdbc.PhoenixDatabaseMetaData;
+import org.apache.phoenix.schema.ConcurrentTableMutationException;
 import org.apache.phoenix.schema.PTable;
 import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.schema.TableNotFoundException;
@@ -16,7 +19,10 @@ import org.apache.phoenix.util.SchemaUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -42,9 +48,26 @@ public class PhoenixHelper {
     }
 
     public boolean execute(Connection con, String sql) throws SQLException {
+        return execute(con, sql, 5);
+    }
+
+    private boolean execute(Connection con, String sql, int retry) throws SQLException {
         logger.debug(sql);
         try (Statement statement = con.createStatement()) {
             return statement.execute(sql);
+        } catch (ConcurrentTableMutationException e) {
+            if (retry == 0) {
+                throw e;
+            }
+            logger.debug("Catch " + e.getClass().getSimpleName());
+            try {
+                int millis = RandomUtils.nextInt(100, 1000);
+                logger.debug("Sleeping " + millis + "ms");
+                Thread.sleep(millis);
+            } catch (InterruptedException interruption) {
+                Thread.interrupted();
+            }
+            return execute(con, sql, retry - 1);
         } catch (SQLException | RuntimeException e) {
             logger.error("Error executing '{}'", sql);
             throw e;
@@ -236,17 +259,16 @@ public class PhoenixHelper {
         }
     }
 
-    public List<Column> getColumns(Connection con, String tableName) throws SQLException {
-        String sql = "SELECT * FROM " + SchemaUtil.getEscapedFullTableName(tableName) + " LIMIT 0";
-        logger.debug(sql);
+    public List<Column> getColumns(Connection con, String fullTableName) throws SQLException {
+        String schema = SchemaUtil.getSchemaNameFromFullName(fullTableName);
+        String table = SchemaUtil.getTableNameFromFullName(fullTableName);
 
-        try (Statement statement = con.createStatement(); // Clean up Statement and RS
-             ResultSet resultSet = statement.executeQuery(sql)) {
-            ResultSetMetaData metaData = resultSet.getMetaData();
-            List<Column> columns = new ArrayList<>(metaData.getColumnCount());
-            // 1-based
-            for (int i = 1; i <= metaData.getColumnCount(); i++) {
-                columns.add(Column.build(metaData.getColumnName(i), PDataType.fromSqlTypeName(metaData.getColumnTypeName(i))));
+        try (ResultSet resultSet = con.getMetaData().getColumns(null, schema, table, null)) {
+            List<Column> columns = new ArrayList<>();
+            while (resultSet.next()) {
+                String columnName = resultSet.getString(PhoenixDatabaseMetaData.COLUMN_NAME);
+                String typeName = resultSet.getString(PhoenixDatabaseMetaData.TYPE_NAME);
+                columns.add(Column.build(columnName, PDataType.fromSqlTypeName(typeName)));
             }
             return columns;
         }

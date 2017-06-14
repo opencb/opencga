@@ -485,10 +485,10 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         int studyId = options.getInt(Options.STUDY_ID.key(), -1);
         options.remove(Options.STUDY_CONFIGURATION.key());
 
+        VariantSource source = readVariantSource(input, options);
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
         dbAdaptor.getStudyConfigurationManager().lockAndUpdate(studyId, studyConfiguration -> {
             studyConfiguration = checkOrCreateStudyConfiguration(studyConfiguration);
-            VariantSource source = readVariantSource(input, options);
             securePreLoad(studyConfiguration, source);
             options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
             return studyConfiguration;
@@ -524,7 +524,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         try {
             fileId = Integer.parseInt(source.getFileId());
         } catch (NumberFormatException e) {
-            throw new StorageEngineException("FileId '" + source.getFileId() + "' is not an integer", e);
+            throw new StorageEngineException("FileId '" + source.getFileId() + "' from file " + fileName + " is not an integer", e);
         }
 
         if (fileId < 0) {
@@ -643,7 +643,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
 
         // Check loaded variants BEFORE updating the StudyConfiguration
-        checkLoadedVariants(input, fileIds, getStudyConfiguration());
+        checkLoadedVariants(fileIds, getStudyConfiguration());
 
         StudyConfiguration studyConfiguration;
         try {
@@ -698,13 +698,13 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         }
     }
 
-    protected abstract void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration)
+    protected abstract void checkLoadedVariants(int fileId, StudyConfiguration studyConfiguration)
             throws StorageEngineException;
 
-    protected void checkLoadedVariants(URI input, List<Integer> fileIds, StudyConfiguration studyConfiguration)
+    protected void checkLoadedVariants(List<Integer> fileIds, StudyConfiguration studyConfiguration)
             throws StorageEngineException {
         for (Integer fileId : fileIds) {
-            checkLoadedVariants(input, fileId, studyConfiguration);
+            checkLoadedVariants(fileId, studyConfiguration);
         }
     }
 

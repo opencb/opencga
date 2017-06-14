@@ -18,8 +18,11 @@ package org.opencb.opencga.storage.hadoop.variant.adaptors;
 
 import org.junit.*;
 import org.junit.rules.ExternalResource;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -32,12 +35,19 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.runners.Parameterized.Parameter;
+import static org.junit.runners.Parameterized.Parameters;
+
 
 /**
  * Created on 20/05/16
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@RunWith(Parameterized.class)
 public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements HadoopVariantStorageTest {
 
 
@@ -46,16 +56,52 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     private static final boolean CT_GENES = false;
     protected static final boolean MISSING_ALLELE = false;
 
+    @Parameter
+    public ObjectMap indexParams;
+
+    public static ObjectMap previousIndexParams = null;
+
+    @Parameters
+    public static List<Object[]> data() {
+        List<Object[]> parameters = new ArrayList<>();
+        parameters.add(new Object[]{
+                new ObjectMap()
+                        .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
+                        .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true)
+                        .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
+                        .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DS,GL")
+                        .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)
+        });
+        parameters.add(new Object[]{
+                new ObjectMap()
+                        .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto")
+                        .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true)
+                        .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED)
+                        .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DS,GL")
+                        .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)
+        });
+        return parameters;
+    }
+
     @Before
     @Override
     public void before() throws Exception {
         boolean fileIndexed = VariantDBAdaptorTest.fileIndexed;
         try {
+            VariantStorageEngine.MergeMode mergeMode = VariantStorageEngine.MergeMode.from(indexParams);
+            if (!indexParams.equals(previousIndexParams)) {
+                fileIndexed = false;
+                VariantDBAdaptorTest.fileIndexed = false;
+                clearDB(getVariantStorageEngine().getVariantTableName());
+                clearDB(getVariantStorageEngine().getArchiveTableName(STUDY_ID));
+            }
+            previousIndexParams = indexParams;
+            System.out.println("Loading with MergeMode : " + mergeMode);
             super.before();
         } finally {
             try {
                 if (!fileIndexed) {
-                    VariantHbaseTestUtils.printVariants(studyConfiguration, (VariantHadoopDBAdaptor) dbAdaptor, newOutputUri());
+                    VariantHbaseTestUtils.printVariants(studyConfiguration, getVariantStorageEngine().getDBAdaptor(), newOutputUri());
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -88,13 +134,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 
     @Override
     protected ObjectMap getOtherParams() {
-        return new ObjectMap()
-                .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto")
-                .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true)
-//                .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
-//                .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, false)
-                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "")
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
+        return indexParams;
     }
 
 

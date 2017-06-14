@@ -6,6 +6,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 
 import java.util.Objects;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -26,6 +28,14 @@ public interface VariantIterable extends Iterable<Variant> {
 
     default Stream<Variant> stream() {
         return StreamSupport.stream(spliterator(), false);
+    }
+
+    default Stream<Variant> stream(Query query, QueryOptions options) {
+        return StreamSupport.stream(spliterator(query, options), false);
+    }
+
+    default Spliterator<Variant> spliterator(Query query, QueryOptions options) {
+        return Spliterators.spliteratorUnknownSize(iterator(query, options), 0);
     }
 
     @Override
