@@ -233,8 +233,8 @@ public class CatalogManagerTest extends GenericTest {
                 .append("PHEN", "CONTROL"), null, true, sessionIdUser);
 
 
-        catalogManager.getFileManager().update(test01k.getId(), new ObjectMap("sampleIds", Arrays.asList(s_1, s_2, s_3, s_4, s_5)),
-                new QueryOptions(), sessionIdUser);
+        catalogManager.getFileManager().update(test01k.getId(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
+                        Arrays.asList(s_1, s_2, s_3, s_4, s_5)), new QueryOptions(), sessionIdUser);
 
     }
 

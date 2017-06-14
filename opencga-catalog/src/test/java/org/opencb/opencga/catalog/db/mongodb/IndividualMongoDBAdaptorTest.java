@@ -75,8 +75,8 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testGetIndividual() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        Individual individual = new Individual(0, "An Individual", -1, -1, "Family", Individual.Sex.MALE, "", new Individual
-                .Population(), Collections.emptyList(), null);
+        Individual individual = new Individual(0, "An Individual", -1, -1, "Family", Individual.Sex.MALE, "",
+                new Individual.Population(), Collections.emptyList(), null);
         individual = catalogIndividualDBAdaptor.insert(individual, studyId, null).first();
         Individual individual2 = catalogIndividualDBAdaptor.get(individual.getId(), null).first();
         assertEquals(individual, individual2);

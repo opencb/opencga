@@ -1002,6 +1002,13 @@ public class FileManager extends AbstractManager implements IFileManager {
             query.put(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         }
 
+        if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
+            MyResourceIds resourceIds = catalogManager.getSampleManager().getIds(
+                    query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()), Long.toString(studyId), sessionId);
+            query.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), resourceIds.getResourceIds());
+            query.remove(FileDBAdaptor.QueryParams.SAMPLES.key());
+        }
+
         QueryResult<File> queryResult = fileDBAdaptor.get(query, options);
         authorizationManager.filterFiles(userId, studyId, queryResult.getResult());
         queryResult.setNumResults(queryResult.getResult().size());

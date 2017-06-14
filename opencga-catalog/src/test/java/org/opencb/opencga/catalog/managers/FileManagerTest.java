@@ -231,8 +231,8 @@ public class FileManagerTest extends GenericTest {
                 .append("PHEN", "CONTROL"), null, true, sessionIdUser);
 
 
-        catalogManager.getFileManager().update(test01k.getId(), new ObjectMap("sampleIds", Arrays.asList(s_1, s_2, s_3, s_4, s_5)),
-                new QueryOptions(), sessionIdUser);
+        catalogManager.getFileManager().update(test01k.getId(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
+                        Arrays.asList(s_1, s_2, s_3, s_4, s_5)), new QueryOptions(), sessionIdUser);
 
     }
 
@@ -408,7 +408,7 @@ public class FileManagerTest extends GenericTest {
         assertEquals(4, link.first().getSamples().size());
 
         Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.ID.key(), link.first().getSamples())
+                .append(SampleDBAdaptor.QueryParams.ID.key(), link.first().getSamples().stream().map(Sample::getId).collect(Collectors.toList()))
                 .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(query, QueryOptions.empty(), sessionIdUser);
 
@@ -916,7 +916,7 @@ public class FileManagerTest extends GenericTest {
 
         List<Long> sampleIds = catalogManager.getAllSamples(studyId, new Query("name", "s_1,s_3,s_4"), null, sessionIdUser)
                 .getResult().stream().map(Sample::getId).collect(Collectors.toList());
-        result = catalogManager.searchFile(studyId, new Query("sampleIds", sampleIds), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new Query(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleIds), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
         query = new Query("type", "FILE");
