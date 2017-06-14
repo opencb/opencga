@@ -915,7 +915,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
             Set<Long> sampleSet = new HashSet<>();
             for (Cohort cohort : cohortQueryResult.getResult()) {
-                sampleSet.addAll(cohort.getSamples());
+                sampleSet.addAll(cohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
             }
             sample = StringUtils.join(sampleSet, ",");
 

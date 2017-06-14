@@ -195,8 +195,8 @@ public class CatalogStudyConfigurationFactory {
             int cohortId = (int) cohort.getId();
             studyConfiguration.getCohortIds().forcePut(cohort.getName(), cohortId);
             List<Integer> sampleIds = new ArrayList<>(cohort.getSamples().size());
-            for (Long sampleId : cohort.getSamples()) {
-                sampleIds.add(toIntExact(sampleId));
+            for (Sample sample : cohort.getSamples()) {
+                sampleIds.add(toIntExact(sample.getId()));
             }
             studyConfiguration.getCohorts().put(cohortId, new HashSet<>(sampleIds));
             if (cohort.getStatus().getName().equals(Cohort.CohortStatus.READY)) {

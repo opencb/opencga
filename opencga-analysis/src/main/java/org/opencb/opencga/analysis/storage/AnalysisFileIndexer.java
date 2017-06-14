@@ -293,9 +293,9 @@ public class AnalysisFileIndexer {
             QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyIdByOutDirId,
                     new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), sessionId);
             if (cohorts.getResult().isEmpty()) {
-                defaultCohort = catalogManager.getCohortManager().create(studyIdByOutDirId, StudyEntry.DEFAULT_COHORT, Study.Type
-                        .COLLECTION, "Default cohort with almost all indexed samples", Collections.emptyList(), null, null, sessionId)
-                        .first();
+                defaultCohort = catalogManager.getCohortManager().create(studyIdByOutDirId, StudyEntry.DEFAULT_COHORT,
+                        Study.Type.COLLECTION, "Default cohort with almost all indexed samples", Collections.emptyList(), null, null,
+                        sessionId).first();
             } else {
                 defaultCohort = cohorts.first();
             }
@@ -306,11 +306,11 @@ public class AnalysisFileIndexer {
                 updateParams.append("status.name", Cohort.CohortStatus.CALCULATING);
             }
             //Samples are the already indexed plus those that are going to be indexed
-            Set<Long> samples = new HashSet<>(defaultCohort.getSamples());
+            Set<Long> samples = new HashSet<>(defaultCohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
             samples.addAll(sampleList.stream().map(Sample::getId).collect(Collectors.toList()));
             if (samples.size() != defaultCohort.getSamples().size()) {
                 logger.debug("Updating \"{}\" cohort", StudyEntry.DEFAULT_COHORT);
-                updateParams.append("samples", new ArrayList<>(samples));
+                updateParams.append(CohortDBAdaptor.QueryParams.SAMPLES.key(), new ArrayList<>(samples));
             }
             if (!updateParams.isEmpty()) {
                 catalogManager.modifyCohort(defaultCohort.getId(), updateParams, new QueryOptions(), sessionId);

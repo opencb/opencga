@@ -37,7 +37,7 @@ public class Cohort extends Annotable<CohortAclEntry> {
     private CohortStatus status;
     private String description;
 
-    private List<Long> samples;
+    private List<Sample> samples;
     private Family family;
 
     private Map<String, Object> stats;
@@ -47,20 +47,20 @@ public class Cohort extends Annotable<CohortAclEntry> {
     public Cohort() {
     }
 
-    public Cohort(String name, Study.Type type, String creationDate, String description, List<Long> samples,
+    public Cohort(String name, Study.Type type, String creationDate, String description, List<Sample> samples,
                   Map<String, Object> attributes) {
         this(-1, name, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(),
                 Collections.emptyList(), Collections.emptyMap(), attributes);
     }
 
-    public Cohort(String name, Study.Type type, String creationDate, String description, List<Long> samples,
+    public Cohort(String name, Study.Type type, String creationDate, String description, List<Sample> samples,
                   List<AnnotationSet> annotationSetList, Map<String, Object> attributes) {
         this(-1, name, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(),
                 annotationSetList, Collections.emptyMap(), attributes);
     }
 
     public Cohort(long id, String name, Study.Type type, String creationDate, CohortStatus status, String description,
-                  List<Long> samples, Family family, List<CohortAclEntry> acl, List<AnnotationSet> annotationSets,
+                  List<Sample> samples, Family family, List<CohortAclEntry> acl, List<AnnotationSet> annotationSets,
                   Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -238,11 +238,11 @@ public class Cohort extends Annotable<CohortAclEntry> {
         return this;
     }
 
-    public List<Long> getSamples() {
+    public List<Sample> getSamples() {
         return samples;
     }
 
-    public Cohort setSamples(List<Long> samples) {
+    public Cohort setSamples(List<Sample> samples) {
         this.samples = samples;
         return this;
     }
@@ -260,17 +260,6 @@ public class Cohort extends Annotable<CohortAclEntry> {
         this.acl = acl;
         return this;
     }
-
-//    @Override
-//    public List<AnnotationSet> getAnnotationSets() {
-//        return annotationSets;
-//    }
-//
-//    @Override
-//    public Cohort setAnnotationSets(List<AnnotationSet> annotationSets) {
-//        this.annotationSets = annotationSets;
-//        return this;
-//    }
 
     public Map<String, Object> getStats() {
         return stats;

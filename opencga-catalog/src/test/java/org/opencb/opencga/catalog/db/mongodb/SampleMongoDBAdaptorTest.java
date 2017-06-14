@@ -367,7 +367,7 @@ public class SampleMongoDBAdaptorTest {
         Sample hg0097 = new Sample(0, "HG0097", "1000g", new Individual(), "A description");
         QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(hg0097, studyId, null);
         dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(new Cohort("Cohort", Study.Type.COLLECTION, "", "",
-                Collections.singletonList(createResult.first().getId()), null), studyId, null);
+                Collections.singletonList(createResult.first()), null), studyId, null);
 
         thrown.expect(CatalogDBException.class);
         dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getId());

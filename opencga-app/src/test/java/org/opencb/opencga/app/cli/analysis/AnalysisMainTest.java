@@ -24,13 +24,13 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.manager.OpenCGATestExternalResource;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.storage.core.manager.OpenCGATestExternalResource;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,9 +39,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -166,10 +164,10 @@ public class AnalysisMainTest {
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getName());
 
 
-        catalogManager.getCohortManager().create(studyId, "coh1", Study.Type.CONTROL_SET, "",
-                file1.getSamples().stream().map(Sample::getId).collect(Collectors.toList()), null, null, sessionId);
-        catalogManager.getCohortManager().create(studyId, "coh2", Study.Type.CONTROL_SET, "",
-                file2.getSamples().stream().map(Sample::getId).collect(Collectors.toList()), null, null, sessionId);
+        catalogManager.getCohortManager().create(studyId, "coh1", Study.Type.CONTROL_SET, "", file1.getSamples(), null, null,
+                sessionId);
+        catalogManager.getCohortManager().create(studyId, "coh2", Study.Type.CONTROL_SET, "", file2.getSamples(), null, null,
+                sessionId);
 
         execute(new String[]{"variant", "stats", "--session-id", sessionId, "--study-id", String.valueOf(studyId), "--cohort-ids", "coh1", "--outdir-id", String.valueOf(outdirId)});
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), "coh1"), null, sessionId).first().getStatus().getName());
@@ -188,16 +186,15 @@ public class AnalysisMainTest {
 //        File file1 = opencga.createFile(studyId, "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
 
         QueryResult<Sample> allSamples = catalogManager.getAllSamples(studyId, new Query(), new QueryOptions(), sessionId);
-        List<Long> sampleIds = allSamples.getResult().stream().map(Sample::getId).collect(Collectors.toList());
-        Long c1 = catalogManager.getCohortManager().create(studyId, "C1", Study.Type.CONTROL_SET, "", sampleIds.subList(0, sampleIds.size
-                () / 2), null, null, sessionId).first().getId();
-        Long c2 = catalogManager.getCohortManager().create(studyId, "C2", Study.Type.CONTROL_SET, "", sampleIds.subList(sampleIds.size()
-                / 2 + 1, sampleIds.size()), null, null, sessionId).first().getId();
-        Long c3 = catalogManager.getCohortManager().create(studyId, "C3", Study.Type.CONTROL_SET, "", sampleIds.subList(0, 1), null,
+        Long c1 = catalogManager.getCohortManager().create(studyId, "C1", Study.Type.CONTROL_SET, "", allSamples.getResult().subList(0,
+                allSamples.getResult().size() / 2), null, null, sessionId).first().getId();
+        Long c2 = catalogManager.getCohortManager().create(studyId, "C2", Study.Type.CONTROL_SET, "", allSamples.getResult().subList(allSamples.getResult().size()
+                / 2 + 1, allSamples.getResult().size()), null, null, sessionId).first().getId();
+        Long c3 = catalogManager.getCohortManager().create(studyId, "C3", Study.Type.CONTROL_SET, "", allSamples.getResult().subList(0, 1), null,
                 null, sessionId).first().getId();
         Sample sample = catalogManager.createSample(studyId, "Sample", "", "", null, null, sessionId).first();
-        Long c4 = catalogManager.getCohortManager().create(studyId, "C4", Study.Type.CONTROL_SET, "", Collections.singletonList(sample
-                .getId()), null, null, sessionId).first().getId();
+        Long c4 = catalogManager.getCohortManager().create(studyId, "C4", Study.Type.CONTROL_SET, "", Collections.singletonList(sample),
+                null, null, sessionId).first().getId();
 
         // Index file1
         execute(new String[]{"variant", "index", "--session-id", sessionId, "--file-id", "user@p1:s1:" + file1.getPath(), "--calculate-stats", "--annotate"});

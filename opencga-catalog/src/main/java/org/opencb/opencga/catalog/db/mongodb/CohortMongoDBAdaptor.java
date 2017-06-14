@@ -179,122 +179,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
 
         return endQuery("Delete annotation", startTime, Collections.singletonList(annotationSet));
     }
-//
-//    @Deprecated
-//    @Override
-//    public QueryResult<CohortAclEntry> getCohortAcl(long cohortId, List<String> members) throws CatalogDBException {
-//        long startTime = startQuery();
-//
-//        checkId(cohortId);
-//
-//        Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, cohortId));
-//        Bson unwind = Aggregates.unwind("$" + QueryParams.ACL.key());
-//        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACL_MEMBER.key(), members));
-//        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACL.key()));
-//
-//        List<CohortAclEntry> cohortAcl = null;
-//        QueryResult<Document> aggregate = cohortCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
-//        Cohort cohort = cohortConverter.convertToDataModelType(aggregate.first());
-//
-//        if (cohort != null) {
-//            cohortAcl = cohort.getAcl();
-//        }
-//
-//        return endQuery("get cohort Acl", startTime, cohortAcl);
-//    }
-//
-//    @Deprecated
-//    @Override
-//    public QueryResult<CohortAclEntry> setCohortAcl(long cohortId, CohortAclEntry acl, boolean override) throws CatalogDBException {
-//        long startTime = startQuery();
-//        long studyId = getStudyId(cohortId);
-//
-//        String member = acl.getMember();
-//
-//        // If there is a group in acl.getMember(), we will obtain all the users belonging to the groups and will check if any of them
-//        // already have permissions on its own.
-//        if (member.startsWith("@")) {
-//            Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
-//
-//            // Check if any user already have permissions set on their own.
-//            QueryResult<CohortAclEntry> fileAcl = getAcl(cohortId, group.getUserIds());
-//            if (fileAcl.getNumResults() > 0) {
-//                throw new CatalogDBException("Error when adding permissions in cohort. At least one user in " + group.getName()
-//                        + " has already defined permissions for cohort " + cohortId);
-//            }
-//        } else {
-//            // Check if the members of the new acl already have some permissions set
-//            QueryResult<CohortAclEntry> cohortAcls = getAcl(cohortId, acl.getMember());
-//
-//            if (cohortAcls.getNumResults() > 0 && override) {
-//                unsetCohortAcl(cohortId, Arrays.asList(member), Collections.emptyList());
-//            } else if (cohortAcls.getNumResults() > 0 && !override) {
-//                throw new CatalogDBException("setCohortAcl: " + member + " already had an Acl set. If you "
-//                        + "still want to set a new Acl and remove the old one, please use the override parameter.");
-//            }
-//        }
-//
-//        // Push the new acl to the list of acls.
-//        Document queryDocument = new Document(PRIVATE_ID, cohortId);
-//        Document update = new Document("$push", new Document(QueryParams.ACL.key(), getMongoDBDocument(acl, "CohortAcl")));
-//        QueryResult<UpdateResult> updateResult = cohortCollection.update(queryDocument, update, null);
-//
-//        if (updateResult.first().getModifiedCount() == 0) {
-//            throw new CatalogDBException("setCohortAcl: An error occurred when trying to share cohort " + cohortId + " with " + member);
-//        }
-//
-//        return endQuery("setCohortAcl", startTime, Arrays.asList(acl));
-//    }
-
-//    @Override
-//    public void unsetCohortAcl(long cohortId, List<String> members, List<String> permissions) throws CatalogDBException {
-//        // Check that all the members (users) are correct and exist.
-//        checkMembers(dbAdaptorFactory, getStudyId(cohortId), members);
-//
-//        // Remove the permissions the members might have had
-//        for (String member : members) {
-//            Document query = new Document(PRIVATE_ID, cohortId).append(QueryParams.ACL_MEMBER.key(), member);
-//            Bson update;
-//            if (permissions.size() == 0) {
-//                update = new Document("$pull", new Document("acl", new Document("member", member)));
-//            } else {
-//                update = new Document("$pull", new Document("acl.$.permissions", new Document("$in", permissions)));
-//            }
-//            QueryResult<UpdateResult> updateResult = cohortCollection.update(query, update, null);
-//            if (updateResult.first().getModifiedCount() == 0) {
-//                throw new CatalogDBException("unsetCohortAcl: An error occurred when trying to stop sharing cohort " + cohortId
-//                        + " with other " + member + ".");
-//            }
-//        }
-//
-////        // Remove possible cohortAcls that might have permissions defined but no users
-////        Bson queryBson = new Document(QueryParams.ID.key(), cohortId)
-////                .append(QueryParams.ACL_MEMBER.key(),
-////                        new Document("$exists", true).append("$eq", Collections.emptyList()));
-////        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
-////        cohortCollection.update(queryBson, update, null);
-//    }
-
-//    @Deprecated
-//    @Override
-//    public void unsetCohortAclsInStudy(long studyId, List<String> members) throws CatalogDBException {
-//        // Check that all the members (users) are correct and exist.
-//        checkMembers(dbAdaptorFactory, studyId, members);
-//
-//        // Remove the permissions the members might have had
-//        for (String member : members) {
-//            Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.ACL_MEMBER.key(), member);
-//            Bson update = new Document("$pull", new Document("acl", new Document("member", member)));
-//            cohortCollection.update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
-//        }
-//
-////        // Remove possible CohortAcls that might have permissions defined but no users
-////        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
-////                .append(CatalogSampleDBAdaptor.QueryParams.ACL_MEMBER.key(),
-////                        new Document("$exists", true).append("$eq", Collections.emptyList()));
-////        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
-////        cohortCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
-//    }
 
     @Override
     public long getStudyId(long cohortId) throws CatalogDBException {
@@ -377,13 +261,20 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(QueryParams.TYPE.key(), Study.Type.class);
         filterEnumParams(parameters, cohortParams, acceptedEnums);
 
-        String[] acceptedLongListParams = {QueryParams.SAMPLES.key()};
-        filterLongListParams(parameters, cohortParams, acceptedLongListParams);
+        // Check if the samples exist.
         if (parameters.containsKey(QueryParams.SAMPLES.key())) {
-            for (Long sampleId : parameters.getAsLongList(QueryParams.SAMPLES.key())) {
-                if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().exists(sampleId)) {
-                    throw CatalogDBException.idNotFound("Sample", sampleId);
+            List<Object> objectSampleList = parameters.getAsList(QueryParams.SAMPLES.key());
+            List<Sample> sampleList = new ArrayList<>();
+            for (Object sampleId : objectSampleList) {
+                if (sampleId instanceof Long) {
+                    if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().exists(((Long) sampleId))) {
+                        throw CatalogDBException.idNotFound("Sample", ((Long) sampleId));
+                    }
+                    sampleList.add(new Sample().setId((Long) sampleId));
                 }
+            }
+            if (sampleList.size() > 0) {
+                cohortParams.put(QueryParams.SAMPLES.key(), cohortConverter.convertSamplesToDocument(sampleList));
             }
         }
 
@@ -651,7 +542,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
                     case ANNOTATION_SET_NAME:
                         addOrQuery("name", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
-                    case SAMPLES:
+                    case SAMPLE_IDS:
                         addQueryFilter(queryParam.key(), queryParam.key(), query, queryParam.type(),
                                 MongoDBQueryUtils.ComparisonOperator.IN, MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
                         break;
@@ -697,7 +588,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
         QueryResult<Cohort> cohortQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
         if (cohortQueryResult.getNumResults() > 0) {
             Bson bsonQuery = parseQuery(query, false);
-            Bson update = new Document("$pull", new Document(QueryParams.SAMPLES.key(), new Document("$in", sampleIds)));
+            Bson update = new Document("$pull", new Document(QueryParams.SAMPLES.key(),
+                    new Document("id", new Document("$in", sampleIds))));
             QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
             QueryResult<UpdateResult> updateQueryResult = cohortCollection.update(bsonQuery, update, multi);
 

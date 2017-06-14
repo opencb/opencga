@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Cohort;
+import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
@@ -44,7 +45,7 @@ import java.util.Map;
 @Deprecated
 public interface ICohortManager extends ResourceManager<Long, Cohort>, IAnnotationSetManager {
 
-    QueryResult<Cohort> create(long studyId, String name, Study.Type type, String description, List<Long> sampleIds, List<AnnotationSet>
+    QueryResult<Cohort> create(long studyId, String name, Study.Type type, String description, List<Sample> samples, List<AnnotationSet>
             annotationSetList, Map<String, Object> attributes, String sessionId) throws CatalogException;
 
     Long getStudyId(long cohortId) throws CatalogException;

@@ -585,7 +585,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         //Samples are the already indexed plus those that are going to be indexed
         ObjectMap updateParams = new ObjectMap();
-        Set<Long> samples = new HashSet<>(defaultCohort.getSamples());
+        Set<Long> samples = new HashSet<>(defaultCohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
         samples.addAll(sampleList.stream().map(Sample::getId).collect(Collectors.toList()));
         if (samples.size() != defaultCohort.getSamples().size()) {
             logger.debug("Updating \"{}\" cohort", StudyEntry.DEFAULT_COHORT);
