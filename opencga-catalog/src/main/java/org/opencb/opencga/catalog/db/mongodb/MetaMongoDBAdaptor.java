@@ -225,7 +225,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     public String readSecretKey() throws CatalogDBException {
         Bson query = Filters.eq("_id", "METADATA");
         QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
-        return ((Admin) MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getSecretKey();
+        return (MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getSecretKey();
     }
 
     @Override
@@ -239,21 +239,25 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     public String readAlgorithm() throws CatalogDBException {
         Bson query = Filters.eq("_id", "METADATA");
         QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
-        return ((Admin) MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getAlgorithm();
+        return (MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getAlgorithm();
     }
 
     @Override
     public void updateAdmin(Admin admin) throws CatalogDBException {
         Bson query = Filters.eq("_id", "METADATA");
-        Bson update = null;
+
+        Document adminDocument = new Document();
         if (admin.getSecretKey() != null) {
-            update = Updates.set("admin.secretKey", admin.getSecretKey());
+            adminDocument.append("admin.secretKey", admin.getSecretKey());
         }
 
         if (admin.getAlgorithm() != null) {
-            update = Updates.set("admin.algorithm", admin.getAlgorithm());
+            adminDocument.append("admin.algorithm", admin.getAlgorithm());
         }
 
-        this.metaCollection.update(query, update, QueryOptions.empty());
+        if (adminDocument.size() > 0) {
+            Bson update = new Document("$set", adminDocument);
+            this.metaCollection.update(query, update, QueryOptions.empty());
+        }
     }
 }
