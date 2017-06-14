@@ -106,7 +106,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
             params.put(JobDBAdaptor.QueryParams.END_TIME.key(), jobsCommandOptions.createCommandOptions.endTime);
         }
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.COMMAND_LINE.key(), jobsCommandOptions.createCommandOptions.commandLine);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.OUT_DIR_ID.key(), jobsCommandOptions.createCommandOptions.outDir);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.OUT_DIR.key(), jobsCommandOptions.createCommandOptions.outDir);
         if (StringUtils.isNotEmpty(jobsCommandOptions.createCommandOptions.input)) {
             List<Long> list = new ArrayList<>();
             for (String aux : jobsCommandOptions.createCommandOptions.input.split(",")) {
@@ -181,7 +181,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(jobsCommandOptions.groupByCommandOptions.study));
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.ID.key(), jobsCommandOptions.groupByCommandOptions.id);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.NAME.key(), jobsCommandOptions.groupByCommandOptions.name);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.OUT_DIR_ID.key(), jobsCommandOptions.groupByCommandOptions.path);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.OUT_DIR.key(), jobsCommandOptions.groupByCommandOptions.path);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.STATUS_NAME.key(), jobsCommandOptions.groupByCommandOptions.status);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.USER_ID.key(), jobsCommandOptions.groupByCommandOptions.ownerId);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.CREATION_DATE.key(), jobsCommandOptions.groupByCommandOptions.creationDate);

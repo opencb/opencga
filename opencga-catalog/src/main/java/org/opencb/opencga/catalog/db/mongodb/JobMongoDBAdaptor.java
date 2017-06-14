@@ -106,15 +106,15 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                 update1.first().getModifiedCount());
 
         queryAux = new Query(query);
-        queryAux.append(QueryParams.INPUT.key(), fileIds);
-        update = new Document("$pullAll", new Document(QueryParams.INPUT.key(), fileIds));
+        queryAux.append(QueryParams.INPUT_ID.key(), fileIds);
+        update = new Document("$pull", new Document(QueryParams.INPUT.key(), new Document("id", new Document("$in", fileIds))));
         QueryResult<UpdateResult> update2 = jobCollection.update(parseQuery(queryAux, true), update, multi);
         logger.debug("{} out of {} documents changed to pull input file ids", update2.first().getMatchedCount(),
                 update2.first().getModifiedCount());
 
         queryAux = new Query(query);
-        queryAux.append(QueryParams.OUTPUT.key(), fileIds);
-        update = new Document("$pullAll", new Document(QueryParams.OUTPUT.key(), fileIds));
+        queryAux.append(QueryParams.OUTPUT_ID.key(), fileIds);
+        update = new Document("$pull", new Document(QueryParams.OUTPUT.key(), new Document("id", new Document("$in", fileIds))));
         QueryResult<UpdateResult> update3 = jobCollection.update(parseQuery(queryAux, true), update, multi);
         logger.debug("{} out of {} documents changed to pull input file ids", update3.first().getMatchedCount(),
                 update3.first().getModifiedCount());
@@ -495,7 +495,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.USER_ID.key(), QueryParams.TOOL_NAME.key(),
                 QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(), QueryParams.OUTPUT_ERROR.key(),
-                QueryParams.COMMAND_LINE.key(), QueryParams.OUT_DIR_ID.key(), QueryParams.ERROR.key(), QueryParams.ERROR_DESCRIPTION.key(),
+                QueryParams.COMMAND_LINE.key(), QueryParams.ERROR.key(), QueryParams.ERROR_DESCRIPTION.key(),
         };
         filterStringParams(parameters, jobParameters, acceptedParams);
 
@@ -511,7 +511,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         String[] acceptedIntParams = {QueryParams.VISITS.key(), };
         filterIntParams(parameters, jobParameters, acceptedIntParams);
 
-        String[] acceptedLongParams = {QueryParams.START_TIME.key(), QueryParams.END_TIME.key(), QueryParams.SIZE.key()};
+        String[] acceptedLongParams = {QueryParams.START_TIME.key(), QueryParams.END_TIME.key(), QueryParams.SIZE.key(),
+                QueryParams.OUT_DIR_ID.key(), };
         filterLongParams(parameters, jobParameters, acceptedLongParams);
 
         String[] acceptedIntegerListParams = {QueryParams.OUTPUT.key()};
@@ -658,8 +659,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
-                    case INPUT:
-                    case OUTPUT:
+                    case INPUT_ID:
+                    case OUTPUT_ID:
                         addQueryFilter(queryParam.key(), queryParam.key(), query, queryParam.type(),
                             MongoDBQueryUtils.ComparisonOperator.IN, MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
                         break;

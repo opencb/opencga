@@ -214,7 +214,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.put("calculate", cohortsCommandOptions.statsCommandOptions.calculate);
         queryOptions.put("delete", cohortsCommandOptions.statsCommandOptions.delete);
         queryOptions.putIfNotEmpty("log", cohortsCommandOptions.statsCommandOptions.log);
-        queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.OUT_DIR_ID.key(), cohortsCommandOptions.statsCommandOptions.outdirId);
+        queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.OUT_DIR.key(), cohortsCommandOptions.statsCommandOptions.outdirId);
         return openCGAClient.getCohortClient().getStats(cohortsCommandOptions.statsCommandOptions.cohort, query, queryOptions);
     }
 

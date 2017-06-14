@@ -913,7 +913,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<Job> createJob(long studyId, String name, String toolName, String description, String executor, Map<String, String>
-            params, String commandLine, URI tmpOutDirUri, long outDirId, List<Long> inputFiles, List<Long> outputFiles, Map<String,
+            params, String commandLine, URI tmpOutDirUri, long outDirId, List<File> inputFiles, List<File> outputFiles, Map<String,
             Object> attributes, Map<String, Object> resourceManagerAttributes, Job.JobStatus status, long startTime, long endTime,
                                       QueryOptions options, String sessionId) throws CatalogException {
         return jobManager.create(studyId, name, toolName, description, executor, params, commandLine, tmpOutDirUri, outDirId, inputFiles,

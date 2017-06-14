@@ -2429,19 +2429,19 @@ public class FileManager extends AbstractManager implements IFileManager {
             outDirPath = outDirPath + "/";
         }
 
-        long outDirId;
+        File outDir;
         try {
-            outDirId = getId(outDirPath, Long.toString(studyId), sessionId).getResourceId();
+            outDir = new File().setId(getId(outDirPath, Long.toString(studyId), sessionId).getResourceId());
         } catch (CatalogException e) {
             logger.warn("'{}' does not exist. Trying to create the output directory.", outDirPath);
             QueryResult<File> folder = createFolder(Long.toString(studyId), outDirPath, new File.FileStatus(), true, "",
                     new QueryOptions(), sessionId);
-            outDirId = folder.first().getId();
+            outDir = folder.first();
         }
 
-        if (outDirId > 0) {
-            authorizationManager.checkFilePermission(outDirId, userId, FileAclEntry.FilePermissions.WRITE);
-            if (fileDBAdaptor.getStudyIdByFileId(outDirId) != studyId) {
+        if (outDir.getId() > 0) {
+            authorizationManager.checkFilePermission(outDir.getId(), userId, FileAclEntry.FilePermissions.WRITE);
+            if (fileDBAdaptor.getStudyIdByFileId(outDir.getId()) != studyId) {
                 throw new CatalogException("The output directory does not correspond to the same study of the files");
             }
 
@@ -2455,13 +2455,13 @@ public class FileManager extends AbstractManager implements IFileManager {
                 }
                 // It is a path, so we will try to create the folder
                 createFolder(Long.toString(studyId), path, new File.FileStatus(), true, "", new QueryOptions(), sessionId);
-                outDirId = getId(userId, path);
-                logger.info("Outdir {} -> {}", outDirId, path);
+                outDir = new File().setId(getId(userId, path));
+                logger.info("Outdir {} -> {}", outDir, path);
             }
         }
 
         QueryResult<Job> jobQueryResult;
-        List<Long> fileIdList = new ArrayList<>();
+        List<File> fileIdList = new ArrayList<>();
         String indexDaemonType = null;
         String jobName = null;
         String description = null;
@@ -2514,7 +2514,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                         authorizationManager.checkFilePermission(fileTmp.getId(), userId, FileAclEntry.FilePermissions.VIEW);
                         authorizationManager.checkFilePermission(fileTmp.getId(), userId, FileAclEntry.FilePermissions.WRITE);
 
-                        fileIdList.add(fileTmp.getId());
+                        fileIdList.add(fileTmp);
                     }
 
                 } else {
@@ -2525,7 +2525,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                     authorizationManager.checkFilePermission(file.first().getId(), userId, FileAclEntry.FilePermissions.VIEW);
                     authorizationManager.checkFilePermission(file.first().getId(), userId, FileAclEntry.FilePermissions.WRITE);
 
-                    fileIdList.add(file.first().getId());
+                    fileIdList.add(file.first());
                 }
             }
 
@@ -2533,7 +2533,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                 throw new CatalogException("Cannot send to index. No files could be found to be indexed.");
             }
 
-            params.put("outdir", Long.toString(outDirId));
+            params.put("outdir", Long.toString(outDir.getId()));
 
         } else if (type.equals("BAM")) {
 
@@ -2570,7 +2570,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                         authorizationManager.checkFilePermission(fileTmp.getId(), userId, FileAclEntry.FilePermissions.VIEW);
                         authorizationManager.checkFilePermission(fileTmp.getId(), userId, FileAclEntry.FilePermissions.WRITE);
 
-                        fileIdList.add(fileTmp.getId());
+                        fileIdList.add(fileTmp);
                     }
 
                 } else {
@@ -2581,7 +2581,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                     authorizationManager.checkFilePermission(file.first().getId(), userId, FileAclEntry.FilePermissions.VIEW);
                     authorizationManager.checkFilePermission(file.first().getId(), userId, FileAclEntry.FilePermissions.WRITE);
 
-                    fileIdList.add(file.first().getId());
+                    fileIdList.add(file.first());
                 }
             }
 
@@ -2591,15 +2591,15 @@ public class FileManager extends AbstractManager implements IFileManager {
             throw new CatalogException("Cannot send to index. No files could be found to be indexed.");
         }
 
-        String fileIds = StringUtils.join(fileIdList, ",");
+        String fileIds = fileIdList.stream().map(File::getId).map(l -> Long.toString(l)).collect(Collectors.joining(", "));
         params.put("file", fileIds);
         params.put("sid", sessionId);
-        List<Long> outputList = outDirId > 0 ? Arrays.asList(outDirId) : Collections.emptyList();
+        List<File> outputList = outDir.getId() > 0 ? Arrays.asList(outDir) : Collections.emptyList();
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(IndexDaemon.INDEX_TYPE, indexDaemonType);
         logger.info("job description: " + description);
         jobQueryResult = catalogManager.getJobManager().queue(studyId, jobName, description, "opencga-analysis.sh",
-                Job.Type.INDEX, params, fileIdList, outputList, outDirId, userId, attributes);
+                Job.Type.INDEX, params, fileIdList, outputList, outDir, userId, attributes);
         jobQueryResult.first().setToolName(jobName);
 
         return jobQueryResult;

@@ -18,22 +18,21 @@ package org.opencb.opencga.analysis;
 
 import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.utils.StringUtils;
-import org.opencb.opencga.catalog.models.tool.Execution;
-import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
-import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
+import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created on 30/11/15
@@ -51,7 +50,7 @@ public class JobFactory {
 
     @Deprecated
     public QueryResult<Job> createJob(long studyId, String jobName, String toolName, String description,
-                                      File outDir, List<Long> inputFiles, final String sessionId,
+                                      File outDir, List<File> inputFiles, final String sessionId,
                                       String randomString, URI temporalOutDirUri, String commandLine,
                                       boolean execute, boolean simulate, Map<String, Object> attributes,
                                       Map<String, Object> resourceManagerAttributes)
@@ -85,7 +84,7 @@ public class JobFactory {
      * @throws CatalogException
      */
     public QueryResult<Job> createJob(long studyId, String jobName, String toolName, String executor, Map<String, String> params, String commandLine, String description,
-                                      File outDir, URI temporalOutDirUri, List<Long> inputFiles, String jobSchedulerName, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, final String sessionId,
+                                      File outDir, URI temporalOutDirUri, List<File> inputFiles, String jobSchedulerName, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, final String sessionId,
                                       boolean simulate, boolean execute)
             throws AnalysisExecutionException, CatalogException {
         logger.debug("Creating job {}: simulate {}, execute {}", jobName, simulate, execute);
@@ -99,7 +98,7 @@ public class JobFactory {
         resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, jobSchedulerName);
         if (simulate) { //Simulate a job. Do not create it.
             jobQueryResult = new QueryResult<>("simulatedJob", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(
-                    new Job(jobName, catalogManager.getUserIdBySessionId(sessionId), toolName, description, commandLine, outDir.getId(),
+                    new Job(jobName, catalogManager.getUserIdBySessionId(sessionId), toolName, description, commandLine, outDir,
                             inputFiles)));
         } else {
             if (execute) {

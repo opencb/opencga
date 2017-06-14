@@ -121,7 +121,7 @@ public class AnalysisMainTest {
         assertNotNull(outputFile);
         job = catalogManager.getJob(outputFile.getJob().getId(), null, sessionId).first();
         assertEquals(Job.JobStatus.READY, job.getStatus().getName());
-        assertEquals(outdirId, job.getOutDirId());
+        assertEquals(outdirId, job.getOutDir().getId());
 
         // Index file2
         execute(new String[]{"variant", "index", "--session-id", sessionId, "--file-id", String.valueOf(file2.getId()), "--calculate-stats", "--outdir", String.valueOf(outdirId)});
@@ -129,7 +129,7 @@ public class AnalysisMainTest {
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getName());
         job = catalogManager.getAllJobs(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file2.getId()), null, sessionId).first();
         assertEquals(Job.JobStatus.READY, job.getStatus().getName());
-        assertEquals(outdirId, job.getOutDirId());
+        assertEquals(outdirId, job.getOutDir().getId());
 
         // Annotate all variants
         execute(new String[]{"variant", "annotate", "--session-id", sessionId, "--study-id", String.valueOf(studyId), "--outdir-id", String.valueOf(outdirId)});
@@ -140,7 +140,7 @@ public class AnalysisMainTest {
         assertEquals(Cohort.CohortStatus.INVALID, catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getName());
         job = catalogManager.getAllJobs(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file3.getId()), null, sessionId).first();
         assertEquals(Job.JobStatus.READY, job.getStatus().getName());
-        Assert.assertNotEquals(outdirId, job.getOutDirId());
+        Assert.assertNotEquals(outdirId, job.getOutDir().getId());
 
         // Index file4 and stats
         execute(new String[]{"variant", "index", "--session-id", sessionId, "--file-id", String.valueOf(file4.getId()), "--calculate-stats", "--queue"});

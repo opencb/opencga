@@ -111,9 +111,9 @@ public class ExecutionOutputRecorder {
         logger.debug("Scan the temporal output directory ({}) from a job to find all generated files.", tmpOutDirUri);
         File outDir;
         try {
-            outDir = catalogManager.getFileManager().get(job.getOutDirId(), new QueryOptions(), sessionId).getResult().get(0);
+            outDir = catalogManager.getFileManager().get(job.getOutDir().getId(), new QueryOptions(), sessionId).getResult().get(0);
         } catch (CatalogException e) {
-            logger.error("Cannot find file {}. Error: {}", job.getOutDirId(), e.getMessage());
+            logger.error("Cannot find file {}. Error: {}", job.getOutDir().getId(), e.getMessage());
             throw e;
         }
 

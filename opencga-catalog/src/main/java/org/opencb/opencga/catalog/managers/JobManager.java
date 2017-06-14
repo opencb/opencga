@@ -308,7 +308,7 @@ public class JobManager extends AbstractManager implements IJobManager {
     @Override
     public QueryResult<Job> create(long studyId, String name, String toolName, String description, String executor,
                                    Map<String, String> params, String commandLine, URI tmpOutDirUri, long outDirId,
-                                   List<Long> inputFiles, List<Long> outputFiles, Map<String, Object> attributes,
+                                   List<File> inputFiles, List<File> outputFiles, Map<String, Object> attributes,
                                    Map<String, Object> resourceManagerAttributes, Job.JobStatus status, long startTime,
                                    long endTime, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(name, "name");
@@ -317,8 +317,8 @@ public class JobManager extends AbstractManager implements IJobManager {
         ParamUtils.checkParameter(commandLine, "commandLine");
         description = ParamUtils.defaultString(description, "");
         status = ParamUtils.defaultObject(status, new Job.JobStatus(Job.JobStatus.PREPARED));
-        inputFiles = ParamUtils.defaultObject(inputFiles, Collections.<Long>emptyList());
-        outputFiles = ParamUtils.defaultObject(outputFiles, Collections.<Long>emptyList());
+        inputFiles = ParamUtils.defaultObject(inputFiles, Collections.emptyList());
+        outputFiles = ParamUtils.defaultObject(outputFiles, Collections.emptyList());
 
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
@@ -326,8 +326,8 @@ public class JobManager extends AbstractManager implements IJobManager {
 //        URI tmpOutDirUri = createJobOutdir(studyId, randomString, sessionId);
 
         authorizationManager.checkFilePermission(outDirId, userId, FileAclEntry.FilePermissions.WRITE);
-        for (Long inputFile : inputFiles) {
-            authorizationManager.checkFilePermission(inputFile, userId, FileAclEntry.FilePermissions.VIEW);
+        for (File inputFile : inputFiles) {
+            authorizationManager.checkFilePermission(inputFile.getId(), userId, FileAclEntry.FilePermissions.VIEW);
         }
         QueryOptions fileQueryOptions = new QueryOptions("include", Arrays.asList(
                 "projects.studies.files.id",
@@ -340,7 +340,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         }
 
         // FIXME: Pass the toolId
-        Job job = new Job(name, userId, toolName, description, commandLine, outDir.getId(), inputFiles);
+        Job job = new Job(name, userId, toolName, description, commandLine, outDir, inputFiles);
         job.setOutput(outputFiles);
         job.setStatus(status);
         job.setStartTime(startTime);
@@ -587,12 +587,12 @@ public class JobManager extends AbstractManager implements IJobManager {
 
     @Override
     public QueryResult<Job> queue(long studyId, String jobName, String description, String executable, Job.Type type,
-                                  Map<String, String> params, List<Long> input, List<Long> output, long outDirId, String userId,
+                                  Map<String, String> params, List<File> input, List<File> output, File outDir, String userId,
                                   Map<String, Object> attributes)
             throws CatalogException {
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
-        Job job = new Job(jobName, userId, executable, type, input, output, outDirId, params)
+        Job job = new Job(jobName, userId, executable, type, input, output, outDir, params)
                 .setDescription(description)
                 .setAttributes(attributes);
 

@@ -35,6 +35,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -64,7 +66,7 @@ public class JobWSServer extends OpenCGAWSServer {
             this.endTime = endTime;
             this.commandLine = commandLine;
             this.status = status;
-            this.outDirId = outDirId;
+            this.outDir = outDirId;
             this.input = input;
             this.attributes = attributes;
             this.resourceManagerAttributes = resourceManagerAttributes;
@@ -85,7 +87,7 @@ public class JobWSServer extends OpenCGAWSServer {
         public Status status = Status.READY;
         public String statusMessage;
         @ApiModelProperty(required = true)
-        public String outDirId;
+        public String outDir;
         public List<Long> input;
         public List<Long> output;
         public Map<String, Object> attributes;
@@ -117,14 +119,25 @@ public class JobWSServer extends OpenCGAWSServer {
                 jobStatus = new Job.JobStatus();
                 jobStatus.setMessage(job.statusMessage);
             }
-            long outDir = catalogManager.getFileId(job.outDirId, Long.toString(studyId), sessionId);
+            long outDir = catalogManager.getFileId(job.outDir, Long.toString(studyId), sessionId);
             QueryResult<Job> result = catalogManager.createJob(studyId, job.name, job.toolName, job.description, job.execution, job.params,
-                    job.commandLine, null, outDir, job.input, job.output, job.attributes, job.resourceManagerAttributes, jobStatus,
-                    job.startTime, job.endTime, queryOptions, sessionId);
+                    job.commandLine, null, outDir, parseToListOfFiles(job.input), parseToListOfFiles(job.output), job.attributes,
+                    job.resourceManagerAttributes, jobStatus, job.startTime, job.endTime, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    private List<File> parseToListOfFiles(List<Long> longList) {
+        if (longList == null || longList.size() == 0) {
+            return Collections.emptyList();
+        }
+        List<File> fileList = new ArrayList<>(longList.size());
+        for (Long myLong : longList) {
+            fileList.add(new File().setId(myLong));
+        }
+        return fileList;
     }
 
     @GET

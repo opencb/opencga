@@ -211,11 +211,11 @@ public class AnalysisFileIndexer {
                     indexedFileId = new ObjectMap(job.getAttributes()).getInt(Job.INDEXED_FILE_ID);
                 } else {
                     logger.warn("INDEXED_FILE_ID missing in job " + job.getId());
-                    List<Long> jobInputFiles = job.getInput();
+                    List<File> jobInputFiles = job.getInput();
                     if (jobInputFiles.size() != 1) {
                         throw new CatalogException("Error: Job {id: " + job.getId() + "} input is empty");
                     }
-                    indexedFileId = jobInputFiles.get(0);
+                    indexedFileId = jobInputFiles.get(0).getId();
                 }
             }
             originalFile = catalogManager.getFile(indexedFileId, null, sessionId).first();
@@ -391,7 +391,7 @@ public class AnalysisFileIndexer {
         }
         JobFactory jobFactory = new JobFactory(catalogManager);
         final Job job = jobFactory.createJob(studyIdByOutDirId, jobName,
-                OPENCGA_ANALYSIS_BIN_NAME, jobDescription, outDir, Collections.singletonList(inputFile.getId()),
+                OPENCGA_ANALYSIS_BIN_NAME, jobDescription, outDir, Collections.singletonList(inputFile),
                 sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, jobAttributes, null).first();
 
 

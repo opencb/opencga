@@ -313,7 +313,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         job.getParams().put("outdir", path.toString());
 
         if (job.getAttributes().get(INDEX_TYPE).toString().equalsIgnoreCase(VARIANT_TYPE)) {
-            job.getParams().put("path", Long.toString(job.getOutDirId()));
+            job.getParams().put("path", Long.toString(job.getOutDir().getId()));
 
             commandLine.append(" variant index");
             Set<String> knownParams = new HashSet<>(Arrays.asList(
