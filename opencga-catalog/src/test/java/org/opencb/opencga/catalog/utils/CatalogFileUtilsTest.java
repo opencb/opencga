@@ -65,7 +65,8 @@ public class CatalogFileUtilsTest {
     public void before() throws CatalogException, IOException, URISyntaxException {
         Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
                 .openStream());
-
+        configuration.getAdmin().setSecretKey("dummy");
+        configuration.getAdmin().setAlgorithm("HS256");
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
                 .add("username", configuration.getCatalog().getDatabase().getUser())
                 .add("password", configuration.getCatalog().getDatabase().getPassword())

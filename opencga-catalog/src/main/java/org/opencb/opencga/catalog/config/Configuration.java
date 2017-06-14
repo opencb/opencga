@@ -44,7 +44,6 @@ public class Configuration {
     private String toolDir;
 
     private Admin admin;
-    private List<AuthenticationOrigin> authenticationOrigins;
     private Monitor monitor;
     private Execution execution;
     private Audit audit;
@@ -55,20 +54,12 @@ public class Configuration {
     private Catalog catalog;
 
     private ServerConfiguration server;
+    private Authentication authentication;
 
     protected static Logger logger = LoggerFactory.getLogger(Configuration.class);
 
     public Configuration() {
     }
-
-//    public CatalogConfiguration(String defaultStorageEngineId, List<StorageEngineConfiguration> storageEngines) {
-//        this.defaultStorageEngineId = defaultStorageEngineId;
-//        this.storageEngines = storageEngines;
-//
-//        this.cellbase = new CellBaseConfiguration();
-//        this.server = new QueryServerConfiguration();
-//    }
-
 
     public void serialize(OutputStream configurationOututStream) throws IOException {
         ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
@@ -94,6 +85,7 @@ public class Configuration {
                 configuration = objectMapper.readValue(configurationInputStream, Configuration.class);
                 break;
         }
+        //TODO : create mandatory fileds check to avoid invalid or incomplete conf
         return configuration;
     }
 
@@ -109,7 +101,6 @@ public class Configuration {
         sb.append(", tempJobsDir='").append(tempJobsDir).append('\'');
         sb.append(", toolDir='").append(toolDir).append('\'');
         sb.append(", admin=").append(admin);
-        sb.append(", authenticationOrigins=").append(authenticationOrigins);
         sb.append(", monitor=").append(monitor);
         sb.append(", execution=").append(execution);
         sb.append(", audit=").append(audit);
@@ -117,6 +108,7 @@ public class Configuration {
         sb.append(", email=").append(email);
         sb.append(", catalog=").append(catalog);
         sb.append(", server=").append(server);
+        sb.append(", authentication=").append(authentication);
         sb.append('}');
         return sb.toString();
     }
@@ -202,15 +194,6 @@ public class Configuration {
         return this;
     }
 
-    public List<AuthenticationOrigin> getAuthenticationOrigins() {
-        return authenticationOrigins;
-    }
-
-    public Configuration setAuthenticationOrigins(List<AuthenticationOrigin> authenticationOrigins) {
-        this.authenticationOrigins = authenticationOrigins;
-        return this;
-    }
-
     public Monitor getMonitor() {
         return monitor;
     }
@@ -272,5 +255,13 @@ public class Configuration {
     public Configuration setServer(ServerConfiguration server) {
         this.server = server;
         return this;
+    }
+
+    public Authentication getAuthentication() {
+        return authentication;
+    }
+
+    public void setAuthentication(Authentication authentication) {
+        this.authentication = authentication;
     }
 }

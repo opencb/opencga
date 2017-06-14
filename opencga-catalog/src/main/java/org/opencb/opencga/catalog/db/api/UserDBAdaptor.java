@@ -20,7 +20,6 @@ import org.apache.commons.collections.map.LinkedMap;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 
@@ -69,12 +68,6 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
     QueryResult<User> delete(String userId, QueryOptions queryOptions) throws CatalogDBException;
 
     QueryResult<Session> addSession(String userId, Session session) throws CatalogDBException;
-
-    QueryResult<Session> logout(String userId, String sessionId) throws CatalogDBException;
-
-    QueryResult<ObjectMap> loginAsAnonymous(Session session) throws CatalogException;
-
-    QueryResult logoutAnonymous(String sessionId) throws CatalogDBException;
 
     QueryResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogDBException;
 

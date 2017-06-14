@@ -32,10 +32,7 @@ import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -48,8 +45,8 @@ import java.util.Map;
 public class UserWSServer extends OpenCGAWSServer {
 
 
-    public UserWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(uriInfo, httpServletRequest);
+    public UserWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest, httpHeaders);
     }
 
     @GET
@@ -172,13 +169,13 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
+    @Deprecated
     @GET
     @Path("/{user}/logout")
     @ApiOperation(value = "End user session")
     public Response logout(@ApiParam(value = "userId", required = true) @PathParam("user") String userId) {
         try {
-            QueryResult result = catalogManager.logout(userId, sessionId);
-            result.setId("You successfully logged out");
+            QueryResult result = new QueryResult("OpenCGA does not support logging out anymore");
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

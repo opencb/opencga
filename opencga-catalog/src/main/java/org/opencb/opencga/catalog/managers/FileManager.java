@@ -385,10 +385,6 @@ public class FileManager extends AbstractManager implements IFileManager {
                     .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), variantPathName)
                     .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
-//                    .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(
-//                            FileIndex.IndexStatus.NONE, FileIndex.IndexStatus.TRANSFORMING, FileIndex.IndexStatus.INDEXING,
-//                            FileIndex.IndexStatus.READY
-//                    ));
 
             QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
 
@@ -400,12 +396,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                         .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                         .append(FileDBAdaptor.QueryParams.NAME.key(), variantFileName)
                         .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
-//                        .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(
-//                                FileIndex.IndexStatus.NONE, FileIndex.IndexStatus.TRANSFORMING, FileIndex.IndexStatus.INDEXING,
-//                                FileIndex.IndexStatus.READY
-//                        ));
-//                        .append(CatalogFileDBAdaptor.QueryParams.INDEX_TRANSFORMED_FILE.key(), null);
-                fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
+            fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
             }
 
             if (fileQueryResult.getNumResults() > 0) {
@@ -455,7 +446,6 @@ public class FileManager extends AbstractManager implements IFileManager {
             relatedFiles.add(new File.RelatedFile(vcf.getId(), File.RelatedFile.Relation.PRODUCED_FROM));
             ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFiles);
             fileDBAdaptor.update(json.getId(), params);
-//            update(json.getId(), params, new QueryOptions(), sessionId);
 
             // Update transformed file
             logger.debug("Updating transformed relation");
@@ -466,7 +456,6 @@ public class FileManager extends AbstractManager implements IFileManager {
             relatedFiles.add(new File.RelatedFile(vcf.getId(), File.RelatedFile.Relation.PRODUCED_FROM));
             params = new ObjectMap(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFiles);
             fileDBAdaptor.update(transformedFile.getId(), params);
-//            update(transformedFile.getId(), params, new QueryOptions(), sessionId);
 
             // Update vcf file
             logger.debug("Updating vcf relation");
@@ -484,12 +473,6 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
             params = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), index);
             fileDBAdaptor.update(vcf.getId(), params);
-//            FileIndex.TransformedFile transformedFile = new FileIndex.TransformedFile(transformedFile.getId(), json.getId());
-//            params = new ObjectMap()
-//                    .append(CatalogFileDBAdaptor.QueryParams.INDEX_TRANSFORMED_FILE.key(), transformedFile)
-//                    .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.TRANSFORMED);
-
-//            update(vcf.getId(), params, new QueryOptions(), sessionId);
 
             // Update variant stats
             Path statsFile = Paths.get(json.getUri().getRawPath());
@@ -1958,16 +1941,6 @@ public class FileManager extends AbstractManager implements IFileManager {
             // Limit the number of results and only some fields
             QueryOptions queryOptions = new QueryOptions()
                     .append(QueryOptions.LIMIT, 100);
-//                    .append(QueryOptions.INCLUDE, Arrays.asList(
-//                            FileDBAdaptor.QueryParams.ID.key(),
-//                            FileDBAdaptor.QueryParams.NAME.key(),
-//                            FileDBAdaptor.QueryParams.TYPE.key(),
-//                            FileDBAdaptor.QueryParams.PATH.key(),
-//                            FileDBAdaptor.QueryParams.URI.key(),
-//                            FileDBAdaptor.QueryParams.FORMAT.key(),
-//                            FileDBAdaptor.QueryParams.BIOFORMAT.key()
-//                    ));
-
             return fileDBAdaptor.get(query, queryOptions);
         }
     }

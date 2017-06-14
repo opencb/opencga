@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.audit.CatalogAuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
+import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -39,8 +40,7 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.*;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
-import org.opencb.opencga.catalog.session.DefaultSessionManager;
-import org.opencb.opencga.catalog.session.SessionManager;
+import org.opencb.opencga.catalog.session.JwtSessionManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.slf4j.Logger;
@@ -62,7 +62,6 @@ public class CatalogManager implements AutoCloseable {
 
     private DBAdaptorFactory catalogDBAdaptorFactory;
     private CatalogIOManagerFactory catalogIOManagerFactory;
-//    private CatalogClient catalogClient;
 
     private IUserManager userManager;
     private IProjectManager projectManager;
@@ -74,9 +73,9 @@ public class CatalogManager implements AutoCloseable {
     private ICohortManager cohortManager;
     private FamilyManager familyManager;
     private ClinicalAnalysisManager clinicalAnalysisManager;
-//    private AuthenticationManager authenticationManager;
+
     private CatalogAuditManager auditManager;
-    private SessionManager sessionManager;
+    private JwtSessionManager sessionManager;
     private AuthorizationManager authorizationManager;
 
     private Configuration configuration;
@@ -89,12 +88,6 @@ public class CatalogManager implements AutoCloseable {
         configureIOManager(configuration);
         logger.debug("CatalogManager configureManager");
         configureManagers(configuration);
-//        if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
-//            catalogDBAdaptorFactory.installCatalogDB(catalogConfiguration);
-//            Admin admin = catalogConfiguration.getAdmin();
-//            admin.setPassword(CatalogAuthenticationManager.cipherPassword(admin.getPassword()));
-//            catalogDBAdaptorFactory.initializeCatalogDB(admin);
-//        }
     }
 
     public String getCatalogDatabase() {
@@ -115,12 +108,11 @@ public class CatalogManager implements AutoCloseable {
 //        catalogClient = new CatalogDBClient(this);
         //TODO: Check if catalog is empty
         //TODO: Setup catalog if it's empty.
-
+        this.initializeAdmin();
         auditManager = new CatalogAuditManager(catalogDBAdaptorFactory.getCatalogAuditDbAdaptor(), catalogDBAdaptorFactory
                 .getCatalogUserDBAdaptor(), authorizationManager, configuration);
-//        authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager);
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager, this.configuration);
-        sessionManager = new DefaultSessionManager(catalogDBAdaptorFactory);
+        sessionManager = new JwtSessionManager(configuration);
         userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
         fileManager = new FileManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
@@ -141,6 +133,22 @@ public class CatalogManager implements AutoCloseable {
                 configuration);
         clinicalAnalysisManager = new ClinicalAnalysisManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
+    }
+
+    private void initializeAdmin() throws CatalogDBException {
+
+        if (StringUtils.isEmpty(this.configuration.getAdmin().getSecretKey())) {
+            this.configuration.getAdmin().setSecretKey(this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readSecretKey());
+        }
+
+        if (StringUtils.isEmpty(this.configuration.getAdmin().getAlgorithm())) {
+            this.configuration.getAdmin().setAlgorithm(this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readAlgorithm());
+        }
+    }
+
+    public void insertUpdatedAdmin(Admin admin) throws CatalogDBException {
+
+        this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().updateAdmin(admin);
     }
 
     public ObjectMap getDatabaseStatus() {
@@ -225,20 +233,6 @@ public class CatalogManager implements AutoCloseable {
         }
         folder.delete();
     }
-//
-//    public void testIndices() {
-//        System.out.println("vamos bien");
-//        catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().createIndexes();
-//    }
-//
-//    public CatalogClient client() {
-//        return client("");
-//    }
-//
-//    public CatalogClient client(String sessionId) {
-//        catalogClient.setSessionId(sessionId);
-//        return catalogClient;
-//    }
 
     public CatalogIOManagerFactory getCatalogIOManagerFactory() {
         return catalogIOManagerFactory;
@@ -374,23 +368,8 @@ public class CatalogManager implements AutoCloseable {
         return userManager.create(id, name, email, password, organization, quota, Account.FULL, options);
     }
 
-    @Deprecated
-    public QueryResult<ObjectMap> loginAsAnonymous(String sessionIp)
-            throws CatalogException, IOException {
-        return userManager.loginAsAnonymous(sessionIp);
-    }
-
     public QueryResult<Session> login(String userId, String password, String sessionIp) throws CatalogException, IOException {
         return userManager.login(userId, password, sessionIp);
-    }
-
-    public QueryResult logout(String userId, String sessionId) throws CatalogException {
-        return userManager.logout(userId, sessionId);
-    }
-
-    @Deprecated
-    public QueryResult logoutAnonymous(String sessionId) throws CatalogException {
-        return userManager.logoutAnonymous(sessionId);
     }
 
     public QueryResult changePassword(String userId, String oldPassword, String newPassword)
@@ -568,19 +547,6 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.deleteGroup(studyStr, groupId, sessionId);
     }
 
-//    @Deprecated
-//    public QueryResult addUsersToGroup(long studyId, String groupId, String userIds, String sessionId) throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        return authorizationManager.addUsersToGroup(userId, studyId, groupId, userIds);
-//    }
-//
-//    @Deprecated
-//    public QueryResult removeUsersFromGroup(long studyId, String groupId, String userIds, String sessionId) throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        authorizationManager.removeUsersFromGroup(userId, studyId, groupId, userIds);
-//        return new QueryResult("removeUsersFromGroup");
-//    }
-
     @Deprecated
     public QueryResult<StudyAclEntry> createStudyAcls(String studyStr, String members, String permissions, @Nullable String templateId,
                                                       String sessionId) throws CatalogException {
@@ -604,13 +570,6 @@ public class CatalogManager implements AutoCloseable {
         Study.StudyAclParams aclParams = new Study.StudyAclParams(null, AclParams.Action.RESET, null);
         return studyManager.updateAcl(studyStr, member, aclParams, sessionId).get(0);
     }
-
-//    @Deprecated
-//    public QueryResult unshareStudy(long studyId, String members, String sessionId) throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        authorizationManager.removeStudyPermissions(userId, studyId, members);
-//        return new QueryResult("unshareStudy");
-//    }
 
     public List<QueryResult<SampleAclEntry>> getAllSampleAcls(String sampleIdsStr, @Nullable String studyStr, String sessionId)
             throws CatalogException {
@@ -804,30 +763,9 @@ public class CatalogManager implements AutoCloseable {
     @Deprecated
     public QueryResult shareFile(String fileIds, String userIds, AclEntry acl, String sessionId) throws CatalogException {
         throw new CatalogException("The method being called is deprecated.");
-//        return authorizationManager.setFileACL(fileIds, userIds, acl, sessionId);
+
     }
 
-//    @Deprecated
-//    public QueryResult shareFile(String fileIds, String members, List<String> permissions, boolean override, String sessionId)
-//            throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        List<Long> fileList = fileManager.getFileIds(userId, fileIds);
-//        return authorizationManager.setFilePermissions(userId, fileList, members, permissions, override);
-//    }
-
-//    public QueryResult unshareFile(String fileIds, String userIds, String sessionId) throws CatalogException {
-//        return authorizationManager.unsetFileACL(fileIds, userIds, sessionId);
-//    }
-
-//    @Deprecated
-//    public QueryResult unshareFile(String fileIds, String members, String permissions, String sessionId) throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        List<Long> fileList = fileManager.getFileIds(userId, fileIds);
-//        List<String> permissionList = permissions != null && !permissions.isEmpty()
-//                ? Arrays.asList(permissions.split(",")) : Collections.emptyList();
-//        authorizationManager.unsetFilePermissions(userId, fileList, members, permissionList);
-//        return new QueryResult("unshareFile");
-//    }
 
     public List<QueryResult<FileAclEntry>> getAllFileAcls(String fileIdsStr, @Nullable String studyStr, String sessionId)
             throws CatalogException {
@@ -884,21 +822,6 @@ public class CatalogManager implements AutoCloseable {
         return fileManager.link(uriOrigin, pathDestiny, studyId, params, sessionId);
     }
 
-//    public QueryResult shareDatasets(String datasetIds, String members, List<String> permissions, String sessionId, boolean override)
-//            throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        List<Long> datasetList = fileManager.getDatasetIds(userId, datasetIds);
-//        return authorizationManager.setDatasetPermissions(userId, datasetList, members, permissions, override);
-//    }
-//
-//    public QueryResult unshareDatasets(String datasetIds, String userIds, String sessionId, String permissions) throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        List<Long> datasetList = fileManager.getDatasetIds(userId, datasetIds);
-//        List<String> permissionList = permissions != null && !permissions.isEmpty()
-//                ? Arrays.asList(permissions.split(",")) : Collections.emptyList();
-//        authorizationManager.unsetDatasetPermissions(userId, datasetList, userIds, permissionList);
-//        return new QueryResult("unshareDatasets");
-//    }
 
     /*
      * **************************
@@ -1245,7 +1168,7 @@ public class CatalogManager implements AutoCloseable {
         return configuration;
     }
 
-    public SessionManager getSessionManager() {
+    public JwtSessionManager getSessionManager() {
         return sessionManager;
     }
 

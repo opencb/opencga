@@ -240,16 +240,6 @@ public class CatalogManagerTest extends GenericTest {
 
     @After
     public void tearDown() throws Exception {
-        if (sessionIdUser != null) {
-            catalogManager.logout("user", sessionIdUser);
-        }
-        if (sessionIdUser2 != null) {
-            catalogManager.logout("user2", sessionIdUser2);
-        }
-        if (sessionIdUser3 != null) {
-            catalogManager.logout("user3", sessionIdUser3);
-        }
-//        catalogManager.close();
     }
 
     public CatalogManager getTestCatalogManager() {
@@ -259,7 +249,7 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testAdminUserExists() throws Exception {
         QueryResult<Session> login = catalogManager.getUserManager().login("admin", "admin", "localhost");
-        assertTrue(login.first().getId().length() == 40);
+        assertEquals("admin" ,catalogManager.getUserManager().getId(login.first().getId()));
     }
 
     @Test
@@ -267,11 +257,6 @@ public class CatalogManagerTest extends GenericTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage(containsString("already exists"));
         catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, null);
-    }
-
-    @Test
-    public void testLoginAsAnonymous() throws Exception {
-        System.out.println(catalogManager.loginAsAnonymous("127.0.0.1"));
     }
 
     @Test
@@ -296,12 +281,6 @@ public class CatalogManagerTest extends GenericTest {
 
         System.out.println(login);
 
-    }
-
-    @Test
-    public void testLogoutAnonymous() throws Exception {
-        QueryResult<ObjectMap> queryResult = catalogManager.loginAsAnonymous("127.0.0.1");
-        catalogManager.logoutAnonymous(queryResult.first().getString("sessionId"));
     }
 
     @Test
@@ -433,19 +412,6 @@ public class CatalogManagerTest extends GenericTest {
      * ***************************
      */
 
-
-    @Test
-    public void testCreateAnonymousProject() throws IOException, CatalogException {
-        String sessionId = catalogManager.loginAsAnonymous("127.0.0.1").first().getString("sessionId");
-
-        String userId = catalogManager.getUserIdBySessionId(sessionId);
-
-        catalogManager.getProjectManager().create("Project", "project", "", "", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), sessionId);
-
-        catalogManager.logoutAnonymous(sessionId);
-
-    }
 
     @Test
     public void testGetAllProjects() throws Exception {
