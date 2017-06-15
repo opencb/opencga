@@ -631,8 +631,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
             }
         }
 
-        options.putAll(parameters); //FIXME: Use separated params and options, or merge
-        QueryResult<Individual> queryResult = individualDBAdaptor.update(individualId, new ObjectMap(options));
+//        options.putAll(parameters); //FIXME: Use separated params and options, or merge
+        QueryResult<Individual> queryResult = individualDBAdaptor.update(individualId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, parameters, null, null);
         return queryResult;
 

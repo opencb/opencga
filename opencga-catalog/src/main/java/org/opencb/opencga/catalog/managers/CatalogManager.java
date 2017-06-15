@@ -887,10 +887,10 @@ public class CatalogManager implements AutoCloseable {
     public List<QueryResult<JobAclEntry>> getAllJobAcls(String jobIdsStr, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] jobNameSplit = jobIdsStr.split(",");
-        List<Long> jobIds = jobManager.getIds(userId, jobIdsStr);
-        List<QueryResult<JobAclEntry>> aclList = new ArrayList<>(jobIds.size());
-        for (int i = 0; i < jobIds.size(); i++) {
-            Long jobId = jobIds.get(i);
+        AbstractManager.MyResourceIds resource = jobManager.getIds(jobIdsStr, null, sessionId);
+        List<QueryResult<JobAclEntry>> aclList = new ArrayList<>(resource.getResourceIds().size());
+        for (int i = 0; i < resource.getResourceIds().size(); i++) {
+            long jobId = resource.getResourceIds().get(i);
             QueryResult<JobAclEntry> allJobAcls = authorizationManager.getAllJobAcls(userId, jobId);
             allJobAcls.setId(jobNameSplit[i]);
             aclList.add(allJobAcls);
@@ -900,8 +900,8 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<JobAclEntry> getJobAcl(String jobIdStr, String member, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
-        long jobId = jobManager.getId(userId, jobIdStr);
-        return authorizationManager.getJobAcl(userId, jobId, member);
+        AbstractManager.MyResourceId resource = jobManager.getId(jobIdStr, null, sessionId);
+        return authorizationManager.getJobAcl(userId, resource.getResourceId(), member);
     }
 
     /*

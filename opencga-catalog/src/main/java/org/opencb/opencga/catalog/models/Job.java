@@ -125,8 +125,8 @@ public class Job extends AbstractAcl<JobAclEntry> {
         this.startTime = startTime;
         this.endTime = endTime;
         this.outputError = outputError;
-        this.execution = execution;
-        this.executable = executable;
+        this.execution = execution != null ? execution : "";
+        this.executable = executable != null ? executable : "";
         this.commandLine = commandLine;
         this.visits = visits;
         this.status = status;
@@ -135,16 +135,17 @@ public class Job extends AbstractAcl<JobAclEntry> {
         this.input = input;
         this.output = output;
         this.tags = tags;
-        this.params = params;
-        this.attributes = attributes;
+        this.params = params != null ? params : new HashMap<>();
+        this.attributes = attributes != null ? attributes : new HashMap<>();
         this.resourceManagerAttributes = resourceManagerAttributes;
         if (this.resourceManagerAttributes == null) {
             this.resourceManagerAttributes = new HashMap<>();
         }
         this.resourceManagerAttributes.putIfAbsent(Job.JOB_SCHEDULER_NAME, "");
         this.attributes.putIfAbsent(Job.TYPE, Type.ANALYSIS);
-        this.error = error;
-        this.errorDescription = errorDescription;
+        this.error = error != null ? error : "";
+        this.errorDescription = errorDescription != null ? errorDescription : "";
+        this.acl = Collections.emptyList();
     }
 
     public static class JobStatus extends Status {
