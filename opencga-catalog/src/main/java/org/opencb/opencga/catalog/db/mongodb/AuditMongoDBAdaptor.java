@@ -52,9 +52,7 @@ public class AuditMongoDBAdaptor extends MongoDBAdaptor implements AuditDBAdapto
     public QueryResult<AuditRecord> insertAuditRecord(AuditRecord auditRecord) throws CatalogDBException {
         long startQuery = startQuery();
 
-//        DBObject auditRecordDbObject = CatalogMongoDBUtils.getDbObject(auditRecord, "AuditRecord");
         Document auditRecordDbObject = MongoDBUtils.getMongoDBDocument(auditRecord, "AuditRecord");
-//        WriteResult writeResult = auditCollection.insert(auditRecordDbObject, new QueryOptions()).first();
         auditCollection.insert(auditRecordDbObject, new QueryOptions());
 
         return endQuery("insertAuditRecord", startQuery, Collections.singletonList(auditRecord));

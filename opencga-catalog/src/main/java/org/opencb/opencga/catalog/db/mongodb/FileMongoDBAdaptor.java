@@ -110,13 +110,6 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         if (!file.isExternal()) {
             dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, file.getSize());
         }
-//        try {
-//            dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, file.getSize());
-//        } catch (CatalogDBException e) {
-//            delete(newFileId, options);
-//            throw new CatalogDBException("File from study { id:" + studyId + "} was removed from the database due to problems "
-//                    + "with the study collection.");
-//        }
 
         return endQuery("Create file", startTime, get(newFileId, options));
     }
@@ -192,12 +185,6 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
         long startTime = startQuery();
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-//        DBObject match = new BasicDBObject("$match", new BasicDBObject(PRIVATE_STUDY_ID, studyId).append("path", new BasicDBObject("$in",
-//                filePaths)));
-//        DBObject unwind = new BasicDBObject("$unwind", "$acl");
-//        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("acl.userId", new BasicDBObject("$in", userIds)));
-//        DBObject project = new BasicDBObject("$project", new BasicDBObject("path", 1).append("id", 1).append("acl", 1));
-//        QueryResult<DBObject> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
 
         Bson match = Aggregates.match(Filters.and(Filters.eq(PRIVATE_STUDY_ID, studyId), Filters.in(QueryParams.PATH.key(), filePaths)));
         Bson unwind = Aggregates.unwind("$" + QueryParams.ACL.key());

@@ -85,21 +85,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
 
         QueryResult<Family> familyQueryResult;
 
-//        Bson match = Aggregates.match(bson);
-//        Bson lookupMother = Aggregates.lookup("individual", "mother.id", IndividualDBAdaptor.QueryParams.ID.key(), "mother");
-//        Bson lookupFather = Aggregates.lookup("individual", "father.id", IndividualDBAdaptor.QueryParams.ID.key(), "father");
-//        Bson unwindMother = Aggregates.unwind("$mother");
-//        Bson unwindFather = Aggregates.unwind("$father");
-
-        // To be able to lookup by children, we need first to de-normalise the content
-//        Bson unwind = Aggregates.unwind("$children");
-//        Bson lookupChildren = Aggregates.lookup("individual", "children.id", IndividualDBAdaptor.QueryParams.ID.key(), "child");
-//        Bson unwindResult = Aggregates.unwind("$child");
-//        Bson group = Aggregates.group("$" + PRIVATE_ID, Accumulators.push("children", "$child"));
-
-//        familyQueryResult = familyCollection.aggregate(
-//                Arrays.asList(match, lookupMother, lookupFather, unwindMother, unwindFather),
-//                familyConverter, options);
         familyQueryResult = familyCollection.find(bson, familyConverter, qOptions);
         addMemberInfoToFamily(familyQueryResult);
 

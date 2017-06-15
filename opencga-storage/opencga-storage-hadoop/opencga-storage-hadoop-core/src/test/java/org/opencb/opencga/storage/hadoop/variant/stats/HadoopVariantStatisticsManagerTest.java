@@ -20,7 +20,7 @@ import org.junit.Rule;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManagerTest;
-import org.opencb.opencga.storage.hadoop.variant.AbstractHadoopVariantStoragePipeline;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 
 import java.util.Map;
@@ -37,6 +37,6 @@ public class HadoopVariantStatisticsManagerTest extends VariantStatisticsManager
 
     @Override
     public Map<String, ?> getOtherStorageConfigurationOptions() {
-        return new ObjectMap(AbstractHadoopVariantStoragePipeline.SKIP_CREATE_PHOENIX_INDEXES, true);
+        return new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true);
     }
 }

@@ -147,13 +147,6 @@ public interface IUserManager extends ResourceManager<String, User> {
 
     void validatePassword(String userId, String password, boolean throwException) throws CatalogException;
 
-    @Deprecated
-    QueryResult<ObjectMap> loginAsAnonymous(String sessionIp) throws CatalogException, IOException;
-
-    QueryResult logout(String userId, String sessionId) throws CatalogException;
-
-    @Deprecated
-    QueryResult logoutAnonymous(String sessionId) throws CatalogException;
 
     /*          Filter operations     */
     /**

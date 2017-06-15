@@ -39,6 +39,9 @@ public class ConfigurationTest {
 
         configuration.setAdmin(new Admin("password", "admin@admin.com"));
 
+        Authentication authentication = new Authentication();
+        configuration.setAuthentication(authentication);
+
         configuration.setMonitor(new Monitor());
         configuration.setExecution(new Execution());
 
@@ -49,7 +52,7 @@ public class ConfigurationTest {
         myMap.put("ou", "People");
         authenticationOriginList.add(new AuthenticationOrigin("opencga", AuthenticationOrigin.AuthenticationType.LDAP.toString(),
                 "ldap://10.10.0.20:389", myMap));
-        configuration.setAuthenticationOrigins(authenticationOriginList);
+        configuration.getAuthentication().setAuthenticationOrigins(authenticationOriginList);
 
         Email emailServer = new Email("localhost", "", "", "", "", false);
         configuration.setEmail(emailServer);

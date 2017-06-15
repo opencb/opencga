@@ -75,9 +75,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPInputStream;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.checkOperator;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isValidParam;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.splitValue;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 /**
  * Created by mh719 on 16/06/15.
@@ -112,6 +110,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String MERGE_COLLAPSE_DELETIONS      = "opencga.storage.hadoop.hbase.merge.collapse-deletions";
     public static final boolean DEFAULT_MERGE_COLLAPSE_DELETIONS = true;
     public static final String MERGE_LOAD_SPECIFIC_PUT       = "opencga.storage.hadoop.hbase.merge.use_specific_put";
+//    public static final String MERGE_LOAD_STUDY_COLUMNS      = "opencga.storage.hadoop.hbase.merge.study_columns";
     public static final String MERGE_LOAD_SAMPLE_COLUMNS     = "opencga.storage.hadoop.hbase.merge.sample_columns";
     public static final boolean DEFAULT_MERGE_LOAD_SAMPLE_COLUMNS = true;
 
@@ -127,6 +126,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     // Variant table configuration
     public static final String VARIANT_TABLE_COMPRESSION = "opencga.variant.table.compression";
     public static final String VARIANT_TABLE_PRESPLIT_SIZE = "opencga.variant.table.presplit.size";
+    // Do not create phoenix indexes. Testing purposes only
+    public static final String VARIANT_TABLE_INDEXES_SKIP = "opencga.variant.table.indexes.skip";
 
     // Archive table configuration
     public static final String ARCHIVE_TABLE_PREFIX = "opencga.storage.hadoop.variant.archive.table.prefix";
@@ -193,7 +194,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         for (URI inputFile : inputFiles) {
             //Provide a connected storageETL if load is required.
 
-            VariantStoragePipeline storageETL = newStorageETL(doLoad, new ObjectMap(extraOptions));
+            VariantStoragePipeline storageETL = newStoragePipeline(doLoad, new ObjectMap(extraOptions));
             futures.add(executorService.submit(() -> {
                 try {
                     Thread.currentThread().setName(Paths.get(inputFile).getFileName().toString());
@@ -287,13 +288,16 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                                 .append(HADOOP_LOAD_ARCHIVE, false)
                                 .append(HADOOP_LOAD_VARIANT, true)
                                 .append(HADOOP_LOAD_VARIANT_PENDING_FILES, filesToMerge);
-
-                        AbstractHadoopVariantStoragePipeline localEtl = newStorageETL(doLoad, extraOptions);
+                        AbstractHadoopVariantStoragePipeline localEtl = newStoragePipeline(doLoad, extraOptions);
 
                         int studyId = getOptions().getInt(Options.STUDY_ID.key());
-                        localEtl.preLoad(inputFiles.get(i), outdirUri);
+                        URI input = concurrResult.get(i).getPostTransformResult();
+                        if (input == null) {
+                            input = inputFiles.get(i);
+                        }
+                        localEtl.preMerge(input);
                         localEtl.merge(studyId, filesToMerge);
-                        localEtl.postLoad(inputFiles.get(i), outdirUri);
+                        localEtl.postMerge(input, outdirUri);
                         filesToMerge.clear();
                     }
                 }
@@ -323,7 +327,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public AbstractHadoopVariantStoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException {
-        return newStorageETL(connected, null);
+        return newStoragePipeline(connected, null);
     }
 
     @Override
@@ -336,26 +340,31 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         return new HadoopDefaultVariantStatisticsManager(getDBAdaptor());
     }
 
-    public AbstractHadoopVariantStoragePipeline newStorageETL(boolean connected, Map<? extends String, ?> extraOptions)
+    public AbstractHadoopVariantStoragePipeline newStoragePipeline(boolean connected, Map<? extends String, ?> extraOptions)
             throws StorageEngineException {
         ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
         if (extraOptions != null) {
             options.putAll(extraOptions);
         }
+        MergeMode mergeMode = MergeMode.from(options);
         boolean directLoad = options.getBoolean(HADOOP_LOAD_DIRECT, HADOOP_LOAD_DIRECT_DEFAULT);
         VariantHadoopDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
         Configuration hadoopConfiguration = null == dbAdaptor ? null : dbAdaptor.getConfiguration();
         hadoopConfiguration = hadoopConfiguration == null ? getHadoopConfiguration(options) : hadoopConfiguration;
         hadoopConfiguration.setIfUnset(ARCHIVE_TABLE_COMPRESSION, Algorithm.SNAPPY.getName());
 
-        HBaseCredentials archiveCredentials = buildCredentials(getArchiveTableName(options.getInt(Options.STUDY_ID.key()), options));
+        int studyId = options.getInt(Options.STUDY_ID.key());
+        HBaseCredentials archiveCredentials = buildCredentials(getArchiveTableName(studyId, options));
 
-        AbstractHadoopVariantStoragePipeline storageETL = null;
-        if (directLoad) {
-            storageETL = new HadoopDirectVariantStoragePipeline(configuration, storageEngineId, dbAdaptor, getMRExecutor(options),
+        AbstractHadoopVariantStoragePipeline storageETL;
+        if (mergeMode.equals(MergeMode.BASIC)) {
+            storageETL = new HadoopMergeBasicVariantStoragePipeline(configuration, dbAdaptor,
+                    hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
+        } else if (directLoad) {
+            storageETL = new HadoopDirectVariantStoragePipeline(configuration, dbAdaptor, getMRExecutor(options),
                     hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
         } else {
-            storageETL = new HadoopVariantStoragePipeline(configuration, storageEngineId, dbAdaptor, getMRExecutor(options),
+            storageETL = new HadoopVariantStoragePipeline(configuration, dbAdaptor, getMRExecutor(options),
                     hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
         }
         return storageETL;

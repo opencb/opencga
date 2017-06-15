@@ -127,7 +127,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
                 Document keys = new Document();
                 Iterator fieldsIterator = userIndex.get("fields").entrySet().iterator();
                 while (fieldsIterator.hasNext()) {
-                    Map.Entry pair = (Map.Entry)fieldsIterator.next();
+                    Map.Entry pair = (Map.Entry) fieldsIterator.next();
                     keys.append((String) pair.getKey(), pair.getValue());
 
                     if (!indexName.isEmpty()) {
@@ -162,7 +162,6 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         Document metadataObject = getMongoDBDocument(metadata, "Metadata");
         metadataObject.put(PRIVATE_ID, "METADATA");
         Document adminDocument = getMongoDBDocument(admin, "Admin");
-        adminDocument.put("sessions", new ArrayList<>());
         metadataObject.put("admin", adminDocument);
 
         metaCollection.insert(metadataObject, null);
@@ -215,4 +214,50 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         return metaCollection.count(query).first() == 1;
     }
 
+    @Override
+    public void writeSecretKey(String secretKey) throws CatalogDBException {
+        Bson query = Filters.eq("_id", "METADATA");
+        Bson update = Updates.set("admin.secretKey", secretKey);
+        this.metaCollection.update(query, update, QueryOptions.empty());
+    }
+
+    @Override
+    public String readSecretKey() throws CatalogDBException {
+        Bson query = Filters.eq("_id", "METADATA");
+        QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
+        return (MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getSecretKey();
+    }
+
+    @Override
+    public void writeAlgorithm(String algorithm) throws CatalogDBException {
+        Bson query = Filters.eq("_id", "METADATA");
+        Bson update = Updates.set("admin.algorithm", algorithm);
+        this.metaCollection.update(query, update, QueryOptions.empty());
+    }
+
+    @Override
+    public String readAlgorithm() throws CatalogDBException {
+        Bson query = Filters.eq("_id", "METADATA");
+        QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
+        return (MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getAlgorithm();
+    }
+
+    @Override
+    public void updateAdmin(Admin admin) throws CatalogDBException {
+        Bson query = Filters.eq("_id", "METADATA");
+
+        Document adminDocument = new Document();
+        if (admin.getSecretKey() != null) {
+            adminDocument.append("admin.secretKey", admin.getSecretKey());
+        }
+
+        if (admin.getAlgorithm() != null) {
+            adminDocument.append("admin.algorithm", admin.getAlgorithm());
+        }
+
+        if (adminDocument.size() > 0) {
+            Bson update = new Document("$set", adminDocument);
+            this.metaCollection.update(query, update, QueryOptions.empty());
+        }
+    }
 }

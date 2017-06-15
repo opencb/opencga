@@ -361,42 +361,11 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
     @Override
     public QueryResult<Cohort> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Operation not yet supported.");
-//        long startTime = startQuery();
-//        if (queryOptions == null) {
-//            queryOptions = new QueryOptions();
-//        }
-//        QueryResult<Long> remove = remove(new Query(QueryParams.ID.key(), id), queryOptions);
-//        if (remove.getResult().get(0) != 1L) {
-//            throw CatalogDBException.removeError("Cohort");
-//        }
-//        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.DELETED);
-//        return endQuery("Remove cohort", startTime, get(query, new QueryOptions()));
     }
 
     @Override
     public QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Operation not yet supported.");
-//        long startTime = startQuery();
-//        query.append(QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.NONE + "," + Cohort.CohortStatus.TRASHED);
-//
-//        // First we obtain the ids of the cohorts that will be removed.
-//        List<Cohort> cohorts = get(query, new QueryOptions(MongoDBCollection.INCLUDE,
-//                Arrays.asList(QueryParams.ID.key(), QueryParams.STATUS_NAME))).getResult();
-//
-//        QueryResult<Long> removed = update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.DELETED));
-//
-//        if (removed.first() != cohorts.size()) {
-//            throw CatalogDBException.removeError("Cohort");
-//        }
-//
-//        // Remove the instances to cohort that are stored in study
-//        dbAdaptorFactory.getCatalogStudyDBAdaptor().removeCohortDependencies(
-//                cohorts.stream()
-//                        .filter(c -> c.getName().getName() != Cohort.CohortStatus.TRASHED)
-//                        .map(Cohort::getId).collect(Collectors.toList())
-//        );
-//
-//        return endQuery("Remove cohorts", startTime, Collections.singletonList(removed.first()));
     }
 
     @Override
@@ -424,17 +393,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
         query.put(QueryParams.STATUS_NAME.key(), Status.TRASHED);
         return endQuery("Restore cohorts", startTime, setStatus(query, Cohort.CohortStatus.NONE));
     }
-
-//    @Override
-//    public QueryResult<Long> updateStatus(Query query, String status) throws CatalogDBException {
-//        long startTime = startQuery();
-//        QueryResult<UpdateResult> update = cohortCollection.update(parseQuery(query),
-//                Updates.combine(
-//                        Updates.set(QueryParams.STATUS_NAME.key(), status),
-//                        Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis()))
-//                , new QueryOptions());
-//        return endQuery("Update cohort status", startTime, Collections.singletonList(update.first().getModifiedCount()));
-//    }
 
     @Override
     public DBIterator<Cohort> iterator(Query query, QueryOptions options) throws CatalogDBException {

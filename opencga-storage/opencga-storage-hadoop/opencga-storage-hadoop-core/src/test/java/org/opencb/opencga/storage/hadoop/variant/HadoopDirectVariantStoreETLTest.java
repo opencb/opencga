@@ -88,7 +88,7 @@ public class HadoopDirectVariantStoreETLTest implements HadoopVariantStorageTest
         HBaseCredentials credentials = new HBaseCredentials("who1", "test-table", "user", "pass");
         VariantHadoopDBAdaptor dbAdaptor = null; // new VariantHadoopDBAdaptor(credentials, config, conf);
         VariantReaderUtils variantReaderUtils = new VariantReaderUtils();
-        HadoopDirectVariantStoragePipeline etl = new HadoopDirectVariantStoragePipeline(sconfig, "hadoop", dbAdaptor , mrexec, conf, credentials, variantReaderUtils, options);
+        HadoopDirectVariantStoragePipeline etl = new HadoopDirectVariantStoragePipeline(sconfig, dbAdaptor , mrexec, conf, credentials, variantReaderUtils, options);
         URI load = etl.load(uri);
         System.out.println(load);
 

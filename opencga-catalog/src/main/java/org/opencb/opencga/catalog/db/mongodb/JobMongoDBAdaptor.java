@@ -130,31 +130,10 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     /**
      * At the moment it does not clean external references to itself.
      */
-//    @Override
-//    public QueryResult<Job> deleteJob(int jobId) throws CatalogDBException {
-//        long startTime = startQuery();
-//        Job job = getJob(jobId, null).first();
-//        WriteResult id = jobCollection.remove(new BasicDBObject(PRIVATE_ID, jobId), null).getResult().get(0);
-//        List<Integer> deletes = new LinkedList<>();
-//        if (id.getN() == 0) {
-//            throw CatalogDBException.idNotFound("Job", jobId);
-//        } else {
-//            deletes.add(id.getN());
-//            return endQuery("delete job", startTime, Collections.singletonList(job));
-//        }
-//    }
     @Override
     public QueryResult<Job> get(long jobId, QueryOptions options) throws CatalogDBException {
         checkId(jobId);
         return get(new Query(QueryParams.ID.key(), jobId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED), options);
-//        long startTime = startQuery();
-//        QueryResult<Document> queryResult = jobCollection.find(Filters.eq(PRIVATE_ID, jobId), filterOptions(options, FILTER_ROUTE_JOBS));
-//        Job job = parseJob(queryResult);
-//        if (job != null) {
-//            return endQuery("Get job", startTime, Arrays.asList(job));
-//        } else {
-//            throw CatalogDBException.idNotFound("Job", jobId);
-//        }
     }
 
     @Override
@@ -238,13 +217,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             throw new CatalogDBException("User {id:" + userId + "} does not exist");
         }
 
-//         Check if tools.alias already exists.
-//        DBObject countQuery = BasicDBObjectBuilder
-//                .start(PRIVATE_ID, userId)
-//                .append("tools.alias", tool.getAlias())
-//                .get();
-//        QueryResult<Long> count = userCollection.count(countQuery);
-
         Query query1 = new Query(QueryParams.ID.key(), userId).append("tools.alias", tool.getAlias());
         QueryResult<Long> count = dbAdaptorFactory.getCatalogUserDBAdaptor().count(query1);
         if (count.getResult().get(0) != 0) {
@@ -275,15 +247,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     public QueryResult<Tool> getTool(long id) throws CatalogDBException {
         long startTime = startQuery();
 
-//        DBObject query = new BasicDBObject("tools.id", id);
-//        DBObject projection = new BasicDBObject("tools",
-//                new BasicDBObject("$elemMatch",
-//                        new BasicDBObject("id", id)
-//                )
-//        );
-//        QueryResult<DBObject> queryResult = userCollection.find(query, projection, new QueryOptions("include", Collections
-// .singletonList("tools")));
-
         Bson query = Filters.eq("tools.id", id);
         Bson projection = Projections.fields(Projections.elemMatch("tools", Filters.eq("id", id)), Projections.include("tools"));
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection()
@@ -299,15 +262,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     @Override
     public long getToolId(String userId, String toolAlias) throws CatalogDBException {
-//        DBObject query = BasicDBObjectBuilder
-//                .start(PRIVATE_ID, userId)
-//                .append("tools.alias", toolAlias).get();
-//        DBObject projection = new BasicDBObject("tools",
-//                new BasicDBObject("$elemMatch",
-//                        new BasicDBObject("alias", toolAlias)
-//                )
-//        );
-//        QueryResult<DBObject> queryResult = userCollection.find(query, projection, null);
 
         Bson query = Filters.and(Filters.eq(PRIVATE_ID, userId), Filters.eq("tools.alias", toolAlias));
         Bson projection = Projections.elemMatch("tools", Filters.eq("alias", toolAlias));
@@ -333,19 +287,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection()
                 .aggregate(aggregations, queryOptions);
 
-/*        DBObject query = new BasicDBObject();
-        addQueryStringListFilter("userId", queryOptions, PRIVATE_ID, query);
-        addQueryIntegerListFilter("id", queryOptions, "tools.id", query);
-        addQueryIntegerListFilter("alias", queryOptions, "tools.alias", query);
-
-        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection().aggregate(
-                Arrays.asList(
-                        new BasicDBObject("$project", new BasicDBObject("tools", 1)),
-                        new BasicDBObject("$unwind", "$tools"),
-                        new BasicDBObject("$match", query)
-                ), queryOptions);
-
-*/
         List<User> users = parseObjects(queryResult, User.class);
         List<Tool> tools = users.stream().map(user -> user.getTools().get(0)).collect(Collectors.toList());
         return endQuery("Get tools", startTime, tools);
