@@ -19,7 +19,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.DuplicateKeyException;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
@@ -37,7 +36,6 @@ import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.UserConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Project;
-import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -113,23 +111,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public QueryResult<Session> addSession(String userId, Session session) throws CatalogDBException {
-        long startTime = startQuery();
-
-        Bson query = new Document(QueryParams.ID.key(), userId);
-        Bson updates = Updates.push("sessions",
-                new Document("$each", Arrays.asList(getMongoDBDocument(session, "Session"))));
-//                        .append("$slice", -50));
-        QueryResult<UpdateResult> update = userCollection.update(query, updates, null);
-
-        if (update.first().getModifiedCount() == 0) {
-            throw new CatalogDBException("An internal error occurred when logging the user" + userId);
-        }
-
-        return endQuery("Login", startTime, Collections.singletonList(session));
-    }
-
-    @Override
     public QueryResult<User> get(String userId, QueryOptions options, String lastModified) throws CatalogDBException {
 
         checkId(userId);
@@ -177,41 +158,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             throw new CatalogDBException("Bad user or email");
         }
         return endQuery("Reset Password", startTime, Arrays.asList("Password successfully changed"));
-    }
-
-    @Override
-    public QueryResult<Session> getSession(String userId, String sessionId) throws CatalogDBException {
-        long startTime = startQuery();
-
-        Query query1 = new Query(QueryParams.ID.key(), userId)
-                .append(QueryParams.SESSION_ID.key(), sessionId);
-        Bson bson = parseQuery(query1);
-
-
-        Bson projection = Projections.elemMatch("sessions", Filters.eq("id", sessionId));
-
-        QueryResult<Document> documentQueryResult = userCollection.find(bson, projection, null);
-        User user = parseUser(documentQueryResult);
-
-        if (user != null) {
-            return endQuery("getSession", startTime, user.getSessions());
-        }
-
-        return endQuery("getSession", startTime, Arrays.asList());
-    }
-
-    @Override
-    public String getUserIdBySessionId(String sessionId) {
-
-        Bson query = new Document("sessions", new Document("$elemMatch", new Document("id", sessionId)));
-        Bson projection = Projections.include(QueryParams.ID.key());
-        QueryResult<Document> id = userCollection.find(query, projection, null);
-
-        if (id.getNumResults() != 0) {
-            return (String) (id.getResult().get(0)).get("id");
-        } else {
-            return "";
-        }
     }
 
     @Override
@@ -686,11 +632,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                     case TOOL_ID:
                     case TOOL_NAME:
                     case TOOL_ALIAS:
-                    case SESSIONS:
-                    case SESSION_ID:
-                    case SESSION_IP:
-                    case SESSION_LOGIN:
-                    case SESSION_LOGOUT:
                     case CONFIGS:
                     case CONFIGS_FILTERS:
                     case CONFIGS_FILTERS_NAME:

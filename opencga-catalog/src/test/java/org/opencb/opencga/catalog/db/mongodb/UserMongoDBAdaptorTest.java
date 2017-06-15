@@ -100,18 +100,6 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void loginTest() throws CatalogException, IOException {
-        String userId = user1.getId();
-        Session sessionJCOLL = new Session("127.0.0.1", 20);
-        catalogUserDBAdaptor.addSession(userId, sessionJCOLL);
-
-        // Check password is correct in the database
-        String storedPassword = catalogUserDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, "password"), null).first()
-                .getPassword();
-        assertEquals("1234", storedPassword);
-    }
-
-    @Test
     public void changePasswordTest() throws CatalogDBException {
         QueryResult queryResult = catalogUserDBAdaptor.changePassword(user2.getId(), user2.getPassword(), "1234");
         assertNotSame(0, queryResult.getResult().size());

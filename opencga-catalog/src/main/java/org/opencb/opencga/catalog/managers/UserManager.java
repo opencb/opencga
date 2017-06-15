@@ -338,7 +338,7 @@ public class UserManager extends AbstractManager implements IUserManager {
             Map<String, Object> attributes = new HashMap<>();
             attributes.put("LDAP_RDN", rdn);
             User user = new User(uid, displayname, mail, "", base, account, User.UserStatus.READY, "", -1, -1, new ArrayList<>(),
-                    new ArrayList<>(), new ArrayList<>(), new HashMap<>(), attributes);
+                    new ArrayList<>(), new HashMap<>(), attributes);
 
             userDBAdaptor.insert(user, QueryOptions.empty());
 
@@ -436,7 +436,6 @@ public class UserManager extends AbstractManager implements IUserManager {
         // Remove some unnecessary and prohibited parameters
         for (User user : userQueryResult.getResult()) {
             user.setPassword(null);
-            user.setSessions(null);
             if (user.getProjects() != null) {
                 for (Project project : user.getProjects()) {
                     if (project.getStudies() != null) {

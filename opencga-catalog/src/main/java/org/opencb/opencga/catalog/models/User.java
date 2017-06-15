@@ -50,12 +50,6 @@ public class User {
     private List<Project> projects;
     private List<Tool> tools;
 
-    /**
-     * Open sessions for this user. Closed are stored in audit
-     * More than one session can be open, i.e. logged from CLI and Web browsers
-     */
-    private List<Session> sessions;
-
     private UserConfiguration configs;
     private Map<String, Object> attributes;
 
@@ -201,13 +195,13 @@ public class User {
     }
 
     public User(String id, String name, String email, String password, String organization, String status) {
-        this(id, name, email, password, organization, null, status, "", -1, -1, new ArrayList<>(), new ArrayList<>(0), new ArrayList<>(0),
-                new HashMap<>(), new HashMap<>());
+        this(id, name, email, password, organization, null, status, "", -1, -1, new ArrayList<>(),
+                new ArrayList<>(0), new HashMap<>(), new HashMap<>());
     }
 
     public User(String id, String name, String email, String password, String organization, Account account, String status,
-                String lastModified, long size, long quota, List<Project> projects, List<Tool> tools, List<Session> sessions,
-                Map<String, Object> configs, Map<String, Object> attributes) {
+                String lastModified, long size, long quota, List<Project> projects, List<Tool> tools, Map<String, Object> configs,
+                Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.email = email;
@@ -221,7 +215,6 @@ public class User {
         this.quota = quota;
         this.projects = projects;
         this.tools = tools;
-        this.sessions = sessions;
         if (configs == null) {
             this.configs = new UserConfiguration();
         } else {
@@ -245,7 +238,6 @@ public class User {
         sb.append(", quota=").append(quota);
         sb.append(", projects=").append(projects);
         sb.append(", tools=").append(tools);
-        sb.append(", sessions=").append(sessions);
         sb.append(", configs=").append(configs);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -392,15 +384,6 @@ public class User {
         return this;
     }
 
-    public List<Session> getSessions() {
-        return sessions;
-    }
-
-    public User setSessions(List<Session> sessions) {
-        this.sessions = sessions;
-        return this;
-    }
-
     public UserConfiguration getConfigs() {
         return configs;
     }
@@ -409,10 +392,6 @@ public class User {
         this.configs = configs;
         return this;
     }
-//    public User setConfigs(Map<String, Object> configs) {
-//        this.configs = configs;
-//        return this;
-//    }
 
     public Map<String, Object> getAttributes() {
         return attributes;

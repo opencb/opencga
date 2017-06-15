@@ -25,7 +25,6 @@ import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
@@ -63,11 +62,8 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
             storedPassword = metaDBAdaptor.getAdminPassword();
             validSessionId = metaDBAdaptor.checkValidAdminSession(password);
         } else {
-            storedPassword = userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, "password"), null).first().getPassword();
-            QueryResult<Session> session = userDBAdaptor.getSession(userId, password);
-            if (session.getNumResults() > 0) {
-                validSessionId = true;
-            }
+            storedPassword = userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, "password"), null).first()
+                    .getPassword();
         }
         if (storedPassword.equals(cypherPassword) || validSessionId) {
             return true;
