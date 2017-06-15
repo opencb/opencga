@@ -77,7 +77,7 @@ public class UserManager extends AbstractManager implements IUserManager {
                     switch (authenticationOrigin.getType()) {
                         case LDAP:
                             authenticationManagerMap.put(authenticationOrigin.getId(),
-                                    new LDAPAuthenticationManager(authenticationOrigin.getHost()));
+                                    new LDAPAuthenticationManager(authenticationOrigin.getHost(), configuration));
                             break;
                         default:
                             break;
@@ -117,7 +117,7 @@ public class UserManager extends AbstractManager implements IUserManager {
 
     @Override
     public String getId(String sessionId) throws CatalogException {
-        return this.catalogManager.getSessionManager().getUserId(sessionId);
+        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(sessionId);
     }
 
     @Override
@@ -617,7 +617,7 @@ public class UserManager extends AbstractManager implements IUserManager {
 
         QueryResult<Session> sessionTokenQueryResult;
         try {
-            sessionTokenQueryResult = catalogManager.getSessionManager().createToken(userId, sessionIp, Session.Type.USER);
+            sessionTokenQueryResult = authenticationManagerMap.get(authId).createToken(userId, sessionIp, Session.Type.USER);
         } catch (CatalogException e) {
             auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.login, AuditRecord.Magnitude.high, userId, userId,
                     null, null, "Unsuccessfully login attempt", null);
@@ -633,7 +633,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     @Override
     public QueryResult<Session> getNewUserSession(String sessionId, String userId) throws CatalogException {
         authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", sessionId, true);
-        return catalogManager.getSessionManager().createToken(userId, "localhost", Session.Type.SYSTEM);
+        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(userId, "localhost", Session.Type.SYSTEM);
     }
 
     @Override
@@ -862,7 +862,7 @@ public class UserManager extends AbstractManager implements IUserManager {
 
     private void checkSessionId(String userId, String jwtToken) throws CatalogException {
 
-        if (!userId.equals(catalogManager.getSessionManager().getUserId(jwtToken))) {
+        if (!userId.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(jwtToken))) {
             throw new CatalogException("Invalid sessionId for user: " + userId);
         }
     }

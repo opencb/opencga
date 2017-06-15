@@ -36,7 +36,7 @@ public class JwtSessionManager {
         this.expiration = this.configuration.getAuthentication().getExpiration();
     }
 
-    public String createJWTToken(String userId) throws CatalogException {
+    String createJWTToken(String userId) throws CatalogException {
         String jwt = null;
 
         try {
@@ -56,7 +56,7 @@ public class JwtSessionManager {
         return jwt;
     }
 
-    public Jws<Claims> parseClaims(String jwtKey) throws CatalogTokenException {
+    Jws<Claims> parseClaims(String jwtKey) throws CatalogTokenException {
         try {
             Jws claims = Jwts.parser().setSigningKey(this.secretKey.getBytes("UTF-8")).parseClaimsJws(jwtKey);
             return claims;

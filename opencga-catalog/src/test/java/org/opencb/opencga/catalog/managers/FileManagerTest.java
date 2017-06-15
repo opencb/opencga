@@ -418,7 +418,7 @@ public class FileManagerTest extends GenericTest {
         AtomicInteger numFailures = new AtomicInteger();
         AtomicInteger numOk = new AtomicInteger();
         int numThreads = 10;
-        int numOperations = 500;
+        int numOperations = 250;
 
         ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
 
@@ -435,29 +435,11 @@ public class FileManagerTest extends GenericTest {
             });
 
         }
-//        executorService.shutdown();
-        executorService.awaitTermination(30, TimeUnit.SECONDS);
+        executorService.awaitTermination(1, TimeUnit.SECONDS);
         executorService.shutdown();
 
         int unexecuted = executorService.shutdownNow().size();
         System.out.println("Do not execute " + unexecuted + " tasks!");
-//        for (int i = 0; i < numThreads; i++) {
-//            threads.add(new Thread(() -> {
-//                try {
-//                    fileManager.link(uri, ".", studyId, new ObjectMap(), sessionIdUser);
-//                } catch (IOException | CatalogException ignore) {
-//                    numFailures.incrementAndGet();
-//                }
-//            }));
-//        }
-//        threads.parallelStream().forEach(Thread::run);
-//        threads.parallelStream().forEach((thread) -> {
-//            try {
-//                thread.join();
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//        });
 
         System.out.println("numFailures = " + numFailures);
         System.out.println("numOk.get() = " + numOk.get());

@@ -16,15 +16,13 @@ import static org.junit.Assert.assertEquals;
  */
 public class JwtSessionManagerTest extends GenericTest {
 
-    private Configuration configuration;
     private JwtSessionManager jwtSessionManager;
     private String jwtToken;
     private String ip = "172.20.56.1";
 
     @Before
     public void setUp() throws Exception  {
-        configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
-                .openStream());
+        Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
         configuration.getAdmin().setSecretKey("12345");
         configuration.getAdmin().setAlgorithm("HS256");
         jwtSessionManager = new JwtSessionManager(configuration);

@@ -27,7 +27,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
-import org.opencb.opencga.catalog.session.JwtSessionManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
 
@@ -36,18 +35,15 @@ import java.security.NoSuchAlgorithmException;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CatalogAuthenticationManager implements AuthenticationManager {
+public class CatalogAuthenticationManager extends AuthenticationManager {
 
-    protected final UserDBAdaptor userDBAdaptor;
-    protected final MetaDBAdaptor metaDBAdaptor;
-    protected final Configuration configuration;
-    protected final JwtSessionManager sessionManager;
+    private final UserDBAdaptor userDBAdaptor;
+    private final MetaDBAdaptor metaDBAdaptor;
 
     public CatalogAuthenticationManager(DBAdaptorFactory dbAdaptorFactory, Configuration configuration) {
+        super(configuration);
         this.userDBAdaptor = dbAdaptorFactory.getCatalogUserDBAdaptor();
         this.metaDBAdaptor = dbAdaptorFactory.getCatalogMetaDBAdaptor();
-        this.configuration = configuration;
-        this.sessionManager = new JwtSessionManager(configuration);
     }
 
     public static String cypherPassword(String password) throws CatalogException {
@@ -85,16 +81,6 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
     }
 
     @Override
-    public String getUserId(String token) throws CatalogException {
-
-        if (token == null || token.isEmpty() || token.equalsIgnoreCase("null")) {
-            return "anonymous";
-        }
-
-        return sessionManager.getUserId(token);
-    }
-
-    @Override
     public void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException {
         String oldCryptPass = (oldPassword.length() != 40) ? cypherPassword(oldPassword) : oldPassword;
         String newCryptPass = (newPassword.length() != 40) ? cypherPassword(newPassword) : newPassword;
@@ -127,10 +113,10 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
 
         QueryResult queryResult = userDBAdaptor.resetPassword(userId, email, newCryptPass);
 
-        String mailUser = configuration.getEmail().getFrom();
-        String mailPassword = configuration.getEmail().getPassword();
-        String mailHost = configuration.getEmail().getHost();
-        String mailPort = configuration.getEmail().getPort();
+        String mailUser = this.configuration.getEmail().getFrom();
+        String mailPassword = this.configuration.getEmail().getPassword();
+        String mailHost = this.configuration.getEmail().getHost();
+        String mailPort = this.configuration.getEmail().getPort();
 
         MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
 
