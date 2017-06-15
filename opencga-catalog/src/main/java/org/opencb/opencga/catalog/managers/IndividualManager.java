@@ -576,7 +576,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                     }
                     break;
                 case KARYOTYPIC_SEX:
-                    Individual.KaryotypicSex karyo = Individual.KaryotypicSex.valueOf((String) param.getValue());
+                    Individual.KaryotypicSex karyo = Individual.KaryotypicSex.valueOf(String.valueOf(param.getValue()));
 
                     if (parameters.containsKey(IndividualDBAdaptor.QueryParams.SEX.key())) {
                         Individual.Sex sex = Individual.Sex.valueOf(parameters.getString(IndividualDBAdaptor.QueryParams.SEX.key()));
@@ -600,7 +600,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                     break;
                 case SEX:
                     if (!parameters.containsKey(IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key())) {
-                        Individual.Sex sex = Individual.Sex.valueOf((String) param.getValue());
+                        Individual.Sex sex = Individual.Sex.valueOf(String.valueOf(param.getValue()));
                         // Get karyotype and check it is compatible
                         QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(individualId,
                                 new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key()));
