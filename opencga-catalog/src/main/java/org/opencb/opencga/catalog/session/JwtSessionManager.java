@@ -2,13 +2,7 @@
 
 package org.opencb.opencga.catalog.session;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.SignatureException;
+import io.jsonwebtoken.*;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Collections;
@@ -36,19 +30,21 @@ public class JwtSessionManager {
         this.expiration = this.configuration.getAuthentication().getExpiration();
     }
 
-    String createJWTToken(String userId) throws CatalogException {
+    String createJWTToken(String userId, long expiration) throws CatalogException {
         String jwt = null;
 
         try {
             Long currentTime = Long.valueOf(System.currentTimeMillis());
-            jwt = Jwts.builder()
+            JwtBuilder jwtBuilder = Jwts.builder()
                     .setSubject(userId)
-                    .setExpiration(new Date(currentTime.longValue() + this.expiration.longValue() * 1000L))
                     .setAudience("OpenCGA users")
                     .setIssuedAt(new Date(currentTime.longValue()))
                     .signWith(SignatureAlgorithm.forName(configuration.getAdmin().getAlgorithm()),
-                            this.secretKey.getBytes("UTF-8"))
-                    .compact();
+                            this.secretKey.getBytes("UTF-8"));
+            if (expiration > -1) {
+                jwtBuilder.setExpiration(new Date(currentTime.longValue() + expiration * 1000L));
+            }
+            jwt = jwtBuilder.compact();
         } catch (UnsupportedEncodingException e) {
             logger.error("error while creating jwt token");
         }
@@ -75,7 +71,14 @@ public class JwtSessionManager {
 
     public QueryResult<Session> createToken(String userId, String ip, Type type) throws CatalogException {
         QueryResult result = new QueryResult();
-        String jwtToken = this.createJWTToken(userId);
+        String jwtToken = null;
+
+        if (type.equals(Type.SYSTEM)) {
+            jwtToken = this.createJWTToken(userId, -1L);
+        } else {
+            jwtToken = this.createJWTToken(userId, this.getExpiration());
+        }
+
         Session session = new Session(jwtToken, ip, TimeUtils.getTime(), type);
         result.setResult(Collections.singletonList(session));
         return result;

@@ -4,12 +4,14 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogTokenException;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 /**
  * Created by wasim on 06/06/17.
@@ -31,7 +33,7 @@ public class JwtSessionManagerTest extends GenericTest {
 
     @Test
     public void testCreateJWTToken() throws Exception {
-        jwtToken = jwtSessionManager.createJWTToken("testUser");
+        jwtToken = jwtSessionManager.createJWTToken("testUser", 60L);
     }
 
     @Test
@@ -56,5 +58,13 @@ public class JwtSessionManagerTest extends GenericTest {
     public void testInvalidSecretKey() throws CatalogTokenException {
         jwtSessionManager.setSecretKey("wrongKey");
         jwtSessionManager.parseClaims(jwtToken);
+    }
+
+    @Test
+    public void testNonExpiringToken() throws CatalogException {
+        String nonExpiringToken = jwtSessionManager.createJWTToken("System", -1L);
+        Jws<Claims> claims = jwtSessionManager.parseClaims(nonExpiringToken);
+        assertEquals(claims.getBody().getSubject(), "System");
+        assertNull(claims.getBody().getExpiration());
     }
 }
