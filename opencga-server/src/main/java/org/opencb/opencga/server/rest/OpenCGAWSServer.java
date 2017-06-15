@@ -173,12 +173,10 @@ public class OpenCGAWSServer {
         }
 
         query = new
-
-                Query();
+        Query();
 
         queryOptions = new
-
-                QueryOptions();
+        QueryOptions();
 
         parseParams();
         // take the time for calculating the whole duration of the call
