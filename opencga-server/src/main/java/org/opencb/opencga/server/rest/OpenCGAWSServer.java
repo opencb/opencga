@@ -174,11 +174,11 @@ public class OpenCGAWSServer {
 
         query = new
 
-        Query();
+                Query();
 
         queryOptions = new
 
-        QueryOptions();
+                QueryOptions();
 
         parseParams();
         // take the time for calculating the whole duration of the call
@@ -534,12 +534,14 @@ public class OpenCGAWSServer {
 
     private void verifyHeaders(HttpHeaders httpHeaders) throws CatalogTokenException {
 
-        if (httpHeaders.getRequestHeader("Authorization") != null) {
-            String authorization = httpHeaders.getRequestHeader("Authorization").get(0);
-            if (!authorization.startsWith("Bearer ")) {
-                throw new CatalogTokenException("Authorization Header must start with Bearer");
+        List<String> authorization = httpHeaders.getRequestHeader("Authorization");
+
+        if (authorization != null && authorization.get(0).length() > 7) {
+            String token = authorization.get(0);
+            if (!token.startsWith("Bearer ")) {
+                throw new CatalogTokenException("Authorization Header must start with Bearer JWToken");
             }
-            this.sessionId = authorization.substring("Bearer".length()).trim();
+            this.sessionId = token.substring("Bearer".length()).trim();
         }
 
         if (StringUtils.isEmpty(this.sessionId)) {
