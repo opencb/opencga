@@ -25,6 +25,7 @@ import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogTokenException;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
@@ -60,7 +61,11 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
         boolean validSessionId = false;
         if (userId.equals("admin")) {
             storedPassword = metaDBAdaptor.getAdminPassword();
-            validSessionId = metaDBAdaptor.checkValidAdminSession(password);
+            try {
+                validSessionId = jwtSessionManager.getUserId(password).equals(userId);
+            } catch (CatalogTokenException e) {
+                validSessionId = false;
+            }
         } else {
             storedPassword = userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, "password"), null).first()
                     .getPassword();

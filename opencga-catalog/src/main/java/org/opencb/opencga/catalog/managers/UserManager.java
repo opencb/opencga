@@ -630,8 +630,8 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<Session> getNewUserSession(String sessionId, String userId) throws CatalogException {
-        authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", sessionId, true);
+    public QueryResult<Session> getSystemTokenForUser(String userId, String adminCredentials) throws CatalogException {
+        authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", adminCredentials, true);
         return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(userId, "localhost", Session.Type.SYSTEM);
     }
 
