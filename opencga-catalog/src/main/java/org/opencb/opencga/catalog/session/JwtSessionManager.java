@@ -34,15 +34,15 @@ public class JwtSessionManager {
         String jwt = null;
 
         try {
-            Long currentTime = Long.valueOf(System.currentTimeMillis());
+            long currentTime = System.currentTimeMillis();
             JwtBuilder jwtBuilder = Jwts.builder()
                     .setSubject(userId)
                     .setAudience("OpenCGA users")
-                    .setIssuedAt(new Date(currentTime.longValue()))
+                    .setIssuedAt(new Date(currentTime))
                     .signWith(SignatureAlgorithm.forName(configuration.getAdmin().getAlgorithm()),
                             this.secretKey.getBytes("UTF-8"));
             if (expiration > -1) {
-                jwtBuilder.setExpiration(new Date(currentTime.longValue() + expiration * 1000L));
+                jwtBuilder.setExpiration(new Date(currentTime + expiration * 1000L));
             }
             jwt = jwtBuilder.compact();
         } catch (UnsupportedEncodingException e) {
