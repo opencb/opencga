@@ -71,8 +71,7 @@ public class MonitorService {
 
         try {
             this.catalogManager = new CatalogManager(this.configuration);
-            String sessionId = this.catalogManager.login("admin", password,
-                    this.configuration.getCatalog().getDatabase().getHosts().get(0)).first().getId();
+            String sessionId = this.catalogManager.getUserManager().getSystemTokenForUser("admin", password).first().getId();
 
             executionDaemon = new ExecutionDaemon(configuration.getMonitor().getExecutionDaemonInterval(), sessionId,
                     catalogManager, appHome);

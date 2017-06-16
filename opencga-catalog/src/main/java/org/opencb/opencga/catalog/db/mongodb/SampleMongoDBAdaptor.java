@@ -82,10 +82,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         long startTime = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-        /*
-        QueryResult<Long> count = sampleCollection.count(
-                new BasicDBObject("name", sample.getName()).append(PRIVATE_STUDY_ID, studyId));
-                */
         List<Bson> filterList = new ArrayList<>();
         filterList.add(Filters.eq(QueryParams.NAME.key(), sample.getName()));
         filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
@@ -93,7 +89,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
 
         Bson bson = Filters.and(filterList);
         QueryResult<Long> count = sampleCollection.count(bson);
-//                new BsonDocument("name", new BsonString(sample.getName())).append(PRIVATE_STUDY_ID, new BsonInt32(studyId)));
+
         if (count.getResult().get(0) > 0) {
             throw new CatalogDBException("Sample { name: '" + sample.getName() + "'} already exists.");
         }
@@ -113,35 +109,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     public QueryResult<Sample> get(long sampleId, QueryOptions options) throws CatalogDBException {
         checkId(sampleId);
         return get(new Query(QueryParams.ID.key(), sampleId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED), options);
-//        long startTime = startQuery();
-//        //QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
-//
-////        DBObject query = new BasicDBObject(PRIVATE_ID, sampleId);
-//        Query query1 = new Query(QueryParams.ID.key(), sampleId);
-//        QueryResult<Sample> sampleQueryResult = get(query1, options);
-//
-////        QueryResult<Document> queryResult = sampleCollection.find(bson, filteredOptions);
-////        List<Sample> samples = parseSamples(queryResult);
-//
-//        if (sampleQueryResult.getResult().size() == 0) {
-//            throw CatalogDBException.idNotFound("Sample", sampleId);
-//        }
-//
-//        return endQuery("getSample", startTime, sampleQueryResult);
     }
-
-//    @Override
-//    public QueryResult<Sample> getAllSamples(QueryOptions options) throws CatalogDBException {
-//        throw new UnsupportedOperationException("Deprecated method. Use get instead");
-//        /*
-//        int variableSetId = options.getInt(SampleFilterOption.variableSetId.toString());
-//        Map<String, Variable> variableMap = null;
-//        if (variableSetId > 0) {
-//            variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
-//                    .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
-//        }
-//        return getAllSamples(variableMap, options);*/
-//    }
 
     @Override
     public QueryResult<Sample> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException {
@@ -177,17 +145,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, sampleParams, acceptedMapParams);
 
-//        if (sampleParams.containsKey(QueryParams.INDIVIDUAL_ID.key())) {
-//            long individualId = parameters.getInt(QueryParams.INDIVIDUAL_ID.key());
-//            if (individualId > 0 && !dbAdaptorFactory.getCatalogIndividualDBAdaptor().exists(individualId)) {
-//                throw CatalogDBException.idNotFound("Individual", individualId);
-//            }
-//        }
-
         if (!sampleParams.isEmpty()) {
-            /*QueryResult<WriteResult> update = sampleCollection.update(new BasicDBObject(PRIVATE_ID, sampleId),
-                    new BasicDBObject("$set", sampleParams), null);
-                    */
             Bson query = Filters.eq(PRIVATE_ID, sampleId);
             Bson operation = new Document("$set", sampleParams);
             QueryResult<UpdateResult> update = sampleCollection.update(query, operation, null);
@@ -220,19 +178,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
             }
         }
 
-        // Remove possible SampleAcls that might have permissions defined but no users
-//        Bson queryBson = new Document(QueryParams.ID.key(), sampleId)
-//                .append(QueryParams.ACL_MEMBER.key(),
-//                        new Document("$exists", true).append("$eq", Collections.emptyList()));
-//        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
-//        sampleCollection.update(queryBson, update, null);
     }
 
     @Override
     public long getStudyId(long sampleId) throws CatalogDBException {
-        /*DBObject query = new BasicDBObject(PRIVATE_ID, sampleId);
-        BasicDBObject projection = new BasicDBObject(PRIVATE_STUDY_ID, true);
-        QueryResult<DBObject> queryResult = sampleCollection.find(query, projection, null);*/
         Bson query = new Document(PRIVATE_ID, sampleId);
         Bson projection = Projections.include(PRIVATE_STUDY_ID);
         QueryResult<Document> queryResult = sampleCollection.find(query, projection, null);

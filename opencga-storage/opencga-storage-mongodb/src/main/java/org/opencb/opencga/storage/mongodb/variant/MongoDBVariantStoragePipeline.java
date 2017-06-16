@@ -412,7 +412,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     op -> op.getOperationName().equals(MERGE.key()) && !op.currentStatus().equals(BatchFileOperation.Status.READY));
             if (mergeOperation != null) {
                 // Avoid stage new files if there are ongoing merge operations
-                throw MongoVariantStorageEngineException.operationInProgressException(mergeOperation);
+                throw MongoVariantStorageEngineException.otherOperationInProgressException(mergeOperation,
+                        STAGE.key(), Collections.singletonList(fileId));
             }
         }
 
@@ -640,7 +641,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     // Can not merge any file if there is an ongoing MERGE or STAGE operation
                     if (op.getOperationName().equals(MERGE.key()) || op.getOperationName().equals(STAGE.key())) {
                         if (!op.currentStatus().equals(BatchFileOperation.Status.READY)) {
-                            throw MongoVariantStorageEngineException.operationInProgressException(op);
+                            throw MongoVariantStorageEngineException.otherOperationInProgressException(op, MERGE.key(), fileIds);
                         }
                     }
                 }
@@ -739,10 +740,10 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     @Override
-    protected void checkLoadedVariants(URI input, List<Integer> fileIds, StudyConfiguration studyConfiguration)
+    protected void checkLoadedVariants(List<Integer> fileIds, StudyConfiguration studyConfiguration)
             throws StorageEngineException {
         if (fileIds.size() == 1) {
-            checkLoadedVariants(input, fileIds.get(0), studyConfiguration);
+            checkLoadedVariants(fileIds.get(0), studyConfiguration);
         } else {
             // FIXME: Check variants in this situation!
             logger.warn("Skip check loaded variants");
@@ -750,11 +751,10 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     @Override
-    protected void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration) throws
+    protected void checkLoadedVariants(int fileId, StudyConfiguration studyConfiguration) throws
             StorageEngineException {
-        VariantSource variantSource = VariantReaderUtils.readVariantSource(Paths.get(input.getPath()), null);
+        VariantSource variantSource = dbAdaptor.getVariantSourceDBAdaptor().get(String.valueOf(fileId), null).first();
 
-//        VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(options.getString(VariantStorageEngine.Options.DB_NAME.key()));
         Long count = dbAdaptor.count(new Query()
                 .append(VariantQueryParam.FILES.key(), fileId)
                 .append(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId())).first();

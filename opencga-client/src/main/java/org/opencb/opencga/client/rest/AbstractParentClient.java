@@ -39,6 +39,7 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
@@ -122,14 +123,6 @@ public abstract class AbstractParentClient {
             params = new ObjectMap(paramsMap);
         }
 
-//        // Remove null or empty params
-//        for (Map.Entry<String, Object> param : params.entrySet()) {
-//            Object value = param.getValue();
-//            if (value == null || (value instanceof String && ((String) value).isEmpty())) {
-//                params.remove(param.getKey());
-//            }
-//        }
-
         client.property(ClientProperties.CONNECT_TIMEOUT, 1000);
         client.property(ClientProperties.READ_TIMEOUT, timeout);
 
@@ -162,11 +155,6 @@ public abstract class AbstractParentClient {
         int limit = Math.min(numRequiredFeatures, batchSize);
 
         int skip = params.getInt(QueryOptions.SKIP, DEFAULT_SKIP);
-
-        // Session ID is needed almost always, the only exceptions are 'create/user', 'login' and 'changePassword'
-        if (this.sessionId != null && !this.sessionId.isEmpty()) {
-            path = path.queryParam("sid", this.sessionId);
-        }
 
         QueryResponse<T> finalQueryResponse = null;
         QueryResponse<T> queryResponse;
@@ -237,7 +225,9 @@ public abstract class AbstractParentClient {
             }
 
             logger.debug("GET URL: " + path.getUri().toURL());
-            jsonString = path.request().get().readEntity(String.class);
+            jsonString = path.request()
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.sessionId)
+                    .get().readEntity(String.class);
         } else if (method.equalsIgnoreCase(POST)) {
             // TODO we still have to check the limit of the query, and keep querying while there are more results
 //            Form form = new Form();
@@ -263,7 +253,9 @@ public abstract class AbstractParentClient {
 //            ObjectMap json = new ObjectMap("body", params.get("body"));
 
             logger.debug("POST URL: " + path.getUri().toURL());
-            Response body = path.request().post(Entity.json(params.get("body")));
+            Response body = path.request()
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.sessionId)
+                    .post(Entity.json(params.get("body")));
             jsonString = body.readEntity(String.class);
 //            jsonString = path.request().post(Entity.json(params.get("body")), String.class);
         }
@@ -296,7 +288,9 @@ public abstract class AbstractParentClient {
         }
         final FormDataMultiPart multipart = (FormDataMultiPart) formDataMultiPart.bodyPart(filePart);
 
-        jsonString = path.request().post(Entity.entity(multipart, multipart.getMediaType()), String.class);
+        jsonString = path.request()
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.sessionId)
+                .post(Entity.entity(multipart, multipart.getMediaType()), String.class);
 
         formDataMultiPart.close();
         multipart.close();

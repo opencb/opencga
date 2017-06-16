@@ -161,8 +161,6 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                     logger.info("{} synchronised with {}", executor.from, executor.to);
                 }
             }
-
-            catalogManager.logout("admin", sessionId);
         }
     }
 
@@ -282,8 +280,8 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
     }
 
     private AuthenticationOrigin getAuthenticationOrigin(String authOrigin) {
-        if (configuration.getAuthenticationOrigins() != null) {
-            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthenticationOrigins()) {
+        if (configuration.getAuthentication().getAuthenticationOrigins() != null) {
+            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
                 if (authOrigin.equals(authenticationOrigin.getId())) {
                     return authenticationOrigin;
                 }

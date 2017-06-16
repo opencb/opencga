@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -175,18 +176,24 @@ public class VariantSqlQueryParser {
 
             if (returnedFields.contains(VariantField.STUDIES)) {
                 for (Integer studyId : studyIds) {
+                    StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null).first();
+                    VariantStorageEngine.MergeMode mergeMode = VariantStorageEngine.MergeMode.from(studyConfiguration.getAttributes());
                     List<String> studyColumns = STUDY_COLUMNS;
-//                    if (returnedFields.contains(SAMPLES_FIELD)) {
-//                        studyColumns = STUDY_COLUMNS;
-//                    } else {
-//                        // If samples are not required, do not fetch all the fields
-//                        studyColumns = Collections.singletonList(HOM_REF);
-//                    }
+                    if (returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)
+                            && mergeMode.equals(VariantStorageEngine.MergeMode.ADVANCED)) {
+                        studyColumns = STUDY_COLUMNS;
+                    } else {
+                        // If samples are not required, do not fetch all the fields
+                        studyColumns = Collections.singletonList(HOM_REF);
+                    }
                     for (String studyColumn : studyColumns) {
                         sb.append(",\"").append(buildColumnKey(studyId, studyColumn)).append('"');
                     }
+//                    if (mergeMode.equals(VariantStorageEngine.MergeMode.ADVANCED)) {
+//                    } else {
+//                        sb.append(",\"").append(buildColumnKey(studyId, HOM_REF)).append('"');
+//                    }
                     if (returnedFields.contains(VariantField.STUDIES_STATS)) {
-                        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null).first();
                         for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
                             Column statsColumn = getStatsColumn(studyId, cohortId);
                             sb.append(",\"").append(statsColumn.column()).append('"');

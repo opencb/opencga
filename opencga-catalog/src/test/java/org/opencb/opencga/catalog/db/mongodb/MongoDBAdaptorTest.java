@@ -124,9 +124,10 @@ public class MongoDBAdaptorTest extends GenericTest {
          * Let's init the database with some basic data to perform each of the tests
          */
         user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "1234", "", null, User.UserStatus.READY, "", 100, 1000,
-                Arrays.<Project>asList(new Project("project", "P1", "", new Status(), "", null, 1), new Project("project", "P2", "", new Status(),
+                Arrays.<Project>asList(new Project("project", "P1", "", new Status(), "", null, 1), new Project("project", "P2", "", new
+                        Status(),
                         "", null, 1), new Project("project", "P3", "", new Status(), "", null, 1)),
-                Collections.<Tool>emptyList(), Collections.<Session>emptyList(), new HashMap<>(), new HashMap<>());
+                Collections.<Tool>emptyList(), new HashMap<>(), new HashMap<>());
         QueryResult createUser = catalogUserDBAdaptor.insert(user1, null);
         assertNotNull(createUser.getResult());
 
@@ -147,8 +148,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                         )
                 ), Collections.emptyMap(), Collections.<String, Object>emptyMap(), 1)
                 ),
-                Collections.<Tool>emptyList(), Collections.<Session>emptyList(),
-                new HashMap<>(), new HashMap<>());
+                Collections.<Tool>emptyList(), new HashMap<>(), new HashMap<>());
         createUser = catalogUserDBAdaptor.insert(user3, null);
         assertNotNull(createUser.getResult());
 
@@ -181,7 +181,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                         ), Collections.<Job>emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, 1, Collections.emptyMap(), Collections.emptyMap())
                         ), Collections.emptyMap(), Collections.emptyMap(), 1)
                 ),
-                Collections.<Tool>emptyList(), Collections.<Session>emptyList(), new HashMap<>(), new HashMap<>());
+                Collections.<Tool>emptyList(), new HashMap<>(), new HashMap<>());
 
         createUser = catalogUserDBAdaptor.insert(user4, null);
         assertNotNull(createUser.getResult());

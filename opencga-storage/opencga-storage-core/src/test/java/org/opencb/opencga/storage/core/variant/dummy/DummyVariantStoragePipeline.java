@@ -75,7 +75,7 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     @Override
-    protected void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration) throws StorageEngineException {
+    protected void checkLoadedVariants(int fileId, StudyConfiguration studyConfiguration) throws StorageEngineException {
 
     }
 }

@@ -305,7 +305,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
 
             BatchFileOperation opInProgress = new BatchFileOperation(MongoDBVariantOptions.MERGE.key(), Collections.singletonList(FILE_ID), 0, BatchFileOperation.Type.OTHER);
             opInProgress.addStatus(BatchFileOperation.Status.RUNNING);
-            MongoVariantStorageEngineException expected = MongoVariantStorageEngineException.operationInProgressException(opInProgress);
+            StorageEngineException expected = MongoVariantStorageEngineException.otherOperationInProgressException(opInProgress, MongoDBVariantOptions.STAGE.key(), Collections.singletonList(secondFileId));
             thrown.expect(StoragePipelineException.class);
             thrown.expectCause(instanceOf(expected.getClass()));
             thrown.expectCause(hasMessage(is(expected.getMessage())));
@@ -355,7 +355,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
 
             BatchFileOperation opInProgress = new BatchFileOperation(MongoDBVariantOptions.MERGE.key(), Collections.singletonList(FILE_ID), 0, BatchFileOperation.Type.OTHER);
             opInProgress.addStatus(BatchFileOperation.Status.RUNNING);
-            MongoVariantStorageEngineException expected = MongoVariantStorageEngineException.operationInProgressException(opInProgress);
+            StorageEngineException expected = MongoVariantStorageEngineException.otherOperationInProgressException(opInProgress, MongoDBVariantOptions.MERGE.key(), Collections.singletonList(secondFileId));
             thrown.expect(StoragePipelineException.class);
             thrown.expectCause(instanceOf(expected.getClass()));
             thrown.expectCause(hasMessage(is(expected.getMessage())));

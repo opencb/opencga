@@ -56,7 +56,7 @@ public abstract class AbstractHBaseVariantMapper<KEYOUT, VALUEOUT> extends Table
         return getMrHelper().getStudyConfiguration();
     }
 
-    public HBaseToVariantConverter getHbaseToVariantConverter() {
+    public HBaseToVariantConverter<Result> getHbaseToVariantConverter() {
         return getMrHelper().getHbaseToVariantConverter();
     }
 

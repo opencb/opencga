@@ -266,7 +266,8 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(0).get("features"));
 
         assertEquals("NONE", ((Document) groupByBioformat.get(1).get("_id")).get(FileDBAdaptor.QueryParams.BIOFORMAT.key()));
-        assertEquals(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt", "data/"), groupByBioformat.get(1).get("features"));
+        assertTrue(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt", "data/")
+                .containsAll((Collection<?>) groupByBioformat.get(1).get("features")));
 
         groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), 14), // MINECO study
                 FileDBAdaptor.QueryParams.BIOFORMAT.key(), new QueryOptions()).getResult();

@@ -58,9 +58,6 @@ public class FamilyManagerTest extends GenericTest {
 
     @After
     public void tearDown() throws Exception {
-        if (sessionIdUser != null) {
-            catalogManager.logout("user", sessionIdUser);
-        }
     }
 
     @Test

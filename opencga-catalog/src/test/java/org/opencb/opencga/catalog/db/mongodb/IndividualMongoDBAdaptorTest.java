@@ -78,7 +78,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .Population(), 1, Collections.emptyList(), null);
         individual = catalogIndividualDBAdaptor.insert(individual, studyId, null).first();
         Individual individual2 = catalogIndividualDBAdaptor.get(individual.getId(), null).first();
-        assertEquals(individual, individual2);
+        assertEquals(individual.toString(), individual2.toString());
     }
 
     @Test
