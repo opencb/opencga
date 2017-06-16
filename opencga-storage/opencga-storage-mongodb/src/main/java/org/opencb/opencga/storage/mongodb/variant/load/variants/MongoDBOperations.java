@@ -3,9 +3,7 @@ package org.opencb.opencga.storage.mongodb.variant.load.variants;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Package local class for grouping mongodb operations.
@@ -20,6 +18,8 @@ public class MongoDBOperations {
 
     // Document and study exist
     private ExistingStudy existingStudy = new ExistingStudy();
+
+    private Set<String> genotypes = new HashSet<>();
 
     // Stage documents to cleanup
 //    private List<Pair<Bson, Bson>> cleanFromStage = new ArrayList<>();
@@ -117,6 +117,15 @@ public class MongoDBOperations {
 
     MongoDBOperations setMissingVariantsNoFillGaps(long missingVariantsNoFillGaps) {
         this.missingVariantsNoFillGaps = missingVariantsNoFillGaps;
+        return this;
+    }
+
+    public Set<String> getGenotypes() {
+        return genotypes;
+    }
+
+    public MongoDBOperations setGenotypes(Set<String> genotypes) {
+        this.genotypes = genotypes;
         return this;
     }
 

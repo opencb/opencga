@@ -973,6 +973,11 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     protected void updateMongoDBOperations(Variant emptyVar, List<String> ids, List<Document> fileDocuments,
                                            List<Document> secondaryAlternates, Document gts, boolean newStudy, boolean newVariant,
                                            MongoDBOperations mongoDBOps) {
+
+        if (!excludeGenotypes) {
+            mongoDBOps.getGenotypes().addAll(gts.keySet());
+        }
+
         if (newStudy) {
             // If there where no files and the study is new, do not add a new study.
             // It may happen if all the files in the variant where duplicated for this variant.

@@ -66,6 +66,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getReturnedFiles;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getSamplesMetadata;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_STAGE;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_STUDIES;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -134,6 +135,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     public MongoDBCollection getStageCollection() {
         return db.getCollection(configuration.getString(COLLECTION_STAGE.key(), COLLECTION_STAGE.defaultValue()));
+    }
+
+    public MongoDBCollection getStudiesCollection() {
+        return db.getCollection(configuration.getString(COLLECTION_STUDIES.key(), COLLECTION_STUDIES.defaultValue()));
     }
 
     protected MongoDataStore getDB() {

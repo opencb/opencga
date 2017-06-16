@@ -38,7 +38,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
@@ -485,7 +484,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
                 studyConfiguration.getIndexedFiles(), false, false);
         boolean resume = false;
         MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(variantsCollection, dbAdaptor.getStageCollection(),
-                studyConfiguration.getStudyId(), fileIds, resume, cleanWhileLoading, null);
+                dbAdaptor.getStudiesCollection(), studyConfiguration, fileIds, resume, cleanWhileLoading, null);
 
         reader.open();
         reader.pre();
@@ -678,7 +677,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     }
 
     public void assertEqualsResult(MongoDBVariantWriteResult expected, MongoDBVariantWriteResult result) {
-        result.setExistingVariantsNanoTime(0).setFillGapsNanoTime(0).setNewVariantsNanoTime(0);
+        result.setExistingVariantsNanoTime(0).setFillGapsNanoTime(0).setNewVariantsNanoTime(0).setGenotypes(Collections.emptySet());
 
         if (defaultGenotype.equals(UNKNOWN_GENOTYPE)) {
             // If defaultGenotype is the unknown, overlapping missing variants won't not be updated
