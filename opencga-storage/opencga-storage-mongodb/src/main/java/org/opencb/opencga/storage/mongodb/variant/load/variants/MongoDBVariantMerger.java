@@ -55,6 +55,8 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSa
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.IDS_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.STUDIES_FIELD;
+import static org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter.ID_FIELD;
+import static org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter.SECONDARY_ALTERNATES_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.STAGE_TO_VARIANT_CONVERTER;
 import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.VARIANT_CONVERTER_DEFAULT;
 
@@ -973,6 +975,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     protected void updateMongoDBOperations(Variant emptyVar, List<String> ids, List<Document> fileDocuments,
                                            List<Document> secondaryAlternates, Document gts, boolean newStudy, boolean newVariant,
                                            MongoDBOperations mongoDBOps) {
+        final String id;
         if (newStudy) {
             // If there where no files and the study is new, do not add a new study.
             // It may happen if all the files in the variant where duplicated for this variant.
@@ -988,7 +991,6 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     studyDocument.append(ALTERNATES_FIELD, secondaryAlternates);
                 }
 
-                final String id;
                 List<Bson> updates = new ArrayList<>();
                 updates.add(push(STUDIES_FIELD, studyDocument));
                 if (newVariant) {
@@ -1012,9 +1014,11 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 mongoDBOps.getNewStudy().getIds().add(id);
                 mongoDBOps.getNewStudy().getQueries().add(eq("_id", id));
                 mongoDBOps.getNewStudy().getUpdates().add(combine(updates));
+            } else {
+                id = null;
             }
         } else {
-            String id = variantConverter.buildStorageId(emptyVar);
+            id = variantConverter.buildStorageId(emptyVar);
             List<Bson> mergeUpdates = new LinkedList<>();
             if (!ids.isEmpty()) {
                 mergeUpdates.add(addEachToSet(IDS_FIELD, ids));
@@ -1057,6 +1061,12 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             } else {
                 mongoDBOps.setMissingVariantsNoFillGaps(mongoDBOps.getMissingVariantsNoFillGaps() + 1);
             }
+        }
+
+        if (secondaryAlternates != null && !secondaryAlternates.isEmpty() && id != null) {
+            mongoDBOps.getSecondaryAlternates().getIds().add(id);
+            mongoDBOps.getSecondaryAlternates().getQueries().add(eq(ID_FIELD, id));
+            mongoDBOps.getSecondaryAlternates().getUpdates().add(set(studyIdStr + '.' + SECONDARY_ALTERNATES_FIELD, secondaryAlternates));
         }
     }
 
