@@ -162,7 +162,7 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         if (!alternates.getQueries().isEmpty()) {
             QueryResult<BulkWriteResult> update = stageCollection.update(alternates.getQueries(), alternates.getUpdates(), null);
             if (update.first().getMatchedCount() != alternates.getQueries().size()) {
-                onUpdateError("populate secondary alternates", update, alternates.getQueries(), alternates.getIds());
+                onUpdateError("populate secondary alternates", update, alternates.getQueries(), alternates.getIds(), stageCollection);
             }
         }
 
@@ -280,10 +280,15 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
     }
 
     protected void onUpdateError(String updateName, QueryResult<BulkWriteResult> update, List<Bson> queries, List<String> queryIds) {
+        onUpdateError(updateName, update, queries, queryIds, variantsCollection);
+    }
+
+    protected void onUpdateError(String updateName, QueryResult<BulkWriteResult> update, List<Bson> queries, List<String> queryIds,
+                                 MongoDBCollection collection) {
         logger.error("(Updated " + updateName + " variants = " + queries.size() + " ) != "
                 + "(ModifiedCount = " + update.first().getModifiedCount() + "). MatchedCount:" + update.first().getMatchedCount());
         logger.info("QueryIDs: {}", queryIds);
-        List<QueryResult<Document>> queryResults = variantsCollection.find(queries, null);
+        List<QueryResult<Document>> queryResults = collection.find(queries, null);
         logger.info("Results: ", queryResults.size());
 
         for (QueryResult<Document> r : queryResults) {

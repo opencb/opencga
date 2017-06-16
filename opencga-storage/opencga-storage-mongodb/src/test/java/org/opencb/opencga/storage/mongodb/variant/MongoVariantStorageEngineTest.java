@@ -888,10 +888,6 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
             for (Document document : variantsCollection.nativeQuery().find(new Document(), new QueryOptions())) {
                 String id = document.getString("_id");
                 List<Document> studies = document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class);
-//                List alternates = studies.get(0).get(ALTERNATES_FIELD, List.class);
-                if (id.equals("M:     16185:C:A") || id.equals("M:     16184:C:") || id.equals("M:     16184:CC:")) {
-                    continue;
-                }
                 assertEquals(id, 2, studies.size());
                 for (Document study : studies) {
                     Document gts = study.get(GENOTYPES_FIELD, Document.class);
