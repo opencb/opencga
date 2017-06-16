@@ -292,10 +292,9 @@ public class JobManager extends AbstractManager implements IJobManager {
         } else {
             query.put(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         }
-        //query.putAll(options);
         String userId;
         if (sessionId.length() == 40) {
-            catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().checkValidAdminSession(sessionId);
+            catalogManager.getUserManager().getId(sessionId);
             userId = "admin";
         } else {
             userId = userManager.getId(sessionId);
