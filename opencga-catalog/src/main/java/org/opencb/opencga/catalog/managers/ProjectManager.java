@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -365,6 +366,77 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     @Override
     public List<QueryResult<Project>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public QueryResult<Integer> incrementRelease(String projectStr, String sessionId) throws CatalogException {
+        String userId = catalogManager.getUserManager().getId(sessionId);
+        long projectId = getId(userId, projectStr);
+
+        if (!userId.equals(projectDBAdaptor.getOwnerId(projectId))) {
+            throw new CatalogException("Only the owner of the project can increment the release number");
+        }
+
+        // Obtain the current release number
+        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(projectId, new QueryOptions(QueryOptions.INCLUDE,
+                ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
+        if (projectQueryResult == null || projectQueryResult.getNumResults() == 0) {
+            throw new CatalogException("Internal error: Unexpected situation happened. Current release number not incremented.");
+        }
+
+        int currentRelease = projectQueryResult.first().getCurrentRelease();
+        // Check current release has been used at least in one study or file or cohort or individual...
+        QueryResult<Study> allStudiesInProject = studyDBAdaptor.getAllStudiesInProject(projectId, new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.RELEASE.key())));
+        if (allStudiesInProject == null || allStudiesInProject.getNumResults() == 0) {
+            throw new CatalogException("Cannot increment current release number. No studies found for release " + currentRelease);
+        }
+
+        if (checkCurrentReleaseInUse(allStudiesInProject, currentRelease)) {
+            return projectDBAdaptor.incrementCurrentRelease(projectId);
+        } else {
+            throw new CatalogException("Cannot increment current release number. The current release " + currentRelease + " has not yet "
+                    + "been used in any entry");
+        }
+    }
+
+    // Return true if currentRelease is found in any entry
+    private boolean checkCurrentReleaseInUse(QueryResult<Study> allStudiesInProject, int currentRelease) throws CatalogDBException {
+        for (Study study : allStudiesInProject.getResult()) {
+            if (study.getRelease() == currentRelease) {
+                return true;
+            }
+        }
+        List<Long> studyIds = allStudiesInProject.getResult().stream().map(Study::getId).collect(Collectors.toList());
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(FileDBAdaptor.QueryParams.RELEASE.key(), currentRelease);
+        if (fileDBAdaptor.count(query).first() > 0) {
+            return true;
+        }
+        if (sampleDBAdaptor.count(query).first() > 0) {
+            return true;
+        }
+        if (individualDBAdaptor.count(query).first() > 0) {
+            return true;
+        }
+        if (cohortDBAdaptor.count(query).first() > 0) {
+            return true;
+        }
+        if (familyDBAdaptor.count(query).first() > 0) {
+            return true;
+        }
+        if (jobDBAdaptor.count(query).first() > 0) {
+            return true;
+        }
+//        if (panelDBAdaptor.count(query).first() > 0) {
+//            return true;
+//        }
+        if (clinicalDBAdaptor.count(query).first() > 0) {
+            return true;
+        }
+
+        return false;
     }
 
     @Override

@@ -123,6 +123,23 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 //        return endQuery("Get project", startTime, projects);
     }
 
+    @Override
+    public QueryResult<Integer> incrementCurrentRelease(long projectId) throws CatalogDBException {
+        long startTime = startQuery();
+        Query query = new Query(QueryParams.ID.key(), projectId);
+        Bson update = new Document("$inc", new Document("projects.$." + QueryParams.CURRENT_RELEASE.key(), 1));
+
+        QueryResult<UpdateResult> updateQR = userCollection.update(parseQuery(query), update, null);
+        if (updateQR == null || updateQR.first().getMatchedCount() == 0) {
+            throw new CatalogDBException("Could not increment release number. Project id " + projectId + " not found");
+        } else if (updateQR.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("Internal error. Current release number could not be incremented.");
+        }
+
+        QueryResult<Project> projectQueryResult = get(projectId, new QueryOptions(QueryOptions.INCLUDE, QueryParams.CURRENT_RELEASE.key()));
+        return endQuery(Long.toString(projectId), startTime, Arrays.asList(projectQueryResult.first().getCurrentRelease()));
+    }
+
     /**
      * At the moment it does not clean external references to itself.
      */

@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.AclEntry;
@@ -58,6 +59,17 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void getProjectIdTest() throws CatalogDBException {
         assertTrue(catalogProjectDBAdaptor.getId(user3.getId(), user3.getProjects().get(0).getAlias()) != -1);
         assertTrue(catalogProjectDBAdaptor.getId(user3.getId(), "nonExistingProject") == -1);
+    }
+
+    @Test
+    public void incrementCurrentRelease() throws CatalogDBException {
+        long projectId = catalogProjectDBAdaptor.getId(user3.getId(), user3.getProjects().get(0).getAlias());
+        QueryResult<Project> projectQueryResult = catalogProjectDBAdaptor.get(projectId, new QueryOptions(QueryOptions.INCLUDE,
+                ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
+        assertEquals(1, projectQueryResult.first().getCurrentRelease());
+
+        assertEquals(2, catalogProjectDBAdaptor.incrementCurrentRelease(projectId).first().intValue());
+        assertEquals(3, catalogProjectDBAdaptor.incrementCurrentRelease(projectId).first().intValue());
     }
 
 

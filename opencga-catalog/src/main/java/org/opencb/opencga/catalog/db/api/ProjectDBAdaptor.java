@@ -129,6 +129,8 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
 
     QueryResult<Project> get(long project, QueryOptions options) throws CatalogDBException;
 
+    QueryResult<Integer> incrementCurrentRelease(long projectId) throws CatalogDBException;
+
 //    @Deprecated
 //    default QueryResult<Project> deleteProject(long projectId) throws CatalogDBException {
 //        return delete(projectId, false);

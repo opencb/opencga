@@ -114,6 +114,19 @@ public class ProjectWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/{project}/increlease")
+    @ApiOperation(value = "Increment current release number in the project", response = Integer.class)
+    public Response incrementRelease(
+            @ApiParam(value = "Project ID or alias", required = true) @PathParam("project") String projectStr) {
+        try {
+            return createOkResponse(catalogManager.getProjectManager().incrementRelease(projectStr, sessionId));
+        } catch (CatalogException e) {
+            e.printStackTrace();
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/{projects}/studies")
     @ApiOperation(value = "Fetch all the studies contained in the projects", response = Study[].class)
     @ApiImplicitParams({
