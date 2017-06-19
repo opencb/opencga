@@ -1285,6 +1285,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     case GROUPS:
                     case GROUP_NAME:
                     case GROUP_USER_IDS:
+                    case RELEASE:
                     case ROLES:
                     case ROLES_ID:
                     case ROLES_USERS:

@@ -99,7 +99,7 @@ public class JobFactory {
         if (simulate) { //Simulate a job. Do not create it.
             jobQueryResult = new QueryResult<>("simulatedJob", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(
                     new Job(jobName, catalogManager.getUserIdBySessionId(sessionId), toolName, description, commandLine, outDir,
-                            inputFiles)));
+                            inputFiles, 1)));
         } else {
             if (execute) {
                 /** Create a RUNNING job in CatalogManager **/

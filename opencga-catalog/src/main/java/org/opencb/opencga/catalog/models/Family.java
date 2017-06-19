@@ -27,27 +27,28 @@ public class Family extends Annotable<FamilyAclEntry> {
 
     private List<OntologyTerm> ontologyTerms;
 
+    private int release;
     private Map<String, Object> attributes;
 
     public Family() {
     }
 
     public Family(String name, Individual father, Individual mother, List<Individual> children, boolean parentalConsanguinity,
-                  String description) {
+                  String description, int release) {
         this(name, father, mother, children, parentalConsanguinity, description, Collections.emptyList(), Collections.emptyList(),
-                Collections.emptyMap());
+                release, Collections.emptyMap());
     }
 
     public Family(String name, Individual father, Individual mother, List<Individual> children, boolean parentalConsanguinity,
-                  String description, List<OntologyTerm> ontologyTerms, List<AnnotationSet> annotationSets,
+                  String description, List<OntologyTerm> ontologyTerms, List<AnnotationSet> annotationSets, int release,
                   Map<String, Object> attributes) {
         this(-1, name, father, mother, children, parentalConsanguinity, TimeUtils.getTime(), new Status(), description, ontologyTerms,
-                annotationSets, Collections.emptyList(), attributes);
+                annotationSets, Collections.emptyList(), release, attributes);
     }
 
     public Family(long id, String name, Individual father, Individual mother, List<Individual> children, boolean parentalConsanguinity,
                   String creationDate, Status status, String description, List<OntologyTerm> ontologyTerms,
-                  List<AnnotationSet> annotationSets, List<FamilyAclEntry> acl, Map<String, Object> attributes) {
+                  List<AnnotationSet> annotationSets, List<FamilyAclEntry> acl, int release, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = father;
@@ -58,6 +59,7 @@ public class Family extends Annotable<FamilyAclEntry> {
         this.status = status;
         this.description = description;
         this.ontologyTerms = ontologyTerms;
+        this.release = release;
         this.attributes = attributes;
         this.acl = acl;
         this.annotationSets = annotationSets;
@@ -76,6 +78,7 @@ public class Family extends Annotable<FamilyAclEntry> {
         sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
         sb.append(", ontologyTerms=").append(ontologyTerms);
+        sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
         sb.append(", acl=").append(acl);
         sb.append(", annotationSets=").append(annotationSets);
@@ -170,6 +173,15 @@ public class Family extends Annotable<FamilyAclEntry> {
 
     public Family setOntologyTerms(List<OntologyTerm> ontologyTerms) {
         this.ontologyTerms = ontologyTerms;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public Family setRelease(int release) {
+        this.release = release;
         return this;
     }
 

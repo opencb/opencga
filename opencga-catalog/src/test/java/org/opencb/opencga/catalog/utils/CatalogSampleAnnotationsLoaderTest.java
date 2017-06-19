@@ -110,7 +110,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         variables.add(new Variable("NonExistingField", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, null, "",
                 null, null));
 
-        VariableSet variableSet = new VariableSet(5, "", false, "", variables, null);
+        VariableSet variableSet = new VariableSet(5, "", false, "", variables, 1, null);
 
         validate(pedigree, variableSet);
     }
@@ -163,7 +163,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
             for (Map.Entry<String, Object> annotationEntry : annotation.entrySet()) {
                 annotationSet.add(new Annotation(annotationEntry.getKey(), annotationEntry.getValue()));
             }
-            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "",
+            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "", 1,
                     null), null);
         }
     }

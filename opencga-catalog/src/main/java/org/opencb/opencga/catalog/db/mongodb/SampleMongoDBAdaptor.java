@@ -650,6 +650,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     case STATUS_DATE:
                     case SOMATIC:
                     case TYPE:
+                    case RELEASE:
                     case ACL:
                     case ACL_MEMBER:
                     case ACL_PERMISSIONS:

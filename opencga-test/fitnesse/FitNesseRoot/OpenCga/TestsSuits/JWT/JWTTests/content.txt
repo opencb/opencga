@@ -11,9 +11,6 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/users/$user/info?sid=$sessionId&exclude=projects |  |  Content-Type: application/json | jsonbody.response[0].result[0].id == '$user'|
 
-!3 (Negative) Get User With An Expired JWT Token
-!|Table: Rest Fixture | $baseURL |
-| GET | /v1/users/$user/info?sid=$expiredSessionId |500|  Content-Type: application/json |jsonbody.error == 'authentication token is expired : $expiredSessionId' |
 
 !3 (Negative) Get User With An Invalid JWT Token
 !|Table: Rest Fixture | $baseURL |

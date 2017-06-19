@@ -582,6 +582,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                     case MODIFICATION_DATE:
                     case DESCRIPTION:
                     case EXTERNAL:
+                    case RELEASE:
                     case STATUS:
                     case STATUS_NAME:
                     case STATUS_MSG:

@@ -136,6 +136,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "CSV list of variable set ids or names", required = false) @QueryParam("id") String id,
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
+                           @ApiParam(value = "Release value") @QueryParam("release") String release,
                            @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes,
                            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {

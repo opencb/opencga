@@ -61,7 +61,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void deleteJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
 
-        Job job = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", new File().setId(4), Collections.emptyList()),
+        Job job = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", new File().setId(4), Collections.emptyList(), 1),
                 studyId, null).first();
         long jobId = job.getId();
         assertEquals(Job.JobStatus.PREPARED, job.getStatus().getName());
@@ -84,7 +84,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void getJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
 
-        Job job = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", new File().setId(4), Collections.emptyList()),
+        Job job = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", new File().setId(4), Collections.emptyList(), 1),
                 studyId, null).first();
         long jobId = job.getId();
 
@@ -104,7 +104,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void incJobVisits() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         Job jobBefore = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", new File().setId(4),
-                        Collections.emptyList()), studyId, null).first();
+                        Collections.emptyList(), 1), studyId, null).first();
         long jobId = jobBefore.getId();
 
         Long visits = (Long) catalogJobDBAdaptor.incJobVisits(jobBefore.getId()).first().get("visits");

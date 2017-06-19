@@ -165,6 +165,7 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         family.setAnnotationSets(ParamUtils.defaultObject(family.getAnnotationSets(), Collections.emptyList()));
         family.setAnnotationSets(AnnotationManager.validateAnnotationSets(family.getAnnotationSets(), studyDBAdaptor));
         family.setAcl(Collections.emptyList());
+        family.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));
         family.setAttributes(ParamUtils.defaultObject(family.getAttributes(), Collections.emptyMap()));
 
         checkAndCreateAllIndividualsFromFamily(studyId, family, sessionId);
@@ -541,7 +542,8 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null).first();
 
         QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(resourceId.getResourceId(), variableSet,
-                annotationSetName, annotations, attributes, familyDBAdaptor);
+                annotationSetName, annotations, catalogManager.getStudyManager().getCurrentRelease(resourceId.getStudyId()), attributes,
+                familyDBAdaptor);
 
         auditManager.recordUpdate(AuditRecord.Resource.family, resourceId.getResourceId(), resourceId.getUser(),
                 new ObjectMap("annotationSets", annotationSet.first()), "annotate", null);
@@ -602,7 +604,7 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream()
                         .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
-                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), null);
+                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), 1, null);
         auditManager.recordUpdate(AuditRecord.Resource.family, resourceId.getResourceId(), resourceId.getUser(),
                 new ObjectMap("annotationSets", Collections.singletonList(annotationSetUpdate)), "Update annotation", null);
 

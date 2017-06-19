@@ -243,7 +243,8 @@ public class JobManager extends AbstractManager implements IJobManager {
         }
 
         // FIXME: Pass the toolId
-        Job job = new Job(name, userId, toolName, description, commandLine, outDir, inputFiles);
+        Job job = new Job(name, userId, toolName, description, commandLine, outDir, inputFiles,
+                catalogManager.getStudyManager().getCurrentRelease(studyId));
         job.setOutput(outputFiles);
         job.setStatus(status);
         job.setStartTime(startTime);
@@ -292,10 +293,9 @@ public class JobManager extends AbstractManager implements IJobManager {
         } else {
             query.put(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         }
-        //query.putAll(options);
         String userId;
         if (sessionId.length() == 40) {
-            catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().checkValidAdminSession(sessionId);
+            catalogManager.getUserManager().getId(sessionId);
             userId = "admin";
         } else {
             userId = userManager.getId(sessionId);
@@ -495,7 +495,8 @@ public class JobManager extends AbstractManager implements IJobManager {
             throws CatalogException {
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
-        Job job = new Job(jobName, userId, executable, type, input, output, outDir, params)
+        Job job = new Job(jobName, userId, executable, type, input, output, outDir, params,
+                catalogManager.getStudyManager().getCurrentRelease(studyId))
                 .setDescription(description)
                 .setAttributes(attributes);
 

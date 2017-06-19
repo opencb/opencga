@@ -126,7 +126,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
         Individual individual = new Individual(0, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity,
                 new Individual.Population(populationName, populationSubpopulation, populationDescription), lifeStatus, affectationStatus,
-                dateOfBirth, false, Collections.emptyList(), new ArrayList<>());
+                dateOfBirth, false, catalogManager.getStudyManager().getCurrentRelease(studyId), Collections.emptyList(),
+                new ArrayList<>());
 
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
 //      auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
@@ -457,6 +458,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         long studyId = catalogManager.getStudyId(studyStr, sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
 
+        individual.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));
+
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
         auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.create, AuditRecord.Magnitude.low,
                 queryResult.first().getId(), userId, null, queryResult.first(), null, null);
@@ -477,7 +480,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
 
         AnnotationSet annotationSet =
-                new AnnotationSet(annotationSetName, variableSetId, new HashSet<>(), TimeUtils.getTime(), attributes);
+                new AnnotationSet(annotationSetName, variableSetId, new HashSet<>(), TimeUtils.getTime(), 1, attributes);
 
         for (Map.Entry<String, Object> entry : annotations.entrySet()) {
             annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
@@ -536,7 +539,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream().map(entry -> new Annotation(entry.getKey(), entry.getValue())).collect(Collectors
                         .toSet()),
-                annotationSet.getCreationDate(), null);
+                annotationSet.getCreationDate(), 1, null);
         auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, new ObjectMap("annotationSets",
                 Collections.singletonList(annotationSetUpdate)), "update annotation", null);
 
@@ -576,7 +579,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                     }
                     break;
                 case KARYOTYPIC_SEX:
-                    Individual.KaryotypicSex karyo = Individual.KaryotypicSex.valueOf((String) param.getValue());
+                    Individual.KaryotypicSex karyo = Individual.KaryotypicSex.valueOf(String.valueOf(param.getValue()));
 
                     if (parameters.containsKey(IndividualDBAdaptor.QueryParams.SEX.key())) {
                         Individual.Sex sex = Individual.Sex.valueOf(parameters.getString(IndividualDBAdaptor.QueryParams.SEX.key()));
@@ -600,7 +603,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                     break;
                 case SEX:
                     if (!parameters.containsKey(IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key())) {
-                        Individual.Sex sex = Individual.Sex.valueOf((String) param.getValue());
+                        Individual.Sex sex = Individual.Sex.valueOf(String.valueOf(param.getValue()));
                         // Get karyotype and check it is compatible
                         QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(individualId,
                                 new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key()));
@@ -631,8 +634,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
             }
         }
 
-        options.putAll(parameters); //FIXME: Use separated params and options, or merge
-        QueryResult<Individual> queryResult = individualDBAdaptor.update(individualId, new ObjectMap(options));
+//        options.putAll(parameters); //FIXME: Use separated params and options, or merge
+        QueryResult<Individual> queryResult = individualDBAdaptor.update(individualId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, parameters, null, null);
         return queryResult;
 
@@ -921,7 +924,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null).first();
 
         QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(resource.getResourceId(), variableSet,
-                annotationSetName, annotations, attributes, individualDBAdaptor);
+                annotationSetName, annotations, catalogManager.getStudyManager().getCurrentRelease(resource.getStudyId()), attributes,
+                individualDBAdaptor);
 
         auditManager.recordUpdate(AuditRecord.Resource.individual, resource.getResourceId(), resource.getUser(),
                 new ObjectMap("annotationSets", annotationSet.first()), "annotate", null);
@@ -982,7 +986,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream()
                         .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
-                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), null);
+                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), 1, null);
         auditManager.recordUpdate(AuditRecord.Resource.individual, resource.getResourceId(), resource.getUser(),
                 new ObjectMap("annotationSets", Collections.singletonList(annotationSetUpdate)), "update annotation", null);
 

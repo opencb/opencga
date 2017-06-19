@@ -299,7 +299,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         String userId = job.getUserId();
         String userSessionId = null;
         try {
-            userSessionId = catalogManager.getUserManager().getNewUserSession(sessionId, userId).first().getId();
+            userSessionId = catalogManager.getUserManager().getSystemTokenForUser(userId, sessionId).first().getId();
         } catch (CatalogException e) {
             logger.warn("Could not obtain a new session id for user {}. ", userId, e);
         }

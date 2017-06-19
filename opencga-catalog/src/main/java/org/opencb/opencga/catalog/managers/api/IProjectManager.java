@@ -90,6 +90,8 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
      */
     List<QueryResult<Project>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException, IOException;
 
+    QueryResult<Integer> incrementRelease(String projectStr, String sessionId) throws CatalogException;
+
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.
      *

@@ -136,12 +136,12 @@ public interface IUserManager extends ResourceManager<String, User> {
     /**
      * This method will be only callable by the system. It generates a new session id for the user.
      *
-     * @param sessionId Admin session id.
      * @param userId user id for which a session will be generated.
+     * @param adminCredentials Password or active session of the OpenCGA admin.
      * @return an objectMap containing the new sessionId
      * @throws CatalogException if the password is not correct or the userId does not exist.
      */
-    QueryResult<Session> getNewUserSession(String sessionId, String userId) throws CatalogException;
+    QueryResult<Session> getSystemTokenForUser(String userId, String adminCredentials) throws CatalogException;
 
     QueryResult resetPassword(String userId, String sessionId) throws CatalogException;
 

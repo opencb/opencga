@@ -176,6 +176,7 @@ public class JobWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Comma separated list of input file ids", required = false) @DefaultValue("") @QueryParam("inputFiles") String inputFiles,
                            @ApiParam(value = "Comma separated list of output file ids", required = false) @DefaultValue("")
                                @QueryParam ("outputFiles") String outputFiles,
+                           @ApiParam(value = "Release value") @QueryParam("release") String release,
                            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);

@@ -228,6 +228,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         STATS("stats", TEXT, ""),
         TYPE("type", TEXT, ""),
+        RELEASE("release", INTEGER, ""),
 
         GROUPS("groups", TEXT_ARRAY, ""),
         GROUP_NAME("groups.name", TEXT_ARRAY, ""),
@@ -341,6 +342,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         ATTRIBUTES("attributes", TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         NATTRIBUTES("nattributes", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         BATTRIBUTES("battributes", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
+        RELEASE("release", INTEGER, ""),
         STUDY_ID("studyId", DECIMAL, "");
 
         private static Map<String, VariableSetParams> map;

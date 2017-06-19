@@ -148,6 +148,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
 
+        sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));
+
         long individualId = 0;
 
         if (sample.getIndividual() != null) {
@@ -220,8 +222,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             }
         }
 
-        Sample sample = new Sample(-1, name, source, individual, description, type, somatic, Collections.emptyList(),
-                Collections.emptyList(), new ArrayList<>(), attributes);
+        Sample sample = new Sample(-1, name, source, individual, description, type, somatic,
+                catalogManager.getStudyManager().getCurrentRelease(studyId), Collections.emptyList(), Collections.emptyList(),
+                new ArrayList<>(), attributes);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         QueryResult<Sample> queryResult = sampleDBAdaptor.insert(sample, studyId, options);
@@ -245,7 +248,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
 
-        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSetId, new HashSet<>(), TimeUtils.getTime(), attributes);
+        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSetId, new HashSet<>(), TimeUtils.getTime(), 1,
+                attributes);
 
         for (Map.Entry<String, Object> entry : annotations.entrySet()) {
             annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
@@ -308,7 +312,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream()
                         .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
-                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), null);
+                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), 1, null);
         auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId, new ObjectMap("annotationSets",
                 Collections.singletonList(annotationSetUpdate)), "update annotation", null);
         return queryResult;
@@ -892,7 +896,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null).first();
 
         QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(resourceId.getResourceId(), variableSet,
-                annotationSetName, annotations, attributes, sampleDBAdaptor);
+                annotationSetName, annotations, catalogManager.getStudyManager().getCurrentRelease(resourceId.getStudyId()), attributes,
+                sampleDBAdaptor);
 
         auditManager.recordUpdate(AuditRecord.Resource.sample, resourceId.getResourceId(), resourceId.getUser(),
                 new ObjectMap("annotationSets", annotationSet.first()), "annotate", null);
@@ -953,7 +958,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream()
                         .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
-                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), null);
+                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), 1, null);
         auditManager.recordUpdate(AuditRecord.Resource.sample, resourceId.getResourceId(), resourceId.getUser(),
                 new ObjectMap("annotationSets", Collections.singletonList(annotationSetUpdate)), "update annotation", null);
 

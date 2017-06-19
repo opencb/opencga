@@ -28,7 +28,7 @@ import org.opencb.opencga.catalog.session.JwtSessionManager;
 public abstract class AuthenticationManager {
 
     protected Configuration configuration;
-    private JwtSessionManager jwtSessionManager;
+    protected JwtSessionManager jwtSessionManager;
 
     AuthenticationManager(Configuration configuration) {
         this.configuration = configuration;

@@ -42,6 +42,7 @@ public class Individual extends Annotable<IndividualAclEntry> {
     private Species species;
     private Population population;
     private String dateOfBirth;
+    private int release;
     private String creationDate;
     private Status status;
     private LifeStatus lifeStatus;
@@ -75,23 +76,17 @@ public class Individual extends Annotable<IndividualAclEntry> {
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Population population,
-                      List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, fatherId, motherId, family, sex, ethnicity, population, new Status(), Collections.emptyList(),
-                annotationSets, attributes);
-    }
-
-    public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Population population,
-                      Status status, List<IndividualAclEntry> acl, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, fatherId, motherId, family, sex, null, ethnicity, population, "", TimeUtils.getTime(), status,
-                false, LifeStatus.UNKNOWN, AffectationStatus.UNKNOWN, Collections.emptyList(), new ArrayList<>(), acl, annotationSets,
-                attributes);
+                      int release, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+        this(id, name, fatherId, motherId, family, sex, null, ethnicity, population, "", release, TimeUtils.getTime(), new Status(),
+                false, LifeStatus.UNKNOWN, AffectationStatus.UNKNOWN, Collections.emptyList(), new ArrayList<>(),
+                Collections.emptyList(), annotationSets, attributes);
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
                       String ethnicity, Population population, LifeStatus lifeStatus, AffectationStatus affectationStatus,
-                      String dateOfBirth, boolean parentalConsanguinity, List<AnnotationSet> annotationSets,
+                      String dateOfBirth, boolean parentalConsanguinity, int release, List<AnnotationSet> annotationSets,
                       List<OntologyTerm> ontologyTermList) {
-        this(id, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, population, dateOfBirth, TimeUtils.getTime(),
+        this(id, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, population, dateOfBirth, release, TimeUtils.getTime(),
                 new Status(), parentalConsanguinity, lifeStatus, affectationStatus, ontologyTermList, new ArrayList<>(), new LinkedList<>(),
                 annotationSets, Collections.emptyMap());
         if (population == null) {
@@ -100,7 +95,7 @@ public class Individual extends Annotable<IndividualAclEntry> {
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
-                      String ethnicity, Population population, String dateOfBirth, String creationDate, Status status,
+                      String ethnicity, Population population, String dateOfBirth, int release, String creationDate, Status status,
                       boolean parentalConsanguinity, LifeStatus lifeStatus, AffectationStatus affectationStatus,
                       List<OntologyTerm> ontologyTerms, List<Sample> samples, List<IndividualAclEntry> acl,
                       List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
@@ -114,6 +109,7 @@ public class Individual extends Annotable<IndividualAclEntry> {
         this.ethnicity = ethnicity;
         this.population = population;
         this.dateOfBirth = dateOfBirth;
+        this.release = release;
         this.creationDate = creationDate;
         this.parentalConsanguinity = parentalConsanguinity;
         this.status = status;
@@ -154,35 +150,6 @@ public class Individual extends Annotable<IndividualAclEntry> {
             sb.append(", commonName='").append(commonName).append('\'');
             sb.append('}');
             return sb.toString();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (!(o instanceof Species)) {
-                return false;
-            }
-
-            Species species = (Species) o;
-
-            if (taxonomyCode != null ? !taxonomyCode.equals(species.taxonomyCode) : species.taxonomyCode != null) {
-                return false;
-            }
-            if (scientificName != null ? !scientificName.equals(species.scientificName) : species.scientificName != null) {
-                return false;
-            }
-            return !(commonName != null ? !commonName.equals(species.commonName) : species.commonName != null);
-
-        }
-
-        @Override
-        public int hashCode() {
-            int result = taxonomyCode != null ? taxonomyCode.hashCode() : 0;
-            result = 31 * result + (scientificName != null ? scientificName.hashCode() : 0);
-            result = 31 * result + (commonName != null ? commonName.hashCode() : 0);
-            return result;
         }
 
         public String getTaxonomyCode() {
@@ -240,35 +207,6 @@ public class Individual extends Annotable<IndividualAclEntry> {
             return sb.toString();
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (!(o instanceof Population)) {
-                return false;
-            }
-
-            Population that = (Population) o;
-
-            if (name != null ? !name.equals(that.name) : that.name != null) {
-                return false;
-            }
-            if (subpopulation != null ? !subpopulation.equals(that.subpopulation) : that.subpopulation != null) {
-                return false;
-            }
-            return !(description != null ? !description.equals(that.description) : that.description != null);
-
-        }
-
-        @Override
-        public int hashCode() {
-            int result = name != null ? name.hashCode() : 0;
-            result = 31 * result + (subpopulation != null ? subpopulation.hashCode() : 0);
-            result = 31 * result + (description != null ? description.hashCode() : 0);
-            return result;
-        }
-
         public String getName() {
             return name;
         }
@@ -303,14 +241,15 @@ public class Individual extends Annotable<IndividualAclEntry> {
         sb.append(", name='").append(name).append('\'');
         sb.append(", fatherId=").append(fatherId);
         sb.append(", motherId=").append(motherId);
-        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", family='").append(family).append('\'');
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", sex=").append(sex);
         sb.append(", karyotypicSex=").append(karyotypicSex);
         sb.append(", ethnicity='").append(ethnicity).append('\'');
         sb.append(", species=").append(species);
         sb.append(", population=").append(population);
         sb.append(", dateOfBirth='").append(dateOfBirth).append('\'');
+        sb.append(", release=").append(release);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", lifeStatus=").append(lifeStatus);
@@ -440,6 +379,14 @@ public class Individual extends Annotable<IndividualAclEntry> {
         return this;
     }
 
+    public int getRelease() {
+        return release;
+    }
+
+    public Individual setRelease(int release) {
+        this.release = release;
+        return this;
+    }
 
     public LifeStatus getLifeStatus() {
         return lifeStatus;
@@ -555,97 +502,4 @@ public class Individual extends Annotable<IndividualAclEntry> {
         }
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        Individual that = (Individual) o;
-
-        if (id != that.id) {
-            return false;
-        }
-        if (fatherId != that.fatherId) {
-            return false;
-        }
-        if (motherId != that.motherId) {
-            return false;
-        }
-        if (parentalConsanguinity != that.parentalConsanguinity) {
-            return false;
-        }
-        if (name != null ? !name.equals(that.name) : that.name != null) {
-            return false;
-        }
-        if (family != null ? !family.equals(that.family) : that.family != null) {
-            return false;
-        }
-        if (sex != that.sex) {
-            return false;
-        }
-        if (karyotypicSex != that.karyotypicSex) {
-            return false;
-        }
-        if (ethnicity != null ? !ethnicity.equals(that.ethnicity) : that.ethnicity != null) {
-            return false;
-        }
-        if (species != null ? !species.equals(that.species) : that.species != null) {
-            return false;
-        }
-        if (population != null ? !population.equals(that.population) : that.population != null) {
-            return false;
-        }
-        if (dateOfBirth != null ? !dateOfBirth.equals(that.dateOfBirth) : that.dateOfBirth != null) {
-            return false;
-        }
-        if (creationDate != null ? !creationDate.equals(that.creationDate) : that.creationDate != null) {
-            return false;
-        }
-        if (status != null ? !status.equals(that.status) : that.status != null) {
-            return false;
-        }
-        if (lifeStatus != that.lifeStatus) {
-            return false;
-        }
-        if (affectationStatus != that.affectationStatus) {
-            return false;
-        }
-        if (ontologyTerms != null ? !ontologyTerms.equals(that.ontologyTerms) : that.ontologyTerms != null) {
-            return false;
-        }
-
-        if (samples != null ? !samples.equals(that.samples) : that.samples != null) {
-            return false;
-        }
-        return attributes != null ? attributes.equals(that.attributes) : that.attributes == null;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = (int) (id ^ (id >>> 32));
-        result = 31 * result + (name != null ? name.hashCode() : 0);
-        result = 31 * result + (int) (fatherId ^ (fatherId >>> 32));
-        result = 31 * result + (int) (motherId ^ (motherId >>> 32));
-        result = 31 * result + (family != null ? family.hashCode() : 0);
-        result = 31 * result + (sex != null ? sex.hashCode() : 0);
-        result = 31 * result + (karyotypicSex != null ? karyotypicSex.hashCode() : 0);
-        result = 31 * result + (ethnicity != null ? ethnicity.hashCode() : 0);
-        result = 31 * result + (species != null ? species.hashCode() : 0);
-        result = 31 * result + (population != null ? population.hashCode() : 0);
-        result = 31 * result + (dateOfBirth != null ? dateOfBirth.hashCode() : 0);
-        result = 31 * result + (creationDate != null ? creationDate.hashCode() : 0);
-        result = 31 * result + (status != null ? status.hashCode() : 0);
-        result = 31 * result + (lifeStatus != null ? lifeStatus.hashCode() : 0);
-        result = 31 * result + (affectationStatus != null ? affectationStatus.hashCode() : 0);
-        result = 31 * result + (ontologyTerms != null ? ontologyTerms.hashCode() : 0);
-        result = 31 * result + (samples != null ? samples.hashCode() : 0);
-        result = 31 * result + (parentalConsanguinity ? 1 : 0);
-        result = 31 * result + (attributes != null ? attributes.hashCode() : 0);
-        return result;
-    }
 }

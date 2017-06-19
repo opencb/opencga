@@ -66,21 +66,22 @@ public class AnnotationManager {
      * @param variableSet variable set under which the annotation will be made.
      * @param annotationSetName annotation set name that will be used for the annotation.
      * @param annotations map of annotations to create the annotation set.
+     * @param release Current project release.
      * @param attributes map with further attributes that the user might be interested in storing.
      * @param dbAdaptor DB Adaptor to make the correspondent call to create the annotation set.
      * @return a queryResult object with the annotation set created.
      * @throws CatalogException if the annotation is not valid.
      */
     public static QueryResult<AnnotationSet> createAnnotationSet(long id, VariableSet variableSet, String annotationSetName,
-                                                           Map<String, Object> annotations, Map<String, Object> attributes,
-                                                           AnnotationSetDBAdaptor dbAdaptor)
+                                                                 Map<String, Object> annotations, int release,
+                                                                 Map<String, Object> attributes, AnnotationSetDBAdaptor dbAdaptor)
             throws CatalogException {
 
         ParamUtils.checkAlias(annotationSetName, "annotationSetName", -1);
 
         // Create empty annotation set
         AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSet.getId(), new HashSet<>(), TimeUtils.getTime(),
-                attributes);
+                release, attributes);
 
         // Fill the annotation set object with the annotations
         for (Map.Entry<String, Object> entry : annotations.entrySet()) {

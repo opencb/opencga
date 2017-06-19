@@ -294,7 +294,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         LinkedList<Job> jobs = new LinkedList<>();
 
         File rootFile = new File(".", File.Type.DIRECTORY, null, null, "", "study root folder",
-                new File.FileStatus(File.FileStatus.READY), 0);
+                new File.FileStatus(File.FileStatus.READY), 0, getProjectCurrentRelease(projectId));
         files.add(rootFile);
 
         // We set all the permissions for the owner of the study.
@@ -302,7 +302,8 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
         Study study = new Study(-1, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
                 0, cipher, new LinkedList<>(), new LinkedList<>(), experiments, files, jobs, new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, datastores, stats, attributes);
+                new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, datastores,
+                getProjectCurrentRelease(projectId), stats, attributes);
 
         /* CreateStudy */
         QueryResult<Study> result = studyDBAdaptor.insert(projectId, study, options);
@@ -333,6 +334,20 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 null, rootFile, null, null);
         userDBAdaptor.updateUserLastModified(userId);
         return result;
+    }
+
+    @Override
+    public int getCurrentRelease(long studyId) throws CatalogException {
+        return getProjectCurrentRelease(studyDBAdaptor.getProjectIdByStudyId(studyId));
+    }
+
+    private int getProjectCurrentRelease(long projectId) throws CatalogException {
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key());
+        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(projectId, options);
+        if (projectQueryResult.getNumResults() == 0) {
+            throw new CatalogException("Internal error. Cannot retrieve current release from project");
+        }
+        return projectQueryResult.first().getCurrentRelease();
     }
 
     @Deprecated
@@ -1164,7 +1179,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 //            variable.setRank(defaultString(variable.getDescription(), ""));
         }
 
-        VariableSet variableSet = new VariableSet(-1, name, unique, description, variables, attributes);
+        VariableSet variableSet = new VariableSet(-1, name, unique, description, variables, getCurrentRelease(studyId), attributes);
         CatalogAnnotationsValidator.checkVariableSet(variableSet);
 
         QueryResult<VariableSet> queryResult = studyDBAdaptor.createVariableSet(studyId, variableSet);

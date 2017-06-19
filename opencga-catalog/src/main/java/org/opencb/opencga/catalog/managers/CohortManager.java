@@ -92,7 +92,8 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         }
         String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_COHORTS);
-        Cohort cohort = new Cohort(name, type, TimeUtils.getTime(), description, samples, annotationSetList, attributes);
+        Cohort cohort = new Cohort(name, type, TimeUtils.getTime(), description, samples, annotationSetList,
+                catalogManager.getStudyManager().getCurrentRelease(studyId), attributes);
         QueryResult<Cohort> queryResult = cohortDBAdaptor.insert(cohort, studyId, null);
         auditManager.recordAction(AuditRecord.Resource.cohort, AuditRecord.Action.create, AuditRecord.Magnitude.low,
                 queryResult.first().getId(), userId, null, queryResult.first(), null, null);
@@ -559,7 +560,8 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null).first();
 
         QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(resource.getResourceId(), variableSet,
-                annotationSetName, annotations, attributes, cohortDBAdaptor);
+                annotationSetName, annotations, catalogManager.getStudyManager().getCurrentRelease(resource.getStudyId()), attributes,
+                cohortDBAdaptor);
 
         auditManager.recordUpdate(AuditRecord.Resource.cohort, resource.getResourceId(), resource.getUser(),
                 new ObjectMap("annotationSets", annotationSet.first()), "annotate", null);
@@ -637,7 +639,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream()
                         .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
-                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), null);
+                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), 1, null);
         auditManager.recordUpdate(AuditRecord.Resource.cohort, cohortId, resource.getUser(), new ObjectMap("annotationSets",
                 Collections.singletonList(annotationSetUpdate)), "update annotation", null);
 

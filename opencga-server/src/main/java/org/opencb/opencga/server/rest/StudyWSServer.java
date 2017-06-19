@@ -128,7 +128,8 @@ public class StudyWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes,
                                   @Deprecated @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes,
                                   @Deprecated @ApiParam(value = "Boolean attributes") @QueryParam("battributes") boolean battributes,
-                                  @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
+                                  @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
+                                  @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 

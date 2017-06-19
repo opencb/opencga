@@ -130,6 +130,7 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         SIZE("size", DECIMAL, ""),
+        RELEASE("release", INTEGER, ""),
         OUT_DIR("outDir", TEXT_ARRAY, ""),
         OUT_DIR_ID("outDir.id", INTEGER, ""),
         TMP_OUT_DIR_URI("tmpOutDirUri", TEXT_ARRAY, ""),

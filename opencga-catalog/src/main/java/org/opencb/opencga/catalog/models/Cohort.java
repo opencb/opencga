@@ -41,27 +41,28 @@ public class Cohort extends Annotable<CohortAclEntry> {
     private Family family;
 
     private Map<String, Object> stats;
+    private int release;
     private Map<String, Object> attributes;
 
 
     public Cohort() {
     }
 
-    public Cohort(String name, Study.Type type, String creationDate, String description, List<Sample> samples,
+    public Cohort(String name, Study.Type type, String creationDate, String description, List<Sample> samples, int release,
                   Map<String, Object> attributes) {
         this(-1, name, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(),
-                Collections.emptyList(), Collections.emptyMap(), attributes);
+                Collections.emptyList(), Collections.emptyMap(), release, attributes);
     }
 
     public Cohort(String name, Study.Type type, String creationDate, String description, List<Sample> samples,
-                  List<AnnotationSet> annotationSetList, Map<String, Object> attributes) {
+                  List<AnnotationSet> annotationSetList, int release, Map<String, Object> attributes) {
         this(-1, name, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(),
-                annotationSetList, Collections.emptyMap(), attributes);
+                annotationSetList, Collections.emptyMap(), release, attributes);
     }
 
     public Cohort(long id, String name, Study.Type type, String creationDate, CohortStatus status, String description,
                   List<Sample> samples, Family family, List<CohortAclEntry> acl, List<AnnotationSet> annotationSets,
-                  Map<String, Object> stats, Map<String, Object> attributes) {
+                  Map<String, Object> stats, int release, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -72,6 +73,7 @@ public class Cohort extends Annotable<CohortAclEntry> {
         this.family = family;
         this.acl = acl;
         this.annotationSets = annotationSets;
+        this.release = release;
         this.stats = stats;
         this.attributes = attributes;
     }
@@ -179,6 +181,7 @@ public class Cohort extends Annotable<CohortAclEntry> {
         sb.append(", acl=").append(acl);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", stats=").append(stats);
+        sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -258,6 +261,15 @@ public class Cohort extends Annotable<CohortAclEntry> {
 
     public Cohort setAcl(List<CohortAclEntry> acl) {
         this.acl = acl;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public Cohort setRelease(int release) {
+        this.release = release;
         return this;
     }
 

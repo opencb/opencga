@@ -159,37 +159,39 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
-    public Response searchIndividuals(@ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
-                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
-                                              + "alias") @QueryParam("study") String studyStr,
-                                      @ApiParam(value = "DEPRECATED: id", hidden = true) @QueryParam("id") String id,
-                                      @ApiParam(value = "name", required = false) @QueryParam("name") String name,
-                                      @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") String fatherId,
-                                      @ApiParam(value = "motherId", required = false) @QueryParam("motherId") String motherId,
-                                      @ApiParam(value = "family", required = false) @QueryParam("family") String family,
-                                      @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
-                                      @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-                                      @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
-                                                  String populationName,
-                                      @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
-                                                  String populationSubpopulation,
-                                      @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
-                                                  String populationDescription,
-                                      @ApiParam(value = "Ontology terms", required = false) @QueryParam("ontologies") String ontologies,
-                                      @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
-                                                  Individual.KaryotypicSex karyotypicSex,
-                                      @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
-                                                  Individual.LifeStatus lifeStatus,
-                                      @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
-                                                  Individual.AffectationStatus affectationStatus,
-                                      @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
-                                      @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId")
-                                                  String variableSetId,
-                                      @ApiParam(value = "Variable set id or name") @QueryParam("variableSet") String variableSet,
-                                      @ApiParam(value = "annotationsetName", required = false) @QueryParam("annotationsetName")
-                                                  String annotationsetName,
-                                      @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)", required = false) @QueryParam("annotation") String annotation,
-                                      @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
+    public Response searchIndividuals(
+            @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
+              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
+                      + "alias") @QueryParam("study") String studyStr,
+              @ApiParam(value = "DEPRECATED: id", hidden = true) @QueryParam("id") String id,
+              @ApiParam(value = "name", required = false) @QueryParam("name") String name,
+              @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") String fatherId,
+              @ApiParam(value = "motherId", required = false) @QueryParam("motherId") String motherId,
+              @ApiParam(value = "family", required = false) @QueryParam("family") String family,
+              @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
+              @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
+              @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
+                          String populationName,
+              @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
+                          String populationSubpopulation,
+              @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
+                          String populationDescription,
+              @ApiParam(value = "Ontology terms", required = false) @QueryParam("ontologies") String ontologies,
+              @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
+                          Individual.KaryotypicSex karyotypicSex,
+              @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
+                          Individual.LifeStatus lifeStatus,
+              @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
+                          Individual.AffectationStatus affectationStatus,
+              @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
+              @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId")
+                          String variableSetId,
+              @ApiParam(value = "Variable set id or name") @QueryParam("variableSet") String variableSet,
+              @ApiParam(value = "annotationsetName", required = false) @QueryParam("annotationsetName")
+                          String annotationsetName,
+              @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)", required = false) @QueryParam("annotation") String annotation,
+              @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
+            @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 
@@ -729,7 +731,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             }
 
             return new Individual(-1, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, population, lifeStatus,
-                    affectationStatus, dateOfBirth, parentalConsanguinity != null ? parentalConsanguinity : false, annotationSetList,
+                    affectationStatus, dateOfBirth, parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList,
                     ontologyTerms);
         }
     }

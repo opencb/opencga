@@ -83,6 +83,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         POPULATION_DESCRIPTION("population.description", TEXT, ""),
         DATE_OF_BIRTH("dateOfBirth", TEXT, ""),
         CREATION_DATE("creationDate", TEXT, ""),
+        RELEASE("release", INTEGER, ""),
 
         ONTOLOGIES("ontologies", TEXT_ARRAY, ""), // Alias in the webservice to ONTOLOGY_TERMS
         ONTOLOGY_TERMS("ontologyTerms", TEXT_ARRAY, ""),

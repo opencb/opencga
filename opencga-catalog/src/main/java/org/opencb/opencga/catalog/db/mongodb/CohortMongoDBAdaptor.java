@@ -507,6 +507,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
                     case NAME:
                     case TYPE:
                     case CREATION_DATE:
+                    case RELEASE:
                     case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:

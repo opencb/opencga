@@ -51,6 +51,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
+        RELEASE("release", INTEGER, ""),
         CREATION_DATE("creationDate", TEXT, ""),
 
         STUDY_ID("studyId", INTEGER_ARRAY, ""),

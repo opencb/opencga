@@ -225,8 +225,8 @@ public class CohortWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "Cohort type") @QueryParam("type") Study.Type type,
                                   @ApiParam(value = "Status") @QueryParam("status") String status,
                                   @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,
-                                  @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
-//                                  @ApiParam(value = "Family") @QueryParam("family") String family) {
+                                  @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
+                                  @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
             return createOkResponse(catalogManager.getCohortManager().search(studyStr, query, queryOptions, sessionId));
