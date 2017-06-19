@@ -1040,6 +1040,31 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
+    public QueryResult<File> count(String studyStr, Query query, String sessionId) throws CatalogException {
+        String userId = userManager.getId(sessionId);
+        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
+
+        // Check any permission in studies
+        for (Long studyId : studyIds) {
+            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
+        }
+
+        // The samples introduced could be either ids or names. As so, we should use the smart resolutor to do this.
+        // FIXME: Although the search method is multi-study, we can only use the smart resolutor for one study at the moment.
+        if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key())) && studyIds.size() == 1) {
+            MyResourceIds resourceIds = catalogManager.getSampleManager().getIds(
+                    query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()), Long.toString(studyIds.get(0)), sessionId);
+            query.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), resourceIds.getResourceIds());
+            query.remove(FileDBAdaptor.QueryParams.SAMPLES.key());
+        }
+
+        query.append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyIds);
+        QueryResult<Long> queryResultAux = fileDBAdaptor.count(query);
+        return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
+                queryResultAux.getErrorMsg(), Collections.emptyList());
+    }
+
+    @Override
     public QueryResult<Long> count(Query query, String sessionId) throws CatalogException {
         // Check the user exists in catalog
         String userId = catalogManager.getUserManager().getId(sessionId);

@@ -112,6 +112,8 @@ public interface ICohortManager extends ResourceManager<Long, Cohort>, IAnnotati
      */
     QueryResult<Cohort> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
+    QueryResult<Cohort> count(String studyStr, Query query, String sessionId) throws CatalogException;
+
     /**
      * Delete entries from Catalog.
      *

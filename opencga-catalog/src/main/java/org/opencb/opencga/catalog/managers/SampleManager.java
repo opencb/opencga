@@ -504,6 +504,32 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         return queryResult;
     }
 
+    @Override
+    public QueryResult<Sample> count(String studyStr, Query query, String sessionId) throws CatalogException {
+        String userId = userManager.getId(sessionId);
+        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
+
+        // Check any permission in studies
+        for (Long studyId : studyIds) {
+            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
+        }
+
+        // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
+        // FIXME: Although the search method is multi-study, we can only use the smart resolutor for one study at the moment.
+        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))
+                && studyIds.size() == 1) {
+            MyResourceIds resourceIds = catalogManager.getIndividualManager().getIds(
+                    query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()), Long.toString(studyIds.get(0)), sessionId);
+            query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), resourceIds.getResourceIds());
+            query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
+        }
+
+        query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyIds);
+        QueryResult<Long> queryResultAux = sampleDBAdaptor.count(query);
+        return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
+                queryResultAux.getErrorMsg(), Collections.emptyList());
+    }
+
     // TODO
     // This implementation should be changed and made better. Check the comment in IndividualManager -> delete(). Those changes
     // will probably make the delete from individualManager to be changed.

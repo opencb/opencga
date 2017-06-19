@@ -177,6 +177,8 @@ public interface IFileManager extends ResourceManager<Long, File> {
      */
     QueryResult<File> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
+    QueryResult<File> count(String studyStr, Query query, String sessionId) throws CatalogException;
+
     QueryResult<Long> count(Query query, String sessionId) throws CatalogException;
 
     /**

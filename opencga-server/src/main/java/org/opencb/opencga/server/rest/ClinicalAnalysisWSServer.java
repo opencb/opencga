@@ -1,6 +1,7 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.exception.VersionException;
@@ -89,7 +90,13 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
             @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)") @QueryParam("nattributes") String nattributes) {
         try {
-            return createOkResponse(clinicalManager.search(studyStr, query, queryOptions, sessionId));
+            QueryResult<ClinicalAnalysis> queryResult;
+            if (count) {
+                queryResult = clinicalManager.count(studyStr, query, sessionId);
+            } else {
+                queryResult = clinicalManager.search(studyStr, query, queryOptions, sessionId);
+            }
+            return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

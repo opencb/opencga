@@ -406,6 +406,22 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     @Override
+    public QueryResult<Individual> count(String studyStr, Query query, String sessionId) throws CatalogException {
+        String userId = userManager.getId(sessionId);
+        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
+
+        // Check any permission in studies
+        for (Long studyId : studyIds) {
+            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
+        }
+
+        query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyIds);
+        QueryResult<Long> queryResultAux = individualDBAdaptor.count(query);
+        return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
+                queryResultAux.getErrorMsg(), Collections.emptyList());
+    }
+
+    @Override
     public QueryResult<Individual> create(String studyStr, Individual individual, QueryOptions options, String sessionId)
             throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);

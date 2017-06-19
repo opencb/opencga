@@ -121,6 +121,8 @@ public interface IJobManager extends ResourceManager<Long, Job> {
 
     QueryResult<Job> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
+    QueryResult<Job> count(String studyStr, Query query, String sessionId) throws CatalogException;
+
     URI createJobOutDir(long studyId, String dirName, String sessionId) throws CatalogException;
 
     @Deprecated

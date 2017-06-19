@@ -205,7 +205,12 @@ public class SampleWSServer extends OpenCGAWSServer {
                 query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
             }
 
-            QueryResult<Sample> queryResult = sampleManager.search(studyStr, query, queryOptions, sessionId);
+            QueryResult<Sample> queryResult;
+            if (count) {
+                queryResult = sampleManager.count(studyStr, query, sessionId);
+            } else {
+                queryResult = sampleManager.search(studyStr, query, queryOptions, sessionId);
+            }
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

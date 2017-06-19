@@ -312,6 +312,23 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
+    public QueryResult<Job> count(String studyStr, Query query, String sessionId) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        String userId = userManager.getId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+        if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
+            throw CatalogAuthorizationException.deny(userId, "view", "jobs", studyId, null);
+        }
+
+        query.append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Long> queryResultAux = jobDBAdaptor.count(query);
+        return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
+                queryResultAux.getErrorMsg(), Collections.emptyList());
+    }
+
+    @Override
     public QueryResult<Job> update(Long jobId, ObjectMap parameters, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(parameters, "parameters");
         String userId = this.catalogManager.getUserManager().getId(sessionId);

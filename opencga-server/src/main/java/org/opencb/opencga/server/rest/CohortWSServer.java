@@ -229,7 +229,13 @@ public class CohortWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
-            return createOkResponse(catalogManager.getCohortManager().search(studyStr, query, queryOptions, sessionId));
+            QueryResult<Cohort> queryResult;
+            if (count) {
+                queryResult = catalogManager.getCohortManager().count(studyStr, query, sessionId);
+            } else {
+                queryResult = catalogManager.getCohortManager().search(studyStr, query, queryOptions, sessionId);
+            }
+            return createOkResponse(queryResult);
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }

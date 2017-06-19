@@ -252,4 +252,40 @@ public class ClinicalAnalysisManager extends AbstractManager {
 
         return queryResult;
     }
+
+    public QueryResult<ClinicalAnalysis> count(String studyStr, Query query, String sessionId)
+            throws CatalogException {
+        String userId = catalogManager.getUserManager().getId(sessionId);
+        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
+
+        // Check any permission in studies
+        for (Long studyId : studyIds) {
+            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
+        }
+
+        // FIXME: Although the search method is multi-study, we can only use the smart resolutor for one study at the moment.
+        if (query.containsKey("family")) {
+            MyResourceId familyResource = catalogManager.getFamilyManager().getId(query.getString("family"),
+                    Long.toString(studyIds.get(0)), sessionId);
+            query.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY_ID.key(), familyResource.getResourceId());
+            query.remove("family");
+        }
+        if (query.containsKey("sample")) {
+            MyResourceId sampleResource = catalogManager.getSampleManager().getId(query.getString("sample"),
+                    Long.toString(studyIds.get(0)), sessionId);
+            query.put(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE_ID.key(), sampleResource.getResourceId());
+            query.remove("sample");
+        }
+        if (query.containsKey("proband")) {
+            MyResourceId probandResource = catalogManager.getIndividualManager().getId(query.getString("proband"),
+                    Long.toString(studyIds.get(0)), sessionId);
+            query.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_ID.key(), probandResource.getResourceId());
+            query.remove("proband");
+        }
+
+        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyIds);
+        QueryResult<Long> queryResultAux = clinicalDBAdaptor.count(query);
+        return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
+                queryResultAux.getErrorMsg(), Collections.emptyList());
+    }
 }

@@ -198,7 +198,12 @@ public class IndividualWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            QueryResult<Individual> queryResult = individualManager.search(studyStr, query, queryOptions, sessionId);
+            QueryResult<Individual> queryResult;
+            if (count) {
+                queryResult = individualManager.count(studyStr, query, sessionId);
+            } else {
+                queryResult = individualManager.search(studyStr, query, queryOptions, sessionId);
+            }
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

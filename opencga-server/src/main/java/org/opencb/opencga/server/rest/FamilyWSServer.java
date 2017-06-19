@@ -90,7 +90,12 @@ public class FamilyWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
-            QueryResult<Family> queryResult = familyManager.search(studyStr, query, queryOptions, sessionId);
+            QueryResult<Family> queryResult;
+            if (count) {
+                queryResult = familyManager.count(studyStr, query, sessionId);
+            } else {
+                queryResult = familyManager.search(studyStr, query, queryOptions, sessionId);
+            }
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

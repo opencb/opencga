@@ -288,6 +288,30 @@ public class CohortManager extends AbstractManager implements ICohortManager {
     }
 
     @Override
+    public QueryResult<Cohort> count(String studyStr, Query query, String sessionId) throws CatalogException {
+        String userId = userManager.getId(sessionId);
+        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
+
+        // Check any permission in studies
+        for (Long studyId : studyIds) {
+            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
+        }
+
+        if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
+            // First look for the sample ids.
+            AbstractManager.MyResourceIds samples = catalogManager.getSampleManager()
+                    .getIds(query.getString(CohortDBAdaptor.QueryParams.SAMPLES.key()), studyStr, sessionId);
+            query.remove(CohortDBAdaptor.QueryParams.SAMPLES.key());
+            query.append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), samples.getResourceIds());
+        }
+
+        query.append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyIds);
+        QueryResult<Long> queryResultAux = cohortDBAdaptor.count(query);
+        return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
+                queryResultAux.getErrorMsg(), Collections.emptyList());
+    }
+
+    @Override
     @Deprecated
     public QueryResult<Cohort> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
         return null;

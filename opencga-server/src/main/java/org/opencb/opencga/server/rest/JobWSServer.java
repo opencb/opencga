@@ -192,8 +192,12 @@ public class JobWSServer extends OpenCGAWSServer {
                 query.remove(JobDBAdaptor.QueryParams.NAME.key());
                 logger.debug("Name attribute empty, it's been removed");
             }
-
-            QueryResult<Job> result = catalogManager.getAllJobs(studyIdNum, query, queryOptions, sessionId);
+            QueryResult<Job> result;
+            if (count) {
+                result = catalogManager.getJobManager().count(Long.toString(studyIdNum), query, sessionId);
+            } else {
+                result = catalogManager.getAllJobs(studyIdNum, query, queryOptions, sessionId);
+            }
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

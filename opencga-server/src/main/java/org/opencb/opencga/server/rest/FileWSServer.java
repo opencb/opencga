@@ -684,7 +684,13 @@ public class FileWSServer extends OpenCGAWSServer {
                 query.put(FileDBAdaptor.QueryParams.JOB_ID.key(), query.get("jobId"));
                 query.remove("jobId");
             }
-            QueryResult<File> result = fileManager.search(studyStr, query, queryOptions, sessionId);
+
+            QueryResult<File> result;
+            if (count) {
+                result = fileManager.count(studyStr, query, sessionId);
+            } else {
+                result = fileManager.search(studyStr, query, queryOptions, sessionId);
+            }
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
