@@ -33,6 +33,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -273,7 +274,12 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         samplesPositionMap = new HashMap<>();
 
         variantMerger = new VariantMerger();
-
+        for (VariantStudyMetadata.VariantMetadataRecord record : studyConfiguration.getVariantMetadata().getFormat().values()) {
+            variantMerger.configure(record.getId(), record.getNumberType(), record.getType());
+        }
+        for (VariantStudyMetadata.VariantMetadataRecord record : studyConfiguration.getVariantMetadata().getInfo().values()) {
+            variantMerger.configure(record.getId(), record.getNumberType(), record.getType());
+        }
         this.resume = resume;
     }
 
