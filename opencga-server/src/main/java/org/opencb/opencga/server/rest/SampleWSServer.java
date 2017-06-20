@@ -367,16 +367,47 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{sample}/annotationsets/info")
     @ApiOperation(value = "Return the annotation sets of the sample", position = 12)
-    public Response infoAnnotationSetGET(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
-                                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                         @QueryParam("study") String studyStr,
-                                         @ApiParam(value = "Indicates whether to show the annotations as key-value",
-                                                 defaultValue = "false") @QueryParam("asMap") boolean asMap) {
+    public Response infoAnnotationSetGET(
+            @ApiParam(value = "Sample id or name", required = true) @PathParam("sample") String sampleStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap,
+            @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam ("annotationsetName") String annotationsetName) {
         try {
             if (asMap) {
-                return createOkResponse(sampleManager.getAllAnnotationSetsAsMap(sampleStr, studyStr, sessionId));
+                if (StringUtils.isNotEmpty(annotationsetName)) {
+                    return createOkResponse(sampleManager.getAnnotationSetAsMap(sampleStr, studyStr, annotationsetName, sessionId));
+                } else {
+                    return createOkResponse(sampleManager.getAllAnnotationSetsAsMap(sampleStr, studyStr, sessionId));
+                }
             } else {
-                return createOkResponse(sampleManager.getAllAnnotationSets(sampleStr, studyStr, sessionId));
+                if (StringUtils.isNotEmpty(annotationsetName)) {
+                    return createOkResponse(sampleManager.getAnnotationSet(sampleStr, studyStr, annotationsetName, sessionId));
+                } else {
+                    return createOkResponse(sampleManager.getAllAnnotationSets(sampleStr, studyStr, sessionId));
+                }
+            }
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+    }
+
+
+    @GET
+    @Path("/{sample}/annotationsets/{annotationsetName}/info")
+    @ApiOperation(value = "Return the annotation set [DEPRECATED]", position = 16, notes = "Use /{sample}/annotationsets/info instead")
+    public Response infoAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
+                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                      @QueryParam("study") String studyStr,
+                                      @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName") String annotationsetName,
+                                      @ApiParam(value = "Indicates whether to show the annotations as key-value",
+                                              defaultValue = "false") @QueryParam("asMap") boolean asMap) {
+        try {
+            if (asMap) {
+                return createOkResponse(catalogManager.getSampleManager().getAnnotationSetAsMap(sampleStr, studyStr, annotationsetName,
+                        sessionId));
+            } else {
+                return createOkResponse(catalogManager.getSampleManager().getAnnotationSet(sampleStr, studyStr, annotationsetName,
+                        sessionId));
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -441,28 +472,6 @@ public class SampleWSServer extends OpenCGAWSServer {
             QueryResult<AnnotationSet> queryResult = sampleManager.updateAnnotationSet(sampleIdStr, studyStr, annotationsetName,
                     annotations, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{sample}/annotationsets/{annotationsetName}/info")
-    @ApiOperation(value = "Return the annotation set", position = 16)
-    public Response infoAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
-                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                      @QueryParam("study") String studyStr,
-                                      @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName") String annotationsetName,
-                                      @ApiParam(value = "Indicates whether to show the annotations as key-value",
-                                              defaultValue = "false") @QueryParam("asMap") boolean asMap) {
-        try {
-            if (asMap) {
-                return createOkResponse(catalogManager.getSampleManager().getAnnotationSetAsMap(sampleStr, studyStr, annotationsetName,
-                        sessionId));
-            } else {
-                return createOkResponse(catalogManager.getSampleManager().getAnnotationSet(sampleStr, studyStr, annotationsetName,
-                        sessionId));
-            }
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }
