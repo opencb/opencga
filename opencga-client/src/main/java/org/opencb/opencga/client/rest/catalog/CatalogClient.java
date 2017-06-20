@@ -42,10 +42,6 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
         }
     }
 
-    public QueryResponse<Long> count(Query query) throws IOException {
-        return execute(category, "count", query, GET, Long.class);
-    }
-
     public QueryResponse<T> get(String id, ObjectMap params) throws IOException {
         return execute(category, id, "info", params, GET, clazz);
     }
@@ -53,6 +49,12 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
     public QueryResponse<T> search(Query query, QueryOptions options) throws IOException {
         ObjectMap myQuery = new ObjectMap(query);
         myQuery.putAll(options);
+        return execute(category, "search", myQuery, GET, clazz);
+    }
+
+    public QueryResponse<T> count(Query query) throws IOException {
+        ObjectMap myQuery = new ObjectMap(query);
+        myQuery.put("count", true);
         return execute(category, "search", myQuery, GET, clazz);
     }
 

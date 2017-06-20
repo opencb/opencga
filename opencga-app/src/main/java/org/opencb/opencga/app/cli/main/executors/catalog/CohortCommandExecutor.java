@@ -133,15 +133,17 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotNull(CohortDBAdaptor.QueryParams.STATUS.key(), commandOptions.status);
         query.putIfNotEmpty(CohortDBAdaptor.QueryParams.SAMPLES.key(), commandOptions.samples);
 
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, commandOptions.dataModelOptions.exclude);
-        queryOptions.put(QueryOptions.LIMIT, commandOptions.numericOptions.limit);
-        queryOptions.put(QueryOptions.SKIP, commandOptions.numericOptions.skip);
-        queryOptions.put("count", commandOptions.numericOptions.count);
+        if (commandOptions.numericOptions.count) {
+            return openCGAClient.getCohortClient().count(query);
+        } else {
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);
+            queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, commandOptions.dataModelOptions.exclude);
+            queryOptions.put(QueryOptions.LIMIT, commandOptions.numericOptions.limit);
+            queryOptions.put(QueryOptions.SKIP, commandOptions.numericOptions.skip);
 
-        return openCGAClient.getCohortClient().search(query,queryOptions);
-
+            return openCGAClient.getCohortClient().search(query, queryOptions);
+        }
     }
 
 

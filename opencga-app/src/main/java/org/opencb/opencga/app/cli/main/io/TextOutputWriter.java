@@ -31,7 +31,12 @@ public class TextOutputWriter extends AbstractOutputWriter {
         }
 
         if (queryResponse.getResponse().size() == 0 || ((QueryResult) queryResponse.getResponse().get(0)).getNumResults() == 0) {
-            ps.println("No results found for the query.");
+            if (queryResponse.first().getNumTotalResults() > 0) {
+                // count
+                ps.println(queryResponse.first().getNumTotalResults());
+            } else {
+                ps.println("No results found for the query.");
+            }
             return;
         }
 

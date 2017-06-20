@@ -197,15 +197,18 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), filesCommandOptions.searchCommandOptions.attributes);
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.NATTRIBUTES.key(), filesCommandOptions.searchCommandOptions.nattributes);
 
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, filesCommandOptions.searchCommandOptions.dataModelOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, filesCommandOptions.searchCommandOptions.dataModelOptions.exclude);
-        queryOptions.put(QueryOptions.LIMIT, filesCommandOptions.searchCommandOptions.numericOptions.limit);
-        queryOptions.put(QueryOptions.SKIP, filesCommandOptions.searchCommandOptions.numericOptions.skip);
-        queryOptions.put("count", filesCommandOptions.searchCommandOptions.numericOptions.count);
-        queryOptions.put("lazy", !filesCommandOptions.infoCommandOptions.noLazy);
+        if (filesCommandOptions.searchCommandOptions.numericOptions.count) {
+            return openCGAClient.getFileClient().count(query);
+        } else {
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, filesCommandOptions.searchCommandOptions.dataModelOptions.include);
+            queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, filesCommandOptions.searchCommandOptions.dataModelOptions.exclude);
+            queryOptions.put(QueryOptions.LIMIT, filesCommandOptions.searchCommandOptions.numericOptions.limit);
+            queryOptions.put(QueryOptions.SKIP, filesCommandOptions.searchCommandOptions.numericOptions.skip);
+            queryOptions.put("lazy", !filesCommandOptions.infoCommandOptions.noLazy);
 
-        return openCGAClient.getFileClient().search(query,queryOptions);
+            return openCGAClient.getFileClient().search(query, queryOptions);
+        }
     }
 
     private QueryResponse<File> list() throws CatalogException, IOException {
