@@ -36,13 +36,13 @@ import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.hpg.bigdata.core.io.avro.AvroFileWriter;
-import org.opencb.commons.ProgressLogger;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -51,6 +51,7 @@ import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata.VariantMetadataRecord;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -71,6 +72,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -580,24 +582,30 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             }
             if (!studyConfiguration.getAttributes().containsKey(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key())) {
                 List<String> extraFieldsType = new ArrayList<>(extraFields.size());
+                List<Map<String, Object>> formats = (List) source.getHeader().getMeta().get("FORMAT");
+                Map<String, VariantMetadataRecord> map = formats.stream()
+                        .map(VariantMetadataRecord::new)
+                        .collect(Collectors.toMap(VariantMetadataRecord::getId, r -> r));
                 for (String extraField : extraFields) {
-                    List<Map<String, Object>> formats = (List) source.getHeader().getMeta().get("FORMAT");
-                    VCFHeaderLineType type = VCFHeaderLineType.String;
-                    for (Map<String, Object> format : formats) {
-                        if (format.get("ID").toString().equals(extraField)) {
-                            if ("1".equals(format.get("Number"))) {
-                                try {
-                                    type = VCFHeaderLineType.valueOf(Objects.toString(format.get("Type")));
-                                } catch (IllegalArgumentException ignore) {
-                                    type = VCFHeaderLineType.String;
-                                }
-                            } else {
-                                //Fields with arity != 1 are loaded as String
-                                type = VCFHeaderLineType.String;
-                            }
-                            break;
-                        }
+                    VCFHeaderLineType type;
+                    VariantMetadataRecord metadataRecord = map.get(extraField);
+                    if (metadataRecord == null) {
+                        throw new StorageEngineException("Unknown FORMAT field " + extraField);
                     }
+                    studyConfiguration.getVariantMetadata().getFormat().put(metadataRecord.getId(), metadataRecord);
+
+                    if (Objects.equals(metadataRecord.getNumber(), 1)) {
+                        try {
+                            type = metadataRecord.getType();
+                        } catch (IllegalArgumentException ignore) {
+                            type = VCFHeaderLineType.String;
+                        }
+                    } else {
+                        //Fields with arity != 1 are loaded as String
+                        type = VCFHeaderLineType.String;
+                    }
+
+
                     switch (type) {
                         case String:
                         case Float:
@@ -614,6 +622,26 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 }
                 studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), extraFieldsType);
             }
+        }
+
+        List<Map<String, Object>> info = (List) source.getHeader().getMeta().getOrDefault("INFO", Collections.emptyList());
+        for (Map<String, Object> line : info) {
+            studyConfiguration.getVariantMetadata().addInfoRecord(line);
+        }
+
+        List<Map<String, Object>> filter = (List) source.getHeader().getMeta().getOrDefault("FILTER", Collections.emptyList());
+        for (Map<String, Object> line : filter) {
+            studyConfiguration.getVariantMetadata().getFilter().put(line.get("ID").toString(), line.get("Description").toString());
+        }
+
+        List<Map<String, Object>> alt = (List) source.getHeader().getMeta().getOrDefault("ALT", Collections.emptyList());
+        for (Map<String, Object> line : alt) {
+            studyConfiguration.getVariantMetadata().getAlternates().put(line.get("ID").toString(), line.get("Description").toString());
+        }
+
+        List<Map<String, Object>> config = (List) source.getHeader().getMeta().getOrDefault("contig", Collections.emptyList());
+        for (Map<String, Object> line : config) {
+            studyConfiguration.getVariantMetadata().getContig().put(line.get("ID").toString(), Long.valueOf(line.get("length").toString()));
         }
     }
 

@@ -1,0 +1,237 @@
+package org.opencb.opencga.storage.core.metadata;
+
+import htsjdk.variant.vcf.*;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
+import java.util.*;
+
+/**
+ * Created on 20/06/17.
+ *
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
+ */
+public class VariantStudyMetadata {
+
+    private Map<String, VariantMetadataRecord> info;    // Map from ID to VariantMetadataRecord
+    private Map<String, VariantMetadataRecord> format;  // Map from ID to VariantMetadataRecord
+
+    private Map<String, String> alternates; // Symbolic alternates
+    private Map<String, String> filter;
+    private LinkedHashMap<String, Long> contig;
+
+    // Do not store other metadata fields as they may be totally different
+    // private Map<String, String> other;
+
+    public VariantStudyMetadata() {
+        info = new HashMap<>();
+        format = new HashMap<>();
+        alternates = new HashMap<>();
+        filter = new HashMap<>();
+        contig = new LinkedHashMap<>();
+    }
+
+    public VariantStudyMetadata(VariantStudyMetadata copy) {
+        info = new HashMap<>(copy.info); // VariantMetadataRecord are immutable objects
+        format = new HashMap<>(copy.format); // VariantMetadataRecord are immutable objects
+        alternates = new HashMap<>(copy.alternates);
+        filter = new HashMap<>(copy.filter);
+        contig = new LinkedHashMap<>(copy.contig);
+    }
+
+    public Map<String, VariantMetadataRecord> getInfo() {
+        return info;
+    }
+
+    public VariantStudyMetadata setInfo(Map<String, VariantMetadataRecord> info) {
+        this.info = info;
+        return this;
+    }
+
+    public VariantStudyMetadata addInfoRecords(Collection<VCFInfoHeaderLine> collection) {
+        for (VCFInfoHeaderLine line : collection) {
+            info.put(line.getID(), new VariantMetadataRecord(line));
+        }
+        return this;
+    }
+
+    public VariantStudyMetadata addInfoRecord(Map<String, Object> record) {
+        VariantMetadataRecord r = new VariantMetadataRecord(record);
+        info.put(r.getId(), r);
+        return this;
+    }
+
+    public Map<String, VariantMetadataRecord> getFormat() {
+        return format;
+    }
+
+    public VariantStudyMetadata setFormat(Map<String, VariantMetadataRecord> format) {
+        this.format = format;
+        return this;
+    }
+
+    public VariantStudyMetadata addFormatRecords(Collection<VCFFormatHeaderLine> collection) {
+        for (VCFFormatHeaderLine line : collection) {
+            format.put(line.getKey(), new VariantMetadataRecord(line));
+        }
+        return this;
+    }
+
+    public VariantStudyMetadata addFormatRecord(Map<String, Object> record) {
+        VariantMetadataRecord r = new VariantMetadataRecord(record);
+        format.put(r.getId(), r);
+        return this;
+    }
+
+    public Map<String, String> getAlternates() {
+        return alternates;
+    }
+
+    public VariantStudyMetadata setAlternates(Map<String, String> alternates) {
+        this.alternates = alternates;
+        return this;
+    }
+
+    public Map<String, String> getFilter() {
+        return filter;
+    }
+
+    public VariantStudyMetadata setFilter(Map<String, String> filter) {
+        this.filter = filter;
+        return this;
+    }
+
+    public LinkedHashMap<String, Long> getContig() {
+        return contig;
+    }
+
+    public VariantStudyMetadata setContig(LinkedHashMap<String, Long> contig) {
+        this.contig = contig;
+        return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof VariantStudyMetadata)) {
+            return false;
+        }
+        VariantStudyMetadata that = (VariantStudyMetadata) o;
+        return Objects.equals(info, that.info)
+                && Objects.equals(format, that.format)
+                && Objects.equals(alternates, that.alternates)
+                && Objects.equals(filter, that.filter)
+                && Objects.equals(contig, that.contig);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(info, format, alternates, filter, contig);
+    }
+
+    @Override
+    public String toString() {
+        return toString(ToStringStyle.SIMPLE_STYLE);
+    }
+
+    public String toJson() {
+        return toString(ToStringStyle.JSON_STYLE);
+    }
+
+    public String toString(ToStringStyle style) {
+        return new ToStringBuilder(this, style)
+                .append("info", info)
+                .append("format", format)
+                .append("alternates", alternates)
+                .append("filter", filter)
+                .append("contigs", contig)
+                .toString();
+    }
+
+
+    public static class VariantMetadataRecord {
+        private final String id;
+        private final VCFHeaderLineCount numberType;
+        private final Integer number;
+        private final VCFHeaderLineType type;
+        private final String description;
+//        private Map<String, String> other;
+
+        public VariantMetadataRecord(String id, VCFHeaderLineCount numberType, Integer number, VCFHeaderLineType type, String description) {
+            this.id = id;
+            this.numberType = numberType;
+            this.number = number;
+            this.type = type;
+            this.description = description;
+        }
+
+        public VariantMetadataRecord(VCFCompoundHeaderLine line) {
+            id = line.getID();
+            numberType = line.getCountType();
+            number = line.getCount();
+            type = line.getType();
+            description = line.getDescription();
+        }
+
+        public VariantMetadataRecord(Map<String, Object> record) {
+            id = record.get("ID").toString();
+            String numberStr = record.get("Number").toString();
+            if (numberStr.equals(".")) {
+                numberType = VCFHeaderLineCount.UNBOUNDED;
+                number = null;
+            } else if (StringUtils.isNumeric(numberStr)) {
+                numberType = VCFHeaderLineCount.INTEGER;
+                number = Integer.valueOf(numberStr);
+            } else {
+                numberType = VCFHeaderLineCount.valueOf(numberStr);
+                number = null;
+            }
+            type = VCFHeaderLineType.valueOf(record.get("Type").toString());
+            description = record.get("Description").toString();
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public VCFHeaderLineCount getNumberType() {
+            return numberType;
+        }
+
+        public Integer getNumber() {
+            return number;
+        }
+
+        public VCFHeaderLineType getType() {
+            return type;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof VariantMetadataRecord)) {
+                return false;
+            }
+            VariantMetadataRecord that = (VariantMetadataRecord) o;
+            return Objects.equals(id, that.id)
+                    && Objects.equals(number, that.number)
+                    && numberType == that.numberType
+                    && type == that.type
+                    && Objects.equals(description, that.description);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(id, number, numberType, type, description);
+        }
+    }
+}
