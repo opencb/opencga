@@ -1216,6 +1216,13 @@ public class FileWSServer extends OpenCGAWSServer {
                 map.remove("jobId");
             }
 
+            // TODO: sampleIds is deprecated
+            if (StringUtils.isNotEmpty(params.getString("sampleIds"))
+                    && StringUtils.isEmpty(params.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
+                params.remove("sampleIds");
+                params.put(FileDBAdaptor.QueryParams.SAMPLES.key(), params.getString("sampleIds"));
+            }
+
             QueryResult<File> queryResult = fileManager.update(resource.getResourceId(), map, queryOptions, sessionId);
             queryResult.setId("Update file");
             return createOkResponse(queryResult);
