@@ -5,7 +5,6 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.AbstractAclEntry;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Iterator;
@@ -148,14 +147,6 @@ public class TextOutputWriter extends AbstractOutputWriter {
                                         printGroup(group, sb, "        + ");
                                     }
                                 }
-
-                                if (study.getAcl().size() > 0) {
-                                    sb.append("       Acl:\n");
-                                    for (StudyAclEntry studyAclEntry : study.getAcl()) {
-                                        printACL(studyAclEntry, sb, "        + ");
-                                    }
-                                }
-
                             }
                         }
                     }
