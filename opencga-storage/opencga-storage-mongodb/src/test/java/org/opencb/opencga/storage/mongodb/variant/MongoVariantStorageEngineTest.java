@@ -926,6 +926,22 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
                 assertEquals(id, studies.get(0).get(FILES_FIELD, List.class).size(), studies.get(1).get(FILES_FIELD, List.class).size());
                 assertEquals(id, files1.size(), files2.size());
                 for (Map.Entry<String, Document> entry : files1.entrySet()) {
+                    Document attrs = entry.getValue().get(ATTRIBUTES_FIELD, Document.class);
+                    Document attrs2 = files2.get(entry.getKey()).get(ATTRIBUTES_FIELD, Document.class);
+                    String ac1 = Objects.toString(attrs.remove("AC"));
+                    String ac2 = Objects.toString(attrs2.remove("AC"));
+                    if (!ac1.equals(ac2)) {
+                        ac1 = Arrays.stream(ac1.split(",")).map(Integer::parseInt).map(String::valueOf).collect(Collectors.joining(","));
+                        ac2 = Arrays.stream(ac2.split(",")).map(Integer::parseInt).map(String::valueOf).collect(Collectors.joining(","));
+                        assertTrue(id + ' ' + ac1 + ' ' + ac2 , ac1.startsWith(ac2) || ac2.startsWith(ac1));
+                    }
+                    String af1 = Objects.toString(attrs.remove("AF"));
+                    String af2 = Objects.toString(attrs2.remove("AF"));
+                    if (!af1.equals(af2)) {
+                        af1 = Arrays.stream(af1.split(",")).map(Double::parseDouble).map(String::valueOf).collect(Collectors.joining(","));
+                        af2 = Arrays.stream(af2.split(",")).map(Double::parseDouble).map(String::valueOf).collect(Collectors.joining(","));
+                        assertTrue(id + ' ' + af1 + ' ' + af2 , af1.startsWith(af2) || af2.startsWith(af1));
+                    }
                     assertEquals(id, entry.getValue(), files2.get(entry.getKey()));
                 }
 

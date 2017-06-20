@@ -475,21 +475,26 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 emptyVar.setType(variant.getType());
                 variant.getStudies().get(0).setSamplesPosition(getSamplesPosition(fileId));
                 List<AlternateCoordinate> fileAlternates = variant.getStudies().get(0).getSecondaryAlternates();
-                if (!alternates.isEmpty() && !alternates.equals(fileAlternates) && !fileAlternates.isEmpty()) {
-                    // Create template variant with the required alternates.
-                    Variant templateVariant = new Variant(
-                            variant.getChromosome(),
-                            variant.getStart(),
-                            variant.getEnd(),
-                            variant.getReference(),
-                            variant.getAlternate());
-                    StudyEntry studyEntry = new StudyEntry(studyIdStr, alternates, format);
-                    studyEntry.setSamplesPosition(Collections.emptyMap());
-                    templateVariant.addStudyEntry(studyEntry);
+                if (!alternates.isEmpty() && !alternates.equals(fileAlternates)) {
+                    if (!fileAlternates.isEmpty()) {
+                        // Create template variant with the required alternates.
+                        Variant templateVariant = new Variant(
+                                variant.getChromosome(),
+                                variant.getStart(),
+                                variant.getEnd(),
+                                variant.getReference(),
+                                variant.getAlternate());
+                        StudyEntry studyEntry = new StudyEntry(studyIdStr, alternates, format);
+                        studyEntry.setSamplesPosition(Collections.emptyMap());
+                        templateVariant.addStudyEntry(studyEntry);
 
-                    variant = variantMerger.merge(templateVariant, variant);
-                    // Update the alternates, in case of increasing the number of alternates.
-                    alternates = new ArrayList<>(variant.getStudies().get(0).getSecondaryAlternates());
+                        variant = variantMerger.merge(templateVariant, variant);
+                        // Update the alternates, in case of increasing the number of alternates.
+                        alternates = new ArrayList<>(variant.getStudies().get(0).getSecondaryAlternates());
+                    } else {
+                        // Add unused extra alternates
+                        fileAlternates.addAll(alternates);
+                    }
                 } else if (alternates.isEmpty() && !fileAlternates.isEmpty()) {
                     alternates = new ArrayList<>(fileAlternates);
                 }
@@ -735,7 +740,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
      *
      * If there are any conflict with overlapped positions, will try to select always the mainVariant.
      *
-     * @see {@link VariantMerger}
+     * @see VariantMerger
      *
      * @param mainVariant           Main variant to resolve conflicts.
      * @param overlappedVariants    Overlapping documents from Stage collection.
