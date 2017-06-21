@@ -172,8 +172,7 @@ public class OpencgaCliOptionsParser {
         individualSubCommands.addCommand("acl", individualCommandOptions.aclsCommandOptions);
         individualSubCommands.addCommand("acl-update", individualCommandOptions.aclsUpdateCommandOptions);
         individualSubCommands.addCommand("annotation-sets-create", individualCommandOptions.annotationCreateCommandOptions);
-        individualSubCommands.addCommand("annotation-sets-all-info", individualCommandOptions.annotationAllInfoCommandOptions);
-        individualSubCommands.addCommand("annotation-sets-info", individualCommandOptions.annotationInfoCommandOptions);
+        individualSubCommands.addCommand("annotation-sets", individualCommandOptions.annotationInfoCommandOptions);
         individualSubCommands.addCommand("annotation-sets-search", individualCommandOptions.annotationSearchCommandOptions);
         individualSubCommands.addCommand("annotation-sets-update", individualCommandOptions.annotationUpdateCommandOptions);
         individualSubCommands.addCommand("annotation-sets-delete", individualCommandOptions.annotationDeleteCommandOptions);
@@ -188,8 +187,7 @@ public class OpencgaCliOptionsParser {
         familySubCommands.addCommand("acl", familyCommandOptions.aclsCommandOptions);
         familySubCommands.addCommand("acl-update", familyCommandOptions.aclsUpdateCommandOptions);
         familySubCommands.addCommand("annotation-sets-create", familyCommandOptions.annotationCreateCommandOptions);
-        familySubCommands.addCommand("annotation-sets-all-info", familyCommandOptions.annotationAllInfoCommandOptions);
-        familySubCommands.addCommand("annotation-sets-info", familyCommandOptions.annotationInfoCommandOptions);
+        familySubCommands.addCommand("annotation-sets", familyCommandOptions.annotationInfoCommandOptions);
         familySubCommands.addCommand("annotation-sets-search", familyCommandOptions.annotationSearchCommandOptions);
         familySubCommands.addCommand("annotation-sets-update", familyCommandOptions.annotationUpdateCommandOptions);
         familySubCommands.addCommand("annotation-sets-delete", familyCommandOptions.annotationDeleteCommandOptions);
@@ -208,8 +206,7 @@ public class OpencgaCliOptionsParser {
         sampleSubCommands.addCommand("acl", sampleCommandOptions.aclsCommandOptions);
         sampleSubCommands.addCommand("acl-update", sampleCommandOptions.aclsUpdateCommandOptions);
         sampleSubCommands.addCommand("annotation-sets-create", sampleCommandOptions.annotationCreateCommandOptions);
-        sampleSubCommands.addCommand("annotation-sets-all-info", sampleCommandOptions.annotationAllInfoCommandOptions);
-        sampleSubCommands.addCommand("annotation-sets-info", sampleCommandOptions.annotationInfoCommandOptions);
+        sampleSubCommands.addCommand("annotation-sets", sampleCommandOptions.annotationInfoCommandOptions);
         sampleSubCommands.addCommand("annotation-sets-search", sampleCommandOptions.annotationSearchCommandOptions);
         sampleSubCommands.addCommand("annotation-sets-update", sampleCommandOptions.annotationUpdateCommandOptions);
         sampleSubCommands.addCommand("annotation-sets-delete", sampleCommandOptions.annotationDeleteCommandOptions);
@@ -240,8 +237,7 @@ public class OpencgaCliOptionsParser {
         cohortSubCommands.addCommand("acl", cohortCommandOptions.aclsCommandOptions);
         cohortSubCommands.addCommand("acl-update", cohortCommandOptions.aclsUpdateCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-create", cohortCommandOptions.annotationCreateCommandOptions);
-        cohortSubCommands.addCommand("annotation-sets-all-info", cohortCommandOptions.annotationAllInfoCommandOptions);
-        cohortSubCommands.addCommand("annotation-sets-info", cohortCommandOptions.annotationInfoCommandOptions);
+        cohortSubCommands.addCommand("annotation-sets", cohortCommandOptions.annotationInfoCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-search", cohortCommandOptions.annotationSearchCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-update", cohortCommandOptions.annotationUpdateCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-delete", cohortCommandOptions.annotationDeleteCommandOptions);

@@ -44,12 +44,8 @@ public abstract class AnnotationClient<T, U> extends CatalogClient<T, U> {
         return execute(category, id, "annotationsets", null, "create", params, POST, AnnotationSet.class);
     }
 
-    public QueryResponse<AnnotationSet> getAllAnnotationSets(String id, ObjectMap params) throws IOException {
-        return execute(category, id, "annotationsets", null, "info", params, GET, AnnotationSet.class);
-    }
-
-    public QueryResponse<AnnotationSet> getAnnotationSet(String id, String annotationSetName, ObjectMap params) throws IOException {
-        return execute(category, id, "annotationsets", annotationSetName, "info", params, GET, AnnotationSet.class);
+    public QueryResponse<AnnotationSet> getAnnotationSets(String id, ObjectMap params) throws IOException {
+        return execute(category, id, "annotationsets", params, GET, AnnotationSet.class);
     }
 
     public QueryResponse<AnnotationSet> searchAnnotationSets(String id, ObjectMap params) throws IOException {
