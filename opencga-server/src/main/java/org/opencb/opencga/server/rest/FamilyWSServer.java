@@ -170,18 +170,26 @@ public class FamilyWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{family}/annotationsets/info")
+    @Path("/{family}/annotationsets")
     @ApiOperation(value = "Return the annotation sets of the family", position = 12)
-    public Response infoAnnotationSetGET(@ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
-                                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                         @QueryParam("study") String studyStr,
-                                         @ApiParam(value = "Indicates whether to show the annotations as key-value",
-                                                 defaultValue = "false") @QueryParam("asMap") boolean asMap) {
+    public Response getAnnotationSet(
+            @ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap,
+            @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName) {
         try {
             if (asMap) {
-                return createOkResponse(familyManager.getAllAnnotationSetsAsMap(familyStr, studyStr, sessionId));
+                if (StringUtils.isNotEmpty(annotationsetName)) {
+                    return createOkResponse(familyManager.getAnnotationSetAsMap(familyStr, studyStr, annotationsetName, sessionId));
+                } else {
+                    return createOkResponse(familyManager.getAllAnnotationSetsAsMap(familyStr, studyStr, sessionId));
+                }
             } else {
-                return createOkResponse(familyManager.getAllAnnotationSets(familyStr, studyStr, sessionId));
+                if (StringUtils.isNotEmpty(annotationsetName)) {
+                    return createOkResponse(familyManager.getAnnotationSet(familyStr, studyStr, annotationsetName, sessionId));
+                } else {
+                    return createOkResponse(familyManager.getAllAnnotationSets(familyStr, studyStr, sessionId));
+                }
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -246,28 +254,6 @@ public class FamilyWSServer extends OpenCGAWSServer {
             QueryResult<AnnotationSet> queryResult = familyManager.updateAnnotationSet(familyIdStr, studyStr, annotationsetName,
                     annotations, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{family}/annotationsets/{annotationsetName}/info")
-    @ApiOperation(value = "Return the annotation set", position = 16)
-    public Response infoAnnotationGET(@ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
-                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                      @QueryParam("study") String studyStr,
-                                      @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName") String annotationsetName,
-                                      @ApiParam(value = "Indicates whether to show the annotations as key-value",
-                                              defaultValue = "false") @QueryParam("asMap") boolean asMap) {
-        try {
-            if (asMap) {
-                return createOkResponse(catalogManager.getFamilyManager().getAnnotationSetAsMap(familyStr, studyStr, annotationsetName,
-                        sessionId));
-            } else {
-                return createOkResponse(catalogManager.getFamilyManager().getAnnotationSet(familyStr, studyStr, annotationsetName,
-                        sessionId));
-            }
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }

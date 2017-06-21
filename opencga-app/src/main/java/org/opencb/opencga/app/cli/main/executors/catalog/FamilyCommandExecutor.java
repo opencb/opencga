@@ -66,10 +66,6 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = annotationCommandExecutor.createAnnotationSet(familyCommandOptions.annotationCreateCommandOptions,
                         openCGAClient.getFamilyClient());
                 break;
-            case "annotation-sets-all-info":
-                queryResponse = annotationCommandExecutor.getAllAnnotationSets(familyCommandOptions.annotationAllInfoCommandOptions,
-                        openCGAClient.getFamilyClient());
-                break;
             case "annotation-sets-search":
                 queryResponse = annotationCommandExecutor.searchAnnotationSets(familyCommandOptions.annotationSearchCommandOptions,
                         openCGAClient.getFamilyClient());
@@ -78,7 +74,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = annotationCommandExecutor.deleteAnnotationSet(familyCommandOptions.annotationDeleteCommandOptions,
                         openCGAClient.getFamilyClient());
                 break;
-            case "annotation-sets-info":
+            case "annotation-sets":
                 queryResponse = annotationCommandExecutor.getAnnotationSet(familyCommandOptions.annotationInfoCommandOptions,
                         openCGAClient.getFamilyClient());
                 break;

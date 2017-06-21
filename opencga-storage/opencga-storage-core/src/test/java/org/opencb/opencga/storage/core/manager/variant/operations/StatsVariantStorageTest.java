@@ -449,9 +449,9 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
                 for (Map.Entry<String, VariantStats> entry : sourceEntry.getStats().entrySet()) {
                     assertTrue("In variant " + variant.toString(), cohorts.containsKey(entry.getKey()));
                     if (cohorts.get(entry.getKey()) != null) {
-                        assertEquals("Variant: " + variant.toString() + " does not have the correct number of samples in cohort '" + entry.getKey() + "'.",
+                        assertEquals("Variant: " + variant.toString() + " does not have the correct number of samples in cohort '" + entry.getKey() + "'. jsonVariant: " + variant.toJson() ,
                                 cohorts.get(entry.getKey()).getSamples().size(),
-                                entry.getValue().getGenotypesCount().values().stream().reduce((integer, integer2) -> integer + integer2).orElse(0).intValue());
+                                entry.getValue().getGenotypesCount().values().stream().reduce(Integer::sum).orElse(0).intValue());
                     }
                 }
             }

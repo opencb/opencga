@@ -68,7 +68,7 @@ catalog:
 
 authentication:
   # Session expiration time in seconds
-  expiration: 600
+  expiration: 1800
 # LDAP configuration example
   #authenticationOrigins:
   #- id: ldap            # Any id

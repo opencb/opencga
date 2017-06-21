@@ -31,8 +31,13 @@ import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
+import org.opencb.biodata.formats.variant.vcf4.VariantAggregatedVcfFactory;
+import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
-import org.opencb.biodata.models.variant.*;
+import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
@@ -343,7 +348,8 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 logger.info("Using Biodata to read variants.");
                 final VariantSource finalSource = source;
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
-                taskSupplier = () -> new VariantAvroTransformTask(factory, finalSource, outputMetaFile, statsCalculator, includeSrc)
+                taskSupplier = () -> new VariantAvroTransformTask(factory, finalSource, outputMetaFile, statsCalculator,
+                        includeSrc, generateReferenceBlocks)
                         .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
             }
 
@@ -402,7 +408,8 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 final VariantVcfFactory factory = createVariantVcfFactory(source, fileName);
                 logger.info("Using Biodata to read variants.");
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
-                taskSupplier = () -> new VariantJsonTransformTask(factory, finalSource, outputMetaFile, statsCalculator, includeSrc)
+                taskSupplier = () -> new VariantJsonTransformTask(factory, finalSource, outputMetaFile, statsCalculator,
+                        includeSrc, generateReferenceBlocks)
                         .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
             }
 
