@@ -91,6 +91,35 @@ public class Sample extends Annotable<SampleAclEntry> {
         return sb.toString();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Sample)) {
+            return false;
+        }
+        Sample sample = (Sample) o;
+        return id == sample.id
+                && release == sample.release
+                && somatic == sample.somatic
+                && Objects.equals(name, sample.name)
+                && Objects.equals(source, sample.source)
+                && Objects.equals(individual, sample.individual)
+                && Objects.equals(creationDate, sample.creationDate)
+                && Objects.equals(status, sample.status)
+                && Objects.equals(description, sample.description)
+                && Objects.equals(type, sample.type)
+                && Objects.equals(ontologyTerms, sample.ontologyTerms)
+                && Objects.equals(attributes, sample.attributes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, source, individual, release, creationDate, status,
+                description, type, somatic, ontologyTerms, attributes);
+    }
+
     public long getId() {
         return id;
     }
@@ -231,6 +260,25 @@ public class Sample extends Annotable<SampleAclEntry> {
             sb.append(", cohort='").append(cohort).append('\'');
             sb.append('}');
             return sb.toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof SampleAclParams)) {
+                return false;
+            }
+            SampleAclParams that = (SampleAclParams) o;
+            return Objects.equals(individual, that.individual)
+                    && Objects.equals(file, that.file)
+                    && Objects.equals(cohort, that.cohort);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(individual, file, cohort);
         }
 
         public String getIndividual() {
