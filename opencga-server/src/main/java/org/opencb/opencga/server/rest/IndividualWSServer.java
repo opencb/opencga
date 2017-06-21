@@ -237,13 +237,13 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individual}/annotationsets/info")
+    @Path("/{individual}/annotationsets")
     @ApiOperation(value = "Return all the annotation sets of the individual", position = 12)
-    public Response infoAnnotationSetGET(
+    public Response getAnnotationSet(
             @ApiParam(value = "Individual id or name", required = true) @PathParam("individual") String individualStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam ("asMap") boolean asMap,
-            @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam ("annotationsetName") String annotationsetName) {
+            @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName) {
         try {
             if (asMap) {
                 if (StringUtils.isNotEmpty(annotationsetName)) {
@@ -264,8 +264,27 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/{individual}/annotationsets/info")
+    @ApiOperation(value = "Return all the annotation sets of the individual [DEPRECATED]", position = 12,
+            notes = "Use /{individual}/annotationsets instead")
+    public Response infoAnnotationSetGET(
+            @ApiParam(value = "Individual id or name", required = true) @PathParam("individual") String individualStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam ("asMap") boolean asMap) {
+        try {
+            if (asMap) {
+                    return createOkResponse(individualManager.getAllAnnotationSetsAsMap(individualStr, studyStr, sessionId));
+            } else {
+                    return createOkResponse(individualManager.getAllAnnotationSets(individualStr, studyStr, sessionId));
+            }
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/{individual}/annotationsets/{annotationsetName}/info")
-    @ApiOperation(value = "Return the annotation set [DEPRECATED]", position = 16, notes = "Use /{individual}/annotationsets/info instead")
+    @ApiOperation(value = "Return the annotation set [DEPRECATED]", position = 16, notes = "Use /{individual}/annotationsets instead")
     public Response infoAnnotationGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                       @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                                               + "alias") @QueryParam("study") String studyStr,

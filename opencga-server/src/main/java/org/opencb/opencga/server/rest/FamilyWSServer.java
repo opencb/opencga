@@ -170,13 +170,13 @@ public class FamilyWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{family}/annotationsets/info")
+    @Path("/{family}/annotationsets")
     @ApiOperation(value = "Return the annotation sets of the family", position = 12)
-    public Response infoAnnotationSetGET(
+    public Response getAnnotationSet(
             @ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap,
-            @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam ("annotationsetName") String annotationsetName) {
+            @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName) {
         try {
             if (asMap) {
                 if (StringUtils.isNotEmpty(annotationsetName)) {

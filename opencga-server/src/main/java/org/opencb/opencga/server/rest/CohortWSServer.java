@@ -365,13 +365,13 @@ public class CohortWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{cohort}/annotationsets/info")
+    @Path("/{cohort}/annotationsets")
     @ApiOperation(value = "Return all the annotation sets of the cohort", position = 12)
-    public Response infoAnnotationSetGET(
+    public Response getAnnotationSet(
             @ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap,
-            @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam ("annotationsetName") String annotationsetName) {
+            @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName) {
         try {
             if (asMap) {
                 if (StringUtils.isNotEmpty(annotationsetName)) {
@@ -385,6 +385,25 @@ public class CohortWSServer extends OpenCGAWSServer {
                 } else {
                     return createOkResponse(cohortManager.getAllAnnotationSets(cohortStr, studyStr, sessionId));
                 }
+            }
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{cohort}/annotationsets/info")
+    @ApiOperation(value = "Return all the annotation sets of the cohort [DEPRECATED]", position = 12,
+            notes = "Use /{cohort}/annotationsets instead")
+    public Response infoAnnotationSetGET(
+            @ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
+        try {
+            if (asMap) {
+                return createOkResponse(cohortManager.getAllAnnotationSetsAsMap(cohortStr, studyStr, sessionId));
+            } else {
+                return createOkResponse(cohortManager.getAllAnnotationSets(cohortStr, studyStr, sessionId));
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);

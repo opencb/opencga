@@ -365,13 +365,13 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{sample}/annotationsets/info")
+    @Path("/{sample}/annotationsets")
     @ApiOperation(value = "Return the annotation sets of the sample", position = 12)
-    public Response infoAnnotationSetGET(
+    public Response getAnnotationSet(
             @ApiParam(value = "Sample id or name", required = true) @PathParam("sample") String sampleStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap,
-            @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam ("annotationsetName") String annotationsetName) {
+            @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName) {
         try {
             if (asMap) {
                 if (StringUtils.isNotEmpty(annotationsetName)) {
@@ -385,6 +385,25 @@ public class SampleWSServer extends OpenCGAWSServer {
                 } else {
                     return createOkResponse(sampleManager.getAllAnnotationSets(sampleStr, studyStr, sessionId));
                 }
+            }
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{sample}/annotationsets/info")
+    @ApiOperation(value = "Return the annotation sets of the sample [DEPRECATED]", position = 12,
+            notes = "Use /{sample}/annotationsets instead")
+    public Response infoAnnotationSetGET(
+            @ApiParam(value = "Sample id or name", required = true) @PathParam("sample") String sampleStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
+        try {
+            if (asMap) {
+                return createOkResponse(sampleManager.getAllAnnotationSetsAsMap(sampleStr, studyStr, sessionId));
+            } else {
+                return createOkResponse(sampleManager.getAllAnnotationSets(sampleStr, studyStr, sessionId));
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);
