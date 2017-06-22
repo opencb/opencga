@@ -23,8 +23,10 @@ import java.util.List;
 /**
  * Created by pfurio on 29/07/16.
  */
+@Deprecated
 public abstract class AbstractAcl<T extends AbstractAclEntry> {
 
+    @Deprecated
     protected List<T> acl;
 
     public List<T> getAcl() {
