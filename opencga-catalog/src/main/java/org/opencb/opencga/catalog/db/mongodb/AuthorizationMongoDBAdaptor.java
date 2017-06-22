@@ -135,7 +135,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 .setAuthenticationDatabase(configuration.getCatalog().getDatabase().getOptions()
                         .get(MongoDBConfiguration.AUTHENTICATION_DATABASE))
                 .setConnectionsPerHost(Integer.parseInt(configuration.getCatalog().getDatabase().getOptions()
-                        .get(MongoDBConfiguration.CONNECTIONS_PER_HOST)))
+                        .getOrDefault(MongoDBConfiguration.CONNECTIONS_PER_HOST, "20")))
                 .build();
 
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
