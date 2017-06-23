@@ -30,6 +30,7 @@ public class AuthorizationMongoDBAdaptorTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
     private AuthorizationDBAdaptor aclDBAdaptor;
+    private DBAdaptorFactory dbAdaptorFactory;
     private User user1;
     private User user2;
     private User user3;
@@ -55,7 +56,7 @@ public class AuthorizationMongoDBAdaptorTest {
         user1 = MongoDBAdaptorTest.user1;
         user2 = MongoDBAdaptorTest.user2;
         user3 = MongoDBAdaptorTest.user3;
-        DBAdaptorFactory dbAdaptorFactory = MongoDBAdaptorTest.catalogDBAdaptor;
+        dbAdaptorFactory = MongoDBAdaptorTest.catalogDBAdaptor;
         aclDBAdaptor = new AuthorizationMongoDBAdaptor(configuration);
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getId();
@@ -75,6 +76,82 @@ public class AuthorizationMongoDBAdaptorTest {
                 SampleAclEntry.SamplePermissions.SHARE.name(),
                 SampleAclEntry.SamplePermissions.UPDATE.name()
         ));
+    }
+
+    @Test
+    public void addSetGetAndRemoveAcls() throws Exception {
+
+        aclDBAdaptor.addToMembers(Arrays.asList(s1.getId()), Arrays.asList("user1", "user2", "user3"), Arrays.asList("VIEW", "UPDATE"),
+                MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+        aclDBAdaptor.addToMembers(Arrays.asList(s1.getId()), Arrays.asList("user4"), Collections.emptyList(),
+                MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+        // We attempt to store the same permissions
+        aclDBAdaptor.addToMembers(Arrays.asList(s1.getId()), Arrays.asList("user1", "user2", "user3"), Arrays.asList("VIEW", "UPDATE"),
+                MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+
+        QueryResult<SampleAclEntry> sampleAcl = aclDBAdaptor.get(s1.getId(), null, MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+        assertEquals(4, sampleAcl.getNumResults());
+
+        sampleAcl = aclDBAdaptor.get(s1.getId(), Arrays.asList("user1", "user2"), MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+        assertEquals(2, sampleAcl.getNumResults());
+        for (SampleAclEntry sampleAclEntry : sampleAcl.getResult()) {
+            assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("VIEW")));
+            assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("UPDATE")));
+        }
+
+        aclDBAdaptor.setToMembers(Arrays.asList(s1.getId()), Arrays.asList("user1"), Arrays.asList("DELETE", "SHARE"),
+                MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+        sampleAcl = aclDBAdaptor.get(s1.getId(), Arrays.asList("user1", "user2"), MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+        assertEquals(2, sampleAcl.getNumResults());
+        for (SampleAclEntry sampleAclEntry : sampleAcl.getResult()) {
+            if (sampleAclEntry.getMember().equals("user1")) {
+                assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("DELETE")));
+                assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("SHARE")));
+            } else {
+                assertEquals("user2", sampleAclEntry.getMember());
+                assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("VIEW")));
+                assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("UPDATE")));
+            }
+        }
+
+        // Remove one permission from one user
+        aclDBAdaptor.removeFromMembers(Arrays.asList(s1.getId()), Arrays.asList("user1"), Arrays.asList("DELETE"),
+                MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+        sampleAcl = aclDBAdaptor.get(s1.getId(), Arrays.asList("user1"), MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+        assertEquals(1, sampleAcl.getNumResults());
+        assertEquals(1, sampleAcl.first().getPermissions().size());
+        assertTrue(sampleAcl.first().getPermissions().contains(SampleAclEntry.SamplePermissions.SHARE));
+
+        // Reset user
+        aclDBAdaptor.removeFromMembers(Arrays.asList(s1.getId()), Arrays.asList("user1"), null,
+                MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+        sampleAcl = aclDBAdaptor.get(s1.getId(), Arrays.asList("user1"), MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+        assertEquals(0, sampleAcl.getNumResults());
+
+        // Remove from all samples (there is only one) in study
+        aclDBAdaptor.removeFromStudy(studyId, "user3", MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+        sampleAcl = aclDBAdaptor.get(s1.getId(), Arrays.asList("user3"), MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+        assertEquals(0, sampleAcl.getNumResults());
+
+        sampleAcl = aclDBAdaptor.get(s1.getId(), null, MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+        assertEquals(2, sampleAcl.getNumResults());
+        for (SampleAclEntry sampleAclEntry : sampleAcl.getResult()) {
+            if (sampleAclEntry.getMember().equals("user2")) {
+                assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("VIEW")));
+                assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("UPDATE")));
+            } else {
+                assertEquals("user4", sampleAclEntry.getMember());
+                assertEquals(0, sampleAclEntry.getPermissions().size());
+            }
+        }
+
+        // Reset user4
+        aclDBAdaptor.removeFromMembers(Arrays.asList(s1.getId()), Arrays.asList("user4"), null, MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+        sampleAcl = aclDBAdaptor.get(s1.getId(), null, MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+        assertEquals(1, sampleAcl.getNumResults());
+        assertEquals("user2", sampleAcl.first().getMember());
+        assertTrue(sampleAcl.first().getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("VIEW")));
+        assertTrue(sampleAcl.first().getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("UPDATE")));
     }
 
     @Test
