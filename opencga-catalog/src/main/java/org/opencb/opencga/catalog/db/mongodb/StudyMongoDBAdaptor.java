@@ -63,23 +63,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         this.variableSetConverter = new VariableSetConverter();
     }
 
-    /*
-     * Study methods
-     * ***************************
-     */
-
-    //    @Override
-//    public boolean studyExists(int studyId) {
-//        QueryResult<Long> count = studyCollection.count(new BasicDBObject(PRIVATE_ID, studyId));
-//        return count.getResult().get(0) != 0;
-//    }
-//
-//    @Override
-//    public void checkStudyId(int studyId) throws CatalogDBException {
-//        if (!studyExists(studyId)) {
-//            throw CatalogDBException.idNotFound("Study", studyId);
-//        }
-//    }
     private boolean studyAliasExists(long projectId, String studyAlias) throws CatalogDBException {
         if (projectId < 0) {
             throw CatalogDBException.newInstance("Project id '{}' is not valid: ", projectId);
@@ -133,12 +116,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         //Insert
         QueryResult<WriteResult> updateResult = studyCollection.insert(studyObject, null);
 
-        //Check if the the study has been inserted
-//        if (updateResult.getResult().get(0).getN() == 0) {
-//            throw new CatalogDBException("Study {alias:\"" + study.getAlias() + "\"} already exists");
-//        }
-
-        // Insert nested fields
         String errorMsg = updateResult.getErrorMsg() != null ? updateResult.getErrorMsg() : "";
 
         for (File file : files) {
@@ -253,33 +230,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
 
     private long getDiskUsageByStudy(int studyId) {
-        /*
-        List<DBObject> operations = Arrays.<DBObject>asList(
-                new BasicDBObject(
-                        "$match",
-                        new BasicDBObject(
-                                PRIVATE_STUDY_ID,
-                                studyId
-                                //new BasicDBObject("$in",studyIds)
-                        )
-                ),
-                new BasicDBObject(
-                        "$group",
-                        BasicDBObjectBuilder
-                                .start("_id", "$" + PRIVATE_STUDY_ID)
-                                .append("size",
-                                        new BasicDBObject(
-                                                "$sum",
-                                                "$diskUsage"
-                                        )).get()
-                )
-        );*/
+
         List<Bson> operations = new ArrayList<>();
         operations.add(Aggregates.match(Filters.eq(PRIVATE_STUDY_ID, studyId)));
         operations.add(Aggregates.group("$" + PRIVATE_STUDY_ID, Accumulators.sum("size", "$diskUsage")));
-
-//        Bson match = Aggregates.match(Filters.eq(PRIVATE_STUDY_ID, studyId));
-//        Aggregates.group()
 
         QueryResult<Document> aggregate = dbAdaptorFactory.getCatalogFileDBAdaptor().getFileCollection()
                 .aggregate(operations, null);
@@ -331,36 +285,20 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throw new CatalogDBException("Group \"" + groupId + "\" does not exist in study " + studyId);
         }
 
-        /*
-        * List<Bson> aggregation = new ArrayList<>();
-        aggregation.add(Aggregates.match(Filters.elemMatch(QueryParams.VARIABLE_SET.key(),
-                Filters.eq(VariableSetParams.ID.key(), variableSetId))));
-        aggregation.add(Aggregates.project(Projections.include(QueryParams.VARIABLE_SET.key())));
-        aggregation.add(Aggregates.unwind("$" + QueryParams.VARIABLE_SET.key()));
-        aggregation.add(Aggregates.match(Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId)));
-        QueryResult<VariableSet> queryResult = studyCollection.aggregate(aggregation, variableSetConverter, new QueryOptions());
-        * */
         List<Bson> aggregation = new ArrayList<>();
         aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, studyId)));
         aggregation.add(Aggregates.project(Projections.include(QueryParams.GROUPS.key())));
         aggregation.add(Aggregates.unwind("$" + QueryParams.GROUPS.key()));
 
-//        Document query = new Document(PRIVATE_ID, studyId);
-//        List<Bson> groupQuery = new ArrayList<>();
         if (userIds.size() > 0) {
             aggregation.add(Aggregates.match(Filters.in(QueryParams.GROUP_USER_IDS.key(), userIds)));
-//            groupQuery.add(Filters.in("userIds", userIds));
         }
         if (groupId != null && groupId.length() > 0) {
             aggregation.add(Aggregates.match(Filters.eq(QueryParams.GROUP_NAME.key(), groupId)));
-//            groupQuery.add(Filters.eq("id", groupId));
         }
-
-//        Bson projection = new Document(QueryParams.GROUPS.key(), new Document("$elemMatch", groupQuery));
 
         QueryResult<Document> queryResult = studyCollection.aggregate(aggregation, null);
 
-//        QueryResult<Document> queryResult = studyCollection.find(query, projection, null);
         List<Study> studies = MongoDBUtils.parseStudies(queryResult);
         List<Group> groups = new ArrayList<>();
         studies.stream().filter(study -> study.getGroups() != null).forEach(study -> groups.addAll(study.getGroups()));
@@ -408,39 +346,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         return endQuery("set users to group", startTime, getGroup(studyId, null, groupId, null));
     }
-
-//    @Deprecated
-//    @Override
-//    public QueryResult<Role> getRole(long studyId, String userId, String groupId, String roleId, QueryOptions options)
-//            throws CatalogDBException {
-//        long startTime = startQuery();
-//
-//        Bson query = new Document(PRIVATE_ID, studyId);
-//        List<Bson> roleQuery = new ArrayList<>();
-//        List<String> userIds = new ArrayList<>();
-//        if (userId != null) {
-//            userIds.add(userId);
-//        }
-//        if (groupId != null) {
-//            userIds.add(groupId);
-//        }
-//        if (userIds.size() > 0) {
-//            roleQuery.add(Filters.in("userIds", userIds));
-//        }
-//        if (roleId != null) {
-//            roleQuery.add(Filters.eq("id", roleId));
-//        }
-//        Bson projection = Projections.elemMatch(QueryParams.ROLES.key(), Filters.and(roleQuery));
-//
-//        QueryResult<Document> queryResult = studyCollection.find(query, projection,
-//                filterOptions(options, FILTER_ROUTE_STUDIES + QueryParams.ROLES.key() + "."));
-//        List<Study> studies = MongoDBUtils.parseStudies(queryResult);
-//        List<Role> roles = new ArrayList<>(1);
-////        studies.stream().filter(study -> study.getRoles() != null).forEach(study -> {
-////            roles.addAll(study.getRoles());
-////        });
-//        return endQuery("getRole", startTime, roles);
-//    }
 
     boolean groupExists(long studyId, String groupId) throws CatalogDBException {
         Query query = new Query(QueryParams.ID.key(), studyId).append(QueryParams.GROUP_NAME.key(), groupId);
@@ -527,51 +432,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         Document updates = new Document("$set", new Document("groups.$.syncedFrom", mongoDBDocument));
         studyCollection.update(parseQuery(query, true), updates, null);
     }
-//
-//    @Override
-//    @Deprecated
-//    public QueryResult<StudyAclEntry> setStudyAcl(long studyId, StudyAclEntry studyAcl, boolean override) throws CatalogDBException {
-//        long startTime = startQuery();
-//
-////        checkStudyId(studyId);
-////        // Check that member (users) is correct and exist.
-////        checkMember(dbAdaptorFactory, studyId, studyAcl.getMember());
-//
-//        // If the member is a group, we will obtain all the users pertaining to the groups and will check if any of them already have
-//        // a special permission on their own. If this is the case, we will throw an exception.
-//        String member = studyAcl.getMember();
-//        if (member.startsWith("@")) {
-//            Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
-//
-//            QueryResult<StudyAclEntry> aclQueryResult = getAcl(studyId, group.getUserIds());
-//            if (aclQueryResult.getNumResults() > 0) {
-//                throw new CatalogDBException("The permissions could not be set. At least one user belonging to " + group.getName()
-//                        + " already have permissions set on its own.");
-//            }
-//        } else {
-//            QueryResult<StudyAclEntry> studyAcls = getAcl(studyId, Arrays.asList(member));
-//
-//            // Check if the user already has permissions
-//            if (studyAcls.getNumResults() > 0 && override) {
-//                unsetStudyAcl(studyId, Arrays.asList(member));
-//            } else if (studyAcls.getNumResults() > 0 && !override) {
-//                throw new CatalogDBException("setStudyAcl: " + member + " already had an Acl set. If you "
-//                        + "still want to set the Acls, please use the override parameter.");
-//            }
-//        }
-//
-//        // Push the new acl to the list of acls.
-//        Document queryDocument = new Document(PRIVATE_ID, studyId);
-//        Document update = new Document("$push", new Document(QueryParams.ACL.key(), getMongoDBDocument(studyAcl, "StudyAcl")));
-//        QueryResult<UpdateResult> updateResult = studyCollection.update(queryDocument, update, null);
-//
-//        if (updateResult.first().getModifiedCount() == 0) {
-//            throw new CatalogDBException("setStudyAcl: An error occurred when trying to share study " + studyId
-//                    + " with " + member);
-//        }
-//
-//        return endQuery("setStudyAcl", startTime, Arrays.asList(studyAcl));
-//    }
 
     /*
      * Variables Methods
@@ -791,17 +651,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throw new CatalogDBException("VariableSet {id: " + variableSetId + "} does not exist.");
         }
 
-/*
-        Bson query = Filters.eq("variableSets.id", variableSetId);
-        Bson projection = Projections.elemMatch("variableSets", Filters.eq("id", variableSetId));
-        QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_STUDIES);
-
-        QueryResult<Document> queryResult = studyCollection.find(query, projection, filteredOptions);
-        List<Study> studies = parseStudies(queryResult);
-        if (studies.isEmpty() || studies.get(0).getVariableSets().isEmpty()) {
-            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} does not exist");
-        }
-*/
         return endQuery("", startTime, studyQueryResult.first().getVariableSets());
     }
 
@@ -1188,13 +1037,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             dbAdaptorFactory.getCatalogIndividualDBAdaptor().setStatus(query, Status.TRASHED);
             dbAdaptorFactory.getCatalogCohortDBAdaptor().setStatus(query, Status.TRASHED);
             dbAdaptorFactory.getCatalogDatasetDBAdaptor().setStatus(query, Status.TRASHED);
-//            dbAdaptorFactory.getCatalogFileDBAdaptor().delete(query, queryOptions);
-//            dbAdaptorFactory.getCatalogJobDBAdaptor().delete(query, queryOptions);
-//            dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(query, queryOptions);
-//            dbAdaptorFactory.getCatalogIndividualDBAdaptor().delete(query, queryOptions);
-//            dbAdaptorFactory.getCatalogCohortDBAdaptor().delete(query, queryOptions);
-//            dbAdaptorFactory.getCatalogDatasetDBAdaptor().delete(query, queryOptions);
-        }
+   }
 
         // Change the status of the project to deleted
         setStatus(id, Status.TRASHED);
@@ -1221,93 +1064,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             delete(study.getId(), queryOptions);
         }
         return endQuery("Delete study", startTime, Collections.singletonList(studyQueryResult.getNumTotalResults()));
-//        long startTime = startQuery();
-//        query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-//
-//        if (queryOptions == null) {
-//            queryOptions = new QueryOptions();
-//        }
-//
-//        List<Study> studies = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key())).getResult();
-//        for (Study study : studies) {
-//            try {
-//                if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
-//                    checkEmptyStudy(study.getId());
-//                }
-//            } catch ()
-//
-//            boolean success = true;
-//
-//            // Try to remove all the samples
-//            if (study.getSamples().size() > 0) {
-//                List<Long> sampleIds = new ArrayList<>(study.getSamples().size());
-//                sampleIds.addAll(study.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
-//                try {
-//                    Long nDeleted = dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(
-//                            new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), sampleIds), , force).first();
-//                    if (nDeleted != sampleIds.size()) {
-//                        success = false;
-//                    }
-//                } catch (CatalogDBException e) {
-//                    logger.info("Delete Study: " + e.getMessage());
-//                }
-//            }
-//
-//            // Try to remove all the jobs.
-//            if (study.getJobs().size() > 0) {
-//                List<Long> jobIds = new ArrayList<>(study.getJobs().size());
-//                jobIds.addAll(study.getJobs().stream().map(Job::getId).collect(Collectors.toList()));
-//                try {
-//                    Long nDeleted = dbAdaptorFactory.getCatalogJobDBAdaptor().delete(
-//                            new Query(CatalogJobDBAdaptor.QueryParams.ID.key(), jobIds), , force).first();
-//                    if (nDeleted != jobIds.size()) {
-//                        success = false;
-//                    }
-//                } catch (CatalogDBException e) {
-//                    logger.info("Delete Study: " + e.getMessage());
-//                }
-//            }
-//
-//            // Try to remove all the files.
-//            if (study.getFiles().size() > 0) {
-//                List<Long> fileIds = new ArrayList<>(study.getFiles().size());
-//                fileIds.addAll(study.getFiles().stream().map((Function<File, Long>) File::getId).collect(Collectors.toList()));
-//                try {
-//                    Long nDeleted = dbAdaptorFactory.getCatalogFileDBAdaptor().delete(
-//                            new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), fileIds), , force).first();
-//                    if (nDeleted != fileIds.size()) {
-//                        success = false;
-//                    }
-//                } catch (CatalogDBException e) {
-//                    logger.info("Delete Study: " + e.getMessage());
-//                }
-//            }
-//
-//            if (success || force) {
-//                if (!success && force) {
-//                    logger.error("Delete study: Force was true and success was false. This should not be happening.");
-//                }
-//                studiesToRemove.add(study.getId());
-//            }
-//        }
-//
-//        if (studiesToRemove.size() == 0) {
-//            throw CatalogDBException.deleteError("Study");
-//        }
-//
-//        Query queryDelete = new Query(QueryParams.ID.key(), studiesToRemove)
-//                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";" + Status.DELETED);
-//        QueryResult<UpdateResult> deleted = studyCollection.update(parseQuery(queryDelete), Updates.combine(
-//                Updates.set(CatalogUserDBAdaptor.QueryParams.STATUS_NAME.key(), Status.TRASHED),
-//                Updates.set(CatalogUserDBAdaptor.QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
-//                new QueryOptions());
-//
-//        if (deleted.first().getModifiedCount() == 0) {
-//            throw CatalogDBException.deleteError("Delete");
-//        } else {
-//            return endQuery("Delete study", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
-//        }
-
     }
 
     /**
@@ -1529,6 +1285,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     case GROUPS:
                     case GROUP_NAME:
                     case GROUP_USER_IDS:
+                    case RELEASE:
                     case ROLES:
                     case ROLES_ID:
                     case ROLES_USERS:

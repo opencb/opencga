@@ -77,6 +77,9 @@ public class AdminMain {
                         case "server":
                             commandExecutor = new ServerCommandExecutor(cliOptionsParser.getServerCommandOptions());
                             break;
+                        case "meta":
+                            commandExecutor = new MetaCommandExecutor(cliOptionsParser.getMetaCommandOptions());
+                            break;
                         default:
                             System.out.printf(String.format("ERROR: not valid command passed: '%s'", parsedCommand));
                             break;

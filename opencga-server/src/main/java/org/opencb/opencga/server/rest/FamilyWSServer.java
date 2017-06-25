@@ -15,10 +15,7 @@ import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
 
@@ -32,8 +29,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     private FamilyManager familyManager;
 
-    public FamilyWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(uriInfo, httpServletRequest);
+    public FamilyWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest, httpHeaders);
         familyManager = catalogManager.getFamilyManager();
     }
 
@@ -89,10 +86,16 @@ public class FamilyWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
                            @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
                            @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
+                           @ApiParam(value = "Release value") @QueryParam("release") String release,
                            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
-            QueryResult<Family> queryResult = familyManager.search(studyStr, query, queryOptions, sessionId);
+            QueryResult<Family> queryResult;
+            if (count) {
+                queryResult = familyManager.count(studyStr, query, sessionId);
+            } else {
+                queryResult = familyManager.search(studyStr, query, queryOptions, sessionId);
+            }
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -167,18 +170,26 @@ public class FamilyWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{family}/annotationsets/info")
+    @Path("/{family}/annotationsets")
     @ApiOperation(value = "Return the annotation sets of the family", position = 12)
-    public Response infoAnnotationSetGET(@ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
-                                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                         @QueryParam("study") String studyStr,
-                                         @ApiParam(value = "Indicates whether to show the annotations as key-value",
-                                                 defaultValue = "false") @QueryParam("asMap") boolean asMap) {
+    public Response getAnnotationSet(
+            @ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap,
+            @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName) {
         try {
             if (asMap) {
-                return createOkResponse(familyManager.getAllAnnotationSetsAsMap(familyStr, studyStr, sessionId));
+                if (StringUtils.isNotEmpty(annotationsetName)) {
+                    return createOkResponse(familyManager.getAnnotationSetAsMap(familyStr, studyStr, annotationsetName, sessionId));
+                } else {
+                    return createOkResponse(familyManager.getAllAnnotationSetsAsMap(familyStr, studyStr, sessionId));
+                }
             } else {
-                return createOkResponse(familyManager.getAllAnnotationSets(familyStr, studyStr, sessionId));
+                if (StringUtils.isNotEmpty(annotationsetName)) {
+                    return createOkResponse(familyManager.getAnnotationSet(familyStr, studyStr, annotationsetName, sessionId));
+                } else {
+                    return createOkResponse(familyManager.getAllAnnotationSets(familyStr, studyStr, sessionId));
+                }
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -243,28 +254,6 @@ public class FamilyWSServer extends OpenCGAWSServer {
             QueryResult<AnnotationSet> queryResult = familyManager.updateAnnotationSet(familyIdStr, studyStr, annotationsetName,
                     annotations, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{family}/annotationsets/{annotationsetName}/info")
-    @ApiOperation(value = "Return the annotation set", position = 16)
-    public Response infoAnnotationGET(@ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
-                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                      @QueryParam("study") String studyStr,
-                                      @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName") String annotationsetName,
-                                      @ApiParam(value = "Indicates whether to show the annotations as key-value",
-                                              defaultValue = "false") @QueryParam("asMap") boolean asMap) {
-        try {
-            if (asMap) {
-                return createOkResponse(catalogManager.getFamilyManager().getAnnotationSetAsMap(familyStr, studyStr, annotationsetName,
-                        sessionId));
-            } else {
-                return createOkResponse(catalogManager.getFamilyManager().getAnnotationSet(familyStr, studyStr, annotationsetName,
-                        sessionId));
-            }
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }
@@ -351,7 +340,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
             return new Family(name, father != null ? father.toIndividual(studyStr, studyManager, sessionId) : null,
                     mother != null ? mother.toIndividual(studyStr, studyManager, sessionId) : null, childrenList,
-                    parentalConsanguinity != null ? parentalConsanguinity : false, description, ontologyTerms, annotationSetList,
+                    parentalConsanguinity != null ? parentalConsanguinity : false, description, ontologyTerms, annotationSetList, 1,
                     attributes);
         }
     }

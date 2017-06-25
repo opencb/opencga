@@ -341,4 +341,6 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
     QueryResult<DiseasePanel> updateDiseasePanel(String panelStr, ObjectMap parameters, String sessionId) throws CatalogException;
 
     QueryResult<VariableSetSummary> getVariableSetSummary(String studyStr, String variableSetId, String sessionId) throws CatalogException;
+
+    int getCurrentRelease(long studyId) throws CatalogException;
 }

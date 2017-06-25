@@ -45,7 +45,6 @@ public class CohortCommandOptions {
     public AclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
     public AnnotationCommandOptions.AnnotationSetsCreateCommandOptions annotationCreateCommandOptions;
-    public AnnotationCommandOptions.AnnotationSetsAllInfoCommandOptions annotationAllInfoCommandOptions;
     public AnnotationCommandOptions.AnnotationSetsSearchCommandOptions annotationSearchCommandOptions;
     public AnnotationCommandOptions.AnnotationSetsDeleteCommandOptions annotationDeleteCommandOptions;
     public AnnotationCommandOptions.AnnotationSetsInfoCommandOptions annotationInfoCommandOptions;
@@ -77,7 +76,6 @@ public class CohortCommandOptions {
 
         this.annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
         this.annotationCreateCommandOptions = this.annotationCommandOptions.getCreateCommandOptions();
-        this.annotationAllInfoCommandOptions = this.annotationCommandOptions.getAllInfoCommandOptions();
         this.annotationSearchCommandOptions = this.annotationCommandOptions.getSearchCommandOptions();
         this.annotationDeleteCommandOptions = this.annotationCommandOptions.getDeleteCommandOptions();
         this.annotationInfoCommandOptions = this.annotationCommandOptions.getInfoCommandOptions();

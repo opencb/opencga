@@ -42,21 +42,13 @@ public class AnnotationCommandExecutor<T,U> {
                 createCommandOptions.annotationSetName, obj);
     }
 
-    public QueryResponse<AnnotationSet> getAllAnnotationSets(
-            AnnotationCommandOptions.AnnotationSetsAllInfoCommandOptions infoCommandOptions, AnnotationClient<T,U> client)
-            throws IOException {
-
-        ObjectMap params = new ObjectMap();
-        params.putIfNotNull("study", infoCommandOptions.study);
-        return client.getAllAnnotationSets(infoCommandOptions.id, params);
-    }
-
     public QueryResponse<AnnotationSet> getAnnotationSet(AnnotationCommandOptions.AnnotationSetsInfoCommandOptions infoCommandOptions,
                                      AnnotationClient<T,U> client) throws IOException {
 
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("study", infoCommandOptions.study);
-        return client.getAnnotationSet(infoCommandOptions.id, infoCommandOptions.annotationSetName, params);
+        params.putIfNotNull("name", infoCommandOptions.annotationSetName);
+        return client.getAnnotationSets(infoCommandOptions.id, params);
     }
 
     public QueryResponse<AnnotationSet> searchAnnotationSets(

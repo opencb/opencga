@@ -177,13 +177,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
         }
 
-//        DBObject query = new BasicDBObject(PRIVATE_ID, individualId);
-//        DBObject update = new BasicDBObject("$pull", new BasicDBObject("annotationSets", new BasicDBObject("id", annotationId)));
-//        QueryResult<WriteResult> resultQueryResult = individualCollection.update(query, update, null);
-//        if (resultQueryResult.first().getN() < 1) {
-//            throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
-//        }
-
         Bson eq = Filters.eq(PRIVATE_ID, individualId);
         Bson pull = Updates.pull("annotationSets", new Document("name", annotationId));
         QueryResult<UpdateResult> update = individualCollection.update(eq, pull, null);
@@ -376,21 +369,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             individualParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             individualParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
-
-//        // Obtain all the possible individual Ids that satisfies the query
-//        QueryResult<Individual> myResults= get(query, new QueryOptions("include", "id"));
-//
-//        for (Individual individual : myResults.getResult()) {
-//            //Check existing name
-//            if (individualParameters.containsKey("name")) {
-//                String name = individualParameters.get("name").toString();
-//                Query subquery = new Query(QueryParams.NAME.key(), name)
-//                        .append(QueryParams.STUDY_ID.key(), getStudyId(individual.getId()));
-//                if (!get(subquery, new QueryOptions()).getResult().isEmpty()) {
-//                    throw CatalogDBException.alreadyExists("Individual", "name", name);
-//                }
-//            }
-//        }
 
         //Check individualIds exists
         String[] individualIdParams = {"fatherId", "motherId"};
@@ -721,6 +699,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
                     case LIFE_STATUS:
                     case AFFECTATION_STATUS:
                     case CREATION_DATE:
+                    case RELEASE:
                     case ACL:
                     case ACL_MEMBER:
                     case ACL_PERMISSIONS:

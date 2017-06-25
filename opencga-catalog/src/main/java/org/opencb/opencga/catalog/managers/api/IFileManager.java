@@ -157,8 +157,8 @@ public interface IFileManager extends ResourceManager<Long, File> {
     /*--------------*/
     QueryResult<File> create(String studyStr, File.Type type, File.Format format, File.Bioformat bioformat, String path,
                              String creationDate, String description, File.FileStatus status, long size, long experimentId,
-                             List<Long> sampleIds, long jobId, Map<String, Object> stats, Map<String, Object> attributes,
-                             boolean parents, String content, QueryOptions options, String sessionId) throws CatalogException;
+                             List<Sample> samples, long jobId, Map<String, Object> stats, Map<String, Object> attributes, boolean parents,
+                             String content, QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<File> createFolder(String studyStr, String path, File.FileStatus status, boolean parents, String description,
                                    QueryOptions options, String sessionId) throws CatalogException;
@@ -176,6 +176,8 @@ public interface IFileManager extends ResourceManager<Long, File> {
      * @throws CatalogException catalogException.
      */
     QueryResult<File> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException;
+
+    QueryResult<File> count(String studyStr, Query query, String sessionId) throws CatalogException;
 
     QueryResult<Long> count(Query query, String sessionId) throws CatalogException;
 

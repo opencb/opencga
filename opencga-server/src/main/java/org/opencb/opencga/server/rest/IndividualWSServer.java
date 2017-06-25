@@ -34,10 +34,7 @@ import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
 
@@ -52,9 +49,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     private IIndividualManager individualManager;
 
-    public IndividualWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+    public IndividualWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        super(uriInfo, httpServletRequest);
+        super(uriInfo, httpServletRequest, httpHeaders);
         individualManager = catalogManager.getIndividualManager();
     }
 
@@ -162,84 +159,55 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
-    public Response searchIndividuals(@ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
-                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
-                                              + "alias") @QueryParam("study") String studyStr,
-                                      @ApiParam(value = "DEPRECATED: id", hidden = true) @QueryParam("id") String id,
-                                      @ApiParam(value = "name", required = false) @QueryParam("name") String name,
-                                      @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") String fatherId,
-                                      @ApiParam(value = "motherId", required = false) @QueryParam("motherId") String motherId,
-                                      @ApiParam(value = "family", required = false) @QueryParam("family") String family,
-                                      @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
-                                      @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-                                      @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
-                                                  String populationName,
-                                      @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
-                                                  String populationSubpopulation,
-                                      @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
-                                                  String populationDescription,
-                                      @ApiParam(value = "Ontology terms", required = false) @QueryParam("ontologies") String ontologies,
-                                      @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
-                                                  Individual.KaryotypicSex karyotypicSex,
-                                      @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
-                                                  Individual.LifeStatus lifeStatus,
-                                      @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
-                                                  Individual.AffectationStatus affectationStatus,
-                                      @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
-                                      @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId")
-                                                  String variableSetId,
-                                      @ApiParam(value = "Variable set id or name") @QueryParam("variableSet") String variableSet,
-                                      @ApiParam(value = "annotationsetName", required = false) @QueryParam("annotationsetName")
-                                                  String annotationsetName,
-                                      @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)", required = false) @QueryParam("annotation") String annotation,
-                                      @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
+    public Response searchIndividuals(
+            @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
+              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
+                      + "alias") @QueryParam("study") String studyStr,
+              @ApiParam(value = "DEPRECATED: id", hidden = true) @QueryParam("id") String id,
+              @ApiParam(value = "name", required = false) @QueryParam("name") String name,
+              @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") String fatherId,
+              @ApiParam(value = "motherId", required = false) @QueryParam("motherId") String motherId,
+              @ApiParam(value = "family", required = false) @QueryParam("family") String family,
+              @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
+              @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
+              @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
+                          String populationName,
+              @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
+                          String populationSubpopulation,
+              @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
+                          String populationDescription,
+              @ApiParam(value = "Ontology terms", required = false) @QueryParam("ontologies") String ontologies,
+              @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
+                          Individual.KaryotypicSex karyotypicSex,
+              @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
+                          Individual.LifeStatus lifeStatus,
+              @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
+                          Individual.AffectationStatus affectationStatus,
+              @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
+              @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId")
+                          String variableSetId,
+              @ApiParam(value = "Variable set id or name") @QueryParam("variableSet") String variableSet,
+              @ApiParam(value = "annotationsetName", required = false) @QueryParam("annotationsetName")
+                          String annotationsetName,
+              @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)", required = false) @QueryParam("annotation") String annotation,
+              @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
+            @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            QueryResult<Individual> queryResult = individualManager.search(studyStr, query, queryOptions, sessionId);
+            QueryResult<Individual> queryResult;
+            if (count) {
+                queryResult = individualManager.count(studyStr, query, sessionId);
+            } else {
+                queryResult = individualManager.search(studyStr, query, queryOptions, sessionId);
+            }
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-    }
-
-    @Deprecated
-    @POST
-    @Path("/{individual}/annotate")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Annotate an individual [DEPRECATED]", position = 4, hidden = true)
-    public Response annotateSamplePOST(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
-                                       @ApiParam(value = "Annotation set name. Must be unique for the individual", required = true)
-                                       @QueryParam("annotateSetName") String annotateSetName,
-                                       @ApiParam(value = "VariableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
-                                       @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update")
-                                           @DefaultValue("false") boolean update,
-                                       @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete")
-                                           @DefaultValue("false") boolean delete,
-                                       Map<String, Object> annotations) {
-        return createErrorResponse(new CatalogException("Webservice no longer supported. Please, use "
-                + "/{individual}/annotationsets/..."));
-//        try {
-//            long individualId = catalogManager.getIndividualId(individualStr, sessionId);
-//            QueryResult<AnnotationSet> queryResult;
-//            if (update && delete) {
-//                return createErrorResponse("Annotate individual", "Unable to update and delete annotations at the same"
-//                        + " time");
-//            } else if (update) {
-//                queryResult = catalogManager.updateIndividualAnnotation(individualId, annotateSetName, annotations, sessionId);
-//            } else if (delete) {
-//                queryResult = catalogManager.deleteIndividualAnnotation(individualId, annotateSetName, sessionId);
-//            } else {
-//                queryResult = catalogManager.annotateIndividual(individualId, annotateSetName, variableSetId,
-//                        annotations, Collections.emptyMap(), sessionId);
-//            }
-//            return createOkResponse(queryResult);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
     }
 
     @GET
@@ -269,18 +237,66 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individual}/annotationsets/info")
+    @Path("/{individual}/annotationsets")
     @ApiOperation(value = "Return all the annotation sets of the individual", position = 12)
-    public Response infoAnnotationSetGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
-                                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
-                                                 + "alias") @QueryParam("study") String studyStr,
-                                         @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value",
-                                                 required = false, defaultValue = "false") @QueryParam("asMap") boolean asMap) {
+    public Response getAnnotationSet(
+            @ApiParam(value = "Individual id or name", required = true) @PathParam("individual") String individualStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam ("asMap") boolean asMap,
+            @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName) {
         try {
             if (asMap) {
-                return createOkResponse(individualManager.getAllAnnotationSetsAsMap(individualStr, studyStr, sessionId));
+                if (StringUtils.isNotEmpty(annotationsetName)) {
+                    return createOkResponse(individualManager.getAnnotationSetAsMap(individualStr, studyStr, annotationsetName, sessionId));
+                } else {
+                    return createOkResponse(individualManager.getAllAnnotationSetsAsMap(individualStr, studyStr, sessionId));
+                }
             } else {
-                return createOkResponse(individualManager.getAllAnnotationSets(individualStr, studyStr, sessionId));
+                if (StringUtils.isNotEmpty(annotationsetName)) {
+                    return createOkResponse(individualManager.getAnnotationSet(individualStr, studyStr, annotationsetName, sessionId));
+                } else {
+                    return createOkResponse(individualManager.getAllAnnotationSets(individualStr, studyStr, sessionId));
+                }
+            }
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{individual}/annotationsets/info")
+    @ApiOperation(value = "Return all the annotation sets of the individual [DEPRECATED]", position = 12,
+            notes = "Use /{individual}/annotationsets instead")
+    public Response infoAnnotationSetGET(
+            @ApiParam(value = "Individual id or name", required = true) @PathParam("individual") String individualStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam ("asMap") boolean asMap) {
+        try {
+            if (asMap) {
+                    return createOkResponse(individualManager.getAllAnnotationSetsAsMap(individualStr, studyStr, sessionId));
+            } else {
+                    return createOkResponse(individualManager.getAllAnnotationSets(individualStr, studyStr, sessionId));
+            }
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{individual}/annotationsets/{annotationsetName}/info")
+    @ApiOperation(value = "Return the annotation set [DEPRECATED]", position = 16, notes = "Use /{individual}/annotationsets instead")
+    public Response infoAnnotationGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
+                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
+                                              + "alias") @QueryParam("study") String studyStr,
+                                      @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName")
+                                              String annotationsetName,
+                                      @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false,
+                                              defaultValue = "false") @QueryParam("asMap") boolean asMap) {
+        try {
+            if (asMap) {
+                return createOkResponse(individualManager.getAnnotationSetAsMap(individualStr, studyStr, annotationsetName, sessionId));
+            } else {
+                return createOkResponse(individualManager.getAnnotationSet(individualStr, studyStr, annotationsetName, sessionId));
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -347,27 +363,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
             QueryResult<AnnotationSet> queryResult = individualManager.updateAnnotationSet(individualStr, studyStr, annotationsetName,
                     annotations, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{individual}/annotationsets/{annotationsetName}/info")
-    @ApiOperation(value = "Return the annotation set", position = 16)
-    public Response infoAnnotationGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
-                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
-                                              + "alias") @QueryParam("study") String studyStr,
-                                      @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName")
-                                                  String annotationsetName,
-                                      @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false,
-                                              defaultValue = "false") @QueryParam("asMap") boolean asMap) {
-        try {
-            if (asMap) {
-                return createOkResponse(individualManager.getAnnotationSetAsMap(individualStr, studyStr, annotationsetName, sessionId));
-            } else {
-                return createOkResponse(individualManager.getAnnotationSet(individualStr, studyStr, annotationsetName, sessionId));
-            }
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }
@@ -732,7 +727,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             }
 
             return new Individual(-1, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, population, lifeStatus,
-                    affectationStatus, dateOfBirth, parentalConsanguinity != null ? parentalConsanguinity : false, annotationSetList,
+                    affectationStatus, dateOfBirth, parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList,
                     ontologyTerms);
         }
     }

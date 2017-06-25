@@ -43,14 +43,15 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
     private final ResultSet resultSet;
     private final GenomeHelper genomeHelper;
     private final StudyConfigurationManager scm;
-    private final HBaseToVariantConverter converter;
+    private final HBaseToVariantConverter<ResultSet> converter;
     private final Logger logger = LoggerFactory.getLogger(VariantHBaseResultSetIterator.class);
 
     private boolean hasNext = false;
 
     public VariantHBaseResultSetIterator(
             Statement statement, ResultSet resultSet, GenomeHelper genomeHelper, StudyConfigurationManager scm,
-            List<String> returnedSamples, Set<VariantField> returnedFields, QueryOptions options) throws SQLException {
+            List<String> returnedSamples, Set<VariantField> returnedFields, String unknownGenotype, QueryOptions options)
+            throws SQLException {
         this.statement = statement;
         this.resultSet = resultSet;
         this.genomeHelper = genomeHelper;
@@ -58,11 +59,12 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
         if (options == null) {
             options = QueryOptions.empty();
         }
-        converter = new HBaseToVariantConverter(this.genomeHelper, this.scm)
+        converter = HBaseToVariantConverter.fromResultSet(this.genomeHelper, this.scm)
                 .setReturnedFields(returnedFields)
                 .setReturnedSamples(returnedSamples)
                 .setMutableSamplesPosition(false)
                 .setStudyNameAsStudyId(true)
+                .setUnknownGenotype(unknownGenotype)
                 .setSimpleGenotypes(options.getBoolean("simpleGenotypes", true));
         hasNext = fetch(resultSet::next);
     }

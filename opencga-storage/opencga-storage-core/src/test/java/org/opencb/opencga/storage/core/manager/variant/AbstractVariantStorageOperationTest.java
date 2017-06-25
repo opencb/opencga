@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.manager.variant;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -25,8 +26,6 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.mongodb.MongoDataStore;
-import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.config.Policies;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
@@ -65,7 +64,6 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
@@ -266,7 +264,9 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
         Cohort defaultCohort = getDefaultCohort(studyId);
         for (File file : expectedLoadedFiles) {
-            assertTrue(defaultCohort.getSamples().containsAll(file.getSampleIds()));
+            List<Long> samplesInFile = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+            List<Long> samplesInCohort = defaultCohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+            assertTrue(samplesInCohort.containsAll(samplesInFile));
         }
         if (calculateStats) {
             assertEquals(Cohort.CohortStatus.READY, defaultCohort.getStatus().getName());
@@ -301,7 +301,9 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
         Cohort defaultCohort = getDefaultCohort(studyId);
         for (File file : expectedLoadedFiles) {
-            assertTrue(defaultCohort.getSamples().containsAll(file.getSampleIds()));
+            List<Long> samplesInCohort = defaultCohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+            List<Long> samplesInFiles = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+            assertTrue(samplesInCohort.containsAll(samplesInFiles));
         }
         if (calculateStats) {
             assertEquals(Cohort.CohortStatus.READY, defaultCohort.getStatus().getName());

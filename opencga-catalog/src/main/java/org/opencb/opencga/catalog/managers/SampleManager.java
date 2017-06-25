@@ -148,6 +148,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
 
+        sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));
+
         long individualId = 0;
 
         if (sample.getIndividual() != null) {
@@ -220,8 +222,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             }
         }
 
-        Sample sample = new Sample(-1, name, source, individual, description, type, somatic, Collections.emptyList(),
-                Collections.emptyList(), new ArrayList<>(), attributes);
+        Sample sample = new Sample(-1, name, source, individual, description, type, somatic,
+                catalogManager.getStudyManager().getCurrentRelease(studyId), Collections.emptyList(), Collections.emptyList(),
+                new ArrayList<>(), attributes);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         QueryResult<Sample> queryResult = sampleDBAdaptor.insert(sample, studyId, options);
@@ -245,7 +248,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
 
-        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSetId, new HashSet<>(), TimeUtils.getTime(), attributes);
+        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSetId, new HashSet<>(), TimeUtils.getTime(), 1,
+                attributes);
 
         for (Map.Entry<String, Object> entry : annotations.entrySet()) {
             annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
@@ -308,7 +312,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream()
                         .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
-                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), null);
+                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), 1, null);
         auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId, new ObjectMap("annotationSets",
                 Collections.singletonList(annotationSetUpdate)), "update annotation", null);
         return queryResult;
@@ -500,6 +504,32 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         return queryResult;
     }
 
+    @Override
+    public QueryResult<Sample> count(String studyStr, Query query, String sessionId) throws CatalogException {
+        String userId = userManager.getId(sessionId);
+        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
+
+        // Check any permission in studies
+        for (Long studyId : studyIds) {
+            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
+        }
+
+        // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
+        // FIXME: Although the search method is multi-study, we can only use the smart resolutor for one study at the moment.
+        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))
+                && studyIds.size() == 1) {
+            MyResourceIds resourceIds = catalogManager.getIndividualManager().getIds(
+                    query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()), Long.toString(studyIds.get(0)), sessionId);
+            query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), resourceIds.getResourceIds());
+            query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
+        }
+
+        query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyIds);
+        QueryResult<Long> queryResultAux = sampleDBAdaptor.count(query);
+        return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
+                queryResultAux.getErrorMsg(), Collections.emptyList());
+    }
+
     // TODO
     // This implementation should be changed and made better. Check the comment in IndividualManager -> delete(). Those changes
     // will probably make the delete from individualManager to be changed.
@@ -628,105 +658,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         throw new NotImplementedException("Project: Operation not yet supported");
     }
 
-//    @Override
-//    public QueryResult<SampleAclEntry> getAcls(String sampleStr, List<String> members, String sessionId) throws CatalogException {
-//        long startTime = System.currentTimeMillis();
-//        String userId = userManager.getId(sessionId);
-//        Long sampleId = getId(userId, sampleStr);
-//        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.SHARE);
-//        Long studyId = getStudyId(sampleId);
-//
-//        // Split and obtain the set of members (users + groups), users and groups
-//        Set<String> memberSet = new HashSet<>();
-//        Set<String> userIds = new HashSet<>();
-//        Set<String> groupIds = new HashSet<>();
-//        for (String member: members) {
-//            memberSet.add(member);
-//            if (!member.startsWith("@")) {
-//                userIds.add(member);
-//            } else {
-//                groupIds.add(member);
-//            }
-//        }
-//
-//
-//        // Obtain the groups the user might belong to in order to be able to get the permissions properly
-//        // (the permissions might be given to the group instead of the user)
-//        // Map of group -> users
-//        Map<String, List<String>> groupUsers = new HashMap<>();
-//
-//        if (userIds.size() > 0) {
-//            List<String> tmpUserIds = userIds.stream().collect(Collectors.toList());
-//            QueryResult<Group> groups = studyDBAdaptor.getGroup(studyId, null, tmpUserIds);
-//            // We add the groups where the users might belong to to the memberSet
-//            if (groups.getNumResults() > 0) {
-//                for (Group group : groups.getResult()) {
-//                    for (String tmpUserId : group.getUserIds()) {
-//                        if (userIds.contains(tmpUserId)) {
-//                            memberSet.add(group.getName());
-//
-//                            if (!groupUsers.containsKey(group.getName())) {
-//                                groupUsers.put(group.getName(), new ArrayList<>());
-//                            }
-//                            groupUsers.get(group.getName()).add(tmpUserId);
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//        List<String> memberList = memberSet.stream().collect(Collectors.toList());
-//        QueryResult<SampleAclEntry> sampleAclQueryResult = sampleDBAdaptor.getAcl(sampleId, memberList);
-//
-//        if (members.size() == 0) {
-//            return sampleAclQueryResult;
-//        }
-//
-//        // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the
-// user
-//        // instead of the group.
-//        // We loop over the results and recreate one sampleAcl per member
-//        Map<String, SampleAclEntry> sampleAclHashMap = new HashMap<>();
-//        for (SampleAclEntry sampleAcl : sampleAclQueryResult.getResult()) {
-//            if (memberList.contains(sampleAcl.getMember())) {
-//                if (sampleAcl.getMember().startsWith("@")) {
-//                    // Check if the user was demanding the group directly or a user belonging to the group
-//                    if (groupIds.contains(sampleAcl.getMember())) {
-//                        sampleAclHashMap.put(sampleAcl.getMember(), new SampleAclEntry(sampleAcl.getMember(),
-// sampleAcl.getPermissions()));
-//                    } else {
-//                        // Obtain the user(s) belonging to that group whose permissions wanted the userId
-//                        if (groupUsers.containsKey(sampleAcl.getMember())) {
-//                            for (String tmpUserId : groupUsers.get(sampleAcl.getMember())) {
-//                                if (userIds.contains(tmpUserId)) {
-//                                    sampleAclHashMap.put(tmpUserId, new SampleAclEntry(tmpUserId, sampleAcl.getPermissions()));
-//                                }
-//                            }
-//                        }
-//                    }
-//                } else {
-//                    // Add the user
-//                    sampleAclHashMap.put(sampleAcl.getMember(), new SampleAclEntry(sampleAcl.getMember(), sampleAcl.getPermissions()));
-//                }
-//            }
-//        }
-//
-//        // We recreate the output that is in sampleAclHashMap but in the same order the members were queried.
-//        List<SampleAclEntry> sampleAclList = new ArrayList<>(sampleAclHashMap.size());
-//        for (String member : members) {
-//            if (sampleAclHashMap.containsKey(member)) {
-//                sampleAclList.add(sampleAclHashMap.get(member));
-//            }
-//        }
-//
-//        // Update queryResult info
-//        sampleAclQueryResult.setId(sampleStr);
-//        sampleAclQueryResult.setNumResults(sampleAclList.size());
-//        sampleAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
-//        sampleAclQueryResult.setResult(sampleAclList);
-//
-//        return sampleAclQueryResult;
-//
-//    }
 
     @Override
     public QueryResult<Sample> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
@@ -897,7 +828,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
             Set<Long> sampleSet = new HashSet<>();
             for (File file : fileQueryResult.getResult()) {
-                sampleSet.addAll(file.getSampleIds());
+                sampleSet.addAll(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
             }
             sample = StringUtils.join(sampleSet, ",");
 
@@ -915,7 +846,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
             Set<Long> sampleSet = new HashSet<>();
             for (Cohort cohort : cohortQueryResult.getResult()) {
-                sampleSet.addAll(cohort.getSamples());
+                sampleSet.addAll(cohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
             }
             sample = StringUtils.join(sampleSet, ",");
 
@@ -991,7 +922,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null).first();
 
         QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(resourceId.getResourceId(), variableSet,
-                annotationSetName, annotations, attributes, sampleDBAdaptor);
+                annotationSetName, annotations, catalogManager.getStudyManager().getCurrentRelease(resourceId.getStudyId()), attributes,
+                sampleDBAdaptor);
 
         auditManager.recordUpdate(AuditRecord.Resource.sample, resourceId.getResourceId(), resourceId.getUser(),
                 new ObjectMap("annotationSets", annotationSet.first()), "annotate", null);
@@ -1052,7 +984,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream()
                         .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
-                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), null);
+                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), 1, null);
         auditManager.recordUpdate(AuditRecord.Resource.sample, resourceId.getResourceId(), resourceId.getUser(),
                 new ObjectMap("annotationSets", Collections.singletonList(annotationSetUpdate)), "update annotation", null);
 

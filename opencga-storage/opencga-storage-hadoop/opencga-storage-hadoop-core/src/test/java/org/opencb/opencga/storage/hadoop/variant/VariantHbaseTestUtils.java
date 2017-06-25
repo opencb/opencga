@@ -19,7 +19,6 @@
  */
 package org.opencb.opencga.storage.hadoop.variant;
 
-import com.google.protobuf.TextFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.HConstants;
@@ -40,10 +39,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -103,15 +102,15 @@ public class VariantHbaseTestUtils {
                 GenomeHelper.getVariantColumns(result.rawCells()).stream()
                         .filter(c -> Bytes.startsWith(CellUtil.cloneFamily(c), helper.getColumnFamily()))
                         .forEach(c -> {
-                    try {
-                        byte[] value = CellUtil.cloneValue(c);
-                        if (value != null) {
-                            out.println(VariantTableStudyRowsProto.parseFrom(value));
-                        }
-                    } catch (Exception e) {
-                        out.println("e.getMessage() = " + e.getMessage());
-                    }
-                });
+                            out.println("-----------------");
+                            out.println(Bytes.toString(CellUtil.cloneRow(c)) + " : " + Bytes.toString(CellUtil.cloneQualifier(c)));
+                            try {
+                                byte[] value = CellUtil.cloneValue(c);
+                                out.println(VariantTableStudyRowsProto.parseFrom(value));
+                            } catch (Exception e) {
+                                e.printStackTrace(out);
+                            }
+                        });
 
             }
             return 0;
@@ -147,7 +146,14 @@ public class VariantHbaseTestUtils {
                 if (Bytes.toString(result.getRow()).startsWith(genomeHelper.getMetaRowKeyString())) {
                     continue;
                 }
-                Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow());
+                Variant variant;
+                try {
+                    variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow());
+                } catch (RuntimeException e) {
+                    os.println(Arrays.toString(result.getRow()));
+                    os.println("--------------------");
+                    continue;
+                }
                 os.println("Variant = " + variant);
                 for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(genomeHelper.getColumnFamily()).entrySet()) {
                     String key = Bytes.toString(entry.getKey());

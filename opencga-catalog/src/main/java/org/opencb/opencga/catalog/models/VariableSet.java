@@ -30,16 +30,19 @@ public class VariableSet {
     private String description;
     private Set<Variable> variables;
 
+    private int release;
     private Map<String, Object> attributes;
 
     public VariableSet() {
     }
 
-    public VariableSet(long id, String name, boolean unique, String description, Set<Variable> variables, Map<String, Object> attributes) {
+    public VariableSet(long id, String name, boolean unique, String description, Set<Variable> variables, int release,
+                       Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.unique = unique;
         this.description = description;
+        this.release = release;
         this.attributes = attributes;
         this.variables = variables;
     }
@@ -52,6 +55,7 @@ public class VariableSet {
         sb.append(", unique=").append(unique);
         sb.append(", description='").append(description).append('\'');
         sb.append(", variables=").append(variables);
+        sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -99,6 +103,15 @@ public class VariableSet {
 
     public VariableSet setVariables(Set<Variable> variables) {
         this.variables = variables;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public VariableSet setRelease(int release) {
+        this.release = release;
         return this;
     }
 

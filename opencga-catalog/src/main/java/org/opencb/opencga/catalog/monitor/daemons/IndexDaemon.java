@@ -239,7 +239,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         String userId = job.getUserId();
         String userSessionId = null;
         try {
-            userSessionId = catalogManager.getUserManager().getNewUserSession(sessionId, userId).first().getId();
+            userSessionId = catalogManager.getUserManager().getSystemTokenForUser(userId, sessionId).first().getId();
         } catch (CatalogException e) {
             logger.warn("Could not obtain a new session id for user {}. ", userId, e);
         }
@@ -253,7 +253,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         job.getParams().put("outdir", path.toString());
 
         if (job.getAttributes().get(INDEX_TYPE).toString().equalsIgnoreCase(VARIANT_TYPE)) {
-            job.getParams().put("path", Long.toString(job.getOutDirId()));
+            job.getParams().put("path", Long.toString(job.getOutDir().getId()));
 
             commandLine.append(" variant index");
             Set<String> knownParams = new HashSet<>(Arrays.asList(
@@ -338,23 +338,14 @@ public class IndexDaemon extends MonitorParentDaemon {
     }
 
     private void closeSessionId(Job job) {
-        String sessionId = ((String) job.getAttributes().get("sessionId"));
 
-        String userId;
+        // Remove the session id from the job attributes
+        job.getAttributes().remove("sessionId");
+        ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
         try {
-            userId = catalogManager.getUserManager().getId(sessionId);
-            catalogManager.getUserManager().logout(userId, sessionId);
+            catalogManager.getJobManager().update(job.getId(), params, new QueryOptions(), this.sessionId);
         } catch (CatalogException e) {
-            logger.error("An error occurred when trying to close the session id: {}", sessionId, e);
-        } finally {
-            // Remove the session id from the job attributes
-            job.getAttributes().remove("sessionId");
-            ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
-            try {
-                catalogManager.getJobManager().update(job.getId(), params, new QueryOptions(), this.sessionId);
-            } catch (CatalogException e) {
-                logger.error("Could not remove session id from attributes of job {}. ", job.getId(), e);
-            }
+            logger.error("Could not remove session id from attributes of job {}. ", job.getId(), e);
         }
     }
 }

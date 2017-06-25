@@ -62,10 +62,8 @@ public class UserManager extends AbstractManager implements IUserManager {
 
     protected static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
             + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
-    //    private final SessionManager sessionManager;
     protected static final Pattern EMAILPATTERN = Pattern.compile(EMAIL_PATTERN);
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
-//    protected final Policies.UserCreation creationUserPolicy;
 
     public UserManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                        DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
@@ -73,19 +71,15 @@ public class UserManager extends AbstractManager implements IUserManager {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
 
         authenticationManagerMap = new HashMap<>();
-        if (configuration.getAuthenticationOrigins() != null) {
-            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthenticationOrigins()) {
+        if (configuration.getAuthentication().getAuthenticationOrigins() != null) {
+            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
                 if (authenticationOrigin.getId() != null) {
                     switch (authenticationOrigin.getType()) {
                         case LDAP:
                             authenticationManagerMap.put(authenticationOrigin.getId(),
-                                    new LDAPAuthenticationManager(authenticationOrigin.getHost()));
+                                    new LDAPAuthenticationManager(authenticationOrigin.getHost(), configuration));
                             break;
-//                    case OPENCGA:
                         default:
-//                        authenticationManagerMap.put(authenticationOrigin.getId(),
-//                                new CatalogAuthenticationManager(catalogDBAdaptorFactory, catalogConfiguration));
-//                        INTERNAL_AUTHORIZATION = authenticationOrigin.getId();
                             break;
                     }
                 }
@@ -95,12 +89,12 @@ public class UserManager extends AbstractManager implements IUserManager {
         authenticationManagerMap.putIfAbsent(INTERNAL_AUTHORIZATION,
                 new CatalogAuthenticationManager(catalogDBAdaptorFactory, configuration));
         AuthenticationOrigin authenticationOrigin = new AuthenticationOrigin();
-        if (configuration.getAuthenticationOrigins() == null) {
-            configuration.setAuthenticationOrigins(Arrays.asList(authenticationOrigin));
+        if (configuration.getAuthentication().getAuthenticationOrigins() == null) {
+            configuration.getAuthentication().setAuthenticationOrigins(Arrays.asList(authenticationOrigin));
         } else {
             // Check if OPENCGA authentication is already present in catalog configuration
             boolean catalogPresent = false;
-            for (AuthenticationOrigin origin : configuration.getAuthenticationOrigins()) {
+            for (AuthenticationOrigin origin : configuration.getAuthentication().getAuthenticationOrigins()) {
                 if (AuthenticationOrigin.AuthenticationType.OPENCGA == origin.getType()) {
                     catalogPresent = true;
                     break;
@@ -108,9 +102,9 @@ public class UserManager extends AbstractManager implements IUserManager {
             }
             if (!catalogPresent) {
                 List<AuthenticationOrigin> linkedList = new LinkedList<>();
-                linkedList.addAll(configuration.getAuthenticationOrigins());
+                linkedList.addAll(configuration.getAuthentication().getAuthenticationOrigins());
                 linkedList.add(authenticationOrigin);
-                configuration.setAuthenticationOrigins(linkedList);
+                configuration.getAuthentication().setAuthenticationOrigins(linkedList);
             }
         }
     }
@@ -124,10 +118,6 @@ public class UserManager extends AbstractManager implements IUserManager {
     @Override
     public String getId(String sessionId) throws CatalogException {
         return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(sessionId);
-//        if (sessionId == null || sessionId.isEmpty() || sessionId.equalsIgnoreCase("anonymous")) {
-//            return "anonymous";
-//        }
-//        return userDBAdaptor.getUserIdBySessionId(sessionId);
     }
 
     @Override
@@ -155,8 +145,8 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     private AuthenticationOrigin getAuthenticationOrigin(String authOrigin) {
-        if (configuration.getAuthenticationOrigins() != null) {
-            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthenticationOrigins()) {
+        if (configuration.getAuthentication().getAuthenticationOrigins() != null) {
+            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
                 if (authOrigin.equals(authenticationOrigin.getId())) {
                     return authenticationOrigin;
                 }
@@ -348,7 +338,7 @@ public class UserManager extends AbstractManager implements IUserManager {
             Map<String, Object> attributes = new HashMap<>();
             attributes.put("LDAP_RDN", rdn);
             User user = new User(uid, displayname, mail, "", base, account, User.UserStatus.READY, "", -1, -1, new ArrayList<>(),
-                    new ArrayList<>(), new ArrayList<>(), new HashMap<>(), attributes);
+                    new ArrayList<>(), new HashMap<>(), attributes);
 
             userDBAdaptor.insert(user, QueryOptions.empty());
 
@@ -446,7 +436,6 @@ public class UserManager extends AbstractManager implements IUserManager {
         // Remove some unnecessary and prohibited parameters
         for (User user : userQueryResult.getResult()) {
             user.setPassword(null);
-            user.setSessions(null);
             if (user.getProjects() != null) {
                 for (Project project : user.getProjects()) {
                     if (project.getStudies() != null) {
@@ -591,28 +580,6 @@ public class UserManager extends AbstractManager implements IUserManager {
         }
     }
 
-    @Deprecated
-    @Override
-    public QueryResult<ObjectMap> loginAsAnonymous(String sessionIp)
-            throws CatalogException, IOException {
-        ParamUtils.checkParameter(sessionIp, "sessionIp");
-        Session session = new Session(sessionIp, 20);
-
-        String userId = "anonymous_" + session.getId();
-
-        // TODO sessionID should be created here
-
-        catalogIOManagerFactory.getDefault().createAnonymousUser(userId);
-
-        try {
-            return userDBAdaptor.loginAsAnonymous(session);
-        } catch (CatalogDBException e) {
-            catalogIOManagerFactory.getDefault().deleteUser(userId);
-            throw e;
-        }
-
-    }
-
     @Override
     public QueryResult<Session> login(String userId, String password, String sessionIp) throws CatalogException, IOException {
         ParamUtils.checkParameter(userId, "userId");
@@ -649,7 +616,7 @@ public class UserManager extends AbstractManager implements IUserManager {
 
         QueryResult<Session> sessionTokenQueryResult;
         try {
-            sessionTokenQueryResult = catalogManager.getSessionManager().createToken(userId, sessionIp, Session.Type.USER);
+            sessionTokenQueryResult = authenticationManagerMap.get(authId).createToken(userId, sessionIp, Session.Type.USER);
         } catch (CatalogException e) {
             auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.login, AuditRecord.Magnitude.high, userId, userId,
                     null, null, "Unsuccessfully login attempt", null);
@@ -663,55 +630,9 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<Session> getNewUserSession(String sessionId, String userId) throws CatalogException {
-        authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", sessionId, true);
-        return catalogManager.getSessionManager().createToken(userId, "localhost", Session.Type.SYSTEM);
-    }
-
-    @Override
-    public QueryResult logout(String userId, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-
-        QueryResult<Session> logout = null;
-        try {
-            if (userId.equals("admin")) {
-                catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().logout(sessionId);
-                return logout;
-            } else {
-                logout = userDBAdaptor.logout(userId, sessionId);
-            }
-        } catch (CatalogDBException e) {
-            auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.logout, AuditRecord.Magnitude.high, userId, userId,
-                    null, null, "Unsuccessfully logout attempt", null);
-            throw e;
-        }
-        auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.logout, AuditRecord.Magnitude.low, userId, userId,
-                logout.first(), null, "User successfully logged out", null);
-
-        return logout;
-//        switch (authorizationManager.getUserRole(userId)) {
-//            case ANONYMOUS:
-//                return logoutAnonymous(sessionId);
-//            default:
-////                List<Session> sessions = Collections.singletonList(sessionManager.logout(userId, sessionId));
-////                return new QueryResult<>("logout", 0, 1, 1, "", "", sessions);
-//                return userDBAdaptor.logout(userId, sessionId);
-//        }
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult logoutAnonymous(String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        String userId = getId(sessionId);
-        ParamUtils.checkParameter(userId, "userId");
-        checkSessionId(userId, sessionId);
-
-        logger.info("logout anonymous user. userId: " + userId + " sesionId: " + sessionId);
-
-        catalogIOManagerFactory.getDefault().deleteAnonymousUser(userId);
-        return userDBAdaptor.logoutAnonymous(sessionId);
+    public QueryResult<Session> getSystemTokenForUser(String userId, String adminCredentials) throws CatalogException {
+        authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", adminCredentials, true);
+        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(userId, "localhost", Session.Type.SYSTEM);
     }
 
     @Override
@@ -938,9 +859,9 @@ public class UserManager extends AbstractManager implements IUserManager {
         return null;
     }
 
-    private void checkSessionId(String userId, String sessionId) throws CatalogException {
-        String userIdBySessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!userIdBySessionId.equals(userId)) {
+    private void checkSessionId(String userId, String jwtToken) throws CatalogException {
+
+        if (!userId.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(jwtToken))) {
             throw new CatalogException("Invalid sessionId for user: " + userId);
         }
     }

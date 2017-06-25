@@ -327,7 +327,7 @@ public class CatalogAnnotationsValidator {
                             annotationSet.add(new Annotation(entry.getKey().toString(), entry.getValue()));
                         }
                         checkAnnotationSet(new VariableSet(0, variable.getName(), false, variable.getDescription(),
-                                variable.getVariableSet(), null), new AnnotationSet("", 0, annotationSet, null, null), null);
+                                variable.getVariableSet(), 1, null), new AnnotationSet("", 0, annotationSet, null, 1, null), null);
                     }
                 }
                 break;

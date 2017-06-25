@@ -3,11 +3,13 @@ package org.opencb.opencga.storage.hadoop.variant.converters.samples;
 import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.tools.variant.converters.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 
@@ -27,10 +29,18 @@ public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implem
     private final Set<String> defaultGenotypes = new HashSet<>();
     private final StudyConfiguration studyConfiguration;
     private final List<String> expectedFormat;
+    private final PhoenixHelper.Column studyColumn;
+    private boolean addSecondaryAlternates;
 
     public SamplesDataToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration) {
+        this(columnFamily, studyConfiguration, false);
+    }
+
+    public SamplesDataToHBaseConverter(byte[] columnFamily, StudyConfiguration studyConfiguration, boolean addSecondaryAlternates) {
         super(columnFamily);
         this.studyConfiguration = studyConfiguration;
+        studyColumn = VariantPhoenixHelper.getStudyColumn(studyConfiguration.getStudyId());
+        this.addSecondaryAlternates = addSecondaryAlternates;
         defaultGenotypes.add("0/0");
         defaultGenotypes.add("0|0");
         expectedFormat = HBaseToVariantConverter.getFormat(studyConfiguration);
@@ -41,6 +51,7 @@ public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implem
         byte[] rowKey = VariantPhoenixKeyFactory.generateVariantRowKey(variant);
         Put put = new Put(rowKey);
         add(put, VariantPhoenixHelper.VariantColumn.TYPE, variant.getType().toString());
+        add(put, studyColumn, 0);
         return convert(variant, put, null);
     }
 
@@ -63,6 +74,7 @@ public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implem
                     if (formatReMap != null) {
                         sampleData = remapSampleData(studyEntry, formatReMap, sampleData);
                     }
+                    addSecondaryAlternates(variant, studyEntry, sampleData);
                     addVarcharArray(put, column, sampleData);
                 }
             }
@@ -70,6 +82,32 @@ public class SamplesDataToHBaseConverter extends AbstractPhoenixConverter implem
         }
 
         return put;
+    }
+
+    public void addSecondaryAlternates(Variant variant, StudyEntry studyEntry, List<String> sampleData) {
+        if (addSecondaryAlternates && studyEntry.getSecondaryAlternates() != null && !studyEntry.getSecondaryAlternates().isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            Iterator<AlternateCoordinate> iterator = studyEntry.getSecondaryAlternates().iterator();
+            while (iterator.hasNext()) {
+                AlternateCoordinate alt = iterator.next();
+                sb.append(alt.getChromosome() == null ? variant.getChromosome() : alt.getChromosome());
+                sb.append(':');
+                sb.append(alt.getStart() == null ? variant.getStart() : alt.getStart());
+                sb.append(':');
+                sb.append(alt.getEnd() == null ? variant.getEnd() : alt.getEnd());
+                sb.append(':');
+                sb.append(alt.getReference() == null ? variant.getReference() : alt.getReference());
+                sb.append(':');
+                sb.append(alt.getAlternate() == null ? variant.getAlternate() : alt.getAlternate());
+                sb.append(':');
+                sb.append(alt.getType() == null ? variant.getType() : alt.getType());
+
+                if (iterator.hasNext()) {
+                    sb.append(',');
+                }
+            }
+            sampleData.add(sb.toString());
+        }
     }
 
     private int[] buildFormatRemap(StudyEntry studyEntry) {

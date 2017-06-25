@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 import javax.naming.Context;
@@ -27,11 +28,12 @@ import java.util.Hashtable;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class LDAPAuthenticationManager implements AuthenticationManager {
+public class LDAPAuthenticationManager extends AuthenticationManager {
 
     private String host;
 
-    public LDAPAuthenticationManager(String host) {
+    public LDAPAuthenticationManager(String host, Configuration configuration) {
+        super(configuration);
         this.host = host;
         if (!this.host.startsWith("ldap://")) {
             this.host = "ldap://" + this.host;
@@ -58,11 +60,6 @@ public class LDAPAuthenticationManager implements AuthenticationManager {
             return false;
         }
         return true;
-    }
-
-    @Override
-    public String getUserId(String token) throws CatalogException {
-        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -19,7 +19,7 @@
  */
 package org.opencb.opencga.storage.hadoop.variant.index;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Delete;
@@ -62,6 +62,7 @@ import static org.opencb.biodata.tools.variant.merge.VariantMerger.GT_KEY;
 public class VariantTableStudyRow {
     public static final String NOCALL = ".";
     public static final String HOM_REF = "0/0";
+    public static final byte[] HOM_REF_BYTES = Bytes.toBytes(VariantTableStudyRow.HOM_REF);
     public static final String HET_REF = "0/1";
     public static final String HOM_VAR = "1/1";
     public static final String OTHER = "?";
@@ -69,6 +70,7 @@ public class VariantTableStudyRow {
     public static final String PASS_CNT = "P";
     public static final String FILTER_OTHER = "F";
     public static final String CALL_CNT = "C";
+    private static final String MAIN_STUDY_COLUMN = CALL_CNT;
 
     public static final List<String> STUDY_COLUMNS = Collections.unmodifiableList(
             Arrays.asList(NOCALL, HOM_REF, HET_REF, HOM_VAR, OTHER, COMPLEX, PASS_CNT, CALL_CNT, FILTER_OTHER));
@@ -469,13 +471,15 @@ public class VariantTableStudyRow {
         NavigableMap<byte[], byte[]> familyMap = result.getFamilyMap(helper.getColumnFamily());
         Set<Integer> studyIds = familyMap.entrySet().stream()
                 .filter(entry -> entry.getValue() != null && entry.getValue().length > 0)
-                .map(entry -> extractStudyId(Bytes.toString(entry.getKey()), false))
-                .filter(integer -> integer != null)
+                .map(entry -> Bytes.toString(entry.getKey()))
+                .filter(key -> key.endsWith(MAIN_STUDY_COLUMN))
+                .map(key -> extractStudyId(key, false))
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        if (studyIds.isEmpty()) {
-            throw new IllegalStateException("No studies found!!!");
-        }
+//        if (studyIds.isEmpty()) {
+//            throw new IllegalStateException("No studies found!!!");
+//        }
         List<VariantTableStudyRow> rows = new ArrayList<>(studyIds.size());
         for (Integer studyId : studyIds) {
             Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow());
@@ -561,7 +565,7 @@ public class VariantTableStudyRow {
         Set<Integer> studyIds = new HashSet<>();
         for (int i = 0; i < metaData.getColumnCount(); i++) {
             String columnName = metaData.getColumnName(i + 1);
-            if (columnName != null && !columnName.isEmpty()) {
+            if (columnName != null && !columnName.isEmpty() && columnName.endsWith(MAIN_STUDY_COLUMN)) {
                 if (resultSet.getBytes(columnName) != null) {
                     Integer studyId = extractStudyId(columnName, false);
                     if (studyId != null) {
@@ -677,11 +681,11 @@ public class VariantTableStudyRow {
                 for (org.opencb.biodata.models.variant.avro.AlternateCoordinate altCoord : se.getSecondaryAlternates()) {
 
                     VariantProto.AlternateCoordinate.Builder ac = AlternateCoordinate.newBuilder();
-                    ac.setChromosome(Objects.firstNonNull(altCoord.getChromosome(), ""))
-                            .setStart(Objects.firstNonNull(altCoord.getStart(), 0))
-                            .setEnd(Objects.firstNonNull(altCoord.getEnd(), 0))
-                            .setReference(Objects.firstNonNull(altCoord.getReference(), ""))
-                            .setAlternate(Objects.firstNonNull(altCoord.getAlternate(), ""));
+                    ac.setChromosome(MoreObjects.firstNonNull(altCoord.getChromosome(), ""))
+                            .setStart(MoreObjects.firstNonNull(altCoord.getStart(), 0))
+                            .setEnd(MoreObjects.firstNonNull(altCoord.getEnd(), 0))
+                            .setReference(MoreObjects.firstNonNull(altCoord.getReference(), ""))
+                            .setAlternate(MoreObjects.firstNonNull(altCoord.getAlternate(), ""));
                     VariantType vt = toProto(altCoord.getType());
                     ac.setType(vt);
                     arr.add(ac.build());

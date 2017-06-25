@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantNormalizer;
+import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
@@ -100,7 +100,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     @Override
     public Map<String, ?> getOtherStorageConfigurationOptions() {
-        return new ObjectMap(AbstractHadoopVariantStoragePipeline.SKIP_CREATE_PHOENIX_INDEXES, true);
+        return new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true);
     }
 
     public VariantSource loadFile(String resourceName, int fileId, StudyConfiguration studyConfiguration) throws Exception {
@@ -244,6 +244,13 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     public void testMultipleFilesConcurrentFullPut() throws Exception {
         testMultipleFilesConcurrent(new ObjectMap(HadoopVariantStorageEngine.MERGE_LOAD_SPECIFIC_PUT, false));
     }
+    @Test
+    public void testMultipleFilesConcurrentMergeBasic() throws Exception {
+        testMultipleFilesConcurrent(new ObjectMap(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
+                .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
+                .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_BATCH_SIZE, 5)
+                .append(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE_BATCH_SIZE, 5));
+    }
 
     public void testMultipleFilesConcurrent(ObjectMap extraParams) throws Exception {
 
@@ -297,7 +304,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         FileStudyConfigurationAdaptor.write(studyConfiguration, new File(outputUri.resolve("study_configuration.json").getPath()).toPath());
         try (FileOutputStream out = new FileOutputStream(outputUri.resolve("platinum.merged.vcf").getPath())) {
-            VariantVcfDataWriter.htsExport(dbAdaptor.iterator(new Query(), new QueryOptions(QueryOptions.SORT, true)),
+            VariantVcfDataWriter.htsExport(dbAdaptor.iterator(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions(QueryOptions.SORT, true)),
                     studyConfiguration, dbAdaptor.getVariantSourceDBAdaptor(), out, new Query(), new QueryOptions());
         }
     }
@@ -491,6 +498,18 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
                 .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ"), 4);
     }
 
+    @Test
+    public void testPlatinumFilesOneByOne_MergeBasic() throws Exception {
+        testPlatinumFilesOneByOne(new ObjectMap()
+                .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
+                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
+                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ"));
+    }
+
+    public void testPlatinumFilesOneByOne(ObjectMap otherParams) throws Exception {
+        testPlatinumFilesOneByOne(otherParams, 17);
+    }
+
     public void testPlatinumFilesOneByOne(ObjectMap otherParams, int maxFilesLoaded) throws Exception {
 
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
@@ -658,6 +677,9 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         GenomeHelper helper = dbAdaptor.getGenomeHelper();
 
+        if (studyConfiguration.getBatches().isEmpty()) {
+            return;
+        }
         long ts = studyConfiguration.getBatches().get(studyConfiguration.getBatches().size() - 1).getTimestamp();
 
         hm.act(tableName, table -> {

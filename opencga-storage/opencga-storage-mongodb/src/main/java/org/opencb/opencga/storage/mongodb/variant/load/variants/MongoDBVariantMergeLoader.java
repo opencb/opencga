@@ -52,6 +52,7 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
     private static final QueryOptions UPSERT_AND_RELPACE = new QueryOptions(MongoDBCollection.UPSERT, true)
             .append(MongoDBCollection.REPLACE, true);
     private static final QueryOptions UPSERT = new QueryOptions(MongoDBCollection.UPSERT, true);
+    private static final QueryOptions MULTI = new QueryOptions(MongoDBCollection.MULTI, true);
 
 
     private final ProgressLogger progressLogger;
@@ -136,9 +137,7 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         }
         fillGapsVariants.stop();
 
-        if (cleanWhileLoading) {
-            cleanStage(mongoDBOps);
-        }
+        updateStage(mongoDBOps);
 
         long updatesNewStudyExistingVariant = mongoDBOps.getNewStudy().getUpdates().size() - newVariants;
         long updatesWithDataExistingStudy = mongoDBOps.getExistingStudy().getUpdates().size() - mongoDBOps.getMissingVariants();
@@ -157,19 +156,35 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         return writeResult;
     }
 
+    private void updateStage(MongoDBOperations mongoDBOps) {
+
+        MongoDBOperations.StageSecondaryAlternates alternates = mongoDBOps.getSecondaryAlternates();
+        if (!alternates.getQueries().isEmpty()) {
+            QueryResult<BulkWriteResult> update = stageCollection.update(alternates.getQueries(), alternates.getUpdates(), null);
+            if (update.first().getMatchedCount() != alternates.getQueries().size()) {
+                onUpdateError("populate secondary alternates", update, alternates.getQueries(), alternates.getIds(), stageCollection);
+            }
+        }
+
+        long cleanDocuments = 0;
+        if (cleanWhileLoading) {
+            cleanDocuments = cleanStage(mongoDBOps);
+        }
+
+    }
+
     private long cleanStage(MongoDBOperations mongoDBOps) {
         long modifiedCount = 0;
         if (!mongoDBOps.getDocumentsToCleanStudies().isEmpty()) {
             logger.debug("Clean study {} from stage where all the files {} where duplicated : {}", studyId, fileIds,
                     mongoDBOps.getDocumentsToCleanStudies());
             modifiedCount += stageCollection.update(
-                    in(ID_FIELD, mongoDBOps.getDocumentsToCleanStudies()), cleanStageDuplicated,
-                    new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
+                    in(ID_FIELD, mongoDBOps.getDocumentsToCleanStudies()), cleanStageDuplicated, MULTI).first().getModifiedCount();
         }
         if (!mongoDBOps.getDocumentsToCleanFiles().isEmpty()) {
             logger.debug("Cleaning files {} from stage collection", fileIds);
-            modifiedCount += stageCollection.update(in(ID_FIELD, mongoDBOps.getDocumentsToCleanFiles()), cleanStage,
-                    new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
+            modifiedCount += stageCollection.update(
+                    in(ID_FIELD, mongoDBOps.getDocumentsToCleanFiles()), cleanStage, MULTI).first().getModifiedCount();
         }
 
         return modifiedCount;
@@ -265,10 +280,15 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
     }
 
     protected void onUpdateError(String updateName, QueryResult<BulkWriteResult> update, List<Bson> queries, List<String> queryIds) {
+        onUpdateError(updateName, update, queries, queryIds, variantsCollection);
+    }
+
+    protected void onUpdateError(String updateName, QueryResult<BulkWriteResult> update, List<Bson> queries, List<String> queryIds,
+                                 MongoDBCollection collection) {
         logger.error("(Updated " + updateName + " variants = " + queries.size() + " ) != "
                 + "(ModifiedCount = " + update.first().getModifiedCount() + "). MatchedCount:" + update.first().getMatchedCount());
         logger.info("QueryIDs: {}", queryIds);
-        List<QueryResult<Document>> queryResults = variantsCollection.find(queries, null);
+        List<QueryResult<Document>> queryResults = collection.find(queries, null);
         logger.info("Results: ", queryResults.size());
 
         for (QueryResult<Document> r : queryResults) {

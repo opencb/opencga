@@ -45,6 +45,7 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
         ORGANISM_COMMON_NAME("organism.commonName", TEXT, ""),
         ORGANISM_TAXONOMY_CODE("organism.taxonomyCode", TEXT, ""),
         ORGANISM_ASSEMBLY("organism.assembly", TEXT, ""),
+        CURRENT_RELEASE("currentRelease", INTEGER, ""),
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
@@ -127,6 +128,8 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
     QueryResult<Project> get(String userId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Project> get(long project, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Integer> incrementCurrentRelease(long projectId) throws CatalogDBException;
 
 //    @Deprecated
 //    default QueryResult<Project> deleteProject(long projectId) throws CatalogDBException {

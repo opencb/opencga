@@ -137,6 +137,8 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
      */
     QueryResult<Sample> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
+    QueryResult<Sample> count(String studyStr, Query query, String sessionId) throws CatalogException;
+
     @Deprecated
     QueryResult<AnnotationSet> annotate(long sampleId, String annotationSetName, long variableSetId, Map<String, Object> annotations,
                                         Map<String, Object> attributes, boolean checkAnnotationSet,

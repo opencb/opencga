@@ -3,17 +3,12 @@ package org.opencb.opencga.server.rest.analysis;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.Map;
 
@@ -24,14 +19,20 @@ import java.util.Map;
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Analysis - Tool", position = 4, description = "Methods to work with external tools")
 public class ToolWService extends AnalysisWSService {
-
-    public ToolWService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(uriInfo, httpServletRequest);
+/*
+* public JobWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest, httpHeaders);
+        jobManager = catalogManager.getJobManager();
+    }
+* */
+    public ToolWService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+            throws IOException, VersionException {
+        super(uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public ToolWService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
-            throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+    public ToolWService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+                        @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+        super(version, uriInfo, httpServletRequest, httpHeaders);
     }
 
     @POST

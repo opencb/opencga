@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.commons.datastore.core.Query;
@@ -26,7 +27,9 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
@@ -64,6 +67,23 @@ public interface VariantSourceDBAdaptor extends AutoCloseable {
     QueryResult<Long> count();
 
     void updateVariantSource(VariantSource variantSource) throws StorageEngineException;
+
+    default QueryResult<VariantSource> get(String fileId, QueryOptions options) throws StorageEngineException {
+        StopWatch stopWatch = StopWatch.createStarted();
+        Iterator<VariantSource> iterator;
+        try {
+            iterator = iterator(new Query(VariantSourceQueryParam.FILE_ID.key(), fileId), options);
+        } catch (IOException e) {
+            throw new StorageEngineException("Error reading VariantSourceDBAdaptor", e);
+        }
+        if (iterator.hasNext()) {
+            VariantSource variantSource = iterator.next();
+            return new QueryResult<>("", ((int) stopWatch.getTime(TimeUnit.MILLISECONDS)), 1, 1, null, null,
+                    Collections.singletonList(variantSource));
+        } else {
+            return new QueryResult<>("", ((int) stopWatch.getTime(TimeUnit.MILLISECONDS)), 0, 0, null, null, Collections.emptyList());
+        }
+    }
 
     Iterator<VariantSource> iterator(Query query, QueryOptions options) throws IOException;
 

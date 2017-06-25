@@ -91,7 +91,7 @@ public class JobWSServerTest {
         assertEquals(description, job.getDescription());
         assertEquals(commandLine, job.getCommandLine());
         assertEquals(status.toString(), job.getStatus().getName());
-        assertEquals(outDirId, job.getOutDirId());
+        assertEquals(outDirId, job.getOutDir().getId());
     }
 
     @Test
@@ -120,7 +120,7 @@ public class JobWSServerTest {
         assertEquals(20, job.getEndTime());
         assertEquals(commandLine, job.getCommandLine());
         assertEquals(status.toString(), job.getStatus().getName());
-        assertEquals(outDirId, job.getOutDirId());
+        assertEquals(outDirId, job.getOutDir().getId());
     }
 
     @Test

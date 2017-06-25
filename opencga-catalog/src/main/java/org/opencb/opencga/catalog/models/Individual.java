@@ -42,6 +42,7 @@ public class Individual extends Annotable<IndividualAclEntry> {
     private Species species;
     private Population population;
     private String dateOfBirth;
+    private int release;
     private String creationDate;
     private Status status;
     private LifeStatus lifeStatus;
@@ -64,7 +65,7 @@ public class Individual extends Annotable<IndividualAclEntry> {
     }
 
     public enum AffectationStatus {
-        HEALTHY_CONTROL, AFFECTED, UNAFFECTED, UNKNOWN
+        CONTROL, AFFECTED, UNAFFECTED, UNKNOWN
     }
 
     public enum KaryotypicSex {
@@ -75,23 +76,17 @@ public class Individual extends Annotable<IndividualAclEntry> {
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Population population,
-                      List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, fatherId, motherId, family, sex, ethnicity, population, new Status(), Collections.emptyList(),
-                annotationSets, attributes);
-    }
-
-    public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Population population,
-                      Status status, List<IndividualAclEntry> acl, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, fatherId, motherId, family, sex, null, ethnicity, population, "", TimeUtils.getTime(), status,
-                false, LifeStatus.UNKNOWN, AffectationStatus.UNKNOWN, Collections.emptyList(), new ArrayList<>(), acl, annotationSets,
-                attributes);
+                      int release, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+        this(id, name, fatherId, motherId, family, sex, null, ethnicity, population, "", release, TimeUtils.getTime(), new Status(),
+                false, LifeStatus.UNKNOWN, AffectationStatus.UNKNOWN, Collections.emptyList(), new ArrayList<>(),
+                Collections.emptyList(), annotationSets, attributes);
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
                       String ethnicity, Population population, LifeStatus lifeStatus, AffectationStatus affectationStatus,
-                      String dateOfBirth, boolean parentalConsanguinity, List<AnnotationSet> annotationSets,
+                      String dateOfBirth, boolean parentalConsanguinity, int release, List<AnnotationSet> annotationSets,
                       List<OntologyTerm> ontologyTermList) {
-        this(id, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, population, dateOfBirth, TimeUtils.getTime(),
+        this(id, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, population, dateOfBirth, release, TimeUtils.getTime(),
                 new Status(), parentalConsanguinity, lifeStatus, affectationStatus, ontologyTermList, new ArrayList<>(), new LinkedList<>(),
                 annotationSets, Collections.emptyMap());
         if (population == null) {
@@ -100,7 +95,7 @@ public class Individual extends Annotable<IndividualAclEntry> {
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
-                      String ethnicity, Population population, String dateOfBirth, String creationDate, Status status,
+                      String ethnicity, Population population, String dateOfBirth, int release, String creationDate, Status status,
                       boolean parentalConsanguinity, LifeStatus lifeStatus, AffectationStatus affectationStatus,
                       List<OntologyTerm> ontologyTerms, List<Sample> samples, List<IndividualAclEntry> acl,
                       List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
@@ -114,6 +109,7 @@ public class Individual extends Annotable<IndividualAclEntry> {
         this.ethnicity = ethnicity;
         this.population = population;
         this.dateOfBirth = dateOfBirth;
+        this.release = release;
         this.creationDate = creationDate;
         this.parentalConsanguinity = parentalConsanguinity;
         this.status = status;
@@ -154,35 +150,6 @@ public class Individual extends Annotable<IndividualAclEntry> {
             sb.append(", commonName='").append(commonName).append('\'');
             sb.append('}');
             return sb.toString();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (!(o instanceof Species)) {
-                return false;
-            }
-
-            Species species = (Species) o;
-
-            if (taxonomyCode != null ? !taxonomyCode.equals(species.taxonomyCode) : species.taxonomyCode != null) {
-                return false;
-            }
-            if (scientificName != null ? !scientificName.equals(species.scientificName) : species.scientificName != null) {
-                return false;
-            }
-            return !(commonName != null ? !commonName.equals(species.commonName) : species.commonName != null);
-
-        }
-
-        @Override
-        public int hashCode() {
-            int result = taxonomyCode != null ? taxonomyCode.hashCode() : 0;
-            result = 31 * result + (scientificName != null ? scientificName.hashCode() : 0);
-            result = 31 * result + (commonName != null ? commonName.hashCode() : 0);
-            return result;
         }
 
         public String getTaxonomyCode() {
@@ -240,35 +207,6 @@ public class Individual extends Annotable<IndividualAclEntry> {
             return sb.toString();
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (!(o instanceof Population)) {
-                return false;
-            }
-
-            Population that = (Population) o;
-
-            if (name != null ? !name.equals(that.name) : that.name != null) {
-                return false;
-            }
-            if (subpopulation != null ? !subpopulation.equals(that.subpopulation) : that.subpopulation != null) {
-                return false;
-            }
-            return !(description != null ? !description.equals(that.description) : that.description != null);
-
-        }
-
-        @Override
-        public int hashCode() {
-            int result = name != null ? name.hashCode() : 0;
-            result = 31 * result + (subpopulation != null ? subpopulation.hashCode() : 0);
-            result = 31 * result + (description != null ? description.hashCode() : 0);
-            return result;
-        }
-
         public String getName() {
             return name;
         }
@@ -303,14 +241,15 @@ public class Individual extends Annotable<IndividualAclEntry> {
         sb.append(", name='").append(name).append('\'');
         sb.append(", fatherId=").append(fatherId);
         sb.append(", motherId=").append(motherId);
-        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", family='").append(family).append('\'');
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", sex=").append(sex);
         sb.append(", karyotypicSex=").append(karyotypicSex);
         sb.append(", ethnicity='").append(ethnicity).append('\'');
         sb.append(", species=").append(species);
         sb.append(", population=").append(population);
         sb.append(", dateOfBirth='").append(dateOfBirth).append('\'');
+        sb.append(", release=").append(release);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", lifeStatus=").append(lifeStatus);
@@ -440,6 +379,14 @@ public class Individual extends Annotable<IndividualAclEntry> {
         return this;
     }
 
+    public int getRelease() {
+        return release;
+    }
+
+    public Individual setRelease(int release) {
+        this.release = release;
+        return this;
+    }
 
     public LifeStatus getLifeStatus() {
         return lifeStatus;
