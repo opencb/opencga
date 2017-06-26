@@ -89,10 +89,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
     String getOwnerId(long studyId) throws CatalogDBException;
 
-    QueryResult<Group> createGroup(long studyId, String groupId, List<String> userIds) throws CatalogDBException;
-
-    @Deprecated
-    QueryResult<Group> getGroup(long studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Group> createGroup(long studyId, Group group) throws CatalogDBException;
 
     /**
      * Obtains the groups that satisfies the query.
@@ -111,10 +108,9 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      * @param studyId study id.
      * @param groupId group id.
      * @param members new list of users that will compose the group.
-     * @return The group after being updated.
      * @throws CatalogDBException when any of the members do not exist.
      */
-    QueryResult<Group> setUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+    void setUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
 
     /**
      * Adds the list of members to the groupId. If the groupId did not already existed, it creates it.
@@ -122,10 +118,9 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      * @param studyId studyId
      * @param groupId Group id.
      * @param members List of members that will be added to the group.
-     * @return The group that has been updated/created.
      * @throws CatalogDBException when any of the studyId or the members do not exist.
      */
-    QueryResult<Group> addUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+    void addUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
 
     /**
      * Removes the list of members from the group.

@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.User;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -45,6 +46,17 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
 
         if (!exists(userId)) {
             throw CatalogDBException.newInstance("User id '{}' does not exist", userId);
+        }
+    }
+
+    default void checkIds(List<String> userIds) throws CatalogDBException {
+        if (userIds == null || userIds.size() == 0) {
+            throw CatalogDBException.newInstance("No users to be checked.");
+        }
+
+        Query query = new Query(QueryParams.ID.key(), userIds);
+        if (count(query).getNumResults() < userIds.size()) {
+            throw CatalogDBException.newInstance("Some users do not exist.");
         }
     }
 

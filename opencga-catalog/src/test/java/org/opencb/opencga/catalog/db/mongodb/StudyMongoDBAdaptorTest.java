@@ -20,10 +20,7 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.models.Variable;
-import org.opencb.opencga.catalog.models.VariableSet;
+import org.opencb.opencga.catalog.models.*;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -152,5 +149,12 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
         catalogStudyDBAdaptor.addFieldToVariableSet(18, variable);
     }
 
+    @Test
+    public void createGroup() throws CatalogDBException {
+        catalogStudyDBAdaptor.createGroup(5L, new Group("name", Arrays.asList("user1", "user2")));
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("Group already existed");
+        catalogStudyDBAdaptor.createGroup(5L, new Group("name", Arrays.asList("user1", "user2")));
+    }
 
 }

@@ -223,7 +223,7 @@ class MongoDBUtils {
             return;
         } else if (userId.startsWith("@")) {
             String groupId = userId.substring(1);
-            QueryResult<Group> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, null, groupId, null);
+            QueryResult<Group> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, groupId, null);
             if (queryResult.getNumResults() == 0) {
                 throw CatalogDBException.idNotFound("Group", groupId);
             }

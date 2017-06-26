@@ -73,9 +73,9 @@ public class Study extends AbstractAcl<StudyAclEntry> {
 
     public Study(String name, String alias, Type type, String description, Status status, URI uri, int release) {
         this(-1, name, alias, type, TimeUtils.getTime(), description, status, null, 0, "",
-                null, new ArrayList<>(), new ArrayList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), uri, new HashMap<>(), release,
-                new HashMap<>(), new HashMap<>()
+                new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), uri,
+                new HashMap<>(), release, new HashMap<>(), new HashMap<>()
         );
     }
 
