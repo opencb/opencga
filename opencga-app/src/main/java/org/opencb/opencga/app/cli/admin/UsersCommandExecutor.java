@@ -84,7 +84,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             String sessionId = login.first().getId();
 
             if (executor.syncAll) {
-                QueryResult<Group> allGroups = catalogManager.getStudyManager().getAllGroups(executor.study, sessionId);
+                QueryResult<Group> allGroups = catalogManager.getStudyManager().getGroup(executor.study, null, sessionId);
 
                 boolean foundAny = false;
                 for (Group group : allGroups.getResult()) {

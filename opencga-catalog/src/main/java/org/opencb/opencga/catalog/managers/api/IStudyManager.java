@@ -246,16 +246,6 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
     QueryResult<Group> createGroup(String studyStr, String groupId, String userList, String sessionId) throws CatalogException;
 
     /**
-     * Obtain all the groups that are present in the study.
-     *
-     * @param studyStr study.
-     * @param sessionId session id of the user that wants to perform this action.
-     * @return all the groups present in the study.
-     * @throws CatalogException catalogException.
-     */
-    QueryResult<Group> getAllGroups(String studyStr, String sessionId) throws CatalogException;
-
-    /**
      * Obtain the group asked.
      *
      * @param studyStr study.
@@ -278,8 +268,11 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      * @return the group after the update action.
      * @throws CatalogException catalogException.
      */
+    @Deprecated
     QueryResult<Group> updateGroup(String studyStr, String groupId, @Nullable String addUsers, @Nullable String removeUsers,
                                    @Nullable String setUsers, String sessionId) throws CatalogException;
+
+    QueryResult<Group> updateGroup(String studyStr, String groupId, GroupParams groupParams, String sessionId) throws CatalogException;
 
     /**
      * Update the parameters of a group.

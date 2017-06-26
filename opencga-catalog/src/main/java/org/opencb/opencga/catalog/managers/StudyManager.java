@@ -797,6 +797,20 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             panelIds.add(panelDBIterator.next().getId());
         }
         authorizationManager.removeAcls(panelIds, members, null, MongoDBAdaptorFactory.PANEL_COLLECTION);
+
+        List<Long> familyIds = new ArrayList<>();
+        DBIterator<Family> familyDBIterator = familyDBAdaptor.iterator(query, options);
+        while (familyDBIterator.hasNext()) {
+            familyIds.add(familyDBIterator.next().getId());
+        }
+        authorizationManager.removeAcls(familyIds, members, null, MongoDBAdaptorFactory.FAMILY_COLLECTION);
+
+        List<Long> clinicalAnalysisIds = new ArrayList<>();
+        DBIterator<ClinicalAnalysis> clinicalAnalysisDBIterator = clinicalDBAdaptor.iterator(query, options);
+        while (clinicalAnalysisDBIterator.hasNext()) {
+            clinicalAnalysisIds.add(clinicalAnalysisDBIterator.next().getId());
+        }
+        authorizationManager.removeAcls(clinicalAnalysisIds, members, null, MongoDBAdaptorFactory.CLINICAL_ANALYSIS_COLLECTION);
     }
 
     @Override
@@ -829,26 +843,12 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         }
 
         // Check the list of users is ok
-        for (String user : userList) {
-            userDBAdaptor.checkId(user);
-        }
-
-        // Check that none of the users belong to other group
-        StringBuilder errorMessage = new StringBuilder("Cannot create group. These users already belong to other group: ");
-        boolean errorFlag = false;
-        for (String user : userList) {
-            if (memberBelongsToGroup(studyId, user)) {
-                errorMessage.append(user).append(",");
-                errorFlag = true;
-            }
-        }
-
-        if (errorFlag) {
-            throw new CatalogException(errorMessage.toString());
+        if (userList.size() > 0) {
+            userDBAdaptor.checkIds(userList);
         }
 
         // Create the group
-        return studyDBAdaptor.createGroup(studyId, groupId, userList);
+        return studyDBAdaptor.createGroup(studyId, new Group(groupId, userList));
     }
 
     private boolean existsGroup(long studyId, String groupId) throws CatalogDBException {
@@ -866,29 +866,6 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     }
 
     @Override
-    public QueryResult<Group> getAllGroups(String studyStr, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
-        long studyId = getId(userId, studyStr);
-        studyDBAdaptor.checkId(studyId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPDATE_STUDY);
-
-        Query query = new Query(StudyDBAdaptor.QueryParams.ID.key(), studyId);
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.GROUPS.key());
-
-        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions);
-        List<Group> groupList;
-        if (studyQueryResult != null && studyQueryResult.getNumResults() == 1) {
-            groupList = studyQueryResult.first().getGroups();
-        } else {
-            groupList = Collections.emptyList();
-        }
-
-        return new QueryResult<>("Get all groups", studyQueryResult.getDbTime(), groupList.size(), groupList.size(),
-                studyQueryResult.getWarningMsg(), studyQueryResult.getErrorMsg(), groupList);
-    }
-
-    @Override
     public QueryResult<Group> getGroup(String studyStr, String groupId, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getId(sessionId);
         long studyId = getId(userId, studyStr);
@@ -897,7 +874,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPDATE_STUDY);
 
         // Fix the groupId
-        if (!groupId.startsWith("@")) {
+        if (groupId != null && !groupId.startsWith("@")) {
             groupId = "@" + groupId;
         }
 
@@ -946,11 +923,54 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     }
 
     @Override
+    public QueryResult<Group> updateGroup(String studyStr, String groupId, GroupParams groupParams, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkObj(groupParams, "Group parameters");
+        ParamUtils.checkParameter(groupId, "Group name");
+        ParamUtils.checkObj(groupParams.getAction(), "Action");
+
+        String userId = catalogManager.getUserManager().getId(sessionId);
+        long studyId = getId(userId, studyStr);
+
+        List<String> users;
+        if (StringUtils.isNotEmpty(groupParams.getUsers())) {
+            users = Arrays.asList(groupParams.getUsers().split(","));
+            userDBAdaptor.checkIds(users);
+        } else {
+            users = Collections.emptyList();
+        }
+
+        // Check permissions
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPDATE_STUDY);
+
+        // Fix the group name
+        if (!groupId.startsWith("@")) {
+            groupId = "@" + groupId;
+        }
+
+        switch (groupParams.getAction()) {
+            case SET:
+                studyDBAdaptor.setUsersToGroup(studyId, groupId, users);
+                break;
+            case ADD:
+                studyDBAdaptor.addUsersToGroup(studyId, groupId, users);
+                break;
+            case REMOVE:
+                studyDBAdaptor.removeUsersFromGroup(studyId, groupId, users);
+                break;
+            default:
+                throw new CatalogException("Unknown action " + groupParams.getAction() + " found.");
+        }
+
+        return studyDBAdaptor.getGroup(studyId, groupId, Collections.emptyList());
+    }
+
+    @Override
     public QueryResult<Group> syncGroupWith(String studyStr, String groupId, Group.Sync syncedFrom, String sessionId)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getId(sessionId);
         long studyId = getId(userId, studyStr);
-        studyDBAdaptor.checkId(studyId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPDATE_STUDY);
 

@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import org.bson.Document;
@@ -128,7 +129,9 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
     @Override
     public DBIterator<ClinicalAnalysis> iterator(Query query, QueryOptions options) throws CatalogDBException {
-        return null;
+        Bson bson = parseQuery(query, false);
+        MongoCursor<Document> iterator = clinicalCollection.nativeQuery().find(bson, options).iterator();
+        return new MongoDBIterator<>(iterator, clinicalConverter);
     }
 
     @Override

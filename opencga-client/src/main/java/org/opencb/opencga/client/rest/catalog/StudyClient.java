@@ -41,22 +41,6 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
 
     private static final String STUDY_URL = "studies";
 
-    public enum GroupUpdateParams {
-        ADD_USERS("addUsers"),
-        SET_USERS("setUsers"),
-        REMOVE_USERS("removeUsers");
-
-        private String key;
-
-        GroupUpdateParams(String value) {
-            this.key = value;
-        }
-
-        public String key() {
-            return this.key;
-        }
-    }
-
     public StudyClient(String userId, String sessionId, ClientConfiguration configuration) {
         super(userId, sessionId, configuration);
         this.category = STUDY_URL;
@@ -153,7 +137,7 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
 
     public QueryResponse<ObjectMap> createGroup(String studyId, String groupId, String users) throws CatalogException, IOException {
         ObjectMap bodyParams = new ObjectMap();
-        bodyParams.putIfNotEmpty("groupId", groupId);
+        bodyParams.putIfNotEmpty("name", groupId);
         bodyParams.putIfNotEmpty("users", users);
         return execute(STUDY_URL, studyId, "groups", null, "create", new ObjectMap("body", bodyParams), POST, ObjectMap.class);
     }
@@ -171,10 +155,6 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
     public QueryResponse<ObjectMap> groups(String studyId, ObjectMap objectMap) throws CatalogException, IOException {
         ObjectMap params = new ObjectMap(objectMap);
         return execute(STUDY_URL, studyId, "groups", params, GET, ObjectMap.class);
-    }
-
-    public QueryResponse<ObjectMap> infoGroup(String studyId,  String groupId, ObjectMap objectMap) throws CatalogException, IOException {
-        return execute(STUDY_URL, studyId, "groups", groupId, "info", objectMap, GET, ObjectMap.class);
     }
 
     public QueryResponse<Study> update(String studyId, String study, ObjectMap params) throws CatalogException, IOException {

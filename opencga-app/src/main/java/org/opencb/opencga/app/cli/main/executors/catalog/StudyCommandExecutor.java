@@ -121,9 +121,6 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
             case "groups-delete":
                 queryResponse = groupsDelete();
                 break;
-            case "groups-info":
-                queryResponse = groupsInfo();
-                break;
             case "groups-update":
                 queryResponse = groupsUpdate();
                 break;
@@ -474,8 +471,10 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
         studiesCommandOptions.groupsCommandOptions.study = getSingleValidStudy(studiesCommandOptions.groupsCommandOptions.study);
 
-        QueryOptions queryOptions = new QueryOptions();
-        return openCGAClient.getStudyClient().groups(studiesCommandOptions.groupsCommandOptions.study, queryOptions);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull("name", studiesCommandOptions.groupsCommandOptions.group);
+
+        return openCGAClient.getStudyClient().groups(studiesCommandOptions.groupsCommandOptions.study, params);
     }
 
     private QueryResponse<ObjectMap> groupsCreate() throws CatalogException,IOException {
@@ -499,31 +498,18 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 studiesCommandOptions.groupsDeleteCommandOptions.groupId, queryOptions);
     }
 
-    private QueryResponse<ObjectMap> groupsInfo() throws CatalogException,IOException {
-        logger.debug("Info groups");
-
-        studiesCommandOptions.groupsInfoCommandOptions.study = getSingleValidStudy(studiesCommandOptions.groupsInfoCommandOptions.study);
-
-        QueryOptions queryOptions = new QueryOptions();
-        return openCGAClient.getStudyClient().infoGroup(studiesCommandOptions.groupsInfoCommandOptions.study,
-                studiesCommandOptions.groupsInfoCommandOptions.groupId, queryOptions);
-    }
     private QueryResponse<ObjectMap> groupsUpdate() throws CatalogException,IOException {
         logger.debug("Updating groups");
 
         studiesCommandOptions.groupsUpdateCommandOptions.study =
                 getSingleValidStudy(studiesCommandOptions.groupsUpdateCommandOptions.study);
 
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty(StudyClient.GroupUpdateParams.ADD_USERS.key(),
-                studiesCommandOptions.groupsUpdateCommandOptions.addUsers);
-        queryOptions.putIfNotEmpty(StudyClient.GroupUpdateParams.SET_USERS.key(),
-                studiesCommandOptions.groupsUpdateCommandOptions.setUsers);
-        queryOptions.putIfNotEmpty(StudyClient.GroupUpdateParams.REMOVE_USERS.key(),
-                studiesCommandOptions.groupsUpdateCommandOptions.removeUsers);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull("action", studiesCommandOptions.groupsUpdateCommandOptions.action);
+        params.putIfNotNull("users", studiesCommandOptions.groupsUpdateCommandOptions.users);
 
         return openCGAClient.getStudyClient().updateGroup(studiesCommandOptions.groupsUpdateCommandOptions.study,
-                studiesCommandOptions.groupsUpdateCommandOptions.groupId, queryOptions);
+                studiesCommandOptions.groupsUpdateCommandOptions.groupId, params);
     }
 
     /************************************************* Acl commands *********************************************************/

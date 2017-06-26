@@ -21,6 +21,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.opencga.catalog.models.GroupParams;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
@@ -49,7 +50,6 @@ public class StudyCommandOptions {
     public GroupsCommandOptions groupsCommandOptions;
     public GroupsCreateCommandOptions groupsCreateCommandOptions;
     public GroupsDeleteCommandOptions groupsDeleteCommandOptions;
-    public GroupsInfoCommandOptions groupsInfoCommandOptions;
     public GroupsUpdateCommandOptions groupsUpdateCommandOptions;
 
     public AclsCommandOptions aclsCommandOptions;
@@ -86,7 +86,6 @@ public class StudyCommandOptions {
         this.groupsCommandOptions = new GroupsCommandOptions();
         this.groupsCreateCommandOptions = new GroupsCreateCommandOptions();
         this.groupsDeleteCommandOptions = new GroupsDeleteCommandOptions();
-        this.groupsInfoCommandOptions = new GroupsInfoCommandOptions();
         this.groupsUpdateCommandOptions = new GroupsUpdateCommandOptions();
 
         this.aclsCommandOptions = new AclsCommandOptions();
@@ -521,7 +520,9 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {"groups"}, commandDescription = "Return the groups present in the studies")
     public class GroupsCommandOptions extends BaseStudyCommand {
-
+        @Parameter(names = {"--name"}, description = "Group name. If present, it will fetch only information of the group provided.",
+                arity = 1)
+        public String group;
     }
 
     @Parameters(commandNames = {"help"}, commandDescription = "Help [PENDING]")
@@ -535,8 +536,7 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"groups-create"}, commandDescription = "Create a group")
     public class GroupsCreateCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"--group"}, description = "Group id, group id corresponds to the name of the group", required = true,
-                arity = 1)
+        @Parameter(names = {"--name"}, description = "Group name.", required = true, arity = 1)
         public String groupId;
 
         @Parameter(names = {"--users"}, description = "Comma separated list of members that will form the group", arity = 1)
@@ -547,17 +547,7 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"groups-delete"}, commandDescription = "Delete group")
     public class GroupsDeleteCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"--group"}, description = "Group id, group id corresponds to the name of the group ", required = true,
-                arity = 1)
-        public String groupId;
-
-    }
-
-    @Parameters(commandNames = {"groups-info"}, commandDescription = "Return the group")
-    public class GroupsInfoCommandOptions extends BaseStudyCommand {
-
-        @Parameter(names = {"--group"}, description = "Group id, group id corresponds to the name of the group", required = true,
-                arity = 1)
+        @Parameter(names = {"--name"}, description = "Group name", required = true, arity = 1)
         public String groupId;
 
     }
@@ -565,18 +555,14 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"groups-update"}, commandDescription = "Updates the members of the group")
     public class GroupsUpdateCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"--group"}, description = "Group id, group id corresponds to the name of the group", required = true,
-                arity = 1)
+        @Parameter(names = {"--name"}, description = "Group name", required = true, arity = 1)
         public String groupId;
 
-        @Parameter(names = {"--add-users"}, description = "Comma separated list of users that will be added to the group", arity = 1)
-        public String addUsers;
+        @Parameter(names = {"--users"}, description = "Comma separated list of users", arity = 1)
+        public String users;
 
-        @Parameter(names = {"--set-users"}, description = "Comma separated list of users that will be added to the group", arity = 1)
-        public String setUsers;
-
-        @Parameter(names = {"--remove-users"}, description = "Comma separated list of users that will be added to the group", arity = 1)
-        public String removeUsers;
+        @Parameter(names = {"--action"}, description = "Action to be performed over users (ADD, SET, REMOVE)", required = true, arity = 1)
+        public GroupParams.Action action;
     }
 
     @Parameters(commandNames = {"acl"}, commandDescription = "Return the acls set for the resource")

@@ -55,7 +55,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         }
 
         Query query = new Query(QueryParams.ID.key(), userIds);
-        if (count(query).getNumResults() < userIds.size()) {
+        if (count(query).first() < userIds.size()) {
             throw CatalogDBException.newInstance("Some users do not exist.");
         }
     }
