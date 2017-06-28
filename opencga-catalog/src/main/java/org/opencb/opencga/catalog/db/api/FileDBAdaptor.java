@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 
 import java.util.HashMap;
@@ -50,6 +51,7 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
         MODIFICATION_DATE("modificationDate", TEXT_ARRAY, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
         EXTERNAL("external", BOOLEAN, ""),
+        RELEASE("release", INTEGER, ""),
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
@@ -58,7 +60,8 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
         RELATED_FILES_RELATION("relatedFiles.relation", TEXT, ""),
         SIZE("size", INTEGER_ARRAY, ""),
         EXPERIMENT_ID("experiment.id", INTEGER_ARRAY, ""),
-        SAMPLE_IDS("sampleIds", INTEGER_ARRAY, ""),
+        SAMPLES("samples", TEXT_ARRAY, ""),
+        SAMPLE_IDS("samples.id", INTEGER_ARRAY, ""),
 
         JOB_ID("job.id", INTEGER_ARRAY, ""),
         ACL("acl", TEXT_ARRAY, ""),
@@ -218,6 +221,15 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
      * @throws CatalogDBException CatalogDBException.
      */
     QueryResult<Long> extractSampleFromFiles(Query query, List<Long> sampleIds) throws CatalogDBException;
+
+    /**
+     * Add the samples to the array of samples in the file entry.
+     *
+     * @param fileId file id corresponding to the file being updated.
+     * @param samples List of samples to be added to the array.
+     * @throws CatalogDBException CatalogDBException.
+     */
+    void addSamplesToFile(long fileId, List<Sample> samples) throws CatalogDBException;
 
     /*
      * ACL methods

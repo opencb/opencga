@@ -22,6 +22,7 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
@@ -38,6 +39,7 @@ import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.FileConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -108,13 +110,6 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         if (!file.isExternal()) {
             dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, file.getSize());
         }
-//        try {
-//            dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, file.getSize());
-//        } catch (CatalogDBException e) {
-//            delete(newFileId, options);
-//            throw new CatalogDBException("File from study { id:" + studyId + "} was removed from the database due to problems "
-//                    + "with the study collection.");
-//        }
 
         return endQuery("Create file", startTime, get(newFileId, options));
     }
@@ -190,12 +185,6 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
         long startTime = startQuery();
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-//        DBObject match = new BasicDBObject("$match", new BasicDBObject(PRIVATE_STUDY_ID, studyId).append("path", new BasicDBObject("$in",
-//                filePaths)));
-//        DBObject unwind = new BasicDBObject("$unwind", "$acl");
-//        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("acl.userId", new BasicDBObject("$in", userIds)));
-//        DBObject project = new BasicDBObject("$project", new BasicDBObject("path", 1).append("id", 1).append("acl", 1));
-//        QueryResult<DBObject> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
 
         Bson match = Aggregates.match(Filters.and(Filters.eq(PRIVATE_STUDY_ID, studyId), Filters.in(QueryParams.PATH.key(), filePaths)));
         Bson unwind = Aggregates.unwind("$" + QueryParams.ACL.key());
@@ -264,15 +253,16 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
         if (myParams.isEmpty()) {
             logger.debug("The map of parameters to update file is empty. Originally it contained {}", parameters.safeToString());
-            throw new CatalogDBException("Nothing to update");
-        }
+        } else {
+            logger.debug("Update file. Query: {}, Update: {}", query.toBsonDocument(Document.class,
+                    MongoClient.getDefaultCodecRegistry()), myParams);
 
-        logger.debug("Update file. Query: {}, Update: {}",
-                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()), myParams);
 
-        QueryResult<UpdateResult> update = fileCollection.update(query, new Document("$set", myParams), new QueryOptions("multi", true));
-        if (update.first().getMatchedCount() == 0) {
-            throw new CatalogDBException("File " + id + " not found.");
+            QueryResult<UpdateResult> update = fileCollection.update(query, new Document("$set", myParams), new QueryOptions("multi",
+                    true));
+            if (update.first().getMatchedCount() == 0) {
+                throw new CatalogDBException("File " + id + " not found.");
+            }
         }
 
         QueryResult<File> queryResult = fileCollection.find(query, fileConverter, QueryOptions.empty());
@@ -369,14 +359,20 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
             }
         }
 
-        String[] acceptedIntegerListParams = {QueryParams.SAMPLE_IDS.key()};
-        filterIntegerListParams(parameters, fileParameters, acceptedIntegerListParams);
-        // Check if the sample ids exist.
-        if (parameters.containsKey(QueryParams.SAMPLE_IDS.key())) {
-            for (Integer sampleId : parameters.getAsIntegerList(QueryParams.SAMPLE_IDS.key())) {
-                if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().exists(sampleId)) {
-                    throw CatalogDBException.idNotFound("Sample", sampleId);
+        // Check if the samples exist.
+        if (parameters.containsKey(QueryParams.SAMPLES.key())) {
+            List<Object> objectSampleList = parameters.getAsList(QueryParams.SAMPLES.key());
+            List<Sample> sampleList = new ArrayList<>();
+            for (Object sample : objectSampleList) {
+                if (sample instanceof Sample) {
+                    if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().exists(((Sample) sample).getId())) {
+                        throw CatalogDBException.idNotFound("Sample", ((Sample) sample).getId());
+                    }
+                    sampleList.add((Sample) sample);
                 }
+            }
+            if (sampleList.size() > 0) {
+                fileParameters.put(QueryParams.SAMPLES.key(), fileConverter.convertSamples(sampleList));
             }
         }
 
@@ -586,6 +582,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                     case MODIFICATION_DATE:
                     case DESCRIPTION:
                     case EXTERNAL:
+                    case RELEASE:
                     case STATUS:
                     case STATUS_NAME:
                     case STATUS_MSG:
@@ -629,88 +626,6 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.PATH.key(), path);
         QueryResult<Long> count = fileCollection.count(query);
         return count.getResult().get(0) != 0;
-    }
-
-    // TODO: Check these deprecated methods and get rid of them at some point
-
-    @Deprecated
-    public QueryResult<File> getAllFiles(Query query, QueryOptions options) throws CatalogDBException {
-        throw new UnsupportedOperationException("Deprecated method. Use get instead.");
-/*
-        long startTime = startQuery();
-
-        List<DBObject> mongoQueryList = new LinkedList<>();
-
-        for (Map.Entry<String, Object> entry : query.entrySet()) {
-            String key = entry.getKey().split("\\.")[0];
-            try {
-                if (isDataStoreOption(key) || isOtherKnownOption(key)) {
-                    continue;   //Exclude DataStore options
-                }
-                FileFilterOption option = FileFilterOption.valueOf(key);
-                switch (option) {
-                    case id:
-                        addCompQueryFilter(option, option.name(), query, PRIVATE_ID, mongoQueryList);
-                        break;
-                    case studyId:
-                        addCompQueryFilter(option, option.name(), query, PRIVATE_STUDY_ID, mongoQueryList);
-                        break;
-                    case directory:
-                        mongoQueryList.add(new BasicDBObject("path", new BasicDBObject("$regex", "^" + query.getString("directory") +
-                                "[^/]+/?$")));
-                        break;
-                    default:
-                        String queryKey = entry.getKey().replaceFirst(option.name(), option.getKey());
-                        addCompQueryFilter(option, entry.getKey(), query, queryKey, mongoQueryList);
-                        break;
-                    case minSize:
-                        mongoQueryList.add(new BasicDBObject("size", new BasicDBObject("$gt", query.getInt("minSize"))));
-                        break;
-                    case maxSize:
-                        mongoQueryList.add(new BasicDBObject("size", new BasicDBObject("$lt", query.getInt("maxSize"))));
-                        break;
-                    case like:
-                        mongoQueryList.add(new BasicDBObject("name", new BasicDBObject("$regex", query.getString("like"))));
-                        break;
-                    case startsWith:
-                        mongoQueryList.add(new BasicDBObject("name", new BasicDBObject("$regex", "^" + query.getString("startsWith"))));
-                        break;
-                    case startDate:
-                        mongoQueryList.add(new BasicDBObject("creationDate", new BasicDBObject("$lt", query.getString("startDate"))));
-                        break;
-                    case endDate:
-                        mongoQueryList.add(new BasicDBObject("creationDate", new BasicDBObject("$gt", query.getString("endDate"))));
-                        break;
-                }
-            } catch (IllegalArgumentException e) {
-                throw new CatalogDBException(e);
-            }
-        }
-
-        BasicDBObject mongoQuery = new BasicDBObject("$and", mongoQueryList);
-        QueryOptions queryOptions = filterOptions(options, FILTER_ROUTE_FILES);
-//        QueryResult<DBObject> queryResult = fileCollection.find(mongoQuery, null, File.class, queryOptions);
-        QueryResult<File> queryResult = fileCollection.find(mongoQuery, null, new ComplexTypeConverter<File, DBObject>() {
-            @Override
-            public File convertToDataModelType(DBObject object) {
-                try {
-                    return getObjectReader(File.class).readValue(restoreDotsInKeys(object).toString());
-                } catch (IOException e) {
-                    return null;
-                }
-            }
-
-            @Override
-            public DBObject convertToStorageType(File object) {
-                return null;
-            }
-        }, queryOptions);
-        logger.debug("File search: query : {}, project: {}, dbTime: {}", mongoQuery, queryOptions == null ? "" : queryOptions.toJson(),
-                queryResult.getDbTime());
-//        List<File> files = parseFiles(queryResult);
-
-        return endQuery("Search File", startTime, queryResult);
-        */
     }
 
     QueryResult<File> setStatus(long fileId, String status) throws CatalogDBException {
@@ -764,13 +679,23 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         logger.debug("FileId {} extracted from {} jobs", fileId, result.first());
     }
 
+    @Override
     public QueryResult<Long> extractSampleFromFiles(Query query, List<Long> sampleIds) throws CatalogDBException {
         long startTime = startQuery();
         Bson bsonQuery = parseQuery(query, true);
-        Bson update = new Document("$pull", new Document(QueryParams.SAMPLE_IDS.key(), new Document("$in", sampleIds)));
+        Bson update = new Document("$pull", new Document(QueryParams.SAMPLES.key(), new Document("id", new Document("$in", sampleIds))));
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
         QueryResult<UpdateResult> updateQueryResult = fileCollection.update(bsonQuery, update, multi);
         return endQuery("Extract samples from files", startTime, Collections.singletonList(updateQueryResult.first().getModifiedCount()));
     }
 
+    @Override
+    public void addSamplesToFile(long fileId, List<Sample> samples) throws CatalogDBException {
+        if (samples == null || samples.size() == 0) {
+            return;
+        }
+        List<Document> sampleList = fileConverter.convertSamples(samples);
+        Bson update = Updates.addEachToSet(QueryParams.SAMPLES.key(), sampleList);
+        fileCollection.update(Filters.eq(PRIVATE_ID, fileId), update, QueryOptions.empty());
+    }
 }

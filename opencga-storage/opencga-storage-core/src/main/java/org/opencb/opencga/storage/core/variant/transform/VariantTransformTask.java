@@ -24,10 +24,15 @@ import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import org.apache.avro.generic.GenericRecord;
+import org.opencb.biodata.formats.variant.VariantFactory;
 import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
-import org.opencb.biodata.models.variant.*;
+import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
+import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.exceptions.NotAVariantException;
+import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.commons.run.ParallelTaskRunner;
@@ -69,7 +74,7 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
 
     public VariantTransformTask(VariantFactory factory,
                                 VariantSource source, Path outputFileJsonFile, VariantGlobalStatsCalculator variantStatsTask,
-                                boolean includesrc) {
+                                boolean includesrc, boolean generateReferenceBlocks) {
         this.factory = factory;
         this.source = source;
         this.outputFileJsonFile = outputFileJsonFile;
@@ -78,7 +83,8 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
 
         this.vcfCodec = null;
         this.converter = null;
-        this.normalizer = null;
+        this.normalizer = new VariantNormalizer();
+        normalizer.setGenerateReferenceBlocks(generateReferenceBlocks);
     }
 
     public VariantTransformTask(VCFHeader header, VCFHeaderVersion version,
@@ -130,10 +136,13 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
                                 }
                             }
                         }
-                        transformedVariants.add(variant);
                     }
 
-                    variantStatsTask.apply(variants);
+                    List<Variant> normalizedVariants = normalize(variants);
+
+                    variantStatsTask.apply(normalizedVariants);
+
+                    transformedVariants.addAll(normalizedVariants);
 
                 } catch (NotAVariantException ignore) {
                     variants = Collections.emptyList();
@@ -160,17 +169,7 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
             List<Variant> variants = converter.apply(variantContexts);
             this.biodataConvertTime.addAndGet(System.currentTimeMillis() - curr);
 
-            curr = System.currentTimeMillis();
-            List<Variant> normalizedVariants = new ArrayList<>((int) (variants.size() * 1.1));
-            for (Variant variant : variants) {
-                try {
-                    normalizedVariants.addAll(normalizer.normalize(Collections.singletonList(variant), true));
-                } catch (Exception e) {
-                    logger.error("Error parsing variant " + variant);
-                    throw new IllegalStateException(e);
-                }
-            }
-            this.normTime.addAndGet(System.currentTimeMillis() - curr);
+            List<Variant> normalizedVariants = normalize(variants);
 
             variantStatsTask.apply(normalizedVariants);
 
@@ -178,6 +177,22 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
         }
 
         return encodeVariants(transformedVariants);
+    }
+
+    public List<Variant> normalize(List<Variant> variants) {
+        long curr;
+        curr = System.currentTimeMillis();
+        List<Variant> normalizedVariants = new ArrayList<>((int) (variants.size() * 1.1));
+        for (Variant variant : variants) {
+            try {
+                normalizedVariants.addAll(normalizer.normalize(Collections.singletonList(variant), true));
+            } catch (Exception e) {
+                logger.error("Error parsing variant " + variant);
+                throw new IllegalStateException(e);
+            }
+        }
+        this.normTime.addAndGet(System.currentTimeMillis() - curr);
+        return normalizedVariants;
     }
 
     private void onError(RuntimeException e, String line) {

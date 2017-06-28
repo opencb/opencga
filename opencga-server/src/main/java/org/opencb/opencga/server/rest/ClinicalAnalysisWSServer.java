@@ -1,20 +1,14 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
-import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.Map;
 
@@ -29,9 +23,9 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 
     private final ClinicalAnalysisManager clinicalManager;
 
-    public ClinicalAnalysisWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+    public ClinicalAnalysisWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        super(uriInfo, httpServletRequest);
+        super(uriInfo, httpServletRequest, httpHeaders);
         clinicalManager = catalogManager.getClinicalAnalysisManager();
     }
 
@@ -92,10 +86,17 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Family") @QueryParam("family") String family,
             @ApiParam(value = "Proband") @QueryParam("proband") String proband,
             @ApiParam(value = "Sample") @QueryParam("sample") String sample,
+            @ApiParam(value = "Release value") @QueryParam("release") String release,
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
             @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)") @QueryParam("nattributes") String nattributes) {
         try {
-            return createOkResponse(clinicalManager.search(studyStr, query, queryOptions, sessionId));
+            QueryResult<ClinicalAnalysis> queryResult;
+            if (count) {
+                queryResult = clinicalManager.count(studyStr, query, sessionId);
+            } else {
+                queryResult = clinicalManager.search(studyStr, query, queryOptions, sessionId);
+            }
+            return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -114,7 +115,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 
         public ClinicalAnalysis toClinicalAnalysis() {
             return new ClinicalAnalysis(-1, name, description, type, new Family().setName(family), new Individual().setName(proband),
-                    new Sample().setName(sample), null, null, attributes);
+                    new Sample().setName(sample), null, null, 1, attributes);
         }
     }
 

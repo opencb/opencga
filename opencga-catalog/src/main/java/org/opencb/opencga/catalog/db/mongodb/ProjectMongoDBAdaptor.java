@@ -82,34 +82,19 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         project.setStudies(Collections.<Study>emptyList());
 
 
-        // Check if project.alias already exists.
-//        DBObject countQuery = BasicDBObjectBuilder
-//                .start("id", userId)
-//                .append("projects.alias", project.getAlias())
-//                .get();
         Bson countQuery = Filters.and(Filters.eq("id", userId), Filters.eq("projects.alias", project.getAlias()));
         QueryResult<Long> count = userCollection.count(countQuery);
         if (count.getResult().get(0) != 0) {
             throw new CatalogDBException("Project {alias:\"" + project.getAlias() + "\"} already exists for this user");
         }
-//        if(getProjectId(userId, project.getAlias()) >= 0){
-//            throw new CatalogManagerException( "Project {alias:\"" + project.getAlias() + "\"} already exists in this user");
-//        }
-
-        //Generate json
-//        int projectId = CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
         long projectId = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
         project.setId(projectId);
-//        DBObject query = new BasicDBObject("id", userId);
-//        query.put("projects.alias", new BasicDBObject("$ne", project.getAlias()));
         Bson query = Filters.and(Filters.eq("id", userId), Filters.ne("projects.alias", project.getAlias()));
 
         Document projectDocument = projectConverter.convertToStorageType(project);
-//        DBObject update = new BasicDBObject("$push", new BasicDBObject("projects", projectDBObject));
         Bson update = Updates.push("projects", projectDocument);
 
         //Update object
-//        QueryResult<WriteResult> queryResult = userCollection.update(query, update, null);
         QueryResult<UpdateResult> queryResult = userCollection.update(query, update, null);
 
         if (queryResult.getResult().get(0).getModifiedCount() == 0) { // Check if the project has been inserted
@@ -131,23 +116,28 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     public QueryResult<Project> get(long projectId, QueryOptions options) throws CatalogDBException {
         checkId(projectId);
         return get(new Query(QueryParams.ID.key(), projectId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED), options);
-//
-//        long startTime = startQuery();
-//        Bson query = Filters.eq("projects.id", projectId);
-//        Bson projection = Projections.elemMatch("projects", Filters.eq("id", projectId));
-//
-//        QueryResult<Document> result = userCollection.find(query, projection, options);
-//
-//        User user = parseUser(result);
-//
-//        if (user == null || user.getProjects().isEmpty()) {
-//            throw CatalogDBException.idNotFound("Project", projectId);
-//        }
 //        // Fixme: Check the code below
 //        List<Project> projects = user.getProjects();
 //        joinFields(projects.get(0), options);
 //
 //        return endQuery("Get project", startTime, projects);
+    }
+
+    @Override
+    public QueryResult<Integer> incrementCurrentRelease(long projectId) throws CatalogDBException {
+        long startTime = startQuery();
+        Query query = new Query(QueryParams.ID.key(), projectId);
+        Bson update = new Document("$inc", new Document("projects.$." + QueryParams.CURRENT_RELEASE.key(), 1));
+
+        QueryResult<UpdateResult> updateQR = userCollection.update(parseQuery(query), update, null);
+        if (updateQR == null || updateQR.first().getMatchedCount() == 0) {
+            throw new CatalogDBException("Could not increment release number. Project id " + projectId + " not found");
+        } else if (updateQR.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("Internal error. Current release number could not be incremented.");
+        }
+
+        QueryResult<Project> projectQueryResult = get(projectId, new QueryOptions(QueryOptions.INCLUDE, QueryParams.CURRENT_RELEASE.key()));
+        return endQuery(Long.toString(projectId), startTime, Arrays.asList(projectQueryResult.first().getCurrentRelease()));
     }
 
     /**
@@ -177,30 +167,9 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         return endQuery("User projects list", startTime, get(query, options).getResult());
     }
 
-
-    /*
-     * db.user.update(
-     * {
-     * "projects.id" : projectId,
-     * "projects.alias" : {
-     * $ne : newAlias
-     * }
-     * },
-     * {
-     * $set:{
-     * "projects.$.alias":newAlias
-     * }
-     * })
-     */
     @Override
     public QueryResult renameAlias(long projectId, String newProjectAlias) throws CatalogDBException {
         long startTime = startQuery();
-//        String projectOwner = getProjectOwner(projectId);
-//
-//        int collisionProjectId = getProjectId(projectOwner, newProjectAlias);
-//        if (collisionProjectId != -1) {
-//            throw new CatalogManagerException("Couldn't rename project alias, alias already used in the same user");
-//        }
 
         QueryResult<Project> projectResult = get(projectId, null); // if projectId doesn't exist, an exception is raised
         Project project = projectResult.getResult().get(0);
@@ -208,15 +177,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         //String oldAlias = project.getAlias();
         project.setAlias(newProjectAlias);
 
-        /*
-        DBObject query = BasicDBObjectBuilder
-                .start("projects.id", projectId)
-                .append("projects.alias", new BasicDBObject("$ne", newProjectAlias))    // check that any other project in the user has
-                // the new name
-                .get();
-        DBObject update = new BasicDBObject("$set",
-                new BasicDBObject("projects.$.alias", newProjectAlias));
-*/
         Bson query = Filters.and(Filters.eq("projects.id", projectId),
                 Filters.ne("projects.alias", newProjectAlias));
         Bson update = Updates.set("projects.$.alias", newProjectAlias);
@@ -228,66 +188,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         return endQuery("rename project alias", startTime, result);
     }
 
-//    @Deprecated
-//    @Override
-//    public QueryResult<Project> modifyProject(long projectId, ObjectMap parameters) throws CatalogDBException {
-//        long startTime = startQuery();
-//
-//        if (!projectExists(projectId)) {
-//            throw CatalogDBException.idNotFound("Project", projectId);
-//        }
-//        //BasicDBObject projectParameters = new BasicDBObject();
-//        Bson projectParameters = new Document();
-//
-//        String[] acceptedParams = {"name", "creationDate", "description", "organization", "status", "lastModified"};
-//        for (String s : acceptedParams) {
-//            if (parameters.containsKey(s)) {
-//                ((Document) projectParameters).put("projects.$." + s, parameters.getString(s));
-//            }
-//        }
-//        String[] acceptedIntParams = {"quota", "size"};
-//        for (String s : acceptedIntParams) {
-//            if (parameters.containsKey(s)) {
-//                int anInt = parameters.getInt(s, Integer.MIN_VALUE);
-//                if (anInt != Integer.MIN_VALUE) {
-//                    ((Document) projectParameters).put(s, anInt);
-//                }
-//            }
-//        }
-//        Map<String, Object> attributes = parameters.getMap("attributes");
-//        if (attributes != null) {
-//            for (Map.Entry<String, Object> entry : attributes.entrySet()) {
-//                ((Document) projectParameters).put("projects.$.attributes." + entry.getKey(), entry.getValue());
-//            }
-////            projectParameters.put("projects.$.attributes", attributes);
-//        }
-//
-//        if (!((Document) projectParameters).isEmpty()) {
-//            Bson query = Filters.eq("projects.id", projectId);
-//            Bson updates = new Document("$set", projectParameters);
-//            // Fixme: Updates
-//                    /*
-//            BasicDBObject query = new BasicDBObject("projects.id", projectId);
-//            BasicDBObject updates = new BasicDBObject("$set", projectParameters);
-//            */
-//            QueryResult<UpdateResult> updateResult = userCollection.update(query, updates, null);
-//            if (updateResult.getResult().get(0).getModifiedCount() == 0) {
-//                throw CatalogDBException.idNotFound("Project", projectId);
-//            }
-//        }
-//        /*
-//        if (!projectParameters.isEmpty()) {
-//            BasicDBObject query = new BasicDBObject("projects.id", projectId);
-//            BasicDBObject updates = new BasicDBObject("$set", projectParameters);
-//            QueryResult<WriteResult> updateResult = userCollection.update(query, updates, null);
-//            if (updateResult.getResult().get(0).getN() == 0) {
-//                throw CatalogDBException.idNotFound("Project", projectId);
-//            }
-//        }
-//        */
-//        return endQuery("Modify project", startTime, getProject(projectId, null));
-//    }
-
     @Override
     public long getId(String userId, String projectAlias) throws CatalogDBException {
         QueryResult<Document> queryResult = userCollection.find(
@@ -296,15 +196,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 Projections.fields(Projections.include("projects.id"),
                         Projections.elemMatch("projects", Filters.eq("alias", projectAlias))),
                 null);
-/*
-        QueryResult<DBObject> queryResult = userCollection.find(
-                BasicDBObjectBuilder
-                        .start("projects.alias", projectAlias)
-                        .append("id", userId).get(),
-                BasicDBObjectBuilder.start("projects.id", true)
-                        .append("projects", new BasicDBObject("$elemMatch", new BasicDBObject("alias", projectAlias))).get(),
-                null
-        );*/
         User user = parseUser(queryResult);
         if (user == null || user.getProjects().isEmpty()) {
             return -1;
@@ -484,16 +375,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             */
             updateResult = userCollection.update(bsonQuery, updates, null);
         }
-        /*
-        if (!projectParameters.isEmpty()) {
-            BasicDBObject query = new BasicDBObject("projects.id", projectId);
-            BasicDBObject updates = new BasicDBObject("$set", projectParameters);
-            QueryResult<WriteResult> updateResult = userCollection.update(query, updates, null);
-            if (updateResult.getResult().get(0).getN() == 0) {
-                throw CatalogDBException.idNotFound("Project", projectId);
-            }
-        }
-        */
         return endQuery("Update project", startTime, Collections.singletonList(updateResult.first().getModifiedCount()));
     }
 

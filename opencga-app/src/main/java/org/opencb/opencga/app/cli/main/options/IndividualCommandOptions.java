@@ -44,7 +44,6 @@ public class IndividualCommandOptions {
     public IndividualAclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
     public AnnotationCommandOptions.AnnotationSetsCreateCommandOptions annotationCreateCommandOptions;
-    public AnnotationCommandOptions.AnnotationSetsAllInfoCommandOptions annotationAllInfoCommandOptions;
     public AnnotationCommandOptions.AnnotationSetsSearchCommandOptions annotationSearchCommandOptions;
     public AnnotationCommandOptions.AnnotationSetsDeleteCommandOptions annotationDeleteCommandOptions;
     public AnnotationCommandOptions.AnnotationSetsInfoCommandOptions annotationInfoCommandOptions;
@@ -73,7 +72,6 @@ public class IndividualCommandOptions {
 
         AnnotationCommandOptions annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
         this.annotationCreateCommandOptions = annotationCommandOptions.getCreateCommandOptions();
-        this.annotationAllInfoCommandOptions = annotationCommandOptions.getAllInfoCommandOptions();
         this.annotationSearchCommandOptions = annotationCommandOptions.getSearchCommandOptions();
         this.annotationDeleteCommandOptions = annotationCommandOptions.getDeleteCommandOptions();
         this.annotationInfoCommandOptions = annotationCommandOptions.getInfoCommandOptions();

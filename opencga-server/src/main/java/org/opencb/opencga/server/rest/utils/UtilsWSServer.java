@@ -29,10 +29,7 @@ import org.opencb.opencga.server.rest.OpenCGAWSServer;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -47,8 +44,8 @@ import java.util.Properties;
 @Produces("application/json")
 public class UtilsWSServer extends OpenCGAWSServer {
 
-    public UtilsWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(uriInfo, httpServletRequest);
+    public UtilsWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest, headerParam);
     }
 
     @POST

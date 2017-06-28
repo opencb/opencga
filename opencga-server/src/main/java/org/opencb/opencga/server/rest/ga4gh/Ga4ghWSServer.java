@@ -41,10 +41,7 @@ import org.opencb.opencga.storage.core.variant.BeaconResponse;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.List;
 
@@ -61,8 +58,8 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 @Api(value = "GA4GH", position = 13, description = "Global Alliance for Genomics & Health RESTful API")
 public class Ga4ghWSServer extends OpenCGAWSServer {
 
-    public Ga4ghWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(uriInfo, httpServletRequest);
+    public Ga4ghWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest, httpHeaders);
     }
 
     /* =================    BEACON     ===================*/

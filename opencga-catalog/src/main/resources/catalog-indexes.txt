@@ -24,7 +24,7 @@
 {"collection": "file", "fields": {"uri": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"path": 1, "_studyId": 1}, "options": {"unique": true, "background": true}}
 {"collection": "file", "fields": {"status.name": 1, "_studyId": 1}, "options": {"background": true}}
-{"collection": "file", "fields": {"sampleIds": 1}, "options": {"background": true}}
+{"collection": "file", "fields": {"samples.id": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"job.id": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"acl.member": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"_studyId": 1}, "options": {"background": true}}

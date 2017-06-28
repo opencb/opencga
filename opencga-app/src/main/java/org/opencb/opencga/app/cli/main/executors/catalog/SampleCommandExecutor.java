@@ -93,10 +93,6 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = annotationCommandExecutor.createAnnotationSet(samplesCommandOptions.annotationCreateCommandOptions,
                         openCGAClient.getSampleClient());
                 break;
-            case "annotation-sets-all-info":
-                queryResponse = annotationCommandExecutor.getAllAnnotationSets(samplesCommandOptions.annotationAllInfoCommandOptions,
-                        openCGAClient.getSampleClient());
-                break;
             case "annotation-sets-search":
                 queryResponse = annotationCommandExecutor.searchAnnotationSets(samplesCommandOptions.annotationSearchCommandOptions,
                         openCGAClient.getSampleClient());
@@ -105,7 +101,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = annotationCommandExecutor.deleteAnnotationSet(samplesCommandOptions.annotationDeleteCommandOptions,
                         openCGAClient.getSampleClient());
                 break;
-            case "annotation-sets-info":
+            case "annotation-sets":
                 queryResponse = annotationCommandExecutor.getAnnotationSet(samplesCommandOptions.annotationInfoCommandOptions,
                         openCGAClient.getSampleClient());
                 break;
@@ -175,14 +171,17 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), samplesCommandOptions.searchCommandOptions.variableSetId);
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION.key(), samplesCommandOptions.searchCommandOptions.annotation);
 
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, samplesCommandOptions.searchCommandOptions.dataModelOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, samplesCommandOptions.searchCommandOptions.dataModelOptions.exclude);
-        queryOptions.put(QueryOptions.LIMIT, samplesCommandOptions.searchCommandOptions.numericOptions.limit);
-        queryOptions.put(QueryOptions.SKIP, samplesCommandOptions.searchCommandOptions.numericOptions.skip);
-        queryOptions.put("count", samplesCommandOptions.searchCommandOptions.numericOptions.count);
+        if (samplesCommandOptions.searchCommandOptions.numericOptions.count) {
+            return openCGAClient.getSampleClient().count(query);
+        } else {
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, samplesCommandOptions.searchCommandOptions.dataModelOptions.include);
+            queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, samplesCommandOptions.searchCommandOptions.dataModelOptions.exclude);
+            queryOptions.put(QueryOptions.LIMIT, samplesCommandOptions.searchCommandOptions.numericOptions.limit);
+            queryOptions.put(QueryOptions.SKIP, samplesCommandOptions.searchCommandOptions.numericOptions.skip);
 
-        return openCGAClient.getSampleClient().search(query, queryOptions);
+            return openCGAClient.getSampleClient().search(query, queryOptions);
+        }
     }
 
     private QueryResponse<Sample> update() throws CatalogException, IOException {

@@ -61,6 +61,7 @@ public class Study extends AbstractAcl<StudyAclEntry> {
 
     private URI uri;
 
+    private int release;
     private Map<File.Bioformat, DataStore> dataStores;
 
     private Map<String, Object> stats;
@@ -70,18 +71,18 @@ public class Study extends AbstractAcl<StudyAclEntry> {
     public Study() {
     }
 
-    public Study(String name, String alias, Type type, String description, Status status, URI uri) {
+    public Study(String name, String alias, Type type, String description, Status status, URI uri, int release) {
         this(-1, name, alias, type, TimeUtils.getTime(), description, status, null, 0, "",
                 null, new ArrayList<>(), new ArrayList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), uri, new HashMap<>(), new HashMap<>(),
-                new HashMap<>()
+                new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), uri, new HashMap<>(), release,
+                new HashMap<>(), new HashMap<>()
         );
     }
 
     public Study(long id, String name, String alias, Type type, String creationDate, String description, Status status, String lastModified,
                  long size, String cipher, List<Group> groups, List<StudyAclEntry> acl, List<Experiment> experiments, List<File> files,
                  List<Job> jobs, List<Individual> individuals, List<Sample> samples, List<Dataset> datasets, List<Cohort> cohorts,
-                 List<DiseasePanel> panels, List<VariableSet> variableSets, URI uri, Map<File.Bioformat, DataStore> dataStores,
+                 List<DiseasePanel> panels, List<VariableSet> variableSets, URI uri, Map<File.Bioformat, DataStore> dataStores, int release,
                  Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -106,6 +107,7 @@ public class Study extends AbstractAcl<StudyAclEntry> {
         this.variableSets = variableSets;
         this.uri = uri;
         this.stats = stats;
+        this.release = release;
         this.dataStores = dataStores;
         this.attributes = attributes;
     }
@@ -149,6 +151,7 @@ public class Study extends AbstractAcl<StudyAclEntry> {
         sb.append(", panels=").append(panels);
         sb.append(", variableSets=").append(variableSets);
         sb.append(", uri=").append(uri);
+        sb.append(", release=").append(release);
         sb.append(", dataStores=").append(dataStores);
         sb.append(", stats=").append(stats);
         sb.append(", attributes=").append(attributes);
@@ -347,6 +350,15 @@ public class Study extends AbstractAcl<StudyAclEntry> {
 
     public Study setUri(URI uri) {
         this.uri = uri;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public Study setRelease(int release) {
+        this.release = release;
         return this;
     }
 

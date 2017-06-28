@@ -58,9 +58,6 @@ public class FamilyManagerTest extends GenericTest {
 
     @After
     public void tearDown() throws Exception {
-        if (sessionIdUser != null) {
-            catalogManager.logout("user", sessionIdUser);
-        }
     }
 
     @Test
@@ -70,7 +67,7 @@ public class FamilyManagerTest extends GenericTest {
         List<Individual> children = Arrays.asList(
                 new Individual().setName("son"), new Individual().setName("daughter")
         );
-        Family family = new Family("family", father, mother, children, false, "");
+        Family family = new Family("family", father, mother, children, false, "", 1);
 
         QueryResult<Family> familyQueryResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, familyQueryResult.getNumResults());

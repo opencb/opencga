@@ -57,10 +57,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -77,9 +74,9 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Optio
 public class FileWSServer extends OpenCGAWSServer {
 
     private IFileManager fileManager;
-    public FileWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException,
+    public FileWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException,
             ClassNotFoundException, IllegalAccessException, InstantiationException, VersionException {
-        super(uriInfo, httpServletRequest);
+        super(uriInfo, httpServletRequest, httpHeaders);
         fileManager = catalogManager.getFileManager();
     }
 
@@ -119,8 +116,8 @@ public class FileWSServer extends OpenCGAWSServer {
             } else {
                 // Create a file
                 file = fileManager.create(studyStr, File.Type.FILE, File.Format.PLAIN, File.Bioformat.UNKNOWN, params.path, null,
-                        params.description, new File.FileStatus(File.FileStatus.READY), 0, -1, null, -1, null, null, params.parents,
-                        params.content, queryOptions, sessionId);
+                        params.description, new File.FileStatus(File.FileStatus.READY), 0, -1, null, -1, null, null,
+                        params.parents, params.content, queryOptions, sessionId);
             }
             return createOkResponse(file);
         } catch (Exception e) {
@@ -656,14 +653,15 @@ public class FileWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss)", required = false) @DefaultValue("") @QueryParam("modificationDate") String modificationDate,
                            @ApiParam(value = "Description", required = false) @DefaultValue("") @QueryParam("description") String description,
                            @ApiParam(value = "Size", required = false) @DefaultValue("") @QueryParam("size") Long size,
-                           @ApiParam(value = "DEPRECATED: use sample instead", hidden = true) @DefaultValue("") @QueryParam("sampleIds") String sampleIds,
-                           @ApiParam(value = "Comma separated list of sample ids", required = false) @DefaultValue("") @QueryParam("sample") String samples,
+                           @ApiParam(value = "Comma separated list of sample ids", hidden = true) @QueryParam("sample") String sample,
+                           @ApiParam(value = "Comma separated list of sample ids") @QueryParam("samples") String samples,
                            @ApiParam(value = "(DEPRECATED) Job id that created the file(s) or folder(s)", hidden = true) @QueryParam("jobId") String jobIdOld,
                            @ApiParam(value = "Job id that created the file(s) or folder(s)", required = false) @QueryParam("job.id") String jobId,
                            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
                            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("")
                            @QueryParam("nattributes") String nattributes,
-                           @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
+                           @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
+                           @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 
@@ -671,8 +669,8 @@ public class FileWSServer extends OpenCGAWSServer {
                 studyStr = studyIdStr;
             }
 
-            if (StringUtils.isNotEmpty(samples)) {
-                query.put("sampleIds", samples);
+            if (StringUtils.isNotEmpty(sample) && !query.containsKey(FileDBAdaptor.QueryParams.SAMPLES.key())) {
+                query.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sample);
             }
 
             if (query.containsKey(FileDBAdaptor.QueryParams.NAME.key())
@@ -686,7 +684,13 @@ public class FileWSServer extends OpenCGAWSServer {
                 query.put(FileDBAdaptor.QueryParams.JOB_ID.key(), query.get("jobId"));
                 query.remove("jobId");
             }
-            QueryResult<File> result = fileManager.search(studyStr, query, queryOptions, sessionId);
+
+            QueryResult<File> result;
+            if (count) {
+                result = fileManager.count(studyStr, query, sessionId);
+            } else {
+                result = fileManager.search(studyStr, query, queryOptions, sessionId);
+            }
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1177,6 +1181,7 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
+    @Deprecated
     public static class UpdateFile {
         public String name;
         public File.Format format;
@@ -1209,6 +1214,13 @@ public class FileWSServer extends OpenCGAWSServer {
             if (map.get("jobId") != null) {
                 map.put(FileDBAdaptor.QueryParams.JOB_ID.key(), map.get("jobId"));
                 map.remove("jobId");
+            }
+
+            // TODO: sampleIds is deprecated
+            if (StringUtils.isNotEmpty(params.getString("sampleIds"))
+                    && StringUtils.isEmpty(params.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
+                params.remove("sampleIds");
+                params.put(FileDBAdaptor.QueryParams.SAMPLES.key(), params.getString("sampleIds"));
             }
 
             QueryResult<File> queryResult = fileManager.update(resource.getResourceId(), map, queryOptions, sessionId);
@@ -1405,8 +1417,8 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description")
                                     String description,
                             @ApiParam(value = "size", required = false) @DefaultValue("") @QueryParam("size") Long size,
-                            @ApiParam(value = "Comma separated sampleIds", required = false) @DefaultValue("") @QueryParam("sampleIds")
-                                    String sampleIds,
+                            @ApiParam(value = "Comma separated sampleIds", hidden = true) @QueryParam("sampleIds") String sampleIds,
+                            @ApiParam(value = "Comma separated list of sample ids or names") @QueryParam("samples") String samples,
                             @ApiParam(value = "(DEPRECATED) Job id", hidden = true) @QueryParam("jobId") String jobIdOld,
                             @ApiParam(value = "Job id", required = false) @QueryParam("job.id") String jobId,
                             @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
@@ -1415,6 +1427,9 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
+            }
+            if (StringUtils.isNotEmpty(sampleIds) && !query.containsKey(FileDBAdaptor.QueryParams.SAMPLES.key())) {
+                query.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleIds);
             }
             QueryResult result = fileManager.groupBy(studyStr, query, queryOptions, fields, sessionId);
             return createOkResponse(result);

@@ -89,10 +89,6 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = annotationCommandExecutor.createAnnotationSet(individualsCommandOptions.annotationCreateCommandOptions,
                         openCGAClient.getIndividualClient());
                 break;
-            case "annotation-sets-all-info":
-                queryResponse = annotationCommandExecutor.getAllAnnotationSets(individualsCommandOptions.annotationAllInfoCommandOptions,
-                        openCGAClient.getIndividualClient());
-                break;
             case "annotation-sets-search":
                 queryResponse = annotationCommandExecutor.searchAnnotationSets(individualsCommandOptions.annotationSearchCommandOptions,
                         openCGAClient.getIndividualClient());
@@ -101,7 +97,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = annotationCommandExecutor.deleteAnnotationSet(individualsCommandOptions.annotationDeleteCommandOptions,
                         openCGAClient.getIndividualClient());
                 break;
-            case "annotation-sets-info":
+            case "annotation-sets":
                 queryResponse = annotationCommandExecutor.getAnnotationSet(individualsCommandOptions.annotationInfoCommandOptions,
                         openCGAClient.getIndividualClient());
                 break;
@@ -202,14 +198,17 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
                 individualsCommandOptions.searchCommandOptions.annotationSetName);
 
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, individualsCommandOptions.searchCommandOptions.dataModelOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, individualsCommandOptions.searchCommandOptions.dataModelOptions.exclude);
-        queryOptions.put(QueryOptions.SKIP, individualsCommandOptions.searchCommandOptions.numericOptions.skip);
-        queryOptions.put(QueryOptions.LIMIT, individualsCommandOptions.searchCommandOptions.numericOptions.limit);
-        queryOptions.put("count", individualsCommandOptions.searchCommandOptions.numericOptions.count);
+        if (individualsCommandOptions.searchCommandOptions.numericOptions.count) {
+            return openCGAClient.getIndividualClient().count(query);
+        } else {
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, individualsCommandOptions.searchCommandOptions.dataModelOptions.include);
+            queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, individualsCommandOptions.searchCommandOptions.dataModelOptions.exclude);
+            queryOptions.put(QueryOptions.SKIP, individualsCommandOptions.searchCommandOptions.numericOptions.skip);
+            queryOptions.put(QueryOptions.LIMIT, individualsCommandOptions.searchCommandOptions.numericOptions.limit);
 
-        return openCGAClient.getIndividualClient().search(query, queryOptions);
+            return openCGAClient.getIndividualClient().search(query, queryOptions);
+        }
     }
 
 

@@ -30,11 +30,10 @@ import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -45,8 +44,8 @@ public class JobWSServer extends OpenCGAWSServer {
 
     private IJobManager jobManager;
 
-    public JobWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(uriInfo, httpServletRequest);
+    public JobWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest, httpHeaders);
         jobManager = catalogManager.getJobManager();
     }
 
@@ -64,7 +63,7 @@ public class JobWSServer extends OpenCGAWSServer {
             this.endTime = endTime;
             this.commandLine = commandLine;
             this.status = status;
-            this.outDirId = outDirId;
+            this.outDir = outDirId;
             this.input = input;
             this.attributes = attributes;
             this.resourceManagerAttributes = resourceManagerAttributes;
@@ -85,7 +84,7 @@ public class JobWSServer extends OpenCGAWSServer {
         public Status status = Status.READY;
         public String statusMessage;
         @ApiModelProperty(required = true)
-        public String outDirId;
+        public String outDir;
         public List<Long> input;
         public List<Long> output;
         public Map<String, Object> attributes;
@@ -117,14 +116,25 @@ public class JobWSServer extends OpenCGAWSServer {
                 jobStatus = new Job.JobStatus();
                 jobStatus.setMessage(job.statusMessage);
             }
-            long outDir = catalogManager.getFileId(job.outDirId, Long.toString(studyId), sessionId);
+            long outDir = catalogManager.getFileId(job.outDir, Long.toString(studyId), sessionId);
             QueryResult<Job> result = catalogManager.createJob(studyId, job.name, job.toolName, job.description, job.execution, job.params,
-                    job.commandLine, null, outDir, job.input, job.output, job.attributes, job.resourceManagerAttributes, jobStatus,
-                    job.startTime, job.endTime, queryOptions, sessionId);
+                    job.commandLine, null, outDir, parseToListOfFiles(job.input), parseToListOfFiles(job.output), job.attributes,
+                    job.resourceManagerAttributes, jobStatus, job.startTime, job.endTime, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    private List<File> parseToListOfFiles(List<Long> longList) {
+        if (longList == null || longList.size() == 0) {
+            return Collections.emptyList();
+        }
+        List<File> fileList = new ArrayList<>(longList.size());
+        for (Long myLong : longList) {
+            fileList.add(new File().setId(myLong));
+        }
+        return fileList;
     }
 
     @GET
@@ -166,6 +176,7 @@ public class JobWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Comma separated list of input file ids", required = false) @DefaultValue("") @QueryParam("inputFiles") String inputFiles,
                            @ApiParam(value = "Comma separated list of output file ids", required = false) @DefaultValue("")
                                @QueryParam ("outputFiles") String outputFiles,
+                           @ApiParam(value = "Release value") @QueryParam("release") String release,
                            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
@@ -181,8 +192,12 @@ public class JobWSServer extends OpenCGAWSServer {
                 query.remove(JobDBAdaptor.QueryParams.NAME.key());
                 logger.debug("Name attribute empty, it's been removed");
             }
-
-            QueryResult<Job> result = catalogManager.getAllJobs(studyIdNum, query, queryOptions, sessionId);
+            QueryResult<Job> result;
+            if (count) {
+                result = catalogManager.getJobManager().count(Long.toString(studyIdNum), query, sessionId);
+            } else {
+                result = catalogManager.getAllJobs(studyIdNum, query, queryOptions, sessionId);
+            }
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -5,7 +5,6 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.AbstractAclEntry;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Iterator;
@@ -32,7 +31,12 @@ public class TextOutputWriter extends AbstractOutputWriter {
         }
 
         if (queryResponse.getResponse().size() == 0 || ((QueryResult) queryResponse.getResponse().get(0)).getNumResults() == 0) {
-            ps.println("No results found for the query.");
+            if (queryResponse.first().getNumTotalResults() > 0) {
+                // count
+                ps.println(queryResponse.first().getNumTotalResults());
+            } else {
+                ps.println("No results found for the query.");
+            }
             return;
         }
 
@@ -148,14 +152,6 @@ public class TextOutputWriter extends AbstractOutputWriter {
                                         printGroup(group, sb, "        + ");
                                     }
                                 }
-
-                                if (study.getAcl().size() > 0) {
-                                    sb.append("       Acl:\n");
-                                    for (StudyAclEntry studyAclEntry : study.getAcl()) {
-                                        printACL(studyAclEntry, sb, "        + ");
-                                    }
-                                }
-
                             }
                         }
                     }
@@ -244,7 +240,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                     file.getFormat(), file.getBioformat(), file.getDescription(), file.getPath(), file.getUri(), file.getId(),
                     file.getStatus().getName(), file.getSize(), indexStatus,
                     StringUtils.join(file.getRelatedFiles().stream().map(File.RelatedFile::getFileId).collect(Collectors.toList()), ", "),
-                    StringUtils.join(file.getSampleIds().stream().collect(Collectors.toList()), ", ")));
+                    StringUtils.join(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()), ", ")));
         }
     }
 
@@ -376,7 +372,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%s\t%s\t%d\n",
                         job.getName(), job.getId(), job.getType(), job.getToolName(), job.getCreationDate(), job.getExecutable(),
                         job.getExecution(), job.getVisits(), job.getStatus().getName(), StringUtils.join(job.getInput(), ", "),
-                        StringUtils.join(job.getOutput(), ", "), job.getOutDirId()));
+                        StringUtils.join(job.getOutput(), ", "), job.getOutDir().getId()));
             }
         }
 

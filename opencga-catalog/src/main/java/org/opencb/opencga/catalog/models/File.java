@@ -52,6 +52,7 @@ public class File extends AbstractAcl<FileAclEntry> {
     private URI uri;
     private String path;
 
+    private int release;
     private String creationDate;
     @Deprecated
     private String modificationDate;
@@ -62,7 +63,7 @@ public class File extends AbstractAcl<FileAclEntry> {
 
     private long size;
     private Experiment experiment;
-    private List<Long> sampleIds;
+    private List<Sample> samples;
 
 
     /**
@@ -81,17 +82,17 @@ public class File extends AbstractAcl<FileAclEntry> {
     public File() {
     }
 
-    public File(String name, Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status,
-                long size) {
+    public File(String name, Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status, long size,
+                int release) {
         this(-1, name, type, format, bioformat, null, path, TimeUtils.getTime(), TimeUtils.getTime(), description, status, false,
                 size, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), Collections.emptyList(),
-                new FileIndex(), Collections.emptyMap(), Collections.emptyMap());
+                new FileIndex(), Collections.emptyMap(), release, Collections.emptyMap());
     }
 
     public File(long id, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String creationDate,
                 String modificationDate, String description, FileStatus status, boolean external, long size, Experiment experiment,
-                List<Long> sampleIds, Job job, List<RelatedFile> relatedFiles, List<FileAclEntry> acl, FileIndex index,
-                Map<String, Object> stats, Map<String, Object> attributes) {
+                List<Sample> samples, Job job, List<RelatedFile> relatedFiles, List<FileAclEntry> acl, FileIndex index,
+                Map<String, Object> stats, int release, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -103,10 +104,11 @@ public class File extends AbstractAcl<FileAclEntry> {
         this.modificationDate = modificationDate;
         this.description = description;
         this.status = status;
+        this.release = release;
         this.external = external;
         this.size = size;
         this.experiment = experiment;
-        this.sampleIds = sampleIds;
+        this.samples = samples;
         this.job = job;
         this.relatedFiles = relatedFiles;
         this.acl = acl;
@@ -280,13 +282,15 @@ public class File extends AbstractAcl<FileAclEntry> {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("File{");
-        sb.append("id=").append(id);
+        sb.append("acl=").append(acl);
+        sb.append(", id=").append(id);
         sb.append(", name='").append(name).append('\'');
         sb.append(", type=").append(type);
         sb.append(", format=").append(format);
         sb.append(", bioformat=").append(bioformat);
         sb.append(", uri=").append(uri);
         sb.append(", path='").append(path).append('\'');
+        sb.append(", release=").append(release);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
@@ -294,7 +298,7 @@ public class File extends AbstractAcl<FileAclEntry> {
         sb.append(", external=").append(external);
         sb.append(", size=").append(size);
         sb.append(", experiment=").append(experiment);
-        sb.append(", sampleIds=").append(sampleIds);
+        sb.append(", samples=").append(samples);
         sb.append(", job=").append(job);
         sb.append(", relatedFiles=").append(relatedFiles);
         sb.append(", index=").append(index);
@@ -376,6 +380,15 @@ public class File extends AbstractAcl<FileAclEntry> {
         return this;
     }
 
+    public int getRelease() {
+        return release;
+    }
+
+    public File setRelease(int release) {
+        this.release = release;
+        return this;
+    }
+
     public String getModificationDate() {
         return modificationDate;
     }
@@ -421,12 +434,12 @@ public class File extends AbstractAcl<FileAclEntry> {
         return this;
     }
 
-    public List<Long> getSampleIds() {
-        return sampleIds;
+    public List<Sample> getSamples() {
+        return samples;
     }
 
-    public File setSampleIds(List<Long> sampleIds) {
-        this.sampleIds = sampleIds;
+    public File setSamples(List<Sample> samples) {
+        this.samples = samples;
         return this;
     }
 

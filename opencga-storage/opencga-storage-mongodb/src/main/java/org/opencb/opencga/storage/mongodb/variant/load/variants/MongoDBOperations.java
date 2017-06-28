@@ -25,6 +25,7 @@ public class MongoDBOperations {
 //    private List<Pair<Bson, Bson>> cleanFromStage = new ArrayList<>();
     private List<String> documentsToCleanStudies = new ArrayList<>();
     private List<String> documentsToCleanFiles = new ArrayList<>();
+    private StageSecondaryAlternates secondaryAlternates = new StageSecondaryAlternates();
 
     private int skipped = 0;
     private int nonInserted = 0;
@@ -129,6 +130,10 @@ public class MongoDBOperations {
         return this;
     }
 
+    StageSecondaryAlternates getSecondaryAlternates() {
+        return secondaryAlternates;
+    }
+
     // Document may exist, study does not exist
     class NewStudy {
         private List<String> ids = new LinkedList<>();
@@ -204,6 +209,40 @@ public class MongoDBOperations {
         }
 
         ExistingStudy setUpdates(List<Bson> updates) {
+            this.updates = updates;
+            return this;
+        }
+    }
+
+    // Secondary alternates to be updated in the stage collection
+    class StageSecondaryAlternates {
+        private List<String> ids = new LinkedList<>();
+        private List<Bson> queries = new LinkedList<>();
+        private List<Bson> updates = new LinkedList<>();
+
+        List<String> getIds() {
+            return ids;
+        }
+
+        StageSecondaryAlternates setIds(List<String> ids) {
+            this.ids = ids;
+            return this;
+        }
+
+        List<Bson> getQueries() {
+            return queries;
+        }
+
+        StageSecondaryAlternates setQueries(List<Bson> queries) {
+            this.queries = queries;
+            return this;
+        }
+
+        List<Bson> getUpdates() {
+            return updates;
+        }
+
+        StageSecondaryAlternates setUpdates(List<Bson> updates) {
             this.updates = updates;
             return this;
         }

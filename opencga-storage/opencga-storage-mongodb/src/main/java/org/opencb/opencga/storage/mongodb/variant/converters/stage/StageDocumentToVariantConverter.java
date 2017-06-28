@@ -15,6 +15,7 @@ public class StageDocumentToVariantConverter implements ComplexTypeConverter<Var
     public static final String REF_FIELD = "ref";
     public static final String ALT_FIELD = "alt";
     public static final String STUDY_FILE_FIELD = "_i";
+    public static final String SECONDARY_ALTERNATES_FIELD = "alts";
     private VariantStringIdConverter idConverter = new VariantStringIdConverter();
 
     @Override

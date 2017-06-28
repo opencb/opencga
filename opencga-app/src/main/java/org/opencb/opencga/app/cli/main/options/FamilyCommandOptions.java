@@ -23,7 +23,6 @@ public class FamilyCommandOptions {
     public AclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
     public AnnotationCommandOptions.AnnotationSetsCreateCommandOptions annotationCreateCommandOptions;
-    public AnnotationCommandOptions.AnnotationSetsAllInfoCommandOptions annotationAllInfoCommandOptions;
     public AnnotationCommandOptions.AnnotationSetsSearchCommandOptions annotationSearchCommandOptions;
     public AnnotationCommandOptions.AnnotationSetsDeleteCommandOptions annotationDeleteCommandOptions;
     public AnnotationCommandOptions.AnnotationSetsInfoCommandOptions annotationInfoCommandOptions;
@@ -49,7 +48,6 @@ public class FamilyCommandOptions {
 
         AnnotationCommandOptions annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
         this.annotationCreateCommandOptions = annotationCommandOptions.getCreateCommandOptions();
-        this.annotationAllInfoCommandOptions = annotationCommandOptions.getAllInfoCommandOptions();
         this.annotationSearchCommandOptions = annotationCommandOptions.getSearchCommandOptions();
         this.annotationDeleteCommandOptions = annotationCommandOptions.getDeleteCommandOptions();
         this.annotationInfoCommandOptions = annotationCommandOptions.getInfoCommandOptions();

@@ -45,10 +45,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
@@ -62,8 +59,8 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     private IStudyManager studyManager;
 
-    public StudyWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(uriInfo, httpServletRequest);
+    public StudyWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest, httpHeaders);
         studyManager = catalogManager.getStudyManager();
     }
 
@@ -131,7 +128,8 @@ public class StudyWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes,
                                   @Deprecated @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes,
                                   @Deprecated @ApiParam(value = "Boolean attributes") @QueryParam("battributes") boolean battributes,
-                                  @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
+                                  @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
+                                  @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 

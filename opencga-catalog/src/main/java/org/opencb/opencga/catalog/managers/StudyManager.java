@@ -294,7 +294,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         LinkedList<Job> jobs = new LinkedList<>();
 
         File rootFile = new File(".", File.Type.DIRECTORY, null, null, "", "study root folder",
-                new File.FileStatus(File.FileStatus.READY), 0);
+                new File.FileStatus(File.FileStatus.READY), 0, getProjectCurrentRelease(projectId));
         files.add(rootFile);
 
         // We set all the permissions for the owner of the study.
@@ -302,7 +302,8 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
         Study study = new Study(-1, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
                 0, cipher, new LinkedList<>(), new LinkedList<>(), experiments, files, jobs, new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, datastores, stats, attributes);
+                new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, datastores,
+                getProjectCurrentRelease(projectId), stats, attributes);
 
         /* CreateStudy */
         QueryResult<Study> result = studyDBAdaptor.insert(projectId, study, options);
@@ -333,6 +334,20 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 null, rootFile, null, null);
         userDBAdaptor.updateUserLastModified(userId);
         return result;
+    }
+
+    @Override
+    public int getCurrentRelease(long studyId) throws CatalogException {
+        return getProjectCurrentRelease(studyDBAdaptor.getProjectIdByStudyId(studyId));
+    }
+
+    private int getProjectCurrentRelease(long projectId) throws CatalogException {
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key());
+        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(projectId, options);
+        if (projectQueryResult.getNumResults() == 0) {
+            throw new CatalogException("Internal error. Cannot retrieve current release from project");
+        }
+        return projectQueryResult.first().getCurrentRelease();
     }
 
     @Deprecated
@@ -640,105 +655,6 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         return new QueryResult<>("Study summary", (int) (System.currentTimeMillis() - startTime), 1, 1, "", "",
                 Collections.singletonList(studySummary));
     }
-
-//    @Deprecated
-//    @Override
-//    public QueryResult<StudyAclEntry> getAcls(String studyStr, List<String> members, String sessionId) throws CatalogException {
-//        long startTime = System.currentTimeMillis();
-//        String userId = catalogManager.getUserManager().getId(sessionId);
-//        long studyId = getId(userId, studyStr);
-//        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
-//
-//        // Split and obtain the set of members (users + groups), users and groups
-//        Set<String> memberSet = new HashSet<>();
-//        Set<String> userIds = new HashSet<>();
-//        Set<String> groupIds = new HashSet<>();
-//        for (String member: members) {
-//            memberSet.add(member);
-//            if (!member.startsWith("@")) {
-//                userIds.add(member);
-//            } else {
-//                groupIds.add(member);
-//            }
-//        }
-//
-//
-//        // Obtain the groups the user might belong to in order to be able to get the permissions properly
-//        // (the permissions might be given to the group instead of the user)
-//        // Map of group -> users
-//        Map<String, List<String>> groupUsers = new HashMap<>();
-//
-//        if (userIds.size() > 0) {
-//            List<String> tmpUserIds = userIds.stream().collect(Collectors.toList());
-//            QueryResult<Group> groups = studyDBAdaptor.getGroup(studyId, null, tmpUserIds);
-//            // We add the groups where the users might belong to to the memberSet
-//            if (groups.getNumResults() > 0) {
-//                for (Group group : groups.getResult()) {
-//                    for (String tmpUserId : group.getUserIds()) {
-//                        if (userIds.contains(tmpUserId)) {
-//                            memberSet.add(group.getName());
-//
-//                            if (!groupUsers.containsKey(group.getName())) {
-//                                groupUsers.put(group.getName(), new ArrayList<>());
-//                            }
-//                            groupUsers.get(group.getName()).add(tmpUserId);
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//        List<String> memberList = memberSet.stream().collect(Collectors.toList());
-//        QueryResult<StudyAclEntry> studyAclQueryResult = studyDBAdaptor.getAcl(studyId, memberList);
-//
-//        if (members.size() == 0) {
-//            return studyAclQueryResult;
-//        }
-//
-//        // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the
-// user
-//        // instead of the group.
-//        Map<String, StudyAclEntry> studyAclHashMap = new HashMap<>();
-//        for (StudyAclEntry studyAcl : studyAclQueryResult.getResult()) {
-//            String tmpMember = studyAcl.getMember();
-//            if (memberList.contains(tmpMember)) {
-//                if (tmpMember.startsWith("@")) {
-//                    // Check if the user was demanding the group directly or a user belonging to the group
-//                    if (groupIds.contains(tmpMember)) {
-//                        studyAclHashMap.put(tmpMember, studyAcl);
-//                    } else {
-//                        // Obtain the user(s) belonging to that group whose permissions wanted the userId
-//                        if (groupUsers.containsKey(tmpMember)) {
-//                            for (String tmpUserId : groupUsers.get(tmpMember)) {
-//                                if (userIds.contains(tmpUserId)) {
-//                                    studyAclHashMap.put(tmpUserId, new StudyAclEntry(tmpUserId, studyAcl.getPermissions()));
-//                                }
-//                            }
-//                        }
-//                    }
-//                } else {
-//                    // Add the user
-//                    studyAclHashMap.put(tmpMember, studyAcl);
-//                }
-//            }
-//
-//        }
-//
-//        // We recreate the output that is in studyAclHashMap but in the same order the members were queried.
-//        List<StudyAclEntry> studyAclList = new ArrayList<>(studyAclHashMap.size());
-//        for (String member : members) {
-//            if (studyAclHashMap.containsKey(member)) {
-//                studyAclList.add(studyAclHashMap.get(member));
-//            }
-//        }
-//
-//        // Update queryResult info
-//        studyAclQueryResult.setId(studyStr);
-//        studyAclQueryResult.setNumResults(studyAclList.size());
-//        studyAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
-//        studyAclQueryResult.setResult(studyAclList);
-//
-//        return studyAclQueryResult;
-//    }
 
     @Override
     public List<QueryResult<StudyAclEntry>> updateAcl(String studyStr, String memberIds, Study.StudyAclParams aclParams, String sessionId)
@@ -1263,7 +1179,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 //            variable.setRank(defaultString(variable.getDescription(), ""));
         }
 
-        VariableSet variableSet = new VariableSet(-1, name, unique, description, variables, attributes);
+        VariableSet variableSet = new VariableSet(-1, name, unique, description, variables, getCurrentRelease(studyId), attributes);
         CatalogAnnotationsValidator.checkVariableSet(variableSet);
 
         QueryResult<VariableSet> queryResult = studyDBAdaptor.createVariableSet(studyId, variableSet);

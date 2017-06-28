@@ -560,13 +560,14 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         /* Get file samples */
         boolean modified = false;
         List<Sample> sampleList;
-        if (file.getSampleIds() == null || file.getSampleIds().isEmpty()) {
+        if (file.getSamples() == null || file.getSamples().isEmpty()) {
             final ObjectMap fileModifyParams = new ObjectMap(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), new ObjectMap());
             sampleList = FileMetadataReader.get(catalogManager).getFileSamples(study, file,
                     catalogManager.getFileManager().getUri(file), fileModifyParams,
                     options.getBoolean(FileMetadataReader.CREATE_MISSING_SAMPLES, true), false, options, sessionId);
         } else {
-            Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), file.getSampleIds());
+            Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(),
+                    file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
             sampleList = catalogManager.getSampleManager().get(study.getId(), query, new QueryOptions(), sessionId).getResult();
         }
 
@@ -584,7 +585,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         //Samples are the already indexed plus those that are going to be indexed
         ObjectMap updateParams = new ObjectMap();
-        Set<Long> samples = new HashSet<>(defaultCohort.getSamples());
+        Set<Long> samples = new HashSet<>(defaultCohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
         samples.addAll(sampleList.stream().map(Sample::getId).collect(Collectors.toList()));
         if (samples.size() != defaultCohort.getSamples().size()) {
             logger.debug("Updating \"{}\" cohort", StudyEntry.DEFAULT_COHORT);

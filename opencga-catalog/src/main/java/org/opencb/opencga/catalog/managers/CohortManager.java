@@ -70,32 +70,31 @@ public class CohortManager extends AbstractManager implements ICohortManager {
     }
 
     @Override
-    public QueryResult<Cohort> create(long studyId, String name, Study.Type type, String description, List<Long> sampleIds,
+    public QueryResult<Cohort> create(long studyId, String name, Study.Type type, String description, List<Sample> samples,
                                       List<AnnotationSet> annotationSetList, Map<String, Object> attributes, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(name, "name");
-        ParamUtils.checkObj(sampleIds, "Samples list");
+        ParamUtils.checkObj(samples, "Sample list");
         type = ParamUtils.defaultObject(type, Study.Type.COLLECTION);
         description = ParamUtils.defaultString(description, "");
         annotationSetList = ParamUtils.defaultObject(annotationSetList, Collections::emptyList);
         annotationSetList = AnnotationManager.validateAnnotationSets(annotationSetList, studyDBAdaptor);
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
-        if (!sampleIds.isEmpty()) {
+        if (!samples.isEmpty()) {
             Query query = new Query()
                     .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
+                    .append(SampleDBAdaptor.QueryParams.ID.key(), samples.stream().map(Sample::getId).collect(Collectors.toList()));
             QueryResult<Long> count = sampleDBAdaptor.count(query);
-            if (count.first() != sampleIds.size()) {
-                throw new CatalogException("Error: Some sampleId does not exist in the study " + studyId);
+            if (count.first() != samples.size()) {
+                throw new CatalogException("Error: Some samples do not exist in the study " + studyId);
             }
         }
         String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_COHORTS);
-        Cohort cohort = new Cohort(name, type, TimeUtils.getTime(), description, sampleIds, annotationSetList, attributes);
+        Cohort cohort = new Cohort(name, type, TimeUtils.getTime(), description, samples, annotationSetList,
+                catalogManager.getStudyManager().getCurrentRelease(studyId), attributes);
         QueryResult<Cohort> queryResult = cohortDBAdaptor.insert(cohort, studyId, null);
-//        auditManager.recordCreation(AuditRecord.Resource.cohort, queryResult.first().getId(), userId, queryResult.first(), null, new
-//                ObjectMap());
         auditManager.recordAction(AuditRecord.Resource.cohort, AuditRecord.Action.create, AuditRecord.Magnitude.low,
                 queryResult.first().getId(), userId, null, queryResult.first(), null, null);
         return queryResult;
@@ -156,6 +155,14 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         String userId = userManager.getId(sessionId);
         if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
             throw CatalogAuthorizationException.deny(userId, "view", "cohorts", studyId, null);
+        }
+
+        if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
+            // First look for the sample ids.
+            AbstractManager.MyResourceIds samples = catalogManager.getSampleManager()
+                    .getIds(query.getString(CohortDBAdaptor.QueryParams.SAMPLES.key()), Long.toString(studyId), sessionId);
+            query.remove(CohortDBAdaptor.QueryParams.SAMPLES.key());
+            query.append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), samples.getResourceIds());
         }
 
         QueryResult<Cohort> queryResult = cohortDBAdaptor.get(new Query(query)
@@ -253,6 +260,14 @@ public class CohortManager extends AbstractManager implements ICohortManager {
             authorizationManager.memberHasPermissionsInStudy(studyId, userId);
         }
 
+        if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
+            // First look for the sample ids.
+            AbstractManager.MyResourceIds samples = catalogManager.getSampleManager()
+                    .getIds(query.getString(CohortDBAdaptor.QueryParams.SAMPLES.key()), studyStr, sessionId);
+            query.remove(CohortDBAdaptor.QueryParams.SAMPLES.key());
+            query.append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), samples.getResourceIds());
+        }
+
         QueryResult<Cohort> queryResult = null;
         for (Long studyId : studyIds) {
             query.append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
@@ -270,6 +285,30 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         queryResult.setNumResults(queryResult.getResult().size());
 
         return queryResult;
+    }
+
+    @Override
+    public QueryResult<Cohort> count(String studyStr, Query query, String sessionId) throws CatalogException {
+        String userId = userManager.getId(sessionId);
+        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
+
+        // Check any permission in studies
+        for (Long studyId : studyIds) {
+            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
+        }
+
+        if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
+            // First look for the sample ids.
+            AbstractManager.MyResourceIds samples = catalogManager.getSampleManager()
+                    .getIds(query.getString(CohortDBAdaptor.QueryParams.SAMPLES.key()), studyStr, sessionId);
+            query.remove(CohortDBAdaptor.QueryParams.SAMPLES.key());
+            query.append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), samples.getResourceIds());
+        }
+
+        query.append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyIds);
+        QueryResult<Long> queryResultAux = cohortDBAdaptor.count(query);
+        return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
+                queryResultAux.getErrorMsg(), Collections.emptyList());
     }
 
     @Override
@@ -545,7 +584,8 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null).first();
 
         QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(resource.getResourceId(), variableSet,
-                annotationSetName, annotations, attributes, cohortDBAdaptor);
+                annotationSetName, annotations, catalogManager.getStudyManager().getCurrentRelease(resource.getStudyId()), attributes,
+                cohortDBAdaptor);
 
         auditManager.recordUpdate(AuditRecord.Resource.cohort, resource.getResourceId(), resource.getUser(),
                 new ObjectMap("annotationSets", annotationSet.first()), "annotate", null);
@@ -623,7 +663,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream()
                         .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
-                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), null);
+                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), 1, null);
         auditManager.recordUpdate(AuditRecord.Resource.cohort, cohortId, resource.getUser(), new ObjectMap("annotationSets",
                 Collections.singletonList(annotationSetUpdate)), "update annotation", null);
 

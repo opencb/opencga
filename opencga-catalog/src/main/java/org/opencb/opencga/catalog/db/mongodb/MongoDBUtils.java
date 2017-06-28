@@ -101,14 +101,6 @@ class MongoDBUtils {
 
     @Deprecated
     static long getNewAutoIncrementId(String field, MongoDBCollection metaCollection) {
-//        QueryResult<BasicDBObject> result = metaCollection.findAndModify(
-//                new BasicDBObject("_id", CatalogMongoDBAdaptor.METADATA_OBJECT_ID),  //Query
-//                new BasicDBObject(field, true),  //Fields
-//                null,
-//                new BasicDBObject("$inc", new BasicDBObject(field, 1)), //Update
-//                new QueryOptions("returnNew", true),
-//                BasicDBObject.class
-//        );
 
         Bson query = Filters.eq("_id", MongoDBAdaptorFactory.METADATA_OBJECT_ID);
         Document projection = new Document(field, true);
@@ -284,10 +276,7 @@ class MongoDBUtils {
             return null;
         }
         try {
-//            result.first().remove("_id");
-//            result.first().remove("_studyId");
             String s = jsonObjectWriter.writeValueAsString(result.first());
-//            return getObjectReader(tClass).readValue(restoreDotsInKeys(result.first().toJson()));
             return getObjectReader(tClass).readValue(restoreDotsInKeys(s));
         } catch (IOException e) {
             throw new CatalogDBException("Error parsing " + tClass.getName(), e);
@@ -868,12 +857,6 @@ class MongoDBUtils {
                 filter = option;
             } else {
                 operator = matcher.group(2);
-//                if (queryKey.isEmpty()) {
-//                    key = matcher.group(1);
-//                } else {
-//                    String separatorDot = matcher.group(1).isEmpty() ? "" : ".";
-//                    key = queryKey + separatorDot + matcher.group(1);
-//                }
                 key = queryKey;
                 filter = matcher.group(3);
             }

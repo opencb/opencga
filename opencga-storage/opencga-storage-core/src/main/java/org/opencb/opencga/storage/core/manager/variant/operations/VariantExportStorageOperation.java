@@ -7,7 +7,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -24,7 +23,7 @@ import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -222,17 +221,17 @@ public class VariantExportStorageOperation extends StorageOperation {
                 for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
                     String cohortName = studyConfiguration.getCohortIds().inverse().get(cohortId);
                     Set<Integer> sampleIds = studyConfiguration.getCohorts().get(cohortId);
-                    Set<Integer> newSampleIds = new HashSet<>(sampleIds.size());
+                    List<Sample> newSampleList = new ArrayList<>();
                     for (Integer sampleId : sampleIds) {
                         if (samplesIdMap.containsKey(sampleId)) {
-                            newSampleIds.add(samplesIdMap.get(sampleId));
+                            newSampleList.add(new Sample().setId(samplesIdMap.get(sampleId)));
                         }
                     }
                     Cohort cohort = catalogManager.getCohortManager().create((long) studyConfiguration.getStudyId(), cohortName, Study
-                            .Type.COLLECTION, "", newSampleIds.stream().map(Long::valueOf).collect(Collectors.toList()), null,
-                            Collections.emptyMap(), sessionId).first();
+                            .Type.COLLECTION, "", newSampleList, null, Collections.emptyMap(), sessionId).first();
                     newCohortIds.put(cohortName, (int) cohort.getId());
-                    newCohorts.put((int) cohort.getId(), newSampleIds);
+                    newCohorts.put((int) cohort.getId(), newSampleList.stream().map(Sample::getId).map(Long::intValue)
+                            .collect(Collectors.toSet()));
                     catalogManager.getCohortManager().setStatus(String.valueOf(cohort.getId()), Cohort.CohortStatus.READY, "", sessionId);
                 }
                 studyConfiguration.setCohortIds(newCohortIds);

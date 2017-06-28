@@ -211,11 +211,11 @@ public class AnalysisFileIndexer {
                     indexedFileId = new ObjectMap(job.getAttributes()).getInt(Job.INDEXED_FILE_ID);
                 } else {
                     logger.warn("INDEXED_FILE_ID missing in job " + job.getId());
-                    List<Long> jobInputFiles = job.getInput();
+                    List<File> jobInputFiles = job.getInput();
                     if (jobInputFiles.size() != 1) {
                         throw new CatalogException("Error: Job {id: " + job.getId() + "} input is empty");
                     }
-                    indexedFileId = jobInputFiles.get(0);
+                    indexedFileId = jobInputFiles.get(0).getId();
                 }
             }
             originalFile = catalogManager.getFile(indexedFileId, null, sessionId).first();
@@ -275,7 +275,7 @@ public class AnalysisFileIndexer {
 
         /** Get file samples **/
         List<Sample> sampleList;
-        if (originalFile.getSampleIds() == null || originalFile.getSampleIds().isEmpty()) {
+        if (originalFile.getSamples() == null || originalFile.getSamples().isEmpty()) {
             try {
                 sampleList = FileMetadataReader.get(catalogManager).getFileSamples(study, originalFile,
                         catalogManager.getFileUri(originalFile), fileModifyParams,
@@ -284,16 +284,18 @@ public class AnalysisFileIndexer {
                 throw new AnalysisExecutionException(e);
             }
         } else {
-            sampleList = catalogManager.getAllSamples(study.getId(), new Query("id", originalFile.getSampleIds()), new QueryOptions(), sessionId).getResult();
+            sampleList = catalogManager.getAllSamples(study.getId(),
+                    new Query("id", originalFile.getSamples().stream().map(Sample::getId).collect(Collectors.toList())),
+                    new QueryOptions(), sessionId).getResult();
         }
         if (!simulate) {
             Cohort defaultCohort;
             QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyIdByOutDirId,
                     new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), sessionId);
             if (cohorts.getResult().isEmpty()) {
-                defaultCohort = catalogManager.getCohortManager().create(studyIdByOutDirId, StudyEntry.DEFAULT_COHORT, Study.Type
-                        .COLLECTION, "Default cohort with almost all indexed samples", Collections.emptyList(), null, null, sessionId)
-                        .first();
+                defaultCohort = catalogManager.getCohortManager().create(studyIdByOutDirId, StudyEntry.DEFAULT_COHORT,
+                        Study.Type.COLLECTION, "Default cohort with almost all indexed samples", Collections.emptyList(), null, null,
+                        sessionId).first();
             } else {
                 defaultCohort = cohorts.first();
             }
@@ -304,11 +306,11 @@ public class AnalysisFileIndexer {
                 updateParams.append("status.name", Cohort.CohortStatus.CALCULATING);
             }
             //Samples are the already indexed plus those that are going to be indexed
-            Set<Long> samples = new HashSet<>(defaultCohort.getSamples());
+            Set<Long> samples = new HashSet<>(defaultCohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
             samples.addAll(sampleList.stream().map(Sample::getId).collect(Collectors.toList()));
             if (samples.size() != defaultCohort.getSamples().size()) {
                 logger.debug("Updating \"{}\" cohort", StudyEntry.DEFAULT_COHORT);
-                updateParams.append("samples", new ArrayList<>(samples));
+                updateParams.append(CohortDBAdaptor.QueryParams.SAMPLES.key(), new ArrayList<>(samples));
             }
             if (!updateParams.isEmpty()) {
                 catalogManager.modifyCohort(defaultCohort.getId(), updateParams, new QueryOptions(), sessionId);
@@ -389,7 +391,7 @@ public class AnalysisFileIndexer {
         }
         JobFactory jobFactory = new JobFactory(catalogManager);
         final Job job = jobFactory.createJob(studyIdByOutDirId, jobName,
-                OPENCGA_ANALYSIS_BIN_NAME, jobDescription, outDir, Collections.singletonList(inputFile.getId()),
+                OPENCGA_ANALYSIS_BIN_NAME, jobDescription, outDir, Collections.singletonList(inputFile),
                 sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, jobAttributes, null).first();
 
 

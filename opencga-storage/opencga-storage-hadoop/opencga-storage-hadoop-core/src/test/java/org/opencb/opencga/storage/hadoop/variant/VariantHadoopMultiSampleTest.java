@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantNormalizer;
+import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;

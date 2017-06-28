@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -86,7 +87,7 @@ public class SampleMongoDBAdaptorTest {
                 SampleAclEntry.SamplePermissions.SHARE.name(),
                 SampleAclEntry.SamplePermissions.UPDATE.name()
         ));
-        s1 = catalogSampleDBAdaptor.insert(new Sample(0, "s1", "", new Individual(), "", "", false, Arrays.asList(acl_s1_user1,
+        s1 = catalogSampleDBAdaptor.insert(new Sample(0, "s1", "", new Individual(), "", "", false, 1, Arrays.asList(acl_s1_user1,
                 acl_s1_user2), Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), studyId, null).first();
         acl_s2_user1 = new SampleAclEntry(user1.getId(), Arrays.asList());
         acl_s2_user2 = new SampleAclEntry(user2.getId(), Arrays.asList(
@@ -95,7 +96,7 @@ public class SampleMongoDBAdaptorTest {
                 SampleAclEntry.SamplePermissions.SHARE.name(),
                 SampleAclEntry.SamplePermissions.UPDATE.name()
         ));
-        s2 = catalogSampleDBAdaptor.insert(new Sample(0, "s2", "", new Individual(), "", "", false, Arrays.asList(acl_s2_user1,
+        s2 = catalogSampleDBAdaptor.insert(new Sample(0, "s2", "", new Individual(), "", "", false, 1, Arrays.asList(acl_s2_user1,
                 acl_s2_user2), Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), studyId, null).first();
 
     }
@@ -107,8 +108,8 @@ public class SampleMongoDBAdaptorTest {
         Set<Annotation> annotationSet = Arrays.asList(new Annotation("key", "value"), new Annotation("key2", "value2"), new Annotation
                 ("key3", 3), new Annotation("key4", true)).stream().collect(Collectors.toSet());
 
-        AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", Collections.emptyMap());
-        AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", Collections.emptyMap());
+        AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", 1, Collections.emptyMap());
+        AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", 1, Collections.emptyMap());
         catalogSampleDBAdaptor.createAnnotationSet(sampleId, annot1);
         catalogSampleDBAdaptor.createAnnotationSet(sampleId, annot2);
 
@@ -158,14 +159,14 @@ public class SampleMongoDBAdaptorTest {
         Set<Annotation> annotationSet = Arrays.asList(new Annotation("key", "value"), new Annotation("key2", "value2"), new Annotation
                 ("key3", 3), new Annotation("key4", true)).stream().collect(Collectors.toSet());
 
-        AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", Collections.emptyMap());
-        AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", Collections.emptyMap());
-        AnnotationSet annot3 = new AnnotationSet("annot3", 2, annotationSet, "", Collections.emptyMap());
+        AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", 1, Collections.emptyMap());
+        AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", 1, Collections.emptyMap());
+        AnnotationSet annot3 = new AnnotationSet("annot3", 2, annotationSet, "", 1, Collections.emptyMap());
         catalogSampleDBAdaptor.createAnnotationSet(sampleId, annot3);
         catalogSampleDBAdaptor.createAnnotationSet(sampleId, annot1);
         catalogSampleDBAdaptor.createAnnotationSet(sampleId, annot2);
 
-        AnnotationSet annot4 = new AnnotationSet("annot4", 3, annotationSet, "", Collections.emptyMap());
+        AnnotationSet annot4 = new AnnotationSet("annot4", 3, annotationSet, "", 1, Collections.emptyMap());
         catalogSampleDBAdaptor.createAnnotationSet(s2.getId(), annot4);
     }
 
@@ -192,7 +193,7 @@ public class SampleMongoDBAdaptorTest {
                 new Annotation("key3", 3),
                 new Annotation("key4", true))
                 .stream().collect(Collectors.toSet());
-        AnnotationSet expectedAnnot = new AnnotationSet("annot1", 3, annotationSet, "", Collections.emptyMap());
+        AnnotationSet expectedAnnot = new AnnotationSet("annot1", 3, annotationSet, "", 1, Collections.emptyMap());
 
         catalogSampleDBAdaptor.createAnnotationSet(sampleId, expectedAnnot);
         AnnotationSet annot = catalogSampleDBAdaptor.get(sampleId, null).first().getAnnotationSets().get(0);
@@ -204,7 +205,7 @@ public class SampleMongoDBAdaptorTest {
                 new Annotation("key4", false),
                 new Annotation("key5", 2.3))
                 .stream().collect(Collectors.toSet());
-        expectedAnnot = new AnnotationSet("annot1", 3, annotationSet, "", Collections.emptyMap());
+        expectedAnnot = new AnnotationSet("annot1", 3, annotationSet, "", 1, Collections.emptyMap());
         catalogSampleDBAdaptor.updateAnnotationSet(sampleId, expectedAnnot);
         annot = catalogSampleDBAdaptor.get(sampleId, null).first().getAnnotationSets().get(0);
         assertEquals(expectedAnnot, annot);
@@ -266,7 +267,7 @@ public class SampleMongoDBAdaptorTest {
     public void createSampleTest() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
 
-        Sample hg0097 = new Sample(0, "HG0097", "1000g", new Individual(), "A description");
+        Sample hg0097 = new Sample(0, "HG0097", "1000g", new Individual(), "A description", 1);
         QueryResult<Sample> result = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(hg0097, studyId, null);
 
         assertEquals(hg0097.getName(), result.first().getName());
@@ -327,7 +328,7 @@ public class SampleMongoDBAdaptorTest {
     public void deleteSampleTest() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
 
-        Sample hg0097 = new Sample(0, "HG0097", "1000g", new Individual(), "A description");
+        Sample hg0097 = new Sample(0, "HG0097", "1000g", new Individual(), "A description", 1);
         QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(hg0097, studyId, null);
         dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getId());
 
@@ -349,9 +350,10 @@ public class SampleMongoDBAdaptorTest {
         long fileId = dbAdaptorFactory.getCatalogFileDBAdaptor().getId(user3.getProjects().get(0).getStudies().get(0).getId(),
                 "data/file.vcf");
 
-        Sample hg0097 = new Sample(0, "HG0097", "1000g", new Individual(), "A description");
+        Sample hg0097 = new Sample(0, "HG0097", "1000g", new Individual(), "A description", 1);
         QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(hg0097, studyId, null);
-        dbAdaptorFactory.getCatalogFileDBAdaptor().update(fileId, new ObjectMap("sampleIds", createResult.first().getId()));
+        dbAdaptorFactory.getCatalogFileDBAdaptor().update(fileId, new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
+                createResult.first().getId()));
 
         dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getId());
     }
@@ -362,10 +364,10 @@ public class SampleMongoDBAdaptorTest {
     public void deleteSampleFail3Test() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
 
-        Sample hg0097 = new Sample(0, "HG0097", "1000g", new Individual(), "A description");
+        Sample hg0097 = new Sample(0, "HG0097", "1000g", new Individual(), "A description", 1);
         QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(hg0097, studyId, null);
         dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(new Cohort("Cohort", Study.Type.COLLECTION, "", "",
-                Collections.singletonList(createResult.first().getId()), null), studyId, null);
+                Collections.singletonList(createResult.first()), 1, null), studyId, null);
 
         thrown.expect(CatalogDBException.class);
         dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getId());
@@ -386,7 +388,7 @@ public class SampleMongoDBAdaptorTest {
                 threads.add(new Thread(() -> {
                     try {
                         dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(new Cohort(cohortName, Study.Type.COLLECTION,
-                                "", "", Collections.emptyList(), null), studyId, null);
+                                "", "", Collections.emptyList(), 1, null), studyId, null);
                     } catch (CatalogException ignore) {
                         numFailures.incrementAndGet();
                     }

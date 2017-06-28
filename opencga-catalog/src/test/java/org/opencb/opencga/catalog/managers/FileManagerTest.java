@@ -48,10 +48,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -233,23 +231,13 @@ public class FileManagerTest extends GenericTest {
                 .append("PHEN", "CONTROL"), null, true, sessionIdUser);
 
 
-        catalogManager.getFileManager().update(test01k.getId(), new ObjectMap("sampleIds", Arrays.asList(s_1, s_2, s_3, s_4, s_5)),
-                new QueryOptions(), sessionIdUser);
+        catalogManager.getFileManager().update(test01k.getId(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
+                        Arrays.asList(s_1, s_2, s_3, s_4, s_5)), new QueryOptions(), sessionIdUser);
 
     }
 
     @After
     public void tearDown() throws Exception {
-        if (sessionIdUser != null) {
-            catalogManager.logout("user", sessionIdUser);
-        }
-        if (sessionIdUser2 != null) {
-            catalogManager.logout("user2", sessionIdUser2);
-        }
-        if (sessionIdUser3 != null) {
-            catalogManager.logout("user3", sessionIdUser3);
-        }
-//        catalogManager.close();
     }
 
 
@@ -407,10 +395,10 @@ public class FileManagerTest extends GenericTest {
         URI uri = getClass().getResource("/biofiles/variant-test-file-dot-names.vcf.gz").toURI();
         QueryResult<File> link = fileManager.link(uri, ".", studyId, new ObjectMap(), sessionIdUser);
 
-        assertEquals(4, link.first().getSampleIds().size());
+        assertEquals(4, link.first().getSamples().size());
 
         Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.ID.key(), link.first().getSampleIds())
+                .append(SampleDBAdaptor.QueryParams.ID.key(), link.first().getSamples().stream().map(Sample::getId).collect(Collectors.toList()))
                 .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(query, QueryOptions.empty(), sessionIdUser);
 
@@ -428,7 +416,7 @@ public class FileManagerTest extends GenericTest {
         AtomicInteger numFailures = new AtomicInteger();
         AtomicInteger numOk = new AtomicInteger();
         int numThreads = 10;
-        int numOperations = 500;
+        int numOperations = 250;
 
         ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
 
@@ -445,29 +433,11 @@ public class FileManagerTest extends GenericTest {
             });
 
         }
-//        executorService.shutdown();
-        executorService.awaitTermination(30, TimeUnit.SECONDS);
+        executorService.awaitTermination(1, TimeUnit.SECONDS);
         executorService.shutdown();
 
         int unexecuted = executorService.shutdownNow().size();
         System.out.println("Do not execute " + unexecuted + " tasks!");
-//        for (int i = 0; i < numThreads; i++) {
-//            threads.add(new Thread(() -> {
-//                try {
-//                    fileManager.link(uri, ".", studyId, new ObjectMap(), sessionIdUser);
-//                } catch (IOException | CatalogException ignore) {
-//                    numFailures.incrementAndGet();
-//                }
-//            }));
-//        }
-//        threads.parallelStream().forEach(Thread::run);
-//        threads.parallelStream().forEach((thread) -> {
-//            try {
-//                thread.join();
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//        });
 
         System.out.println("numFailures = " + numFailures);
         System.out.println("numOk.get() = " + numOk.get());
@@ -518,7 +488,8 @@ public class FileManagerTest extends GenericTest {
         try {
             fileManager.create(Long.toString(study.getId()), File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.UNKNOWN,
                     "data/test/myTest/myFile.txt", null, null, new File.FileStatus(File.FileStatus.READY), 0, -1, null, -1,
-                    null, null, false, "This is the content\tof the file", null, sessionIdUser2);
+                    null, null,
+                    false, "This is the content\tof the file", null, sessionIdUser2);
             fail("An error should be raised because parents is false");
         } catch (CatalogException e) {
             System.out.println("Correct");
@@ -526,8 +497,7 @@ public class FileManagerTest extends GenericTest {
 
         QueryResult<File> fileQueryResult = fileManager.create(Long.toString(study.getId()), File.Type.FILE, File.Format.UNKNOWN,
                 File.Bioformat.UNKNOWN, "data/test/myTest/myFile.txt", null, null,
-                new File.FileStatus(File.FileStatus.READY), 0, -1, null, -1, null, null, true, content,
-                null, sessionIdUser2);
+                new File.FileStatus(File.FileStatus.READY), 0, -1, null, -1, null, null, true, content, null, sessionIdUser2);
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(fileQueryResult.first().getUri());
         assertTrue(ioManager.exists(fileQueryResult.first().getUri()));
 
@@ -918,7 +888,7 @@ public class FileManagerTest extends GenericTest {
 
         List<Long> sampleIds = catalogManager.getAllSamples(studyId, new Query("name", "s_1,s_3,s_4"), null, sessionIdUser)
                 .getResult().stream().map(Sample::getId).collect(Collectors.toList());
-        result = catalogManager.searchFile(studyId, new Query("sampleIds", sampleIds), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new Query(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleIds), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
         query = new Query("type", "FILE");
@@ -1333,8 +1303,8 @@ public class FileManagerTest extends GenericTest {
         }
 
         catalogManager.createFile(studyId, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE,
-                "folder/subfolder/subsubfolder/my_staged.txt", null, null, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null,
-                -1, null, null, true, null, sessionIdUser).first();
+                "folder/subfolder/subsubfolder/my_staged.txt", null, null, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1,
+                null, null, true, null, sessionIdUser).first();
 
         thrown.expect(CatalogException.class);
         try {
@@ -1570,8 +1540,7 @@ public class FileManagerTest extends GenericTest {
 
         Path filePath = Paths.get("data", "file1.txt");
         fileManager.create(Long.toString(studyId), File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, filePath.toString(),
-                "", "", new File.FileStatus(), 10, -1, null, -1, null, null, true,
-                "My content", null, sessionIdUser);
+                "", "", new File.FileStatus(), 10, -1, null, -1, null, null, true, "My content", null, sessionIdUser);
 
         catalogManager.createStudyAcls(Long.toString(studyId), "user2", "", null, sessionIdUser);
         List<QueryResult<FileAclEntry>> queryResults = fileManager.updateAcl("data/new/," + filePath.toString(),
@@ -1589,9 +1558,7 @@ public class FileManagerTest extends GenericTest {
     public void testUpdateIndexStatus() throws CatalogException {
         long studyId = catalogManager.getStudyManager().getId("user", "user@1000G:phase1");
         QueryResult<File> fileResult = fileManager.create(Long.toString(studyId), File.Type.FILE, File.Format.VCF,
-                File.Bioformat.VARIANT, "data/test.vcf", "", "description", new File.FileStatus(File.FileStatus.STAGE), 0, -1,
-                Collections.emptyList(), -1, Collections.emptyMap(), Collections.emptyMap(), true, null, new QueryOptions(),
-                sessionIdUser);
+                File.Bioformat.VARIANT, "data/test.vcf", "", "description", new File.FileStatus(File.FileStatus.STAGE), 0, -1, Collections.emptyList(), -1, Collections.emptyMap(), Collections.emptyMap(), true, null, new QueryOptions(), sessionIdUser);
 
         fileManager.updateFileIndexStatus(fileResult.first(), FileIndex.IndexStatus.TRANSFORMED, null, sessionIdUser);
         QueryResult<File> read = fileManager.get(fileResult.first().getId(), new QueryOptions(), sessionIdUser);
