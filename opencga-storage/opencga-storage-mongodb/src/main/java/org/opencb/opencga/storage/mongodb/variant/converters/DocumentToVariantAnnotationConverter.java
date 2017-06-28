@@ -385,7 +385,8 @@ public class DocumentToVariantAnnotationConverter
         for (String soName : soNameList) {
             soTerms.add(new SequenceOntologyTerm(ConsequenceTypeMappings.getSoAccessionString(soName), soName));
         }
-        return new ConsequenceType(geneName, ensemblGeneId, ensemblTranscriptId, strand, biotype, exonNumber, transcriptAnnotationFlags,
+        // FIXME: Should we store ExonOverlap?
+        return new ConsequenceType(geneName, ensemblGeneId, ensemblTranscriptId, strand, biotype, null, transcriptAnnotationFlags,
                 cDnaPosition, cdsPosition, codon, proteinVariantAnnotation, soTerms);
     }
 
@@ -484,7 +485,8 @@ public class DocumentToVariantAnnotationConverter
                 putNotNull(ct, CT_CODON_FIELD, consequenceType.getCodon());
                 putNotDefault(ct, CT_STRAND_FIELD, consequenceType.getStrand(), DEFAULT_STRAND_VALUE);
                 putNotNull(ct, CT_BIOTYPE_FIELD, consequenceType.getBiotype());
-                putNotNull(ct, CT_EXON_NUMBER_FIELD, consequenceType.getExonNumber());
+                // FIXME: Should we store ExonOverlap?
+//                putNotNull(ct, CT_EXON_NUMBER_FIELD, consequenceType.getExonNumber());
                 putNotNull(ct, CT_TRANSCRIPT_ANNOT_FLAGS, consequenceType.getTranscriptAnnotationFlags());
                 putNotNull(ct, CT_C_DNA_POSITION_FIELD, consequenceType.getCdnaPosition());
                 putNotNull(ct, CT_CDS_POSITION_FIELD, consequenceType.getCdsPosition());
