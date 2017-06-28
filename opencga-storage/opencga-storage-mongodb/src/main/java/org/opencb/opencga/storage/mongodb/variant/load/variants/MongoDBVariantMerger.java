@@ -1087,11 +1087,9 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 for (String gt : gts.keySet()) {
                     List sampleIds = getListFromDocument(gts, gt);
                     if (resume) {
-                        mergeUpdates.add(addEachToSet(STUDIES_FIELD + ".$." + GENOTYPES_FIELD + '.' + gt,
-                                sampleIds));
+                        mergeUpdates.add(addEachToSet(STUDIES_FIELD + ".$." + GENOTYPES_FIELD + '.' + gt, sampleIds));
                     } else {
-                        mergeUpdates.add(pushEach(STUDIES_FIELD + ".$." + GENOTYPES_FIELD + '.' + gt,
-                                sampleIds));
+                        mergeUpdates.add(pushEach(STUDIES_FIELD + ".$." + GENOTYPES_FIELD + '.' + gt, sampleIds));
                     }
                 }
             }

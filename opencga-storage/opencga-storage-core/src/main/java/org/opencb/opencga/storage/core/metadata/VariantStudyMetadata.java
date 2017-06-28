@@ -4,6 +4,7 @@ import htsjdk.variant.vcf.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.opencb.biodata.models.variant.VariantSource;
 
 import java.util.*;
 
@@ -151,6 +152,42 @@ public class VariantStudyMetadata {
                 .toString();
     }
 
+    public VariantStudyMetadata addVariantSource(VariantSource source) {
+        return addVariantSource(source, null);
+    }
+
+    public VariantStudyMetadata addVariantSource(VariantSource source, Collection<String> formats) {
+
+        List<Map<String, Object>> format = (List) source.getHeader().getMeta().getOrDefault("FORMAT", Collections.emptyList());
+        for (Map<String, Object> line : format) {
+            if (formats == null || formats.contains(line.get("ID").toString())) {
+                addFormatRecord(line);
+            }
+        }
+
+        List<Map<String, Object>> info = (List) source.getHeader().getMeta().getOrDefault("INFO", Collections.emptyList());
+        for (Map<String, Object> line : info) {
+            addInfoRecord(line);
+        }
+
+        List<Map<String, Object>> filter = (List) source.getHeader().getMeta().getOrDefault("FILTER", Collections.emptyList());
+        for (Map<String, Object> line : filter) {
+            getFilter().put(line.get("ID").toString(), line.get("Description").toString());
+        }
+
+        List<Map<String, Object>> alt = (List) source.getHeader().getMeta().getOrDefault("ALT", Collections.emptyList());
+        for (Map<String, Object> line : alt) {
+            getAlternates().put(line.get("ID").toString(), line.get("Description").toString());
+        }
+
+        List<Map<String, Object>> config = (List) source.getHeader().getMeta().getOrDefault("contig", Collections.emptyList());
+        for (Map<String, Object> line : config) {
+            getContig().put(line.get("ID").toString(), Long.valueOf(line.get("length").toString()));
+        }
+
+        return this;
+    }
+
 
     public static class VariantMetadataRecord {
         private final String id;
@@ -233,5 +270,17 @@ public class VariantStudyMetadata {
         public int hashCode() {
             return Objects.hash(id, number, numberType, type, description);
         }
+
+        @Override
+        public String toString() {
+            return new ToStringBuilder(this, ToStringStyle.JSON_STYLE)
+                    .append("id", id)
+                    .append("numberType", numberType)
+                    .append("number", number)
+                    .append("type", type)
+                    .append("description", description)
+                    .toString();
+        }
+
     }
 }
