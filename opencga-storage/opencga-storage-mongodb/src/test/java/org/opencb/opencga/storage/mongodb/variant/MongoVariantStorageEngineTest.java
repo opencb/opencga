@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
+import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
 import org.bson.Document;
@@ -1004,6 +1005,31 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
                 assertFalse(((Document) document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class).get(0))
                         .containsKey(GENOTYPES_FIELD));
                 System.out.println("dbObject = " + document);
+            }
+        }
+
+    }
+
+    @Override
+    public void removeFile() throws Exception {
+        super.removeFile();
+
+        MongoDataStore mongoDataStore = getMongoDataStoreManager(DB_NAME).get(DB_NAME);
+
+        MongoDBCollection variantsCollection = mongoDataStore.getCollection(MongoDBVariantOptions.COLLECTION_VARIANTS.defaultValue());
+        MongoDBCollection stageCollection = mongoDataStore.getCollection(MongoDBVariantOptions.COLLECTION_STAGE.defaultValue());
+
+        assertEquals(variantsCollection.count().first(), stageCollection.count().first());
+
+        Set<String> variantIds = variantsCollection.find(new Document(DocumentToVariantConverter.STUDIES_FIELD + "." + STUDYID_FIELD, 1), new QueryOptions(QueryOptions.INCLUDE, "_id")).getResult().stream().map(document -> document.getString("_id")).collect(Collectors.toSet());
+        Set<String> stageIds = stageCollection.find(Filters.exists("1"), new QueryOptions(QueryOptions.INCLUDE, "_id")).getResult().stream().map(document -> document.getString("_id")).collect(Collectors.toSet());
+
+        if (!variantIds.equals(stageIds)) {
+            for (String id : variantIds) {
+                assertThat("Stage does not contain " + id, stageIds, hasItem(id));
+            }
+            for (String id : stageIds) {
+                assertThat("Variants does not contain " + id, variantIds, hasItem(id));
             }
         }
 

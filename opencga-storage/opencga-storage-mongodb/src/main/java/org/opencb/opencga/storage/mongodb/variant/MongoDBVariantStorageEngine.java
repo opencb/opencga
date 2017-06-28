@@ -172,7 +172,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     public void dropFile(String study, int fileId) throws StorageEngineException {
         ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
-        getDBAdaptor().deleteFile(study, Integer.toString(fileId), new QueryOptions(options));
+        getDBAdaptor().deleteFile(study, Collections.singletonList(String.valueOf(fileId)), new QueryOptions(options));
     }
 
     @Override
