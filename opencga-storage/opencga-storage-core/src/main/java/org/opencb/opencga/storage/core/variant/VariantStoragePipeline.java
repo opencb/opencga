@@ -26,27 +26,19 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
-import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
-import org.opencb.biodata.formats.variant.io.VariantReader;
-import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.formats.variant.vcf4.VariantAggregatedVcfFactory;
 import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
-import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
-import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.commons.run.Task;
 import org.opencb.hpg.bigdata.core.io.avro.AvroFileWriter;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -59,7 +51,6 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.opencga.storage.core.variant.transform.MalformedVariantHandler;
 import org.opencb.opencga.storage.core.variant.transform.VariantAvroTransformTask;
 import org.opencb.opencga.storage.core.variant.transform.VariantJsonTransformTask;
@@ -72,7 +63,10 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -271,42 +265,43 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
         logger.info("Transforming variants using {} into {} ...", parser, format);
         long start, end;
-        if (numTasks == 1 && "json".equals(format)) { //Run transformation with a SingleThread runner. The legacy way
-            if (!".gz".equals(extension)) { //FIXME: Add compatibility with snappy compression
-                logger.warn("Force using gzip compression");
-                extension = ".gz";
-                outputVariantsFile = output.resolve(fileName + ".variants.json" + extension);
-            }
-
-            //Ped Reader
-            PedigreeReader pedReader = null;
-            if (pedigree != null && pedigree.toFile().exists()) {    //FIXME Add "endsWith(".ped") ??
-                pedReader = new PedigreePedReader(pedigree.toString());
-            }
-
-            //Reader
-            VariantReader reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
-
-            //Writers
-            VariantJsonWriter jsonWriter = new VariantJsonWriter(source, output);
-            jsonWriter.includeStats(includeStats);
-
-            List<VariantWriter> writers = Collections.<VariantWriter>singletonList(jsonWriter);
-
-            //Runner
-            VariantRunner vr = new VariantRunner(source, reader, pedReader, writers,
-                    Collections.<Task<Variant>>singletonList(new VariantGlobalStatsCalculator(source)), batchSize);
-
-            logger.info("Single thread transform...");
-            start = System.currentTimeMillis();
-            try {
-                vr.run();
-            } catch (IOException e) {
-                throw new StorageEngineException("Fail runner execution", e);
-            }
-            end = System.currentTimeMillis();
-
-        } else if ("avro".equals(format)) {
+//        if (numTasks == 1 && "json".equals(format)) { //Run transformation with a SingleThread runner. The legacy way
+//            if (!".gz".equals(extension)) { //FIXME: Add compatibility with snappy compression
+//                logger.warn("Force using gzip compression");
+//                extension = ".gz";
+//                outputVariantsFile = output.resolve(fileName + ".variants.json" + extension);
+//            }
+//
+//            //Ped Reader
+//            PedigreeReader pedReader = null;
+//            if (pedigree != null && pedigree.toFile().exists()) {    //FIXME Add "endsWith(".ped") ??
+//                pedReader = new PedigreePedReader(pedigree.toString());
+//            }
+//
+//            //Reader
+//            VariantReader reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
+//
+//            //Writers
+//            VariantJsonWriter jsonWriter = new VariantJsonWriter(source, output);
+//            jsonWriter.includeStats(includeStats);
+//
+//            List<VariantWriter> writers = Collections.singletonList(jsonWriter);
+//
+//            //Runner
+//            VariantRunner vr = new VariantRunner(source, reader, pedReader, writers,
+//                    Collections.singletonList(new VariantGlobalStatsCalculator(source)), batchSize);
+//
+//            logger.info("Single thread transform...");
+//            start = System.currentTimeMillis();
+//            try {
+//                vr.run();
+//            } catch (IOException e) {
+//                throw new StorageEngineException("Fail runner execution", e);
+//            }
+//            end = System.currentTimeMillis();
+//
+//        } else
+        if ("avro".equals(format)) {
             //Read VariantSource
             source = VariantReaderUtils.readVariantSource(input, source);
 
