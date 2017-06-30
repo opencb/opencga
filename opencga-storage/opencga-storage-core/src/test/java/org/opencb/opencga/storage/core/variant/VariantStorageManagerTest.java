@@ -171,7 +171,19 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
             assertTrue(variant.toString(), map.containsKey(studyConfigurationSingleFile.getStudyName()));
             String expected = map.get(studyConfigurationSingleFile.getStudyName()).getSamplesData().toString();
             String actual = map.get(studyConfigurationMultiFile.getStudyName()).getSamplesData().toString();
-            assertWithConflicts(variant, () -> assertEquals(variant.toString(), expected, actual));
+            if (!assertWithConflicts(variant, () -> assertEquals(variant.toString(), expected, actual))) {
+                List<List<String>> samplesDataSingle = map.get(studyConfigurationSingleFile.getStudyName()).getSamplesData();
+                List<List<String>> samplesDataMulti = map.get(studyConfigurationMultiFile.getStudyName()).getSamplesData();
+                for (int i = 0; i < samplesDataSingle.size(); i++) {
+                    String sampleName = map.get(studyConfigurationMultiFile.getStudyName()).getOrderedSamplesName().get(i);
+                    String message = variant.toString()
+                            + " sample: " + sampleName
+                            + " id " + studyConfigurationMultiFile.getSampleIds().get(sampleName);
+                    String expectedGt = samplesDataSingle.get(i).toString();
+                    String actualGt = samplesDataMulti.get(i).toString();
+                    assertWithConflicts(variant, () -> assertEquals(message, expectedGt, actualGt));
+                }
+            }
         }
         assertEquals(expectedNumVariants, numVariants);
 

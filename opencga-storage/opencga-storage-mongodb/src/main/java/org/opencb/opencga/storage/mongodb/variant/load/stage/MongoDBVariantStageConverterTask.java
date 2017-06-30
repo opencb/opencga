@@ -5,9 +5,9 @@ import com.google.common.collect.ListMultimap;
 import org.bson.Document;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStoragePipeline;
 
 import java.util.Collections;
 import java.util.List;
@@ -44,7 +44,7 @@ public class MongoDBVariantStageConverterTask implements ParallelTaskRunner.Task
         ListMultimap<Document, Binary> ids = LinkedListMultimap.create();
 
         for (Variant variant : variants) {
-            if (variant.getType().equals(VariantType.NO_VARIATION) || variant.getType().equals(VariantType.SYMBOLIC)) {
+            if (MongoDBVariantStoragePipeline.SKIPPED_VARIANTS.contains(variant.getType())) {
                 localSkippedVariants++;
                 continue;
             }
