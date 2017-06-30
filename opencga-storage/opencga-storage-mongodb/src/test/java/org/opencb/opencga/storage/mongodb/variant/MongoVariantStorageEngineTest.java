@@ -24,6 +24,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -1010,9 +1012,37 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
 
     }
 
+    @Test
+    public void removeFileMergeBasicTest() throws Exception {
+        removeFileTest(new QueryOptions(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC));
+    }
+
     @Override
-    public void removeFile() throws Exception {
-        super.removeFile();
+    public void removeFileTest(QueryOptions params) throws Exception {
+        MongoDBVariantStorageEngine variantStorageEngineExpected = getVariantStorageEngine("_expected");
+
+        StudyConfiguration studyConfiguration1 = new StudyConfiguration(1, "Study1");
+        StudyConfiguration studyConfiguration2 = new StudyConfiguration(2, "Study2");
+
+        ObjectMap options = new ObjectMap(params)
+                .append(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.CONTROL)
+                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
+                .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
+        //Study1
+        runDefaultETL(getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
+                variantStorageEngineExpected, studyConfiguration1, options.append(VariantStorageEngine.Options.FILE_ID.key(), 1));
+//        runDefaultETL(getResourceUri("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
+//                variantStorageEngineExpected, studyConfiguration1, options.append(VariantStorageEngine.Options.FILE_ID.key(), 2));
+
+        //Study2
+        runDefaultETL(getResourceUri("1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
+                variantStorageEngineExpected, studyConfiguration2, options.append(VariantStorageEngine.Options.FILE_ID.key(), 3));
+        runDefaultETL(getResourceUri("1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
+                variantStorageEngineExpected, studyConfiguration2, options.append(VariantStorageEngine.Options.FILE_ID.key(), 4));
+        runDefaultETL(getResourceUri("1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
+                variantStorageEngineExpected, studyConfiguration2, options.append(VariantStorageEngine.Options.FILE_ID.key(), 5));
+
+        super.removeFileTest(params);
 
         MongoDataStore mongoDataStore = getMongoDataStoreManager(DB_NAME).get(DB_NAME);
 
@@ -1021,7 +1051,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
 
         assertEquals(variantsCollection.count().first(), stageCollection.count().first());
 
-        Set<String> variantIds = variantsCollection.find(new Document(DocumentToVariantConverter.STUDIES_FIELD + "." + STUDYID_FIELD, 1), new QueryOptions(QueryOptions.INCLUDE, "_id")).getResult().stream().map(document -> document.getString("_id")).collect(Collectors.toSet());
+        Set<String> variantIds = variantsCollection.find(new Document(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, 1), new QueryOptions(QueryOptions.INCLUDE, "_id")).getResult().stream().map(document -> document.getString("_id")).collect(Collectors.toSet());
         Set<String> stageIds = stageCollection.find(Filters.exists("1"), new QueryOptions(QueryOptions.INCLUDE, "_id")).getResult().stream().map(document -> document.getString("_id")).collect(Collectors.toSet());
 
         if (!variantIds.equals(stageIds)) {
@@ -1032,6 +1062,39 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
                 assertThat("Variants does not contain " + id, variantIds, hasItem(id));
             }
         }
+
+        compareCollections(
+                variantStorageEngineExpected.getDBAdaptor().getVariantsCollection(),
+                getVariantStorageEngine().getDBAdaptor().getVariantsCollection(),
+                d -> {
+                    List<Document> list = (List<Document>) d.get(DocumentToVariantConverter.STUDIES_FIELD, List.class);
+                    for (Document study : list) {
+                        if (study.getInteger(STUDYID_FIELD) == 1) {
+                            Document gts = study.get(GENOTYPES_FIELD, Document.class);
+                            // Remove empty genotype lists
+                            gts.entrySet().removeIf(entry -> ((List) entry.getValue()).isEmpty());
+                            int numAlleles = 1;
+                            Document ori = ((Document) study.get(FILES_FIELD, List.class).get(0)).get(ORI_FIELD, Document.class);
+                            if (ori != null) {
+                                numAlleles = ori.getString("s").split(":")[2].split(",").length;
+                            }
+                            // Remove unused alternates
+                            if (numAlleles > 1) {
+                                List alts = study.get(ALTERNATES_FIELD, List.class);
+                                if (alts.size() > numAlleles - 1) {
+                                    logger.warn(d.getString("_id") + " : Unused alternates " + alts.subList(numAlleles - 1, alts.size()));
+                                }
+                                study.put(ALTERNATES_FIELD, alts.subList(0, numAlleles - 1));
+                            } else {
+                                Object remove = study.remove(ALTERNATES_FIELD);
+                                if (remove != null) {
+                                    logger.warn(d.getString("_id") + " : " + gts.keySet() + " Unused alternates " + remove);
+                                }
+                            }
+                        }
+                    }
+                    return d;
+                });
 
     }
 }

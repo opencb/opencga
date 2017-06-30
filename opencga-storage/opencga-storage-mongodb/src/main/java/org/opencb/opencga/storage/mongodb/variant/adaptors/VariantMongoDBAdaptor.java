@@ -71,9 +71,7 @@ import static org.opencb.commons.datastore.mongodb.MongoDBCollection.NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getReturnedFiles;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getSamplesMetadata;
-import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_STAGE;
-import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_STUDIES;
-import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.LOADED_GENOTYPES;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
 
 /**
@@ -251,12 +249,19 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // Remove also negated fileIds
         List<Integer> negatedFileIds = fileIds.stream().map(i -> -i).collect(Collectors.toList());
         fileIds.addAll(negatedFileIds);
-        Bson query = elemMatch(DocumentToVariantConverter.STUDIES_FIELD,
-                and(
-                        eq(STUDYID_FIELD, studyId),
-                        in(FILES_FIELD + '.' + FILEID_FIELD, fileIds)
-                )
-        );
+
+        Bson query;
+        // If default genotype is not the unknown genotype, we must iterate over all the documents in the study
+        if (!sc.getAttributes().getString(DEFAULT_GENOTYPE.key()).equals(DocumentToSamplesConverter.UNKNOWN_GENOTYPE)) {
+            query = eq(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, studyId);
+        } else {
+            query = elemMatch(DocumentToVariantConverter.STUDIES_FIELD,
+                    and(
+                            eq(STUDYID_FIELD, studyId),
+                            in(FILES_FIELD + '.' + FILEID_FIELD, fileIds)
+                    )
+            );
+        }
 
         List<Bson> updates = new ArrayList<>();
         updates.add(
