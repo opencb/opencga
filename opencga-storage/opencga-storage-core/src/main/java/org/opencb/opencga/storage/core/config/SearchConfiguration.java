@@ -8,8 +8,6 @@ public class SearchConfiguration {
 
     private String host;
     private String mode;
-    @Deprecated
-    private String collection;
     private String user;
     private String password;
     private boolean active;
@@ -43,7 +41,6 @@ public class SearchConfiguration {
         final StringBuilder sb = new StringBuilder("SearchConfiguration{");
         sb.append("host='").append(host).append('\'');
         sb.append(", mode='").append(mode).append('\'');
-        sb.append(", collection='").append(collection).append('\'');
         sb.append(", user='").append(user).append('\'');
         sb.append(", password='").append(password).append('\'');
         sb.append(", active=").append(active);
@@ -68,17 +65,6 @@ public class SearchConfiguration {
 
     public SearchConfiguration setMode(String mode) {
         this.mode = mode;
-        return this;
-    }
-
-    @Deprecated
-    public String getCollection() {
-        return collection;
-    }
-
-    @Deprecated
-    public SearchConfiguration setCollection(String collection) {
-        this.collection = collection;
         return this;
     }
 

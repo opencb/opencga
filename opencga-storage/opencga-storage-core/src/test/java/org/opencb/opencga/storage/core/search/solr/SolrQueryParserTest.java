@@ -19,6 +19,7 @@ public class SolrQueryParserTest {
     public String host = "http://bioinfo.hpc.cam.ac.uk/solr/"; //hgvav1_hgvauser_reference_grch37/select?facet=on&fq=chromosome:22&indent=on&q=*:*&rows=0&wt=json&facet.field=studies&facet.field=type
 
     //public String collection = "test1";
+    public String mode = "cloud";
     public String collection = "hgvav1_hgvauser_reference_grch37";
 
     public String study = collection;
@@ -31,7 +32,7 @@ public class SolrQueryParserTest {
         int timeout = 30000;
         int rows = 10;
         StorageConfiguration config = new StorageConfiguration();
-        config.setSearch(new SearchConfiguration(host, collection, user, password, active, timeout, rows));
+        config.setSearch(new SearchConfiguration(host, mode, user, password, active, timeout, rows));
         VariantSearchManager searchManager = new VariantSearchManager(null, null, config);
         try {
             SolrVariantIterator iterator = searchManager.iterator(collection, query, queryOptions);

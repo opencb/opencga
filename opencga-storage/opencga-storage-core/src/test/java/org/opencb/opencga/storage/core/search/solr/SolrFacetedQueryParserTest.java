@@ -18,6 +18,7 @@ public class SolrFacetedQueryParserTest {
     public String host = "http://bioinfo.hpc.cam.ac.uk/solr/"; //hgvav1_hgvauser_reference_grch37/select?facet=on&fq=chromosome:22&indent=on&q=*:*&rows=0&wt=json&facet.field=studies&facet.field=type
 
     //public String collection = "test1";
+    public String mode = "cloud";
     public String collection = "hgvav1_hgvauser_reference_grch37";
 
     public String study = collection;
@@ -29,7 +30,7 @@ public class SolrFacetedQueryParserTest {
         int timeout = 300 * 1000; // SearchConfiguration.DEFAULT_TIMEOUT;
         int rows = 0;
         StorageConfiguration config = new StorageConfiguration();
-        config.setSearch(new SearchConfiguration(host, collection, user, password, active, timeout, rows));
+        config.setSearch(new SearchConfiguration(host, mode, user, password, active, timeout, rows));
         VariantSearchManager searchManager = new VariantSearchManager(null, null, config);
         try {
             queryOptions.put(QueryOptions.LIMIT, rows);
