@@ -7,7 +7,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.config.SearchConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.search.VariantSearchManager;
+import org.opencb.opencga.storage.core.search.VariantIterator;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
@@ -35,7 +35,7 @@ public class SolrQueryParserTest {
         config.setSearch(new SearchConfiguration(host, mode, user, password, active, timeout, rows));
         VariantSearchManager searchManager = new VariantSearchManager(null, null, config);
         try {
-            SolrVariantIterator iterator = searchManager.iterator(collection, query, queryOptions);
+            VariantIterator iterator = searchManager.iterator(collection, query, queryOptions);
             System.out.println("Num. found = " + iterator.getNumFound());
             while (iterator.hasNext()) {
                 Variant variant = iterator.next();

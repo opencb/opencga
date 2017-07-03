@@ -1,4 +1,20 @@
-package org.opencb.opencga.storage.core.search;
+/*
+ * Copyright 2015-2016 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.opencb.opencga.storage.core.search.solr;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -27,9 +43,10 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.search.solr.SolrQueryParser;
-import org.opencb.opencga.storage.core.search.solr.SolrVariantIterator;
-import org.opencb.opencga.storage.core.search.solr.SolrVariantSearchIterator;
+import org.opencb.opencga.storage.core.search.VariantIterator;
+import org.opencb.opencga.storage.core.search.VariantSearchIterator;
+import org.opencb.opencga.storage.core.search.VariantSearchModel;
+import org.opencb.opencga.storage.core.search.VariantSearchToVariantConverter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -300,7 +317,7 @@ public class VariantSearchManager {
         // we don't initialize here the collection, the iterator does
         StopWatch stopWatch = StopWatch.createStarted();
         List<Variant> results = new ArrayList<>();
-        SolrVariantIterator iterator = iterator(collection, query, queryOptions);
+        VariantIterator iterator = iterator(collection, query, queryOptions);
         while (iterator.hasNext()) {
             results.add(iterator.next());
         }
@@ -323,7 +340,7 @@ public class VariantSearchManager {
             VariantSearchException {
         // we don't initialize here the collection, the iterator does
         List<VariantSearchModel> results = new ArrayList<>();
-        SolrVariantSearchIterator iterator = nativeIterator(collection, query, queryOptions);
+        VariantSearchIterator iterator = nativeIterator(collection, query, queryOptions);
         while (iterator.hasNext()) {
             results.add(iterator.next());
         }
@@ -341,7 +358,7 @@ public class VariantSearchManager {
      * @throws IOException          IOException
      * @throws VariantSearchException  VariantSearchException
      */
-    public SolrVariantIterator iterator(String collection, Query query, QueryOptions queryOptions) throws VariantSearchException,
+    public VariantIterator iterator(String collection, Query query, QueryOptions queryOptions) throws VariantSearchException,
             IOException {
         // init collection if needed
         init(collection);
@@ -350,7 +367,7 @@ public class VariantSearchManager {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
             //System.out.println(solrQuery);
             QueryResponse response = solrClient.query(solrQuery);
-            SolrVariantIterator iterator = new SolrVariantIterator((response.getBeans(VariantSearchModel.class).iterator()));
+            VariantIterator iterator = new VariantIterator((response.getBeans(VariantSearchModel.class).iterator()));
             iterator.setNumFound(response.getResults().getNumFound());
             return iterator;
         } catch (SolrServerException e) {
@@ -370,7 +387,7 @@ public class VariantSearchManager {
      * @throws IOException          IOException
      * @throws VariantSearchException  VariantSearchException
      */
-    public SolrVariantSearchIterator nativeIterator(String collection, Query query, QueryOptions queryOptions)
+    public VariantSearchIterator nativeIterator(String collection, Query query, QueryOptions queryOptions)
             throws VariantSearchException, IOException {
         // init collection if needed
         init(collection);
@@ -378,7 +395,7 @@ public class VariantSearchManager {
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
             QueryResponse response = solrClient.query(solrQuery);
-            return new SolrVariantSearchIterator(response.getBeans(VariantSearchModel.class).iterator());
+            return new VariantSearchIterator(response.getBeans(VariantSearchModel.class).iterator());
         } catch (SolrServerException e) {
             throw new VariantSearchException(e.getMessage(), e);
         }

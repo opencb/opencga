@@ -21,7 +21,26 @@ import java.util.Iterator;
 /**
  * Created by wasim on 14/11/16.
  */
-public abstract class VariantSearchIterator implements Iterator<VariantSearchModel>, AutoCloseable {
+public class VariantSearchIterator implements Iterator<VariantSearchModel>, AutoCloseable {
 
+    private Iterator<VariantSearchModel> solrIterator;
+
+    public VariantSearchIterator(Iterator<VariantSearchModel> solrIterator) {
+        this.solrIterator = solrIterator;
+    }
+
+    @Override
+    public boolean hasNext() {
+        return solrIterator.hasNext();
+    }
+
+    @Override
+    public VariantSearchModel next() {
+        return solrIterator.next();
+    }
+
+    @Override
+    public void close() throws Exception {
+    }
 
 }
