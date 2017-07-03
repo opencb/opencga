@@ -20,7 +20,7 @@ public class SearchConfiguration {
     private static final String DEFAULT_USER = "";
     private static final boolean DEFAULT_ACTIVE = true;
     private static final int DEFAULT_TIMEOUT = 30000;
-    private static final int DEFAULT_ROWS = 100000;
+    private static final int DEFAULT_ROWS = 10000;
 
     public SearchConfiguration() {
         this(DEFAULT_HOST, DEFAULT_MODE, DEFAULT_USER, DEFAULT_PASSWORD, DEFAULT_ACTIVE, DEFAULT_TIMEOUT, DEFAULT_ROWS);

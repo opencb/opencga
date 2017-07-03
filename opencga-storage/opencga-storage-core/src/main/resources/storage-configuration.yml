@@ -47,7 +47,7 @@ search:
   collection: ""
   user: ""
   password: ""
-  rows: 100000
+  rows: 10000
 
 benchmark:
   storageEngine: "mongodb"

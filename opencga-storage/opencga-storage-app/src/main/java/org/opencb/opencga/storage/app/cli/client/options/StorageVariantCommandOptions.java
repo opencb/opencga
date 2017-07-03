@@ -654,11 +654,11 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--solr-config"}, description = "Solr configuration name.", arity = 1)
         public String solrConfig;
 
-        @Parameter(names = {"--solr-num-shards"}, description = "Number of Solr collection shards (only for a Solr cluster mode).", arity = 1)
-        public int numShards = 2;
-
-        @Parameter(names = {"--solr-num-replicas"}, description = "Number of Solr collection replicas (only for a Solr cluster mode).", arity = 1)
-        public int numReplicas = 2;
+//        @Parameter(names = {"--solr-num-shards"}, description = "Number of Solr collection shards (only for a Solr cluster mode).", arity = 1)
+//        public int numShards = 2;
+//
+//        @Parameter(names = {"--solr-num-replicas"}, description = "Number of Solr collection replicas (only for a Solr cluster mode).", arity = 1)
+//        public int numReplicas = 2;
 
         @Parameter(names = {"-d", "--database"}, description = "Name of the target core ore collection.", arity = 1)
         public String dbName;

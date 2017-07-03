@@ -83,9 +83,7 @@ public class VariantSearchManagerTest extends GenericTest {
         try {
             String collectionName = "collection888";
             String configName = "myConfSet";
-            int numShards = 2;
-            int numReplicas = 2;
-            variantSearchManager.createCollection(collectionName, configName, numShards, numReplicas);
+            variantSearchManager.createCollection(collectionName, configName);
         } catch (Exception e) {
             e.printStackTrace();
         }

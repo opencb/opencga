@@ -634,8 +634,7 @@ public class VariantCommandExecutor extends CommandExecutor {
                     if (variantSearchManager.existCollection(dbName)) {
                         throw new IllegalArgumentException("Collection '" + dbName + "' already exists");
                     }
-                    variantSearchManager.createCollection(searchOptions.dbName, searchOptions.solrConfig,
-                            searchOptions.numShards, searchOptions.numReplicas);
+                    variantSearchManager.createCollection(searchOptions.dbName, searchOptions.solrConfig);
                     break;
                 }
                 default: {
