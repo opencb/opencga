@@ -40,11 +40,13 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
+import org.opencb.opencga.storage.core.variant.solr.SolrExternalResource;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,8 +60,8 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 /**
@@ -93,6 +95,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     private String het;
     private String het1;
     private String het2;
+
+    @Rule
+    public SolrExternalResource solr = new SolrExternalResource();
 
     @BeforeClass
     public static void beforeClass() throws IOException {
@@ -216,6 +221,23 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     protected ObjectMap getOtherParams() {
         return new ObjectMap();
+    }
+
+    @Test
+    public void testSummary() throws Exception {
+        solr.configure(variantStorageEngine);
+
+        variantStorageEngine.searchIndex();
+
+        VariantQueryResult<Variant> result = variantStorageEngine.get(new Query(),
+                new QueryOptions(VariantSearchManager.SUMMARY, true)
+                        .append(QueryOptions.LIMIT, 2000));
+        assertEquals(allVariants.getResult().size(), result.getResult().size());
+//        variantSearchManager.load(COLLECTION, dbAdaptor.iterator());
+//        SolrVariantIterator iterator = variantSearchManager.iterator(COLLECTION, new Query(), new QueryOptions(QueryOptions.LIMIT, 1000));
+//        System.out.println("iterator.getNumFound() = " + iterator.getNumFound());
+//        iterator.forEachRemaining(variant -> System.out.println("variant.toJson() = " + variant.toJson()));
+
     }
 
     @Test

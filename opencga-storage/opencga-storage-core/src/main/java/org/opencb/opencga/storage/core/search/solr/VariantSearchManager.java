@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.client.solrj.response.*;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
@@ -66,6 +67,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class VariantSearchManager {
 
+    public static final String CONF_SET = "OpenCGAConfSet";
     private SolrClient solrClient;
     private StorageConfiguration storageConfiguration;
     private VariantSearchToVariantConverter variantSearchToVariantConverter;
@@ -119,8 +121,8 @@ public class VariantSearchManager {
     public boolean isAlive() throws IOException {
         try {
             return solrClient.ping().getResponse().get("status").equals("OK");
-        } catch (SolrServerException e) {
-            e.printStackTrace();
+        } catch (SolrException | SolrServerException e) {
+            logger.trace("Failed isAlive", e);
         }
         return false;
     }
@@ -134,6 +136,26 @@ public class VariantSearchManager {
             return solrClient.ping().getResponse().get("status").equals("OK");
         } catch (SolrServerException | IOException e) {
             return false;
+        }
+    }
+
+    public void createIfNotExists(String collection) throws VariantSearchException {
+        if (storageConfiguration.getSearch().getMode().equalsIgnoreCase("cloud")) {
+            if (!existCollection(collection)) {
+                // by default: config=OpenCGAConfSet, shards=1, replicas=1
+                logger.info("Creating Solr collection " + collection);
+                createCollection(collection, CONF_SET);
+            } else {
+                logger.info("Solr collection '" + collection + "' exists.");
+            }
+        } else {
+            if (!existCore(collection)) {
+                // by default: config=OpenCGAConfSet, shards=1, replicas=1
+                logger.info("Creating Solr core " + collection);
+                createCore(collection, CONF_SET);
+            } else {
+                logger.info("Solr core '" + collection + "' exists.");
+            }
         }
     }
 

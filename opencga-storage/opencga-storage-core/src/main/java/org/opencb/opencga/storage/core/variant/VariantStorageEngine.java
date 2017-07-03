@@ -427,21 +427,18 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         VariantDBAdaptor dbAdaptor = getDBAdaptor();
         StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager();
 
-        if (configuration.getSearch().getActive() && getVariantSearchManager().isAlive(dbName)) {
-            // first, create the collection it it does not exist
-            if (!getVariantSearchManager().existCollection(dbName)) {
-                // by default: config=OpenCGAConfSet, shards=1, replicas=1
-                logger.info("Creating Solr collection " + dbName);
-                getVariantSearchManager().createCollection(dbName, "OpenCGAConfSet");
-            } else {
-                logger.info("Solr collection '" + dbName + "' exists.");
-            }
+        VariantSearchManager variantSearchManager = getVariantSearchManager();
+        // first, create the collection it it does not exist
+        variantSearchManager.createIfNotExists(dbName);
+        if (configuration.getSearch().getActive() && variantSearchManager.isAlive(dbName)) {
 
             // then, load variants
             queryOptions = new QueryOptions();
             queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES_DATA, VariantField.STUDIES_FILES));
             VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
-            getVariantSearchManager().load(dbName, iterator);
+            variantSearchManager.load(dbName, iterator);
+        } else {
+            throw new StorageEngineException("Solr is not alive!");
         }
         dbAdaptor.close();
     }
@@ -500,7 +497,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return new StudyConfigurationManager(new FileStudyConfigurationAdaptor());
     }
 
-    protected VariantSearchManager getVariantSearchManager() throws StorageEngineException {
+    public VariantSearchManager getVariantSearchManager() throws StorageEngineException {
         if (variantSearchManager.get() == null) {
             synchronized (variantSearchManager) {
                 if (variantSearchManager.get() == null) {
