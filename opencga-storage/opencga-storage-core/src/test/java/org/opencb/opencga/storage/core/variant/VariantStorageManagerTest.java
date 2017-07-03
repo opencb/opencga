@@ -741,7 +741,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         runDefaultETL(getResourceUri("1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
                 variantStorageEngine, studyConfiguration2, options.append(VariantStorageEngine.Options.FILE_ID.key(), 5));
 
-        variantStorageEngine.dropFile(studyConfiguration1.getStudyName(), 2);
+        variantStorageEngine.removeFile(studyConfiguration1.getStudyName(), 2);
 
         for (Variant variant : variantStorageEngine.getDBAdaptor()) {
             assertFalse(variant.getStudies().isEmpty());

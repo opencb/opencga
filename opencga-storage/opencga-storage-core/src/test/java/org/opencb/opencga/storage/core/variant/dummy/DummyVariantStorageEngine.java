@@ -69,12 +69,12 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public void dropFile(String study, int fileId) throws StorageEngineException {
+    public void removeFile(String study, int fileId) throws StorageEngineException {
 
     }
 
     @Override
-    public void dropStudy(String studyName) throws StorageEngineException {
+    public void removeStudy(String studyName) throws StorageEngineException {
 
     }
 

@@ -57,9 +57,9 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements M
     }
 
     @Test
-    public void deleteStudyTest() throws Exception {
+    public void removeStudyTest() throws Exception {
         fileIndexed = false;
-        ((VariantMongoDBAdaptor) dbAdaptor).deleteStudy(studyConfiguration.getStudyName(), new QueryOptions("purge", false));
+        ((VariantMongoDBAdaptor) dbAdaptor).removeStudy(studyConfiguration.getStudyName(), new QueryOptions("purge", false));
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
                 assertFalse(entry.getValue().getStudyId().equals(studyConfiguration.getStudyId() + ""));
@@ -70,9 +70,9 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements M
     }
 
     @Test
-    public void deleteAndPurgeStudyTest() throws Exception {
+    public void removeAndPurgeStudyTest() throws Exception {
         fileIndexed = false;
-        ((VariantMongoDBAdaptor) dbAdaptor).deleteStudy(studyConfiguration.getStudyName(), new QueryOptions("purge", true));
+        ((VariantMongoDBAdaptor) dbAdaptor).removeStudy(studyConfiguration.getStudyName(), new QueryOptions("purge", true));
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
                 assertFalse(entry.getValue().getStudyId().equals(studyConfiguration.getStudyId() + ""));
@@ -83,10 +83,10 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements M
     }
 
     @Test
-    public void deleteStatsTest() throws Exception {
+    public void removeStatsTest() throws Exception {
         fileIndexed = false;
         String deletedCohort = "cohort2";
-        ((VariantMongoDBAdaptor) dbAdaptor).deleteStats(studyConfiguration.getStudyName(), deletedCohort, new QueryOptions());
+        ((VariantMongoDBAdaptor) dbAdaptor).removeStats(studyConfiguration.getStudyName(), deletedCohort, new QueryOptions());
 
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
@@ -99,7 +99,7 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements M
     }
 
     @Test
-    public void deleteAnnotationTest() throws Exception {
+    public void removeAnnotationTest() throws Exception {
         fileIndexed = false;
         Query query = new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), true);
         query.put(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId());
@@ -110,7 +110,7 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements M
         query = new Query(VariantQueryParam.CHROMOSOME.key(), "1");
         query.put(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId());
         long numVariantsChr1 = dbAdaptor.count(query).first();
-        ((VariantMongoDBAdaptor) dbAdaptor).deleteAnnotation("", new Query(VariantQueryParam.CHROMOSOME.key(), "1"), new QueryOptions());
+        ((VariantMongoDBAdaptor) dbAdaptor).removeAnnotation("", new Query(VariantQueryParam.CHROMOSOME.key(), "1"), new QueryOptions());
 
         query = new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
         query.put(VariantQueryParam.STUDIES.key(), studyConfiguration.getStudyId());

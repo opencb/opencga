@@ -39,7 +39,7 @@ import static org.junit.Assert.*;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
-public class VariantTableDeleteTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
+public class VariantTableRemoveTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
@@ -61,7 +61,7 @@ public class VariantTableDeleteTest extends VariantStorageBaseTest implements Ha
     }
 
     @Test
-    public void dropFileTest() throws Exception {
+    public void removeFileTest() throws Exception {
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         System.out.println("studyConfiguration = " + studyConfiguration);
         String studyName = studyConfiguration.getStudyName();
@@ -102,7 +102,7 @@ public class VariantTableDeleteTest extends VariantStorageBaseTest implements Ha
     }
 
     @Test
-    public void dropSingleFileTest() throws Exception {
+    public void removeSingleFileTest() throws Exception {
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         System.out.println("studyConfiguration = " + studyConfiguration);
         String studyName = studyConfiguration.getStudyName();

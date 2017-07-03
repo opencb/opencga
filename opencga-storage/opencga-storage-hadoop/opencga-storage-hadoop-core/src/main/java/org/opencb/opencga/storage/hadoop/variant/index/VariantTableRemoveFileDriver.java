@@ -32,16 +32,16 @@ import java.util.List;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
-public class VariantTableDeletionDriver extends AbstractAnalysisTableDriver {
+public class VariantTableRemoveFileDriver extends AbstractAnalysisTableDriver {
 
     public static final String JOB_OPERATION_NAME = "Delete";
-    protected final Logger logger = LoggerFactory.getLogger(VariantTableDeletionDriver.class);
+    protected final Logger logger = LoggerFactory.getLogger(VariantTableRemoveFileDriver.class);
 
-    public VariantTableDeletionDriver() {
+    public VariantTableRemoveFileDriver() {
         super();
     }
 
-    public VariantTableDeletionDriver(Configuration conf) {
+    public VariantTableRemoveFileDriver(Configuration conf) {
         super(conf);
     }
 
@@ -73,7 +73,7 @@ public class VariantTableDeletionDriver extends AbstractAnalysisTableDriver {
 
     public static void main(String[] args) throws Exception {
         try {
-            System.exit(new VariantTableDeletionDriver().privateMain(args));
+            System.exit(new VariantTableRemoveFileDriver().privateMain(args));
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);

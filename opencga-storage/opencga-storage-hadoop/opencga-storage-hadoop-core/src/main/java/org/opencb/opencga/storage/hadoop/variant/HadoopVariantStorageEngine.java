@@ -59,7 +59,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.annotation.HadoopDefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.variant.executors.ExternalMRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableRemoveFileDriver;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.slf4j.Logger;
@@ -384,7 +384,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public void dropFile(String study, int fileId) throws StorageEngineException {
+    public void removeFile(String study, int fileId) throws StorageEngineException {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         // Use ETL as helper class
         AbstractHadoopVariantStoragePipeline etl = newStoragePipeline(true);
@@ -401,14 +401,14 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             boolean resume = options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue())
                     || options.getBoolean(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_RESUME, false);
             BatchFileOperation operation =
-                    etl.addBatchOperation(sc, VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList, resume,
+                    etl.addBatchOperation(sc, VariantTableRemoveFileDriver.JOB_OPERATION_NAME, fileList, resume,
                             BatchFileOperation.Type.REMOVE);
             options.put(AbstractAnalysisTableDriver.TIMESTAMP, operation.getTimestamp());
             return sc;
         });
 
         // Delete
-        Thread hook = etl.newShutdownHook(VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList);
+        Thread hook = etl.newShutdownHook(VariantTableRemoveFileDriver.JOB_OPERATION_NAME, fileList);
         try {
             Runtime.getRuntime().addShutdownHook(hook);
 
@@ -417,8 +417,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
             String jar = AbstractHadoopVariantStoragePipeline.getJarWithDependencies(options);
 
-            Class execClass = VariantTableDeletionDriver.class;
-            String args = VariantTableDeletionDriver.buildCommandLineArgs(variantsTable.toString(), archiveTable,
+            Class execClass = VariantTableRemoveFileDriver.class;
+            String args = VariantTableRemoveFileDriver.buildCommandLineArgs(variantsTable.toString(), archiveTable,
                     variantsTable.getTable(), studyId, fileList, options);
             String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
 
@@ -439,14 +439,14 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             // If everything went fine, remove file column from Archive table and from studyconfig
             scm.lockAndUpdate(studyId, sc -> {
                 scm.setStatus(sc, BatchFileOperation.Status.READY,
-                        VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList);
+                        VariantTableRemoveFileDriver.JOB_OPERATION_NAME, fileList);
                 sc.getIndexedFiles().remove(fileId);
                 return sc;
             });
 
         } catch (Exception e) {
             scm.atomicSetStatus(studyId, BatchFileOperation.Status.ERROR,
-                    VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList);
+                    VariantTableRemoveFileDriver.JOB_OPERATION_NAME, fileList);
             throw e;
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
@@ -454,7 +454,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public void dropStudy(String studyName) throws StorageEngineException {
+    public void removeStudy(String studyName) throws StorageEngineException {
         throw new UnsupportedOperationException("Unimplemented");
     }
 
