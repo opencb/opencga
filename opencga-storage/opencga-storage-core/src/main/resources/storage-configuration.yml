@@ -40,11 +40,11 @@ cache:
   maxResultSize: 5000
   password: ""
 
-## Search Configuration
+## Solr Search Configuration
 search:
   host: ${OPENCGA.STORAGE.SEARCH.HOST}
   timeout: ${OPENCGA.STORAGE.SEARCH.TIMEOUT}
-  collection: "variants"
+  collection: ""
   user: ""
   password: ""
   rows: 100000

@@ -28,7 +28,7 @@ public class SolrQueryParserTest {
         String user = "";
         String password = "";
         boolean active = true;
-        int timeout = SearchConfiguration.DEFAULT_TIMEOUT;
+        int timeout = 30000;
         int rows = 10;
         StorageConfiguration config = new StorageConfiguration();
         config.setSearch(new SearchConfiguration(host, collection, user, password, active, timeout, rows));

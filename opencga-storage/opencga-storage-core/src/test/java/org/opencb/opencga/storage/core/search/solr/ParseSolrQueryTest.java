@@ -27,7 +27,7 @@ public class ParseSolrQueryTest {
         boolean active = true;
         int rows = 10;
         StorageConfiguration config = new StorageConfiguration();
-        config.setSearch(new SearchConfiguration(host, collection, user, password, active, SearchConfiguration.DEFAULT_TIMEOUT, rows));
+        config.setSearch(new SearchConfiguration(host, collection, user, password, active, 30000, rows));
         VariantSearchManager searchManager = new VariantSearchManager(null, null, config);
         try {
             SolrVariantIterator iterator = searchManager.iterator(collection, query, queryOptions);

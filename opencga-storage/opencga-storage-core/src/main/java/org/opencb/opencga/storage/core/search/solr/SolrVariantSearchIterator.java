@@ -17,14 +17,13 @@
 package org.opencb.opencga.storage.core.search.solr;
 
 import org.opencb.opencga.storage.core.search.VariantSearchModel;
-import org.opencb.opencga.storage.core.search.VariantSearchIterator;
 
 import java.util.Iterator;
 
 /**
  * Created by wasim on 14/11/16.
  */
-public class SolrVariantSearchIterator extends VariantSearchIterator {
+public class SolrVariantSearchIterator implements Iterator<VariantSearchModel>, AutoCloseable {
 
     private Iterator<VariantSearchModel> solrIterator;
 
