@@ -43,8 +43,8 @@ cache:
 ## Solr Search Configuration
 search:
   host: ${OPENCGA.STORAGE.SEARCH.HOST}
+  mode: "cloud"
   timeout: ${OPENCGA.STORAGE.SEARCH.TIMEOUT}
-  collection: ""
   user: ""
   password: ""
   rows: 10000
