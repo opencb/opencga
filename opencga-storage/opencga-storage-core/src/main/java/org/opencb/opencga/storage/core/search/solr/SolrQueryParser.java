@@ -69,7 +69,8 @@ public class SolrQueryParser {
         // QueryOptions processing
         //-------------------------------------
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
-            solrQuery.setFields(queryOptions.getAsStringList(QueryOptions.INCLUDE).toString());
+            List<String> includes = queryOptions.getAsStringList(QueryOptions.INCLUDE);
+            solrQuery.setFields(includes.toArray(new String[includes.size()]));
         }
 
         if (queryOptions.containsKey(QueryOptions.LIMIT)) {

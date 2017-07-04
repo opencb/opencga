@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.log4j.Level;
@@ -37,6 +38,8 @@ import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.search.VariantSearchIterator;
+import org.opencb.opencga.storage.core.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -402,16 +405,8 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         if (options == null) {
             options = QueryOptions.empty();
         }
-        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
         // TODO: Use CacheManager ?
-        if (options.getBoolean(VariantSearchManager.SUMMARY)
-                || !query.containsKey(VariantQueryParam.FILES.key())
-                && !query.containsKey(VariantQueryParam.FILTER.key())
-                && !query.containsKey(VariantQueryParam.GENOTYPE.key())
-                && !query.containsKey(VariantQueryParam.SAMPLES.key())
-                && !returnedFields.contains(VariantField.STUDIES_FILES)
-                && !returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)
-                && searchActiveAndAlive()) {
+        if (isQueryCovered(query) && isIncludeCovered(options) && searchActiveAndAlive()) {
             try {
                 return getVariantSearchManager().query(dbName, query, options);
             } catch (IOException | VariantSearchException e) {
@@ -422,21 +417,27 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
             query = parseQuery(query, studyConfigurationManager);
             setDefaultTimeout(options);
-            return dbAdaptor.get(query, options);
+            List<VariantQueryParam> coveredParams = coveredParams(query);
+            if (coveredParams.size() >= 3) {
+                // Intersect Solr+MongoDB
+                Iterator<?> variantsIterator = variantIdIteratorFromSearch(query);
+                Query underlyingQuery = new Query(query);
+                coveredParams.forEach(key -> underlyingQuery.remove(key.key()));
+
+//            setDefaultTimeout(options);
+                return dbAdaptor.get(variantsIterator, underlyingQuery, options);
+            } else {
+                return dbAdaptor.get(query, options);
+            }
         }
     }
 
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) throws StorageEngineException {
-        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
-        if (options.getBoolean(VariantSearchManager.SUMMARY)
-                || !query.containsKey(VariantQueryParam.FILES.key())
-                && !query.containsKey(VariantQueryParam.FILTER.key())
-                && !query.containsKey(VariantQueryParam.GENOTYPE.key())
-                && !query.containsKey(VariantQueryParam.SAMPLES.key())
-                && !returnedFields.contains(VariantField.STUDIES_FILES)
-                && !returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)
-                && searchActiveAndAlive()) {
+        if (options == null) {
+            options = QueryOptions.empty();
+        }
+        if (isQueryCovered(query) && isIncludeCovered(options) && searchActiveAndAlive()) {
             try {
                 return getVariantSearchManager().iterator(dbName, query, options);
             } catch (IOException | VariantSearchException e) {
@@ -446,18 +447,25 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             VariantMongoDBAdaptor dbAdaptor = getDBAdaptor();
             StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
             query = parseQuery(query, studyConfigurationManager);
+            List<VariantQueryParam> coveredParams = coveredParams(query);
+            if (coveredParams.size() >= 3) {
+                // Intersect Solr+MongoDB
+                Iterator<?> variantsIterator = variantIdIteratorFromSearch(query);
+                Query underlyingQuery = new Query(query);
+                coveredParams.forEach(key -> underlyingQuery.remove(key.key()));
+
 //            setDefaultTimeout(options);
-            return dbAdaptor.iterator(query, options);
+                return dbAdaptor.iterator(variantsIterator, underlyingQuery, options);
+            } else {
+//            setDefaultTimeout(options);
+                return dbAdaptor.iterator(query, options);
+            }
         }
     }
 
     @Override
     public QueryResult<Long> count(Query query) throws StorageEngineException {
-        if (query.containsKey(VariantQueryParam.FILES.key())
-                || query.containsKey(VariantQueryParam.FILTER.key())
-                || query.containsKey(VariantQueryParam.GENOTYPE.key())
-                || query.containsKey(VariantQueryParam.SAMPLES.key())
-                || !searchActiveAndAlive()) {
+        if (isQueryCovered(query) || !searchActiveAndAlive()) {
             VariantMongoDBAdaptor dbAdaptor = getDBAdaptor();
             StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
             query = parseQuery(query, studyConfigurationManager);
@@ -472,6 +480,50 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                 throw Throwables.propagate(e);
             }
         }
+    }
+
+    private Iterator<String> variantIdIteratorFromSearch(Query query) throws StorageEngineException {
+        Iterator<String> variantsIterator;
+        try {
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.LIMIT, Integer.MAX_VALUE) // No limit
+                    .append(QueryOptions.INCLUDE, VariantField.ID.fieldName());
+            VariantSearchIterator nativeIterator = getVariantSearchManager().nativeIterator(dbName, query, queryOptions);
+            variantsIterator = Iterators.transform(nativeIterator, VariantSearchModel::getId);
+        } catch (VariantSearchException | IOException e) {
+            throw Throwables.propagate(e);
+        }
+        return variantsIterator;
+    }
+
+    private boolean isQueryCovered(Query query) {
+        return !isValidParam(query, VariantQueryParam.FILES)
+                && !isValidParam(query, VariantQueryParam.FILTER)
+                && !isValidParam(query, VariantQueryParam.GENOTYPE)
+                && !isValidParam(query, VariantQueryParam.SAMPLES);
+    }
+
+    private List<VariantQueryParam> coveredParams(Query query) {
+        List<VariantQueryParam> coveredParams = new ArrayList<>();
+        HashSet<VariantQueryParam> nonCoveredParams = new HashSet<>(
+                Arrays.asList(VariantQueryParam.FILES,
+                        VariantQueryParam.FILTER,
+                        VariantQueryParam.GENOTYPE,
+                        VariantQueryParam.SAMPLES));
+
+        for (VariantQueryParam queryParam : VariantQueryParam.values()) {
+            if (isValidParam(query, queryParam)) {
+                if (!nonCoveredParams.contains(queryParam)) {
+                    coveredParams.add(queryParam);
+                }
+            }
+        }
+        return coveredParams;
+    }
+
+    private boolean isIncludeCovered(QueryOptions options) {
+        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
+        return options.getBoolean(VariantSearchManager.SUMMARY)
+                || (!returnedFields.contains(VariantField.STUDIES_FILES) && !returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA));
     }
 
     public Query parseQuery(Query originalQuery, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {

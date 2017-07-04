@@ -233,6 +233,16 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                 new QueryOptions(VariantSearchManager.SUMMARY, true)
                         .append(QueryOptions.LIMIT, 2000));
         assertEquals(allVariants.getResult().size(), result.getResult().size());
+
+        Query query = new Query(ANNOT_CONSEQUENCE_TYPE.key(), 1631)
+                .append(ANNOT_CONSERVATION.key(), "gerp>1")
+                .append(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift>0.01");
+        VariantDBIterator iterator = variantStorageEngine.iterator(query, new QueryOptions());
+        QueryResult<Variant> queryResult = iterator.toQueryResult();
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        for (Variant variant : queryResult.getResult()) {
+            System.out.println("variant = " + variant);
+        }
 //        variantSearchManager.load(COLLECTION, dbAdaptor.iterator());
 //        SolrVariantIterator iterator = variantSearchManager.iterator(COLLECTION, new Query(), new QueryOptions(QueryOptions.LIMIT, 1000));
 //        System.out.println("iterator.getNumFound() = " + iterator.getNumFound());
