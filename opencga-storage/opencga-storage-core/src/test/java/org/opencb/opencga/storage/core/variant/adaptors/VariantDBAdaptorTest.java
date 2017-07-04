@@ -241,6 +241,19 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
+    public void multiIterator() throws Exception {
+        List<String> variantsToQuery = allVariants.getResult()
+                .stream()
+                .map(Variant::toString).limit(allVariants.getResult().size() / 2)
+                .collect(Collectors.toList());
+
+        VariantDBIterator iterator = dbAdaptor.iterator(variantsToQuery.iterator(), new Query(), new QueryOptions());
+
+        QueryResult<Variant> queryResult = iterator.toQueryResult();
+        assertEquals(variantsToQuery.size(), queryResult.getResult().size());
+    }
+
+    @Test
     public void testGetAllVariants() {
         long numResults = dbAdaptor.count(null).first();
         assertEquals(NUM_VARIANTS, numResults);
