@@ -28,8 +28,8 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
+import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.response.*;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
@@ -118,22 +118,11 @@ public class VariantSearchManager {
         ((HttpSolrClient)this.solrClient).setSoTimeout(storageConfiguration.getSearch().getTimeout());
     }
 
-    public boolean isAlive() throws IOException {
-        try {
-            return solrClient.ping().getResponse().get("status").equals("OK");
-        } catch (SolrException | SolrServerException e) {
-            logger.trace("Failed isAlive", e);
-        }
-        return false;
-    }
-
-    @Deprecated
     public boolean isAlive(String collection) {
         try {
-            // init collection
-//            init(collection);
-
-            return solrClient.ping().getResponse().get("status").equals("OK");
+            SolrPing solrPing = new SolrPing();
+            SolrPingResponse response = solrPing.process(solrClient, collection);
+            return response.getResponse().get("status").equals("OK");
         } catch (SolrServerException | IOException e) {
             return false;
         }
