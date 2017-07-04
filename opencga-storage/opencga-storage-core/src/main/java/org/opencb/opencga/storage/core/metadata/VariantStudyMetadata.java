@@ -190,12 +190,15 @@ public class VariantStudyMetadata {
 
 
     public static class VariantMetadataRecord {
-        private final String id;
-        private final VCFHeaderLineCount numberType;
-        private final Integer number;
-        private final VCFHeaderLineType type;
-        private final String description;
+        private String id;
+        private VCFHeaderLineCount numberType;
+        private Integer number;
+        private VCFHeaderLineType type;
+        private String description;
 //        private Map<String, String> other;
+
+        protected VariantMetadataRecord() {
+        }
 
         public VariantMetadataRecord(String id, VCFHeaderLineCount numberType, Integer number, VCFHeaderLineType type, String description) {
             this.id = id;
@@ -234,20 +237,45 @@ public class VariantStudyMetadata {
             return id;
         }
 
+        protected VariantMetadataRecord setId(String id) {
+            this.id = id;
+            return this;
+        }
+
         public VCFHeaderLineCount getNumberType() {
             return numberType;
+        }
+
+        protected VariantMetadataRecord setNumberType(VCFHeaderLineCount numberType) {
+            this.numberType = numberType;
+            return this;
         }
 
         public Integer getNumber() {
             return number;
         }
 
+        protected VariantMetadataRecord setNumber(Integer number) {
+            this.number = number;
+            return this;
+        }
+
         public VCFHeaderLineType getType() {
             return type;
         }
 
+        protected VariantMetadataRecord setType(VCFHeaderLineType type) {
+            this.type = type;
+            return this;
+        }
+
         public String getDescription() {
             return description;
+        }
+
+        protected VariantMetadataRecord setDescription(String description) {
+            this.description = description;
+            return this;
         }
 
         @Override
