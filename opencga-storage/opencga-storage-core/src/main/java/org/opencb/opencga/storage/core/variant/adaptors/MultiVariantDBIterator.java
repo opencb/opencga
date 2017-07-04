@@ -5,10 +5,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.BiFunction;
 
 /**
@@ -24,6 +21,13 @@ public class MultiVariantDBIterator extends VariantDBIterator {
     private final QueryOptions options;
     private final BiFunction<Query, QueryOptions, VariantDBIterator> iteratorFactory;
     private VariantDBIterator variantDBIterator;
+    // limit + skip
+    private final int maxResults;
+    private final int skip;
+    // Skip elements first time that hasNext or next is called.
+    private boolean pendingSkip;
+    // Current number of results
+    private int numResults;
 
     /**
      * Creates a multi iterator given a iterator of variants. It will apply the query (if any) to all the variants in the iterator.
@@ -38,33 +42,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
     public MultiVariantDBIterator(Iterator<?> variantsIterator, int batchSize,
                                   Query query, QueryOptions options,
                                   BiFunction<Query, QueryOptions, VariantDBIterator> iteratorFactory) {
-        Objects.requireNonNull(variantsIterator);
-        this.queryIterator = new Iterator<Query>() {
-            @Override
-            public boolean hasNext() {
-                return variantsIterator.hasNext();
-            }
-
-            @Override
-            public Query next() {
-                Query newQuery;
-                if (query == null) {
-                    newQuery = new Query();
-                } else {
-                    newQuery = new Query(query);
-                }
-                List<Object> variants = new ArrayList<>(batchSize);
-                do {
-                    // Always execute "next" over variantsIterator, to fail if empty
-                    variants.add(variantsIterator.next());
-                } while (variantsIterator.hasNext() && variants.size() < batchSize);
-                newQuery.append(VariantQueryParam.ID.key(), variants);
-                return newQuery;
-            }
-        };
-        this.options = options == null ? new QueryOptions() : options;
-        this.iteratorFactory = Objects.requireNonNull(iteratorFactory);
-        variantDBIterator = emptyIterator();
+        this(buildQueryIterator(variantsIterator, batchSize, query), options, iteratorFactory);
     }
 
     /**
@@ -75,14 +53,33 @@ public class MultiVariantDBIterator extends VariantDBIterator {
     public MultiVariantDBIterator(Iterator<Query> queryIterator, QueryOptions options,
                                   BiFunction<Query, QueryOptions, VariantDBIterator> iteratorFactory) {
         this.queryIterator = Objects.requireNonNull(queryIterator);
-        this.options = options == null ? new QueryOptions() : options;
+        this.options = options == null ? new QueryOptions() : new QueryOptions(options);
         this.iteratorFactory = Objects.requireNonNull(iteratorFactory);
         variantDBIterator = emptyIterator();
+
+        int limit = this.options.getInt(QueryOptions.LIMIT, 0);
+        skip = Math.max(0, this.options.getInt(QueryOptions.SKIP, 0));
+
+        if (limit <= 0) {
+            limit = Integer.MAX_VALUE;
+            maxResults = limit;
+        } else {
+            maxResults = limit + skip;
+        }
+
+        // Client side limit+skip. Remove from QueryOptions
+        this.options.remove(QueryOptions.LIMIT);
+        this.options.remove(QueryOptions.SKIP);
+
+        pendingSkip = true;
     }
 
     @Override
     public boolean hasNext() {
-        if (!variantDBIterator.hasNext()) {
+        init();
+        if (numResults >= maxResults) {
+            return false;
+        } else if (!variantDBIterator.hasNext()) {
             nextVariantIterator();
             return variantDBIterator.hasNext();
         } else {
@@ -110,6 +107,53 @@ public class MultiVariantDBIterator extends VariantDBIterator {
 
     @Override
     public Variant next() {
-        return variantDBIterator.next();
+        if (hasNext()) {
+            numResults++;
+            return variantDBIterator.next();
+        } else {
+            throw new NoSuchElementException();
+        }
     }
+
+    /**
+     * Client side skip.
+     */
+    private void init() {
+        if (pendingSkip) {
+            pendingSkip = false;
+            int skip = this.skip;
+            while (skip > 0 && hasNext()) {
+                next();
+                skip--;
+            }
+        }
+    }
+
+    private static Iterator<Query> buildQueryIterator(Iterator<?> variantsIterator, int batchSize, Query query) {
+        Objects.requireNonNull(variantsIterator);
+        return new Iterator<Query>() {
+            @Override
+            public boolean hasNext() {
+                return variantsIterator.hasNext();
+            }
+
+            @Override
+            public Query next() {
+                Query newQuery;
+                if (query == null) {
+                    newQuery = new Query();
+                } else {
+                    newQuery = new Query(query);
+                }
+                List<Object> variants = new ArrayList<>(batchSize);
+                do {
+                    // Always execute "next" over variantsIterator, to fail if empty
+                    variants.add(variantsIterator.next());
+                } while (variantsIterator.hasNext() && variants.size() < batchSize);
+                newQuery.append(VariantQueryParam.ID.key(), variants);
+                return newQuery;
+            }
+        };
+    }
+
 }

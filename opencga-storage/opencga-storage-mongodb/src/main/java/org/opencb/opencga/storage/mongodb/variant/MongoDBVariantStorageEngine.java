@@ -406,7 +406,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             options = QueryOptions.empty();
         }
         // TODO: Use CacheManager ?
-        if (isQueryCovered(query) && isIncludeCovered(options) && searchActiveAndAlive()) {
+        boolean queryCovered = isQueryCovered(query);
+        boolean includeCovered = isIncludeCovered(options);
+        if (queryCovered && includeCovered && searchActiveAndAlive()) {
             try {
                 return getVariantSearchManager().query(dbName, query, options);
             } catch (IOException | VariantSearchException e) {
@@ -418,9 +420,28 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             query = parseQuery(query, studyConfigurationManager);
             setDefaultTimeout(options);
             List<VariantQueryParam> coveredParams = coveredParams(query);
-            if (coveredParams.size() >= 3) {
+            if (searchActiveAndAlive() && (coveredParams.size() >= 3 || options.getBoolean("forceSearch", false))) {
                 // Intersect Solr+MongoDB
-                Iterator<?> variantsIterator = variantIdIteratorFromSearch(query);
+
+                int limit = options.getInt(QueryOptions.LIMIT, 0);
+                int skip = options.getInt(QueryOptions.SKIP, 0);
+
+                Iterator<?> variantsIterator;
+                if (skip > 0 || limit > 0) {
+                    if (queryCovered) {
+                        // We can use limit+skip directly in solr
+                        variantsIterator = variantIdIteratorFromSearch(query, limit, skip);
+                        // Remove limit and skip from Options
+                        options = new QueryOptions(options);
+                        options.remove(QueryOptions.LIMIT);
+                        options.remove(QueryOptions.SKIP);
+                    } else {
+                        // Can't limit+skip only from solr. Need to limit+skip also in client side
+                        variantsIterator = variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0);
+                    }
+                } else {
+                    variantsIterator = variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0);
+                }
                 Query underlyingQuery = new Query(query);
                 coveredParams.forEach(key -> underlyingQuery.remove(key.key()));
 
@@ -448,9 +469,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
             query = parseQuery(query, studyConfigurationManager);
             List<VariantQueryParam> coveredParams = coveredParams(query);
-            if (coveredParams.size() >= 3) {
+            if (searchActiveAndAlive() && (coveredParams.size() >= 3 || options.getBoolean("forceSearch", false))) {
                 // Intersect Solr+MongoDB
-                Iterator<?> variantsIterator = variantIdIteratorFromSearch(query);
+                Iterator<?> variantsIterator = variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0);
                 Query underlyingQuery = new Query(query);
                 coveredParams.forEach(key -> underlyingQuery.remove(key.key()));
 
@@ -482,10 +503,12 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         }
     }
 
-    private Iterator<String> variantIdIteratorFromSearch(Query query) throws StorageEngineException {
+    private Iterator<String> variantIdIteratorFromSearch(Query query, int limit, int skip) throws StorageEngineException {
         Iterator<String> variantsIterator;
         try {
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.LIMIT, Integer.MAX_VALUE) // No limit
+            QueryOptions queryOptions = new QueryOptions()
+                    .append(QueryOptions.LIMIT, limit)
+                    .append(QueryOptions.SKIP, skip)
                     .append(QueryOptions.INCLUDE, VariantField.ID.fieldName());
             VariantSearchIterator nativeIterator = getVariantSearchManager().nativeIterator(dbName, query, queryOptions);
             variantsIterator = Iterators.transform(nativeIterator, VariantSearchModel::getId);
