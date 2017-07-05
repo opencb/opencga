@@ -236,7 +236,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException  if there is an error creating the VariantExporter
      */
     protected VariantExporter newVariantExporter() throws StorageEngineException {
-        return new VariantExporter(getDBAdaptor());
+        return new VariantExporter(this);
     }
 
     /**

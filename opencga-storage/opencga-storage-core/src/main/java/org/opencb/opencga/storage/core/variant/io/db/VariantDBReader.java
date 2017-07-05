@@ -52,6 +52,10 @@ public class VariantDBReader implements VariantReader {
         this(null, variantDBAdaptor, query, options);
     }
 
+    public VariantDBReader(VariantDBIterator iterator) {
+        this.iterator = iterator;
+    }
+
     public VariantDBReader(StudyConfiguration studyConfiguration, VariantDBAdaptor variantDBAdaptor, Query query, QueryOptions options) {
         this.studyConfiguration = studyConfiguration;
         this.variantDBAdaptor = variantDBAdaptor;
@@ -96,6 +100,9 @@ public class VariantDBReader implements VariantReader {
 
     @Override
     public boolean open() {
+        if (iterator != null) {
+            return true;
+        }
         QueryOptions iteratorQueryOptions;
         if (options != null) { //Parse query options
             iteratorQueryOptions = new QueryOptions(options);
