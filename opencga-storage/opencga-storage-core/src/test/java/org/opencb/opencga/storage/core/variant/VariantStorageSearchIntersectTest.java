@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.variant;
 
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -14,6 +15,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -21,15 +23,15 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.solr.SolrExternalResource;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.hasItem;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
+import static org.opencb.opencga.storage.core.search.solr.VariantSearchManager.QUERY_INTERSECT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
@@ -151,7 +153,8 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
     public void testGetFromSearch() throws Exception {
         Query query = new Query(ANNOT_CONSEQUENCE_TYPE.key(), 1631)
                 .append(ANNOT_CONSERVATION.key(), "gerp>1")
-                .append(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift>0.01");
+                .append(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift>0.01")
+                .append(UNKNOWN_GENOTYPE.key(), "./.");
         VariantDBIterator iterator = variantStorageEngine.iterator(query, new QueryOptions());
         QueryResult<Variant> queryResult = iterator.toQueryResult();
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
@@ -173,68 +176,48 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 
     @Test
     public void testSkipLimit() throws Exception {
-        int expectedNumResults = allVariants.getNumResults();
-        int numResults = 0;
-        int batchSize = 100;
-
-        int numQueries = (int) Math.ceil(expectedNumResults / (float) batchSize);
-        for (int i = 0; i < numQueries; i++) {
-            QueryOptions options = new QueryOptions()
-                    .append(QueryOptions.SKIP, i * batchSize)
-                    .append(QueryOptions.LIMIT, batchSize)
-                    .append(VariantSearchManager.SUMMARY, true);
-            VariantQueryResult<Variant> result = variantStorageEngine.get(new Query(), options);
-            assertNotEquals(0, result.getNumResults());
-            numResults += result.getNumResults();
-        }
-        verify(solrClient, atLeast(numQueries)).query(anyString(), any());
-        assertEquals(expectedNumResults, numResults);
+        skipLimit(new Query(), new QueryOptions(VariantSearchManager.SUMMARY, true), 100);
     }
 
     @Test
     public void testSkipLimit_extraFields() throws Exception {
-        int expectedNumResults = allVariants.getNumResults();
-        int numResults = 0;
-        int batchSize = 100;
-
-        int numQueries = (int) Math.ceil(expectedNumResults / (float) batchSize);
-        for (int i = 0; i < numQueries; i++) {
-            QueryOptions options = new QueryOptions()
-                    .append(QueryOptions.SKIP, i * batchSize)
-                    .append(QueryOptions.LIMIT, batchSize)
-                    .append("forceSearch", true);
-            VariantQueryResult<Variant> result = variantStorageEngine.get(new Query(), options);
-            assertNotEquals(0, result.getNumResults());
-            numResults += result.getNumResults();
-        }
-        verify(solrClient, atLeast(numQueries)).query(anyString(), any());
-        assertEquals(expectedNumResults, numResults);
+        skipLimit(new Query(), new QueryOptions(QUERY_INTERSECT, true), 100);
     }
 
     @Test
     public void testSkipLimit_extraQueries() throws Exception {
-        Query query = new Query(SAMPLES.key(), "NA19660").append(ANNOT_CONSERVATION.key(), "gerp>1");
-        int expectedNumResults = dbAdaptor.count(query).first().intValue();
-        int numResults = 0;
-        int batchSize = 50;
-        int numQueries = (int) Math.ceil(expectedNumResults / (float) batchSize);
+        Query query = new Query(SAMPLES.key(), "NA19660")
+                .append(ANNOT_CONSERVATION.key(), "gerp>1");
+        QueryOptions options = new QueryOptions(QUERY_INTERSECT, true);
+        skipLimit(query, options, 250);
+    }
+
+    private void skipLimit(Query query, QueryOptions options, int batchSize) throws StorageEngineException, SolrServerException, IOException {
+        Set<String> expectedResults = dbAdaptor.get(query, null).getResult().stream().map(Variant::toString).collect(Collectors.toSet());
+        Set<String> results = new HashSet<>();
+        int numQueries = (int) Math.ceil(expectedResults.size() / (float) batchSize);
         for (int i = 0; i < numQueries; i++) {
-            QueryOptions options = new QueryOptions()
+            QueryOptions thisOptions = new QueryOptions(options)
                     .append(QueryOptions.SKIP, i * batchSize)
-                    .append(QueryOptions.LIMIT, batchSize)
-                    .append("forceSearch", true);
-            VariantQueryResult<Variant> result = variantStorageEngine.get(query, options);
-            numResults += result.getNumResults();
+                    .append(QueryOptions.LIMIT, batchSize);
+            VariantQueryResult<Variant> result = variantStorageEngine.get(query, thisOptions);
+            for (Variant variant : result.getResult()) {
+                assertTrue(results.add(variant.toString()));
+            }
             assertNotEquals(0, result.getNumResults());
         }
-        verify(solrClient, atLeast(numQueries)).query(anyString(), any());
-        assertEquals(expectedNumResults, numResults);
+        verify(solrClient, times(numQueries)).query(anyString(), any());
+        assertEquals(expectedResults, results);
     }
 
     @Test
-    @Ignore
     public void testQueryWithIds() throws Exception {
-        // TODO
+        List<String> variantIds = allVariants.getResult().stream().map(Variant::toString).limit(400).collect(Collectors.toList());
+        Query query = new Query(SAMPLES.key(), "NA19660")
+                .append(ANNOT_CONSERVATION.key(), "gerp>0.2")
+                .append(ID.key(), variantIds);
+        QueryOptions options = new QueryOptions(QUERY_INTERSECT, true);
+        skipLimit(query, options, 50);
     }
 
 }

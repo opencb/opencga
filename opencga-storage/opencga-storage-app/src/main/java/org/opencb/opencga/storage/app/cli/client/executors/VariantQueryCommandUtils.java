@@ -290,7 +290,7 @@ public class VariantQueryCommandUtils {
         }
 
         if (StringUtils.isNotEmpty(queryVariantsOptions.commonQueryOptions.exclude)) {
-            queryOptions.add("exclude", queryVariantsOptions.commonQueryOptions.exclude + ",_id");
+            queryOptions.add("exclude", queryVariantsOptions.commonQueryOptions.exclude);
         }
 //        else {
 //            queryOptions.put("exclude", "_id");

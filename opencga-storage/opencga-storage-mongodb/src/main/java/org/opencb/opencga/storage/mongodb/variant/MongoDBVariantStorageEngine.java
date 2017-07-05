@@ -64,9 +64,9 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.opencb.opencga.storage.core.search.solr.VariantSearchManager.QUERY_INTERSECT;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.DB_NAME;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.FILES;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLES;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 
@@ -402,6 +402,15 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public VariantQueryResult<Variant> get(Query query, QueryOptions options) throws StorageEngineException {
+        return (VariantQueryResult<Variant>) getOrIterator(query, options, false);
+    }
+
+    @Override
+    public VariantDBIterator iterator(Query query, QueryOptions options) throws StorageEngineException {
+        return (VariantDBIterator) getOrIterator(query, options, true);
+    }
+
+    public Object getOrIterator(Query query, QueryOptions options, boolean iterator) throws StorageEngineException {
         if (options == null) {
             options = QueryOptions.empty();
         }
@@ -410,7 +419,11 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         boolean includeCovered = isIncludeCovered(options);
         if (queryCovered && includeCovered && searchActiveAndAlive()) {
             try {
-                return getVariantSearchManager().query(dbName, query, options);
+                if (iterator) {
+                    return getVariantSearchManager().iterator(dbName, query, options);
+                } else {
+                    return getVariantSearchManager().query(dbName, query, options);
+                }
             } catch (IOException | VariantSearchException e) {
                 throw Throwables.propagate(e);
             }
@@ -418,9 +431,11 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             VariantMongoDBAdaptor dbAdaptor = getDBAdaptor();
             StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
             query = parseQuery(query, studyConfigurationManager);
-            setDefaultTimeout(options);
-            List<VariantQueryParam> coveredParams = coveredParams(query);
-            if (searchActiveAndAlive() && (coveredParams.size() >= 3 || options.getBoolean("forceSearch", false))) {
+            List<VariantQueryParam> params = validParams(query);
+            List<VariantQueryParam> coveredParams = coveredParams(params);
+            List<VariantQueryParam> uncoveredParams = uncoveredParams(params);
+            // TODO: Improve this heuristic
+            if (searchActiveAndAlive() && (coveredParams.size() > 3 || options.getBoolean(QUERY_INTERSECT, false))) {
                 // Intersect Solr+MongoDB
 
                 int limit = options.getInt(QueryOptions.LIMIT, 0);
@@ -436,57 +451,53 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                         options.remove(QueryOptions.LIMIT);
                         options.remove(QueryOptions.SKIP);
                     } else {
+                        logger.debug("Logger side pagination. limit : {} , skip : {}", limit, skip);
                         // Can't limit+skip only from solr. Need to limit+skip also in client side
                         variantsIterator = variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0);
                     }
                 } else {
                     variantsIterator = variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0);
                 }
-                Query underlyingQuery = new Query(query);
-                coveredParams.forEach(key -> underlyingQuery.remove(key.key()));
+                Query storageQuery = new Query();
+                for (VariantQueryParam uncoveredParam : uncoveredParams) {
+                    storageQuery.put(uncoveredParam.key(), query.get(uncoveredParam.key()));
+                }
+                // Despite STUDIES is a covered filter by Solr, it has to be in the underlying
+                // query to filter by the rest of uncovered filters
+                if (!uncoveredParams.isEmpty()) {
+                    if (coveredParams.contains(STUDIES)) {
+                        storageQuery.put(STUDIES.key(), query.get(STUDIES.key()));
+                    }
+                }
+                // Add returned fields
+                storageQuery.putIfNotEmpty(RETURNED_STUDIES.key(), query.getString(RETURNED_STUDIES.key()));
+                storageQuery.putIfNotEmpty(RETURNED_SAMPLES.key(), query.getString(RETURNED_SAMPLES.key()));
+                storageQuery.putIfNotEmpty(RETURNED_FILES.key(), query.getString(RETURNED_FILES.key()));
+//                storageQuery.putIfNotEmpty(RETURNED_COHORTS.key(), query.getString(RETURNED_COHORTS.key()));
+//                storageQuery.putIfNotEmpty(INCLUDE_FORMATS.key(), query.getString(INCLUDE_FORMATS.key()));
+                storageQuery.putIfNotEmpty(UNKNOWN_GENOTYPE.key(), query.getString(UNKNOWN_GENOTYPE.key()));
 
-//            setDefaultTimeout(options);
-                return dbAdaptor.get(variantsIterator, underlyingQuery, options);
+                logger.debug("Intersect query " + storageQuery.toJson());
+                if (iterator) {
+                    return dbAdaptor.iterator(variantsIterator, storageQuery, options);
+                } else {
+                    setDefaultTimeout(options);
+                    return dbAdaptor.get(variantsIterator, storageQuery, options);
+                }
             } else {
-                return dbAdaptor.get(query, options);
-            }
-        }
-    }
-
-    @Override
-    public VariantDBIterator iterator(Query query, QueryOptions options) throws StorageEngineException {
-        if (options == null) {
-            options = QueryOptions.empty();
-        }
-        if (isQueryCovered(query) && isIncludeCovered(options) && searchActiveAndAlive()) {
-            try {
-                return getVariantSearchManager().iterator(dbName, query, options);
-            } catch (IOException | VariantSearchException e) {
-                throw Throwables.propagate(e);
-            }
-        } else {
-            VariantMongoDBAdaptor dbAdaptor = getDBAdaptor();
-            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
-            query = parseQuery(query, studyConfigurationManager);
-            List<VariantQueryParam> coveredParams = coveredParams(query);
-            if (searchActiveAndAlive() && (coveredParams.size() >= 3 || options.getBoolean("forceSearch", false))) {
-                // Intersect Solr+MongoDB
-                Iterator<?> variantsIterator = variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0);
-                Query underlyingQuery = new Query(query);
-                coveredParams.forEach(key -> underlyingQuery.remove(key.key()));
-
-//            setDefaultTimeout(options);
-                return dbAdaptor.iterator(variantsIterator, underlyingQuery, options);
-            } else {
-//            setDefaultTimeout(options);
-                return dbAdaptor.iterator(query, options);
+                if (iterator) {
+                    return dbAdaptor.iterator(query, options);
+                } else {
+                    setDefaultTimeout(options);
+                    return dbAdaptor.get(query, options);
+                }
             }
         }
     }
 
     @Override
     public QueryResult<Long> count(Query query) throws StorageEngineException {
-        if (isQueryCovered(query) || !searchActiveAndAlive()) {
+        if (!isQueryCovered(query) || !searchActiveAndAlive()) {
             VariantMongoDBAdaptor dbAdaptor = getDBAdaptor();
             StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
             query = parseQuery(query, studyConfigurationManager);
@@ -519,25 +530,42 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     private boolean isQueryCovered(Query query) {
-        return !isValidParam(query, VariantQueryParam.FILES)
-                && !isValidParam(query, VariantQueryParam.FILTER)
-                && !isValidParam(query, VariantQueryParam.GENOTYPE)
-                && !isValidParam(query, VariantQueryParam.SAMPLES);
+        for (VariantQueryParam nonCoveredParam : VariantSearchManager.NON_COVERED_PARAMS) {
+            if (isValidParam(query, nonCoveredParam)) {
+                return false;
+            }
+        }
+        return true;
     }
 
-    private List<VariantQueryParam> coveredParams(Query query) {
-        List<VariantQueryParam> coveredParams = new ArrayList<>();
-        HashSet<VariantQueryParam> nonCoveredParams = new HashSet<>(
-                Arrays.asList(VariantQueryParam.FILES,
-                        VariantQueryParam.FILTER,
-                        VariantQueryParam.GENOTYPE,
-                        VariantQueryParam.SAMPLES));
+    private List<VariantQueryParam> validParams(Query query) {
+        List<VariantQueryParam> params = new ArrayList<>();
 
         for (VariantQueryParam queryParam : VariantQueryParam.values()) {
             if (isValidParam(query, queryParam)) {
-                if (!nonCoveredParams.contains(queryParam)) {
-                    coveredParams.add(queryParam);
-                }
+                params.add(queryParam);
+            }
+        }
+        return params;
+    }
+
+    private List<VariantQueryParam> coveredParams(List<VariantQueryParam> params) {
+        List<VariantQueryParam> coveredParams = new ArrayList<>();
+
+        for (VariantQueryParam param : params) {
+            if (!VariantSearchManager.NON_COVERED_PARAMS.contains(param)) {
+                coveredParams.add(param);
+            }
+        }
+        return coveredParams;
+    }
+
+    private List<VariantQueryParam> uncoveredParams(List<VariantQueryParam> params) {
+        List<VariantQueryParam> coveredParams = new ArrayList<>();
+
+        for (VariantQueryParam param : params) {
+            if (VariantSearchManager.NON_COVERED_PARAMS.contains(param)) {
+                coveredParams.add(param);
             }
         }
         return coveredParams;

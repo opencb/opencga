@@ -218,7 +218,7 @@ public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli
         }
 
         if (StringUtils.isNotEmpty(queryVariantsOptions.dataModelOptions.exclude)) {
-            queryOptions.add(QueryOptions.EXCLUDE, queryVariantsOptions.dataModelOptions.exclude + ",_id");
+            queryOptions.add(QueryOptions.EXCLUDE, queryVariantsOptions.dataModelOptions.exclude);
         }
 //        else {
 //            queryOptions.put("exclude", "_id");

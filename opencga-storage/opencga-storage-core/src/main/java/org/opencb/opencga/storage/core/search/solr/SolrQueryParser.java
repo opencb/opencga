@@ -313,7 +313,7 @@ public class SolrQueryParser {
     private void classifyIds(String key, Query query, List<String> xrefs, List<String> genes) {
         String value;
         if (query.containsKey(key)) {
-            value = (String) query.get(key);
+            value = query.getString(key);
             if (StringUtils.isNotEmpty(value)) {
                 List<String> items = Arrays.asList(value.split("[,;]"));
                 for (String item: items) {

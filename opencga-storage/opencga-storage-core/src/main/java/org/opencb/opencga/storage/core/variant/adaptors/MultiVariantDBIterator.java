@@ -4,6 +4,8 @@ import com.google.common.base.Throwables;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.BiFunction;
@@ -28,6 +30,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
     private boolean pendingSkip;
     // Current number of results
     private int numResults;
+    private Logger logger = LoggerFactory.getLogger(MultiVariantDBIterator.class);
 
     /**
      * Creates a multi iterator given a iterator of variants. It will apply the query (if any) to all the variants in the iterator.
@@ -125,6 +128,11 @@ public class MultiVariantDBIterator extends VariantDBIterator {
             while (skip > 0 && hasNext()) {
                 next();
                 skip--;
+            }
+            if (skip == 0) {
+                logger.debug("Server side skip {} elements", this.skip);
+            } else {
+                logger.debug("Server side skip {} elements. Original skip {}", (this.skip - skip), this.skip);
             }
         }
     }
