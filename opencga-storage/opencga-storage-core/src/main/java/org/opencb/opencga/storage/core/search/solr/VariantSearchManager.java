@@ -424,7 +424,7 @@ public class VariantSearchManager {
             try {
                 updateResponse = solrClient.addBean(collection, variantSearchModel);
                 if (0 == updateResponse.getStatus()) {
-                    solrClient.commit();
+                    solrClient.commit(collection);
                 }
             } catch (SolrServerException e) {
                 throw new VariantSearchException(e.getMessage(), e);
@@ -440,6 +440,7 @@ public class VariantSearchManager {
      * @throws VariantSearchException  VariantSearchException
      */
     private void insert(String collection, List<Variant> variants) throws IOException, VariantSearchException {
+        HttpSolrClient localSolrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost() + collection).build();
         if (variants != null && variants.size() > 0) {
             List<VariantSearchModel> variantSearchModels = variantSearchToVariantConverter.convertListToStorageType(variants);
 
@@ -448,7 +449,7 @@ public class VariantSearchManager {
                 try {
                     updateResponse = solrClient.addBeans(collection, variantSearchModels);
                     if (0 == updateResponse.getStatus()) {
-                        solrClient.commit();
+                        solrClient.commit(collection);
                     }
                 } catch (SolrServerException e) {
                     throw new VariantSearchException(e.getMessage(), e);
