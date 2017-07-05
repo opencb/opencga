@@ -642,8 +642,8 @@ public class StorageVariantCommandOptions {
 //        public String studyId;
 //
 
-        @Parameter(names = {"--mode"}, description = "Search mode. Valid values: core, collection.", arity = 1)
-        public String mode = "core";
+//        @Parameter(names = {"--mode"}, description = "Search mode. Valid values: core, collection.", arity = 1)
+//        public String mode = "core";
 
         @Parameter(names = {"--create"}, description = "Create a new core/collection.", arity = 0)
         public boolean create;

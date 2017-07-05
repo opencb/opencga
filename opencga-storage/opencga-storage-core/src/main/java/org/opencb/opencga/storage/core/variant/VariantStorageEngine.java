@@ -429,7 +429,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         if (configuration.getSearch().getActive() && getVariantSearchManager().isAlive(dbName)) {
             // first, create the collection it it does not exist
-            if (!getVariantSearchManager().existCollection(dbName)) {
+            if (!getVariantSearchManager().existsCollection(dbName)) {
                 // by default: config=OpenCGAConfSet, shards=1, replicas=1
                 logger.info("Creating Solr collection " + dbName);
                 getVariantSearchManager().createCollection(dbName, "OpenCGAConfSet");

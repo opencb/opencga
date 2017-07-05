@@ -617,53 +617,28 @@ public class VariantCommandExecutor extends CommandExecutor {
         VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getStudyConfigurationManager(),
                 null, variantStorageEngine.getConfiguration());
         boolean querying = true;
-        String mode = searchOptions.mode;
 
-        // create the core or collection
+        // create the database, this method checks if it exists and the solrConfig name
         if (searchOptions.create) {
+            variantSearchManager.create(dbName, searchOptions.solrConfig);
             querying = false;
-            switch (mode.toLowerCase()) {
-                case "core": {
-                    if (variantSearchManager.existCore(dbName)) {
-                        throw new IllegalArgumentException("Core '" + dbName + "' already exists");
-                    }
-                    variantSearchManager.createCore(searchOptions.dbName, searchOptions.solrConfig);
-                    break;
-                }
-                case "collection": {
-                    if (variantSearchManager.existCollection(dbName)) {
-                        throw new IllegalArgumentException("Collection '" + dbName + "' already exists");
-                    }
-                    variantSearchManager.createCollection(searchOptions.dbName, searchOptions.solrConfig);
-                    break;
-                }
-                default: {
-                    throw new IllegalArgumentException("Invalid value '" + searchOptions.create
-                            + "' for the --create parameter. Valid values are 'core' or 'collection'");
-                }
-            }
         }
 
         // index
         if (searchOptions.index) {
-//            if (!variantSearchManager.existCore(dbName)) {
-//                throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
-//            }
-//            querying = false;
-//            Path path = Paths.get(searchOptions.inputFilename);
-//            variantSearchManager.load(dbName, path);
+            querying = false;
             VariantStorageEngine variantStorageEngine = StorageEngineFactory.get(configuration).getVariantStorageEngine(null, dbName);
             variantStorageEngine.searchIndex();
         }
 
-        // query
+        String mode = variantStorageEngine.getConfiguration().getSearch().getMode();
         if (querying) {
-            if ("collection".equals(mode)) {
-                if (!variantSearchManager.existCollection(dbName)) {
+            if ("cloud".equals(mode)) {
+                if (!variantSearchManager.existsCollection(dbName)) {
                     throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
                 }
             } else {
-                if (!variantSearchManager.existCore(dbName)) {
+                if (!variantSearchManager.existsCore(dbName)) {
                     throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
                 }
             }

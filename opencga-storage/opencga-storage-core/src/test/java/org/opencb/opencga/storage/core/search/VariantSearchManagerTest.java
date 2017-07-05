@@ -69,10 +69,10 @@ public class VariantSearchManagerTest extends GenericTest {
         try {
             String name;
             name = "core999";
-            System.out.println("exist " + name + "? " + variantSearchManager.existCore(name));
+            System.out.println("exist " + name + "? " + variantSearchManager.existsCore(name));
 
             name = "core99999";
-            System.out.println("exist " + name + "? " + variantSearchManager.existCore(name));
+            System.out.println("exist " + name + "? " + variantSearchManager.existsCore(name));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -94,10 +94,10 @@ public class VariantSearchManagerTest extends GenericTest {
         try {
             String name;
             name = "collection888";
-            System.out.println("exist " + name + "? " + variantSearchManager.existCollection(name));
+            System.out.println("exist " + name + "? " + variantSearchManager.existsCollection(name));
 
             name = "collection888888";
-            System.out.println("exist " + name + "? " + variantSearchManager.existCollection(name));
+            System.out.println("exist " + name + "? " + variantSearchManager.existsCollection(name));
         } catch (Exception e) {
             e.printStackTrace();
         }

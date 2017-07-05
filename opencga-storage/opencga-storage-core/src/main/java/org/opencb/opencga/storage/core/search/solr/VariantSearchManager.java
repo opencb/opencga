@@ -80,7 +80,6 @@ public class VariantSearchManager {
     @Deprecated
     public VariantSearchManager(String host, String collection) {
         this.solrClient = new HttpSolrClient.Builder(host + collection).build();
-//        this.solrClient.setRequestWriter(new BinaryRequestWriter());
         variantSearchToVariantConverter = new VariantSearchToVariantConverter();
     }
 
@@ -96,23 +95,10 @@ public class VariantSearchManager {
         init();
     }
 
-//    public VariantSearchManager(String collection, StorageConfiguration storageConfiguration) {
-////        this.host = storageConfiguration.getSearch().getHost();
-////        this.collection = collection;
-//        this.storageConfiguration = storageConfiguration;
-//
-//        this.solrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost() + collection).build();
-//        this.solrClient.setRequestWriter(new BinaryRequestWriter());
-//
-//        variantSearchToVariantConverter = new VariantSearchToVariantConverter();
-//
-//        logger = LoggerFactory.getLogger(VariantSearchManager.class);
-//    }
-
     private void init() {
         this.solrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost()).build();
 
-        // Default implementation is HttpSolrClient and we can set up some parameters
+        // The default implementation is HttpSolrClient and we can set up some parameters
         ((HttpSolrClient)this.solrClient).setRequestWriter(new BinaryRequestWriter());
         ((HttpSolrClient)this.solrClient).setSoTimeout(storageConfiguration.getSearch().getTimeout());
     }
@@ -127,53 +113,70 @@ public class VariantSearchManager {
         }
     }
 
+    public void create(String coreName) throws VariantSearchException {
+        create(coreName, "OpenCGAConfSet");
+    }
+
+    public void create(String dbName, String configSet) throws VariantSearchException {
+        String mode = storageConfiguration.getSearch().getMode();
+        if (StringUtils.isNotEmpty(mode)) {
+            logger.warn("Solr 'mode' is empty, setting default 'cloud'");
+            mode = "cloud";
+        }
+
+        if (StringUtils.isEmpty(dbName)) {
+            throw new VariantSearchException("We cannot create a Solr for the empty database '" + dbName + "'");
+        }
+
+        if (StringUtils.isEmpty(configSet)) {
+            logger.warn("Solr 'configSet' is empty, setting default 'OpenCGAConfSet'");
+            configSet = "OpenCGAConfSet";
+        }
+
+        switch (mode.toLowerCase()) {
+            case "core":
+            case "standalone": {
+                if (existsCore(dbName)) {
+                    logger.warn("Solr standalone core {} already exists", dbName);
+                } else {
+                    createCore(dbName, configSet);
+                }
+                break;
+            }
+            case "collection":
+            case "cloud": {
+                if (existsCollection(dbName)) {
+                    logger.warn("Solr cloud collection {} already exists", dbName);
+                } else {
+                    createCollection(dbName, configSet);
+                }
+                break;
+            }
+            default: {
+                throw new IllegalArgumentException("Invalid Solr mode '" + mode + "'. Valid values are 'standalone' or 'cloud'");
+            }
+        }
+    }
+
     /**
      * Create a Solr core from a configuration set directory. By default, the configuration set directory is located
      * inside the folder server/solr/configsets.
      *
      * @param coreName      Core name
      * @param configSet     Configuration set name
+     * @throws VariantSearchException    Exception
      */
-    public void createCore(String coreName, String configSet) {
+    public void createCore(String coreName, String configSet) throws VariantSearchException {
         try {
             logger.debug("Creating core={}, core={}, configSet={}", storageConfiguration.getSearch().getHost(), coreName, configSet);
-//            HttpSolrClient solrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost()).build();
             CoreAdminRequest.Create request = new CoreAdminRequest.Create();
             request.setCoreName(coreName);
             request.setConfigSet(configSet);
             request.process(solrClient);
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new VariantSearchException(e.getMessage(), e);
         }
     }
-
-    /**
-     * Check if a given core exists.
-     *
-     * @param coreName          Core name
-     * @return                  True or false
-     */
-    public boolean existCore(String coreName) {
-//        HttpSolrClient solrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost()).build();
-        try {
-            CoreStatus status = CoreAdminRequest.getCoreStatus(coreName, solrClient);
-            // if the status.response is null, catch the exception
-            status.getInstanceDirectory();
-        } catch (Exception e) {
-            return false;
-        }
-        return true;
-    }
-
-//    /**
-//     * * Create a Solr collection with default parameters: configuration, shards and replicas.
-//     *
-//     * @param collectionName             Collection name
-//     * @throws VariantSearchException    Exception
-//     */
-//    public void createCollection(String collectionName, String config) throws VariantSearchException {
-//        createCollection(collectionName, "OpenCGAConfSet", 1, 1);
-//    }
 
     /**
      * Create a Solr collection from a configuration directory. The configuration has to be uploaded to the zookeeper,
@@ -189,12 +192,53 @@ public class VariantSearchManager {
         logger.debug("Creating collection: {}, collection={}, config={}, numShards={}, numReplicas={}",
                 storageConfiguration.getSearch().getHost(), collectionName, configSet, 1, 1);
         try {
-//            HttpSolrClient solrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost()).build();
             CollectionAdminRequest request = CollectionAdminRequest.createCollection(collectionName, configSet, 1, 1);
             request.process(solrClient);
         } catch (Exception e) {
             throw new VariantSearchException(e.getMessage(), e);
         }
+    }
+
+    public boolean exists(String dbName) throws VariantSearchException {
+        String mode = storageConfiguration.getSearch().getMode();
+        if (StringUtils.isNotEmpty(mode)) {
+            logger.warn("Solr 'mode' is empty, setting default 'cloud'");
+            mode = "cloud";
+        }
+
+        if (StringUtils.isEmpty(dbName)) {
+            throw new VariantSearchException("We cannot check if Solr database exists '" + dbName + "'");
+        }
+
+        switch (mode.toLowerCase()) {
+            case "core":
+            case "standalone": {
+                return existsCore(dbName);
+            }
+            case "collection":
+            case "cloud": {
+                return existsCollection(dbName);
+            }
+            default: {
+                throw new IllegalArgumentException("Invalid Solr mode '" + mode + "'. Valid values are 'standalone' or 'cloud'");
+            }
+        }
+    }
+
+    /**
+     * Check if a given core exists.
+     *
+     * @param coreName          Core name
+     * @return                  True or false
+     */
+    public boolean existsCore(String coreName) {
+        try {
+            CoreStatus status = CoreAdminRequest.getCoreStatus(coreName, solrClient);
+            status.getInstanceDirectory();
+        } catch (Exception e) {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -204,8 +248,7 @@ public class VariantSearchManager {
      * @return                          True or false
      * @throws VariantSearchException   VariantSearchException
      */
-    public boolean existCollection(String collectionName) throws VariantSearchException {
-//        HttpSolrClient solrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost()).build();
+    public boolean existsCollection(String collectionName) throws VariantSearchException {
         try {
             List<String> collections = CollectionAdminRequest.listCollections(solrClient);
             for (String collection : collections) {
@@ -440,7 +483,6 @@ public class VariantSearchManager {
      * @throws VariantSearchException  VariantSearchException
      */
     private void insert(String collection, List<Variant> variants) throws IOException, VariantSearchException {
-        HttpSolrClient localSolrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost() + collection).build();
         if (variants != null && variants.size() > 0) {
             List<VariantSearchModel> variantSearchModels = variantSearchToVariantConverter.convertListToStorageType(variants);
 
