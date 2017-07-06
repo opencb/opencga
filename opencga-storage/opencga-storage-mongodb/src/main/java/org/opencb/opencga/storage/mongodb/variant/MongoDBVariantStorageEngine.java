@@ -521,13 +521,21 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
     private Iterator<String> variantIdIteratorFromSearch(Query query, int limit, int skip) throws StorageEngineException {
         Iterator<String> variantsIterator;
+        QueryOptions queryOptions = new QueryOptions()
+                .append(QueryOptions.LIMIT, limit)
+                .append(QueryOptions.SKIP, skip)
+                .append(QueryOptions.INCLUDE, VariantField.ID.fieldName());
         try {
-            QueryOptions queryOptions = new QueryOptions()
-                    .append(QueryOptions.LIMIT, limit)
-                    .append(QueryOptions.SKIP, skip)
-                    .append(QueryOptions.INCLUDE, VariantField.ID.fieldName());
-            VariantSearchIterator nativeIterator = getVariantSearchManager().nativeIterator(dbName, query, queryOptions);
-            variantsIterator = Iterators.transform(nativeIterator, VariantSearchModel::getId);
+            // Do not iterate for small queries
+            if (limit < 10000) {
+                variantsIterator = getVariantSearchManager().nativeQuery(dbName, query, queryOptions)
+                        .stream()
+                        .map(VariantSearchModel::getId)
+                        .iterator();
+            } else {
+                VariantSearchIterator nativeIterator = getVariantSearchManager().nativeIterator(dbName, query, queryOptions);
+                variantsIterator = Iterators.transform(nativeIterator, VariantSearchModel::getId);
+            }
         } catch (VariantSearchException | IOException e) {
             throw Throwables.propagate(e);
         }

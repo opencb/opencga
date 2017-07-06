@@ -61,6 +61,10 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
             loaded = true;
         }
         solrClient = spy(solr.getSolrClient());
+        doAnswer(invocation -> {
+//            new Exception().printStackTrace();
+            return invocation.callRealMethod();
+        }).when(solrClient).query(anyString(), any());
         variantStorageEngine.getVariantSearchManager().setSolrClient(solrClient);
     }
 
@@ -176,12 +180,12 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 
     @Test
     public void testSkipLimit() throws Exception {
-        skipLimit(new Query(), new QueryOptions(VariantSearchManager.SUMMARY, true), 100);
+        skipLimit(new Query(), new QueryOptions(VariantSearchManager.SUMMARY, true), 100, false);
     }
 
     @Test
     public void testSkipLimit_extraFields() throws Exception {
-        skipLimit(new Query(), new QueryOptions(QUERY_INTERSECT, true), 100);
+        skipLimit(new Query(), new QueryOptions(QUERY_INTERSECT, true), 100, false);
     }
 
     @Test
@@ -189,10 +193,10 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         Query query = new Query(SAMPLES.key(), "NA19660")
                 .append(ANNOT_CONSERVATION.key(), "gerp>1");
         QueryOptions options = new QueryOptions(QUERY_INTERSECT, true);
-        skipLimit(query, options, 250);
+        skipLimit(query, options, 250, true);
     }
 
-    private void skipLimit(Query query, QueryOptions options, int batchSize) throws StorageEngineException, SolrServerException, IOException {
+    private void skipLimit(Query query, QueryOptions options, int batchSize, boolean serverSideSkip) throws StorageEngineException, SolrServerException, IOException {
         Set<String> expectedResults = dbAdaptor.get(query, null).getResult().stream().map(Variant::toString).collect(Collectors.toSet());
         Set<String> results = new HashSet<>();
         int numQueries = (int) Math.ceil(expectedResults.size() / (float) batchSize);
@@ -206,8 +210,17 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
             }
             assertNotEquals(0, result.getNumResults());
         }
-        verify(solrClient, times(numQueries)).query(anyString(), any());
         assertEquals(expectedResults, results);
+        if (serverSideSkip) {
+            long count = mockingDetails(solrClient).getInvocations()
+                    .stream()
+                    .filter(invocation -> invocation.getMethod().getName().equals("query"))
+                    .count();
+            System.out.println(SolrClient.class.getName() + ".query(...) invocations : " + count);
+            verify(solrClient, atLeast(numQueries)).query(anyString(), any());
+        } else {
+            verify(solrClient, times(numQueries)).query(anyString(), any());
+        }
     }
 
     @Test
@@ -217,7 +230,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
                 .append(ANNOT_CONSERVATION.key(), "gerp>0.2")
                 .append(ID.key(), variantIds);
         QueryOptions options = new QueryOptions(QUERY_INTERSECT, true);
-        skipLimit(query, options, 50);
+        skipLimit(query, options, 50, false);
     }
 
 }
