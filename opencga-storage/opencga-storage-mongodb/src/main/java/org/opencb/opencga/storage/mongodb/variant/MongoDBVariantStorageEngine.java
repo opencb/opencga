@@ -17,33 +17,26 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.log4j.Level;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.core.common.MemoryUsageMonitor;
-import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
-import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.search.VariantSearchModel;
-import org.opencb.opencga.storage.core.search.solr.VariantSearchIterator;
-import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
@@ -64,9 +57,9 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.opencb.opencga.storage.core.search.solr.VariantSearchManager.QUERY_INTERSECT;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.DB_NAME;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.FILES;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLES;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 
@@ -401,196 +394,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public VariantQueryResult<Variant> get(Query query, QueryOptions options) throws StorageEngineException {
-        return (VariantQueryResult<Variant>) getOrIterator(query, options, false);
-    }
-
-    @Override
-    public VariantDBIterator iterator(Query query, QueryOptions options) throws StorageEngineException {
-        return (VariantDBIterator) getOrIterator(query, options, true);
-    }
-
-    public Object getOrIterator(Query query, QueryOptions options, boolean iterator) throws StorageEngineException {
-        if (options == null) {
-            options = QueryOptions.empty();
-        }
-        // TODO: Use CacheManager ?
-        boolean queryCovered = isQueryCovered(query);
-        boolean includeCovered = isIncludeCovered(options);
-        if (queryCovered && includeCovered && searchActiveAndAlive()) {
-            try {
-                if (iterator) {
-                    return getVariantSearchManager().iterator(dbName, query, options);
-                } else {
-                    return getVariantSearchManager().query(dbName, query, options);
-                }
-            } catch (IOException | VariantSearchException e) {
-                throw Throwables.propagate(e);
-            }
-        } else {
-            VariantMongoDBAdaptor dbAdaptor = getDBAdaptor();
-            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
-            query = parseQuery(query, studyConfigurationManager);
-            List<VariantQueryParam> params = validParams(query);
-            List<VariantQueryParam> coveredParams = coveredParams(params);
-            List<VariantQueryParam> uncoveredParams = uncoveredParams(params);
-            // TODO: Improve this heuristic
-            if (searchActiveAndAlive() && (coveredParams.size() > 3 || options.getBoolean(QUERY_INTERSECT, false))) {
-                // Intersect Solr+MongoDB
-
-                int limit = options.getInt(QueryOptions.LIMIT, 0);
-                int skip = options.getInt(QueryOptions.SKIP, 0);
-
-                Iterator<?> variantsIterator;
-                if (skip > 0 || limit > 0) {
-                    if (queryCovered) {
-                        // We can use limit+skip directly in solr
-                        variantsIterator = variantIdIteratorFromSearch(query, limit, skip);
-                        // Remove limit and skip from Options
-                        options = new QueryOptions(options);
-                        options.remove(QueryOptions.LIMIT);
-                        options.remove(QueryOptions.SKIP);
-                    } else {
-                        logger.debug("Client side pagination. limit : {} , skip : {}", limit, skip);
-                        // Can't limit+skip only from solr. Need to limit+skip also in client side
-                        variantsIterator = variantIdIteratorFromSearch(query);
-                    }
-                } else {
-                    variantsIterator = variantIdIteratorFromSearch(query);
-                }
-                Query storageQuery = new Query();
-                for (VariantQueryParam uncoveredParam : uncoveredParams) {
-                    storageQuery.put(uncoveredParam.key(), query.get(uncoveredParam.key()));
-                }
-                // Despite STUDIES is a covered filter by Solr, it has to be in the underlying
-                // query to filter by the rest of uncovered filters
-                if (!uncoveredParams.isEmpty()) {
-                    if (coveredParams.contains(STUDIES)) {
-                        storageQuery.put(STUDIES.key(), query.get(STUDIES.key()));
-                    }
-                }
-                // Add returned fields
-                storageQuery.putIfNotEmpty(RETURNED_STUDIES.key(), query.getString(RETURNED_STUDIES.key()));
-                storageQuery.putIfNotEmpty(RETURNED_SAMPLES.key(), query.getString(RETURNED_SAMPLES.key()));
-                storageQuery.putIfNotEmpty(RETURNED_FILES.key(), query.getString(RETURNED_FILES.key()));
-//                storageQuery.putIfNotEmpty(RETURNED_COHORTS.key(), query.getString(RETURNED_COHORTS.key()));
-//                storageQuery.putIfNotEmpty(INCLUDE_FORMATS.key(), query.getString(INCLUDE_FORMATS.key()));
-                storageQuery.putIfNotEmpty(UNKNOWN_GENOTYPE.key(), query.getString(UNKNOWN_GENOTYPE.key()));
-
-                logger.debug("Intersect query " + storageQuery.toJson());
-                if (iterator) {
-                    return dbAdaptor.iterator(variantsIterator, storageQuery, options);
-                } else {
-                    setDefaultTimeout(options);
-                    return dbAdaptor.get(variantsIterator, storageQuery, options);
-                }
-            } else {
-                if (iterator) {
-                    return dbAdaptor.iterator(query, options);
-                } else {
-                    setDefaultTimeout(options);
-                    return dbAdaptor.get(query, options);
-                }
-            }
-        }
-    }
-
-    @Override
-    public QueryResult<Long> count(Query query) throws StorageEngineException {
-        if (!isQueryCovered(query) || !searchActiveAndAlive()) {
-            VariantMongoDBAdaptor dbAdaptor = getDBAdaptor();
-            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
-            query = parseQuery(query, studyConfigurationManager);
-            return dbAdaptor.count(query);
-        } else {
-            try {
-                StopWatch watch = StopWatch.createStarted();
-                long count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 0)).getNumTotalResults();
-                int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
-                return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
-            } catch (IOException | VariantSearchException e) {
-                throw Throwables.propagate(e);
-            }
-        }
-    }
-
-    private Iterator<String> variantIdIteratorFromSearch(Query query) throws StorageEngineException {
-        // FIXME! There should be no limit for this!
-        return variantIdIteratorFromSearch(query, 10000, 0);
-    }
-
-    private Iterator<String> variantIdIteratorFromSearch(Query query, int limit, int skip) throws StorageEngineException {
-        Iterator<String> variantsIterator;
-        QueryOptions queryOptions = new QueryOptions()
-                .append(QueryOptions.LIMIT, limit)
-                .append(QueryOptions.SKIP, skip)
-                .append(QueryOptions.INCLUDE, VariantField.ID.fieldName());
-        try {
-            // Do not iterate for small queries
-            if (limit < 10000) {
-                variantsIterator = getVariantSearchManager().nativeQuery(dbName, query, queryOptions)
-                        .stream()
-                        .map(VariantSearchModel::getId)
-                        .iterator();
-            } else {
-                VariantSearchIterator nativeIterator = getVariantSearchManager().nativeIterator(dbName, query, queryOptions);
-                variantsIterator = Iterators.transform(nativeIterator, VariantSearchModel::getId);
-            }
-        } catch (VariantSearchException | IOException e) {
-            throw Throwables.propagate(e);
-        }
-        return variantsIterator;
-    }
-
-    private boolean isQueryCovered(Query query) {
-        for (VariantQueryParam nonCoveredParam : VariantSearchManager.NON_COVERED_PARAMS) {
-            if (isValidParam(query, nonCoveredParam)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private List<VariantQueryParam> validParams(Query query) {
-        List<VariantQueryParam> params = new ArrayList<>();
-
-        for (VariantQueryParam queryParam : VariantQueryParam.values()) {
-            if (isValidParam(query, queryParam)) {
-                params.add(queryParam);
-            }
-        }
-        return params;
-    }
-
-    private List<VariantQueryParam> coveredParams(List<VariantQueryParam> params) {
-        List<VariantQueryParam> coveredParams = new ArrayList<>();
-
-        for (VariantQueryParam param : params) {
-            if (!VariantSearchManager.NON_COVERED_PARAMS.contains(param)) {
-                coveredParams.add(param);
-            }
-        }
-        return coveredParams;
-    }
-
-    private List<VariantQueryParam> uncoveredParams(List<VariantQueryParam> params) {
-        List<VariantQueryParam> coveredParams = new ArrayList<>();
-
-        for (VariantQueryParam param : params) {
-            if (VariantSearchManager.NON_COVERED_PARAMS.contains(param)) {
-                coveredParams.add(param);
-            }
-        }
-        return coveredParams;
-    }
-
-    private boolean isIncludeCovered(QueryOptions options) {
-        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
-        return options.getBoolean(VariantSearchManager.SUMMARY)
-                || (!returnedFields.contains(VariantField.STUDIES_FILES) && !returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA));
-    }
-
-    public Query parseQuery(Query originalQuery, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
+    public Query transformQuery(Query originalQuery, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
         // Copy input query! Do not modify original query!
         Query query = originalQuery == null ? new Query() : new Query(originalQuery);
         List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());
@@ -603,46 +407,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             query.remove(VariantQueryParam.STUDIES.key());
         }
 
-        if (isValidParam(query, VariantQueryParam.ANNOT_GO)) {
-            String value = query.getString(VariantQueryParam.ANNOT_GO.key());
-            // Check if comma separated of semi colon separated (AND or OR)
-            VariantQueryUtils.QueryOperation queryOperation = checkOperator(value);
-            // Split by comma or semi colon
-            List<String> goValues = splitValue(value, queryOperation);
+        convertGoToGeneQuery(query, cellBaseUtils);
+        convertExpressionToGeneQuery(query, cellBaseUtils);
 
-            if (queryOperation == VariantQueryUtils.QueryOperation.AND) {
-                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_GO, value, "Unimplemented AND operator");
-            }
-            query.remove(VariantQueryParam.ANNOT_GO.key());
-            List<String> genes = new ArrayList<>(query.getAsStringList(VariantQueryParam.GENE.key()));
-            Set<String> genesByGo = cellBaseUtils.getGenesByGo(goValues);
-            if (genesByGo.isEmpty()) {
-                genes.add("none");
-            } else {
-                genes.addAll(genesByGo);
-            }
-            query.put(VariantQueryParam.GENE.key(), genes);
-        }
-        if (isValidParam(query, VariantQueryParam.ANNOT_EXPRESSION)) {
-            String value = query.getString(VariantQueryParam.ANNOT_EXPRESSION.key());
-            // Check if comma separated of semi colon separated (AND or OR)
-            VariantQueryUtils.QueryOperation queryOperation = checkOperator(value);
-            // Split by comma or semi colon
-            List<String> expressionValues = splitValue(value, queryOperation);
-
-            if (queryOperation == VariantQueryUtils.QueryOperation.AND) {
-                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_EXPRESSION, value, "Unimplemented AND operator");
-            }
-            query.remove(VariantQueryParam.ANNOT_EXPRESSION.key());
-            List<String> genes = new ArrayList<>(query.getAsStringList(VariantQueryParam.GENE.key()));
-            Set<String> genesByExpression = cellBaseUtils.getGenesByExpression(expressionValues);
-            if (genesByExpression.isEmpty()) {
-                genes.add("none");
-            } else {
-                genes.addAll(genesByExpression);
-            }
-            query.put(VariantQueryParam.GENE.key(), genes);
-        }
         return query;
     }
 

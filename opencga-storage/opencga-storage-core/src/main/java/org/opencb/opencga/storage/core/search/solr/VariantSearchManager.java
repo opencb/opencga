@@ -49,7 +49,6 @@ import org.opencb.opencga.storage.core.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.search.VariantSearchToVariantConverter;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,11 +66,6 @@ import java.util.concurrent.TimeUnit;
 public class VariantSearchManager {
 
     public static final String CONF_SET = "OpenCGAConfSet";
-    public static final HashSet<VariantQueryParam> NON_COVERED_PARAMS = new HashSet<>(
-            Arrays.asList(VariantQueryParam.FILES,
-                    VariantQueryParam.FILTER,
-                    VariantQueryParam.GENOTYPE,
-                    VariantQueryParam.SAMPLES));
 
     private SolrClient solrClient;
     private StorageConfiguration storageConfiguration;

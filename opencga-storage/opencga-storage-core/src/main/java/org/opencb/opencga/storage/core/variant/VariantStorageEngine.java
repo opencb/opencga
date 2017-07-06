@@ -17,7 +17,9 @@
 package org.opencb.opencga.storage.core.variant;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -42,6 +44,8 @@ import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.search.VariantSearchModel;
+import org.opencb.opencga.storage.core.search.solr.VariantSearchIterator;
 import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -66,10 +70,14 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.opencb.opencga.storage.core.search.solr.VariantSearchManager.QUERY_INTERSECT;
+import static org.opencb.opencga.storage.core.search.solr.VariantSearchUtils.*;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.DEFAULT_TIMEOUT;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MAX_TIMEOUT;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDIES;
 
 /**
  * Created by imedina on 13/08/14.
@@ -508,11 +516,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return variantSearchManager.get();
     }
 
-    public VariantQueryResult<Variant> get(Query query, QueryOptions options) throws StorageEngineException {
-        setDefaultTimeout(options);
-        return getDBAdaptor().get(query, options);
-    }
-
     public VariantQueryResult<Variant> getPhased(String variant, String studyName, String sampleName, QueryOptions options, int windowsSize)
             throws StorageEngineException {
         setDefaultTimeout(options);
@@ -529,11 +532,121 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         options.put(QueryOptions.TIMEOUT, timeout);
     }
 
+    public VariantQueryResult<Variant> get(Query query, QueryOptions options) throws StorageEngineException {
+        return (VariantQueryResult<Variant>) getOrIterator(query, options, false);
+    }
+
     public VariantDBIterator iterator(Query query, QueryOptions options) throws StorageEngineException {
-        VariantDBAdaptor dbAdaptor = getDBAdaptor();
-        VariantDBIterator iterator = dbAdaptor.iterator(query, options);
-        iterator.addCloseable(dbAdaptor);
-        return iterator;
+        return (VariantDBIterator) getOrIterator(query, options, true);
+    }
+
+    protected Object getOrIterator(Query query, QueryOptions options, boolean iterator) throws StorageEngineException {
+        if (options == null) {
+            options = QueryOptions.empty();
+        }
+        // TODO: Use CacheManager ?
+        query = transformQuery(query, getStudyConfigurationManager());
+        if (doQuerySearchManager(query, options)) {
+            try {
+                if (iterator) {
+                    return getVariantSearchManager().iterator(dbName, query, options);
+                } else {
+                    return getVariantSearchManager().query(dbName, query, options);
+                }
+            } catch (IOException | VariantSearchException e) {
+                throw Throwables.propagate(e);
+            }
+        } else {
+            VariantDBAdaptor dbAdaptor = getDBAdaptor();
+            List<VariantQueryParam> params = validParams(query);
+            List<VariantQueryParam> uncoveredParams = uncoveredParams(params);
+            if (doIntersectWithSearch(query, params, options)) {
+                // Intersect Solr+Engine
+
+                int limit = options.getInt(QueryOptions.LIMIT, 0);
+                int skip = options.getInt(QueryOptions.SKIP, 0);
+
+                Iterator<?> variantsIterator;
+                if (skip > 0 || limit > 0) {
+                    if (isQueryCovered(query)) {
+                        // We can use limit+skip directly in solr
+                        variantsIterator = variantIdIteratorFromSearch(query, limit, skip);
+                        // Remove limit and skip from Options
+                        options = new QueryOptions(options);
+                        options.remove(QueryOptions.LIMIT);
+                        options.remove(QueryOptions.SKIP);
+                    } else {
+                        logger.debug("Client side pagination. limit : {} , skip : {}", limit, skip);
+                        // Can't limit+skip only from solr. Need to limit+skip also in client side
+                        variantsIterator = variantIdIteratorFromSearch(query);
+                    }
+                } else {
+                    variantsIterator = variantIdIteratorFromSearch(query);
+                }
+                Query engineQuery = new Query();
+                for (VariantQueryParam uncoveredParam : uncoveredParams) {
+                    engineQuery.put(uncoveredParam.key(), query.get(uncoveredParam.key()));
+                }
+                // Despite STUDIES is a covered filter by Solr, it has to be in the underlying
+                // query to filter by the rest of uncovered filters
+                if (!uncoveredParams.isEmpty()) {
+                    if (params.contains(STUDIES)) {
+                        engineQuery.put(STUDIES.key(), query.get(STUDIES.key()));
+                    }
+                }
+                // Add returned fields
+                for (VariantQueryParam modifier : NON_COVERED_MODIFIERS) {
+                    engineQuery.putIfNotEmpty(modifier.key(), query.getString(modifier.key()));
+                }
+
+                logger.debug("Intersect query " + engineQuery.toJson());
+                if (iterator) {
+                    return dbAdaptor.iterator(variantsIterator, engineQuery, options);
+                } else {
+                    setDefaultTimeout(options);
+                    return dbAdaptor.get(variantsIterator, engineQuery, options);
+                }
+            } else {
+                if (iterator) {
+                    return dbAdaptor.iterator(query, options);
+                } else {
+                    setDefaultTimeout(options);
+                    return dbAdaptor.get(query, options);
+                }
+            }
+        }
+    }
+
+    protected Query transformQuery(Query query, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
+        return query;
+    }
+
+    /**
+     * Decide if a query should be resolved using SearchManager or not.
+     *
+     * @param query     Query
+     * @param options   QueryOptions
+     * @return          true if should resolve only with SearchManager
+     * @throws StorageEngineException StorageEngineException
+     */
+    protected boolean doQuerySearchManager(Query query, QueryOptions options) throws StorageEngineException {
+        return isQueryCovered(query) && isIncludeCovered(options) && searchActiveAndAlive();
+    }
+
+    /**
+     * Decide if a query should be resolved intersecting with SearchManager or not.
+     *
+     * @param query       Query
+     * @param validParams Valid query params
+     * @param options     QueryOptions
+     * @return            true if should intersect
+     * @throws StorageEngineException StorageEngineException
+     */
+    protected boolean doIntersectWithSearch(Query query, List<VariantQueryParam> validParams, QueryOptions options)
+            throws StorageEngineException {
+        // TODO: Improve this heuristic
+        List<VariantQueryParam> coveredParams = coveredParams(validParams);
+        return searchActiveAndAlive() && (coveredParams.size() > 3 || options.getBoolean(QUERY_INTERSECT, false));
     }
 
     public QueryResult distinct(Query query, String field) throws StorageEngineException {
@@ -557,7 +670,21 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public QueryResult<Long> count(Query query) throws StorageEngineException {
-        return getDBAdaptor().count(query);
+        if (doQuerySearchManager(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID))) {
+            VariantDBAdaptor dbAdaptor = getDBAdaptor();
+            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
+            query = transformQuery(query, studyConfigurationManager);
+            return dbAdaptor.count(query);
+        } else {
+            try {
+                StopWatch watch = StopWatch.createStarted();
+                long count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 0)).getNumTotalResults();
+                int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
+                return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
+            } catch (IOException | VariantSearchException e) {
+                throw Throwables.propagate(e);
+            }
+        }
     }
 
     public QueryResult<Long> aproxCount(Query query, QueryOptions options) throws StorageEngineException {
@@ -592,6 +719,34 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     protected boolean searchActiveAndAlive() throws StorageEngineException {
         return configuration.getSearch().getActive() && getVariantSearchManager() != null && getVariantSearchManager().isAlive(dbName);
+    }
+
+
+    protected Iterator<String> variantIdIteratorFromSearch(Query query) throws StorageEngineException {
+        return variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0);
+    }
+
+    protected Iterator<String> variantIdIteratorFromSearch(Query query, int limit, int skip) throws StorageEngineException {
+        Iterator<String> variantsIterator;
+        QueryOptions queryOptions = new QueryOptions()
+                .append(QueryOptions.LIMIT, limit)
+                .append(QueryOptions.SKIP, skip)
+                .append(QueryOptions.INCLUDE, VariantField.ID.fieldName());
+        try {
+            // Do not iterate for small queries
+            if (limit < 10000) {
+                variantsIterator = getVariantSearchManager().nativeQuery(dbName, query, queryOptions)
+                        .stream()
+                        .map(VariantSearchModel::getId)
+                        .iterator();
+            } else {
+                VariantSearchIterator nativeIterator = getVariantSearchManager().nativeIterator(dbName, query, queryOptions);
+                variantsIterator = Iterators.transform(nativeIterator, VariantSearchModel::getId);
+            }
+        } catch (VariantSearchException | IOException e) {
+            throw Throwables.propagate(e);
+        }
+        return variantsIterator;
     }
 
     @Override
