@@ -451,7 +451,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                         options.remove(QueryOptions.LIMIT);
                         options.remove(QueryOptions.SKIP);
                     } else {
-                        logger.debug("Logger side pagination. limit : {} , skip : {}", limit, skip);
+                        logger.debug("Client side pagination. limit : {} , skip : {}", limit, skip);
                         // Can't limit+skip only from solr. Need to limit+skip also in client side
                         variantsIterator = variantIdIteratorFromSearch(query);
                     }

@@ -23,12 +23,12 @@ public class MultiVariantDBIterator extends VariantDBIterator {
     private final QueryOptions options;
     private final BiFunction<Query, QueryOptions, VariantDBIterator> iteratorFactory;
     private VariantDBIterator variantDBIterator;
-    // limit + skip
+    // Total number of elements to return. Includes the skipped elements. limit + skip
     private final int maxResults;
     private final int skip;
     // Skip elements first time that hasNext or next is called.
     private boolean pendingSkip;
-    // Current number of results
+    // Count of returned results.
     private int numResults;
     private Logger logger = LoggerFactory.getLogger(MultiVariantDBIterator.class);
 
@@ -81,6 +81,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
     public boolean hasNext() {
         init();
         if (numResults >= maxResults) {
+            terminateIterator();
             return false;
         } else if (!variantDBIterator.hasNext()) {
             nextVariantIterator();
@@ -91,19 +92,32 @@ public class MultiVariantDBIterator extends VariantDBIterator {
     }
 
     private void nextVariantIterator() {
+        terminateIterator();
         if (queryIterator.hasNext()) {
-            // Accumulate statistics from previous iterator.
-            timeFetching += variantDBIterator.timeFetching;
-            timeConverting += variantDBIterator.timeConverting;
-            try {
-                variantDBIterator.close();
-            } catch (Exception e) {
-                throw Throwables.propagate(e);
-            }
-
             Query query = queryIterator.next();
+            QueryOptions options;
+            if (maxResults != Integer.MAX_VALUE) {
+                // We are expecting no more than maxResults - numResults
+                // Modify the limit in the query
+                options = new QueryOptions(this.options).append(QueryOptions.LIMIT, maxResults - numResults);
+            } else {
+                options = this.options;
+            }
             variantDBIterator = iteratorFactory.apply(query, options);
         } else {
+            variantDBIterator = emptyIterator();
+        }
+    }
+
+    private void terminateIterator() {
+        // Accumulate statistics from previous iterator.
+        timeFetching += variantDBIterator.getTimeFetching();
+        timeConverting += variantDBIterator.getTimeConverting();
+        try {
+            variantDBIterator.close();
+        } catch (Exception e) {
+            throw Throwables.propagate(e);
+        } finally {
             variantDBIterator = emptyIterator();
         }
     }
@@ -111,11 +125,22 @@ public class MultiVariantDBIterator extends VariantDBIterator {
     @Override
     public Variant next() {
         if (hasNext()) {
+            Variant next = variantDBIterator.next();
             numResults++;
-            return variantDBIterator.next();
+            return next;
         } else {
             throw new NoSuchElementException();
         }
+    }
+
+    @Override
+    public long getTimeConverting() {
+        return timeConverting + variantDBIterator.getTimeConverting();
+    }
+
+    @Override
+    public long getTimeFetching() {
+        return timeFetching + variantDBIterator.getTimeFetching();
     }
 
     /**
@@ -123,6 +148,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
      */
     private void init() {
         if (pendingSkip) {
+            // This lock avoids recursion
             pendingSkip = false;
             int skip = this.skip;
             while (skip > 0 && hasNext()) {

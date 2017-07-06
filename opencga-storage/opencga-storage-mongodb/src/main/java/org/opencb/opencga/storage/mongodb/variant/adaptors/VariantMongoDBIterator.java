@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.mongodb.variant.adaptors;
 
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
+import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.variant.Variant;
@@ -46,13 +47,17 @@ public class VariantMongoDBIterator extends VariantDBIterator {
         if (batchSize > 0) {
             dbCursor.batchSize(batchSize);
         }
-        this.dbCursor = dbCursor.iterator();
+        this.dbCursor = fetch(dbCursor::iterator);
     }
 
     //Package protected
     static VariantMongoDBIterator persistentIterator(MongoDBCollection collection, Bson query, Bson projection, QueryOptions options,
                                                      DocumentToVariantConverter converter) {
-        return new VariantMongoDBIterator(new MongoPersistentCursor(collection, query, projection, options), converter);
+        StopWatch watch = StopWatch.createStarted();
+        MongoPersistentCursor cursor = new MongoPersistentCursor(collection, query, projection, options);
+        VariantMongoDBIterator iterator = new VariantMongoDBIterator(cursor, converter);
+        iterator.timeFetching += watch.getNanoTime();
+        return iterator;
     }
 
     //Package protected
@@ -64,7 +69,7 @@ public class VariantMongoDBIterator extends VariantDBIterator {
 
     @Override
     public boolean hasNext() {
-        return dbCursor.hasNext();
+        return fetch(() -> dbCursor.hasNext());
     }
 
     @Override

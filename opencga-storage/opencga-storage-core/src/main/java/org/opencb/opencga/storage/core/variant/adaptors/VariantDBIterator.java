@@ -42,7 +42,7 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
     }
 
     public long getTimeConverting(TimeUnit timeUnit) {
-        return timeUnit.convert(timeConverting, TimeUnit.NANOSECONDS);
+        return timeUnit.convert(getTimeConverting(), TimeUnit.NANOSECONDS);
     }
 
     public void setTimeFetching(long timeFetching) {
@@ -54,7 +54,7 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
     }
 
     public long getTimeFetching(TimeUnit timeUnit) {
-        return timeUnit.convert(timeFetching, TimeUnit.NANOSECONDS);
+        return timeUnit.convert(getTimeFetching(), TimeUnit.NANOSECONDS);
     }
 
     public void setTimeConverting(long timeConverting) {

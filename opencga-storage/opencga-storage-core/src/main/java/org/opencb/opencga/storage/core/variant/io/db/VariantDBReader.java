@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.io.db;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -118,19 +119,22 @@ public class VariantDBReader implements VariantReader {
     @Override
     public List<Variant> read(int batchSize) {
 
-        long start = System.currentTimeMillis();
+        StopWatch watch = StopWatch.createStarted();
         List<Variant> variants = new ArrayList<>(batchSize);
         while (variants.size() < batchSize && iterator.hasNext()) {
             variants.add(iterator.next());
         }
-        logger.debug("another batch of {} elements read. time: {}ms", variants.size(), System.currentTimeMillis() - start);
-        logger.debug("time splitted: fetch = {}ms, convert = {}ms", iterator.getTimeFetching(), iterator.getTimeConverting());
 
-        timeFetching += iterator.getTimeFetching();
-        timeConverting += iterator.getTimeConverting();
+        long newTimeFetching = iterator.getTimeFetching(TimeUnit.MILLISECONDS);
+        long newTimeConverting = iterator.getTimeConverting(TimeUnit.MILLISECONDS);
 
-        iterator.setTimeConverting(0);
-        iterator.setTimeFetching(0);
+        logger.debug("another batch of {} elements read. time: {}ms", variants.size(), watch.getTime());
+        logger.debug("time splitted: fetch = {}ms, convert = {}ms",
+                newTimeFetching - this.timeFetching,
+                newTimeConverting - this.timeConverting);
+
+        this.timeFetching = newTimeFetching;
+        this.timeConverting = newTimeConverting;
 
         return variants;
     }
