@@ -103,6 +103,8 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
 
     QueryResult<ClinicalAnalysis> get(long clinicalAnalysisId, QueryOptions options) throws CatalogDBException;
 
+    QueryResult<ClinicalAnalysis> get(Query query, QueryOptions options, String user) throws CatalogDBException;
+
     long getStudyId(long clinicalAnalysisId) throws CatalogDBException;
 
 }

@@ -103,7 +103,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
         String errorMsg = "";
         for (Study study : studies) {
-            String studyErrorMsg = dbAdaptorFactory.getCatalogStudyDBAdaptor().insert(project.getId(), study, options).getErrorMsg();
+            String studyErrorMsg = dbAdaptorFactory.getCatalogStudyDBAdaptor().insert(project.getId(), study, userId, options)
+                    .getErrorMsg();
             if (studyErrorMsg != null && !studyErrorMsg.isEmpty()) {
                 errorMsg += ", " + study.getAlias() + ":" + studyErrorMsg;
             }

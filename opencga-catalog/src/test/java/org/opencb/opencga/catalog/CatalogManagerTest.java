@@ -953,6 +953,22 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
+    public void searchSamples() throws CatalogException {
+        long studyId = catalogManager.getStudyId("user@1000G:phase1");
+
+        catalogManager.getStudyManager().createGroup(Long.toString(studyId), "myGroup", "user2,user3", sessionIdUser);
+        catalogManager.getStudyManager().createGroup(Long.toString(studyId), "myGroup2", "user2,user3", sessionIdUser);
+        catalogManager.getStudyManager().updateAcl(Long.toString(studyId), "@myGroup",
+                new Study.StudyAclParams("", AclParams.Action.SET, null), sessionIdUser);
+        catalogManager.getSampleManager().updateAcl("s_1", Long.toString(studyId), "@myGroup",
+                new Sample.SampleAclParams("VIEW", AclParams.Action.SET, null, null, null), sessionIdUser);
+
+        QueryResult<Sample> search = catalogManager.getSampleManager().search(Long.toString(studyId), new Query(), new QueryOptions(),
+                sessionIdUser2);
+        assertEquals(1, search.getNumResults());
+    }
+
+    @Test
     public void testSearchAnnotation() throws CatalogException {
         long studyId = catalogManager.getStudyId("user@1000G:phase1");
         Study study = catalogManager.getStudy(studyId, sessionIdUser).first();

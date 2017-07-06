@@ -306,7 +306,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 getProjectCurrentRelease(projectId), stats, attributes);
 
         /* CreateStudy */
-        QueryResult<Study> result = studyDBAdaptor.insert(projectId, study, options);
+        QueryResult<Study> result = studyDBAdaptor.insert(projectId, study, userId, options);
         study = result.getResult().get(0);
 
         //URI studyUri;

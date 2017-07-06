@@ -13,10 +13,13 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ClinicalAnalysisConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.ClinicalAnalysis;
 import org.opencb.opencga.catalog.models.Status;
+import org.opencb.opencga.catalog.models.acls.permissions.ClinicalAnalysisAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
@@ -196,6 +199,42 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
+    public QueryResult<ClinicalAnalysis> get(Query query, QueryOptions options, String user) throws CatalogDBException {
+        long startTime = startQuery();
+
+        // Get the study document
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
+        }
+
+        // Get the document query needed to check the permissions as well
+        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
+                StudyAclEntry.StudyPermissions.VIEW_CLINICAL_ANALYSIS.name(),
+                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name());
+
+
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        }
+        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        QueryOptions qOptions;
+        if (options != null) {
+            qOptions = options;
+        } else {
+            qOptions = new QueryOptions();
+        }
+
+        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = clinicalCollection.find(bson, clinicalConverter, qOptions);
+        addReferencesInfoToClinicalAnalysis(clinicalAnalysisQueryResult);
+
+        logger.debug("Clinical Analysis get: query : {}, dbTime: {}", bson.toBsonDocument(Document.class,
+                MongoClient.getDefaultCodecRegistry()), qOptions == null ? "" : qOptions.toJson(), clinicalAnalysisQueryResult.getDbTime());
+        return endQuery("Get clinical analysis", startTime, clinicalAnalysisQueryResult);
+    }
+
+    @Override
     public long getStudyId(long clinicalAnalysisId) throws CatalogDBException {
         Bson query = new Document(PRIVATE_ID, clinicalAnalysisId);
         Bson projection = Projections.include(PRIVATE_STUDY_ID);
@@ -210,6 +249,10 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
+        return parseQuery(query, isolated, null);
+    }
+
+    private Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
 
         if (isolated) {
@@ -269,6 +312,9 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             }
         }
 
+        if (authorisation != null && authorisation.size() > 0) {
+            andBsonList.add(authorisation);
+        }
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);
         } else {

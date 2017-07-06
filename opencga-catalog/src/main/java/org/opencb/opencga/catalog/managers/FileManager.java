@@ -1003,38 +1003,19 @@ public class FileManager extends AbstractManager implements IFileManager {
     @Override
     public QueryResult<File> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         String userId = userManager.getId(sessionId);
-        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
-
-        // Check any permission in studies
-        for (Long studyId : studyIds) {
-            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
-        }
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         // The samples introduced could be either ids or names. As so, we should use the smart resolutor to do this.
-        // FIXME: Although the search method is multi-study, we can only use the smart resolutor for one study at the moment.
-        if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key())) && studyIds.size() == 1) {
+        if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
             MyResourceIds resourceIds = catalogManager.getSampleManager().getIds(
-                    query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()), Long.toString(studyIds.get(0)), sessionId);
+                    query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()), Long.toString(studyId), sessionId);
             query.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), resourceIds.getResourceIds());
             query.remove(FileDBAdaptor.QueryParams.SAMPLES.key());
         }
 
-
-        QueryResult<File> queryResult = null;
-        for (Long studyId : studyIds) {
-            query.append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-            QueryResult<File> queryResultAux = fileDBAdaptor.get(query, options);
-            authorizationManager.filterFiles(userId, studyId, queryResultAux.getResult());
-
-            if (queryResult == null) {
-                queryResult = queryResultAux;
-            } else {
-                queryResult.getResult().addAll(queryResultAux.getResult());
-                queryResult.setNumTotalResults(queryResult.getNumTotalResults() + queryResultAux.getNumTotalResults());
-                queryResult.setDbTime(queryResult.getDbTime() + queryResultAux.getDbTime());
-            }
-        }
-        queryResult.setNumResults(queryResult.getResult().size());
+        query.append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<File> queryResult = fileDBAdaptor.get(query, options, userId);
+//      authorizationManager.filterFiles(userId, studyId, queryResultAux.getResult());
 
         return queryResult;
     }

@@ -36,6 +36,8 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -109,6 +111,46 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     public QueryResult<Sample> get(long sampleId, QueryOptions options) throws CatalogDBException {
         checkId(sampleId);
         return get(new Query(QueryParams.ID.key(), sampleId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED), options);
+    }
+
+    @Override
+    public QueryResult<Sample> get(Query query, QueryOptions options, String user) throws CatalogDBException {
+        long startTime = startQuery();
+
+        // Get the study document
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
+        }
+
+        // Get the document query needed to check the permissions as well
+        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
+                StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), SampleAclEntry.SamplePermissions.VIEW.name());
+
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        }
+        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        QueryOptions qOptions;
+        if (options != null) {
+            qOptions = options;
+        } else {
+            qOptions = new QueryOptions();
+        }
+        qOptions = filterOptions(qOptions, FILTER_ROUTE_SAMPLES);
+        QueryResult<Sample> sampleQueryResult;
+        if (qOptions.get("lazy") != null && !qOptions.getBoolean("lazy")) {
+            Bson match = Aggregates.match(bson);
+            Bson lookup = Aggregates.lookup("individual", QueryParams.INDIVIDUAL_ID.key(), IndividualDBAdaptor.QueryParams.ID.key(),
+                    "individual");
+            sampleQueryResult = sampleCollection.aggregate(Arrays.asList(match, lookup), sampleConverter, qOptions);
+        } else {
+            sampleQueryResult = sampleCollection.find(bson, sampleConverter, qOptions);
+        }
+        logger.debug("Sample get: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                qOptions == null ? "" : qOptions.toJson(), sampleQueryResult.getDbTime());
+        return endQuery("Get sample", startTime, sampleQueryResult);
     }
 
     @Override
@@ -582,6 +624,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     }
 
     private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
+        return parseQuery(query, isolated, null);
+    }
+
+    private Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
         List<Bson> annotationList = new ArrayList<>();
         // We declare variableMap here just in case we have different annotation queries
@@ -678,6 +724,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         if (annotationList.size() > 0) {
             Bson projection = Projections.elemMatch(QueryParams.ANNOTATION_SETS.key(), Filters.and(annotationList));
             andBsonList.add(projection);
+        }
+        if (authorisation != null && authorisation.size() > 0) {
+            andBsonList.add(authorisation);
         }
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

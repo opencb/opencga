@@ -74,7 +74,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<Study> insert(long projectId, Study study, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Study> insert(long projectId, Study study, String ownerId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         if (projectId < 0) {
             throw CatalogDBException.idNotFound("Project", projectId);
@@ -112,6 +112,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         //Set ProjectId
         studyObject.put(PRIVATE_PROJECT_ID, projectId);
+        studyObject.put(PRIVATE_OWNER_ID, ownerId);
 
         //Insert
         QueryResult<WriteResult> updateResult = studyCollection.insert(studyObject, null);

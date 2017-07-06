@@ -242,6 +242,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
         QueryResult<Document> aggregate = collection.aggregate(aggregation, null);
 
+        // Code replicated in MongoDBAdaptor
         Map<String, List<String>> permissions = new HashMap<>();
         if (aggregate.getNumResults() > 0) {
             Set<String> memberSet = new HashSet<>();

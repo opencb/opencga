@@ -162,8 +162,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/search")
-    @ApiOperation(value = "Multi-study search that allows the user to look for files from from different studies of the same project "
-            + "applying filters.", position = 4, response = Sample[].class)
+    @ApiOperation(value = "Sample search method", position = 4, response = Sample[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),

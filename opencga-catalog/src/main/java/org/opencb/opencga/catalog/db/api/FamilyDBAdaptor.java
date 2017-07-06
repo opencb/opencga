@@ -118,6 +118,8 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
 
     QueryResult<Family> get(long familyId, QueryOptions options) throws CatalogDBException;
 
+    QueryResult<Family> get(Query query, QueryOptions options, String user) throws CatalogDBException;
+
     long getStudyId(long familyId) throws CatalogDBException;
 
 }

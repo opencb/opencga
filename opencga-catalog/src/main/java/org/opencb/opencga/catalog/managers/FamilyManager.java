@@ -338,72 +338,34 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
 
     public QueryResult<Family> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getId(sessionId);
-        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
-
-        // Check any permission in studies
-        for (Long studyId : studyIds) {
-            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
-        }
-        logger.info(studyIds.toString());
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
-        // FIXME: Although the search method is multi-study, we can only use the smart resolutor for one study at the moment.
         // We change the FATHER, MOTHER and CHILDREN parameters for FATHER_ID, MOTHER_ID and CHILDREN_IDS which is what the DBAdaptor
         // understands
         if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.FATHER.key()))) {
-            if (studyIds.size() <= 1) {
-                String studyStrAux = studyIds.size() == 1 ? Long.toString(studyIds.get(0)) : null;
-                MyResourceIds resourceIds = catalogManager.getIndividualManager()
-                        .getIds(query.getString(FamilyDBAdaptor.QueryParams.FATHER.key()), studyStrAux, sessionId);
-                query.put(FamilyDBAdaptor.QueryParams.FATHER_ID.key(), resourceIds.getResourceIds());
-            } else {
-                throw new CatalogException("Operation not supported. Cannot look for individuals from 0 or different studies. Please "
-                        + "choose only one study");
-            }
+            MyResourceIds resourceIds = catalogManager.getIndividualManager()
+                    .getIds(query.getString(FamilyDBAdaptor.QueryParams.FATHER.key()), Long.toString(studyId), sessionId);
+            query.put(FamilyDBAdaptor.QueryParams.FATHER_ID.key(), resourceIds.getResourceIds());
             query.remove(FamilyDBAdaptor.QueryParams.FATHER.key());
         }
         if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.MOTHER.key()))) {
-            if (studyIds.size() <= 1) {
-                String studyStrAux = studyIds.size() == 1 ? Long.toString(studyIds.get(0)) : null;
-                MyResourceIds resourceIds = catalogManager.getIndividualManager()
-                        .getIds(query.getString(FamilyDBAdaptor.QueryParams.MOTHER.key()), studyStrAux, sessionId);
-                query.put(FamilyDBAdaptor.QueryParams.MOTHER_ID.key(), resourceIds.getResourceIds());
-            } else {
-                throw new CatalogException("Operation not supported. Cannot look for individuals from 0 or different studies. Please "
-                        + "choose only one study");
-            }
+            MyResourceIds resourceIds = catalogManager.getIndividualManager()
+                    .getIds(query.getString(FamilyDBAdaptor.QueryParams.MOTHER.key()), Long.toString(studyId), sessionId);
+            query.put(FamilyDBAdaptor.QueryParams.MOTHER_ID.key(), resourceIds.getResourceIds());
             query.remove(FamilyDBAdaptor.QueryParams.MOTHER.key());
         }
         if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.CHILDREN.key()))) {
-            if (studyIds.size() <= 1) {
-                String studyStrAux = studyIds.size() == 1 ? Long.toString(studyIds.get(0)) : null;
-                MyResourceIds resourceIds = catalogManager.getIndividualManager()
-                        .getIds(query.getString(FamilyDBAdaptor.QueryParams.CHILDREN.key()), studyStrAux, sessionId);
-                query.put(FamilyDBAdaptor.QueryParams.CHILDREN_IDS.key(), resourceIds.getResourceIds());
-            } else {
-                throw new CatalogException("Operation not supported. Cannot look for individuals from 0 or different studies. Please "
-                        + "choose only one study");
-            }
+            MyResourceIds resourceIds = catalogManager.getIndividualManager()
+                    .getIds(query.getString(FamilyDBAdaptor.QueryParams.CHILDREN.key()), Long.toString(studyId), sessionId);
+            query.put(FamilyDBAdaptor.QueryParams.CHILDREN_IDS.key(), resourceIds.getResourceIds());
             query.remove(FamilyDBAdaptor.QueryParams.CHILDREN.key());
         }
 
-        QueryResult<Family> queryResult = null;
-        for (Long studyId : studyIds) {
-            query.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        query.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
-            QueryResult<Family> queryResultAux = familyDBAdaptor.get(query, options);
-            authorizationManager.filterFamilies(userId, studyId, queryResultAux.getResult());
-
-            if (queryResult == null) {
-                queryResult = queryResultAux;
-            } else {
-                queryResult.getResult().addAll(queryResultAux.getResult());
-                queryResult.setNumTotalResults(queryResult.getNumTotalResults() + queryResultAux.getNumTotalResults());
-                queryResult.setDbTime(queryResult.getDbTime() + queryResultAux.getDbTime());
-            }
-        }
-        queryResult.setNumResults(queryResult.getResult().size());
-
+        QueryResult<Family> queryResult = familyDBAdaptor.get(query, options, userId);
+//            authorizationManager.filterFamilies(userId, studyId, queryResultAux.getResult());
         return queryResult;
     }
 

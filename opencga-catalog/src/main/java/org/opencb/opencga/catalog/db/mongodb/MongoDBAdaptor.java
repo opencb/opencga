@@ -16,28 +16,27 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.mongodb.MongoClient;
 import com.mongodb.client.model.Accumulators;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Family;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 12/09/14.
@@ -46,6 +45,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
     static final String PRIVATE_ID = "_id";
     static final String PRIVATE_PROJECT_ID = "_projectId";
+    static final String PRIVATE_OWNER_ID = "_ownerId";
     static final String PRIVATE_STUDY_ID = "_studyId";
     static final String FILTER_ROUTE_PROJECTS = "projects.";
     static final String FILTER_ROUTE_STUDIES = "projects.studies.";
@@ -56,6 +56,10 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String FILTER_ROUTE_FILES = "projects.studies.files.";
     static final String FILTER_ROUTE_JOBS = "projects.studies.jobs.";
     static final String FILTER_ROUTE_PANELS = "projects.studies.panels.";
+
+    private static final String PRIVATE_ACL = "_acl";
+    private static final Pattern REGISTERED_PATTERN = Pattern.compile("^\\*");
+    private static final Pattern ANONYMOUS_PATTERN = Pattern.compile("^anonymous");
 
     protected MongoDBAdaptorFactory dbAdaptorFactory;
 
@@ -131,6 +135,168 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
                 andBsonList.add(filter);
             }
         }
+    }
+
+    protected Document getQueryForAuthorisedEntries(Document study, String user, String studyPermission, String entryPermission) {
+        // 0. If the user corresponds with the owner, we don't have to check anything else
+        if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
+            return new Document();
+        }
+
+        // 1. We obtain the groups of the user
+        List<Document> groupDocumentList = study.get(StudyDBAdaptor.QueryParams.GROUPS.key(), ArrayList.class);
+        List<String> groups = new ArrayList<>();
+        if (groupDocumentList != null && groupDocumentList.size() > 0) {
+            for (Document group : groupDocumentList) {
+                List<String> userIds = group.get("userIds", ArrayList.class);
+                for (String userId : userIds) {
+                    if (user.equals(userId)) {
+                        groups.add(group.getString("name"));
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 2. We check if the study contains the studies expected for the user
+        List<String> aclList = study.get(PRIVATE_ACL, ArrayList.class);
+        Map<String, Set<String>> permissionMap = parsePermissions(aclList, user, groups);
+
+        // 2.2. We now check if the user will have those effective permissions defined at the study level
+        boolean hasStudyPermissions = false;
+        if (permissionMap.get("user") != null) {
+            hasStudyPermissions = permissionMap.get("user").contains(studyPermission);
+        } else if (permissionMap.get("group") != null) {
+            hasStudyPermissions = permissionMap.get("group").contains(studyPermission);
+        } else if (permissionMap.get("*") != null) {
+            hasStudyPermissions = permissionMap.get("*").contains(studyPermission);
+        } else if (permissionMap.get("anonymous") != null) {
+            hasStudyPermissions = permissionMap.get("anonymous").contains(studyPermission);
+        }
+
+        Document queryDocument = getAuthorisedEntries(user, groups, entryPermission);
+        if (hasStudyPermissions) {
+            // The user has permissions defined globally, so we also have to check the entries where the user/groups/anonymous/* have no
+            // permissions defined as the user will also be allowed to see them
+            queryDocument = new Document("$or", Arrays.asList(
+                    getNoPermissionsDefined(user, groups),
+                    queryDocument
+            ));
+        }
+
+        logger.debug("Query for authorised entries: {}", queryDocument.toBsonDocument(Document.class,
+                MongoClient.getDefaultCodecRegistry()));
+        return queryDocument;
+    }
+
+    protected Document getQueryForAuthorisedEntries(long studyId, String user, String studyPermission, String entryPermission)
+            throws CatalogDBException {
+        // We obtain the study information (groups and acls)
+        Query query = new Query(StudyDBAdaptor.QueryParams.ID.key(), studyId);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(StudyDBAdaptor.QueryParams.GROUPS.key(), PRIVATE_ACL, PRIVATE_OWNER_ID));
+        QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(query, options);
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Study " + studyId + " not found");
+        }
+        Document studyObject = (Document) queryResult.first();
+
+        return getQueryForAuthorisedEntries(studyObject, user, studyPermission, entryPermission);
+    }
+
+    private Map<String, Set<String>> parsePermissions(List<String> permissionList, String user, List<String> groupList) {
+        Map<String, Set<String>> permissions = new HashMap<>();
+
+        if (permissionList != null) {
+            // If _acl was not previously defined, it can be null the first time
+            for (String memberPermission : permissionList) {
+                String[] split = memberPermission.split("_", 2);
+                String member = null;
+                if (user.equals(split[0])) {
+                    member = "user";
+                } else if (groupList.contains(split[0])) {
+                    member = "group";
+                } else if ("*".equals(split[0])) {
+                    member = "*";
+                } else if ("anonymous".equals(split[0])) {
+                    member = "anonymous";
+                }
+                if (member != null) {
+                    if (!permissions.containsKey(split[0])) {
+                        permissions.put(member, new HashSet<>());
+                    }
+                    if (!split[1].equals("NONE")) {
+                        permissions.get(member).add(split[1]);
+                    }
+                }
+            }
+        }
+
+        return permissions;
+    }
+
+    /**
+     * Creates a document with the corresponding query needed to retrieve results only from any authorised document.
+     *
+     * @param user User asking for the entries.
+     * @param groups Group names where the user belongs to.
+     * @param permission Permission to be checked.
+     * @return The document containing the query to be made in mongo database.
+     */
+    private Document getAuthorisedEntries(String user, List<String> groups, String permission) {
+        List<Document> queryList = new ArrayList<>();
+        queryList.add(new Document(PRIVATE_ACL, user + "_" + permission));
+
+        // This pattern list will contain patterns that should not match
+        List<Pattern> patternList = new ArrayList<>();
+        patternList.add(Pattern.compile("^" + user));
+
+        if (groups != null && groups.size() > 0) {
+            List<String> groupPermissionList = groups.stream().map(group -> group + "_" + permission).collect(Collectors.toList());
+            queryList.add(new Document("$and", Arrays.asList(
+                    new Document(PRIVATE_ACL, new Document("$in", groupPermissionList)),
+                    new Document(PRIVATE_ACL, new Document("$nin", patternList))
+            )));
+
+            // Add groups to pattern
+            patternList = new ArrayList<>(patternList);
+            patternList.addAll(groups.stream().map(group -> Pattern.compile("^" + group)).collect(Collectors.toList()));
+        }
+
+        queryList.add(new Document("$and", Arrays.asList(
+                new Document(PRIVATE_ACL, "*_" + permission),
+                new Document(PRIVATE_ACL, new Document("$nin", patternList))
+        )));
+        patternList = new ArrayList<>(patternList);
+        patternList.add(REGISTERED_PATTERN);
+
+        queryList.add(new Document("$and", Arrays.asList(
+                new Document(PRIVATE_ACL, "anonymous_" + permission),
+                new Document(PRIVATE_ACL, new Document("$nin", patternList))
+        )));
+
+        return new Document("$or", queryList);
+    }
+
+    /**
+     * Creates a document with the corresponding query needed to retrieve results only from documents where no permissions are assigned.
+     *
+     * @param user User asking for the entries.
+     * @param groups Group names where the user belongs to.
+     * @return The document containing the query to be made in mongo database.
+     */
+    private Document getNoPermissionsDefined(String user, List<String> groups) {
+        List<Pattern> patternList = new ArrayList<>();
+
+        patternList.add(Pattern.compile("^" + user));
+        if (groups != null && groups.size() > 0) {
+            patternList.addAll(groups.stream().map(group -> Pattern.compile("^" + group)).collect(Collectors.toList()));
+        }
+
+        patternList.add(REGISTERED_PATTERN);
+        patternList.add(ANONYMOUS_PATTERN);
+
+        return new Document(PRIVATE_ACL, new Document("$nin", patternList));
     }
 
     // Auxiliar methods used in family/get and clinicalAnalysis/get to retrieve the whole referenced documents
@@ -263,29 +429,29 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
 
         List<String> groupByFields = new ArrayList<>(groupByField);
-            Bson match = Aggregates.match(query);
+        Bson match = Aggregates.match(query);
 
-            // add all group-by fields to the projection together with the aggregation field name
-            List<String> includeGroupByFields = new ArrayList<>(groupByField);
-            includeGroupByFields.add(idField);
-            List<Bson> projections = new ArrayList<>();
-            addDateProjection(projections, includeGroupByFields, groupByFields);
-            projections.add(Projections.include(includeGroupByFields));
-            Bson project = Aggregates.project(Projections.fields(projections));
+        // add all group-by fields to the projection together with the aggregation field name
+        List<String> includeGroupByFields = new ArrayList<>(groupByField);
+        includeGroupByFields.add(idField);
+        List<Bson> projections = new ArrayList<>();
+        addDateProjection(projections, includeGroupByFields, groupByFields);
+        projections.add(Projections.include(includeGroupByFields));
+        Bson project = Aggregates.project(Projections.fields(projections));
 //            Bson project = Aggregates.project(Projections.include(groupByFields));
 
-            // _id document creation to have the multiple id
-            Document id = new Document();
-            for (String s : groupByFields) {
-                id.append(s, "$" + s);
-            }
-            Bson group;
-            if (options.getBoolean("count", false)) {
-                group = Aggregates.group(id, Accumulators.sum("count", 1));
-            } else {
-                group = Aggregates.group(id, Accumulators.addToSet("features", "$" + idField));
-            }
-            return collection.aggregate(Arrays.asList(match, project, group), options);
+        // _id document creation to have the multiple id
+        Document id = new Document();
+        for (String s : groupByFields) {
+            id.append(s, "$" + s);
+        }
+        Bson group;
+        if (options.getBoolean("count", false)) {
+            group = Aggregates.group(id, Accumulators.sum("count", 1));
+        } else {
+            group = Aggregates.group(id, Accumulators.addToSet("features", "$" + idField));
+        }
+        return collection.aggregate(Arrays.asList(match, project, group), options);
 //        }
     }
 
@@ -310,7 +476,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             projections.add(dateProjection);
             includeGroupByFields.remove("day");
             if (!includeGroupByFields.remove("month")) {
-                 groupByFields.add("month");
+                groupByFields.add("month");
             }
             if (!includeGroupByFields.remove("year")) {
                 groupByFields.add("year");

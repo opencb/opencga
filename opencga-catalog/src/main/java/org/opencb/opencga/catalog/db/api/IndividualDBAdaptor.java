@@ -52,6 +52,8 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
 
     QueryResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException;
 
+    QueryResult<Individual> get(Query query, QueryOptions options, String user) throws CatalogDBException;
+
 //    @Deprecated
 //    QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options) throws CatalogDBException;
 

@@ -468,38 +468,18 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     @Override
     public QueryResult<Sample> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         String userId = userManager.getId(sessionId);
-        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
-        // Check any permission in studies
-        for (Long studyId : studyIds) {
-            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
-        }
-
-        // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
-        // FIXME: Although the search method is multi-study, we can only use the smart resolutor for one study at the moment.
-        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))
-                && studyIds.size() == 1) {
+        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {
             MyResourceIds resourceIds = catalogManager.getIndividualManager().getIds(
-                    query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()), Long.toString(studyIds.get(0)), sessionId);
+                    query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()), Long.toString(studyId), sessionId);
             query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), resourceIds.getResourceIds());
             query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
         }
 
-        QueryResult<Sample> queryResult = null;
-        for (Long studyId : studyIds) {
-            query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-            QueryResult<Sample> queryResultAux = sampleDBAdaptor.get(query, options);
-            authorizationManager.filterSamples(userId, studyId, queryResultAux.getResult());
-
-            if (queryResult == null) {
-                queryResult = queryResultAux;
-            } else {
-                queryResult.getResult().addAll(queryResultAux.getResult());
-                queryResult.setNumTotalResults(queryResult.getNumTotalResults() + queryResultAux.getNumTotalResults());
-                queryResult.setDbTime(queryResult.getDbTime() + queryResultAux.getDbTime());
-            }
-        }
-        queryResult.setNumResults(queryResult.getResult().size());
+        query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Sample> queryResult = sampleDBAdaptor.get(query, options, userId);
+//        authorizationManager.filterSamples(userId, studyId, queryResultAux.getResult());
 
         return queryResult;
     }

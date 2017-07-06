@@ -139,6 +139,8 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
 
     QueryResult<Sample> get(long sampleId, QueryOptions options) throws CatalogDBException;
 
+    QueryResult<Sample> get(Query query, QueryOptions options, String user) throws CatalogDBException;
+
 //    @Deprecated
 //    QueryResult<Sample> getAllSamples(QueryOptions options) throws CatalogDBException;
 //

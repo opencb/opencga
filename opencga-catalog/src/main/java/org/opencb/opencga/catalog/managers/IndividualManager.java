@@ -379,28 +379,11 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     @Override
     public QueryResult<Individual> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         String userId = userManager.getId(sessionId);
-        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
-        // Check any permission in studies
-        for (Long studyId : studyIds) {
-            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
-        }
-
-        QueryResult<Individual> queryResult = null;
-        for (Long studyId : studyIds) {
-            query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-            QueryResult<Individual> queryResultAux = individualDBAdaptor.get(query, options);
-            authorizationManager.filterIndividuals(userId, studyId, queryResultAux.getResult());
-
-            if (queryResult == null) {
-                queryResult = queryResultAux;
-            } else {
-                queryResult.getResult().addAll(queryResultAux.getResult());
-                queryResult.setNumTotalResults(queryResult.getNumTotalResults() + queryResultAux.getNumTotalResults());
-                queryResult.setDbTime(queryResult.getDbTime() + queryResultAux.getDbTime());
-            }
-        }
-        queryResult.setNumResults(queryResult.getResult().size());
+        query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Individual> queryResult = individualDBAdaptor.get(query, options, userId);
+//        authorizationManager.filterIndividuals(userId, studyId, queryResultAux.getResult());
 
         return queryResult;
     }

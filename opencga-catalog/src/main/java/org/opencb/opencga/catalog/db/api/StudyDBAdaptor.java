@@ -61,7 +61,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         }
     }
 
-    QueryResult<Study> insert(long projectId, Study study, QueryOptions options) throws CatalogDBException;
+    QueryResult<Study> insert(long projectId, Study study, String owner, QueryOptions options) throws CatalogDBException;
 
     //@Deprecated
     //QueryResult<Study> getAllStudies(QueryOptions options) throws CatalogDBException;
