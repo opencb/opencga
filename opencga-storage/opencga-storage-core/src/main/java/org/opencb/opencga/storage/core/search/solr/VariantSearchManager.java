@@ -126,7 +126,7 @@ public class VariantSearchManager {
 
     public void create(String dbName, String configSet) throws VariantSearchException {
         String mode = storageConfiguration.getSearch().getMode();
-        if (StringUtils.isNotEmpty(mode)) {
+        if (StringUtils.isEmpty(mode)) {
             logger.warn("Solr 'mode' is empty, setting default 'cloud'");
             mode = "cloud";
         }
@@ -338,15 +338,23 @@ public class VariantSearchManager {
      */
     public VariantQueryResult<Variant> query(String collection, Query query, QueryOptions queryOptions)
             throws IOException, VariantSearchException {
-        // we don't initialize here the collection, the iterator does
         StopWatch stopWatch = StopWatch.createStarted();
         List<Variant> results = new ArrayList<>();
-        VariantIterator iterator = iterator(collection, query, queryOptions);
-        while (iterator.hasNext()) {
-            results.add(iterator.next());
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        try {
+            QueryResponse solrResponse = solrClient.query(collection, solrQuery);
+            List<VariantSearchModel> beans = solrResponse.getBeans(VariantSearchModel.class);
+            int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
+
+            VariantSearchToVariantConverter converter = new VariantSearchToVariantConverter();
+            for (VariantSearchModel variantSearchModel : beans) {
+                results.add(converter.convertToDataModelType(variantSearchModel));
+            }
+            return new VariantQueryResult<>("", dbTime,
+                    results.size(), solrResponse.getResults().getNumFound(), "Data from Solr", "", results, null);
+        } catch (SolrServerException e) {
+            throw new VariantSearchException("Error fetching from Solr", e);
         }
-        return new VariantQueryResult<>("", (int) stopWatch.getTime(TimeUnit.MILLISECONDS),
-                results.size(), iterator.getNumFound(), "Data from Solr", "", results, null);
     }
 
     /**
@@ -362,13 +370,12 @@ public class VariantSearchManager {
      */
     public List<VariantSearchModel> nativeQuery(String collection, Query query, QueryOptions queryOptions)
             throws IOException, VariantSearchException {
-        // we don't initialize here the collection, the iterator does
-        List<VariantSearchModel> results = new ArrayList<>();
-        VariantSearchIterator iterator = nativeIterator(collection, query, queryOptions);
-        while (iterator.hasNext()) {
-            results.add(iterator.next());
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        try {
+            return solrClient.query(collection, solrQuery).getBeans(VariantSearchModel.class);
+        } catch (SolrServerException e) {
+            throw new VariantSearchException("Error fetching from Solr", e);
         }
-        return results;
     }
 
     /**
