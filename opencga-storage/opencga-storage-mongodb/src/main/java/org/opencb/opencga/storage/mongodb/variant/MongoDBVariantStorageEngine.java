@@ -453,10 +453,10 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                     } else {
                         logger.debug("Logger side pagination. limit : {} , skip : {}", limit, skip);
                         // Can't limit+skip only from solr. Need to limit+skip also in client side
-                        variantsIterator = variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0);
+                        variantsIterator = variantIdIteratorFromSearch(query);
                     }
                 } else {
-                    variantsIterator = variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0);
+                    variantsIterator = variantIdIteratorFromSearch(query);
                 }
                 Query storageQuery = new Query();
                 for (VariantQueryParam uncoveredParam : uncoveredParams) {
@@ -505,13 +505,18 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         } else {
             try {
                 StopWatch watch = StopWatch.createStarted();
-                long count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 1)).getNumTotalResults();
+                long count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 0)).getNumTotalResults();
                 int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
                 return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
             } catch (IOException | VariantSearchException e) {
                 throw Throwables.propagate(e);
             }
         }
+    }
+
+    private Iterator<String> variantIdIteratorFromSearch(Query query) throws StorageEngineException {
+        // FIXME! There should be no limit for this!
+        return variantIdIteratorFromSearch(query, 10000, 0);
     }
 
     private Iterator<String> variantIdIteratorFromSearch(Query query, int limit, int skip) throws StorageEngineException {
