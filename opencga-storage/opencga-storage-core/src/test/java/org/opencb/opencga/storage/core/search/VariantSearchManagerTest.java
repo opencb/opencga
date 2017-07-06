@@ -14,6 +14,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.storage.core.search.solr.VariantSearchIterator;
 import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 
@@ -69,10 +70,10 @@ public class VariantSearchManagerTest extends GenericTest {
         try {
             String name;
             name = "core999";
-            System.out.println("exist " + name + "? " + variantSearchManager.existCore(name));
+            System.out.println("exist " + name + "? " + variantSearchManager.existsCore(name));
 
             name = "core99999";
-            System.out.println("exist " + name + "? " + variantSearchManager.existCore(name));
+            System.out.println("exist " + name + "? " + variantSearchManager.existsCore(name));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -94,10 +95,10 @@ public class VariantSearchManagerTest extends GenericTest {
         try {
             String name;
             name = "collection888";
-            System.out.println("exist " + name + "? " + variantSearchManager.existCollection(name));
+            System.out.println("exist " + name + "? " + variantSearchManager.existsCollection(name));
 
             name = "collection888888";
-            System.out.println("exist " + name + "? " + variantSearchManager.existCollection(name));
+            System.out.println("exist " + name + "? " + variantSearchManager.existsCollection(name));
         } catch (Exception e) {
             e.printStackTrace();
         }

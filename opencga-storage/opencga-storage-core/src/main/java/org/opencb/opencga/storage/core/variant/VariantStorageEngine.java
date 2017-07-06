@@ -429,7 +429,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         VariantSearchManager variantSearchManager = getVariantSearchManager();
         // first, create the collection it it does not exist
-        variantSearchManager.createIfNotExists(dbName);
+        variantSearchManager.create(dbName);
         if (configuration.getSearch().getActive() && variantSearchManager.isAlive(dbName)) {
 
             // then, load variants

@@ -45,8 +45,6 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.search.VariantIterator;
-import org.opencb.opencga.storage.core.search.VariantSearchIterator;
 import org.opencb.opencga.storage.core.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.search.VariantSearchToVariantConverter;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
@@ -89,7 +87,6 @@ public class VariantSearchManager {
     @Deprecated
     public VariantSearchManager(String host, String collection) {
         this.solrClient = new HttpSolrClient.Builder(host + collection).build();
-//        this.solrClient.setRequestWriter(new BinaryRequestWriter());
         variantSearchToVariantConverter = new VariantSearchToVariantConverter();
     }
 
@@ -105,23 +102,10 @@ public class VariantSearchManager {
         init();
     }
 
-//    public VariantSearchManager(String collection, StorageConfiguration storageConfiguration) {
-////        this.host = storageConfiguration.getSearch().getHost();
-////        this.collection = collection;
-//        this.storageConfiguration = storageConfiguration;
-//
-//        this.solrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost() + collection).build();
-//        this.solrClient.setRequestWriter(new BinaryRequestWriter());
-//
-//        variantSearchToVariantConverter = new VariantSearchToVariantConverter();
-//
-//        logger = LoggerFactory.getLogger(VariantSearchManager.class);
-//    }
-
     private void init() {
         this.solrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost()).build();
 
-        // Default implementation is HttpSolrClient and we can set up some parameters
+        // The default implementation is HttpSolrClient and we can set up some parameters
         ((HttpSolrClient)this.solrClient).setRequestWriter(new BinaryRequestWriter());
         ((HttpSolrClient)this.solrClient).setSoTimeout(storageConfiguration.getSearch().getTimeout());
     }
@@ -136,22 +120,47 @@ public class VariantSearchManager {
         }
     }
 
-    public void createIfNotExists(String collection) throws VariantSearchException {
-        if (storageConfiguration.getSearch().getMode().equalsIgnoreCase("cloud")) {
-            if (!existCollection(collection)) {
-                // by default: config=OpenCGAConfSet, shards=1, replicas=1
-                logger.info("Creating Solr collection " + collection);
-                createCollection(collection, CONF_SET);
-            } else {
-                logger.info("Solr collection '" + collection + "' exists.");
+    public void create(String coreName) throws VariantSearchException {
+        create(coreName, "OpenCGAConfSet");
+    }
+
+    public void create(String dbName, String configSet) throws VariantSearchException {
+        String mode = storageConfiguration.getSearch().getMode();
+        if (StringUtils.isNotEmpty(mode)) {
+            logger.warn("Solr 'mode' is empty, setting default 'cloud'");
+            mode = "cloud";
+        }
+
+        if (StringUtils.isEmpty(dbName)) {
+            throw new VariantSearchException("We cannot create a Solr for the empty database '" + dbName + "'");
+        }
+
+        if (StringUtils.isEmpty(configSet)) {
+            logger.warn("Solr 'configSet' is empty, setting default 'OpenCGAConfSet'");
+            configSet = "OpenCGAConfSet";
+        }
+
+        switch (mode.toLowerCase()) {
+            case "core":
+            case "standalone": {
+                if (existsCore(dbName)) {
+                    logger.warn("Solr standalone core {} already exists", dbName);
+                } else {
+                    createCore(dbName, configSet);
+                }
+                break;
             }
-        } else {
-            if (!existCore(collection)) {
-                // by default: config=OpenCGAConfSet, shards=1, replicas=1
-                logger.info("Creating Solr core " + collection);
-                createCore(collection, CONF_SET);
-            } else {
-                logger.info("Solr core '" + collection + "' exists.");
+            case "collection":
+            case "cloud": {
+                if (existsCollection(dbName)) {
+                    logger.warn("Solr cloud collection {} already exists", dbName);
+                } else {
+                    createCollection(dbName, configSet);
+                }
+                break;
+            }
+            default: {
+                throw new IllegalArgumentException("Invalid Solr mode '" + mode + "'. Valid values are 'standalone' or 'cloud'");
             }
         }
     }
@@ -162,47 +171,19 @@ public class VariantSearchManager {
      *
      * @param coreName      Core name
      * @param configSet     Configuration set name
+     * @throws VariantSearchException    Exception
      */
-    public void createCore(String coreName, String configSet) {
+    public void createCore(String coreName, String configSet) throws VariantSearchException {
         try {
             logger.debug("Creating core={}, core={}, configSet={}", storageConfiguration.getSearch().getHost(), coreName, configSet);
-//            HttpSolrClient solrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost()).build();
             CoreAdminRequest.Create request = new CoreAdminRequest.Create();
             request.setCoreName(coreName);
             request.setConfigSet(configSet);
             request.process(solrClient);
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new VariantSearchException(e.getMessage(), e);
         }
     }
-
-    /**
-     * Check if a given core exists.
-     *
-     * @param coreName          Core name
-     * @return                  True or false
-     */
-    public boolean existCore(String coreName) {
-//        HttpSolrClient solrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost()).build();
-        try {
-            CoreStatus status = CoreAdminRequest.getCoreStatus(coreName, solrClient);
-            // if the status.response is null, catch the exception
-            status.getInstanceDirectory();
-        } catch (Exception e) {
-            return false;
-        }
-        return true;
-    }
-
-//    /**
-//     * * Create a Solr collection with default parameters: configuration, shards and replicas.
-//     *
-//     * @param collectionName             Collection name
-//     * @throws VariantSearchException    Exception
-//     */
-//    public void createCollection(String collectionName, String config) throws VariantSearchException {
-//        createCollection(collectionName, "OpenCGAConfSet", 1, 1);
-//    }
 
     /**
      * Create a Solr collection from a configuration directory. The configuration has to be uploaded to the zookeeper,
@@ -218,12 +199,53 @@ public class VariantSearchManager {
         logger.debug("Creating collection: {}, collection={}, config={}, numShards={}, numReplicas={}",
                 storageConfiguration.getSearch().getHost(), collectionName, configSet, 1, 1);
         try {
-//            HttpSolrClient solrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost()).build();
             CollectionAdminRequest request = CollectionAdminRequest.createCollection(collectionName, configSet, 1, 1);
             request.process(solrClient);
         } catch (Exception e) {
             throw new VariantSearchException(e.getMessage(), e);
         }
+    }
+
+    public boolean exists(String dbName) throws VariantSearchException {
+        String mode = storageConfiguration.getSearch().getMode();
+        if (StringUtils.isNotEmpty(mode)) {
+            logger.warn("Solr 'mode' is empty, setting default 'cloud'");
+            mode = "cloud";
+        }
+
+        if (StringUtils.isEmpty(dbName)) {
+            throw new VariantSearchException("We cannot check if Solr database exists '" + dbName + "'");
+        }
+
+        switch (mode.toLowerCase()) {
+            case "core":
+            case "standalone": {
+                return existsCore(dbName);
+            }
+            case "collection":
+            case "cloud": {
+                return existsCollection(dbName);
+            }
+            default: {
+                throw new IllegalArgumentException("Invalid Solr mode '" + mode + "'. Valid values are 'standalone' or 'cloud'");
+            }
+        }
+    }
+
+    /**
+     * Check if a given core exists.
+     *
+     * @param coreName          Core name
+     * @return                  True or false
+     */
+    public boolean existsCore(String coreName) {
+        try {
+            CoreStatus status = CoreAdminRequest.getCoreStatus(coreName, solrClient);
+            status.getInstanceDirectory();
+        } catch (Exception e) {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -233,8 +255,7 @@ public class VariantSearchManager {
      * @return                          True or false
      * @throws VariantSearchException   VariantSearchException
      */
-    public boolean existCollection(String collectionName) throws VariantSearchException {
-//        HttpSolrClient solrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost()).build();
+    public boolean existsCollection(String collectionName) throws VariantSearchException {
         try {
             List<String> collections = CollectionAdminRequest.listCollections(solrClient);
             for (String collection : collections) {
@@ -361,13 +382,30 @@ public class VariantSearchManager {
      * @throws IOException          IOException
      * @throws VariantSearchException  VariantSearchException
      */
-    public VariantIterator iterator(String collection, Query query, QueryOptions queryOptions) throws VariantSearchException, IOException {
+/*
+    public VariantIterator iterator00(String collection, Query query, QueryOptions queryOptions)
+            throws VariantSearchException, IOException {
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
             QueryResponse response = solrClient.query(collection, solrQuery);
             VariantIterator iterator = new VariantIterator((response.getBeans(VariantSearchModel.class).iterator()));
-            iterator.setNumFound(response.getResults().getNumFound());
+            //iterator.setNumFound(response.getResults().getNumFound());
             return iterator;
+        } catch (SolrServerException e) {
+            throw new VariantSearchException(e.getMessage(), e);
+        }
+    }
+*/
+
+    public VariantIterator iterator(String collection, Query query, QueryOptions queryOptions)
+            throws VariantSearchException, IOException {
+        try {
+            SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+            return new VariantIterator(solrClient, collection, solrQuery);
+
+            //QueryResponse response = solrClient.query(collection, solrQuery);
+            //VariantIterator iterator = new VariantIterator((response.getBeans(VariantSearchModel.class).iterator()));
+            //iterator.setNumFound(response.getResults().getNumFound());
         } catch (SolrServerException e) {
             throw new VariantSearchException(e.getMessage(), e);
         }
@@ -388,8 +426,9 @@ public class VariantSearchManager {
             throws VariantSearchException, IOException {
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
-            QueryResponse response = solrClient.query(collection, solrQuery);
-            return new VariantSearchIterator(response.getBeans(VariantSearchModel.class).iterator());
+            return new VariantSearchIterator(solrClient, collection, solrQuery);
+//            QueryResponse response = solrClient.query(collection, solrQuery);
+//            return new VariantSearchIterator(response.getBeans(VariantSearchModel.class).iterator());
         } catch (SolrServerException e) {
             throw new VariantSearchException(e.getMessage(), e);
         }
@@ -453,7 +492,7 @@ public class VariantSearchManager {
             try {
                 updateResponse = solrClient.addBean(collection, variantSearchModel);
                 if (0 == updateResponse.getStatus()) {
-                    solrClient.commit();
+                    solrClient.commit(collection);
                 }
             } catch (SolrServerException e) {
                 throw new VariantSearchException(e.getMessage(), e);
@@ -477,7 +516,7 @@ public class VariantSearchManager {
                 try {
                     updateResponse = solrClient.addBeans(collection, variantSearchModels);
                     if (0 == updateResponse.getStatus()) {
-                        solrClient.commit();
+                        solrClient.commit(collection);
                     }
                 } catch (SolrServerException e) {
                     throw new VariantSearchException(e.getMessage(), e);
