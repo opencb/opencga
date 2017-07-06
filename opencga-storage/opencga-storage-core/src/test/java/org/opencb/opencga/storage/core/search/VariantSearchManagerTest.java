@@ -14,6 +14,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.storage.core.search.solr.VariantSearchIterator;
 import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 
