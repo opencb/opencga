@@ -46,7 +46,7 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
-import org.opencb.opencga.storage.core.search.VariantIterator;
+import org.opencb.opencga.storage.core.search.solr.VariantIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -674,6 +674,9 @@ public class VariantCommandExecutor extends CommandExecutor {
                         facetedQueryResult.getResult().getIntersections().forEach(f -> System.out.println(f.toString()));
                     }
                 } else {
+                    queryOptions.put(QueryOptions.LIMIT, Integer.MAX_VALUE);
+                    queryOptions.put(QueryOptions.SKIP, 0);
+
                     VariantIterator iterator = variantSearchManager.iterator(dbName, query, queryOptions);
                     while (iterator.hasNext()) {
                         Variant variant = iterator.next();

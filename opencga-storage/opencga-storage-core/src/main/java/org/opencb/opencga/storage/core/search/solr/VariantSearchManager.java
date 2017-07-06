@@ -45,8 +45,6 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.search.VariantIterator;
-import org.opencb.opencga.storage.core.search.VariantSearchIterator;
 import org.opencb.opencga.storage.core.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.search.VariantSearchToVariantConverter;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
@@ -375,13 +373,30 @@ public class VariantSearchManager {
      * @throws IOException          IOException
      * @throws VariantSearchException  VariantSearchException
      */
-    public VariantIterator iterator(String collection, Query query, QueryOptions queryOptions) throws VariantSearchException, IOException {
+/*
+    public VariantIterator iterator00(String collection, Query query, QueryOptions queryOptions)
+            throws VariantSearchException, IOException {
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
             QueryResponse response = solrClient.query(collection, solrQuery);
             VariantIterator iterator = new VariantIterator((response.getBeans(VariantSearchModel.class).iterator()));
-            iterator.setNumFound(response.getResults().getNumFound());
+            //iterator.setNumFound(response.getResults().getNumFound());
             return iterator;
+        } catch (SolrServerException e) {
+            throw new VariantSearchException(e.getMessage(), e);
+        }
+    }
+*/
+
+    public VariantIterator iterator(String collection, Query query, QueryOptions queryOptions)
+            throws VariantSearchException, IOException {
+        try {
+            SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+            return new VariantIterator(solrClient, collection, solrQuery);
+
+            //QueryResponse response = solrClient.query(collection, solrQuery);
+            //VariantIterator iterator = new VariantIterator((response.getBeans(VariantSearchModel.class).iterator()));
+            //iterator.setNumFound(response.getResults().getNumFound());
         } catch (SolrServerException e) {
             throw new VariantSearchException(e.getMessage(), e);
         }
@@ -402,8 +417,9 @@ public class VariantSearchManager {
             throws VariantSearchException, IOException {
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
-            QueryResponse response = solrClient.query(collection, solrQuery);
-            return new VariantSearchIterator(response.getBeans(VariantSearchModel.class).iterator());
+            return new VariantSearchIterator(solrClient, collection, solrQuery);
+//            QueryResponse response = solrClient.query(collection, solrQuery);
+//            return new VariantSearchIterator(response.getBeans(VariantSearchModel.class).iterator());
         } catch (SolrServerException e) {
             throw new VariantSearchException(e.getMessage(), e);
         }
