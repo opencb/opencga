@@ -117,7 +117,7 @@ public class VariantSearchManager {
 
     public void create(String dbName, String configSet) throws VariantSearchException {
         String mode = storageConfiguration.getSearch().getMode();
-        if (StringUtils.isNotEmpty(mode)) {
+        if (StringUtils.isEmpty(mode)) {
             logger.warn("Solr 'mode' is empty, setting default 'cloud'");
             mode = "cloud";
         }

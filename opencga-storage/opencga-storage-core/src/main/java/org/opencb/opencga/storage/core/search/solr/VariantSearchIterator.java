@@ -24,6 +24,7 @@ import org.apache.solr.common.params.CursorMarkParams;
 import org.opencb.opencga.storage.core.search.VariantSearchModel;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Iterator;
 
 /**
@@ -31,7 +32,9 @@ import java.util.Iterator;
  */
 public class VariantSearchIterator implements Iterator<VariantSearchModel>, AutoCloseable {
 
-    //private long numFound = 0;
+    private final int CHUNK_SIZE = 100;
+    private final int DEFAULT_LIMIT = 1000;
+
     private Iterator<VariantSearchModel> solrIterator;
 
     private SolrClient solrClient;
@@ -39,6 +42,8 @@ public class VariantSearchIterator implements Iterator<VariantSearchModel>, Auto
     private SolrQuery solrQuery;
     private QueryResponse solrResponse;
     private String cursorMark, nextCursorMark;
+
+    private int left;
 
     @Deprecated
     public VariantSearchIterator(Iterator<VariantSearchModel> solrIterator) {
@@ -51,17 +56,12 @@ public class VariantSearchIterator implements Iterator<VariantSearchModel>, Auto
         this.collection = collection;
         this.solrQuery = solrQuery;
 
-        init();
-    }
+        // be sure, query is sorted
+        this.solrQuery.setSort(SolrQuery.SortClause.asc("id"));
+        this.left = (solrQuery.getRows() == null || solrQuery.getRows() < 0 ? DEFAULT_LIMIT : solrQuery.getRows());
 
-    private void init() throws IOException, SolrServerException {
-        solrQuery.setSort(SolrQuery.SortClause.asc("id"));
-        solrQuery.setRows(100);
-        cursorMark = CursorMarkParams.CURSOR_MARK_START;
-        solrQuery.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
-        solrResponse = solrClient.query(collection, solrQuery);
-        nextCursorMark = solrResponse.getNextCursorMark();
-        solrIterator = solrResponse.getBeans(VariantSearchModel.class).iterator();
+        this.cursorMark = CursorMarkParams.CURSOR_MARK_START;
+        this.solrIterator = Collections.emptyIterator();
     }
 
     @Override
@@ -73,16 +73,19 @@ public class VariantSearchIterator implements Iterator<VariantSearchModel>, Auto
                 return false;
             }
             try {
-                cursorMark = nextCursorMark;
+                if (nextCursorMark != null) {
+                    cursorMark = nextCursorMark;
+                }
+                solrQuery.setRows(left > CHUNK_SIZE ? CHUNK_SIZE : left);
                 solrQuery.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
                 solrResponse = solrClient.query(collection, solrQuery);
+                left -= solrResponse.getResults().size();
                 nextCursorMark = solrResponse.getNextCursorMark();
                 solrIterator = solrResponse.getBeans(VariantSearchModel.class).iterator();
                 return solrIterator.hasNext();
-            } catch (SolrServerException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (SolrServerException | IOException e) {
+                // do something
+                //e.printStackTrace();
             }
             return false;
         }
