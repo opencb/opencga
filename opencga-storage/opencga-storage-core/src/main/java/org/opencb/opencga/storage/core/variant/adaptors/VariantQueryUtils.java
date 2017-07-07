@@ -97,6 +97,17 @@ public class VariantQueryUtils {
                 || value instanceof Collection && ((Collection) value).isEmpty());
     }
 
+    public static Set<VariantQueryParam> validParams(Query query) {
+        Set<VariantQueryParam> params = new HashSet<>(query.size());
+
+        for (VariantQueryParam queryParam : values()) {
+            if (isValidParam(query, queryParam)) {
+                params.add(queryParam);
+            }
+        }
+        return params;
+    }
+
     /**
      * Determines if the filter is negated.
      *

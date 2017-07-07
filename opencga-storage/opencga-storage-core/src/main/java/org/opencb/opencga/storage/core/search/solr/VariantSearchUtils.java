@@ -16,13 +16,13 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
  */
 public class VariantSearchUtils {
 
-    public static final Set<VariantQueryParam> NON_COVERED_PARAMS = Collections.unmodifiableSet(new HashSet<>(
+    public static final Set<VariantQueryParam> UNSUPPORTED_QUERY_PARAMS = Collections.unmodifiableSet(new HashSet<>(
             Arrays.asList(VariantQueryParam.FILES,
                     VariantQueryParam.FILTER,
                     VariantQueryParam.GENOTYPE,
                     VariantQueryParam.SAMPLES)));
 
-    public static final Set<VariantQueryParam> NON_COVERED_MODIFIERS = Collections.unmodifiableSet(new HashSet<>(
+    public static final Set<VariantQueryParam> UNSUPPORTED_MODIFIERS = Collections.unmodifiableSet(new HashSet<>(
             Arrays.asList(VariantQueryParam.RETURNED_FILES,
                     VariantQueryParam.RETURNED_SAMPLES,
                     VariantQueryParam.RETURNED_STUDIES,
@@ -32,7 +32,7 @@ public class VariantSearchUtils {
             )));
 
     public static boolean isQueryCovered(Query query) {
-        for (VariantQueryParam nonCoveredParam : NON_COVERED_PARAMS) {
+        for (VariantQueryParam nonCoveredParam : UNSUPPORTED_QUERY_PARAMS) {
             if (isValidParam(query, nonCoveredParam)) {
                 return false;
             }
@@ -40,33 +40,22 @@ public class VariantSearchUtils {
         return true;
     }
 
-    public static List<VariantQueryParam> validParams(Query query) {
-        List<VariantQueryParam> params = new ArrayList<>();
-
-        for (VariantQueryParam queryParam : VariantQueryParam.values()) {
-            if (isValidParam(query, queryParam)) {
-                params.add(queryParam);
-            }
-        }
-        return params;
-    }
-
-    public static List<VariantQueryParam> coveredParams(List<VariantQueryParam> params) {
+    public static List<VariantQueryParam> coveredParams(Collection<VariantQueryParam> params) {
         List<VariantQueryParam> coveredParams = new ArrayList<>();
 
         for (VariantQueryParam param : params) {
-            if (!NON_COVERED_PARAMS.contains(param)) {
+            if (!UNSUPPORTED_QUERY_PARAMS.contains(param)) {
                 coveredParams.add(param);
             }
         }
         return coveredParams;
     }
 
-    public static List<VariantQueryParam> uncoveredParams(List<VariantQueryParam> params) {
+    public static List<VariantQueryParam> uncoveredParams(Collection<VariantQueryParam> params) {
         List<VariantQueryParam> coveredParams = new ArrayList<>();
 
         for (VariantQueryParam param : params) {
-            if (NON_COVERED_PARAMS.contains(param)) {
+            if (UNSUPPORTED_QUERY_PARAMS.contains(param)) {
                 coveredParams.add(param);
             }
         }

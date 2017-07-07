@@ -48,10 +48,7 @@ import org.opencb.opencga.storage.core.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.search.solr.VariantSearchIterator;
 import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -558,7 +555,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
         } else {
             VariantDBAdaptor dbAdaptor = getDBAdaptor();
-            List<VariantQueryParam> params = validParams(query);
+            Set<VariantQueryParam> params = VariantQueryUtils.validParams(query);
             List<VariantQueryParam> uncoveredParams = uncoveredParams(params);
             if (doIntersectWithSearch(query, params, options)) {
                 // Intersect Solr+Engine
@@ -595,7 +592,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     }
                 }
                 // Add returned fields
-                for (VariantQueryParam modifier : NON_COVERED_MODIFIERS) {
+                for (VariantQueryParam modifier : UNSUPPORTED_MODIFIERS) {
                     engineQuery.putIfNotEmpty(modifier.key(), query.getString(modifier.key()));
                 }
 
@@ -642,7 +639,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @return            true if should intersect
      * @throws StorageEngineException StorageEngineException
      */
-    protected boolean doIntersectWithSearch(Query query, List<VariantQueryParam> validParams, QueryOptions options)
+    protected boolean doIntersectWithSearch(Query query, Collection<VariantQueryParam> validParams, QueryOptions options)
             throws StorageEngineException {
         // TODO: Improve this heuristic
         List<VariantQueryParam> coveredParams = coveredParams(validParams);
