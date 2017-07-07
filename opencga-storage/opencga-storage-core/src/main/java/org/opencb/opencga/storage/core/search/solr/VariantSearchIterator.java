@@ -74,10 +74,10 @@ public class VariantSearchIterator implements Iterator<VariantSearchModel>, Auto
         // A simple solution is to waste these records and remove the Start from the solrQuery
         if (solrQuery.getStart() != null && solrQuery.getStart() >= 0) {
             // Do not change the order or position of the next two lines of code
-            Integer start = solrQuery.getStart();
+            Integer skip = solrQuery.getStart();
             solrQuery.setStart(null);
-            for (int i = 0; i < start; i++) {
-                hasNext();
+            for (int i = 0; i < skip && hasNext(); i++) {
+                next();
             }
         }
     }
