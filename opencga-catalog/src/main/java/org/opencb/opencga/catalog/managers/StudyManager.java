@@ -63,6 +63,7 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
 public class StudyManager extends AbstractManager implements IStudyManager {
 
     protected static Logger logger = LoggerFactory.getLogger(StudyManager.class);
+    private static final String MEMBERS = "@members";
 
     @Deprecated
     public StudyManager(AuthorizationManager authorizationManager, AuditManager auditManager,
@@ -301,9 +302,9 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         // StudyAcl studyAcl = new StudyAcl(userId, AuthorizationManager.getAdminAcls());
 
         Study study = new Study(-1, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
-                0, cipher, new LinkedList<>(), new LinkedList<>(), experiments, files, jobs, new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, datastores,
-                getProjectCurrentRelease(projectId), stats, attributes);
+                0, cipher, Arrays.asList(new Group(MEMBERS, Collections.emptyList())), new LinkedList<>(), experiments, files, jobs,
+                new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(),
+                null, datastores, getProjectCurrentRelease(projectId), stats, attributes);
 
         /* CreateStudy */
         QueryResult<Study> result = studyDBAdaptor.insert(projectId, study, userId, options);
@@ -716,6 +717,12 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, studyId, members);
         }
 
+        if (aclParams.getAction() == AclParams.Action.SET || aclParams.getAction() == AclParams.Action.ADD) {
+            for (Long studyId : studyIds) {
+                studyDBAdaptor.addUsersToGroup(studyId, MEMBERS, members);
+            }
+        }
+
         switch (aclParams.getAction()) {
             case SET:
                 return authorizationManager.setStudyAcls(studyIds, members, permissions);
@@ -724,93 +731,13 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             case REMOVE:
                 return authorizationManager.removeStudyAcls(studyIds, members, permissions);
             case RESET:
-                removeAllPermissionsFromOtherEntities(studyIds, members);
-//                // TODO: Improve this way of doing things
-//                for (Long studyId : studyIds) {
-//                    for (String member : members) {
-//                        sampleDBAdaptor.removeAclsFromStudy(studyId, member);
-//                        fileDBAdaptor.removeAclsFromStudy(studyId, member);
-//                        jobDBAdaptor.removeAclsFromStudy(studyId, member);
-//                        datasetDBAdaptor.removeAclsFromStudy(studyId, member);
-//                        individualDBAdaptor.removeAclsFromStudy(studyId, member);
-//                        cohortDBAdaptor.removeAclsFromStudy(studyId, member);
-//                        panelDBAdaptor.removeAclsFromStudy(studyId, member);
-//                    }
-//                }
-                return authorizationManager.removeStudyAcls(studyIds, members, null);
+                for (Long studyId : studyIds) {
+                    authorizationManager.resetPermissionsFromAllEntities(studyId, members);
+                }
+                return authorizationManager.getAcls(studyIds, members, MongoDBAdaptorFactory.STUDY_COLLECTION);
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }
-    }
-
-    private void removeAllPermissionsFromOtherEntities(List<Long> studyIds, List<String> members) throws CatalogException {
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
-                .append(FileDBAdaptor.QueryParams.ACL_MEMBER.key(), members);
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
-
-        List<Long> sampleIds = new ArrayList<>();
-        DBIterator<Sample> sampleDBIterator = sampleDBAdaptor.iterator(query, options);
-        while (sampleDBIterator.hasNext()) {
-            sampleIds.add(sampleDBIterator.next().getId());
-        }
-        authorizationManager.removeAcls(sampleIds, members, null, MongoDBAdaptorFactory.SAMPLE_COLLECTION);
-
-        List<Long> fileIds = new ArrayList<>();
-        DBIterator<File> fileDBIterator = fileDBAdaptor.iterator(query, options);
-        while (fileDBIterator.hasNext()) {
-            fileIds.add(fileDBIterator.next().getId());
-        }
-        authorizationManager.removeAcls(fileIds, members, null, MongoDBAdaptorFactory.FILE_COLLECTION);
-
-        List<Long> jobIds = new ArrayList<>();
-        DBIterator<Job> jobDBIterator = jobDBAdaptor.iterator(query, options);
-        while (jobDBIterator.hasNext()) {
-            jobIds.add(jobDBIterator.next().getId());
-        }
-        authorizationManager.removeAcls(jobIds, members, null, MongoDBAdaptorFactory.JOB_COLLECTION);
-
-        List<Long> datasetIds = new ArrayList<>();
-        DBIterator<Dataset> datasetDBIterator = datasetDBAdaptor.iterator(query, options);
-        while (datasetDBIterator.hasNext()) {
-            datasetIds.add(datasetDBIterator.next().getId());
-        }
-        authorizationManager.removeAcls(datasetIds, members, null, MongoDBAdaptorFactory.DATASET_COLLECTION);
-
-        List<Long> individualIds = new ArrayList<>();
-        DBIterator<Individual> individualDBIterator = individualDBAdaptor.iterator(query, options);
-        while (individualDBIterator.hasNext()) {
-            individualIds.add(individualDBIterator.next().getId());
-        }
-        authorizationManager.removeAcls(individualIds, members, null, MongoDBAdaptorFactory.INDIVIDUAL_COLLECTION);
-
-        List<Long> cohortIds = new ArrayList<>();
-        DBIterator<Cohort> cohortDBIterator = cohortDBAdaptor.iterator(query, options);
-        while (cohortDBIterator.hasNext()) {
-            cohortIds.add(cohortDBIterator.next().getId());
-        }
-        authorizationManager.removeAcls(cohortIds, members, null, MongoDBAdaptorFactory.COHORT_COLLECTION);
-
-        List<Long> panelIds = new ArrayList<>();
-        DBIterator<DiseasePanel> panelDBIterator = panelDBAdaptor.iterator(query, options);
-        while (panelDBIterator.hasNext()) {
-            panelIds.add(panelDBIterator.next().getId());
-        }
-        authorizationManager.removeAcls(panelIds, members, null, MongoDBAdaptorFactory.PANEL_COLLECTION);
-
-        List<Long> familyIds = new ArrayList<>();
-        DBIterator<Family> familyDBIterator = familyDBAdaptor.iterator(query, options);
-        while (familyDBIterator.hasNext()) {
-            familyIds.add(familyDBIterator.next().getId());
-        }
-        authorizationManager.removeAcls(familyIds, members, null, MongoDBAdaptorFactory.FAMILY_COLLECTION);
-
-        List<Long> clinicalAnalysisIds = new ArrayList<>();
-        DBIterator<ClinicalAnalysis> clinicalAnalysisDBIterator = clinicalDBAdaptor.iterator(query, options);
-        while (clinicalAnalysisDBIterator.hasNext()) {
-            clinicalAnalysisIds.add(clinicalAnalysisDBIterator.next().getId());
-        }
-        authorizationManager.removeAcls(clinicalAnalysisIds, members, null, MongoDBAdaptorFactory.CLINICAL_ANALYSIS_COLLECTION);
     }
 
     @Override
@@ -827,6 +754,11 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         // Fix the groupId
         if (!groupId.startsWith("@")) {
             groupId = "@" + groupId;
+        }
+
+        if (groupId.equals(MEMBERS)) {
+            throw new CatalogException("Cannot create group @members. @members is managed and used internally to keep track of all the "
+                    + "users with any permissions in the study");
         }
 
         // Create the list of users
@@ -948,6 +880,12 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         if (!groupId.startsWith("@")) {
             groupId = "@" + groupId;
         }
+        if (groupId.equals(MEMBERS) && groupParams.getAction() != GroupParams.Action.ADD
+                && groupParams.getAction() != GroupParams.Action.REMOVE) {
+            throw new CatalogException("Action " + groupParams.getAction() + " not allowed for group @members. @members is managed and "
+                    + "used internally to keep track of all the users with any permissions in the study. Only " + GroupParams.Action.ADD
+                    + " and " + GroupParams.Action.REMOVE + " actions are allowed.");
+        }
 
         switch (groupParams.getAction()) {
             case SET:
@@ -955,9 +893,18 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 break;
             case ADD:
                 studyDBAdaptor.addUsersToGroup(studyId, groupId, users);
+                if (!groupId.equals(MEMBERS)) {
+                    studyDBAdaptor.addUsersToGroup(studyId, MEMBERS, users);
+                }
                 break;
             case REMOVE:
-                studyDBAdaptor.removeUsersFromGroup(studyId, groupId, users);
+                if (groupId.equals(MEMBERS)) {
+                    // We remove the users from all the groups and acls
+                    studyDBAdaptor.removeUsersFromAllGroups(studyId, users);
+                    authorizationManager.resetPermissionsFromAllEntities(studyId, users);
+                } else {
+                    studyDBAdaptor.removeUsersFromGroup(studyId, groupId, users);
+                }
                 break;
             default:
                 throw new CatalogException("Unknown action " + groupParams.getAction() + " found.");
@@ -1017,6 +964,10 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         // Fix the groupId
         if (!groupId.startsWith("@")) {
             groupId = "@" + groupId;
+        }
+        if (groupId.equals(MEMBERS)) {
+            throw new CatalogException("Cannot delete group @members. @members is managed and used internally to keep track of all the "
+                    + "users with any permissions in the study");
         }
 
         QueryResult<Group> group = studyDBAdaptor.getGroup(studyId, groupId, Collections.emptyList());

@@ -55,4 +55,5 @@ public interface AuthorizationDBAdaptor {
     void removeFromMembers(List<Long> resourceIds, List<String> members, @Nullable List<String> permissions, String entity)
             throws CatalogDBException;
 
+    void resetMembersFromAllEntries(long studyId, List<String> members) throws CatalogDBException;
 }

@@ -132,6 +132,8 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      */
     void removeUsersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
 
+    void removeUsersFromAllGroups(long studyId, List<String> users) throws CatalogDBException;
+
     /**
      * Delete a group.
      *

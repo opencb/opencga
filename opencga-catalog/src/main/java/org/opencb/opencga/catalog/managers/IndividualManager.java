@@ -824,7 +824,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         List<QueryResult<IndividualAclEntry>> queryResults;
         switch (aclParams.getAction()) {
             case SET:
-                queryResults = authorizationManager.setAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
+                queryResults = authorizationManager.setAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
+                        collectionName);
                 if (aclParams.isPropagate()) {
                     List<Long> sampleIds = getSamplesFromIndividuals(resourceIds);
                     if (sampleIds.size() > 0) {
@@ -836,7 +837,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                 }
                 break;
             case ADD:
-                queryResults = authorizationManager.addAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
+                queryResults = authorizationManager.addAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
+                        collectionName);
                 if (aclParams.isPropagate()) {
                     List<Long> sampleIds = getSamplesFromIndividuals(resourceIds);
                     if (sampleIds.size() > 0) {

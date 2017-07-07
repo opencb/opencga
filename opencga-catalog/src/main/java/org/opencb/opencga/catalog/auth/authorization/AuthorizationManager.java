@@ -402,16 +402,18 @@ public interface AuthorizationManager {
 
     <E extends AbstractAclEntry> List<QueryResult<E>> getAcls(List<Long> ids, List<String> members, String entity) throws CatalogException;
 
-    <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(List<Long> ids, List<String> members,
-                                                              List<String> permissions, String entity) throws CatalogException;
+    <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(long studyId, List<Long> ids, List<String> members, List<String> permissions,
+                                                              String entity) throws CatalogException;
 
-    <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(List<Long> ids, List<String> members,
-                                                              List<String> permissions, String entity) throws CatalogException;
+    <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(long studyId, List<Long> ids, List<String> members, List<String> permissions,
+                                                              String entity) throws CatalogException;
 
     <E extends AbstractAclEntry> List<QueryResult<E>> removeAcls(List<Long> ids, List<String> members, @Nullable List<String> permissions,
                                                                  String entity) throws CatalogException;
 
     <E extends Enum<E>> void checkValidPermission(List<String> permissions, Class<E> enumClass) throws CatalogException;
+
+    void resetPermissionsFromAllEntities(long studyId, List<String> members) throws CatalogException;
 
     /**
      * Checks if the member belongs to one role or not.

@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.managers.api.IIndividualManager;
 import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
+import org.opencb.opencga.catalog.models.acls.permissions.AbstractAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.models.summaries.FeatureCount;
@@ -674,6 +675,62 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals(sampleIds.size(), acls.size());
         for (QueryResult<SampleAclEntry> acl : acls) {
             assertEquals(0, acl.getNumResults());
+        }
+    }
+
+    @Test
+    public void removeUsersFromStudies() throws CatalogException {
+        IStudyManager studyManager = catalogManager.getStudyManager();
+
+        // Assign permissions to study
+        Study.StudyAclParams studyAclParams = new Study.StudyAclParams("VIEW_STUDY", AclParams.Action.SET, null);
+        List<QueryResult<StudyAclEntry>> queryResults = studyManager.updateAcl(Long.toString(studyId), "user2,user3", studyAclParams,
+                sessionIdUser);
+        assertEquals(Long.toString(studyId), queryResults.get(0).getId());
+        assertEquals(2, queryResults.get(0).getNumResults());
+        for (StudyAclEntry studyAclEntry : queryResults.get(0).getResult()) {
+            assertTrue(studyAclEntry.getPermissions().contains(StudyAclEntry.StudyPermissions.VIEW_STUDY));
+            assertTrue(Arrays.asList("user2", "user3").contains(studyAclEntry.getMember()));
+        }
+
+        // Obtain all samples from study
+        Query query = new Query(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(query, QueryOptions.empty(), sessionIdUser);
+        assertTrue(sampleQueryResult.getNumResults() > 0);
+
+        // Assign permissions to all the samples
+        Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams("VIEW,UPDATE", AclParams.Action.SET, null, null, null);
+        List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
+        List<QueryResult<SampleAclEntry>> sampleAclResult = catalogManager.getSampleManager().updateAcl(
+                org.apache.commons.lang3.StringUtils.join(sampleIds, ","), Long.toString(studyId), "user2,user3",
+                sampleAclParams, sessionIdUser);
+        assertEquals(sampleIds.size(), sampleAclResult.size());
+        for (QueryResult<SampleAclEntry> sampleAclEntryQueryResult : sampleAclResult) {
+            assertEquals(2, sampleAclEntryQueryResult.getNumResults());
+            for (SampleAclEntry sampleAclEntry : sampleAclEntryQueryResult.getResult()) {
+                assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.VIEW));
+                assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.UPDATE));
+                assertTrue(Arrays.asList("user2", "user3").contains(sampleAclEntry.getMember()));
+            }
+        }
+
+        catalogManager.getStudyManager().updateGroup(Long.toString(studyId), "@members",
+                new GroupParams("user2,user3", GroupParams.Action.REMOVE), sessionIdUser);
+        List<QueryResult<AbstractAclEntry>> aclQR = catalogManager.getAuthorizationManager().getAcls(Arrays.asList(studyId),
+                Arrays.asList("user2", "user3"), MongoDBAdaptorFactory.STUDY_COLLECTION);
+        assertEquals(1, aclQR.size());
+        assertEquals(0, aclQR.get(0).getNumResults());
+
+        QueryResult<Group> groupQueryResult = catalogManager.getStudyManager().getGroup(Long.toString(studyId), null, sessionIdUser);
+        for (Group group : groupQueryResult.getResult()) {
+            assertTrue(!group.getUserIds().contains("user2"));
+            assertTrue(!group.getUserIds().contains("user3"));
+        }
+
+        List<QueryResult<SampleAclEntry>> sampleQR = catalogManager.getAuthorizationManager().getAcls(sampleIds,
+                Arrays.asList("user2", "user3"), MongoDBAdaptorFactory.SAMPLE_COLLECTION);
+        for (QueryResult<SampleAclEntry> aclEntryQueryResult : sampleQR) {
+            assertEquals(0, aclEntryQueryResult.getNumResults());
         }
     }
 

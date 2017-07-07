@@ -2697,9 +2697,11 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         switch (fileAclParams.getAction()) {
             case SET:
-                return authorizationManager.setAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
+                return authorizationManager.setAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
+                        collectionName);
             case ADD:
-                return authorizationManager.addAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
+                return authorizationManager.addAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
+                        collectionName);
             case REMOVE:
                 return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
             case RESET:

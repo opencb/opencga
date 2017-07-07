@@ -157,4 +157,17 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
         catalogStudyDBAdaptor.createGroup(5L, new Group("name", Arrays.asList("user1", "user2")));
     }
 
+    @Test
+    public void removeUsersFromAllGroups() throws CatalogDBException {
+        catalogStudyDBAdaptor.createGroup(5L, new Group("name1", Arrays.asList("user1", "user2")));
+        catalogStudyDBAdaptor.createGroup(5L, new Group("name2", Arrays.asList("user1", "user2", "user3")));
+        catalogStudyDBAdaptor.createGroup(5L, new Group("name3", Arrays.asList("user1", "user3")));
+
+        QueryResult<Group> group = catalogStudyDBAdaptor.getGroup(5L, null,  Arrays.asList("user1", "user3"));
+        assertEquals(3, group.getNumResults());
+        catalogStudyDBAdaptor.removeUsersFromAllGroups(5L, Arrays.asList("user1", "user3"));
+        group = catalogStudyDBAdaptor.getGroup(5L, null,  Arrays.asList("user1", "user3"));
+        assertEquals(0, group.getNumResults());
+    }
+
 }

@@ -53,6 +53,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                     FILTER_ROUTE_FILES + FileDBAdaptor.QueryParams.PATH.key(),
                     FILTER_ROUTE_FILES + FileDBAdaptor.QueryParams.ACL.key()
             ));
+    private static final String MEMBERS_GROUP = "@members";
 
     private final Logger logger;
 
@@ -66,6 +67,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final CohortDBAdaptor cohortDBAdaptor;
     private final DatasetDBAdaptor datasetDBAdaptor;
     private final PanelDBAdaptor panelDBAdaptor;
+    private final FamilyDBAdaptor familyDBAdaptor;
+    private final ClinicalAnalysisDBAdaptor clinicalAnalysisDBAdaptor;
     private final MetaDBAdaptor metaDBAdaptor;
     private final AuditManager auditManager;
 
@@ -101,6 +104,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         cohortDBAdaptor = dbFactory.getCatalogCohortDBAdaptor();
         datasetDBAdaptor = dbFactory.getCatalogDatasetDBAdaptor();
         panelDBAdaptor = dbFactory.getCatalogPanelDBAdaptor();
+        familyDBAdaptor = dbFactory.getCatalogFamilyDBAdaptor();
+        clinicalAnalysisDBAdaptor = dbFactory.getClinicalAnalysisDBAdaptor();
         metaDBAdaptor = dbFactory.getCatalogMetaDBAdaptor();
     }
 
@@ -1480,6 +1485,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    public void resetPermissionsFromAllEntities(long studyId, List<String> members) throws CatalogException {
+        aclDBAdaptor.resetMembersFromAllEntries(studyId, members);
+    }
+
+    @Override
     public QueryResult<FileAclEntry> getAllFileAcls(String userId, long fileId) throws CatalogException {
         fileDBAdaptor.checkId(fileId);
         // Check if the userId has proper permissions for all the samples.
@@ -1796,6 +1806,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public List<QueryResult<StudyAclEntry>> setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException {
+        // We first add the member to the @members group in case they didn't belong already
+        for (Long studyId : studyIds) {
+            studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, members);
+        }
+
         aclDBAdaptor.setToMembers(studyIds, members, permissions, MongoDBAdaptorFactory.STUDY_COLLECTION);
         return aclDBAdaptor.get(studyIds, members, MongoDBAdaptorFactory.STUDY_COLLECTION);
     }
@@ -1803,6 +1818,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public List<QueryResult<StudyAclEntry>> addStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException {
+        // We first add the member to the @members group in case they didn't belong already
+        for (Long studyId : studyIds) {
+            studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, members);
+        }
         aclDBAdaptor.addToMembers(studyIds, members, permissions, MongoDBAdaptorFactory.STUDY_COLLECTION);
         return aclDBAdaptor.get(studyIds, members, MongoDBAdaptorFactory.STUDY_COLLECTION);
     }
@@ -1826,12 +1845,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(List<Long> ids, List<String> members, List<String> permissions,
-                                                                     String entity) throws CatalogException {
+    public <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(long studyId, List<Long> ids, List<String> members,
+                                                                     List<String> permissions, String entity) throws CatalogException {
         if (ids == null || ids.size() == 0) {
             logger.warn("Missing identifiers to set acls");
             return Collections.emptyList();
         }
+
+        // We first add the member to the @members group in case they didn't belong already
+        studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, members);
 
         long startTime = System.currentTimeMillis();
         aclDBAdaptor.setToMembers(ids, members, permissions, entity);
@@ -1847,12 +1869,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(List<Long> ids, List<String> members, List<String> permissions,
-                                                                     String entity) throws CatalogException {
+    public <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(long studyId, List<Long> ids, List<String> members,
+                                                                     List<String> permissions, String entity) throws CatalogException {
         if (ids == null || ids.size() == 0) {
             logger.warn("Missing identifiers to add acls");
             return Collections.emptyList();
         }
+
+        // We first add the member to the @members group in case they didn't belong already
+        studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, members);
 
         long startTime = System.currentTimeMillis();
         aclDBAdaptor.addToMembers(ids, members, permissions, entity);

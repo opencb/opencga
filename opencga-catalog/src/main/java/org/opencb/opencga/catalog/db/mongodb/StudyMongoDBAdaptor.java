@@ -304,8 +304,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         Document update = new Document("$set", new Document("groups.$.userIds", members));
         QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
 
-        if (queryResult.first().getModifiedCount() != 1) {
-            throw new CatalogDBException("Unable to set users to group " + groupId);
+        if (queryResult.first().getMatchedCount() != 1) {
+            throw new CatalogDBException("Unable to set users to group " + groupId + ". The group does not exist.");
         }
     }
 
@@ -325,8 +325,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         Document update = new Document("$addToSet", new Document("groups.$.userIds", new Document("$each", members)));
         QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
 
-        if (queryResult.first().getModifiedCount() != 1) {
-            throw new CatalogDBException("Unable to add members to group " + groupId + ". Maybe those users already belong to the group?");
+        if (queryResult.first().getMatchedCount() != 1) {
+            throw new CatalogDBException("Unable to add members to group " + groupId + ". The group does not exist.");
         }
     }
 
@@ -344,9 +344,28 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 .append("$isolated", 1);
         Bson pull = Updates.pullAll("groups.$.userIds", members);
         QueryResult<UpdateResult> update = studyCollection.update(query, pull, null);
-        if (update.first().getModifiedCount() != 1) {
-            throw new CatalogDBException("Unable to remove members from group " + groupId);
+        if (update.first().getMatchedCount() != 1) {
+            throw new CatalogDBException("Unable to remove members from group " + groupId + ". The group does not exist.");
         }
+    }
+
+    @Override
+    public void removeUsersFromAllGroups(long studyId, List<String> users) throws CatalogDBException {
+        if (users == null || users.size() == 0) {
+            throw new CatalogDBException("Unable to remove users from groups. List of users is empty");
+        }
+
+        Document query = new Document()
+                .append(PRIVATE_ID, studyId)
+                .append(QueryParams.GROUP_USER_IDS.key(), new Document("$in", users))
+                .append("$isolated", 1);
+        Bson pull = Updates.pullAll("groups.$.userIds", users);
+
+        // Pull those users while they are still there
+        QueryResult<UpdateResult> update;
+        do {
+            update = studyCollection.update(query, pull, null);
+        } while (update.first().getModifiedCount() > 0);
     }
 
     @Override

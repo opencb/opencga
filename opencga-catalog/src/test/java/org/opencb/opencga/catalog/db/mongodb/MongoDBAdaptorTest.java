@@ -138,8 +138,7 @@ public class MongoDBAdaptorTest extends GenericTest {
         user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", null, User.UserStatus.READY, "", 1222, 122222,
                 Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", null, new Status
                         (), "", 0, Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", new Status(),
-                                "", 0, "", Collections.emptyList(),
-                                null, Collections.<Experiment>emptyList(),
+                                "", 0, "", Arrays.asList(new Group("@members", Collections.emptyList())), null, Collections.<Experiment>emptyList(),
                                 Arrays.asList(
                                         new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/", "", new File.FileStatus(File.FileStatus.READY), 1000, 1),
                                         new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file" +
@@ -156,7 +155,8 @@ public class MongoDBAdaptorTest extends GenericTest {
 
         user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", null, User.UserStatus.READY, "", 0, 50000,
                 Arrays.asList(new Project(-1, "lncRNAs", "lncRNAs", "today", "My description", "My org", null, new Status(), "", 0, Arrays.asList(
-                                new Study(-1, "spongeScan", "sponges", Study.Type.COLLECTION, "", "", new Status(), "", 0, "", Collections.emptyList(), null,
+                                new Study(-1, "spongeScan", "sponges", Study.Type.COLLECTION, "", "", new Status(), "", 0, "", Arrays
+                                        .asList(new Group("@members", Collections.emptyList())), null,
                                         null, Arrays.asList(
                                                 new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", "Description", new File.FileStatus(File.FileStatus.READY), 10, 1),
                                                 new File("file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
@@ -171,7 +171,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                                 ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new
                                         LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, 1, Collections.emptyMap(), Collections.emptyMap()
                                 ),
-                                new Study(-1, "MINECO", "mineco", Study.Type.COLLECTION, "", "", new Status(), "", 0, "", Collections.emptyList(), null, null,
+                                new Study(-1, "MINECO", "mineco", Study.Type.COLLECTION, "", "", new Status(), "", 0, "", Arrays.asList(new Group("@members", Collections.emptyList())), null, null,
                                         Arrays.asList(
                                                 new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", "Description", new File.FileStatus(File.FileStatus.READY), 10, 1),
                                                 new File("m_file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,

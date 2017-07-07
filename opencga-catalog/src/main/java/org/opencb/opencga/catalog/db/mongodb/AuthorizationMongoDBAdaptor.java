@@ -444,6 +444,39 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         collection.update(queryDocument, update, new QueryOptions("multi", true));
     }
 
+    @Override
+    public void resetMembersFromAllEntries(long studyId, List<String> members) throws CatalogDBException {
+        if (members == null || members.size() == 0) {
+            return;
+        }
+
+        removePermissions(studyId, members, COHORT_COLLECTION);
+        removePermissions(studyId, members, DATASET_COLLECTION);
+        removePermissions(studyId, members, FILE_COLLECTION);
+        removePermissions(studyId, members, INDIVIDUAL_COLLECTION);
+        removePermissions(studyId, members, JOB_COLLECTION);
+        removePermissions(studyId, members, SAMPLE_COLLECTION);
+        removePermissions(studyId, members, PANEL_COLLECTION);
+        removePermissions(studyId, members, FAMILY_COLLECTION);
+        removePermissions(studyId, members, CLINICAL_ANALYSIS_COLLECTION);
+        removeFromMembers(Arrays.asList(studyId), members, null, STUDY_COLLECTION);
+
+    }
+
+    private void removePermissions(long studyId, List<String> users, String entity) {
+        List<String> permissions = fullPermissionsMap.get(entity);
+        List<String> removePermissions = createPermissionArray(users, permissions);
+
+        MongoDBCollection collection = dbCollectionMap.get(entity);
+        Document queryDocument = new Document()
+                .append("$isolated", 1)
+                .append(PRIVATE_STUDY_ID, studyId)
+                .append(QueryParams.ACL.key(), new Document("$in", removePermissions));
+        Document update = new Document("$pullAll", new Document(QueryParams.ACL.key(), removePermissions));
+
+        collection.update(queryDocument, update, new QueryOptions("multi", true));
+    }
+
     private List<String> createPermissionArray(Map<String, List<String>> memberPermissionsMap) {
         List<String> myPermissions = new ArrayList<>(memberPermissionsMap.size() * 2);
         for (Map.Entry<String, List<String>> stringListEntry : memberPermissionsMap.entrySet()) {
