@@ -73,6 +73,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 
         clearDB(DB_NAME);
         ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.FAMILY)
+                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
                 .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DS,GL")
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);

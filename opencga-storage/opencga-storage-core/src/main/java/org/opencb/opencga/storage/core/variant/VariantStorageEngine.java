@@ -545,7 +545,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             options = QueryOptions.empty();
         }
         // TODO: Use CacheManager ?
-        query = transformQuery(query, getStudyConfigurationManager());
+        query = preProcessQuery(query, getStudyConfigurationManager());
         if (doQuerySearchManager(query, options)) {
             try {
                 if (iterator) {
@@ -617,7 +617,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
-    protected Query transformQuery(Query query, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
+    protected Query preProcessQuery(Query query, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
         return query;
     }
 
@@ -670,11 +670,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public QueryResult<Long> count(Query query) throws StorageEngineException {
+        query = preProcessQuery(query, getStudyConfigurationManager());
         if (doQuerySearchManager(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID))) {
-            VariantDBAdaptor dbAdaptor = getDBAdaptor();
-            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
-            query = transformQuery(query, studyConfigurationManager);
-            return dbAdaptor.count(query);
+            return getDBAdaptor().count(query);
         } else {
             try {
                 StopWatch watch = StopWatch.createStarted();

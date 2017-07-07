@@ -394,7 +394,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public Query transformQuery(Query originalQuery, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
+    public Query preProcessQuery(Query originalQuery, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
         // Copy input query! Do not modify original query!
         Query query = originalQuery == null ? new Query() : new Query(originalQuery);
         List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());

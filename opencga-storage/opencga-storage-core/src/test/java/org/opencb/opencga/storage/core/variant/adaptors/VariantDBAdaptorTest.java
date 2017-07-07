@@ -40,13 +40,11 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
-import org.opencb.opencga.storage.core.variant.solr.SolrExternalResource;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,9 +94,6 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     private String het1;
     private String het2;
 
-    @Rule
-    public SolrExternalResource solr = new SolrExternalResource();
-
     @BeforeClass
     public static void beforeClass() throws IOException {
         fileIndexed = false;
@@ -117,7 +112,6 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                     .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
                     .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DS,GL")
                     .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseRestVariantAnnotator.class.getName())
-                    .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "json")
                     .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
             params.putAll(getOtherParams());
             FORMAT = new HashSet<>();
@@ -221,33 +215,6 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     protected ObjectMap getOtherParams() {
         return new ObjectMap();
-    }
-
-    @Test
-    public void testSummary() throws Exception {
-        solr.configure(variantStorageEngine);
-
-        variantStorageEngine.searchIndex();
-
-        VariantQueryResult<Variant> result = variantStorageEngine.get(new Query(),
-                new QueryOptions(VariantSearchManager.SUMMARY, true)
-                        .append(QueryOptions.LIMIT, 2000));
-        assertEquals(allVariants.getResult().size(), result.getResult().size());
-
-        Query query = new Query(ANNOT_CONSEQUENCE_TYPE.key(), 1631)
-                .append(ANNOT_CONSERVATION.key(), "gerp>1")
-                .append(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift>0.01");
-        VariantDBIterator iterator = variantStorageEngine.iterator(query, new QueryOptions());
-        QueryResult<Variant> queryResult = iterator.toQueryResult();
-        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
-        for (Variant variant : queryResult.getResult()) {
-            System.out.println("variant = " + variant);
-        }
-//        variantSearchManager.load(COLLECTION, dbAdaptor.iterator());
-//        SolrVariantIterator iterator = variantSearchManager.iterator(COLLECTION, new Query(), new QueryOptions(QueryOptions.LIMIT, 1000));
-//        System.out.println("iterator.getNumFound() = " + iterator.getNumFound());
-//        iterator.forEachRemaining(variant -> System.out.println("variant.toJson() = " + variant.toJson()));
-
     }
 
     @Test

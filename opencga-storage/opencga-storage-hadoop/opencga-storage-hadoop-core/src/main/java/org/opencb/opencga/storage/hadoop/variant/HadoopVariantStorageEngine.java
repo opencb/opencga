@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
-import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
@@ -26,29 +25,23 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
-import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
@@ -492,60 +485,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         return hBaseManager;
     }
 
-
-    @Override
-    public VariantQueryResult<Variant> get(Query query, QueryOptions options) throws StorageEngineException {
-        if (options == null) {
-            options = QueryOptions.empty();
-        }
-        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
-        // TODO: Use CacheManager ?
-        if (options.getBoolean(VariantSearchManager.SUMMARY)
-                || !query.containsKey(VariantQueryParam.GENOTYPE.key())
-                && !query.containsKey(VariantQueryParam.SAMPLES.key())
-//                && !query.containsKey(VariantQueryParam.FILES.key())
-//                && !query.containsKey(VariantQueryParam.FILTER.key())
-                && !returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)
-//                && !returnedFields.contains(VariantField.STUDIES_FILES)
-                && searchActiveAndAlive()) {
-            try {
-                return getVariantSearchManager().query(dbName, query, options);
-            } catch (IOException | VariantSearchException e) {
-                throw Throwables.propagate(e);
-            }
-        } else {
-            VariantDBAdaptor dbAdaptor = getDBAdaptor();
-            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
-            query = transformQuery(query, studyConfigurationManager);
-            setDefaultTimeout(options);
-            return dbAdaptor.get(query, options);
-        }
-    }
-
-    @Override
-    public VariantDBIterator iterator(Query query, QueryOptions options) throws StorageEngineException {
-        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
-        if (options.getBoolean(VariantSearchManager.SUMMARY)
-                || !query.containsKey(VariantQueryParam.GENOTYPE.key())
-                && !query.containsKey(VariantQueryParam.SAMPLES.key())
-//                && !query.containsKey(VariantQueryParam.FILES.key())
-//                && !query.containsKey(VariantQueryParam.FILTER.key())
-                && !returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)
-//                && !returnedFields.contains(VariantField.STUDIES_FILES)
-                && searchActiveAndAlive()) {
-            try {
-                return getVariantSearchManager().iterator(dbName, query, options);
-            } catch (IOException | VariantSearchException e) {
-                throw Throwables.propagate(e);
-            }
-        } else {
-            VariantDBAdaptor dbAdaptor = getDBAdaptor();
-            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
-            query = transformQuery(query, studyConfigurationManager);
-            return dbAdaptor.iterator(query, options);
-        }
-    }
-
     @Override
     protected boolean doQuerySearchManager(Query query, QueryOptions options) throws StorageEngineException {
         // TODO: Query using SearchManager even if FILES filter is used
@@ -553,7 +492,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public Query transformQuery(Query originalQuery, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
+    public Query preProcessQuery(Query originalQuery, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
         // Copy input query! Do not modify original query!
         Query query = originalQuery == null ? new Query() : new Query(originalQuery);
         List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());
