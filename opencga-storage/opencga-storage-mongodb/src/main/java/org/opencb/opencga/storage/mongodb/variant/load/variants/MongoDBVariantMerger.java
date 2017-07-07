@@ -37,6 +37,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStoragePipeline;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
@@ -461,7 +462,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
                 Binary file = duplicatedVariants.get(0);
                 Variant variant = VARIANT_CONVERTER_DEFAULT.convertToDataModelType(file);
-                if (variant.getType().equals(VariantType.NO_VARIATION) || variant.getType().equals(VariantType.SYMBOLIC)) {
+                if (MongoDBVariantStoragePipeline.SKIPPED_VARIANTS.contains(variant.getType())) {
                     mongoDBOps.setSkipped(mongoDBOps.getSkipped() + 1);
                     skipped++;
                     continue;
@@ -1187,8 +1188,14 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
     private boolean sameVariant(Variant variant, String call) {
         String[] split = call.split(":", -1);
-        List<VariantNormalizer.VariantKeyFields> normalized = new VariantNormalizer()
-                .normalize(variant.getChromosome(), Integer.parseInt(split[0]), split[1], Arrays.asList(split[2].split(",")));
+        List<VariantNormalizer.VariantKeyFields> normalized;
+        if (variant.isSymbolic()) {
+            normalized = new VariantNormalizer()
+                    .normalizeSymbolic(Integer.parseInt(split[0]), variant.getEnd(), split[1], Arrays.asList(split[2].split(",")));
+        } else {
+            normalized = new VariantNormalizer()
+                    .normalize(variant.getChromosome(), Integer.parseInt(split[0]), split[1], Arrays.asList(split[2].split(",")));
+        }
         for (VariantNormalizer.VariantKeyFields variantKeyFields : normalized) {
             if (variantKeyFields.getStart() == variant.getStart()
                     && variantKeyFields.getReference().equals(variant.getReference())

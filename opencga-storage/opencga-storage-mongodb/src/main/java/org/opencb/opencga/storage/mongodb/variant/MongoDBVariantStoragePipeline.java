@@ -75,6 +75,16 @@ import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEn
  */
 public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
+    // Type of variants that won't be loaded.
+    public static final EnumSet<VariantType> SKIPPED_VARIANTS = EnumSet.of(
+            VariantType.NO_VARIATION,
+            VariantType.SYMBOLIC,
+//            VariantType.CNV,
+//            VariantType.DUPLICATION,
+            VariantType.INVERSION,
+            VariantType.TRANSLOCATION,
+            VariantType.BREAKEND);
+
     private final VariantMongoDBAdaptor dbAdaptor;
     private final ObjectMap loadStats = new ObjectMap();
     private final Logger logger = LoggerFactory.getLogger(MongoDBVariantStoragePipeline.class);
@@ -764,17 +774,11 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         long variantsToLoad = 0;
 
         long expectedSkippedVariants = 0;
-        int symbolicVariants = 0;
-        int nonVariants = 0;
         long alreadyLoadedVariants = options.getLong(ALREADY_LOADED_VARIANTS.key(), 0L);
 
         for (Map.Entry<String, Integer> entry : variantSource.getStats().getVariantTypeCounts().entrySet()) {
-            if (entry.getKey().equals(VariantType.SYMBOLIC.toString())) {
+            if (SKIPPED_VARIANTS.contains(VariantType.valueOf(entry.getKey()))) {
                 expectedSkippedVariants += entry.getValue();
-                symbolicVariants = entry.getValue();
-            } else if (entry.getKey().equals(VariantType.NO_VARIATION.toString())) {
-                expectedSkippedVariants += entry.getValue();
-                nonVariants = entry.getValue();
             } else {
                 variantsToLoad += entry.getValue();
             }
@@ -799,11 +803,11 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     .getSkippedVariants());
         } else if (writeResult.getSkippedVariants() > 0) {
             logger.warn("There were " + writeResult.getSkippedVariants() + " skipped variants.");
-            if (symbolicVariants > 0) {
-                logger.info("  * Of which " + symbolicVariants + " are " + VariantType.SYMBOLIC.toString() + " variants.");
-            }
-            if (nonVariants > 0) {
-                logger.info("  * Of which " + nonVariants + " are " + VariantType.NO_VARIATION.toString() + " variants.");
+            for (VariantType type : SKIPPED_VARIANTS) {
+                Integer countByType = variantSource.getStats().getVariantTypeCounts().get(type.toString());
+                if (countByType != null && countByType > 0) {
+                    logger.info("  * Of which " + countByType + " are " + type.toString() + " variants.");
+                }
             }
         }
 

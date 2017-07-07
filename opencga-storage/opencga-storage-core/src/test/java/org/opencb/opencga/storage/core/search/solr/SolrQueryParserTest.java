@@ -7,7 +7,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.config.SearchConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.search.VariantSearchManager;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
@@ -19,6 +18,7 @@ public class SolrQueryParserTest {
     public String host = "http://bioinfo.hpc.cam.ac.uk/solr/"; //hgvav1_hgvauser_reference_grch37/select?facet=on&fq=chromosome:22&indent=on&q=*:*&rows=0&wt=json&facet.field=studies&facet.field=type
 
     //public String collection = "test1";
+    public String mode = "cloud";
     public String collection = "hgvav1_hgvauser_reference_grch37";
 
     public String study = collection;
@@ -28,13 +28,13 @@ public class SolrQueryParserTest {
         String user = "";
         String password = "";
         boolean active = true;
-        int timeout = SearchConfiguration.DEFAULT_TIMEOUT;
+        int timeout = 30000;
         int rows = 10;
         StorageConfiguration config = new StorageConfiguration();
-        config.setSearch(new SearchConfiguration(host, collection, user, password, active, timeout, rows));
+        config.setSearch(new SearchConfiguration(host, mode, user, password, active, timeout, rows));
         VariantSearchManager searchManager = new VariantSearchManager(null, null, config);
         try {
-            SolrVariantIterator iterator = searchManager.iterator(collection, query, queryOptions);
+            VariantIterator iterator = searchManager.iterator(collection, query, queryOptions);
             System.out.println("Num. found = " + iterator.getNumFound());
             while (iterator.hasNext()) {
                 Variant variant = iterator.next();

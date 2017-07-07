@@ -5,26 +5,23 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import org.apache.solr.client.solrj.response.RangeFacet;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.storage.core.search.solr.SolrVariantSearchIterator;
+import org.opencb.opencga.storage.core.search.solr.VariantSearchIterator;
+import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 
 import java.io.*;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -73,10 +70,10 @@ public class VariantSearchManagerTest extends GenericTest {
         try {
             String name;
             name = "core999";
-            System.out.println("exist " + name + "? " + variantSearchManager.existCore(name));
+            System.out.println("exist " + name + "? " + variantSearchManager.existsCore(name));
 
             name = "core99999";
-            System.out.println("exist " + name + "? " + variantSearchManager.existCore(name));
+            System.out.println("exist " + name + "? " + variantSearchManager.existsCore(name));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -87,9 +84,7 @@ public class VariantSearchManagerTest extends GenericTest {
         try {
             String collectionName = "collection888";
             String configName = "myConfSet";
-            int numShards = 2;
-            int numReplicas = 2;
-            variantSearchManager.createCollection(collectionName, configName, numShards, numReplicas);
+            variantSearchManager.createCollection(collectionName, configName);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -100,10 +95,10 @@ public class VariantSearchManagerTest extends GenericTest {
         try {
             String name;
             name = "collection888";
-            System.out.println("exist " + name + "? " + variantSearchManager.existCollection(name));
+            System.out.println("exist " + name + "? " + variantSearchManager.existsCollection(name));
 
             name = "collection888888";
-            System.out.println("exist " + name + "? " + variantSearchManager.existCollection(name));
+            System.out.println("exist " + name + "? " + variantSearchManager.existsCollection(name));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -167,7 +162,7 @@ public class VariantSearchManagerTest extends GenericTest {
             QueryOptions queryOptions = new QueryOptions();
             queryOptions.append(QueryOptions.LIMIT, 500);
 
-            SolrVariantSearchIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
+            VariantSearchIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
             List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);
@@ -189,7 +184,7 @@ public class VariantSearchManagerTest extends GenericTest {
             QueryOptions queryOptions = new QueryOptions();
             queryOptions.append(QueryOptions.LIMIT, 500);
 
-            SolrVariantSearchIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
+            VariantSearchIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
             List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);
@@ -317,7 +312,7 @@ public class VariantSearchManagerTest extends GenericTest {
             query.append("ids", "*");
             queryOptions.append(QueryOptions.LIMIT, 15);
 
-            SolrVariantSearchIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
+            VariantSearchIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
             List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);
@@ -341,7 +336,7 @@ public class VariantSearchManagerTest extends GenericTest {
             queryOptions.add(QueryOptions.SORT, "start");
             queryOptions.add(QueryOptions.ORDER, QueryOptions.DESCENDING);
 
-            SolrVariantSearchIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
+            VariantSearchIterator iterator = variantSearchManager.nativeIterator(collection, query, queryOptions);
             List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);

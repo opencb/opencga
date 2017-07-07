@@ -35,7 +35,7 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.search.VariantSearchManager;
+import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -171,7 +171,19 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
             assertTrue(variant.toString(), map.containsKey(studyConfigurationSingleFile.getStudyName()));
             String expected = map.get(studyConfigurationSingleFile.getStudyName()).getSamplesData().toString();
             String actual = map.get(studyConfigurationMultiFile.getStudyName()).getSamplesData().toString();
-            assertWithConflicts(variant, () -> assertEquals(variant.toString(), expected, actual));
+            if (!assertWithConflicts(variant, () -> assertEquals(variant.toString(), expected, actual))) {
+                List<List<String>> samplesDataSingle = map.get(studyConfigurationSingleFile.getStudyName()).getSamplesData();
+                List<List<String>> samplesDataMulti = map.get(studyConfigurationMultiFile.getStudyName()).getSamplesData();
+                for (int i = 0; i < samplesDataSingle.size(); i++) {
+                    String sampleName = map.get(studyConfigurationMultiFile.getStudyName()).getOrderedSamplesName().get(i);
+                    String message = variant.toString()
+                            + " sample: " + sampleName
+                            + " id " + studyConfigurationMultiFile.getSampleIds().get(sampleName);
+                    String expectedGt = samplesDataSingle.get(i).toString();
+                    String actualGt = samplesDataMulti.get(i).toString();
+                    assertWithConflicts(variant, () -> assertEquals(message, expectedGt, actualGt));
+                }
+            }
         }
         assertEquals(expectedNumVariants, numVariants);
 
@@ -698,7 +710,8 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 
 
         VariantSearchManager variantSearchManager = new VariantSearchManager(null, null, variantStorageEngine.getConfiguration());
-        variantSearchManager.load(variantStorageEngine.getConfiguration().getSearch().getCollection(), dbAdaptor.iterator());
+        // FIXME Collection is not in the configuration any more
+//        variantSearchManager.load(variantStorageEngine.getConfiguration().getSearch().getCollection(), dbAdaptor.iterator());
     }
 
 }
