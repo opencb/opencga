@@ -32,72 +32,88 @@ import java.util.Iterator;
  */
 public class VariantSearchIterator implements Iterator<VariantSearchModel>, AutoCloseable {
 
-    private final int CHUNK_SIZE = 100;
-    private final int DEFAULT_LIMIT = 1000;
-
-    private Iterator<VariantSearchModel> solrIterator;
-
     private SolrClient solrClient;
     private String collection;
     private SolrQuery solrQuery;
     private QueryResponse solrResponse;
-    private String cursorMark, nextCursorMark;
+    private String cursorMark;
+    private String nextCursorMark;
 
-    private int left;
+    private Iterator<VariantSearchModel> solrIterator;
+
+    private int remaining;
+
+    private static final int BATCH_SIZE = 100;
+    private static final int DEFAULT_LIMIT = 100000;
 
     @Deprecated
     public VariantSearchIterator(Iterator<VariantSearchModel> solrIterator) {
         this.solrIterator = solrIterator;
     }
 
-    public VariantSearchIterator(SolrClient solrClient, String collection, SolrQuery solrQuery)
-            throws IOException, SolrServerException {
+    public VariantSearchIterator(SolrClient solrClient, String collection, SolrQuery solrQuery) throws IOException, SolrServerException {
         this.solrClient = solrClient;
         this.collection = collection;
         this.solrQuery = solrQuery;
 
-        // be sure, query is sorted
+        // Make sure that query is sorted
         this.solrQuery.setSort(SolrQuery.SortClause.asc("id"));
-        this.left = (solrQuery.getRows() == null || solrQuery.getRows() < 0 ? DEFAULT_LIMIT : solrQuery.getRows());
 
+        // This is the limit of the user, or the default limit if it is not passed
+        this.remaining = (solrQuery.getRows() == null || solrQuery.getRows() < 0)
+                ? DEFAULT_LIMIT
+                : solrQuery.getRows();
+
+        // We the set cursor at the beginning
         this.cursorMark = CursorMarkParams.CURSOR_MARK_START;
+
+        // We create an empty iterator, this will return false in the first hasNext call
         this.solrIterator = Collections.emptyIterator();
+
+        // Current Solr iterator (aka cursorMarks) implementation does not support skip.
+        // A simple solution is to waste these records and remove the Start from the solrQuery
+        if (solrQuery.getStart() != null && solrQuery.getStart() >= 0) {
+            // Do not change the order or position of the next two lines of code
+            Integer start = solrQuery.getStart();
+            solrQuery.setStart(null);
+            for (int i = 0; i < start; i++) {
+                hasNext();
+            }
+        }
     }
 
     @Override
     public boolean hasNext() {
+        // This is always false the first time with the empty iterator
         if (solrIterator.hasNext()) {
             return true;
         } else {
+            // This only happens when there are no more records in Solr
             if (cursorMark.equals(nextCursorMark)) {
                 return false;
             }
+
+            // We need to fetch another batch from Solr
             try {
                 if (nextCursorMark != null) {
                     cursorMark = nextCursorMark;
                 }
-                solrQuery.setRows(left > CHUNK_SIZE ? CHUNK_SIZE : left);
+                solrQuery.setRows(remaining > BATCH_SIZE ? BATCH_SIZE : remaining);
                 solrQuery.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
+
+                // Execute the query and fetch setRows records, we will iterate over this list
                 solrResponse = solrClient.query(collection, solrQuery);
-                left -= solrResponse.getResults().size();
+                remaining -= solrResponse.getResults().size();
                 nextCursorMark = solrResponse.getNextCursorMark();
                 solrIterator = solrResponse.getBeans(VariantSearchModel.class).iterator();
                 return solrIterator.hasNext();
             } catch (SolrServerException | IOException e) {
-                // do something
-                //e.printStackTrace();
+                // TODO do something better than this
+                e.printStackTrace();
             }
             return false;
         }
     }
-
-    /*
-    // Old function (without using Solr cursor) !!
-    @Override
-    public boolean hasNext() {
-        return solrIterator.hasNext();
-    }
-    */
 
     @Override
     public VariantSearchModel next() {
@@ -112,35 +128,4 @@ public class VariantSearchIterator implements Iterator<VariantSearchModel>, Auto
     public long getNumFound() {
         return solrResponse.getResults().getNumFound();
     }
-
-/*
-    public long getNumFound() {
-        return numFound;
-    }
-
-    public void setNumFound(long numFound) {
-        this.numFound = numFound;
-    }
-*/
-/*
-    private Iterator<VariantSearchModel> solrIterator;
-
-    public VariantSearchIterator(Iterator<VariantSearchModel> solrIterator) {
-        this.solrIterator = solrIterator;
-    }
-
-    @Override
-    public boolean hasNext() {
-        return solrIterator.hasNext();
-    }
-
-    @Override
-    public VariantSearchModel next() {
-        return solrIterator.next();
-    }
-
-    @Override
-    public void close() throws Exception {
-    }
-*/
 }

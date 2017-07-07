@@ -375,41 +375,10 @@ public class VariantSearchManager {
         }
     }
 
-    /**
-     * Return a Solr variant iterator to retrieve Variant objects from a Solr core/collection
-     * according a given query.
-     *
-     * @param collection    Collection name
-     * @param query         Query
-     * @param queryOptions  Query options
-     * @return              Solr Variant iterator
-     * @throws IOException          IOException
-     * @throws VariantSearchException  VariantSearchException
-     */
-/*
-    public VariantIterator iterator00(String collection, Query query, QueryOptions queryOptions)
-            throws VariantSearchException, IOException {
-        try {
-            SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
-            QueryResponse response = solrClient.query(collection, solrQuery);
-            VariantIterator iterator = new VariantIterator((response.getBeans(VariantSearchModel.class).iterator()));
-            //iterator.setNumFound(response.getResults().getNumFound());
-            return iterator;
-        } catch (SolrServerException e) {
-            throw new VariantSearchException(e.getMessage(), e);
-        }
-    }
-*/
-
-    public VariantIterator iterator(String collection, Query query, QueryOptions queryOptions)
-            throws VariantSearchException, IOException {
+    public VariantIterator iterator(String collection, Query query, QueryOptions queryOptions) throws VariantSearchException, IOException {
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
             return new VariantIterator(solrClient, collection, solrQuery);
-
-            //QueryResponse response = solrClient.query(collection, solrQuery);
-            //VariantIterator iterator = new VariantIterator((response.getBeans(VariantSearchModel.class).iterator()));
-            //iterator.setNumFound(response.getResults().getNumFound());
         } catch (SolrServerException e) {
             throw new VariantSearchException(e.getMessage(), e);
         }
@@ -431,8 +400,6 @@ public class VariantSearchManager {
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
             return new VariantSearchIterator(solrClient, collection, solrQuery);
-//            QueryResponse response = solrClient.query(collection, solrQuery);
-//            return new VariantSearchIterator(response.getBeans(VariantSearchModel.class).iterator());
         } catch (SolrServerException e) {
             throw new VariantSearchException(e.getMessage(), e);
         }
@@ -584,7 +551,7 @@ public class VariantSearchManager {
                 FacetedQueryResultItem.Field nestedField = processSolrPivot(name, index + 1, includes, solrPivot);
 
                 countName = solrPivot.getValue().toString();
-                // discard Ensembl genes and trascripts
+                // Discard Ensembl genes and transcripts
                 if (!field.getName().equals("genes")
                         || (!countName.startsWith("ENSG0") && !countName.startsWith("ENST0"))) {
                     // and then check if this has to be include
@@ -849,4 +816,3 @@ public class VariantSearchManager {
         return this;
     }
 }
-
