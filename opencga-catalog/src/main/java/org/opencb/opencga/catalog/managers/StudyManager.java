@@ -717,12 +717,6 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, studyId, members);
         }
 
-        if (aclParams.getAction() == AclParams.Action.SET || aclParams.getAction() == AclParams.Action.ADD) {
-            for (Long studyId : studyIds) {
-                studyDBAdaptor.addUsersToGroup(studyId, MEMBERS, members);
-            }
-        }
-
         switch (aclParams.getAction()) {
             case SET:
                 return authorizationManager.setStudyAcls(studyIds, members, permissions);
@@ -779,6 +773,8 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             userDBAdaptor.checkIds(userList);
         }
 
+        // Add those users to the members group
+        studyDBAdaptor.addUsersToGroup(studyId, MEMBERS, userList);
         // Create the group
         return studyDBAdaptor.createGroup(studyId, new Group(groupId, userList));
     }
@@ -890,6 +886,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         switch (groupParams.getAction()) {
             case SET:
                 studyDBAdaptor.setUsersToGroup(studyId, groupId, users);
+                studyDBAdaptor.addUsersToGroup(studyId, MEMBERS, users);
                 break;
             case ADD:
                 studyDBAdaptor.addUsersToGroup(studyId, groupId, users);

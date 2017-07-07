@@ -1806,9 +1806,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public List<QueryResult<StudyAclEntry>> setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException {
-        // We first add the member to the @members group in case they didn't belong already
-        for (Long studyId : studyIds) {
-            studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, members);
+        // We obtain which of those members are actually users to add them to the @members group automatically
+        List<String> userList = members.stream().filter(member -> !member.startsWith("@")).collect(Collectors.toList());
+        if (userList.size() > 0) {
+            // We first add the member to the @members group in case they didn't belong already
+            for (Long studyId : studyIds) {
+                studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, userList);
+            }
         }
 
         aclDBAdaptor.setToMembers(studyIds, members, permissions, MongoDBAdaptorFactory.STUDY_COLLECTION);
@@ -1818,9 +1822,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public List<QueryResult<StudyAclEntry>> addStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException {
-        // We first add the member to the @members group in case they didn't belong already
-        for (Long studyId : studyIds) {
-            studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, members);
+        // We obtain which of those members are actually users to add them to the @members group automatically
+        List<String> userList = members.stream().filter(member -> !member.startsWith("@")).collect(Collectors.toList());
+        if (userList.size() > 0) {
+            // We first add the member to the @members group in case they didn't belong already
+            for (Long studyId : studyIds) {
+                studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, userList);
+            }
         }
         aclDBAdaptor.addToMembers(studyIds, members, permissions, MongoDBAdaptorFactory.STUDY_COLLECTION);
         return aclDBAdaptor.get(studyIds, members, MongoDBAdaptorFactory.STUDY_COLLECTION);
