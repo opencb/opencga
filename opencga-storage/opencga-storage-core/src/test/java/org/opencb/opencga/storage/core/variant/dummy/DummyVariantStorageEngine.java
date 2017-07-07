@@ -14,6 +14,7 @@ import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -70,6 +71,11 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public void removeFile(String study, int fileId) throws StorageEngineException {
+
+    }
+
+    @Override
+    public void removeFiles(String study, List<String> files) throws StorageEngineException {
 
     }
 

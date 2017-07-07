@@ -666,6 +666,77 @@ public class StudyConfigurationManager implements AutoCloseable {
         return previousStatus;
     }
 
+    /**
+     * Adds a new {@link BatchFileOperation} to the StudyConfiguration.
+     *
+     * Only allow one running operation at the same time
+     * If any operation is in ERROR and is not the same operation, throw {@link StorageEngineException#otherOperationInProgressException}
+     * If any operation is DONE, RUNNING, and if same operation and resume=true, continue
+     * If all operations are ready, continue
+     *
+     * @param studyConfiguration StudyConfiguration
+     * @param jobOperationName   Job operation name used to create the jobName and as {@link BatchFileOperation#operationName}
+     * @param fileIds            Files to be processed in this batch.
+     * @param resume             Resume operation. Assume that previous operation went wrong.
+     * @param type               Operation type as {@link BatchFileOperation#type}
+     * @return                   The current batchOperation
+     * @throws StorageEngineException if the operation can't be executed
+     */
+    public static BatchFileOperation addBatchOperation(StudyConfiguration studyConfiguration, String jobOperationName,
+                                                       List<Integer> fileIds, boolean resume, BatchFileOperation.Type type)
+            throws StorageEngineException {
+
+        List<BatchFileOperation> batches = studyConfiguration.getBatches();
+        BatchFileOperation resumeOperation = null;
+        boolean newOperation = false;
+        for (int i = 0; i < batches.size(); i++) {
+            BatchFileOperation operation = batches.get(i);
+            BatchFileOperation.Status currentStatus = operation.currentStatus();
+
+            switch (currentStatus) {
+                case READY:
+                    // Ignore ready operations
+                    break;
+                case DONE:
+                case RUNNING:
+                    if (!resume) {
+                        if (operation.sameOperation(fileIds, type, jobOperationName)) {
+                            throw StorageEngineException.currentOperationInProgressException(operation);
+                        } else {
+                            throw StorageEngineException.otherOperationInProgressException(operation, jobOperationName, fileIds);
+                        }
+                    }
+                    // DO NOT BREAK!. Resuming last loading, go to error case.
+                case ERROR:
+                    if (!operation.sameOperation(fileIds, type, jobOperationName)) {
+                        throw StorageEngineException.otherOperationInProgressException(operation, jobOperationName, fileIds);
+                    } else {
+                        logger.info("Resuming Last batch loading due to error.");
+                        resumeOperation = operation;
+                    }
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown Status " + currentStatus);
+            }
+        }
+
+        BatchFileOperation operation;
+        if (resumeOperation == null) {
+            operation = new BatchFileOperation(jobOperationName, fileIds, System.currentTimeMillis(), type);
+            newOperation = true;
+        } else {
+            operation = resumeOperation;
+        }
+
+        if (!Objects.equals(operation.currentStatus(), BatchFileOperation.Status.DONE)) {
+            operation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
+        }
+        if (newOperation) {
+            batches.add(operation);
+        }
+        return operation;
+    }
+
     @Override
     public void close() throws IOException {
         adaptor.close();

@@ -383,6 +383,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         return variantReaderUtils;
     }
 
+    public void removeFiles(String study, List<String> files) throws StorageEngineException {
+        throw new UnsupportedOperationException();
+    }
+
     @Override
     public void removeFile(String study, int fileId) throws StorageEngineException {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();

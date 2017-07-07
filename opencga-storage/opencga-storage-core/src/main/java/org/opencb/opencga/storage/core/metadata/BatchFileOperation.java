@@ -67,6 +67,13 @@ public class BatchFileOperation {
         this.type = batch.type;
     }
 
+    public boolean sameOperation(Collection<Integer> fileIds, Type type, String jobOperationName) {
+        return this.type.equals(type)
+                && this.operationName.equals(jobOperationName)
+                && fileIds.size() == this.fileIds.size()
+                && fileIds.containsAll(this.fileIds);
+    }
+
     public Status currentStatus() {
         return status.isEmpty() ? null : status.lastEntry().getValue();
     }

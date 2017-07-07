@@ -35,6 +35,7 @@ import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
+import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.search.VariantSearchManager;
@@ -62,6 +63,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.DB_NAME;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RESUME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.FILES;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLES;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
@@ -171,8 +173,75 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public void removeFile(String study, int fileId) throws StorageEngineException {
+        removeFiles(study, Collections.singletonList(String.valueOf(fileId)));
+    }
+
+    @Override
+    public void removeFiles(String study, List<String> files) throws StorageEngineException {
+
+        List<Integer> fileIds = new ArrayList<>();
+        getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+            fileIds.addAll(studyConfigurationManager.getFileIds(files, false, studyConfiguration));
+
+            boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
+            StudyConfigurationManager.addBatchOperation(studyConfiguration, "remove", fileIds, resume, BatchFileOperation.Type.REMOVE);
+
+            if (!studyConfiguration.getIndexedFiles().containsAll(fileIds)) {
+                // Remove indexed files to get non indexed files
+                fileIds.removeAll(studyConfiguration.getIndexedFiles());
+                throw new StorageEngineException("Unable to remove non indexed files: " + fileIds);
+            }
+
+            return studyConfiguration;
+        });
+
         ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
-        getDBAdaptor().removeFile(study, Collections.singletonList(String.valueOf(fileId)), new QueryOptions(options));
+
+        Exception exception = null;
+        try {
+            getDBAdaptor().removeFile(study, files, new QueryOptions(options));
+        } catch (Exception e) {
+            exception = e;
+            throw e;
+        } finally {
+            try {
+                boolean error = exception != null;
+                getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+                    if (error) {
+                        StudyConfigurationManager.setStatus(studyConfiguration, BatchFileOperation.Status.ERROR, "remove", fileIds);
+                    } else {
+                        StudyConfigurationManager.setStatus(studyConfiguration, BatchFileOperation.Status.READY, "remove", fileIds);
+                        studyConfiguration.getIndexedFiles().removeAll(fileIds);
+                        Set<Integer> removedSamples = new HashSet<>();
+                        for (Integer fileId : fileIds) {
+                            removedSamples.addAll(studyConfiguration.getSamplesInFiles().get(fileId));
+                        }
+                        List<Integer> invalidCohorts = new ArrayList<>();
+                        for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
+                            Set<Integer> cohort = studyConfiguration.getCohorts().get(cohortId);
+                            for (Integer removedSample : removedSamples) {
+                                if (cohort.contains(removedSample)) {
+                                    logger.info("Invalidating statistics of cohort "
+                                            + studyConfiguration.getCohortIds().inverse().get(cohortId)
+                                            + " (" + cohortId + ')');
+                                    invalidCohorts.add(cohortId);
+                                    break;
+                                }
+                            }
+                        }
+                        studyConfiguration.getCalculatedStats().removeAll(invalidCohorts);
+                        studyConfiguration.getInvalidStats().addAll(invalidCohorts);
+                    }
+                    return studyConfiguration;
+                });
+            } catch (Exception e) {
+                if (exception == null) {
+                    throw e;
+                } else {
+                    logger.error("Error updating StudyConfiguration", e);
+                }
+            }
+        }
     }
 
     @Override

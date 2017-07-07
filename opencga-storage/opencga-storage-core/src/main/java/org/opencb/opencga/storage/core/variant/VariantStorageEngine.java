@@ -456,6 +456,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public abstract void removeFile(String study, int fileId) throws StorageEngineException;
 
     /**
+     * Removes a file from the Variant Storage.
+     *
+     * @param study  StudyName or StudyId
+     * @param files Files to remove
+     * @throws StorageEngineException If the file can not be removed  or there was some problem deleting it.
+     */
+    public abstract void removeFiles(String study, List<String> files) throws StorageEngineException;
+
+    /**
      * Remove a whole study from the Variant Storage.
      *
      * @param study  StudyName or StudyId
