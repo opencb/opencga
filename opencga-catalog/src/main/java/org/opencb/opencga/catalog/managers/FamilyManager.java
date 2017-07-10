@@ -13,7 +13,6 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IAnnotationSetManager;
@@ -300,11 +299,16 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
 
         String userId = catalogManager.getUserManager().getId(sessionId);
         long studyId = familyDBAdaptor.getStudyId(id);
-        authorizationManager.checkFamilyPermission(studyId, id, userId, FamilyAclEntry.FamilyPermissions.VIEW);
 
-        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(id, options);
-        authorizationManager.filterFamilies(userId, studyId, familyQueryResult.getResult());
-        familyQueryResult.setNumResults(familyQueryResult.getResult().size());
+        Query query = new Query()
+                .append(FamilyDBAdaptor.QueryParams.ID.key(), id)
+                .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, options, userId);
+//        authorizationManager.checkFamilyPermission(studyId, id, userId, FamilyAclEntry.FamilyPermissions.VIEW);
+//
+//        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(id, options);
+//        authorizationManager.filterFamilies(userId, studyId, familyQueryResult.getResult());
+//        familyQueryResult.setNumResults(familyQueryResult.getResult().size());
         return familyQueryResult;
     }
 
@@ -314,14 +318,8 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
 
         String userId = catalogManager.getUserManager().getId(sessionId);
 
-        if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
-            throw CatalogAuthorizationException.deny(userId, "view", "families", studyId, null);
-        }
-
         query.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-        QueryResult<Family> queryResult = familyDBAdaptor.get(query, options);
-        authorizationManager.filterFamilies(userId, studyId, queryResult.getResult());
-        queryResult.setNumResults(queryResult.getResult().size());
+        QueryResult<Family> queryResult = familyDBAdaptor.get(query, options, userId);
 
         return queryResult;
     }
@@ -370,57 +368,35 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
 
     public QueryResult<Family> count(String studyStr, Query query, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getId(sessionId);
-        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
-
-        // Check any permission in studies
-        for (Long studyId : studyIds) {
-            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
-        }
-        logger.info(studyIds.toString());
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
-        // FIXME: Although the search method is multi-study, we can only use the smart resolutor for one study at the moment.
         // We change the FATHER, MOTHER and CHILDREN parameters for FATHER_ID, MOTHER_ID and CHILDREN_IDS which is what the DBAdaptor
         // understands
         if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.FATHER.key()))) {
-            if (studyIds.size() <= 1) {
-                String studyStrAux = studyIds.size() == 1 ? Long.toString(studyIds.get(0)) : null;
-                MyResourceIds resourceIds = catalogManager.getIndividualManager()
-                        .getIds(query.getString(FamilyDBAdaptor.QueryParams.FATHER.key()), studyStrAux, sessionId);
-                query.put(FamilyDBAdaptor.QueryParams.FATHER_ID.key(), resourceIds.getResourceIds());
-            } else {
-                throw new CatalogException("Operation not supported. Cannot look for individuals from 0 or different studies. Please "
-                        + "choose only one study");
-            }
+//            String studyStrAux = studyIds.size() == 1 ? Long.toString(studyIds.get(0)) : null;
+            MyResourceIds resourceIds = catalogManager.getIndividualManager()
+                    .getIds(query.getString(FamilyDBAdaptor.QueryParams.FATHER.key()), Long.toString(studyId), sessionId);
+            query.put(FamilyDBAdaptor.QueryParams.FATHER_ID.key(), resourceIds.getResourceIds());
             query.remove(FamilyDBAdaptor.QueryParams.FATHER.key());
         }
         if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.MOTHER.key()))) {
-            if (studyIds.size() <= 1) {
-                String studyStrAux = studyIds.size() == 1 ? Long.toString(studyIds.get(0)) : null;
-                MyResourceIds resourceIds = catalogManager.getIndividualManager()
-                        .getIds(query.getString(FamilyDBAdaptor.QueryParams.MOTHER.key()), studyStrAux, sessionId);
-                query.put(FamilyDBAdaptor.QueryParams.MOTHER_ID.key(), resourceIds.getResourceIds());
-            } else {
-                throw new CatalogException("Operation not supported. Cannot look for individuals from 0 or different studies. Please "
-                        + "choose only one study");
-            }
+//            String studyStrAux = studyIds.size() == 1 ? Long.toString(studyIds.get(0)) : null;
+            MyResourceIds resourceIds = catalogManager.getIndividualManager()
+                    .getIds(query.getString(FamilyDBAdaptor.QueryParams.MOTHER.key()), Long.toString(studyId), sessionId);
+            query.put(FamilyDBAdaptor.QueryParams.MOTHER_ID.key(), resourceIds.getResourceIds());
             query.remove(FamilyDBAdaptor.QueryParams.MOTHER.key());
         }
         if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.CHILDREN.key()))) {
-            if (studyIds.size() <= 1) {
-                String studyStrAux = studyIds.size() == 1 ? Long.toString(studyIds.get(0)) : null;
-                MyResourceIds resourceIds = catalogManager.getIndividualManager()
-                        .getIds(query.getString(FamilyDBAdaptor.QueryParams.CHILDREN.key()), studyStrAux, sessionId);
-                query.put(FamilyDBAdaptor.QueryParams.CHILDREN_IDS.key(), resourceIds.getResourceIds());
-            } else {
-                throw new CatalogException("Operation not supported. Cannot look for individuals from 0 or different studies. Please "
-                        + "choose only one study");
-            }
+//            String studyStrAux = studyIds.size() == 1 ? Long.toString(studyIds.get(0)) : null;
+            MyResourceIds resourceIds = catalogManager.getIndividualManager()
+                    .getIds(query.getString(FamilyDBAdaptor.QueryParams.CHILDREN.key()), Long.toString(studyId), sessionId);
+            query.put(FamilyDBAdaptor.QueryParams.CHILDREN_IDS.key(), resourceIds.getResourceIds());
             query.remove(FamilyDBAdaptor.QueryParams.CHILDREN.key());
         }
 
-        query.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyIds);
-        QueryResult<Long> queryResultAux = familyDBAdaptor.count(query);
+        query.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Long> queryResultAux = familyDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
     }

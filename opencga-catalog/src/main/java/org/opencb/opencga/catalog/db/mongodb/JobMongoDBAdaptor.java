@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
@@ -136,6 +137,36 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     public QueryResult<Job> get(long jobId, QueryOptions options) throws CatalogDBException {
         checkId(jobId);
         return get(new Query(QueryParams.ID.key(), jobId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED), options);
+    }
+
+    @Override
+    public QueryResult<Job> get(Query query, QueryOptions options, String user) throws CatalogDBException {
+        long startTime = startQuery();
+
+        // Get the study document
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
+        }
+
+        // Get the document query needed to check the permissions as well
+        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
+                StudyAclEntry.StudyPermissions.VIEW_JOBS.name(), SampleAclEntry.SamplePermissions.VIEW.name());
+
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        }
+        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        QueryOptions qOptions;
+        if (options != null) {
+            qOptions = options;
+        } else {
+            qOptions = new QueryOptions();
+        }
+        qOptions = filterOptions(qOptions, FILTER_ROUTE_JOBS);
+        QueryResult<Job> jobQueryResult = jobCollection.find(bson, jobConverter, qOptions);
+        return endQuery("Get job", startTime, jobQueryResult);
     }
 
     @Override

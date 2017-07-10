@@ -460,14 +460,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         String userId = userManager.getId(sessionId);
 
-        if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
-            throw CatalogAuthorizationException.deny(userId, "view", "samples", studyId, null);
-        }
-
         query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-        QueryResult<Sample> queryResult = sampleDBAdaptor.get(query, options);
-        authorizationManager.filterSamples(userId, studyId, queryResult.getResult());
-        queryResult.setNumResults(queryResult.getResult().size());
+        QueryResult<Sample> queryResult = sampleDBAdaptor.get(query, options, userId);
 
         return queryResult;
     }
@@ -494,25 +488,18 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     @Override
     public QueryResult<Sample> count(String studyStr, Query query, String sessionId) throws CatalogException {
         String userId = userManager.getId(sessionId);
-        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
-
-        // Check any permission in studies
-        for (Long studyId : studyIds) {
-            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
-        }
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
-        // FIXME: Although the search method is multi-study, we can only use the smart resolutor for one study at the moment.
-        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))
-                && studyIds.size() == 1) {
+        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {
             MyResourceIds resourceIds = catalogManager.getIndividualManager().getIds(
-                    query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()), Long.toString(studyIds.get(0)), sessionId);
+                    query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()), Long.toString(studyId), sessionId);
             query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), resourceIds.getResourceIds());
             query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
         }
 
-        query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyIds);
-        QueryResult<Long> queryResultAux = sampleDBAdaptor.count(query);
+        query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Long> queryResultAux = sampleDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
     }

@@ -971,10 +971,8 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         group.setId("Delete group");
 
         // Remove the permissions the group might have had
-        if (authorizationManager.memberHasPermissionsInStudy(studyId, groupId)) {
-            Study.StudyAclParams aclParams = new Study.StudyAclParams(null, AclParams.Action.RESET, null);
-            updateAcl(Long.toString(studyId), groupId, aclParams, sessionId);
-        }
+        Study.StudyAclParams aclParams = new Study.StudyAclParams(null, AclParams.Action.RESET, null);
+        updateAcl(Long.toString(studyId), groupId, aclParams, sessionId);
 
         studyDBAdaptor.deleteGroup(studyId, groupId);
 

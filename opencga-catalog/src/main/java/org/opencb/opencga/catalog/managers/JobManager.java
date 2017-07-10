@@ -270,9 +270,13 @@ public class JobManager extends AbstractManager implements IJobManager {
     @Override
     public QueryResult<Job> get(Long jobId, QueryOptions options, String sessionId) throws CatalogException {
         MyResourceId resource = getId(Long.toString(jobId), null, sessionId);
-        authorizationManager.checkJobPermission(resource.getStudyId(), jobId, resource.getUser(), JobAclEntry.JobPermissions.VIEW);
-        QueryResult<Job> queryResult = jobDBAdaptor.get(jobId, options);
-        return queryResult;
+        Query query = new Query()
+                .append(JobDBAdaptor.QueryParams.ID.key(), jobId)
+                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudyId());
+        QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, options, resource.getUser());
+//        authorizationManager.checkJobPermission(resource.getStudyId(), jobId, resource.getUser(), JobAclEntry.JobPermissions.VIEW);
+//        QueryResult<Job> queryResult = jobDBAdaptor.get(jobId, options);
+        return jobQueryResult;
     }
 
     @Override
@@ -288,11 +292,11 @@ public class JobManager extends AbstractManager implements IJobManager {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         // If studyId is null, check if there is any on the query
         // Else, ensure that studyId is in the Query
-        if (studyId < 0) {
-            studyId = query.getLong(JobDBAdaptor.QueryParams.STUDY_ID.key(), -1);
-        } else {
-            query.put(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        if (studyId <= 0) {
+            throw new CatalogException("Missing study parameter");
         }
+        query.put(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
         String userId;
         if (sessionId.length() == 40) {
             catalogManager.getUserManager().getId(sessionId);
@@ -301,13 +305,9 @@ public class JobManager extends AbstractManager implements IJobManager {
             userId = userManager.getId(sessionId);
         }
 
-        if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
-            throw CatalogAuthorizationException.deny(userId, "view", "jobs", studyId, null);
-        }
-
-        QueryResult<Job> queryResult = jobDBAdaptor.get(query, options);
-        authorizationManager.filterJobs(userId, studyId, queryResult.getResult());
-        queryResult.setNumResults(queryResult.getResult().size());
+        QueryResult<Job> queryResult = jobDBAdaptor.get(query, options, userId);
+//        authorizationManager.filterJobs(userId, studyId, queryResult.getResult());
+//        queryResult.setNumResults(queryResult.getResult().size());
         return queryResult;
     }
 
@@ -318,12 +318,8 @@ public class JobManager extends AbstractManager implements IJobManager {
         String userId = userManager.getId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
-        if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
-            throw CatalogAuthorizationException.deny(userId, "view", "jobs", studyId, null);
-        }
-
         query.append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-        QueryResult<Long> queryResultAux = jobDBAdaptor.count(query);
+        QueryResult<Long> queryResultAux = jobDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
     }

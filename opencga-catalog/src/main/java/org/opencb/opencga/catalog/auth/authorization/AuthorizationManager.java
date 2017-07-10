@@ -405,6 +405,6 @@ public interface AuthorizationManager {
      * @return true if the member belongs to one role. False otherwise.
      * @throws CatalogException CatalogException.
      */
-    boolean memberHasPermissionsInStudy(long studyId, String member) throws CatalogException;
+//    boolean memberHasPermissionsInStudy(long studyId, String member) throws CatalogException;
 
 }

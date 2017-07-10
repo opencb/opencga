@@ -109,14 +109,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         metaDBAdaptor = dbFactory.getCatalogMetaDBAdaptor();
     }
 
-    private StudyAclEntry getSpecialPermissions(String member) {
-        for (StudyAclEntry studyAclEntry : specialAclList) {
-            if (studyAclEntry.getMember().equals(member)) {
-                return studyAclEntry;
-            }
-        }
-        return null;
-    }
+//    private StudyAclEntry getSpecialPermissions(String member) {
+//        for (StudyAclEntry studyAclEntry : specialAclList) {
+//            if (studyAclEntry.getMember().equals(member)) {
+//                return studyAclEntry;
+//            }
+//        }
+//        return null;
+//    }
 
     @Override
     public boolean isPublicRegistration() {
@@ -1095,65 +1095,65 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //        }
 //    }
 
-    private DiseasePanelAclEntry resolveDiseasePanelPermissions(long studyId, long panelId, String userId) throws CatalogException {
-        String groupId = null;
-        if (!userId.equalsIgnoreCase(ANONYMOUS)) {
-            QueryResult<Group> group = getGroupBelonging(studyId, userId);
-            groupId = group.getNumResults() == 1 ? group.first().getName() : null;
-        }
+//    private DiseasePanelAclEntry resolveDiseasePanelPermissions(long studyId, long panelId, String userId) throws CatalogException {
+//        String groupId = null;
+//        if (!userId.equalsIgnoreCase(ANONYMOUS)) {
+//            QueryResult<Group> group = getGroupBelonging(studyId, userId);
+//            groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+//        }
+//
+//        List<String> userIds = (groupId == null)
+//                ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
+//                : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
+//        QueryResult<DiseasePanelAclEntry> panelQueryResult = aclDBAdaptor.get(panelId, userIds,
+//                MongoDBAdaptorFactory.PANEL_COLLECTION);
+//
+//        Map<String, DiseasePanelAclEntry> userAclMap = new HashMap<>();
+//        for (DiseasePanelAclEntry panelAcl : panelQueryResult.getResult()) {
+//            userAclMap.put(panelAcl.getMember(), panelAcl);
+//        }
+//
+//        return resolveDiseasePanelPermissions(studyId, userId, groupId, userAclMap);
+//    }
 
-        List<String> userIds = (groupId == null)
-                ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
-                : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
-        QueryResult<DiseasePanelAclEntry> panelQueryResult = aclDBAdaptor.get(panelId, userIds,
-                MongoDBAdaptorFactory.PANEL_COLLECTION);
-
-        Map<String, DiseasePanelAclEntry> userAclMap = new HashMap<>();
-        for (DiseasePanelAclEntry panelAcl : panelQueryResult.getResult()) {
-            userAclMap.put(panelAcl.getMember(), panelAcl);
-        }
-
-        return resolveDiseasePanelPermissions(studyId, userId, groupId, userAclMap);
-    }
-
-    private DiseasePanelAclEntry resolveDiseasePanelPermissions(long studyId, String userId, String groupId,
-                                                                Map<String, DiseasePanelAclEntry> userAclMap) throws CatalogException {
-        if (userId.equals(ANONYMOUS)) {
-            if (userAclMap.containsKey(userId)) {
-                return userAclMap.get(userId);
-            } else {
-                return transformStudyAclToDiseasePanelAcl(getStudyAclBelonging(studyId, userId, groupId));
-            }
-        }
-
-        // Registered user
-        EnumSet<DiseasePanelAclEntry.DiseasePanelPermissions> permissions =
-                EnumSet.noneOf(DiseasePanelAclEntry.DiseasePanelPermissions.class);
-        boolean flagPermissionFound = false;
-
-        if (userAclMap.containsKey(userId)) {
-            permissions.addAll(userAclMap.get(userId).getPermissions());
-            flagPermissionFound = true;
-        }
-        if (StringUtils.isNotEmpty(groupId) && userAclMap.containsKey(groupId)) {
-            permissions.addAll(userAclMap.get(groupId).getPermissions());
-            flagPermissionFound = true;
-        }
-        if (userAclMap.containsKey(ANONYMOUS)) {
-            permissions.addAll(userAclMap.get(ANONYMOUS).getPermissions());
-            flagPermissionFound = true;
-        }
-        if (userAclMap.containsKey(OTHER_USERS_ID)) {
-            permissions.addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
-            flagPermissionFound = true;
-        }
-
-        if (flagPermissionFound) {
-            return new DiseasePanelAclEntry(userId, permissions);
-        } else {
-            return transformStudyAclToDiseasePanelAcl(getStudyAclBelonging(studyId, userId, groupId));
-        }
-    }
+//    private DiseasePanelAclEntry resolveDiseasePanelPermissions(long studyId, String userId, String groupId,
+//                                                                Map<String, DiseasePanelAclEntry> userAclMap) throws CatalogException {
+//        if (userId.equals(ANONYMOUS)) {
+//            if (userAclMap.containsKey(userId)) {
+//                return userAclMap.get(userId);
+//            } else {
+//                return transformStudyAclToDiseasePanelAcl(getStudyAclBelonging(studyId, userId, groupId));
+//            }
+//        }
+//
+//        // Registered user
+//        EnumSet<DiseasePanelAclEntry.DiseasePanelPermissions> permissions =
+//                EnumSet.noneOf(DiseasePanelAclEntry.DiseasePanelPermissions.class);
+//        boolean flagPermissionFound = false;
+//
+//        if (userAclMap.containsKey(userId)) {
+//            permissions.addAll(userAclMap.get(userId).getPermissions());
+//            flagPermissionFound = true;
+//        }
+//        if (StringUtils.isNotEmpty(groupId) && userAclMap.containsKey(groupId)) {
+//            permissions.addAll(userAclMap.get(groupId).getPermissions());
+//            flagPermissionFound = true;
+//        }
+//        if (userAclMap.containsKey(ANONYMOUS)) {
+//            permissions.addAll(userAclMap.get(ANONYMOUS).getPermissions());
+//            flagPermissionFound = true;
+//        }
+//        if (userAclMap.containsKey(OTHER_USERS_ID)) {
+//            permissions.addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
+//            flagPermissionFound = true;
+//        }
+//
+//        if (flagPermissionFound) {
+//            return new DiseasePanelAclEntry(userId, permissions);
+//        } else {
+//            return transformStudyAclToDiseasePanelAcl(getStudyAclBelonging(studyId, userId, groupId));
+//        }
+//    }
 
     @Override
     public void filterProjects(String userId, List<Project> projects) throws CatalogException {
@@ -2027,24 +2027,24 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //        return dbAdaptor.getAcl(id, allMembers).getNumResults() > 0;
 //    }
 
-    @Override
-    public boolean memberHasPermissionsInStudy(long studyId, String member) throws CatalogException {
-        String userId = member;
-        String groupId = null;
-        if (!member.startsWith("@")) { // User
-            if (member.equals(ADMIN) || isStudyOwner(studyId, member)) {
-                return true;
-            }
-            if (!member.equals("anonymous") && !member.equals("*")) {
-                QueryResult<Group> groupBelonging = getGroupBelonging(studyId, member);
-                if (groupBelonging.getNumResults() > 0) {
-                    groupId = groupBelonging.first().getName();
-                }
-            }
-        }
-        StudyAclEntry studyAcl = getStudyAclBelonging(studyId, userId, groupId);
-        return studyAcl != null;
-    }
+//    @Override
+//    public boolean memberHasPermissionsInStudy(long studyId, String member) throws CatalogException {
+//        String userId = member;
+//        String groupId = null;
+//        if (!member.startsWith("@")) { // User
+//            if (member.equals(ADMIN) || isStudyOwner(studyId, member)) {
+//                return true;
+//            }
+//            if (!member.equals("anonymous") && !member.equals("*")) {
+//                QueryResult<Group> groupBelonging = getGroupBelonging(studyId, member);
+//                if (groupBelonging.getNumResults() > 0) {
+//                    groupId = groupBelonging.first().getName();
+//                }
+//            }
+//        }
+//        StudyAclEntry studyAcl = getStudyAclBelonging(studyId, userId, groupId);
+//        return studyAcl != null;
+//    }
 
     private boolean isStudyOwner(long studyId, String userId) throws CatalogDBException {
         return studyDBAdaptor.getOwnerId(studyId).equals(userId);

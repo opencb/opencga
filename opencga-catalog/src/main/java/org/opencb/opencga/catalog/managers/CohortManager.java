@@ -134,16 +134,16 @@ public class CohortManager extends AbstractManager implements ICohortManager {
 
     @Override
     public QueryResult<Cohort> get(Long cohortId, QueryOptions options, String sessionId) throws CatalogException {
-        //options = ParamUtils.defaultObject(options, QueryOptions::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         long studyId = cohortDBAdaptor.getStudyId(cohortId);
         String userId = userManager.getId(sessionId);
 
-        authorizationManager.checkCohortPermission(studyId, cohortId, userId, CohortAclEntry.CohortPermissions.VIEW);
-
-        QueryResult<Cohort> queryResult = cohortDBAdaptor.get(cohortId, options);
-        authorizationManager.filterCohorts(userId, studyId, queryResult.getResult());
-
+        Query query = new Query()
+                .append(CohortDBAdaptor.QueryParams.ID.key(), cohortId)
+                .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Cohort> queryResult = cohortDBAdaptor.get(query, options, userId);
+        queryResult.setId(Long.toString(cohortId));
         return queryResult;
     }
 
@@ -153,9 +153,6 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getId(sessionId);
-        if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
-            throw CatalogAuthorizationException.deny(userId, "view", "cohorts", studyId, null);
-        }
 
         if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
             // First look for the sample ids.
@@ -165,10 +162,8 @@ public class CohortManager extends AbstractManager implements ICohortManager {
             query.append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), samples.getResourceIds());
         }
 
-        QueryResult<Cohort> queryResult = cohortDBAdaptor.get(new Query(query)
-                .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId), options);
-        authorizationManager.filterCohorts(userId, studyId, queryResult.getResult());
-        queryResult.setNumResults(queryResult.getResult().size());
+        Query myQuery = new Query(query).append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Cohort> queryResult = cohortDBAdaptor.get(myQuery, options, userId);
         return queryResult;
     }
 
@@ -273,12 +268,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
     @Override
     public QueryResult<Cohort> count(String studyStr, Query query, String sessionId) throws CatalogException {
         String userId = userManager.getId(sessionId);
-        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
-
-        // Check any permission in studies
-        for (Long studyId : studyIds) {
-            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
-        }
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
             // First look for the sample ids.
@@ -288,8 +278,8 @@ public class CohortManager extends AbstractManager implements ICohortManager {
             query.append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), samples.getResourceIds());
         }
 
-        query.append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyIds);
-        QueryResult<Long> queryResultAux = cohortDBAdaptor.count(query);
+        query.append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Long> queryResultAux = cohortDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_COHORTS);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
     }

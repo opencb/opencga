@@ -67,8 +67,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/search")
-    @ApiOperation(value = "Multi-study search that allows the user to look for clinical analysis from different studies of the same " +
-            "project applying filters.", position = 12, response = ClinicalAnalysis[].class)
+    @ApiOperation(value = "Clinical analysis search.", position = 12, response = ClinicalAnalysis[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
@@ -77,7 +76,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
     public Response search(
-            @ApiParam(value = "Study [[user@]project:]{study1,study2|*}  where studies and project can be either the id or alias.")
+            @ApiParam(value = "Study [[user@]project:]{study} where study and project can be either the id or alias.")
                 @QueryParam("study") String studyStr,
             @ApiParam(value = "Clinical analysis type") @QueryParam("type") ClinicalAnalysis.Type type,
             @ApiParam(value = "Clinical analysis status") @QueryParam("status") String status,

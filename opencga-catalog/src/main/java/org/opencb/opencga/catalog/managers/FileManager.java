@@ -35,7 +35,6 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -829,12 +828,11 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         String userId = userManager.getId(sessionId);
         Long studyId = getStudyId(id);
-//        authorizationManager.checkFilePermission(id, userId, CatalogPermission.READ);
-        authorizationManager.checkFilePermission(studyId, id, userId, FileAclEntry.FilePermissions.VIEW);
-
-        QueryResult<File> fileQueryResult = fileDBAdaptor.get(id, options);
-        authorizationManager.filterFiles(userId, studyId, fileQueryResult.getResult());
-        fileQueryResult.setNumResults(fileQueryResult.getResult().size());
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.ID.key(), id)
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options, userId);
+        fileQueryResult.setId(Long.toString(id));
         return fileQueryResult;
     }
 
@@ -984,9 +982,6 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (studyId <= 0) {
             throw new CatalogDBException("Permission denied. Only the files of one study can be seen at a time.");
         } else {
-            if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
-                throw CatalogAuthorizationException.deny(userId, "view", "files", studyId, null);
-            }
             query.put(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         }
 
@@ -997,9 +992,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             query.remove(FileDBAdaptor.QueryParams.SAMPLES.key());
         }
 
-        QueryResult<File> queryResult = fileDBAdaptor.get(query, options);
-        authorizationManager.filterFiles(userId, studyId, queryResult.getResult());
-        queryResult.setNumResults(queryResult.getResult().size());
+        QueryResult<File> queryResult = fileDBAdaptor.get(query, options, userId);
 
         return queryResult;
     }
@@ -1019,7 +1012,6 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         query.append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<File> queryResult = fileDBAdaptor.get(query, options, userId);
-//      authorizationManager.filterFiles(userId, studyId, queryResultAux.getResult());
 
         return queryResult;
     }
@@ -1027,24 +1019,18 @@ public class FileManager extends AbstractManager implements IFileManager {
     @Override
     public QueryResult<File> count(String studyStr, Query query, String sessionId) throws CatalogException {
         String userId = userManager.getId(sessionId);
-        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
-
-        // Check any permission in studies
-        for (Long studyId : studyIds) {
-            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
-        }
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         // The samples introduced could be either ids or names. As so, we should use the smart resolutor to do this.
-        // FIXME: Although the search method is multi-study, we can only use the smart resolutor for one study at the moment.
-        if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key())) && studyIds.size() == 1) {
+        if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
             MyResourceIds resourceIds = catalogManager.getSampleManager().getIds(
-                    query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()), Long.toString(studyIds.get(0)), sessionId);
+                    query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()), Long.toString(studyId), sessionId);
             query.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), resourceIds.getResourceIds());
             query.remove(FileDBAdaptor.QueryParams.SAMPLES.key());
         }
 
-        query.append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyIds);
-        QueryResult<Long> queryResultAux = fileDBAdaptor.count(query);
+        query.append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Long> queryResultAux = fileDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_FILES);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
     }

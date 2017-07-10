@@ -639,8 +639,8 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response search(@ApiParam(value = "Comma separated list of file ids", required = false) @DefaultValue("") @QueryParam("id") String id,
                            @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId")
                                    String studyIdStr,
-                           @ApiParam(value = "Study [[user@]project:]{study1,study2|*}  where studies and project can be either the id or"
-                                   + " alias.") @QueryParam("study") String studyStr,
+                           @ApiParam(value = "Study [[user@]project:]{study}  where study and project can be either the id or alias.")
+                               @QueryParam("study") String studyStr,
                            @ApiParam(value = "Comma separated list of file names") @DefaultValue("") @QueryParam("name") String name,
                            @ApiParam(value = "Comma separated list of paths", required = false) @DefaultValue("") @QueryParam("path") String path,
                            @ApiParam(value = "Available types (FILE, DIRECTORY)", required = false) @DefaultValue("") @QueryParam("type") String type,
