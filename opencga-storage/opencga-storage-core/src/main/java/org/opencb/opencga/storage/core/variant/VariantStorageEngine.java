@@ -73,8 +73,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.storage.core.search.solr.VariantSearchManager.QUERY_INTERSECT;
 import static org.opencb.opencga.storage.core.search.solr.VariantSearchUtils.*;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.DEFAULT_TIMEOUT;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MAX_TIMEOUT;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDIES;
 
 /**
@@ -142,7 +141,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         RESUME("resume", false),
 
         DEFAULT_TIMEOUT("dbadaptor.default_timeout", 10000), // Default timeout for DBAdaptor operations. Only used if none is provided.
-        MAX_TIMEOUT("dbadaptor.max_timeout", 30000);         // Max allowed timeout for DBAdaptor operations
+        MAX_TIMEOUT("dbadaptor.max_timeout", 30000),         // Max allowed timeout for DBAdaptor operations
+
+        // Intersect options
+        INTERSECT_ACTIVE("intersect.active", true),                       // Allow intersect queries with the SearchEngine (Solr)
+        INTERSECT_ALWAYS("intersect.always", false),                      // Force intersect queries
+        INTERSECT_PARAMS_THRESHOLD("intersect.params.threshold", 3);      // Minimum number of QueryParams in the query to intersect
 
         private final String key;
         private final Object value;
@@ -653,10 +657,18 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     protected boolean doIntersectWithSearch(Query query, Collection<VariantQueryParam> validParams, QueryOptions options)
             throws StorageEngineException {
+        if (!getOptions().getBoolean(INTERSECT_ACTIVE.key(), INTERSECT_ACTIVE.defaultValue())) {
+            // If intersect is not active, do not intersect.
+            return false;
+        } else if (getOptions().getBoolean(INTERSECT_ALWAYS.key(), INTERSECT_ALWAYS.defaultValue())) {
+            return true;
+        }
         // TODO: Improve this heuristic
         // Count only real params
         List<VariantQueryParam> coveredParams = coveredParams(validParams);
-        return searchActiveAndAlive() && (coveredParams.size() >= 3 || options.getBoolean(QUERY_INTERSECT, false));
+        int intersectParamsThreshold = getOptions().getInt(INTERSECT_PARAMS_THRESHOLD.key(), INTERSECT_PARAMS_THRESHOLD.defaultValue());
+        return searchActiveAndAlive()
+                && (coveredParams.size() >= intersectParamsThreshold || options.getBoolean(QUERY_INTERSECT, false));
     }
 
     public QueryResult distinct(Query query, String field) throws StorageEngineException {
