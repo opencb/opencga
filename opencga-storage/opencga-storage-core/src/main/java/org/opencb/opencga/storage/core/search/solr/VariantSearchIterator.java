@@ -74,6 +74,8 @@ public class VariantSearchIterator implements Iterator<VariantSearchModel>, Auto
         if (solrQuery.getStart() != null && solrQuery.getStart() >= 0) {
             // Do not change the order or position of the next two lines of code
             Integer skip = solrQuery.getStart();
+            // We need to increment remaining with skip to allow the decrement in the hasNext method
+            this.remaining = (this.remaining < Integer.MAX_VALUE - skip) ? this.remaining + skip : Integer.MAX_VALUE;
             solrQuery.setStart(null);
             for (int i = 0; i < skip && hasNext(); i++) {
                 next();
