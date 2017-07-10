@@ -70,7 +70,7 @@ class ConfigClient(object):
                 self._config['version'] = config_dict['version']
 
         else:
-            msg = 'No configuration parameters found'
+            msg = 'No opencga_configuration parameters found'
             raise ValueError(msg)
 
     def _get_available_host_retry(self):

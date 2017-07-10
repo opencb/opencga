@@ -38,7 +38,7 @@ class _ParentRestClient(object):
 
     def _rest_retry(self, method, resource, query_id=None, subcategory=None,
                     second_query_id=None, data=None, **options):
-        """Invokes the specified HTTP method, with retries if they are specified in the configuration
+        """Invokes the specified HTTP method, with retries if they are specified in the opencga_configuration
         :return: an instance of OpenCGAResponseList"""
 
         query_ids_str = self._get_query_id_str(query_id)
@@ -397,10 +397,6 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         """
 
         return self._get('scanFiles', query_id=studyId, **options)
-
-    def create(self, data, **options):
-
-        return self._post('create', data=[data], **options)
 
 
 class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
