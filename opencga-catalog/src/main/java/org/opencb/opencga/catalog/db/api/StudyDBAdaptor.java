@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.catalog.models.VariableSet;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -62,6 +63,8 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
     }
 
     QueryResult<Study> insert(long projectId, Study study, String owner, QueryOptions options) throws CatalogDBException;
+
+    boolean hasStudyPermission(long studyId, String user, StudyAclEntry.StudyPermissions permission) throws CatalogDBException;
 
     //@Deprecated
     //QueryResult<Study> getAllStudies(QueryOptions options) throws CatalogDBException;

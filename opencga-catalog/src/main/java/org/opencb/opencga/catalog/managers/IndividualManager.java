@@ -143,9 +143,9 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getId(sessionId);
-        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.VIEW);
-        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(individualId, options);
         long studyId = individualDBAdaptor.getStudyId(individualId);
+        authorizationManager.checkIndividualPermission(studyId, individualId, userId, IndividualAclEntry.IndividualPermissions.VIEW);
+        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(individualId, options);
         authorizationManager.filterIndividuals(userId, studyId, individualQueryResult.getResult());
         addChildrenInformation(userId, studyId, individualQueryResult);
         individualQueryResult.setNumResults(individualQueryResult.getResult().size());
@@ -209,20 +209,20 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         ParamUtils.checkParameter(individualIdStr, "id");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getId(sessionId);
-        List<Long> individualIds = getIds(userId, individualIdStr);
+        MyResourceIds resource = getIds(individualIdStr, null, sessionId);
 
-        List<QueryResult<Individual>> queryResultList = new ArrayList<>(individualIds.size());
-        for (Long individualId : individualIds) {
+        List<QueryResult<Individual>> queryResultList = new ArrayList<>(resource.getResourceIds().size());
+        for (Long individualId : resource.getResourceIds()) {
             QueryResult<Individual> queryResult = null;
             try {
-                authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.DELETE);
+                authorizationManager.checkIndividualPermission(resource.getStudyId(), individualId, resource.getUser(),
+                        IndividualAclEntry.IndividualPermissions.DELETE);
                 queryResult = individualDBAdaptor.restore(individualId, options);
                 auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.restore, AuditRecord.Magnitude.medium,
-                        individualId, userId, Status.DELETED, Status.READY, "Individual restore", new ObjectMap());
+                        individualId, resource.getUser(), Status.DELETED, Status.READY, "Individual restore", new ObjectMap());
             } catch (CatalogAuthorizationException e) {
                 auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.restore, AuditRecord.Magnitude.high,
-                        individualId, userId, null, null, e.getMessage(), null);
+                        individualId, resource.getUser(), null, null, e.getMessage(), null);
                 queryResult = new QueryResult<>("Restore individual " + individualId);
                 queryResult.setErrorMsg(e.getMessage());
             } catch (CatalogException e) {
@@ -474,7 +474,9 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         String userId = userManager.getId(sessionId);
-        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS);
+        long studyId = individualDBAdaptor.getStudyId(individualId);
+        authorizationManager.checkIndividualPermission(studyId, individualId, userId,
+                IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS);
 
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
 
@@ -504,7 +506,9 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         ParamUtils.checkObj(newAnnotations, "newAnnotations");
 
         String userId = userManager.getId(sessionId);
-        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS);
+        long studyId = individualDBAdaptor.getStudyId(individualId);
+        authorizationManager.checkIndividualPermission(studyId, individualId, userId,
+                IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS);
 
         QueryOptions queryOptions = new QueryOptions("include", "projects.studies.individuals.annotationSets");
 
@@ -551,7 +555,9 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         ParamUtils.defaultObject(parameters, QueryOptions::new);
         ParamUtils.defaultObject(options, QueryOptions::new);
         String userId = userManager.getId(sessionId);
-        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.UPDATE);
+        long studyId = individualDBAdaptor.getStudyId(individualId);
+        authorizationManager.checkIndividualPermission(studyId, individualId, userId,
+                IndividualAclEntry.IndividualPermissions.UPDATE);
 
         for (Map.Entry<String, Object> param : parameters.entrySet()) {
             IndividualDBAdaptor.QueryParams queryParam = IndividualDBAdaptor.QueryParams.getParam(param.getKey());
@@ -560,7 +566,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                     ParamUtils.checkAlias(parameters.getString(queryParam.key()), "name", configuration.getCatalog().getOffset());
 
                     String myName = parameters.getString(IndividualDBAdaptor.QueryParams.NAME.key());
-                    long studyId = individualDBAdaptor.getStudyId(individualId);
                     Query query = new Query()
                             .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                             .append(IndividualDBAdaptor.QueryParams.NAME.key(), myName);
@@ -654,7 +659,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         for (Long individualId : individualIds) {
             QueryResult<Individual> queryResult = null;
             try {
-                authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.DELETE);
+                authorizationManager.checkIndividualPermission(resourceId.getStudyId(), individualId, userId,
+                        IndividualAclEntry.IndividualPermissions.DELETE);
 
                 // We can delete an individual if their samples can be deleted
                 // We obtain the samples associated to the individual and check if those can be deleted
@@ -805,7 +811,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
         // Check the user has the permissions needed to change permissions over those individuals
         for (Long individualId : resourceIds.getResourceIds()) {
-            authorizationManager.checkIndividualPermission(individualId, resourceIds.getUser(),
+            authorizationManager.checkIndividualPermission(resourceIds.getStudyId(), individualId, resourceIds.getUser(),
                     IndividualAclEntry.IndividualPermissions.SHARE);
         }
 
@@ -817,7 +823,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
             members = Collections.emptyList();
         }
         CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
-        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
+//        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
         String collectionName = MongoDBAdaptorFactory.INDIVIDUAL_COLLECTION;
 
@@ -894,7 +900,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
     private long commonGetAllInvidualSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
         MyResourceId resource = getId(id, studyStr, sessionId);
-        authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
+        authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
         return resource.getResourceId();
     }
@@ -903,7 +909,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
             throws CatalogException {
         ParamUtils.checkAlias(annotationSetName, "annotationSetName", configuration.getCatalog().getOffset());
         MyResourceId resource = getId(id, studyStr, sessionId);
-        authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
+        authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
         return resource.getResourceId();
     }
@@ -917,7 +923,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         MyResourceId resource = catalogManager.getIndividualManager().getId(id, studyStr, sessionId);
-        authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
+        authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
                 IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS);
         MyResourceId variableSetResource = catalogManager.getStudyManager().getVariableSetId(variableSetId,
                 Long.toString(resource.getStudyId()), sessionId);
@@ -969,7 +975,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         ParamUtils.checkObj(newAnnotations, "newAnnotations");
 
         MyResourceId resource = getId(id, studyStr, sessionId);
-        authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
+        authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
                 IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS);
 
         // Update the annotation
@@ -1001,7 +1007,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
 
         MyResourceId resource = getId(id, studyStr, sessionId);
-        authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
+        authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
                 IndividualAclEntry.IndividualPermissions.DELETE_ANNOTATIONS);
 
         QueryResult<AnnotationSet> annotationSet = individualDBAdaptor.getAnnotationSet(resource.getResourceId(), annotationSetName);
@@ -1024,7 +1030,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         ParamUtils.checkParameter(id, "id");
 
         MyResourceId resource = getId(id, studyStr, sessionId);
-        authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
+        authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
 
         long variableSetId = -1;
@@ -1042,7 +1048,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         ParamUtils.checkParameter(id, "id");
 
         MyResourceId resource = getId(id, studyStr, sessionId);
-        authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
+        authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
 
         long variableSetId = -1;

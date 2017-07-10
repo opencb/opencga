@@ -111,7 +111,7 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
     @Deprecated
     QueryResult<Study> share(long studyId, AclEntry acl) throws CatalogException;
 
-    void membersHavePermissionsInStudy(long studyId, List<String> members) throws CatalogException;
+//    void membersHavePermissionsInStudy(long studyId, List<String> members) throws CatalogException;
 
     /*---------------------*/
     /* VariableSet METHODS */

@@ -587,10 +587,8 @@ public class CatalogManager implements AutoCloseable {
             throws CatalogException {
         AbstractManager.MyResourceIds resources = familyManager.getIds(familyIdsStr, studyStr, sessionId);
         for (Long familyId : resources.getResourceIds()) {
-            AbstractManager.MyResourceId tmpResource = new AbstractManager.MyResourceId(resources.getUser(), resources.getStudyId(),
-                    familyId);
-            authorizationManager.checkPermissions(tmpResource, FamilyAclEntry.FamilyPermissions.VIEW,
-                    MongoDBAdaptorFactory.FAMILY_COLLECTION);
+            authorizationManager.checkFamilyPermission(resources.getStudyId(), familyId, resources.getUser(),
+                    FamilyAclEntry.FamilyPermissions.VIEW);
         }
         return authorizationManager.getAcls(resources.getResourceIds(), null, MongoDBAdaptorFactory.FAMILY_COLLECTION);
     }
@@ -598,7 +596,8 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<FamilyAclEntry> getFamilyAcl(String familyIdStr, @Nullable String studyStr, String member, String sessionId)
             throws CatalogException {
         AbstractManager.MyResourceId resource = familyManager.getId(familyIdStr, studyStr, sessionId);
-        authorizationManager.checkPermissions(resource, FamilyAclEntry.FamilyPermissions.VIEW, MongoDBAdaptorFactory.FAMILY_COLLECTION);
+        authorizationManager.checkFamilyPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
+                FamilyAclEntry.FamilyPermissions.VIEW);
 
         List<String> memberList = null;
         if (StringUtils.isNotEmpty(member)) {
@@ -792,22 +791,6 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<File> searchFile(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
         return fileManager.get(studyId, query, options, sessionId);
-    }
-
-    public QueryResult<Dataset> createDataset(long studyId, String name, String description, List<Long> files,
-                                              Map<String, Object> attributes, QueryOptions options, String sessionId)
-            throws CatalogException {
-        return fileManager.createDataset(studyId, name, description, files, attributes, options, sessionId);
-    }
-
-    public QueryResult<Dataset> getDataset(long dataSetId, QueryOptions options, String sessionId) throws CatalogException {
-        return fileManager.readDataset(dataSetId, options, sessionId);
-    }
-
-
-    public QueryResult refreshFolder(final long folderId, final String sessionId)
-            throws CatalogDBException, IOException {
-        throw new UnsupportedOperationException();
     }
 
     public QueryResult<File> link(URI uriOrigin, String pathDestiny, String studyIdStr, ObjectMap params, String sessionId)

@@ -494,8 +494,8 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             DataInputStream stream;
             AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
-            catalogManager.getAuthorizationManager().checkFilePermission(resource.getResourceId(), resource.getUser(),
-                    FileAclEntry.FilePermissions.DOWNLOAD);
+            catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
+                    resource.getUser(), FileAclEntry.FilePermissions.DOWNLOAD);
 
             QueryResult<File> queryResult = catalogManager.getFile(resource.getResourceId(), this.queryOptions, sessionId);
             File file = queryResult.getResult().get(0);
@@ -516,8 +516,8 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "limit", required = false) @QueryParam("limit") @DefaultValue("-1") int limit) {
         try {
             AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
-            catalogManager.getAuthorizationManager().checkFilePermission(resource.getResourceId(), resource.getUser(),
-                    FileAclEntry.FilePermissions.VIEW_CONTENT);
+            catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
+                    resource.getUser(), FileAclEntry.FilePermissions.VIEW_CONTENT);
 
             DataInputStream stream = catalogManager.downloadFile(resource.getResourceId(), start, limit, sessionId);
 //             String content = org.apache.commons.io.IOUtils.toString(stream);
@@ -540,8 +540,8 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Return multiple matches", required = false)  @DefaultValue("true") @QueryParam("multi") Boolean multi) {
         try {
             AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
-            catalogManager.getAuthorizationManager().checkFilePermission(resource.getResourceId(), resource.getUser(),
-                    FileAclEntry.FilePermissions.VIEW_CONTENT);
+            catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
+                    resource.getUser(), FileAclEntry.FilePermissions.VIEW_CONTENT);
 
             DataInputStream stream = catalogManager.grepFile(resource.getResourceId(), pattern, ignoreCase, multi, sessionId);
             return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
@@ -564,8 +564,8 @@ public class FileWSServer extends OpenCGAWSServer {
         InputStream streamBody = null;
         try {
             AbstractManager.MyResourceId resource = fileManager.getId(fileStr, studyStr, sessionId);
-            catalogManager.getAuthorizationManager().checkFilePermission(resource.getResourceId(), resource.getUser(),
-                    FileAclEntry.FilePermissions.WRITE);
+            catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
+                    resource.getUser(), FileAclEntry.FilePermissions.WRITE);
 
             /** Obtain file uri **/
             File file = catalogManager.getFile(resource.getResourceId(), sessionId).getResult().get(0);

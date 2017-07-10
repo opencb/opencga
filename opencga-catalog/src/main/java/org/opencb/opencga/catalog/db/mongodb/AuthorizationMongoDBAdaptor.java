@@ -463,6 +463,33 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     }
 
+    @Override
+    public <E extends AbstractAclEntry> void setAcls(List<Long> resourceIds, List<E> acls, String entity) throws CatalogDBException {
+        validateCollection(entity);
+        MongoDBCollection collection = dbCollectionMap.get(entity);
+
+        for (long resourceId : resourceIds) {
+            // Get current permissions for resource and override with new ones set for members (already existing or not)
+            Map<String, List<String>> currentPermissions = internalGet(resourceId, Collections.emptyList(), entity);
+            for (E acl : acls) {
+                List<String> permissions = (List<String>) acl.getPermissions().stream().map(a -> a.toString()).collect(Collectors.toList());
+                currentPermissions.put(acl.getMember(), permissions);
+            }
+
+            List<String> permissionArray = createPermissionArray(currentPermissions);
+            Document queryDocument = new Document()
+                    .append("$isolated", 1)
+                    .append(PRIVATE_ID, resourceId);
+            Document update = new Document("$set", new Document(QueryParams.ACL.key(), permissionArray));
+
+            logger.debug("Set Acls (set): Query {}, Push {}",
+                    queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+            collection.update(queryDocument, update, QueryOptions.empty());
+        }
+    }
+
     private void removePermissions(long studyId, List<String> users, String entity) {
         List<String> permissions = fullPermissionsMap.get(entity);
         List<String> removePermissions = createPermissionArray(users, permissions);

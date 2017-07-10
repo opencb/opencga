@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.auth.authorization;
 
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.*;
 
@@ -94,23 +93,29 @@ public interface AuthorizationManager {
     void checkStudyPermission(long studyId, String userId, StudyAclEntry.StudyPermissions permission, String message)
             throws CatalogException;
 
-    void checkFilePermission(long fileId, String userId, FileAclEntry.FilePermissions permission) throws CatalogException;
+    void checkFilePermission(long studyId, long fileId, String userId, FileAclEntry.FilePermissions permission) throws CatalogException;
 
-    void checkSamplePermission(long sampleId, String userId, SampleAclEntry.SamplePermissions permission) throws CatalogException;
-
-    void checkIndividualPermission(long individualId, String userId, IndividualAclEntry.IndividualPermissions permission)
+    void checkSamplePermission(long studyId, long sampleId, String userId, SampleAclEntry.SamplePermissions permission)
             throws CatalogException;
 
-    void checkJobPermission(long jobId, String userId, JobAclEntry.JobPermissions permission) throws CatalogException;
-
-    void checkCohortPermission(long cohortId, String userId, CohortAclEntry.CohortPermissions permission) throws CatalogException;
-
-    void checkDatasetPermission(long datasetId, String userId, DatasetAclEntry.DatasetPermissions permission) throws CatalogException;
-
-    void checkDiseasePanelPermission(long panelId, String userId, DiseasePanelAclEntry.DiseasePanelPermissions permission)
+    void checkIndividualPermission(long studyId, long individualId, String userId, IndividualAclEntry.IndividualPermissions permission)
             throws CatalogException;
 
-    <E extends Enum<E>> void checkPermissions(AbstractManager.MyResourceId resource, E permission, String entity) throws CatalogException;
+    void checkJobPermission(long studyId, long jobId, String userId, JobAclEntry.JobPermissions permission) throws CatalogException;
+
+    void checkCohortPermission(long studyId, long cohortId, String userId, CohortAclEntry.CohortPermissions permission)
+            throws CatalogException;
+
+    void checkDiseasePanelPermission(long studyId, long panelId, String userId, DiseasePanelAclEntry.DiseasePanelPermissions permission)
+            throws CatalogException;
+
+    void checkFamilyPermission(long studyId, long familyId, String userId, FamilyAclEntry.FamilyPermissions permission)
+            throws CatalogException;
+
+    void checkClinicalAnalysisPermission(long studyId, long analysisId, String userId,
+                                         ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions permission) throws CatalogException;
+
+//    <E extends Enum<E>> void checkPermissions(AbstractManager.MyResourceId resource, E permission, String entity) throws CatalogException;
 
     /**
      * Removes from the list the projects that the user can not read.
@@ -338,32 +343,6 @@ public interface AuthorizationManager {
 
     //------------------------- End of cohort ACL ----------------------
 
-    //------------------------- Dataset ACL -----------------------------
-
-    /**
-     * Return all the ACLs defined for the dataset.
-     *
-     * @param userId    user id asking for the ACLs.
-     * @param datasetId dataset id.
-     * @return a list of DatasetAcls.
-     * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
-     */
-    QueryResult<DatasetAclEntry> getAllDatasetAcls(String userId, long datasetId) throws CatalogException;
-
-    /**
-     * Return the ACL defined for the member.
-     *
-     * @param userId    user asking for the ACL.
-     * @param datasetId dataset id.
-     * @param member    member whose permissions will be retrieved.
-     * @return the DatasetAcl for the member.
-     * @throws CatalogException if the user does not have proper permissions to see the member permissions.
-     */
-    QueryResult<DatasetAclEntry> getDatasetAcl(String userId, long datasetId, String member) throws CatalogException;
-
-
-    //------------------------- End of dataset ACL ----------------------
-
     //------------------------- Job ACL -----------------------------
 
     /**
@@ -410,6 +389,9 @@ public interface AuthorizationManager {
 
     <E extends AbstractAclEntry> List<QueryResult<E>> removeAcls(List<Long> ids, List<String> members, @Nullable List<String> permissions,
                                                                  String entity) throws CatalogException;
+
+    <E extends AbstractAclEntry> List<QueryResult<E>> replicateAcls(long studyId, List<Long> ids, List<E> aclEntries, String entity)
+            throws CatalogException;
 
     <E extends Enum<E>> void checkValidPermission(List<String> permissions, Class<E> enumClass) throws CatalogException;
 

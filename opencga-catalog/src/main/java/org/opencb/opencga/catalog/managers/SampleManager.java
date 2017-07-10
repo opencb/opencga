@@ -244,7 +244,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         String userId = userManager.getId(sessionId);
-        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS);
+        long studyId = sampleDBAdaptor.getStudyId(sampleId);
+        authorizationManager.checkSamplePermission(studyId, sampleId, userId, SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS);
 
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
 
@@ -277,7 +278,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkObj(newAnnotations, "newAnnotations");
 
         String userId = userManager.getId(sessionId);
-        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS);
+        long studyId = sampleDBAdaptor.getStudyId(sampleId);
+        authorizationManager.checkSamplePermission(studyId, sampleId, userId, SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS);
 
         // Get sample
         QueryOptions queryOptions = new QueryOptions("include", Collections.singletonList("projects.studies.samples.annotationSets"));
@@ -323,8 +325,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     public QueryResult<AnnotationSet> deleteAnnotation(long sampleId, String annotationId, String sessionId) throws CatalogException {
 
         String userId = userManager.getId(sessionId);
-
-        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.DELETE_ANNOTATIONS);
+        long studyId = sampleDBAdaptor.getStudyId(sampleId);
+        authorizationManager.checkSamplePermission(studyId, sampleId, userId, SampleAclEntry.SamplePermissions.DELETE_ANNOTATIONS);
 
         QueryResult<AnnotationSet> queryResult = sampleDBAdaptor.deleteAnnotation(sampleId, annotationId);
         auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId, new ObjectMap("annotationSets", queryResult.first()),
@@ -439,11 +441,16 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     public QueryResult<Sample> get(Long sampleId, QueryOptions options, String sessionId) throws CatalogException {
 
         String userId = userManager.getId(sessionId);
-        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.VIEW);
-        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(sampleId, options);
-        authorizationManager.filterSamples(userId, getStudyId(sampleId), sampleQueryResult.getResult());
-        sampleQueryResult.setNumResults(sampleQueryResult.getResult().size());
-        return sampleQueryResult;
+        long studyId = sampleDBAdaptor.getStudyId(sampleId);
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId)
+                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        return sampleDBAdaptor.get(query, options, userId);
+//        authorizationManager.checkSamplePermission(studyId, sampleId, userId, SampleAclEntry.SamplePermissions.VIEW);
+//        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(sampleId, options);
+//        authorizationManager.filterSamples(userId, getStudyId(sampleId), sampleQueryResult.getResult());
+//        sampleQueryResult.setNumResults(sampleQueryResult.getResult().size());
+//        return sampleQueryResult;
     }
 
     @Override
@@ -564,7 +571,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     @Override
     public void checkCanDeleteSamples(MyResourceIds resources) throws CatalogException {
         for (Long sampleId : resources.getResourceIds()) {
-            authorizationManager.checkSamplePermission(sampleId, resources.getUser(), SampleAclEntry.SamplePermissions.DELETE);
+            authorizationManager.checkSamplePermission(resources.getStudyId(), sampleId, resources.getUser(),
+                    SampleAclEntry.SamplePermissions.DELETE);
         }
 
         // Check that the samples are not being used in cohorts
@@ -596,20 +604,20 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkParameter(sampleIdStr, "id");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getId(sessionId);
-        List<Long> sampleIds = getIds(userId, sampleIdStr);
+        MyResourceIds resource = getIds(sampleIdStr, null, sessionId);
 
-        List<QueryResult<Sample>> queryResultList = new ArrayList<>(sampleIds.size());
-        for (Long sampleId : sampleIds) {
+        List<QueryResult<Sample>> queryResultList = new ArrayList<>(resource.getResourceIds().size());
+        for (Long sampleId : resource.getResourceIds()) {
             QueryResult<Sample> queryResult = null;
             try {
-                authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.DELETE);
+                authorizationManager.checkSamplePermission(resource.getStudyId(), sampleId, resource.getUser(),
+                        SampleAclEntry.SamplePermissions.DELETE);
                 queryResult = sampleDBAdaptor.restore(sampleId, options);
                 auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.Action.restore, AuditRecord.Magnitude.medium, sampleId,
-                        userId, Status.DELETED, Status.READY, "Sample restore", new ObjectMap());
+                        resource.getUser(), Status.DELETED, Status.READY, "Sample restore", new ObjectMap());
             } catch (CatalogAuthorizationException e) {
                 auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.Action.restore, AuditRecord.Magnitude.high, sampleId,
-                        userId, null, null, e.getMessage(), null);
+                        resource.getUser(), null, null, e.getMessage(), null);
                 queryResult = new QueryResult<>("Restore sample " + sampleId);
                 queryResult.setErrorMsg(e.getMessage());
             } catch (CatalogException e) {
@@ -655,7 +663,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getId(sessionId);
-        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.UPDATE);
+        long studyId = sampleDBAdaptor.getStudyId(sampleId);
+        authorizationManager.checkSamplePermission(studyId, sampleId, userId, SampleAclEntry.SamplePermissions.UPDATE);
 
         for (Map.Entry<String, Object> param : parameters.entrySet()) {
             SampleDBAdaptor.QueryParams queryParam = SampleDBAdaptor.QueryParams.getParam(param.getKey());
@@ -681,7 +690,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             if (NumberUtils.isCreatable(individualStr) && Long.parseLong(individualStr) <= 0) {
                 parameters.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1);
             } else {
-                long studyId = sampleDBAdaptor.getStudyId(sampleId);
                 MyResourceId resource = catalogManager.getIndividualManager().getId(individualStr, Long.toString(studyId), sessionId);
                 parameters.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), resource.getResourceId());
             }
@@ -838,7 +846,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         // Check the user has the permissions needed to change permissions over those samples
         for (Long sampleId : resourceIds.getResourceIds()) {
-            authorizationManager.checkSamplePermission(sampleId, resourceIds.getUser(), SampleAclEntry.SamplePermissions.SHARE);
+            authorizationManager.checkSamplePermission(resourceIds.getStudyId(), sampleId, resourceIds.getUser(),
+                    SampleAclEntry.SamplePermissions.SHARE);
         }
 
         // Validate that the members are actually valid members
@@ -849,7 +858,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             members = Collections.emptyList();
         }
         CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
-        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
+//        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
         String collectionName = MongoDBAdaptorFactory.SAMPLE_COLLECTION;
 
@@ -872,7 +881,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     private long commonGetAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
         MyResourceId resourceId = catalogManager.getSampleManager().getId(id, studyStr, sessionId);
-        authorizationManager.checkSamplePermission(resourceId.getResourceId(), resourceId.getUser(),
+        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
         return resourceId.getResourceId();
     }
@@ -882,7 +891,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkAlias(annotationSetName, "annotationSetName", configuration.getCatalog().getOffset());
         MyResourceId resourceId = catalogManager.getSampleManager().getId(id, studyStr, sessionId);
-        authorizationManager.checkSamplePermission(resourceId.getResourceId(), resourceId.getUser(),
+        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
         return resourceId.getResourceId();
     }
@@ -896,7 +905,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         MyResourceId resourceId = catalogManager.getSampleManager().getId(id, studyStr, sessionId);
-        authorizationManager.checkSamplePermission(resourceId.getResourceId(), resourceId.getUser(),
+        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
                 SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS);
         MyResourceId variableSetResource = catalogManager.getStudyManager().getVariableSetId(variableSetId,
                 Long.toString(resourceId.getStudyId()), sessionId);
@@ -948,7 +957,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkObj(newAnnotations, "newAnnotations");
 
         MyResourceId resourceId = catalogManager.getSampleManager().getId(id, studyStr, sessionId);
-        authorizationManager.checkSamplePermission(resourceId.getResourceId(), resourceId.getUser(),
+        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
                 SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS);
 
         // Update the annotation
@@ -980,7 +989,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
 
         MyResourceId resourceId = catalogManager.getSampleManager().getId(id, studyStr, sessionId);
-        authorizationManager.checkSamplePermission(resourceId.getResourceId(), resourceId.getUser(),
+        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
                 SampleAclEntry.SamplePermissions.DELETE_ANNOTATIONS);
 
         QueryResult<AnnotationSet> annotationSet = sampleDBAdaptor.getAnnotationSet(resourceId.getResourceId(), annotationSetName);
@@ -1003,7 +1012,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkParameter(id, "id");
 
         AbstractManager.MyResourceId resourceId = getId(id, studyStr, sessionId);
-        authorizationManager.checkSamplePermission(resourceId.getResourceId(), resourceId.getUser(),
+        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
 
 
@@ -1022,7 +1031,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkParameter(id, "id");
 
         AbstractManager.MyResourceId resourceId = getId(id, studyStr, sessionId);
-        authorizationManager.checkSamplePermission(resourceId.getResourceId(), resourceId.getUser(),
+        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
 
 

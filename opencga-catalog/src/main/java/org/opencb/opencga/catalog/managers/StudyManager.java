@@ -357,15 +357,15 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public void membersHavePermissionsInStudy(long studyId, List<String> members) throws CatalogException {
-        for (String member : members) {
-            if (!member.equals("*") && !member.equals("anonymous") && !memberExists(studyId, member)) {
-                throw new CatalogException("Cannot update ACL for " + member + ". First, a general study permission must be "
-                        + "defined for that member.");
-            }
-        }
-    }
+//    @Override
+//    public void membersHavePermissionsInStudy(long studyId, List<String> members) throws CatalogException {
+//        for (String member : members) {
+//            if (!member.equals("*") && !member.equals("anonymous") && !memberExists(studyId, member)) {
+//                throw new CatalogException("Cannot update ACL for " + member + ". First, a general study permission must be "
+//                        + "defined for that member.");
+//            }
+//        }
+//    }
 
     @Override
     public MyResourceId getVariableSetId(String variableStr, @Nullable String studyStr, String sessionId) throws CatalogException {
@@ -1048,7 +1048,8 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     public QueryResult<DiseasePanel> getDiseasePanel(String panelStr, QueryOptions options, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getId(sessionId);
         Long panelId = getDiseasePanelId(userId, panelStr);
-        authorizationManager.checkDiseasePanelPermission(panelId, userId, DiseasePanelAclEntry.DiseasePanelPermissions.VIEW);
+        long studyId = panelDBAdaptor.getStudyId(panelId);
+        authorizationManager.checkDiseasePanelPermission(studyId, panelId, userId, DiseasePanelAclEntry.DiseasePanelPermissions.VIEW);
         QueryResult<DiseasePanel> queryResult = panelDBAdaptor.get(panelId, options);
         return queryResult;
     }
@@ -1058,7 +1059,9 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         ParamUtils.checkObj(parameters, "Parameters");
         String userId = catalogManager.getUserManager().getId(sessionId);
         Long diseasePanelId = getDiseasePanelId(userId, panelStr);
-        authorizationManager.checkDiseasePanelPermission(diseasePanelId, userId, DiseasePanelAclEntry.DiseasePanelPermissions.UPDATE);
+        long studyId = panelDBAdaptor.getStudyId(diseasePanelId);
+        authorizationManager.checkDiseasePanelPermission(studyId, diseasePanelId, userId,
+                DiseasePanelAclEntry.DiseasePanelPermissions.UPDATE);
 
         for (String s : parameters.keySet()) {
             if (!s.matches("name|disease")) {

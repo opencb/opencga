@@ -67,7 +67,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     private final String password = "1234";
 
     private final String groupAdmin = "@admins";
-    private final String groupMember = "@members";
+    private final String groupMember = "@memberss";
 
     private final String ALL_FILE_PERMISSIONS = join(
             EnumSet.allOf(FileAclEntry.FilePermissions.class)
@@ -192,7 +192,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getSampleManager().updateAcl(Long.toString(smp3.getId()), Long.toString(s1), externalUser, noSamplePermissions, ownerSessionId);
         catalogManager.getSampleManager().updateAcl(Long.toString(smp2.getId()), Long.toString(s1), groupAdmin, noSamplePermissions, ownerSessionId);
         catalogManager.getSampleManager().updateAcl(Long.toString(smp5.getId()), Long.toString(s1), externalUser, noSamplePermissions, ownerSessionId);
-        catalogManager.getSampleManager().updateAcl(Long.toString(smp6.getId()), Long.toString(s1), "*", allSamplePermissions, ownerSessionId);
+        catalogManager.getSampleManager().updateAcl(Long.toString(smp6.getId()), Long.toString(s1), "@members", allSamplePermissions,
+                ownerSessionId);
     }
 
     @After

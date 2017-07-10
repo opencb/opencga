@@ -203,8 +203,9 @@ public class JobManager extends AbstractManager implements IJobManager {
 
     @Override
     public QueryResult<ObjectMap> visit(long jobId, String sessionId) throws CatalogException {
-        String userId = userManager.getId(sessionId);
-        authorizationManager.checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.VIEW);
+        MyResourceId resource = getId(Long.toString(jobId), null, sessionId);
+
+        authorizationManager.checkJobPermission(resource.getStudyId(), jobId, resource.getUser(), JobAclEntry.JobPermissions.VIEW);
         return jobDBAdaptor.incJobVisits(jobId);
     }
 
@@ -228,9 +229,9 @@ public class JobManager extends AbstractManager implements IJobManager {
         // FIXME check inputFiles? is a null conceptually valid?
 //        URI tmpOutDirUri = createJobOutdir(studyId, randomString, sessionId);
 
-        authorizationManager.checkFilePermission(outDirId, userId, FileAclEntry.FilePermissions.WRITE);
+        authorizationManager.checkFilePermission(studyId, outDirId, userId, FileAclEntry.FilePermissions.WRITE);
         for (File inputFile : inputFiles) {
-            authorizationManager.checkFilePermission(inputFile.getId(), userId, FileAclEntry.FilePermissions.VIEW);
+            authorizationManager.checkFilePermission(studyId, inputFile.getId(), userId, FileAclEntry.FilePermissions.VIEW);
         }
         QueryOptions fileQueryOptions = new QueryOptions("include", Arrays.asList(
                 "projects.studies.files.id",
@@ -267,10 +268,9 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult<Job> get(Long jobId, QueryOptions options, String sessionId)
-            throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
-        authorizationManager.checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.VIEW);
+    public QueryResult<Job> get(Long jobId, QueryOptions options, String sessionId) throws CatalogException {
+        MyResourceId resource = getId(Long.toString(jobId), null, sessionId);
+        authorizationManager.checkJobPermission(resource.getStudyId(), jobId, resource.getUser(), JobAclEntry.JobPermissions.VIEW);
         QueryResult<Job> queryResult = jobDBAdaptor.get(jobId, options);
         return queryResult;
     }
@@ -331,10 +331,10 @@ public class JobManager extends AbstractManager implements IJobManager {
     @Override
     public QueryResult<Job> update(Long jobId, ObjectMap parameters, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(parameters, "parameters");
-        String userId = this.catalogManager.getUserManager().getId(sessionId);
-        authorizationManager.checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.UPDATE);
+        MyResourceId resource = getId(Long.toString(jobId), null, sessionId);
+        authorizationManager.checkJobPermission(resource.getStudyId(), jobId, resource.getUser(), JobAclEntry.JobPermissions.UPDATE);
         QueryResult<Job> queryResult = jobDBAdaptor.update(jobId, parameters);
-        auditManager.recordUpdate(AuditRecord.Resource.job, jobId, userId, parameters, null, null);
+        auditManager.recordUpdate(AuditRecord.Resource.job, jobId, resource.getUser(), parameters, null, null);
         return queryResult;
     }
 
@@ -354,7 +354,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         for (Long jobId : resourceIds.getResourceIds()) {
             QueryResult<Job> queryResult = null;
             try {
-                authorizationManager.checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.DELETE);
+                authorizationManager.checkJobPermission(resourceIds.getStudyId(), jobId, userId, JobAclEntry.JobPermissions.DELETE);
 
                 QueryResult<Job> jobQueryResult = jobDBAdaptor.get(jobId, QueryOptions.empty());
                 if (jobQueryResult.first().getOutput() != null && jobQueryResult.first().getOutput().size() > 0) {
@@ -436,10 +436,10 @@ public class JobManager extends AbstractManager implements IJobManager {
     @Override
     public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        String userId = userManager.getId(sessionId);
-        long jobId = getId(userId, id);
+        MyResourceId resource = getId(id, null, sessionId);
 
-        authorizationManager.checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.UPDATE);
+        authorizationManager.checkJobPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
+                JobAclEntry.JobPermissions.UPDATE);
 
         if (status != null && !Job.JobStatus.isValid(status)) {
             throw new CatalogException("The status " + status + " is not valid job status.");
@@ -449,8 +449,8 @@ public class JobManager extends AbstractManager implements IJobManager {
         parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_NAME.key(), status);
         parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_MSG.key(), message);
 
-        jobDBAdaptor.update(jobId, parameters);
-        auditManager.recordUpdate(AuditRecord.Resource.job, jobId, userId, parameters, null, null);
+        jobDBAdaptor.update(resource.getResourceId(), parameters);
+        auditManager.recordUpdate(AuditRecord.Resource.job, resource.getResourceId(), resource.getUser(), parameters, null, null);
     }
 
     @Override
@@ -545,7 +545,8 @@ public class JobManager extends AbstractManager implements IJobManager {
 
         // Check the user has the permissions needed to change permissions
         for (Long jobId : resourceIds.getResourceIds()) {
-            authorizationManager.checkJobPermission(jobId, resourceIds.getUser(), JobAclEntry.JobPermissions.SHARE);
+            authorizationManager.checkJobPermission(resourceIds.getStudyId(), jobId, resourceIds.getUser(),
+                    JobAclEntry.JobPermissions.SHARE);
         }
 
         // Validate that the members are actually valid members
@@ -556,7 +557,7 @@ public class JobManager extends AbstractManager implements IJobManager {
             members = Collections.emptyList();
         }
         CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
-        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
+//        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
         String collectionName = MongoDBAdaptorFactory.JOB_COLLECTION;
 

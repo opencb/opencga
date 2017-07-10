@@ -21,6 +21,7 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.*;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang3.NotImplementedException;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -33,6 +34,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -176,6 +178,17 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         dbAdaptorFactory.getCatalogProjectDbAdaptor().checkId(projectId);
         Query query = new Query(QueryParams.PROJECT_ID.key(), projectId);
         return endQuery("getAllSudiesInProject", startTime, get(query, options));
+    }
+
+    @Override
+    public boolean hasStudyPermission(long studyId, String user, StudyAclEntry.StudyPermissions permission) throws CatalogDBException {
+        Query query = new Query(QueryParams.ID.key(), studyId);
+        QueryResult queryResult = nativeGet(query, QueryOptions.empty());
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Study " + studyId + " not found");
+        }
+
+        return checkStudyPermission((Document) queryResult.first(), user, permission.name());
     }
 
     @Override
@@ -815,6 +828,11 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     public QueryResult<Long> count(Query query) throws CatalogDBException {
         Bson bson = parseQuery(query, false);
         return studyCollection.count(bson);
+    }
+
+    @Override
+    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission) throws CatalogDBException {
+        throw new NotImplementedException("Count not implemented for study collection");
     }
 
     @Override

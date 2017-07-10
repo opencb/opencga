@@ -137,6 +137,19 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
     }
 
+    protected boolean checkStudyPermission(Document study, String user, String studyPermission) {
+        // 0. If the user corresponds with the owner, we don't have to check anything else
+        if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
+            return true;
+        }
+
+        // 1. We obtain the groups of the user
+        List<String> groups = getGroups(study, user);
+
+        // 2. We check if the study contains the studies expected for the user
+        return checkUserHasPermission(study, user, groups, studyPermission);
+    }
+
     protected Document getQueryForAuthorisedEntries(Document study, String user, String studyPermission, String entryPermission) {
         // 0. If the user corresponds with the owner, we don't have to check anything else
         if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
@@ -144,35 +157,10 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
 
         // 1. We obtain the groups of the user
-        List<Document> groupDocumentList = study.get(StudyDBAdaptor.QueryParams.GROUPS.key(), ArrayList.class);
-        List<String> groups = new ArrayList<>();
-        if (groupDocumentList != null && groupDocumentList.size() > 0) {
-            for (Document group : groupDocumentList) {
-                List<String> userIds = group.get("userIds", ArrayList.class);
-                for (String userId : userIds) {
-                    if (user.equals(userId)) {
-                        groups.add(group.getString("name"));
-                        break;
-                    }
-                }
-            }
-        }
+        List<String> groups = getGroups(study, user);
 
         // 2. We check if the study contains the studies expected for the user
-        List<String> aclList = study.get(PRIVATE_ACL, ArrayList.class);
-        Map<String, Set<String>> permissionMap = parsePermissions(aclList, user, groups);
-
-        // 2.2. We now check if the user will have those effective permissions defined at the study level
-        boolean hasStudyPermissions = false;
-        if (permissionMap.get("user") != null) {
-            hasStudyPermissions = permissionMap.get("user").contains(studyPermission);
-        } else if (permissionMap.get("group") != null) {
-            hasStudyPermissions = permissionMap.get("group").contains(studyPermission);
-        } else if (permissionMap.get("*") != null) {
-            hasStudyPermissions = permissionMap.get("*").contains(studyPermission);
-        } else if (permissionMap.get("anonymous") != null) {
-            hasStudyPermissions = permissionMap.get("anonymous").contains(studyPermission);
-        }
+        boolean hasStudyPermissions = checkUserHasPermission(study, user, groups, studyPermission);
 
         Document queryDocument = getAuthorisedEntries(user, groups, entryPermission);
         if (hasStudyPermissions) {
@@ -187,6 +175,43 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         logger.debug("Query for authorised entries: {}", queryDocument.toBsonDocument(Document.class,
                 MongoClient.getDefaultCodecRegistry()));
         return queryDocument;
+    }
+
+    private boolean checkUserHasPermission(Document study, String user, List<String> groups, String studyPermission) {
+        List<String> aclList = study.get(PRIVATE_ACL, ArrayList.class);
+        Map<String, Set<String>> permissionMap = parsePermissions(aclList, user, groups);
+
+        // 2.2. We now check if the user will have those effective permissions defined at the study level
+        boolean hasStudyPermissions = false;
+        if (permissionMap.get("user") != null) {
+            hasStudyPermissions = permissionMap.get("user").contains(studyPermission);
+        } else if (permissionMap.get("group") != null) {
+            hasStudyPermissions = permissionMap.get("group").contains(studyPermission);
+        } else if (permissionMap.get("members") != null) {
+            hasStudyPermissions = permissionMap.get("members").contains(studyPermission);
+        } else if (permissionMap.get("*") != null) {
+            hasStudyPermissions = permissionMap.get("*").contains(studyPermission);
+        }
+        return hasStudyPermissions;
+    }
+
+    private List<String> getGroups(Document study, String user) {
+        List<Document> groupDocumentList = study.get(StudyDBAdaptor.QueryParams.GROUPS.key(), ArrayList.class);
+        List<String> groups = new ArrayList<>();
+        if (groupDocumentList != null && groupDocumentList.size() > 0) {
+            for (Document group : groupDocumentList) {
+                if (!group.getString("name").equals("@members")) {
+                    List<String> userIds = group.get("userIds", ArrayList.class);
+                    for (String userId : userIds) {
+                        if (user.equals(userId)) {
+                            groups.add(group.getString("name"));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return groups;
     }
 
     protected Document getQueryForAuthorisedEntries(long studyId, String user, String studyPermission, String entryPermission)
@@ -216,13 +241,13 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
                     member = "user";
                 } else if (groupList.contains(split[0])) {
                     member = "group";
+                } else if ("@members".equals(split[0])) {
+                    member = "members";
                 } else if ("*".equals(split[0])) {
                     member = "*";
-                } else if ("anonymous".equals(split[0])) {
-                    member = "anonymous";
                 }
                 if (member != null) {
-                    if (!permissions.containsKey(split[0])) {
+                    if (!permissions.containsKey(member)) {
                         permissions.put(member, new HashSet<>());
                     }
                     if (!split[1].equals("NONE")) {

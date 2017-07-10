@@ -22,7 +22,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
-import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.NotImplementedException;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.Document;
@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -230,6 +231,11 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
+    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission) throws CatalogDBException {
+        throw new NotImplementedException("Count not implemented for projects");
+    }
+
+    @Override
     public QueryResult distinct(Query query, String field) throws CatalogDBException {
         Bson bson = parseQuery(query);
         return userCollection.distinct(field, bson);
@@ -403,7 +409,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     @Override
     public void delete(Query query) throws CatalogDBException {
-        throw new NotImplementedException();
+        throw new NotImplementedException("Delete not implemented for projects");
     }
 
     @Deprecated

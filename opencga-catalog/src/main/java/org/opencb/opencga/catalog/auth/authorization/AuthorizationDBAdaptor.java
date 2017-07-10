@@ -56,4 +56,6 @@ public interface AuthorizationDBAdaptor {
             throws CatalogDBException;
 
     void resetMembersFromAllEntries(long studyId, List<String> members) throws CatalogDBException;
+
+    <E extends AbstractAclEntry> void setAcls(List<Long> resourceIds, List<E> acls, String entity) throws CatalogDBException;
 }

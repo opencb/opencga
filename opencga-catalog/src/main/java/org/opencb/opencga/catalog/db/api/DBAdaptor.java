@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +51,7 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     QueryResult<Long> count(Query query) throws CatalogDBException;
 
+    QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission) throws CatalogDBException;
 
     default QueryResult distinct(String field) throws CatalogDBException {
         return distinct(new Query(), field);

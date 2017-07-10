@@ -9,7 +9,6 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.ClinicalAnalysis;
@@ -186,12 +185,10 @@ public class ClinicalAnalysisManager extends AbstractManager {
         MyResourceIds resourceIds = getIds(clinicalAnalysis, studyStr, sessionId);
 
         List<QueryResult<ClinicalAnalysis>> queryResults = new ArrayList<>(resourceIds.getResourceIds().size());
-        MyResourceId resourceId = new MyResourceId().setStudyId(resourceIds.getStudyId()).setUser(resourceIds.getUser());
         for (Long clinicalAnalysisId : resourceIds.getResourceIds()) {
-            resourceId.setResourceId(clinicalAnalysisId);
             try {
-                authorizationManager.checkPermissions(resourceId, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW,
-                        MongoDBAdaptorFactory.CLINICAL_ANALYSIS_COLLECTION);
+                authorizationManager.checkClinicalAnalysisPermission(resourceIds.getStudyId(), clinicalAnalysisId, resourceIds.getUser(),
+                        ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW);
                 queryResults.add(clinicalDBAdaptor.get(clinicalAnalysisId, options));
             } catch (CatalogException e) {
                 logger.error(e.getMessage(), e);
