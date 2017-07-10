@@ -27,6 +27,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * Created by wasim on 14/11/16.
@@ -119,7 +120,12 @@ public class VariantSearchIterator implements Iterator<VariantSearchModel>, Auto
 
     @Override
     public VariantSearchModel next() {
-        return solrIterator.next();
+        // sanity check
+        if (hasNext()) {
+            return solrIterator.next();
+        } else {
+            throw new NoSuchElementException();
+        }
     }
 
     @Override
@@ -128,6 +134,10 @@ public class VariantSearchIterator implements Iterator<VariantSearchModel>, Auto
     }
 
     public long getNumFound() {
-        return solrResponse.getResults().getNumFound();
+        // sanity check
+        if (solrResponse == null) {
+            hasNext();
+        }
+        return solrResponse == null ? 0 : solrResponse.getResults().getNumFound();
     }
 }
