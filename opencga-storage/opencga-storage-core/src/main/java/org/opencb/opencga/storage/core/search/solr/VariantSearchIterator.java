@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.opencb.opencga.storage.core.search.VariantSearchModel;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -89,7 +90,7 @@ public class VariantSearchIterator implements Iterator<VariantSearchModel>, Auto
             return true;
         } else {
             // This only happens when there are no more records in Solr
-            if (cursorMark.equals(nextCursorMark)) {
+            if (cursorMark.equals(nextCursorMark) || remaining == 0) {
                 return false;
             }
 
@@ -103,15 +104,16 @@ public class VariantSearchIterator implements Iterator<VariantSearchModel>, Auto
 
                 // Execute the query and fetch setRows records, we will iterate over this list
                 solrResponse = solrClient.query(collection, solrQuery);
+                if (solrResponse.getResults().getNumFound() < remaining) {
+                    remaining = (int) solrResponse.getResults().getNumFound();
+                }
                 remaining -= solrResponse.getResults().size();
                 nextCursorMark = solrResponse.getNextCursorMark();
                 solrIterator = solrResponse.getBeans(VariantSearchModel.class).iterator();
                 return solrIterator.hasNext();
             } catch (SolrServerException | IOException e) {
-                // TODO do something better than this
-                e.printStackTrace();
+                throw new VariantQueryException("Error searching more variants", e);
             }
-            return false;
         }
     }
 
