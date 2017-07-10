@@ -97,14 +97,15 @@ public class VariantSearchIterator implements Iterator<VariantSearchModel>, Auto
                 if (nextCursorMark != null) {
                     cursorMark = nextCursorMark;
                 }
-                solrQuery.setRows(remaining > BATCH_SIZE ? BATCH_SIZE : remaining);
+//                solrQuery.setRows(remaining > BATCH_SIZE ? BATCH_SIZE : remaining);
+                solrQuery.setRows(BATCH_SIZE);
                 solrQuery.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
 
                 // Execute the query and fetch setRows records, we will iterate over this list
                 solrResponse = solrClient.query(collection, solrQuery);
 
                 // When the returned elements is less than setRows it means there are no enough elements in the server
-                if (solrResponse.getResults().size() < remaining) {
+                if (solrResponse.getResults().size() < BATCH_SIZE) {
                     remaining = 0;
                 } else {
                     // The requested elements is reached
