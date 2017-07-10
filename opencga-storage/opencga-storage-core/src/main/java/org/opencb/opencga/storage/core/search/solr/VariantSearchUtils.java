@@ -8,6 +8,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import java.util.*;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isValidParam;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.validParams;
 
 /**
  * Created on 06/07/17.
@@ -49,6 +50,10 @@ public class VariantSearchUtils {
             }
         }
         return coveredParams;
+    }
+
+    public static List<VariantQueryParam> uncoveredParams(Query query) {
+        return uncoveredParams(validParams(query));
     }
 
     public static List<VariantQueryParam> uncoveredParams(Collection<VariantQueryParam> params) {

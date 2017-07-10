@@ -233,4 +233,16 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         skipLimit(query, options, 50, false);
     }
 
+    @Test
+    public void testApproxCount() throws Exception {
+        Query query = new Query(SAMPLES.key(), "NA19660")
+                .append(ANNOT_CONSERVATION.key(), "gerp>0.1");
+        long realCount = dbAdaptor.count(query).first();
+        long approxCount = variantStorageEngine.approxCount(query, new QueryOptions("numSamples", realCount * 0.1)).first();
+        System.out.println("approxCount = " + approxCount);
+        System.out.println("realCount = " + realCount);
+        assertThat(approxCount, lte(realCount * 1.25));
+        assertThat(approxCount, gte(realCount * 0.75));
+    }
+
 }

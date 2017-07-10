@@ -70,10 +70,12 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.search.solr.VariantSearchManager.QUERY_INTERSECT;
 import static org.opencb.opencga.storage.core.search.solr.VariantSearchUtils.*;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ID;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDIES;
 
 /**
@@ -570,19 +572,26 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 boolean pagination = skip > 0 || limit > 0;
 
                 Iterator<?> variantsIterator;
-                AtomicLong numTotalResults = null;
+                Number numTotalResults = null;
+                AtomicLong searchCount = null;
 
                 if (isQueryCovered(query)) {
                     // If the query is fully covered, the numTotalResults from solr is correct.
-                    numTotalResults = new AtomicLong();
+                    searchCount = new AtomicLong();
+                    numTotalResults = searchCount;
                     // Skip count in storage. We already know the numTotalResults
                     options.put(QueryOptions.SKIP_COUNT, true);
+                } else {
+                    if (options.getBoolean("approxCount")) {
+                        options.put(QueryOptions.SKIP_COUNT, true);
+                        numTotalResults = approxCount(query, options).first();
+                    }
                 }
 
                 if (pagination) {
                     if (isQueryCovered(query)) {
                         // We can use limit+skip directly in solr
-                        variantsIterator = variantIdIteratorFromSearch(query, limit, skip, numTotalResults);
+                        variantsIterator = variantIdIteratorFromSearch(query, limit, skip, searchCount);
 
                         // Remove limit and skip from Options for storage. The Search Engine already knows the pagination.
                         options = new QueryOptions(options);
@@ -594,7 +603,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         variantsIterator = variantIdIteratorFromSearch(query);
                     }
                 } else {
-                    variantsIterator = variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0, numTotalResults);
+                    variantsIterator = variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0, searchCount);
                 }
                 Query engineQuery = new Query();
                 for (VariantQueryParam uncoveredParam : uncoveredParams) {
@@ -615,7 +624,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     setDefaultTimeout(options);
                     VariantQueryResult<Variant> queryResult = dbAdaptor.get(variantsIterator, engineQuery, options);
                     if (numTotalResults != null) {
-                        queryResult.setNumTotalResults(numTotalResults.get());
+                        queryResult.setNumTotalResults(numTotalResults.longValue());
                     }
                     return queryResult;
                 }
@@ -643,7 +652,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException StorageEngineException
      */
     protected boolean doQuerySearchManager(Query query, QueryOptions options) throws StorageEngineException {
-        return isQueryCovered(query) && isIncludeCovered(options) && searchActiveAndAlive();
+        return isQueryCovered(query) && (options.getBoolean(QueryOptions.COUNT) || isIncludeCovered(options)) && searchActiveAndAlive();
     }
 
     /**
@@ -693,7 +702,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public QueryResult<Long> count(Query query) throws StorageEngineException {
         query = preProcessQuery(query, getStudyConfigurationManager());
-        if (doQuerySearchManager(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID))) {
+        if (!doQuerySearchManager(query, new QueryOptions(QueryOptions.COUNT, true))) {
             return getDBAdaptor().count(query);
         } else {
             try {
@@ -707,8 +716,38 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
-    public QueryResult<Long> aproxCount(Query query, QueryOptions options) throws StorageEngineException {
-        return getDBAdaptor().count(query);
+    public QueryResult<Long> approxCount(Query query, QueryOptions options) throws StorageEngineException {
+        long count;
+        StopWatch watch = StopWatch.createStarted();
+        try {
+            if (doQuerySearchManager(query, new QueryOptions(QueryOptions.COUNT, true))) {
+                count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 0)).getNumTotalResults();
+            } else {
+                int numSamples = options.getInt("numSamples", 1000);
+                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, numSamples);
+
+                VariantQueryResult<VariantSearchModel> nativeResult = getVariantSearchManager().nativeQuery(dbName, query, queryOptions);
+                List<String> variantIds = nativeResult.getResult().stream().map(VariantSearchModel::getId).collect(Collectors.toList());
+                // Adjust numSamples if the results from SearchManager is smaller than numSamples
+                if (variantIds.size() < numSamples) {
+                    numSamples = variantIds.size();
+                }
+                long numSearchResults = nativeResult.getNumTotalResults();
+
+                Query engineQuery = new Query();
+                for (VariantQueryParam uncoveredParam : uncoveredParams(query)) {
+                    engineQuery.put(uncoveredParam.key(), query.get(uncoveredParam.key()));
+                }
+                engineQuery.put(ID.key(), variantIds);
+                long numResults = getDBAdaptor().count(engineQuery).first();
+                logger.debug("NumResults: {}, NumSearchResults: {}, NumSamples: {}", numResults, numSearchResults, numSamples);
+                count = (long) ((numResults / (float) numSamples) * numSearchResults);
+            }
+        } catch (IOException | VariantSearchException e) {
+            throw new VariantQueryException("Error querying Solr", e);
+        }
+        int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
+        return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
     }
 
     /**
