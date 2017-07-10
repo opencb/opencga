@@ -19,7 +19,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.solr.SolrExternalResource;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
@@ -160,14 +159,14 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
                 .append(ANNOT_CONSERVATION.key(), "gerp>1")
                 .append(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift>0.01")
                 .append(UNKNOWN_GENOTYPE.key(), "./.");
-        VariantDBIterator iterator = variantStorageEngine.iterator(query, new QueryOptions());
-        QueryResult<Variant> queryResult = iterator.toQueryResult();
-        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
-        for (Variant variant : queryResult.getResult()) {
-            System.out.println("variant = " + variant);
-        }
+        QueryResult<Variant> queryResult = variantStorageEngine.get(query, new QueryOptions());
+//        for (Variant variant : queryResult.getResult()) {
+//            System.out.println("variant = " + variant);
+//        }
+        assertEquals(queryResult.getNumResults(), queryResult.getNumTotalResults());
+        assertNotEquals(0, queryResult.getNumResults());
 
-        verify(solrClient, atLeastOnce()).query(anyString(), any());
+        verify(solrClient, times(1)).query(anyString(), any());
     }
 
     @Test

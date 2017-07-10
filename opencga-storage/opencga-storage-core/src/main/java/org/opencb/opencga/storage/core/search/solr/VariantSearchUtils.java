@@ -44,7 +44,7 @@ public class VariantSearchUtils {
         List<VariantQueryParam> coveredParams = new ArrayList<>();
 
         for (VariantQueryParam param : params) {
-            if (!UNSUPPORTED_QUERY_PARAMS.contains(param)) {
+            if (!UNSUPPORTED_QUERY_PARAMS.contains(param) && !UNSUPPORTED_MODIFIERS.contains(param)) {
                 coveredParams.add(param);
             }
         }
@@ -55,7 +55,7 @@ public class VariantSearchUtils {
         List<VariantQueryParam> coveredParams = new ArrayList<>();
 
         for (VariantQueryParam param : params) {
-            if (UNSUPPORTED_QUERY_PARAMS.contains(param)) {
+            if (UNSUPPORTED_QUERY_PARAMS.contains(param) || UNSUPPORTED_MODIFIERS.contains(param)) {
                 coveredParams.add(param);
             }
         }

@@ -68,6 +68,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.storage.core.search.solr.VariantSearchManager.QUERY_INTERSECT;
@@ -551,7 +552,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     return getVariantSearchManager().query(dbName, query, options);
                 }
             } catch (IOException | VariantSearchException e) {
-                throw Throwables.propagate(e);
+                throw new VariantQueryException("Error querying Solr", e);
             }
         } else {
             VariantDBAdaptor dbAdaptor = getDBAdaptor();
@@ -560,15 +561,26 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             if (doIntersectWithSearch(query, params, options)) {
                 // Intersect Solr+Engine
 
-                int limit = options.getInt(QueryOptions.LIMIT, 0);
-                int skip = options.getInt(QueryOptions.SKIP, 0);
+                int limit = options.getInt(QueryOptions.LIMIT, -1);
+                int skip = options.getInt(QueryOptions.SKIP, -1);
+                boolean pagination = skip > 0 || limit > 0;
 
                 Iterator<?> variantsIterator;
-                if (skip > 0 || limit > 0) {
+                AtomicLong numTotalResults = null;
+
+                if (isQueryCovered(query)) {
+                    // If the query is fully covered, the numTotalResults from solr is correct.
+                    numTotalResults = new AtomicLong();
+                    // Skip count in storage. We already know the numTotalResults
+                    options.put(QueryOptions.SKIP_COUNT, true);
+                }
+
+                if (pagination) {
                     if (isQueryCovered(query)) {
                         // We can use limit+skip directly in solr
-                        variantsIterator = variantIdIteratorFromSearch(query, limit, skip);
-                        // Remove limit and skip from Options
+                        variantsIterator = variantIdIteratorFromSearch(query, limit, skip, numTotalResults);
+
+                        // Remove limit and skip from Options for storage. The Search Engine already knows the pagination.
                         options = new QueryOptions(options);
                         options.remove(QueryOptions.LIMIT);
                         options.remove(QueryOptions.SKIP);
@@ -578,7 +590,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         variantsIterator = variantIdIteratorFromSearch(query);
                     }
                 } else {
-                    variantsIterator = variantIdIteratorFromSearch(query);
+                    variantsIterator = variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0, numTotalResults);
                 }
                 Query engineQuery = new Query();
                 for (VariantQueryParam uncoveredParam : uncoveredParams) {
@@ -591,17 +603,17 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         engineQuery.put(STUDIES.key(), query.get(STUDIES.key()));
                     }
                 }
-                // Add returned fields
-                for (VariantQueryParam modifier : UNSUPPORTED_MODIFIERS) {
-                    engineQuery.putIfNotEmpty(modifier.key(), query.getString(modifier.key()));
-                }
 
-                logger.debug("Intersect query " + engineQuery.toJson());
+                logger.debug("Intersect query " + engineQuery.toJson() + " options " + options.toJson());
                 if (iterator) {
                     return dbAdaptor.iterator(variantsIterator, engineQuery, options);
                 } else {
                     setDefaultTimeout(options);
-                    return dbAdaptor.get(variantsIterator, engineQuery, options);
+                    VariantQueryResult<Variant> queryResult = dbAdaptor.get(variantsIterator, engineQuery, options);
+                    if (numTotalResults != null) {
+                        queryResult.setNumTotalResults(numTotalResults.get());
+                    }
+                    return queryResult;
                 }
             } else {
                 if (iterator) {
@@ -642,8 +654,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     protected boolean doIntersectWithSearch(Query query, Collection<VariantQueryParam> validParams, QueryOptions options)
             throws StorageEngineException {
         // TODO: Improve this heuristic
+        // Count only real params
         List<VariantQueryParam> coveredParams = coveredParams(validParams);
-        return searchActiveAndAlive() && (coveredParams.size() > 3 || options.getBoolean(QUERY_INTERSECT, false));
+        return searchActiveAndAlive() && (coveredParams.size() >= 3 || options.getBoolean(QUERY_INTERSECT, false));
     }
 
     public QueryResult distinct(Query query, String field) throws StorageEngineException {
@@ -677,7 +690,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
                 return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
             } catch (IOException | VariantSearchException e) {
-                throw Throwables.propagate(e);
+                throw new VariantQueryException("Error querying Solr", e);
             }
         }
     }
@@ -718,10 +731,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
 
     protected Iterator<String> variantIdIteratorFromSearch(Query query) throws StorageEngineException {
-        return variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0);
+        return variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0, null);
     }
 
-    protected Iterator<String> variantIdIteratorFromSearch(Query query, int limit, int skip) throws StorageEngineException {
+    protected Iterator<String> variantIdIteratorFromSearch(Query query, int limit, int skip, AtomicLong numTotalResults)
+            throws StorageEngineException {
         Iterator<String> variantsIterator;
         QueryOptions queryOptions = new QueryOptions()
                 .append(QueryOptions.LIMIT, limit)
@@ -730,16 +744,23 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         try {
             // Do not iterate for small queries
             if (limit < 10000) {
-                variantsIterator = getVariantSearchManager().nativeQuery(dbName, query, queryOptions)
+                VariantQueryResult<VariantSearchModel> nativeResult = getVariantSearchManager().nativeQuery(dbName, query, queryOptions);
+                if (numTotalResults != null) {
+                    numTotalResults.set(nativeResult.getNumTotalResults());
+                }
+                variantsIterator = nativeResult.getResult()
                         .stream()
                         .map(VariantSearchModel::getId)
                         .iterator();
             } else {
                 VariantSearchIterator nativeIterator = getVariantSearchManager().nativeIterator(dbName, query, queryOptions);
+                if (numTotalResults != null) {
+                    numTotalResults.set(nativeIterator.getNumFound());
+                }
                 variantsIterator = Iterators.transform(nativeIterator, VariantSearchModel::getId);
             }
         } catch (VariantSearchException | IOException e) {
-            throw Throwables.propagate(e);
+            throw new VariantQueryException("Error querying Solr", e);
         }
         return variantsIterator;
     }

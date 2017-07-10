@@ -62,6 +62,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
 
         int limit = this.options.getInt(QueryOptions.LIMIT, 0);
         skip = Math.max(0, this.options.getInt(QueryOptions.SKIP, 0));
+        pendingSkip = skip != 0;
 
         if (limit <= 0) {
             limit = Integer.MAX_VALUE;
@@ -74,7 +75,6 @@ public class MultiVariantDBIterator extends VariantDBIterator {
         this.options.remove(QueryOptions.LIMIT);
         this.options.remove(QueryOptions.SKIP);
 
-        pendingSkip = true;
     }
 
     @Override
@@ -156,9 +156,9 @@ public class MultiVariantDBIterator extends VariantDBIterator {
                 skip--;
             }
             if (skip == 0) {
-                logger.debug("Server side skip {} elements", this.skip);
+                logger.debug("Client side skip {} elements", this.skip);
             } else {
-                logger.debug("Server side skip {} elements. Original skip {}", (this.skip - skip), this.skip);
+                logger.debug("Client side skip {} elements. Original skip {}", (this.skip - skip), this.skip);
             }
         }
     }
