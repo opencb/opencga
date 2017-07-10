@@ -632,6 +632,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             dbAdaptorFactory.getCatalogSampleDBAdaptor().addVariableToAnnotations(variableSetId, variable);
             dbAdaptorFactory.getCatalogCohortDBAdaptor().addVariableToAnnotations(variableSetId, variable);
             dbAdaptorFactory.getCatalogIndividualDBAdaptor().addVariableToAnnotations(variableSetId, variable);
+            dbAdaptorFactory.getCatalogFamilyDBAdaptor().addVariableToAnnotations(variableSetId, variable);
         }
         return endQuery("Add field to variable set", startTime, getVariableSet(variableSetId, null));
     }
@@ -701,6 +702,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         // Remove all the annotations from that field
         dbAdaptorFactory.getCatalogSampleDBAdaptor().removeAnnotationField(variableSetId, name);
         dbAdaptorFactory.getCatalogCohortDBAdaptor().removeAnnotationField(variableSetId, name);
+        dbAdaptorFactory.getCatalogIndividualDBAdaptor().removeAnnotationField(variableSetId, name);
+        dbAdaptorFactory.getCatalogFamilyDBAdaptor().removeAnnotationField(variableSetId, name);
 
         return endQuery("Remove field from Variable Set", startTime, getVariableSet(variableSetId, null));
     }
@@ -806,7 +809,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     public QueryResult<VariableSet> getVariableSets(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
-        List<Bson> mongoQueryList = new LinkedList<>();
+        List<Document> mongoQueryList = new LinkedList<>();
         long studyId = -1;
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
@@ -845,7 +848,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         aggregation.add(Aggregates.project(Projections.include("variableSets")));
         aggregation.add(Aggregates.unwind("$variableSets"));
         if (mongoQueryList.size() > 0) {
-            aggregation.add(Aggregates.match(Filters.and(mongoQueryList)));
+            List<Bson> bsonList = new ArrayList<>(mongoQueryList.size());
+            bsonList.addAll(mongoQueryList);
+            aggregation.add(Aggregates.match(Filters.and(bsonList)));
         }
 
         QueryResult<Document> queryResult = studyCollection.aggregate(aggregation, filterOptions(queryOptions, FILTER_ROUTE_STUDIES));

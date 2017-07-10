@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.storage.mongodb.utils;
 
+import com.mongodb.ReadPreference;
+import com.mongodb.WriteConcern;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
@@ -51,7 +53,9 @@ public class MongoLock {
 
     public MongoLock(MongoDBCollection collection, String lockField) {
         this.collection = collection;
-        lockWriteField = lockField + "." + WRITE_FIELD;
+        this.collection.withReadPreference(ReadPreference.primary())
+                .withWriteConcern(WriteConcern.ACKNOWLEDGED);
+        lockWriteField = lockField + '.' + WRITE_FIELD;
     }
 
     /**

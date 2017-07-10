@@ -86,6 +86,10 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/studies/$studyId/groups/$emptyGroup/info?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds.length == '0.0'|
 
+!3 Get Groups From A Study
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/studies/$studyId/groups?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result.length == '2.0'|
+
 #@groupId in above line is exception to handle groups
 
 !3 Update Group 

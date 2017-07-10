@@ -23,13 +23,8 @@ package org.opencb.opencga.catalog.db.api;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Session;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
-
-import java.util.List;
 
 public interface MetaDBAdaptor {
-
-    boolean isRegisterOpen();
 
     QueryResult<Session> addAdminSession(Session session) throws CatalogDBException;
 
@@ -38,7 +33,5 @@ public interface MetaDBAdaptor {
     String getAdminPassword() throws CatalogDBException;
 
     boolean checkValidAdminSession(String id);
-
-    QueryResult<StudyAclEntry> getDaemonAcl(List<String> members) throws CatalogDBException;
 
 }

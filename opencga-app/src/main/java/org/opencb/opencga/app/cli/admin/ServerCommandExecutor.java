@@ -17,7 +17,11 @@
 package org.opencb.opencga.app.cli.admin;
 
 
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
 import org.opencb.opencga.server.RestServer;
+import org.opencb.opencga.server.grpc.AdminServiceGrpc;
 import org.opencb.opencga.server.grpc.GrpcServer;
 
 import javax.ws.rs.client.Client;
@@ -59,31 +63,15 @@ public class ServerCommandExecutor extends AdminCommandExecutor {
 
     private void rest() throws Exception {
         if (serverCommandOptions.restServerCommandOptions.start) {
-//            StorageConfiguration storageConfiguration = configuration;
-//            if (StringUtils.isNotEmpty(restCommandOptions.restStartCommandOptions.commonOptions.conf)) {
-//                Path path = Paths.get(restCommandOptions.restStartCommandOptions.commonOptions.conf);
-//                if (Files.exists(path)) {
-//                    storageConfiguration = StorageConfiguration.load(Files.newInputStream(path));
-//                }
-//            }
-
-//            if (StringUtils.isNotEmpty(restCommandOptions.restStartCommandOptions.commonOptions.storageEngine)) {
-//                storageConfiguration.setDefaultStorageEngineId(restCommandOptions.restStartCommandOptions.commonOptions.storageEngine);
-//            }
-
-            // Server crated and started
             RestServer server = new RestServer(Paths.get(this.conf));
             server.start();
-            server.blockUntilShutdown();
+            if (!serverCommandOptions.restServerCommandOptions.background) {
+                server.blockUntilShutdown();
+            }
             logger.info("Shutting down OpenCGA Storage REST server");
         }
 
         if (serverCommandOptions.restServerCommandOptions.stop) {
-//            if (serverCommandOptions.restStopCommandOptions.port > 0) {
-//                port = restCommandOptions.restStopCommandOptions.port;
-//            }
-
-//            GeneralConfiguration openCGAGeneralConfiguration = getOpenCGAConfiguration();catalogConfiguration
             Client client = ClientBuilder.newClient();
             WebTarget target = client.target("http://localhost:" + configuration.getServer().getRest().getPort())
                     .path("opencga")
@@ -98,30 +86,21 @@ public class ServerCommandExecutor extends AdminCommandExecutor {
 
     private void grpc() throws Exception {
         if (serverCommandOptions.grpcServerCommandOptions.start) {
-
-            // Server crated and started
-//            FileInputStream fileInputStream = new FileInputStream(Paths.get(this.conf).resolve("storage-configuration.yml").toFile());
-//            StorageConfiguration load = StorageConfiguration.load(fileInputStream);
             GrpcServer server = new GrpcServer(Paths.get(this.conf));
             server.start();
-            server.blockUntilShutdown();
+            if (!serverCommandOptions.grpcServerCommandOptions.background) {
+                server.blockUntilShutdown();
+            }
             logger.info("Shutting down OpenCGA Storage GRPC server");
         }
 
         if (serverCommandOptions.grpcServerCommandOptions.stop) {
-//            if (serverCommandOptions.restStopCommandOptions.port > 0) {
-//                port = restCommandOptions.restStopCommandOptions.port;
-//            }
-//            GeneralConfiguration openCGAGeneralConfiguration = getOpenCGAConfiguration();
-            Client client = ClientBuilder.newClient();
-            WebTarget target = client.target("http://localhost" + configuration.getServer().getGrpc().getPort())
-                    .path("opencga")
-                    .path("webservices")
-                    .path("rest")
-                    .path("admin")
-                    .path("stop");
-            Response response = target.request().get();
-            logger.info(response.toString());
+            ManagedChannel channel = ManagedChannelBuilder.forTarget("localhost:" + configuration.getServer().getGrpc().getPort())
+                    .usePlaintext(true)
+                    .build();
+            AdminServiceGrpc.AdminServiceBlockingStub stub = AdminServiceGrpc.newBlockingStub(channel);
+            ServiceTypesModel.MapResponse stopResponse = stub.stop(null);
+            System.out.println(stopResponse.toString());
         }
     }
 

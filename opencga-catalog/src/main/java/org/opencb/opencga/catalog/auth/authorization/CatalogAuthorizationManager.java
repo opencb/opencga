@@ -69,16 +69,27 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final MetaDBAdaptor metaDBAdaptor;
     private final AuditManager auditManager;
 
+    // List of Acls defined for the special users (admin, daemon...) read from the main configuration file.
+    private final List<StudyAclEntry> specialAclList;
+
+    private final boolean openRegister;
+
     private final AuthorizationDBAdaptor aclDBAdaptor;
 
     private final String ADMIN = "admin";
     private final String ANONYMOUS = "anonymous";
 
     public CatalogAuthorizationManager(DBAdaptorFactory dbFactory, CatalogAuditManager auditManager, Configuration configuration)
-            throws CatalogDBException {
+            throws CatalogDBException, CatalogAuthorizationException {
         this.logger = LoggerFactory.getLogger(CatalogAuthorizationManager.class);
         this.auditManager = auditManager;
         this.aclDBAdaptor = new AuthorizationMongoDBAdaptor(configuration);
+
+        if (configuration.getAcl() == null || configuration.getAcl().size() == 0) {
+            throw new CatalogAuthorizationException("No Acls defined in the configuration file for special users");
+        }
+        this.specialAclList = configuration.getAcl();
+        this.openRegister = configuration.isOpenRegister();
 
         this.dbAdaptorFactory = dbFactory;
         projectDBAdaptor = dbFactory.getCatalogProjectDbAdaptor();
@@ -91,6 +102,20 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         datasetDBAdaptor = dbFactory.getCatalogDatasetDBAdaptor();
         panelDBAdaptor = dbFactory.getCatalogPanelDBAdaptor();
         metaDBAdaptor = dbFactory.getCatalogMetaDBAdaptor();
+    }
+
+    private StudyAclEntry getSpecialPermissions(String member) {
+        for (StudyAclEntry studyAclEntry : specialAclList) {
+            if (studyAclEntry.getMember().equals(member)) {
+                return studyAclEntry;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public boolean isPublicRegistration() {
+        return openRegister;
     }
 
     @Override
@@ -130,9 +155,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         StudyAclEntry studyAcl = null;
         if (userId.equals(ADMIN)) {
-            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList(ADMIN));
-            if (studyAclQueryResult.getNumResults() == 1) {
-                studyAcl = studyAclQueryResult.first();
+            StudyAclEntry adminPermissions = getSpecialPermissions(ADMIN);
+            if (adminPermissions != null) {
+                studyAcl = adminPermissions;
             }
         } else {
             String groupId = null;
@@ -162,9 +187,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         FileAclEntry fileAcl = null;
         if (userId.equals(ADMIN)) {
-            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList(ADMIN));
-            if (studyAclQueryResult.getNumResults() == 1) {
-                fileAcl = transformStudyAclToFileAcl(studyAclQueryResult.first());
+            StudyAclEntry adminPermissions = getSpecialPermissions(ADMIN);
+            if (adminPermissions != null) {
+                fileAcl = transformStudyAclToFileAcl(adminPermissions);
             }
         } else {
             fileAcl = resolveFilePermissions(studyId, fileId, userId);
@@ -260,9 +285,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         SampleAclEntry sampleAcl = null;
         if (userId.equals(ADMIN)) {
-            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList(ADMIN));
-            if (studyAclQueryResult.getNumResults() == 1) {
-                sampleAcl = transformStudyAclToSampleAcl(studyAclQueryResult.first());
+            StudyAclEntry adminPermissions = getSpecialPermissions(ADMIN);
+            if (adminPermissions != null) {
+                sampleAcl = transformStudyAclToSampleAcl(adminPermissions);
             }
         } else {
             sampleAcl = resolveSamplePermissions(studyId, sampleId, userId);
@@ -370,9 +395,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         IndividualAclEntry individualAcl = null;
         if (userId.equals(ADMIN)) {
-            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList(ADMIN));
-            if (studyAclQueryResult.getNumResults() == 1) {
-                individualAcl = transformStudyAclToIndividualAcl(studyAclQueryResult.first());
+            StudyAclEntry adminPermissions = getSpecialPermissions(ADMIN);
+            if (adminPermissions != null) {
+                individualAcl = transformStudyAclToIndividualAcl(adminPermissions);
             }
         } else {
             individualAcl = resolveIndividualPermissions(studyId, individualId, userId);
@@ -469,9 +494,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         JobAclEntry jobAcl = null;
         if (userId.equals(ADMIN)) {
-            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList(ADMIN));
-            if (studyAclQueryResult.getNumResults() == 1) {
-                jobAcl = transformStudyAclToJobAcl(studyAclQueryResult.first());
+            StudyAclEntry adminPermissions = getSpecialPermissions(ADMIN);
+            if (adminPermissions != null) {
+                jobAcl = transformStudyAclToJobAcl(adminPermissions);
             }
         } else {
             jobAcl = resolveJobPermissions(studyId, jobId, userId);
@@ -568,9 +593,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         CohortAclEntry cohortAcl = null;
         if (userId.equals(ADMIN)) {
-            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList(ADMIN));
-            if (studyAclQueryResult.getNumResults() == 1) {
-                cohortAcl = transformStudyAclToCohortAcl(studyAclQueryResult.first());
+            StudyAclEntry adminPermissions = getSpecialPermissions(ADMIN);
+            if (adminPermissions != null) {
+                cohortAcl = transformStudyAclToCohortAcl(adminPermissions);
             }
         } else {
             cohortAcl = resolveCohortPermissions(studyId, cohortId, userId);
@@ -667,9 +692,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         DatasetAclEntry datasetAcl = null;
         if (userId.equals(ADMIN)) {
-            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList(ADMIN));
-            if (studyAclQueryResult.getNumResults() == 1) {
-                datasetAcl = transformStudyAclToDatasetAcl(studyAclQueryResult.first());
+            StudyAclEntry adminPermissions = getSpecialPermissions(ADMIN);
+            if (adminPermissions != null) {
+                datasetAcl = transformStudyAclToDatasetAcl(adminPermissions);
             }
         } else {
             datasetAcl = resolveDatasetPermissions(studyId, datasetId, userId);
@@ -767,9 +792,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         DiseasePanelAclEntry panelAcl = null;
         if (userId.equals(ADMIN)) {
-            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList(ADMIN));
-            if (studyAclQueryResult.getNumResults() == 1) {
-                panelAcl = transformStudyAclToDiseasePanelAcl(studyAclQueryResult.first());
+            StudyAclEntry adminPermissions = getSpecialPermissions(ADMIN);
+            if (adminPermissions != null) {
+                panelAcl = transformStudyAclToDiseasePanelAcl(adminPermissions);
             }
         } else {
             panelAcl = resolveDiseasePanelPermissions(studyId, panelId, userId);
@@ -793,9 +818,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         AbstractAclEntry aclEntry = null;
         if (userId.equals(ADMIN)) {
-            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList(ADMIN));
-            if (studyAclQueryResult.getNumResults() == 1) {
-                aclEntry = transformStudyAclToEntityAcl(studyAclQueryResult.first(), entity);
+            StudyAclEntry adminPermissions = getSpecialPermissions(ADMIN);
+            if (adminPermissions != null) {
+                aclEntry = transformStudyAclToEntityAcl(adminPermissions, entity);
             }
         } else {
             aclEntry = resolvePermissions(resource, entity);

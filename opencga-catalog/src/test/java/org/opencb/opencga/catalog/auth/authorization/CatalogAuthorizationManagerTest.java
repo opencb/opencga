@@ -21,6 +21,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -179,9 +180,12 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
                 ownerSessionId);
         ind1 = catalogManager.createIndividual(s1, "ind1", "", 0, 0, Individual.Sex.UNKNOWN, null, ownerSessionId).first().getId();
         ind2 = catalogManager.createIndividual(s1, "ind2", "", 0, 0, Individual.Sex.UNKNOWN, null, ownerSessionId).first().getId();
-        catalogManager.modifySample(smp1, new QueryOptions(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), ind1), ownerSessionId);
-        catalogManager.modifySample(smp2, new QueryOptions(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), ind1), ownerSessionId);
-        catalogManager.modifySample(smp2, new QueryOptions(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), ind2), ownerSessionId);
+        catalogManager.getSampleManager().update(smp1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), ind1),
+                QueryOptions.empty(), ownerSessionId);
+        catalogManager.getSampleManager().update(smp2, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), ind1),
+                QueryOptions.empty(), ownerSessionId);
+        catalogManager.getSampleManager().update(smp2, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), ind2),
+                QueryOptions.empty(), ownerSessionId);
 
         catalogManager.getSampleManager().updateAcl(Long.toString(smp1), Long.toString(s1), externalUser, allSamplePermissions, ownerSessionId);
         catalogManager.getSampleManager().updateAcl(Long.toString(smp3), Long.toString(s1), externalUser, noSamplePermissions, ownerSessionId);

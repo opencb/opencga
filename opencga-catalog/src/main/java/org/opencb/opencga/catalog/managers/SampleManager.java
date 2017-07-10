@@ -473,11 +473,12 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
         // FIXME: Although the search method is multi-study, we can only use the smart resolutor for one study at the moment.
-        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()))
+        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))
                 && studyIds.size() == 1) {
             MyResourceIds resourceIds = catalogManager.getIndividualManager().getIds(
-                    query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()), Long.toString(studyIds.get(0)), sessionId);
+                    query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()), Long.toString(studyIds.get(0)), sessionId);
             query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), resourceIds.getResourceIds());
+            query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
         }
 
         QueryResult<Sample> queryResult = null;
@@ -752,7 +753,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                     ParamUtils.checkAlias(parameters.getString(queryParam.key()), "name", configuration.getCatalog().getOffset());
                     break;
                 case SOURCE:
-                case INDIVIDUAL_ID:
+                case INDIVIDUAL:
                 case TYPE:
                 case SOMATIC:
                 case DESCRIPTION:
@@ -763,8 +764,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             }
         }
 
-        if (StringUtils.isNotEmpty(parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()))) {
-            String individualStr = parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
+        if (StringUtils.isNotEmpty(parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {
+            String individualStr = parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
             if (NumberUtils.isCreatable(individualStr) && Long.parseLong(individualStr) <= 0) {
                 parameters.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1);
             } else {
@@ -772,6 +773,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                 MyResourceId resource = catalogManager.getIndividualManager().getId(individualStr, Long.toString(studyId), sessionId);
                 parameters.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), resource.getResourceId());
             }
+            parameters.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
         }
 
         QueryResult<Sample> queryResult = sampleDBAdaptor.update(sampleId, parameters);
@@ -818,6 +820,17 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         // Add study id to the query
         query.put(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
+        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {
+            String individualStr = query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
+            if (NumberUtils.isCreatable(individualStr) && Long.parseLong(individualStr) <= 0) {
+                query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1);
+            } else {
+                MyResourceId resource = catalogManager.getIndividualManager().getId(individualStr, Long.toString(studyId), sessionId);
+                query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), resource.getResourceId());
+            }
+            query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
+        }
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -1070,81 +1083,40 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, String variableSetId,
+    public QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, String variableSetStr,
                                                            @Nullable String annotation, String sessionId) throws CatalogException {
-        QueryResult<Sample> sampleQueryResult = commonSearchAnnotationSet(id, studyStr, variableSetId, annotation, sessionId);
-        List<ObjectMap> annotationSets;
-
-        if (sampleQueryResult == null || sampleQueryResult.getNumResults() == 0) {
-            logger.debug("No samples found");
-            annotationSets = Collections.emptyList();
-        } else {
-            logger.debug("Found {} sample with {} annotationSets", sampleQueryResult.getNumResults(),
-                    sampleQueryResult.first().getAnnotationSets().size());
-            annotationSets = sampleQueryResult.first().getAnnotationSetAsMap();
-        }
-
-        return new QueryResult<>("Search annotation sets", sampleQueryResult.getDbTime(), annotationSets.size(), annotationSets.size(),
-                sampleQueryResult.getWarningMsg(), sampleQueryResult.getErrorMsg(), annotationSets);
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, String variableSetId,
-                                                          @Nullable String annotation, String sessionId) throws CatalogException {
-        QueryResult<Sample> sampleQueryResult = commonSearchAnnotationSet(id, null, variableSetId, annotation, sessionId);
-        List<AnnotationSet> annotationSets;
-
-        if (sampleQueryResult == null || sampleQueryResult.getNumResults() == 0) {
-            logger.debug("No samples found");
-            annotationSets = Collections.emptyList();
-        } else {
-            logger.debug("Found {} sample with {} annotationSets", sampleQueryResult.getNumResults(),
-                    sampleQueryResult.first().getAnnotationSets().size());
-            annotationSets = sampleQueryResult.first().getAnnotationSets();
-        }
-
-        return new QueryResult<>("Search annotation sets", sampleQueryResult.getDbTime(), annotationSets.size(), annotationSets.size(),
-                sampleQueryResult.getWarningMsg(), sampleQueryResult.getErrorMsg(), annotationSets);
-    }
-
-    private QueryResult<Sample> commonSearchAnnotationSet(String id, @Nullable String studyStr, String variableSetStr,
-                                                          @Nullable String annotation, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
 
-        AbstractManager.MyResourceId resourceId = catalogManager.getSampleManager().getId(id, studyStr, sessionId);
+        AbstractManager.MyResourceId resourceId = getId(id, studyStr, sessionId);
         authorizationManager.checkSamplePermission(resourceId.getResourceId(), resourceId.getUser(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
 
-        Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), id);
 
         long variableSetId = -1;
         if (StringUtils.isNotEmpty(variableSetStr)) {
-            variableSetId = catalogManager.getStudyManager().getVariableSetId(variableSetStr, Long.toString(resourceId.getStudyId()),
-                    sessionId).getResourceId();
-            query.append(SampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId);
-        }
-        if (annotation != null) {
-            query.append(SampleDBAdaptor.QueryParams.ANNOTATION.key(), annotation);
+            variableSetId = catalogManager.getStudyManager()
+                    .getVariableSetId(variableSetStr, Long.toString(resourceId.getStudyId()), sessionId).getResourceId();
         }
 
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key());
-        logger.debug("Query: {}, \t QueryOptions: {}", query.safeToString(), queryOptions.safeToString());
-        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions);
+        return sampleDBAdaptor.searchAnnotationSetAsMap(resourceId.getResourceId(), variableSetId, annotation);
+    }
 
-        // Filter out annotation sets only from the variable set id specified
-        for (Sample sample : sampleQueryResult.getResult()) {
-            List<AnnotationSet> finalAnnotationSets = new ArrayList<>();
-            for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
-                if (variableSetId > -1 && annotationSet.getVariableSetId() == variableSetId) {
-                    finalAnnotationSets.add(annotationSet);
-                }
-            }
+    @Override
+    public QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, String variableSetStr,
+                                                          @Nullable String annotation, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(id, "id");
 
-            if (finalAnnotationSets.size() > 0) {
-                sample.setAnnotationSets(finalAnnotationSets);
-            }
+        AbstractManager.MyResourceId resourceId = getId(id, studyStr, sessionId);
+        authorizationManager.checkSamplePermission(resourceId.getResourceId(), resourceId.getUser(),
+                SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
+
+
+        long variableSetId = -1;
+        if (StringUtils.isNotEmpty(variableSetStr)) {
+            variableSetId = catalogManager.getStudyManager()
+                    .getVariableSetId(variableSetStr, Long.toString(resourceId.getStudyId()), sessionId).getResourceId();
         }
 
-        return sampleQueryResult;
+        return sampleDBAdaptor.searchAnnotationSet(resourceId.getResourceId(), variableSetId, annotation);
     }
 }

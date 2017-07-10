@@ -89,7 +89,7 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
         organism.setScientificName(StringUtils.isNotEmpty(commandOptions.scientificName)
                 ? commandOptions.scientificName : organism.getScientificName());
         organism.setTaxonomyCode(StringUtils.isNotEmpty(commandOptions.taxonomyCode)
-                ? Integer.getInteger(commandOptions.taxonomyCode) : organism.getTaxonomyCode());
+                ? Integer.parseInt(commandOptions.taxonomyCode) : organism.getTaxonomyCode());
         params.put(ProjectDBAdaptor.QueryParams.ORGANISM.key(), organism);
 
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.createCommandOptions.description);

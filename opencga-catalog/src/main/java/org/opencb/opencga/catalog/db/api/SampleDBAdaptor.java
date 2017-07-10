@@ -39,6 +39,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         ID("id", INTEGER_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),
         SOURCE("source", TEXT_ARRAY, ""),
+        INDIVIDUAL("individual", TEXT, ""),
         INDIVIDUAL_ID("individual.id", INTEGER_ARRAY, ""),
         DESCRIPTION("description", TEXT, ""),
         TYPE("type", TEXT, ""),

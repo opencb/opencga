@@ -58,7 +58,6 @@ import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbaseTransformTask;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
@@ -307,8 +306,8 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             super.preLoad(input, output);
 
             if (needLoadFromHdfs() && !input.getScheme().equals("hdfs")) {
-                if (!StringUtils.isEmpty(options.getString(OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY))) {
-                    output = URI.create(options.getString(OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY));
+                if (!StringUtils.isEmpty(options.getString(INTERMEDIATE_HDFS_DIRECTORY))) {
+                    output = URI.create(options.getString(INTERMEDIATE_HDFS_DIRECTORY));
                 }
                 if (output.getScheme() != null && !output.getScheme().equals("hdfs")) {
                     throw new StorageEngineException("Output must be in HDFS");
@@ -575,7 +574,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
         boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
 
-        ArchiveTableHelper.setChunkSize(conf, conf.getInt(ArchiveDriver.CONFIG_ARCHIVE_CHUNK_SIZE, ArchiveDriver.DEFAULT_CHUNK_SIZE));
+        ArchiveTableHelper.setChunkSize(conf, conf.getInt(ARCHIVE_CHUNK_SIZE, DEFAULT_ARCHIVE_CHUNK_SIZE));
         ArchiveTableHelper.setStudyId(conf, studyId);
 
         if (loadArch) {

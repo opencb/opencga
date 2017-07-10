@@ -1146,77 +1146,39 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     @Override
-    public QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, String variableSetId,
+    public QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, String variableSetStr,
                                                            @Nullable String annotation, String sessionId) throws CatalogException {
-        QueryResult<Individual> individualQueryResult = commonSearchAnnotationSet(id, studyStr, variableSetId, annotation, sessionId);
-        List<ObjectMap> annotationSets;
-
-        if (individualQueryResult == null || individualQueryResult.getNumResults() == 0) {
-            annotationSets = Collections.emptyList();
-        } else {
-            annotationSets = individualQueryResult.first().getAnnotationSetAsMap();
-        }
-
-        return new QueryResult<>("Search annotation sets", individualQueryResult.getDbTime(), annotationSets.size(), annotationSets.size(),
-                individualQueryResult.getWarningMsg(), individualQueryResult.getErrorMsg(), annotationSets);
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, String variableSetId,
-                                                          @Nullable String annotation, String sessionId) throws CatalogException {
-        QueryResult<Individual> individualQueryResult = commonSearchAnnotationSet(id, studyStr, variableSetId, annotation, sessionId);
-        List<AnnotationSet> annotationSets;
-
-        if (individualQueryResult == null || individualQueryResult.getNumResults() == 0) {
-            annotationSets = Collections.emptyList();
-        } else {
-            annotationSets = individualQueryResult.first().getAnnotationSets();
-        }
-
-        return new QueryResult<>("Search annotation sets", individualQueryResult.getDbTime(), annotationSets.size(), annotationSets.size(),
-                individualQueryResult.getWarningMsg(), individualQueryResult.getErrorMsg(), annotationSets);
-    }
-
-    private QueryResult<Individual> commonSearchAnnotationSet(String id, @Nullable String studyStr, String variableSetStr,
-                                                              @Nullable String annotation, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
 
         MyResourceId resource = getId(id, studyStr, sessionId);
         authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
 
-        Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), id);
+        long variableSetId = -1;
+        if (StringUtils.isNotEmpty(variableSetStr)) {
+            variableSetId = catalogManager.getStudyManager().getVariableSetId(variableSetStr, Long.toString(resource.getStudyId()),
+                    sessionId).getResourceId();
+        }
+
+        return individualDBAdaptor.searchAnnotationSetAsMap(resource.getResourceId(), variableSetId, annotation);
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, String variableSetStr,
+                                                          @Nullable String annotation, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(id, "id");
+
+        MyResourceId resource = getId(id, studyStr, sessionId);
+        authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
+                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
 
         long variableSetId = -1;
         if (StringUtils.isNotEmpty(variableSetStr)) {
             variableSetId = catalogManager.getStudyManager().getVariableSetId(variableSetStr, Long.toString(resource.getStudyId()),
                     sessionId).getResourceId();
-            query.append(IndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId);
-        }
-        if (annotation != null) {
-            query.append(IndividualDBAdaptor.QueryParams.ANNOTATION.key(), annotation);
         }
 
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key());
-        logger.debug("Query: {}, \t QueryOptions: {}", query.safeToString(), queryOptions.safeToString());
-
-        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
-
-        // Filter out annotation sets only from the variable set id specified
-        for (Individual individual : individualQueryResult.getResult()) {
-            List<AnnotationSet> finalAnnotationSets = new ArrayList<>();
-            for (AnnotationSet annotationSet : individual.getAnnotationSets()) {
-                if (variableSetId > -1 && annotationSet.getVariableSetId() == variableSetId) {
-                    finalAnnotationSets.add(annotationSet);
-                }
-            }
-
-            if (finalAnnotationSets.size() > 0) {
-                individual.setAnnotationSets(finalAnnotationSets);
-            }
-        }
-
-        return individualQueryResult;
+        return individualDBAdaptor.searchAnnotationSet(resource.getResourceId(), variableSetId, annotation);
     }
 
 }

@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage-hadoop</artifactId>
-        <version>1.1.0-dev</version>
+        <version>1.1.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -36,7 +36,7 @@
 
         <dependency>
             <groupId>org.opencb.hpg-bigdata</groupId>
-            <artifactId>hpg-bigdata-tools</artifactId>
+            <artifactId>hpg-bigdata-analysis</artifactId>
             <version>${hpg-bigdata.version}</version>
             <exclusions>
                 <exclusion>

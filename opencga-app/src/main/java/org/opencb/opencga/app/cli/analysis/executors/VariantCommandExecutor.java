@@ -214,6 +214,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(LOAD, cliOptions.genericVariantIndexOptions.load);
         queryOptions.put(TRANSFORM, cliOptions.genericVariantIndexOptions.transform);
+        queryOptions.put(VariantStorageEngine.Options.MERGE_MODE.key(), cliOptions.genericVariantIndexOptions.merge);
 
         queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), cliOptions.genericVariantIndexOptions.calculateStats);
         queryOptions.put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), cliOptions.genericVariantIndexOptions.extraFields);

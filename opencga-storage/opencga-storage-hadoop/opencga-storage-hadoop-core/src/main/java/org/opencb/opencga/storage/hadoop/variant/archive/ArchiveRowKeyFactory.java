@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 
 import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.DEFAULT_ROWKEY_SEPARATOR;
 
@@ -18,8 +19,8 @@ public class ArchiveRowKeyFactory {
     private final char separator;
 
     public ArchiveRowKeyFactory(Configuration conf) {
-        this.chunkSize = conf.getInt(ArchiveDriver.CONFIG_ARCHIVE_CHUNK_SIZE, ArchiveDriver.DEFAULT_CHUNK_SIZE);
-        this.separator = conf.get(ArchiveDriver.CONFIG_ARCHIVE_ROW_KEY_SEPARATOR, DEFAULT_ROWKEY_SEPARATOR).charAt(0);
+        this.chunkSize = conf.getInt(HadoopVariantStorageEngine.ARCHIVE_CHUNK_SIZE, HadoopVariantStorageEngine.DEFAULT_ARCHIVE_CHUNK_SIZE);
+        this.separator = conf.get(HadoopVariantStorageEngine.ARCHIVE_ROW_KEY_SEPARATOR, DEFAULT_ROWKEY_SEPARATOR).charAt(0);
     }
 
     public ArchiveRowKeyFactory(int chunkSize, char separator) {

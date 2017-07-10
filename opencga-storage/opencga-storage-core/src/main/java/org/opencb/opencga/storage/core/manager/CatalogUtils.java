@@ -97,9 +97,9 @@ public class CatalogUtils {
                 if (sb.length() > 0) {
                     sb.append(queryOperation.separator());
                 }
-                if (value.startsWith("!")) {
-                    sb.append('!');
-                    value = value.substring(1);
+                if (isNegated(value)) {
+                    sb.append(NOT);
+                    value = removeNegation(value);
                 }
 
                 if (StringUtils.isNumeric(value)) {

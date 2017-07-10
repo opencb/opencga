@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 
 /**
@@ -25,23 +26,21 @@ public class Metadata {
 
     private String version;
     private String creationDate;
-    private String open;
 
     private long idCounter;
 
 
     public Metadata() {
-        this("v2", TimeUtils.getTime(), "public");
+        this(GitRepositoryState.get().getBuildVersion(), TimeUtils.getTime());
     }
 
-    public Metadata(String version, String creationDate, String open) {
-        this(version, creationDate, open, 0);
+    public Metadata(String version, String creationDate) {
+        this(version, creationDate, 0);
     }
 
-    public Metadata(String version, String creationDate, String open, long idCounter) {
+    public Metadata(String version, String creationDate, long idCounter) {
         this.version = version;
         this.creationDate = creationDate;
-        this.open = open;
         this.idCounter = idCounter;
     }
 
@@ -50,7 +49,6 @@ public class Metadata {
         final StringBuilder sb = new StringBuilder("Metadata{");
         sb.append("version='").append(version).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", open='").append(open).append('\'');
         sb.append(", idCounter=").append(idCounter);
         sb.append('}');
         return sb.toString();
@@ -71,15 +69,6 @@ public class Metadata {
 
     public Metadata setCreationDate(String creationDate) {
         this.creationDate = creationDate;
-        return this;
-    }
-
-    public String getOpen() {
-        return open;
-    }
-
-    public Metadata setOpen(String open) {
-        this.open = open;
         return this;
     }
 

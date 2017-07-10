@@ -97,14 +97,6 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
         closeConnections();
     }
 
-    default int getExpectedNumLoadedVariants(VariantSource source) {
-        int numRecords = source.getStats().getNumRecords();
-        return numRecords
-                - source.getStats().getVariantTypeCount(VariantType.SYMBOLIC)
-                - source.getStats().getVariantTypeCount(VariantType.NO_VARIATION);
-    }
-
-
     default MongoDataStoreManager getMongoDataStoreManager(String dbName) throws Exception {
         MongoCredentials credentials = getVariantStorageEngine().getMongoCredentials();
         return new MongoDataStoreManager(credentials.getDataStoreServerAddresses());

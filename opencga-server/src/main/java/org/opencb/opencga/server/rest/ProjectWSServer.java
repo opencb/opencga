@@ -17,8 +17,10 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Study;
@@ -47,8 +49,8 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create a new project [WARNING]", response = Project.class,
-    notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+    @ApiOperation(value = "Create a new project [DEPRECATED]", response = Project.class,
+    notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
             + "is not tested and this can be deprecated in a future version.")
     public Response createProject(@ApiParam(value = "Project name", required = true) @QueryParam("name") String name,
                                   @ApiParam(value = "Project alias. Unique name without spaces that will be used to identify the project",
@@ -147,8 +149,8 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{project}/update")
-    @ApiOperation(value = "Update some project attributes [WARNING]", position = 4,
-    notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+    @ApiOperation(value = "Update some project attributes [DEPRECATED]", position = 4,
+    notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
             + "is not tested and this can be deprecated in a future version.")
     public Response update(@ApiParam(value = "Project id or alias", required = true) @PathParam("project") String projectStr,
                            @ApiParam(value = "Project name") @QueryParam("name") String name,
@@ -180,13 +182,30 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some project attributes", response = Project.class)
     public Response updateByPost(@ApiParam(value = "Project id or alias", required = true) @PathParam("project") String projectStr,
-                                 @ApiParam(value = "JSON containing the params to be updated.", required = true) ProjectUpdateParams updateParams)
+                                 @ApiParam(value = "JSON containing the params to be updated. It will be only possible to update organism "
+                                         + "fields not previously defined.", required = true) ProjectUpdateParams updateParams)
             throws IOException {
         try {
             String userId = catalogManager.getUserManager().getId(sessionId);
             long projectId = catalogManager.getProjectManager().getId(userId, projectStr);
 
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(updateParams));
+            if (updateParams.organism != null) {
+                if (StringUtils.isNotEmpty(updateParams.organism.getAssembly())) {
+                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), updateParams.organism.getAssembly());
+                }
+                if (StringUtils.isNotEmpty(updateParams.organism.getCommonName())) {
+                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), updateParams.organism.getCommonName());
+                }
+                if (StringUtils.isNotEmpty(updateParams.organism.getScientificName())) {
+                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(), updateParams.organism.getScientificName());
+                }
+                if (updateParams.organism.getTaxonomyCode() > 0) {
+                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), updateParams.organism.getTaxonomyCode());
+                }
+                params.remove("organism");
+            }
+
             QueryResult result = catalogManager.getProjectManager().update(projectId, params, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {

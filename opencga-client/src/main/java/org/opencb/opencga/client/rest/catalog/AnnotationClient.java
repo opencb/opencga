@@ -41,28 +41,28 @@ public abstract class AnnotationClient<T, U> extends CatalogClient<T, U> {
         ObjectMap params = new ObjectMap()
                 .append("body", bodyParams)
                 .append("variableSetId", variableSetId);
-        return execute(category, id, "annotationSets", null, "create", params, POST, AnnotationSet.class);
+        return execute(category, id, "annotationsets", null, "create", params, POST, AnnotationSet.class);
     }
 
     public QueryResponse<AnnotationSet> getAllAnnotationSets(String id, ObjectMap params) throws IOException {
-        return execute(category, id, "annotationSets", null, "info", params, GET, AnnotationSet.class);
+        return execute(category, id, "annotationsets", null, "info", params, GET, AnnotationSet.class);
     }
 
     public QueryResponse<AnnotationSet> getAnnotationSet(String id, String annotationSetName, ObjectMap params) throws IOException {
-        return execute(category, id, "annotationSets", annotationSetName, "info", params, GET, AnnotationSet.class);
+        return execute(category, id, "annotationsets", annotationSetName, "info", params, GET, AnnotationSet.class);
     }
 
     public QueryResponse<AnnotationSet> searchAnnotationSets(String id, ObjectMap params) throws IOException {
-        return execute(category, id, "annotationSets", null, "search", params, GET, AnnotationSet.class);
+        return execute(category, id, "annotationsets", null, "search", params, GET, AnnotationSet.class);
     }
 
     public QueryResponse<AnnotationSet> deleteAnnotationSet(String id, String annotationSetName, ObjectMap params) throws IOException {
-        return execute(category, id, "annotationSets", annotationSetName, "delete", params, GET, AnnotationSet.class);
+        return execute(category, id, "annotationsets", annotationSetName, "delete", params, GET, AnnotationSet.class);
     }
 
     public QueryResponse<AnnotationSet> updateAnnotationSet(String id, String annotationSetName, ObjectMap annotations) throws IOException {
         ObjectMap params = new ObjectMap("body", annotations);
-        return execute(category, id, "annotationSets", annotationSetName, "update", params, POST, AnnotationSet.class);
+        return execute(category, id, "annotationsets", annotationSetName, "update", params, POST, AnnotationSet.class);
     }
 
 }

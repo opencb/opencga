@@ -20,17 +20,17 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <properties>
-        <opencga-storage-hadoop-deps.version>${opencga.version}-SNAPSHOT</opencga-storage-hadoop-deps.version>
+        <opencga-storage-hadoop-deps.version>${opencga.version}</opencga-storage-hadoop-deps.version>
     </properties>
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage</artifactId>
-        <version>1.1.0-dev</version>
+        <version>1.1.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>opencga-storage-hadoop</artifactId>
-    <version>1.1.0-dev</version>
+    <version>1.1.2</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -43,7 +43,7 @@
             <id>opencga-storage-hadoop-deps</id>
             <activation>
                 <file>
-                    <missing>${user.home}/.m2/repository/org/opencb/opencga/opencga-storage-hadoop-deps/1.1.0-dev-SNAPSHOT/opencga-storage-hadoop-deps-1.1.0-dev-SNAPSHOT.jar</missing>
+                    <missing>${user.home}/.m2/repository/org/opencb/opencga/opencga-storage-hadoop-deps/1.1.2/opencga-storage-hadoop-deps-1.1.2.jar</missing>
                 </file>
             </activation>
             <modules>

@@ -32,8 +32,10 @@ import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice.Builder;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,8 +61,8 @@ public class ArchiveTableHelper extends GenomeHelper {
 
     public ArchiveTableHelper(Configuration conf) throws IOException {
         this(conf, null);
-        int fileId = conf.getInt(ArchiveDriver.CONFIG_ARCHIVE_FILE_ID, 0);
-        int studyId = conf.getInt(GenomeHelper.CONFIG_STUDY_ID, 0);
+        int fileId = conf.getInt(VariantStorageEngine.Options.FILE_ID.key(), 0);
+        int studyId = conf.getInt(VariantStorageEngine.Options.STUDY_ID.key(), 0);
         try (HadoopVariantSourceDBAdaptor metadataManager = new HadoopVariantSourceDBAdaptor(conf)) {
             VcfMeta meta = metadataManager.getVcfMeta(getStudyId(), fileId, null);
             this.meta.set(meta);
@@ -134,8 +136,8 @@ public class ArchiveTableHelper extends GenomeHelper {
 
     public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con) throws IOException {
         Compression.Algorithm compression = Compression.getCompressionAlgorithmByName(
-                genomeHelper.getConf().get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName()));
-        int nSplits = genomeHelper.getConf().getInt(ArchiveDriver.CONFIG_ARCHIVE_TABLE_PRESPLIT_SIZE, 100);
+                genomeHelper.getConf().get(HadoopVariantStorageEngine.ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName()));
+        int nSplits = genomeHelper.getConf().getInt(HadoopVariantStorageEngine.ARCHIVE_TABLE_PRESPLIT_SIZE, 100);
         ArchiveRowKeyFactory rowKeyFactory = new ArchiveRowKeyFactory(genomeHelper.getChunkSize(), genomeHelper.getSeparator());
         List<byte[]> preSplits = generateBootPreSplitsHuman(nSplits, rowKeyFactory::generateBlockIdAsBytes);
         return HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(), preSplits, compression);

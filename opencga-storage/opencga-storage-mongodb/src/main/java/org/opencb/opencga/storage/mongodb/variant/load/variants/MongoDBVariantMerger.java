@@ -39,7 +39,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
-import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter;
+import org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +55,7 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSa
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.IDS_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.STUDIES_FIELD;
-import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.STRING_ID_CONVERTER;
+import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.STAGE_TO_VARIANT_CONVERTER;
 import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.VARIANT_CONVERTER_DEFAULT;
 
 /**
@@ -309,7 +309,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             Document document = iterator.next();
             if (document.get(studyIdStr) != null) {
                 previousDocument = document;
-                previousVariant = STRING_ID_CONVERTER.convertToDataModelType(previousDocument);
+                previousVariant = STAGE_TO_VARIANT_CONVERTER.convertToDataModelType(previousDocument);
 
                 chromosome = previousVariant.getChromosome();
                 start = previousVariant.getStart();
@@ -320,7 +320,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
         while (iterator.hasNext()) {
             Document document = iterator.next();
-            Variant variant = STRING_ID_CONVERTER.convertToDataModelType(document);
+            Variant variant = STAGE_TO_VARIANT_CONVERTER.convertToDataModelType(document);
             Document study = document.get(studyIdStr, Document.class);
             if (study != null) {
                 if (checkOverlappings && variant.overlapWith(chromosome, start, end, true)) {
@@ -502,9 +502,9 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             try {
                 processOverlappedVariants(document, overlappedVariants, mongoDBOps);
             } catch (Exception e) {
-                Variant mainVariant = STRING_ID_CONVERTER.convertToDataModelType(document);
+                Variant mainVariant = STAGE_TO_VARIANT_CONVERTER.convertToDataModelType(document);
                 List<Variant> variants = overlappedVariants.stream()
-                        .map(STRING_ID_CONVERTER::convertToDataModelType)
+                        .map(STAGE_TO_VARIANT_CONVERTER::convertToDataModelType)
                         .collect(Collectors.toList());
                 logger.error("Error processing variant " + mainVariant + " in overlapped variants " + variants);
                 throw e;
@@ -524,7 +524,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
      */
     protected void processOverlappedVariants(Document mainDocument, List<Document> overlappedVariants, MongoDBOperations mongoDBOps) {
 
-        Variant mainVariant = STRING_ID_CONVERTER.convertToDataModelType(mainDocument);
+        Variant mainVariant = STAGE_TO_VARIANT_CONVERTER.convertToDataModelType(mainDocument);
 
         int variantsWithValidData = getVariantsWithValidData(mainVariant, overlappedVariants);
 
@@ -680,7 +680,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     private int getVariantsWithValidData(Variant mainVariant, Collection<Document> documents) {
         int variantsWithValidData = 0;
         for (Document document : documents) {
-            if (!mainVariant.overlapWith(STRING_ID_CONVERTER.convertToDataModelType(document), true)) {
+            if (!mainVariant.overlapWith(STAGE_TO_VARIANT_CONVERTER.convertToDataModelType(document), true)) {
                 continue;
             }
             Document study = document.get(studyIdStr, Document.class);
@@ -733,7 +733,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
         // For each variant, create an empty variant that will be filled by the VariantMerger
         for (Document document : overlappedVariants) {
-            Variant var = STRING_ID_CONVERTER.convertToDataModelType(document);
+            Variant var = STAGE_TO_VARIANT_CONVERTER.convertToDataModelType(document);
             if (!mainVariant.overlapWith(var, true)) {
                 // Skip those variants that do not overlap with the given main variant
                 continue;
@@ -1074,11 +1074,11 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         // If the document has only the study, _id, end, ref and alt fields.
         if (!newStudy || document.size() != 6) {
             for (Map.Entry<String, Object> entry : document.entrySet()) {
-                if (!entry.getKey().equals(VariantStringIdConverter.ID_FIELD)
-                        && !entry.getKey().equals(VariantStringIdConverter.END_FIELD)
-                        && !entry.getKey().equals(VariantStringIdConverter.REF_FIELD)
-                        && !entry.getKey().equals(VariantStringIdConverter.ALT_FIELD)
-                        && !entry.getKey().equals(VariantStringIdConverter.STUDY_FILE_FIELD)) {
+                if (!entry.getKey().equals(StageDocumentToVariantConverter.ID_FIELD)
+                        && !entry.getKey().equals(StageDocumentToVariantConverter.END_FIELD)
+                        && !entry.getKey().equals(StageDocumentToVariantConverter.REF_FIELD)
+                        && !entry.getKey().equals(StageDocumentToVariantConverter.ALT_FIELD)
+                        && !entry.getKey().equals(StageDocumentToVariantConverter.STUDY_FILE_FIELD)) {
                     if (!isNewStudy((Document) entry.getValue())) {
                         return false;
                     }

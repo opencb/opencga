@@ -57,7 +57,6 @@ import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.annotation.HadoopDefaultVariantAnnotationManager;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.executors.ExternalMRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
@@ -101,18 +100,41 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String HADOOP_LOAD_VARIANT_STATUS = "hadoop.load.variant.status";
     //Other files to be loaded from Archive to Variant
     public static final String HADOOP_LOAD_VARIANT_PENDING_FILES = "opencga.storage.hadoop.load.pending.files";
-    public static final String OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY = "opencga.storage.hadoop.intermediate.hdfs.directory";
-    public static final String OPENCGA_STORAGE_HADOOP_VARIANT_HBASE_NAMESPACE = "opencga.storage.hadoop.variant.hbase.namespace";
-    public static final String OPENCGA_STORAGE_HADOOP_VARIANT_ARCHIVE_TABLE_PREFIX = "opencga.storage.hadoop.variant.archive.table.prefix";
-    public static final String OPENCGA_STORAGE_HADOOP_MAPREDUCE_SCANNER_TIMEOUT = "opencga.storage.hadoop.mapreduce.scanner.timeout";
+    public static final String INTERMEDIATE_HDFS_DIRECTORY = "opencga.storage.hadoop.intermediate.hdfs.directory";
 
     public static final String HADOOP_LOAD_ARCHIVE_BATCH_SIZE = "hadoop.load.archive.batch.size";
     public static final String HADOOP_LOAD_VARIANT_BATCH_SIZE = "hadoop.load.variant.batch.size";
     public static final String HADOOP_LOAD_DIRECT = "hadoop.load.direct";
     public static final boolean HADOOP_LOAD_DIRECT_DEFAULT = true;
 
+    public static final String MERGE_ARCHIVE_SCAN_BATCH_SIZE = "opencga.storage.hadoop.hbase.merge.archive.scan.batchsize";
+    public static final int DEFAULT_MERGE_ARCHIVE_SCAN_BATCH_SIZE = 500;
+    public static final String MERGE_COLLAPSE_DELETIONS = "opencga.storage.hadoop.hbase.merge.collapse-deletions";
+    public static final boolean DEFAULT_MERGE_COLLAPSE_DELETIONS = true;
+
+    //upload HBase jars and jars for any of the configured job classes via the distributed cache (tmpjars).
+    public static final String MAPREDUCE_ADD_DEPENDENCY_JARS = "opencga.mapreduce.addDependencyJars";
+    public static final String MAPREDUCE_HBASE_SCANNER_TIMEOUT = "opencga.storage.hadoop.mapreduce.scanner.timeout";
+    public static final String MAPREDUCE_HBASE_KEYVALUE_SIZE_MAX = "hadoop.load.variant.hbase.client.keyvalue.maxsize";
+    public static final String MAPREDUCE_HBASE_SCAN_CACHING = "hadoop.load.variant.scan.caching";
+
+    public static final String HBASE_NAMESPACE = "opencga.storage.hadoop.variant.hbase.namespace";
+    public static final String HBASE_COLUMN_FAMILY = "opencga.hbase.column_family";
+
+    // Variant table configuration
+    public static final String VARIANT_TABLE_COMPRESSION = "opencga.variant.table.compression";
+    public static final String VARIANT_TABLE_PRESPLIT_SIZE = "opencga.variant.table.presplit.size";
+
+    // Archive table configuration
+    public static final String ARCHIVE_TABLE_PREFIX = "opencga.storage.hadoop.variant.archive.table.prefix";
+    public static final String DEFAULT_ARCHIVE_TABLE_PREFIX = "opencga_study_";
+    public static final String ARCHIVE_TABLE_COMPRESSION = "opencga.archive.table.compression";
+    public static final String ARCHIVE_TABLE_PRESPLIT_SIZE = "opencga.archive.table.presplit.size";
+    public static final String ARCHIVE_CHUNK_SIZE = "opencga.archive.chunk_size";
+    public static final int DEFAULT_ARCHIVE_CHUNK_SIZE = 1000;
+    public static final String ARCHIVE_ROW_KEY_SEPARATOR = "opencga.archive.row_key_sep";
+
     public static final String EXTERNAL_MR_EXECUTOR = "opencga.external.mr.executor";
-    public static final String ARCHIVE_TABLE_PREFIX = "opencga_study_";
 
 
     protected Configuration conf = null;
@@ -322,7 +344,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         VariantHadoopDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
         Configuration hadoopConfiguration = null == dbAdaptor ? null : dbAdaptor.getConfiguration();
         hadoopConfiguration = hadoopConfiguration == null ? getHadoopConfiguration(options) : hadoopConfiguration;
-        hadoopConfiguration.setIfUnset(ArchiveDriver.CONFIG_ARCHIVE_TABLE_COMPRESSION, Algorithm.SNAPPY.getName());
+        hadoopConfiguration.setIfUnset(ARCHIVE_TABLE_COMPRESSION, Algorithm.SNAPPY.getName());
 
         HBaseCredentials archiveCredentials = buildCredentials(getArchiveTableName(options.getInt(Options.STUDY_ID.key()), options));
 
@@ -710,11 +732,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
      * @return Table name
      */
     public String getArchiveTableName(int studyId) {
-        String prefix = getOptions().getString(OPENCGA_STORAGE_HADOOP_VARIANT_ARCHIVE_TABLE_PREFIX);
+        String prefix = getOptions().getString(ARCHIVE_TABLE_PREFIX);
         if (StringUtils.isEmpty(prefix)) {
-            prefix = ARCHIVE_TABLE_PREFIX;
+            prefix = DEFAULT_ARCHIVE_TABLE_PREFIX;
         }
-        return buildTableName(getOptions().getString(OPENCGA_STORAGE_HADOOP_VARIANT_HBASE_NAMESPACE, ""),
+        return buildTableName(getOptions().getString(HBASE_NAMESPACE, ""),
                 prefix, studyId);
     }
 
@@ -726,11 +748,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
      * @return Table name
      */
     public static String getArchiveTableName(int studyId, Configuration conf) {
-        String prefix = conf.get(OPENCGA_STORAGE_HADOOP_VARIANT_ARCHIVE_TABLE_PREFIX);
+        String prefix = conf.get(ARCHIVE_TABLE_PREFIX);
         if (StringUtils.isEmpty(prefix)) {
-            prefix = ARCHIVE_TABLE_PREFIX;
+            prefix = DEFAULT_ARCHIVE_TABLE_PREFIX;
         }
-        return buildTableName(conf.get(OPENCGA_STORAGE_HADOOP_VARIANT_HBASE_NAMESPACE, ""),
+        return buildTableName(conf.get(HBASE_NAMESPACE, ""),
                 prefix, studyId);
     }
 
@@ -742,11 +764,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
      * @return Table name
      */
     public static String getArchiveTableName(int studyId, ObjectMap options) {
-        String prefix = options.getString(OPENCGA_STORAGE_HADOOP_VARIANT_ARCHIVE_TABLE_PREFIX);
+        String prefix = options.getString(ARCHIVE_TABLE_PREFIX);
         if (StringUtils.isEmpty(prefix)) {
-            prefix = ARCHIVE_TABLE_PREFIX;
+            prefix = DEFAULT_ARCHIVE_TABLE_PREFIX;
         }
-        return buildTableName(options.getString(OPENCGA_STORAGE_HADOOP_VARIANT_HBASE_NAMESPACE, ""),
+        return buildTableName(options.getString(HBASE_NAMESPACE, ""),
                 prefix, studyId);
     }
 
@@ -755,11 +777,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     public static String getVariantTableName(String table, ObjectMap options) {
-        return buildTableName(options.getString(OPENCGA_STORAGE_HADOOP_VARIANT_HBASE_NAMESPACE, ""), "", table);
+        return buildTableName(options.getString(HBASE_NAMESPACE, ""), "", table);
     }
 
     public static String getVariantTableName(String table, Configuration conf) {
-        return buildTableName(conf.get(OPENCGA_STORAGE_HADOOP_VARIANT_HBASE_NAMESPACE, ""), "", table);
+        return buildTableName(conf.get(HBASE_NAMESPACE, ""), "", table);
     }
 
     protected static String buildTableName(String namespace, String prefix, int studyId) {

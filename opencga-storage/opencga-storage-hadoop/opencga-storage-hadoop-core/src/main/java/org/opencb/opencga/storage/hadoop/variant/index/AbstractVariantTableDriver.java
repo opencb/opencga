@@ -41,9 +41,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
@@ -60,7 +62,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.OPENCGA_STORAGE_HADOOP_MAPREDUCE_SCANNER_TIMEOUT;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCANNER_TIMEOUT;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -90,14 +92,14 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
     @Override
     public int run(String[] args) throws Exception {
         Configuration conf = getConf();
-        int maxKeyValueSize = conf.getInt(AbstractAnalysisTableDriver.HBASE_KEYVALUE_SIZE_MAX, 10485760); // 10MB
+        int maxKeyValueSize = conf.getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_KEYVALUE_SIZE_MAX, 10485760); // 10MB
         getLog().info("HBASE: set " + ConnectionConfiguration.MAX_KEYVALUE_SIZE_KEY + " to " + maxKeyValueSize);
         conf.setInt(ConnectionConfiguration.MAX_KEYVALUE_SIZE_KEY, maxKeyValueSize); // always overwrite server default (usually 1MB)
 
         String inTable = conf.get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, StringUtils.EMPTY);
         String outTable = conf.get(AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_NAME, StringUtils.EMPTY);
         String[] fileArr = argFileArray();
-        Integer studyId = conf.getInt(GenomeHelper.CONFIG_STUDY_ID, -1);
+        Integer studyId = conf.getInt(VariantStorageEngine.Options.STUDY_ID.key(), -1);
 
         /* -------------------------------*/
         // Validate parameters CHECK
@@ -146,7 +148,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         Scan scan = createScan(fileArr);
 
         // set other scan attrs
-        boolean addDependencyJar = conf.getBoolean(GenomeHelper.CONFIG_HBASE_ADD_DEPENDENCY_JARS, true);
+        boolean addDependencyJar = conf.getBoolean(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, true);
         initMapReduceJob(inTable, outTable, job, scan, addDependencyJar);
 
         boolean succeed = executeJob(job);
@@ -171,7 +173,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
     protected abstract String getJobOperationName();
 
     protected String[] argFileArray() {
-        return getConf().getStrings(AbstractAnalysisTableDriver.CONFIG_VARIANT_FILE_IDS, new String[0]);
+        return getConf().getStrings(VariantStorageEngine.Options.FILE_ID.key(), new String[0]);
     }
 
     protected VariantTableHelper getHelper() {
@@ -229,7 +231,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
 
         // Increase the ScannerTimeoutPeriod to avoid ScannerTimeoutExceptions
         // See opencb/opencga#352 for more info.
-        int scannerTimeout = getConf().getInt(OPENCGA_STORAGE_HADOOP_MAPREDUCE_SCANNER_TIMEOUT,
+        int scannerTimeout = getConf().getInt(MAPREDUCE_HBASE_SCANNER_TIMEOUT,
                 getConf().getInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, HConstants.DEFAULT_HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD));
         getLog().info("Set Scanner timeout to " + scannerTimeout + " ...");
         job.getConfiguration().setInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, scannerTimeout);
@@ -238,7 +240,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
 
     protected Scan createScan(String[] fileArr) {
         Scan scan = new Scan();
-        int caching = getConf().getInt(AbstractAnalysisTableDriver.HBASE_SCAN_CACHING, 50);
+        int caching = getConf().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 50);
         getLog().info("Scan set Caching to " + caching);
         scan.setCaching(caching);        // 1 is the default in Scan, 200 caused timeout issues.
         scan.setCacheBlocks(false);  // don't set to true for MR jobs
@@ -312,14 +314,14 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
             }
         }
 
-        int nsplits = genomeHelper.getConf().getInt(AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_PRESPLIT_SIZE, 100);
+        int nsplits = genomeHelper.getConf().getInt(HadoopVariantStorageEngine.VARIANT_TABLE_PRESPLIT_SIZE, 100);
         List<byte[]> splitList = GenomeHelper.generateBootPreSplitsHuman(
                 nsplits,
                 (chr, pos) -> VariantPhoenixKeyFactory.generateVariantRowKey(chr, pos, "", ""));
         boolean newTable = HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
                 splitList, Compression.getCompressionAlgorithmByName(
                         genomeHelper.getConf().get(
-                                AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_COMPRESSION,
+                                HadoopVariantStorageEngine.VARIANT_TABLE_COMPRESSION,
                                 Compression.Algorithm.SNAPPY.getName())));
         if (newTable) {
             try (java.sql.Connection jdbcConnection = variantPhoenixHelper.newJdbcConnection()) {
@@ -356,8 +358,8 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         conf = HBaseManager.addHBaseSettings(conf, toolArgs[0]);
         conf.set(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, toolArgs[1]);
         conf.set(AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_NAME, toolArgs[2]);
-        conf.set(GenomeHelper.CONFIG_STUDY_ID, toolArgs[3]);
-        conf.setStrings(AbstractAnalysisTableDriver.CONFIG_VARIANT_FILE_IDS, toolArgs[4].split(","));
+        conf.set(VariantStorageEngine.Options.STUDY_ID.key(), toolArgs[3]);
+        conf.setStrings(VariantStorageEngine.Options.FILE_ID.key(), toolArgs[4].split(","));
         for (int i = fixedSizeArgs; i < toolArgs.length; i = i + 2) {
             conf.set(toolArgs[i], toolArgs[i + 1]);
         }

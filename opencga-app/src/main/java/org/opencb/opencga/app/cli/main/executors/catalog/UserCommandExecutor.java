@@ -132,14 +132,11 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
             }
         } else {
             String sessionId = usersCommandOptions.commonCommandOptions.sessionId;
+            String errorMsg = "Missing password. ";
             if (StringUtils.isNotEmpty(sessionId)) {
-                openCGAClient.setSessionId(sessionId);
-                System.out.println("You have been logged correctly. This is your new session id " + sessionId);
-            } else {
-                // load user session file
-
-//                openCGAClient.setSessionId(sessionId);
+                errorMsg += "Active session id detected " + sessionId;
             }
+            System.err.println(errorMsg);
         }
     }
 

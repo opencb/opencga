@@ -59,8 +59,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create individual [WARNING]", position = 1, response = Individual.class,
-            notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web "
+    @ApiOperation(value = "Create individual [DEPRECATED]", position = 1, response = Individual.class,
+            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web "
                     + "service is not tested and this can be deprecated in a future version.")
     public Response createIndividual(@ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId")
                                                  String studyIdStr,
@@ -189,7 +189,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                       @ApiParam(value = "Variable set id or name") @QueryParam("variableSet") String variableSet,
                                       @ApiParam(value = "annotationsetName", required = false) @QueryParam("annotationsetName")
                                                   String annotationsetName,
-                                      @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
+                                      @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)", required = false) @QueryParam("annotation") String annotation,
                                       @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
@@ -242,13 +242,13 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individual}/annotationsets/search")
-    @ApiOperation(value = "Search annotation sets [NOT TESTED]", position = 11)
+    @ApiOperation(value = "Search annotation sets", position = 11)
     public Response searchAnnotationSetGET(
             @ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId") String variableSetId,
-            @ApiParam(value = "Variable set id or name") @QueryParam("variableSet") String variableSet,
-            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
+            @ApiParam(value = "Variable set id or name", required = true) @QueryParam("variableSet") String variableSet,
+            @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)", required = false) @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
             if (StringUtils.isNotEmpty(variableSetId)) {
@@ -268,7 +268,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individual}/annotationsets/info")
-    @ApiOperation(value = "Return all the annotation sets of the individual [NOT TESTED]", position = 12)
+    @ApiOperation(value = "Return all the annotation sets of the individual", position = 12)
     public Response infoAnnotationSetGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                                                  + "alias") @QueryParam("study") String studyStr,
@@ -288,7 +288,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{individual}/annotationsets/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create an annotation set for the individual [NOT TESTED]", position = 13)
+    @ApiOperation(value = "Create an annotation set for the individual", position = 13)
     public Response annotateSamplePOST(
             @ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
@@ -311,7 +311,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individual}/annotationsets/{annotationsetName}/delete")
-    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [NOT TESTED]", position = 14)
+    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set", position = 14)
     public Response deleteAnnotationGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                                                 + "alias") @QueryParam("study") String studyStr,
@@ -352,7 +352,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individual}/annotationsets/{annotationsetName}/info")
-    @ApiOperation(value = "Return the annotation set [NOT TESTED]", position = 16)
+    @ApiOperation(value = "Return the annotation set", position = 16)
     public Response infoAnnotationGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                       @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                                               + "alias") @QueryParam("study") String studyStr,
@@ -374,8 +374,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individual}/update")
-    @ApiOperation(value = "Update individual information [WARNING]", position = 6, response = Individual.class,
-    notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+    @ApiOperation(value = "Update individual information [DEPRECATED]", position = 6, response = Individual.class,
+    notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
             + "is not tested and this can be deprecated in a future version.")
     public Response updateIndividual(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -443,7 +443,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individuals}/delete")
-    @ApiOperation(value = "Delete individual information", position = 7)
+    @ApiOperation(value = "Delete individual information [NOT TESTED]", position = 7)
     public Response deleteIndividual(@ApiParam(value = "Comma separated list of individual IDs or names", required = true)
                                          @PathParam ("individuals") String individualIds,
                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")

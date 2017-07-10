@@ -876,8 +876,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
     }
 
     @Test
-    public void multiIndexPlatinumNoMerge() throws Exception {
-        super.multiIndexPlatinum(new ObjectMap(MongoDBVariantOptions.MERGE_IGNORE_OVERLAPPING_VARIANTS.key(), true));
+    public void multiIndexPlatinumMergeSimple() throws Exception {
+        super.multiIndexPlatinum(new ObjectMap(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC));
         checkPlatinumDatabase(d -> ((List) d.get(FILES_FIELD)).size(), Collections.singleton(DocumentToSamplesConverter.UNKNOWN_GENOTYPE));
     }
 

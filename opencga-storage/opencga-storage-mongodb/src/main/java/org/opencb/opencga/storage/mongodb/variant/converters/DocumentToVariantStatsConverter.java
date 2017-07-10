@@ -34,6 +34,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -44,6 +45,7 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
 
     public static final QueryOptions STUDY_CONFIGURATION_MANAGER_QUERY_OPTIONS = new QueryOptions()
             .append(StudyConfigurationManager.CACHED, true).append(StudyConfigurationManager.READ_ONLY, true);
+    private static final Pattern MISSING_ALLELE = Pattern.compile("-1", Pattern.LITERAL);
 
     public DocumentToVariantStatsConverter() {
     }
@@ -76,6 +78,7 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
     private Map<Integer, StudyConfiguration> studyConfigurations;
     private Map<Integer, String> studyIds = new HashMap<>();
     private Map<Integer, Map<Integer, String>> studyCohortNames = new HashMap<>();
+    private Map<String, Genotype> genotypeMap = new HashMap<>();
 
     public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
         this.studyConfigurationManager = studyConfigurationManager;
@@ -90,13 +93,13 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
 
     public void convertToDataModelType(Document object, VariantStats stats) {
         // Basic fields
-        stats.setMaf(((Double) object.get(MAF_FIELD)).floatValue());
-        stats.setMgf(((Double) object.get(MGF_FIELD)).floatValue());
+        stats.setMaf(((Number) object.get(MAF_FIELD)).floatValue());
+        stats.setMgf(((Number) object.get(MGF_FIELD)).floatValue());
         stats.setMafAllele((String) object.get(MAFALLELE_FIELD));
         stats.setMgfGenotype((String) object.get(MGFGENOTYPE_FIELD));
 
-        stats.setMissingAlleles((int) object.get(MISSALLELE_FIELD));
-        stats.setMissingGenotypes((int) object.get(MISSGENOTYPE_FIELD));
+        stats.setMissingAlleles(((Number) object.get(MISSALLELE_FIELD)).intValue());
+        stats.setMissingGenotypes(((Number) object.get(MISSGENOTYPE_FIELD)).intValue());
 
         // Genotype counts
         int alleleNumber = 0;
@@ -104,9 +107,9 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
         Document genotypes = (Document) object.get(NUMGT_FIELD);
         HashMap<Genotype, Integer> genotypesCount = new HashMap<>();
         for (Map.Entry<String, Object> o : genotypes.entrySet()) {
-            String genotypeStr = o.getKey().replace("-1", ".");
-            int value = (int) o.getValue();
-            Genotype g = new Genotype(genotypeStr);
+            String genotypeStr = o.getKey();
+            int value = ((Number) o.getValue()).intValue();
+            Genotype g = getGenotype(genotypeStr);
             genotypesCount.put(g, value);
             alleleNumber += value * g.getAllelesIdx().length;
             gtNumber += value;
@@ -147,6 +150,15 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
                 stats.setAltAlleleFreq(alleleCounts[1] / ((float) alleleNumber));
             }
         }
+    }
+
+    private Genotype getGenotype(String genotypeStr) {
+        Genotype genotype = genotypeMap.get(genotypeStr);
+        if (genotype == null) {
+            genotype = new Genotype(MISSING_ALLELE.matcher(genotypeStr).replaceAll("."));
+            genotypeMap.put(genotypeStr, genotype);
+        }
+        return genotype;
     }
 
     @Override

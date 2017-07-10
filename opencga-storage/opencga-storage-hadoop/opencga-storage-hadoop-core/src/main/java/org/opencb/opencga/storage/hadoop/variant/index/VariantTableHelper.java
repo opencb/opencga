@@ -33,6 +33,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
@@ -103,14 +104,14 @@ public class VariantTableHelper extends GenomeHelper {
             }
         }
 
-        int nsplits = genomeHelper.getConf().getInt(AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_PRESPLIT_SIZE, 100);
+        int nsplits = genomeHelper.getConf().getInt(HadoopVariantStorageEngine.VARIANT_TABLE_PRESPLIT_SIZE, 100);
         List<byte[]> splitList = generateBootPreSplitsHuman(
                 nsplits,
                 (chr, pos) -> VariantPhoenixKeyFactory.generateVariantRowKey(chr, pos, "", ""));
         boolean newTable = HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
                 splitList, Compression.getCompressionAlgorithmByName(
                         genomeHelper.getConf().get(
-                                AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_COMPRESSION,
+                                HadoopVariantStorageEngine.VARIANT_TABLE_COMPRESSION,
                                 Compression.Algorithm.SNAPPY.getName())));
         if (newTable) {
             try (java.sql.Connection jdbcConnection = variantPhoenixHelper.newJdbcConnection()) {

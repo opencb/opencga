@@ -353,24 +353,24 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         options.put(HadoopVariantStorageEngine.EXTERNAL_MR_EXECUTOR, TestMRExecutor.class);
         TestMRExecutor.setStaticConfiguration(conf);
 
-        options.put(GenomeHelper.CONFIG_HBASE_ADD_DEPENDENCY_JARS, false);
+        options.put(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, false);
         EnumSet<Compression.Algorithm> supportedAlgorithms = EnumSet.of(Compression.Algorithm.NONE, HBaseTestingUtility.getSupportedCompressionAlgorithms());
 
-        options.put(ArchiveDriver.CONFIG_ARCHIVE_TABLE_COMPRESSION, supportedAlgorithms.contains(Compression.Algorithm.GZ)
+        options.put(HadoopVariantStorageEngine.ARCHIVE_TABLE_COMPRESSION, supportedAlgorithms.contains(Compression.Algorithm.GZ)
                 ? Compression.Algorithm.GZ.getName()
                 : Compression.Algorithm.NONE.getName());
-        options.put(VariantTableDriver.CONFIG_VARIANT_TABLE_COMPRESSION, supportedAlgorithms.contains(Compression.Algorithm.SNAPPY)
+        options.put(HadoopVariantStorageEngine.VARIANT_TABLE_COMPRESSION, supportedAlgorithms.contains(Compression.Algorithm.SNAPPY)
                 ? Compression.Algorithm.SNAPPY.getName()
                 : Compression.Algorithm.NONE.getName());
 
         FileSystem fs = FileSystem.get(HadoopVariantStorageTest.configuration.get());
         String intermediateDirectory = fs.getHomeDirectory().toUri().resolve("opencga_test/").toString();
-        System.out.println(HadoopVariantStorageEngine.OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY + " = " + intermediateDirectory);
+//        System.out.println(HadoopVariantStorageEngine.INTERMEDIATE_HDFS_DIRECTORY + " = " + intermediateDirectory);
         options.put(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, conf.get(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY));
-        options.put(HadoopVariantStorageEngine.OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY, intermediateDirectory);
+        options.put(HadoopVariantStorageEngine.INTERMEDIATE_HDFS_DIRECTORY, intermediateDirectory);
 
-        options.put(ArchiveDriver.CONFIG_ARCHIVE_TABLE_PRESPLIT_SIZE, 5);
-        options.put(AbstractAnalysisTableDriver.CONFIG_VARIANT_TABLE_PRESPLIT_SIZE, 5);
+        options.put(HadoopVariantStorageEngine.ARCHIVE_TABLE_PRESPLIT_SIZE, 5);
+        options.put(HadoopVariantStorageEngine.VARIANT_TABLE_PRESPLIT_SIZE, 5);
 
         variantConfiguration.getDatabase().setHosts(Collections.singletonList("hbase://" + HadoopVariantStorageTest.configuration.get().get(HConstants.ZOOKEEPER_QUORUM)));
         return storageConfiguration;
@@ -477,7 +477,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         }
 
         @Override
-        protected void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException {
+        protected void map(VariantMapReduceContext ctx) throws IOException, InterruptedException {
             if (Bytes.toString(ctx.getCurrRowKey()).equals(sliceToFail)) {
                 if (!hadFail.getAndSet(true)) {
                     System.out.println("DO FAIL!!");
@@ -485,7 +485,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                     throw new RuntimeException();
                 }
             }
-            super.doMap(ctx);
+            super.map(ctx);
         }
     }
 

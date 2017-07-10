@@ -17,9 +17,7 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
@@ -31,13 +29,12 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.Configuration;
-import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Metadata;
 import org.opencb.opencga.catalog.models.Session;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
@@ -53,7 +50,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.parseObject;
 public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor {
 
     private final MongoDBCollection metaCollection;
-    private static final String VERSION = "v0.8";
+    private static final String VERSION = GitRepositoryState.get().getBuildVersion();
 
     public MetaMongoDBAdaptor(MongoDBCollection metaMongoDBCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(ProjectMongoDBAdaptor.class));
@@ -66,30 +63,14 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     }
 
     public long getNewAutoIncrementId(String field) { //, MongoDBCollection metaCollection
-//        QueryResult<BasicDBObject> result = metaCollection.findAndModify(
-//                new BasicDBObject("_id", CatalogMongoDBAdaptor.METADATA_OBJECT_ID),  //Query
-//                new BasicDBObject(field, true),  //Fields
-//                null,
-//                new BasicDBObject("$inc", new BasicDBObject(field, 1)), //Update
-//                new QueryOptions("returnNew", true),
-//                BasicDBObject.class
-//        );
-
         Bson query = Filters.eq(PRIVATE_ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID);
         Document projection = new Document(field, true);
         Bson inc = Updates.inc(field, 1L);
         QueryOptions queryOptions = new QueryOptions("returnNew", true);
         QueryResult<Document> result = metaCollection.findAndUpdate(query, projection, null, inc, queryOptions);
-//        return (int) Float.parseFloat(result.getResult().get(0).get(field).toString());
         return result.getResult().get(0).getLong(field);
     }
 
-
-//    public void createCollections() {
-//        clean(Collections.singletonList(""));
-////        metaCollection.createIndexes()
-////        dbAdaptorFactory.getCatalogFileDBAdaptor().getFileCollection().createIndexes()
-//    }
 
     public void createIndexes() {
         InputStream resourceAsStream = getClass().getResourceAsStream("/catalog-indexes.txt");
@@ -178,28 +159,11 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
 
         Metadata metadata = new Metadata().setIdCounter(configuration.getCatalog().getOffset()).setVersion(VERSION);
 
-        if (configuration.isOpenRegister()) {
-            metadata.setOpen("public");
-        } else {
-            metadata.setOpen("private");
-        }
-
         Document metadataObject = getMongoDBDocument(metadata, "Metadata");
         metadataObject.put(PRIVATE_ID, "METADATA");
         Document adminDocument = getMongoDBDocument(admin, "Admin");
         adminDocument.put("sessions", new ArrayList<>());
         metadataObject.put("admin", adminDocument);
-
-        // We store the original configuration file
-        Document config = getMongoDBDocument(configuration, "CatalogConfiguration");
-        metadataObject.put("config", config);
-
-        List<StudyAclEntry> acls = configuration.getAcl();
-        List<Document> aclList = new ArrayList<>(acls.size());
-        for (StudyAclEntry acl : acls) {
-            aclList.add(getMongoDBDocument(acl, "StudyAcl"));
-        }
-        metadataObject.put("acl", aclList);
 
         metaCollection.insert(metadataObject, null);
     }
@@ -209,15 +173,6 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         if (metaCollection.count(query).getResult().get(0) == 0) {
             throw new CatalogDBException("The admin password is incorrect.");
         }
-    }
-
-    @Override
-    public boolean isRegisterOpen() {
-        Document doc = metaCollection.find(new Document(PRIVATE_ID, "METADATA"), new QueryOptions(QueryOptions.INCLUDE, "open")).first();
-        if (doc.getString("open").equals("public")) {
-            return true;
-        }
-        return false;
     }
 
     @Override
@@ -258,24 +213,6 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     public boolean checkValidAdminSession(String id) {
         Document query = new Document(PRIVATE_ID, "METADATA").append("admin.sessions.id", id);
         return metaCollection.count(query).first() == 1;
-    }
-
-    @Override
-    public QueryResult<StudyAclEntry> getDaemonAcl(List<String> members) throws CatalogDBException {
-        long startTime = startQuery();
-
-        Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, "METADATA"));
-        Bson unwind = Aggregates.unwind("$" + CohortDBAdaptor.QueryParams.ACL.key());
-        Bson match2 = Aggregates.match(Filters.in(CohortDBAdaptor.QueryParams.ACL_MEMBER.key(), members));
-        Bson project = Aggregates.project(Projections.include(CohortDBAdaptor.QueryParams.ID.key(),
-                CohortDBAdaptor.QueryParams.ACL.key()));
-
-        QueryResult<Document> aggregate = metaCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
-        StudyAclEntry result = null;
-        if (aggregate.getNumResults() == 1) {
-            result = parseObject(((Document) aggregate.getResult().get(0).get("acl")), StudyAclEntry.class);
-        }
-        return endQuery("get daemon Acl", startTime, Arrays.asList(result));
     }
 
 }

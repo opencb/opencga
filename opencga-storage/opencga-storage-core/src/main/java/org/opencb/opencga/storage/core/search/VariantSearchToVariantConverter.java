@@ -7,6 +7,8 @@ import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -16,6 +18,7 @@ import java.util.*;
 public class VariantSearchToVariantConverter implements ComplexTypeConverter<Variant, VariantSearchModel> {
 
     public static final double MISSING_VALUE = -100.0;
+    private Logger logger = LoggerFactory.getLogger(VariantSearchManager.class);
 
     /**
      * Conversion: from storage type to data model.
@@ -59,9 +62,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     variantStats.setMaf(variantSearchModel.getStats().get(key));
 
                     studyEntryMap.get(fields[1]).setStats(fields[2], variantStats);
-                } else {
-                    System.out.println("Something wrong happened: stats " + key + ", but there is no study for that stats.");
                 }
+//                else {
+//                    System.out.println("Something wrong happened: stats " + key + ", but there is no study for that stats.");
+//                }
             }
         }
 
@@ -199,8 +203,14 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         cosmic.setHistologySubtype(fields[3]);
                         cosmicList.add(cosmic);
                         break;
+                    case "KW":
+                        //TODO: Parse Keyword
+                        break;
+                    case "PD":
+                        //TODO: Parse Protein Feature
+                        break;
                     default: {
-                        System.out.println("Unknown trait type: " + fields[0] + ", it should be HPO, ClinVar or Cosmic");
+                        logger.warn("Unknown trait type: " + fields[0] + ", it should be HPO, ClinVar or Cosmic");
                         break;
                     }
                 }
@@ -401,7 +411,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             variantSearchModel.setGerp(score.getScore());
                             break;
                         default:
-                            System.out.println("Unknown 'conservation' source: score.getSource() = " + score.getSource());
+                            logger.warn("Unknown 'conservation' source: score.getSource() = " + score.getSource());
                             break;
                     }
                 }
@@ -420,7 +430,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             variantSearchModel.setCaddScaled(score.getScore());
                             break;
                         default:
-                            System.out.println("Unknown 'functional score' source: score.getSource() = " + score.getSource());
+                            logger.warn("Unknown 'functional score' source: score.getSource() = " + score.getSource());
                             break;
                     }
                 }

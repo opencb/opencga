@@ -988,6 +988,38 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
+    public void testSearchAnnotation() throws CatalogException {
+        long studyId = catalogManager.getStudyId("user@1000G:phase1");
+        Study study = catalogManager.getStudy(studyId, sessionIdUser).first();
+
+        Set<Variable> variables = new HashSet<>();
+        variables.add(new Variable("var_name", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0,
+                "",
+                "",
+                null, Collections.<String, Object>emptyMap()));
+        variables.add(new Variable("AGE", "", Variable.VariableType.INTEGER, "", false, false, Collections.<String>emptyList(), 0, "", "",
+                null, Collections.<String, Object>emptyMap()));
+        variables.add(new Variable("HEIGHT", "", Variable.VariableType.DOUBLE, "", false, false, Collections.<String>emptyList(), 0, "",
+                "", null, Collections.<String, Object>emptyMap()));
+        VariableSet vs1 = catalogManager.createVariableSet(study.getId(), "vs1", false, "", null, variables, sessionIdUser).first();
+
+        HashMap<String, Object> annotations = new HashMap<>();
+        annotations.put("var_name", "Joe");
+        annotations.put("AGE", 25);
+        annotations.put("HEIGHT", 180);
+        catalogManager.getSampleManager().createAnnotationSet(Long.toString(s_1), Long.toString(studyId), vs1.getName(),"annotation1",
+                annotations, null, sessionIdUser);
+
+        QueryResult<AnnotationSet> annotQueryResult = catalogManager.getSampleManager().searchAnnotationSet(Long.toString(s_1),
+                Long.toString(studyId), vs1.getName(), "var_name=Joe;AGE=25", sessionIdUser);
+        assertEquals(1, annotQueryResult.getNumResults());
+
+        annotQueryResult = catalogManager.getSampleManager().searchAnnotationSet(Long.toString(s_1),
+                Long.toString(studyId), vs1.getName(), "var_name=Joe;AGE=23", sessionIdUser);
+        assertEquals(0, annotQueryResult.getNumResults());
+    }
+
+    @Test
     public void testAnnotateMulti() throws CatalogException {
         long studyId = catalogManager.getStudyId("user@1000G:phase1");
         Study study = catalogManager.getStudy(studyId, sessionIdUser).first();
@@ -1464,7 +1496,7 @@ public class CatalogManagerTest extends GenericTest {
                 sessionIdUser).first().getId();
 
         Sample sample = catalogManager.getSampleManager()
-                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId), null, sessionIdUser)
+                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), individualId), null, sessionIdUser)
                 .first();
 
         assertEquals(individualId, sample.getIndividual().getId());
@@ -1497,7 +1529,7 @@ public class CatalogManagerTest extends GenericTest {
 
         thrown.expect(CatalogDBException.class);
         catalogManager.getSampleManager()
-                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), 4), null, sessionIdUser);
+                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), 4), null, sessionIdUser);
     }
 
     @Test
@@ -1506,10 +1538,10 @@ public class CatalogManagerTest extends GenericTest {
                 sessionIdUser).first().getId();
 
         catalogManager.getSampleManager()
-                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1), null, sessionIdUser);
+                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), -1), null, sessionIdUser);
 
         Sample sample = catalogManager.getSampleManager()
-                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -2), null, sessionIdUser).first();
+                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), -2), null, sessionIdUser).first();
         assertEquals(-1, sample.getIndividual().getId());
     }
 

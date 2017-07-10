@@ -32,6 +32,7 @@ import java.util.*;
 import java.util.concurrent.TimeoutException;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isNegated;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.removeNegation;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
@@ -260,7 +261,7 @@ public class StudyConfigurationManager implements AutoCloseable {
                 if (skipNegated) {
                     return null;
                 } else {
-                    studyName = studyName.substring(1);
+                    studyName = removeNegation(studyName);
                 }
             }
             if (StringUtils.isNumeric(studyName)) {
@@ -344,7 +345,7 @@ public class StudyConfigurationManager implements AutoCloseable {
                 if (skipNegated) {
                     return null;
                 } else {
-                    file = file.substring(1);
+                    file = removeNegation(file);
                 }
             }
             if (file.contains(":")) {

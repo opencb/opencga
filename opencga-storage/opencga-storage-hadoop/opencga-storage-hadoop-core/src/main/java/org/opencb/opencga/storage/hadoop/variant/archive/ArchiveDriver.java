@@ -39,9 +39,11 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.avro.VariantFileMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantToVcfSliceMapper;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceCombiner;
@@ -61,16 +63,9 @@ import java.util.zip.GZIPInputStream;
  */
 public class ArchiveDriver extends Configured implements Tool {
 
-    public static final String CONFIG_ARCHIVE_FILE_ID             = "opencga.archive.file.id";
     public static final String CONFIG_ARCHIVE_INPUT_FILE_VCF      = "opencga.archive.input.file.vcf";
     public static final String CONFIG_ARCHIVE_INPUT_FILE_VCF_META = "opencga.archive.input.file.vcf.meta";
     public static final String CONFIG_ARCHIVE_TABLE_NAME          = "opencga.archive.table.name";
-    public static final String CONFIG_ARCHIVE_TABLE_COMPRESSION   = "opencga.archive.table.compression";
-    public static final String CONFIG_ARCHIVE_TABLE_PRESPLIT_SIZE = "opencga.archive.table.presplit.size";
-    public static final String CONFIG_ARCHIVE_CHUNK_SIZE          = "opencga.archive.chunk_size";
-    public static final String CONFIG_ARCHIVE_ROW_KEY_SEPARATOR   = "opencga.archive.row_key_sep";
-
-    public static final int DEFAULT_CHUNK_SIZE = 1000;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveDriver.class);
 
@@ -88,15 +83,15 @@ public class ArchiveDriver extends Configured implements Tool {
         URI inputFile = URI.create(conf.get(CONFIG_ARCHIVE_INPUT_FILE_VCF));
         URI inputMetaFile = URI.create(conf.get(CONFIG_ARCHIVE_INPUT_FILE_VCF_META));
         String tableName = conf.get(CONFIG_ARCHIVE_TABLE_NAME);
-        int studyId = conf.getInt(GenomeHelper.CONFIG_STUDY_ID, -1);
-        int fileId = conf.getInt(CONFIG_ARCHIVE_FILE_ID, -1);
+        int studyId = conf.getInt(VariantStorageEngine.Options.STUDY_ID.key(), -1);
+        int fileId = conf.getInt(VariantStorageEngine.Options.FILE_ID.key(), -1);
         GenomeHelper genomeHelper = new GenomeHelper(conf);
 
 /*  SERVER details  */
         if (ArchiveTableHelper.createArchiveTableIfNeeded(genomeHelper, tableName)) {
-            LOGGER.info(String.format("Create table '%s' in hbase!", tableName));
+            LOGGER.info("Create table '{}' in hbase!", tableName);
         } else {
-            LOGGER.info(String.format("Table '%s' exists in hbase!", tableName));
+            LOGGER.info("Table '{}' exists in hbase!", tableName);
         }
 
         // add metadata config as string
@@ -126,7 +121,7 @@ public class ArchiveDriver extends Configured implements Tool {
 
 
         TableMapReduceUtil.initTableReducerJob(tableName, VcfSliceReducer.class, job, null, null, null, null,
-                conf.getBoolean(GenomeHelper.CONFIG_HBASE_ADD_DEPENDENCY_JARS, true));
+                conf.getBoolean(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, true));
         job.setMapOutputValueClass(VcfSliceWritable.class);
 
         Thread hook = new Thread(() -> {
@@ -224,15 +219,17 @@ public class ArchiveDriver extends Configured implements Tool {
             return -1;
         }
 
+        // Get first other args to avoid overwrite the fixed position args.
+        for (int i = fixedSizeArgs; i < toolArgs.length; i = i + 2) {
+            conf.set(toolArgs[i], toolArgs[i + 1]);
+        }
+
         conf.set(CONFIG_ARCHIVE_INPUT_FILE_VCF, toolArgs[0]);
         conf.set(CONFIG_ARCHIVE_INPUT_FILE_VCF_META, toolArgs[1]);
         conf = HBaseManager.addHBaseSettings(conf, toolArgs[2]);
         conf.set(CONFIG_ARCHIVE_TABLE_NAME, toolArgs[3]);
-        conf.set(GenomeHelper.CONFIG_STUDY_ID, toolArgs[4]);
-        conf.set(CONFIG_ARCHIVE_FILE_ID, toolArgs[5]);
-        for (int i = fixedSizeArgs; i < toolArgs.length; i = i + 2) {
-            conf.set(toolArgs[i], toolArgs[i + 1]);
-        }
+        conf.set(VariantStorageEngine.Options.STUDY_ID.key(), toolArgs[4]);
+        conf.set(VariantStorageEngine.Options.FILE_ID.key(), toolArgs[5]);
         //set the configuration back, so that Tool can configure itself
         driver.setConf(conf);
 

@@ -20,7 +20,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index;
 
 import com.google.common.collect.BiMap;
-import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
@@ -61,12 +60,11 @@ public class VariantTableDeletionMapper extends AbstractArchiveTableMapper {
     }
 
     @Override
-    protected void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException {
+    protected void map(VariantMapReduceContext ctx) throws IOException, InterruptedException {
         List<Variant> updateLst = new ArrayList<>();
         List<Variant> removeLst = new ArrayList<>();
         BiMap<Integer, String> sampleIds = getStudyConfiguration().getSampleIds().inverse();
-        List<Cell> cells = GenomeHelper.getVariantColumns(ctx.getValue().rawCells());
-        List<Variant> analysisVar = parseCurrentVariantsRegion(cells, ctx.getChromosome());
+        List<Variant> analysisVar = parseCurrentVariantsRegion(ctx);
         ctx.getContext().getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ANALYSIS").increment(analysisVar.size());
         logger.info("Loaded {} variants ... ", analysisVar.size());
         if (!analysisVar.isEmpty()) {

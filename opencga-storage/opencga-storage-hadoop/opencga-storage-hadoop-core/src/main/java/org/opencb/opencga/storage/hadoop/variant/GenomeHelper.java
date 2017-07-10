@@ -25,7 +25,7 @@ import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,12 +39,6 @@ import java.util.stream.Collectors;
  */
 public class GenomeHelper {
     private final Logger logger = LoggerFactory.getLogger(GenomeHelper.class);
-
-    public static final String CONFIG_STUDY_ID = "opencga.study.id";
-
-    //upload HBase jars and jars for any of the configured job classes via the distributed cache (tmpjars).
-    public static final String CONFIG_HBASE_ADD_DEPENDENCY_JARS = "opencga.hbase.addDependencyJars";
-    public static final String CONFIG_HBASE_COLUMN_FAMILY = "opencga.hbase.column_family";
 
     public static final String METADATA_PREFIX = "_";
     public static final String DEFAULT_METADATA_ROW_KEY = "_METADATA";
@@ -70,15 +64,15 @@ public class GenomeHelper {
 
     public GenomeHelper(Configuration conf) {
         this.conf = conf;
-        this.separator = conf.get(ArchiveDriver.CONFIG_ARCHIVE_ROW_KEY_SEPARATOR, DEFAULT_ROWKEY_SEPARATOR).charAt(0);
+        this.separator = conf.get(HadoopVariantStorageEngine.ARCHIVE_ROW_KEY_SEPARATOR, DEFAULT_ROWKEY_SEPARATOR).charAt(0);
         // TODO: Check if columnFamily is upper case
         // Phoenix local indexes fail if the default_column_family is lower case
         // TODO: Report this bug to phoenix JIRA
-        this.columnFamily = Bytes.toBytes(conf.get(CONFIG_HBASE_COLUMN_FAMILY, DEFAULT_COLUMN_FAMILY));
+        this.columnFamily = Bytes.toBytes(conf.get(HadoopVariantStorageEngine.HBASE_COLUMN_FAMILY, DEFAULT_COLUMN_FAMILY));
         this.metaRowKeyString = DEFAULT_METADATA_ROW_KEY;
         this.metaRowKey = Bytes.toBytes(metaRowKeyString);
-        this.chunkSize = conf.getInt(ArchiveDriver.CONFIG_ARCHIVE_CHUNK_SIZE, ArchiveDriver.DEFAULT_CHUNK_SIZE);
-        this.studyId = conf.getInt(CONFIG_STUDY_ID, -1);
+        this.chunkSize = conf.getInt(HadoopVariantStorageEngine.ARCHIVE_CHUNK_SIZE, HadoopVariantStorageEngine.DEFAULT_ARCHIVE_CHUNK_SIZE);
+        this.studyId = conf.getInt(VariantStorageEngine.Options.STUDY_ID.key(), -1);
     }
 
     public Configuration getConf() {
@@ -86,11 +80,11 @@ public class GenomeHelper {
     }
 
     public static void setChunkSize(Configuration conf, Integer size) {
-        conf.setInt(ArchiveDriver.CONFIG_ARCHIVE_CHUNK_SIZE, size);
+        conf.setInt(HadoopVariantStorageEngine.ARCHIVE_CHUNK_SIZE, size);
     }
 
     public static void setStudyId(Configuration conf, Integer studyId) {
-        conf.setInt(CONFIG_STUDY_ID, studyId);
+        conf.setInt(VariantStorageEngine.Options.STUDY_ID.key(), studyId);
     }
 
     public int getStudyId() {

@@ -80,6 +80,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     private Logger logger = LoggerFactory.getLogger(VariantStorageEngine.class);
     private CellBaseUtils cellBaseUtils;
 
+    public enum MergeMode {
+        BASIC,
+        ADVANCED;
+
+        public static MergeMode from(ObjectMap options) {
+            String mergeModeStr = options.getString(Options.MERGE_MODE.key(), Options.MERGE_MODE.defaultValue().toString());
+            return MergeMode.valueOf(mergeModeStr.toUpperCase());
+        }
+    }
 
     public enum Options {
         INCLUDE_STATS("include.stats", true),              //Include existing stats on the original file.
@@ -116,6 +125,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         TRANSFORM_FORMAT("transform.format", "avro"),
         LOAD_BATCH_SIZE("load.batch.size", 100),
         LOAD_THREADS("load.threads", 6),
+
+        MERGE_MODE("merge.mode", MergeMode.ADVANCED),
 
         CALCULATE_STATS("calculateStats", false),          //Calculate stats on the postLoad step
         OVERWRITE_STATS("overwriteStats", false),          //Overwrite stats already present

@@ -387,9 +387,9 @@ public class OpenCGAWSServer {
     }
 
 
-    protected void addParamIfNotNull(Map<String, String> params, String key, String value) {
+    protected void addParamIfNotNull(Map<String, String> params, String key, Object value) {
         if (key != null && value != null) {
-            params.put(key, value);
+            params.put(key, value.toString());
         }
     }
 

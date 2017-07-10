@@ -127,7 +127,7 @@ public class FamilyCommandOptions {
         @Parameter(names = {"--parental-consanguinity"}, description = "Parental consanguinity", arity = 1)
         public Boolean parentalConsanguinity;
 
-        @Parameter(names = {"--ontologies"}, description = "Ontology terms", arity = 1)
+        @Parameter(names = {"--ontologies"}, description = "Comma separated list of ontology ids or names", arity = 1)
         public String ontologies;
         
         @Parameter(names = {"--variable-set"}, description = "Variable set id or name", arity = 1)
@@ -136,7 +136,7 @@ public class FamilyCommandOptions {
         @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name", arity = 1)
         public String annotationSetName;
 
-        @Parameter(names = {"--annotation"}, description = "Annotation", arity = 1)
+        @Parameter(names = {"--annotation"}, description = "Annotation, e.g: key1=value(,key2=value)", arity = 1)
         public String annotation;
 
     }
