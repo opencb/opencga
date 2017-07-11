@@ -32,6 +32,10 @@ public class VariantSearchUtils {
                     // INCLUDED_FORMATS
             )));
 
+    private static final List<VariantField> UNSUPPORTED_VARIANT_FIELDS =
+            Arrays.asList(VariantField.STUDIES_FILES,
+                    VariantField.STUDIES_SAMPLES_DATA);
+
     public static boolean isQueryCovered(Query query) {
         for (VariantQueryParam nonCoveredParam : UNSUPPORTED_QUERY_PARAMS) {
             if (isValidParam(query, nonCoveredParam)) {
@@ -69,8 +73,12 @@ public class VariantSearchUtils {
 
     public static boolean isIncludeCovered(QueryOptions options) {
         Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
-        return options.getBoolean(VariantSearchManager.SUMMARY)
-                || (!returnedFields.contains(VariantField.STUDIES_FILES) && !returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA));
+        for (VariantField unsupportedVariantField : UNSUPPORTED_VARIANT_FIELDS) {
+            if (returnedFields.contains(unsupportedVariantField)) {
+                return false;
+            }
+        }
+        return true;
     }
 
 }

@@ -17,8 +17,8 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.solr.SolrExternalResource;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
@@ -147,7 +147,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
     public void testGetSummary() throws Exception {
 
         VariantQueryResult<Variant> result = variantStorageEngine.get(new Query(),
-                new QueryOptions(VariantSearchManager.SUMMARY, true)
+                new QueryOptions(VariantField.SUMMARY, true)
                         .append(QueryOptions.LIMIT, 2000));
         assertEquals(allVariants.getResult().size(), result.getResult().size());
 
@@ -180,7 +180,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 
     @Test
     public void testSkipLimit() throws Exception {
-        skipLimit(new Query(), new QueryOptions(VariantSearchManager.SUMMARY, true), 100, false);
+        skipLimit(new Query(), new QueryOptions(VariantField.SUMMARY, true), 100, false);
     }
 
     @Test
