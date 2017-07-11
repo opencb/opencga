@@ -29,9 +29,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-/**
- * Created by wasim on 14/11/16.
- */
+
 public class VariantSearchIterator implements Iterator<VariantSearchModel>, AutoCloseable {
 
     private SolrClient solrClient;
@@ -46,7 +44,6 @@ public class VariantSearchIterator implements Iterator<VariantSearchModel>, Auto
     private int remaining;
 
     private static final int BATCH_SIZE = 100;
-    private static final int DEFAULT_LIMIT = 100000;
 
     @Deprecated
     public VariantSearchIterator(Iterator<VariantSearchModel> solrIterator) {
@@ -63,7 +60,7 @@ public class VariantSearchIterator implements Iterator<VariantSearchModel>, Auto
 
         // This is the limit of the user, or the default limit if it is not passed
         this.remaining = (solrQuery.getRows() == null || solrQuery.getRows() < 0)
-                ? DEFAULT_LIMIT
+                ? Integer.MAX_VALUE
                 : solrQuery.getRows();
 
         // We the set cursor at the beginning
@@ -77,6 +74,8 @@ public class VariantSearchIterator implements Iterator<VariantSearchModel>, Auto
         if (solrQuery.getStart() != null && solrQuery.getStart() >= 0) {
             // Do not change the order or position of the next two lines of code
             Integer skip = solrQuery.getStart();
+            // We need to increment remaining with skip to allow the decrement in the hasNext method
+            this.remaining = (this.remaining < Integer.MAX_VALUE - skip) ? this.remaining + skip : Integer.MAX_VALUE;
             solrQuery.setStart(null);
             for (int i = 0; i < skip && hasNext(); i++) {
                 next();
@@ -105,10 +104,14 @@ public class VariantSearchIterator implements Iterator<VariantSearchModel>, Auto
 
                 // Execute the query and fetch setRows records, we will iterate over this list
                 solrResponse = solrClient.query(collection, solrQuery);
-                if (solrResponse.getResults().getNumFound() < remaining) {
-                    remaining = (int) solrResponse.getResults().getNumFound();
+
+                // When the number of returned elements is less than setRows it means there are no enough elements in the server
+                if (solrResponse.getResults().size() < BATCH_SIZE) {
+                    remaining = 0;
+                } else {
+                    // We decrement the number of elements found
+                    remaining -= solrResponse.getResults().size();
                 }
-                remaining -= solrResponse.getResults().size();
                 nextCursorMark = solrResponse.getNextCursorMark();
                 solrIterator = solrResponse.getBeans(VariantSearchModel.class).iterator();
                 return solrIterator.hasNext();
@@ -120,7 +123,7 @@ public class VariantSearchIterator implements Iterator<VariantSearchModel>, Auto
 
     @Override
     public VariantSearchModel next() {
-        // sanity check
+        // Sanity check
         if (hasNext()) {
             return solrIterator.next();
         } else {
@@ -134,7 +137,7 @@ public class VariantSearchIterator implements Iterator<VariantSearchModel>, Auto
     }
 
     public long getNumFound() {
-        // sanity check
+        // Sanity check
         if (solrResponse == null) {
             hasNext();
         }
