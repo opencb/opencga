@@ -122,15 +122,22 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         if (permission.equals(StudyAclEntry.StudyPermissions.VIEW_STUDY)) {
-            final Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId);
-            final QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
-                    FILTER_ROUTE_STUDIES + StudyDBAdaptor.QueryParams.ID.key());
-            for (Study study : studyDBAdaptor.get(query, queryOptions).getResult()) {
-                try {
-                    checkStudyPermission(study.getId(), userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
-                    return; //Return if can read some study
-                } catch (CatalogException e) {
-                    e.printStackTrace();
+            if (userId.equals(ADMIN)) {
+                if (getSpecialPermissions(ADMIN).getPermissions().contains(permission)) {
+                    return;
+                }
+            } else {
+                final Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId);
+                final QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FILTER_ROUTE_STUDIES
+                        + StudyDBAdaptor.QueryParams.ID.key());
+
+                for (Study study : studyDBAdaptor.get(query, queryOptions).getResult()) {
+                    try {
+                        checkStudyPermission(study.getId(), userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
+                        return; //Return if can read some study
+                    } catch (CatalogException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
@@ -146,9 +153,16 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void checkStudyPermission(long studyId, String userId, StudyAclEntry.StudyPermissions permission, String message)
             throws CatalogException {
-        if (!studyDBAdaptor.hasStudyPermission(studyId, userId, permission)) {
-            throw CatalogAuthorizationException.deny(userId, message, "Study", studyId, null);
+        if (userId.equals(ADMIN)) {
+            if (getSpecialPermissions(ADMIN).getPermissions().contains(permission)) {
+                return;
+            }
+        } else {
+            if (studyDBAdaptor.hasStudyPermission(studyId, userId, permission)) {
+                return;
+            }
         }
+        throw CatalogAuthorizationException.deny(userId, message, "Study", studyId, null);
     }
 
     @Override
@@ -187,9 +201,24 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }
 
-        if (fileDBAdaptor.count(query, userId, studyPermission).first() == 0) {
-            throw CatalogAuthorizationException.deny(userId, permission.toString(), "File", fileId, null);
+        if (checkUserPermission(userId, query, studyPermission, fileDBAdaptor)) {
+            return;
         }
+        throw CatalogAuthorizationException.deny(userId, permission.toString(), "File", fileId, null);
+    }
+
+    private boolean checkUserPermission(String userId, Query query, StudyAclEntry.StudyPermissions studyPermission, DBAdaptor dbAdaptor)
+            throws CatalogDBException {
+        if (userId.equals(ADMIN)) {
+            if (getSpecialPermissions(ADMIN).getPermissions().contains(studyPermission)) {
+                return true;
+            }
+        } else {
+            if ((Long) dbAdaptor.count(query, userId, studyPermission).first() == 1) {
+                return true;
+            }
+        }
+        return false;
     }
 
 //    private FileAclEntry resolveFilePermissions(long studyId, File file, String userId) throws CatalogException {
@@ -301,9 +330,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }
 
-        if (sampleDBAdaptor.count(query, userId, studyPermission).first() == 0) {
-            throw CatalogAuthorizationException.deny(userId, permission.toString(), "Sample", sampleId, null);
+        if (checkUserPermission(userId, query, studyPermission, sampleDBAdaptor)) {
+            return;
         }
+        throw CatalogAuthorizationException.deny(userId, permission.toString(), "Sample", sampleId, null);
     }
 
 //    /**
@@ -426,9 +456,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }
 
-        if (individualDBAdaptor.count(query, userId, studyPermission).first() == 0) {
-            throw CatalogAuthorizationException.deny(userId, permission.toString(), "Individual", individualId, null);
+        if (checkUserPermission(userId, query, studyPermission, individualDBAdaptor)) {
+            return;
         }
+        throw CatalogAuthorizationException.deny(userId, permission.toString(), "Individual", individualId, null);
     }
 
 //    private IndividualAclEntry resolveIndividualPermissions(long studyId, Individual individual, String userId) throws CatalogException {
@@ -531,9 +562,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }
 
-        if (jobDBAdaptor.count(query, userId, studyPermission).first() == 0) {
-            throw CatalogAuthorizationException.deny(userId, permission.toString(), "Job", jobId, null);
+        if (checkUserPermission(userId, query, studyPermission, jobDBAdaptor)) {
+            return;
         }
+        throw CatalogAuthorizationException.deny(userId, permission.toString(), "Job", jobId, null);
     }
 
 //    private JobAclEntry resolveJobPermissions(long studyId, Job job, String userId) throws CatalogException {
@@ -645,9 +677,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }
 
-        if (cohortDBAdaptor.count(query, userId, studyPermission).first() == 0) {
-            throw CatalogAuthorizationException.deny(userId, permission.toString(), "Cohort", cohortId, null);
+        if (checkUserPermission(userId, query, studyPermission, cohortDBAdaptor)) {
+            return;
         }
+        throw CatalogAuthorizationException.deny(userId, permission.toString(), "Cohort", cohortId, null);
+
     }
 
 //    private CohortAclEntry resolveCohortPermissions(long studyId, Cohort cohort, String userId) throws CatalogException {
@@ -828,9 +862,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }
 
-        if (panelDBAdaptor.count(query, userId, studyPermission).first() == 0) {
-            throw CatalogAuthorizationException.deny(userId, permission.toString(), "Panel", panelId, null);
+        if (checkUserPermission(userId, query, studyPermission, panelDBAdaptor)) {
+            return;
         }
+        throw CatalogAuthorizationException.deny(userId, permission.toString(), "Panel", panelId, null);
     }
 
     @Override
@@ -866,9 +901,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }
 
-        if (familyDBAdaptor.count(query, userId, studyPermission).first() == 0) {
-            throw CatalogAuthorizationException.deny(userId, permission.toString(), "Family", familyId, null);
+        if (checkUserPermission(userId, query, studyPermission, familyDBAdaptor)) {
+            return;
         }
+        throw CatalogAuthorizationException.deny(userId, permission.toString(), "Family", familyId, null);
+
     }
 
     @Override
@@ -895,9 +932,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }
 
-        if (clinicalAnalysisDBAdaptor.count(query, userId, studyPermission).first() == 0) {
-            throw CatalogAuthorizationException.deny(userId, permission.toString(), "ClinicalAnalysis", analysisId, null);
+        if (checkUserPermission(userId, query, studyPermission, clinicalAnalysisDBAdaptor)) {
+            return;
         }
+        throw CatalogAuthorizationException.deny(userId, permission.toString(), "ClinicalAnalysis", analysisId, null);
     }
 
 //    @Override
@@ -1442,10 +1480,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public QueryResult<StudyAclEntry> getAllStudyAcls(String userId, long studyId) throws CatalogException {
         studyDBAdaptor.checkId(studyId);
-        if (!studyDBAdaptor.hasStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY)) {
-            throw CatalogAuthorizationException.deny(userId, "see acls", "study", studyId, "");
-        }
-
+        checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
         return aclDBAdaptor.get(studyId, null, MongoDBAdaptorFactory.STUDY_COLLECTION);
 
 //        Query query = new Query(StudyDBAdaptor.QueryParams.ID.key(), studyId);
@@ -1567,7 +1602,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public QueryResult<FileAclEntry> getAllFileAcls(String userId, long fileId) throws CatalogException {
         fileDBAdaptor.checkId(fileId);
-        checkFilePermission(fileDBAdaptor.getStudyIdByFileId(fileId), fileId, userId, FileAclEntry.FilePermissions.VIEW);
+        checkFilePermission(fileDBAdaptor.getStudyIdByFileId(fileId), fileId, userId, FileAclEntry.FilePermissions.SHARE);
         // Check if the userId has proper permissions for all the samples.
 //        checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
 
