@@ -586,24 +586,32 @@ public class CatalogManager implements AutoCloseable {
     public List<QueryResult<FamilyAclEntry>> getAllFamilyAcls(String familyIdsStr, @Nullable String studyStr, String sessionId)
             throws CatalogException {
         AbstractManager.MyResourceIds resources = familyManager.getIds(familyIdsStr, studyStr, sessionId);
+        List<QueryResult<FamilyAclEntry>> familyResults = new ArrayList<>(resources.getResourceIds().size());
         for (Long familyId : resources.getResourceIds()) {
-            authorizationManager.checkFamilyPermission(resources.getStudyId(), familyId, resources.getUser(),
-                    FamilyAclEntry.FamilyPermissions.VIEW);
+            familyResults.add(authorizationManager.getAllFamilyAcls(resources.getUser(), familyId));
         }
-        return authorizationManager.getAcls(resources.getResourceIds(), null, MongoDBAdaptorFactory.FAMILY_COLLECTION);
+        return familyResults;
+//        return authorizationManager.getAllFamilyAcls(resources.getUser(), )
+//        for (Long familyId : resources.getResourceIds()) {
+//            authorizationManager.checkFamilyPermission(resources.getStudyId(), familyId, resources.getUser(),
+//                    FamilyAclEntry.FamilyPermissions.VIEW);
+//        }
+//        return authorizationManager.getAcls(resources.getResourceIds(), null, MongoDBAdaptorFactory.FAMILY_COLLECTION);
     }
 
     public QueryResult<FamilyAclEntry> getFamilyAcl(String familyIdStr, @Nullable String studyStr, String member, String sessionId)
             throws CatalogException {
         AbstractManager.MyResourceId resource = familyManager.getId(familyIdStr, studyStr, sessionId);
-        authorizationManager.checkFamilyPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
-                FamilyAclEntry.FamilyPermissions.VIEW);
-
-        List<String> memberList = null;
-        if (StringUtils.isNotEmpty(member)) {
-            memberList = Arrays.asList(StringUtils.split(member, ","));
-        }
-        return authorizationManager.getAcl(resource.getResourceId(), memberList, MongoDBAdaptorFactory.FAMILY_COLLECTION);
+        return authorizationManager.getFamilyAcl(resource.getUser(), resource.getResourceId(), member);
+//        authorizationManager.checkFamilyPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
+//                FamilyAclEntry.FamilyPermissions.SHARE);
+//
+//        List<String> memberList = null;
+//        if (StringUtils.isNotEmpty(member)) {
+//            memberList = Arrays.asList(StringUtils.split(member, ","));
+//        }
+//        return authorizationManager.getFamilyAcl()
+//        return authorizationManager.getAcl(resource.getResourceId(), memberList, MongoDBAdaptorFactory.FAMILY_COLLECTION);
     }
 
     /**

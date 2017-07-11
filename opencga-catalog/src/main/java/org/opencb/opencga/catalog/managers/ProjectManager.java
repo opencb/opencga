@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import org.apache.commons.collections.map.LinkedMap;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -38,11 +37,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IProjectManager;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 /**
@@ -242,12 +242,8 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     public QueryResult<Project> get(Long projectId, QueryOptions options, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getId(sessionId);
 
-        authorizationManager.checkProjectPermission(projectId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
-        QueryResult<Project> projectResult = projectDBAdaptor.get(projectId, options);
-        if (!projectResult.getResult().isEmpty()) {
-            authorizationManager.filterStudies(userId, projectResult.getResult().get(0).getStudies());
-        }
-        return projectResult;
+        Query query = new Query(ProjectDBAdaptor.QueryParams.ID.key(), projectId);
+        return projectDBAdaptor.get(query, options, userId);
     }
 
     @Override
@@ -257,15 +253,10 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         String userId = catalogManager.getUserManager().getId(sessionId);
 
         String ownerId = query.getString("ownerId", query.getString("userId", userId));
-
         ParamUtils.checkParameter(ownerId, "ownerId");
 
-        QueryResult<Project> allProjects = projectDBAdaptor.get(ownerId, options);
-
-        List<Project> projects = allProjects.getResult();
-        authorizationManager.filterProjects(userId, projects);
-        allProjects.setResult(projects);
-        allProjects.setNumResults(projects.size());
+        query.append(ProjectDBAdaptor.QueryParams.USER_ID.key(), ownerId);
+        QueryResult<Project> allProjects = projectDBAdaptor.get(query, options, userId);
 
         return allProjects;
     }
@@ -539,70 +530,87 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     @Override
     public QueryResult<Project> getSharedProjects(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException {
         queryOptions = ParamUtils.defaultObject(queryOptions, QueryOptions::new);
-        long startTime = System.currentTimeMillis();
-
-        String userSessionId = catalogManager.getUserManager().getId(sessionId);
-        if (!userSessionId.equals(userId)) {
-            throw new CatalogException("Invalid session id: The user corresponding to the session provided is not " + userId);
+        String user = catalogManager.getUserManager().getId(sessionId);
+        if (!user.equals(userId)) {
+            throw new CatalogException("User " + user + " cannot see shared projects from other users");
         }
 
-        // Search all studies shared with the user
-        // 1. Look for userId in a group in all the studies.
-        Query query = new Query(StudyDBAdaptor.QueryParams.GROUP_USER_IDS.key(), userId);
-        QueryResult<Study> studyGroupQR = catalogManager.getStudyManager().get(query, queryOptions, sessionId);
-        // The studies obtained are already filtered in studyManager, so if we get them is because those have been shared with the user
-
-        // 2. Look for userId in an ACL in all the studies.
-        query = new Query(StudyDBAdaptor.QueryParams.ACL_MEMBER.key(), userId);
-        QueryResult<Study> studyACLQR = catalogManager.getStudyManager().get(query, queryOptions, sessionId);
-
-        List<Study> studyList = new ArrayList<>();
-        studyList.addAll(studyGroupQR.getResult());
-        studyList.addAll(studyACLQR.getResult());
-
-        if (studyList.size() == 0) {
-            // No studies are shared with userId
-            return new QueryResult<>(userId, (int) (System.currentTimeMillis() - startTime), 0, 0, "", "", Collections.emptyList());
-        }
-
-        // Obtain the projects corresponding to each study
-        List<Long> projectIds = new LinkedList<>();
-        Map<Long, List<Study>> projectStudyMap = new LinkedMap();
-        for (Study study : studyList) {
-            Long projectId = catalogManager.getStudyManager().getProjectId(study.getId());
-            if (!projectStudyMap.containsKey(projectId)) {
-                projectStudyMap.put(projectId, new LinkedList<>());
-                projectIds.add(projectId);
-            }
-            projectStudyMap.get(projectId).add(study);
-        }
-
-        // Obtain the project info of all the project ids needed
-        query = new Query(ProjectDBAdaptor.QueryParams.ID.key(), projectIds);
-        QueryOptions options = new QueryOptions(queryOptions); // Copy of queryOptions
-        if (options.containsKey(QueryOptions.EXCLUDE)) {
-            List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
-            excludeList.add("projects.studies");
-            options.put(QueryOptions.EXCLUDE, excludeList);
-        } else {
-            options.add(QueryOptions.EXCLUDE, "projects.studies");
-        }
-
-        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options);
-        for (Project project : projectQueryResult.getResult()) {
-            // Update with the studies shared with the user
-            project.setStudies(projectStudyMap.get(project.getId()));
-
+        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + userId);
+        QueryResult<Project> allProjects = projectDBAdaptor.get(query, queryOptions, userId);
+        for (Project project : allProjects.getResult()) {
             // Add user info to the alias
             String ownerId = projectDBAdaptor.getOwnerId(project.getId());
             project.setAlias(ownerId + "@" + project.getAlias());
         }
 
-        authorizationManager.filterProjects(userSessionId, projectQueryResult.getResult());
+        return allProjects;
 
-        projectQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
-        projectQueryResult.setId(userId);
 
-        return projectQueryResult;
+//        queryOptions = ParamUtils.defaultObject(queryOptions, QueryOptions::new);
+//        long startTime = System.currentTimeMillis();
+//
+//        String userSessionId = catalogManager.getUserManager().getId(sessionId);
+//        if (!userSessionId.equals(userId)) {
+//            throw new CatalogException("Invalid session id: The user corresponding to the session provided is not " + userId);
+//        }
+//
+//        // Search all studies shared with the user
+//        // 1. Look for userId in a group in all the studies.
+//        Query query = new Query(StudyDBAdaptor.QueryParams.GROUP_USER_IDS.key(), userId);
+//        QueryResult<Study> studyGroupQR = catalogManager.getStudyManager().get(query, queryOptions, sessionId);
+//        // The studies obtained are already filtered in studyManager, so if we get them is because those have been shared with the user
+//
+//        // 2. Look for userId in an ACL in all the studies.
+//        query = new Query(StudyDBAdaptor.QueryParams.ACL_MEMBER.key(), userId);
+//        QueryResult<Study> studyACLQR = catalogManager.getStudyManager().get(query, queryOptions, sessionId);
+//
+//        List<Study> studyList = new ArrayList<>();
+//        studyList.addAll(studyGroupQR.getResult());
+//        studyList.addAll(studyACLQR.getResult());
+//
+//        if (studyList.size() == 0) {
+//            // No studies are shared with userId
+//            return new QueryResult<>(userId, (int) (System.currentTimeMillis() - startTime), 0, 0, "", "", Collections.emptyList());
+//        }
+//
+//        // Obtain the projects corresponding to each study
+//        List<Long> projectIds = new LinkedList<>();
+//        Map<Long, List<Study>> projectStudyMap = new LinkedMap();
+//        for (Study study : studyList) {
+//            Long projectId = catalogManager.getStudyManager().getProjectId(study.getId());
+//            if (!projectStudyMap.containsKey(projectId)) {
+//                projectStudyMap.put(projectId, new LinkedList<>());
+//                projectIds.add(projectId);
+//            }
+//            projectStudyMap.get(projectId).add(study);
+//        }
+//
+//        // Obtain the project info of all the project ids needed
+//        query = new Query(ProjectDBAdaptor.QueryParams.ID.key(), projectIds);
+//        QueryOptions options = new QueryOptions(queryOptions); // Copy of queryOptions
+//        if (options.containsKey(QueryOptions.EXCLUDE)) {
+//            List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
+//            excludeList.add("projects.studies");
+//            options.put(QueryOptions.EXCLUDE, excludeList);
+//        } else {
+//            options.add(QueryOptions.EXCLUDE, "projects.studies");
+//        }
+//
+//        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options);
+//        for (Project project : projectQueryResult.getResult()) {
+//            // Update with the studies shared with the user
+//            project.setStudies(projectStudyMap.get(project.getId()));
+//
+//            // Add user info to the alias
+//            String ownerId = projectDBAdaptor.getOwnerId(project.getId());
+//            project.setAlias(ownerId + "@" + project.getAlias());
+//        }
+//
+//        authorizationManager.filterProjects(userSessionId, projectQueryResult.getResult());
+//
+//        projectQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
+//        projectQueryResult.setId(userId);
+//
+//        return projectQueryResult;
     }
 }

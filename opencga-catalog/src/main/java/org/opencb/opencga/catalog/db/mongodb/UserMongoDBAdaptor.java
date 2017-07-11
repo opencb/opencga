@@ -338,6 +338,11 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
+    public QueryResult<User> get(Query query, QueryOptions options, String user) throws CatalogDBException {
+        throw new NotImplementedException("Get not implemented for user");
+    }
+
+    @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
             query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);

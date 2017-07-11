@@ -139,6 +139,11 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     }
 
     @Override
+    public QueryResult<Dataset> get(Query query, QueryOptions options, String user) throws CatalogDBException {
+        throw new NotImplementedException("Get not implemented for dataset");
+    }
+
+    @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson;
         if (!query.containsKey(QueryParams.STATUS_NAME.key())) {

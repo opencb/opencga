@@ -21,6 +21,7 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang3.NotImplementedException;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -161,6 +162,11 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         logger.debug("Panel get: query : {}, project: {}, dbTime: {}", bson, qOptions == null ? "" : qOptions.toJson(),
                 panelQueryResult.getDbTime());
         return endQuery("get Panel", startTime, panelQueryResult);
+    }
+
+    @Override
+    public QueryResult<DiseasePanel> get(Query query, QueryOptions options, String user) throws CatalogDBException {
+        throw new NotImplementedException("Get not implemented for panel");
     }
 
     @Override

@@ -117,105 +117,105 @@ public interface AuthorizationManager {
 
 //    <E extends Enum<E>> void checkPermissions(AbstractManager.MyResourceId resource, E permission, String entity) throws CatalogException;
 
-    /**
-     * Removes from the list the projects that the user can not read.
-     * From the remaining projects, filters the studies.
-     *
-     * @param userId   UserId.
-     * @param projects Project list.
-     * @throws CatalogException CatalogException
-     */
-    void filterProjects(String userId, List<Project> projects) throws CatalogException;
+//    /**
+//     * Removes from the list the projects that the user can not read.
+//     * From the remaining projects, filters the studies.
+//     *
+//     * @param userId   UserId.
+//     * @param projects Project list.
+//     * @throws CatalogException CatalogException
+//     */
+//    void filterProjects(String userId, List<Project> projects) throws CatalogException;
 
-    /**
-     * Removes from the list the studies that the user can not read.
-     * From the remaining studies, filters the files.
-     *
-     * @param userId  UserId.
-     * @param studies Studies list.
-     * @throws CatalogException CatalogException
-     */
-    void filterStudies(String userId, List<Study> studies) throws CatalogException;
+//    /**
+//     * Removes from the list the studies that the user can not read.
+//     * From the remaining studies, filters the files.
+//     *
+//     * @param userId  UserId.
+//     * @param studies Studies list.
+//     * @throws CatalogException CatalogException
+//     */
+//    void filterStudies(String userId, List<Study> studies) throws CatalogException;
+//
+//    /**
+//     * Removes from the list the files that the user can not read.
+//     *
+//     * @param userId  UserId
+//     * @param studyId StudyId
+//     * @param files   Files list
+//     * @throws CatalogException CatalogException
+//     */
+//    void filterFiles(String userId, long studyId, List<File> files) throws CatalogException;
 
-    /**
-     * Removes from the list the files that the user can not read.
-     *
-     * @param userId  UserId
-     * @param studyId StudyId
-     * @param files   Files list
-     * @throws CatalogException CatalogException
-     */
-    void filterFiles(String userId, long studyId, List<File> files) throws CatalogException;
+//    /**
+//     * Removes from the list the samples that the user can not read.
+//     *
+//     * @param userId  UserId
+//     * @param studyId StudyId
+//     * @param samples Samples
+//     * @throws CatalogException CatalogException
+//     */
+//    void filterSamples(String userId, long studyId, List<Sample> samples) throws CatalogException;
 
-    /**
-     * Removes from the list the samples that the user can not read.
-     *
-     * @param userId  UserId
-     * @param studyId StudyId
-     * @param samples Samples
-     * @throws CatalogException CatalogException
-     */
-    void filterSamples(String userId, long studyId, List<Sample> samples) throws CatalogException;
+//    /**
+//     * Removes from the list the families that the user can not read.
+//     *
+//     * @param userId  UserId
+//     * @param studyId StudyId
+//     * @param families Families
+//     * @throws CatalogException CatalogException
+//     */
+//    void filterFamilies(String userId, long studyId, List<Family> families) throws CatalogException;
 
-    /**
-     * Removes from the list the families that the user can not read.
-     *
-     * @param userId  UserId
-     * @param studyId StudyId
-     * @param families Families
-     * @throws CatalogException CatalogException
-     */
-    void filterFamilies(String userId, long studyId, List<Family> families) throws CatalogException;
+//    /**
+//     * Removes from the list the individuals that the user can not read.
+//     *
+//     * @param userId      UserId
+//     * @param studyId     StudyId
+//     * @param individuals Individuals
+//     * @throws CatalogException CatalogException
+//     */
+//    void filterIndividuals(String userId, long studyId, List<Individual> individuals) throws CatalogException;
 
-    /**
-     * Removes from the list the individuals that the user can not read.
-     *
-     * @param userId      UserId
-     * @param studyId     StudyId
-     * @param individuals Individuals
-     * @throws CatalogException CatalogException
-     */
-    void filterIndividuals(String userId, long studyId, List<Individual> individuals) throws CatalogException;
-
-    /**
-     * Removes from the list the cohorts that the user can not read.
-     *
-     * @param userId  UserId.
-     * @param studyId StudyId.
-     * @param cohorts Cohorts.
-     * @throws CatalogException CatalogException.
-     */
-    void filterCohorts(String userId, long studyId, List<Cohort> cohorts) throws CatalogException;
-
-    /**
-     * Removes from the list the jobs that the user can not read.
-     *
-     * @param userId  UserId.
-     * @param studyId StudyId.
-     * @param jobs    Jobs.
-     * @throws CatalogException CatalogException.
-     */
-    void filterJobs(String userId, long studyId, List<Job> jobs) throws CatalogException;
-
-    /**
-     * Removes from the list the datasets that the user can not read.
-     *
-     * @param userId   UserId.
-     * @param studyId  StudyId.
-     * @param datasets datasets.
-     * @throws CatalogException CatalogException.
-     */
-    void filterDatasets(String userId, long studyId, List<Dataset> datasets) throws CatalogException;
-
-    /**
-     * Removes from the list the clinical analysis that the user can not read.
-     *
-     * @param userId  UserId
-     * @param studyId StudyId
-     * @param clinicalAnalysis Clinical analysis list
-     * @throws CatalogException CatalogException
-     */
-    void filterClinicalAnalysis(String userId, long studyId, List<ClinicalAnalysis> clinicalAnalysis) throws CatalogException;
+//    /**
+//     * Removes from the list the cohorts that the user can not read.
+//     *
+//     * @param userId  UserId.
+//     * @param studyId StudyId.
+//     * @param cohorts Cohorts.
+//     * @throws CatalogException CatalogException.
+//     */
+//    void filterCohorts(String userId, long studyId, List<Cohort> cohorts) throws CatalogException;
+//
+//    /**
+//     * Removes from the list the jobs that the user can not read.
+//     *
+//     * @param userId  UserId.
+//     * @param studyId StudyId.
+//     * @param jobs    Jobs.
+//     * @throws CatalogException CatalogException.
+//     */
+//    void filterJobs(String userId, long studyId, List<Job> jobs) throws CatalogException;
+//
+//    /**
+//     * Removes from the list the datasets that the user can not read.
+//     *
+//     * @param userId   UserId.
+//     * @param studyId  StudyId.
+//     * @param datasets datasets.
+//     * @throws CatalogException CatalogException.
+//     */
+//    void filterDatasets(String userId, long studyId, List<Dataset> datasets) throws CatalogException;
+//
+//    /**
+//     * Removes from the list the clinical analysis that the user can not read.
+//     *
+//     * @param userId  UserId
+//     * @param studyId StudyId
+//     * @param clinicalAnalysis Clinical analysis list
+//     * @throws CatalogException CatalogException
+//     */
+//    void filterClinicalAnalysis(String userId, long studyId, List<ClinicalAnalysis> clinicalAnalysis) throws CatalogException;
 
     //------------------------- Study ACL -----------------------------
 
@@ -366,6 +366,27 @@ public interface AuthorizationManager {
      */
     QueryResult<JobAclEntry> getJobAcl(String userId, long jobId, String member) throws CatalogException;
 
+    /**
+     * Return all the ACLs defined for the family.
+     *
+     * @param userId user id asking for the ACLs.
+     * @param familyId family id.
+     * @return a list of FamilyAcls.
+     * @throws CatalogException when the user asking to retrieve all the ACLs defined in the family does not have proper permissions.
+     */
+    QueryResult<FamilyAclEntry> getAllFamilyAcls(String userId, long familyId) throws CatalogException;
+
+    /**
+     * Return the ACL defined for the member.
+     *
+     * @param userId user asking for the ACL.
+     * @param familyId  family id.
+     * @param member member whose permissions will be retrieved.
+     * @return the FamilyAcl for the member.
+     * @throws CatalogException if the user does not have proper permissions to see the member permissions.
+     */
+    QueryResult<FamilyAclEntry> getFamilyAcl(String userId, long familyId, String member) throws CatalogException;
+
     //------------------------- End of job ACL ----------------------
 
     List<QueryResult<StudyAclEntry>> setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
@@ -377,9 +398,7 @@ public interface AuthorizationManager {
     List<QueryResult<StudyAclEntry>> removeStudyAcls(List<Long> studyIds, List<String> members, @Nullable List<String> permissions)
             throws CatalogException;
 
-    <E extends AbstractAclEntry> QueryResult<E> getAcl(long id, List<String> members, String entity) throws CatalogException;
-
-    <E extends AbstractAclEntry> List<QueryResult<E>> getAcls(List<Long> ids, List<String> members, String entity) throws CatalogException;
+//    <E extends AbstractAclEntry> QueryResult<E> getAcl(long id, List<String> members, String entity) throws CatalogException;
 
     <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(long studyId, List<Long> ids, List<String> members, List<String> permissions,
                                                               String entity) throws CatalogException;
@@ -393,7 +412,7 @@ public interface AuthorizationManager {
     <E extends AbstractAclEntry> List<QueryResult<E>> replicateAcls(long studyId, List<Long> ids, List<E> aclEntries, String entity)
             throws CatalogException;
 
-    <E extends Enum<E>> void checkValidPermission(List<String> permissions, Class<E> enumClass) throws CatalogException;
+//    <E extends Enum<E>> void checkValidPermission(List<String> permissions, Class<E> enumClass) throws CatalogException;
 
     void resetPermissionsFromAllEntities(long studyId, List<String> members) throws CatalogException;
 

@@ -823,7 +823,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
     }
 
-
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
         Bson bson = parseQuery(query, false);
@@ -869,6 +868,17 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
+    public QueryResult<Study> get(Query query, QueryOptions options, String user) throws CatalogDBException {
+        QueryResult queryResult = nativeGet(query, options, user);
+        List<Study> studyList = new ArrayList<>(queryResult.getNumResults());
+        for (Object studyDocument : queryResult.getResult()) {
+            studyList.add(studyConverter.convertToDataModelType((Document) studyDocument));
+        }
+        return new QueryResult<>("Get", queryResult.getDbTime(), queryResult.getNumResults(), queryResult.getNumTotalResults(),
+                queryResult.getWarningMsg(), queryResult.getErrorMsg(), studyList);
+    }
+
+    @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
             query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
@@ -883,6 +893,20 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         qOptions = filterOptions(qOptions, FILTER_ROUTE_STUDIES);
         // Fixme: If necessary, include in the results also the files, jobs, individuals...
         return studyCollection.find(bson, qOptions);
+    }
+
+    @Override
+    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException {
+        QueryResult queryResult = nativeGet(query, options);
+
+        Iterator iterator = queryResult.getResult().iterator();
+        while (iterator.hasNext()) {
+            if (!checkStudyPermission((Document) iterator.next(), user, StudyAclEntry.StudyPermissions.VIEW_STUDY.name())) {
+                iterator.remove();
+            }
+        }
+
+        return queryResult;
     }
 
     @Override

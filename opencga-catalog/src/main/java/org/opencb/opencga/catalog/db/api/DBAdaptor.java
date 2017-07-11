@@ -69,6 +69,8 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     QueryResult<T> get(Query query, QueryOptions options) throws CatalogDBException;
 
+    QueryResult<T> get(Query query, QueryOptions options, String user) throws CatalogDBException;
+
     default List<QueryResult<T>> get(List<Query> queries, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(queries);
         List<QueryResult<T>> queryResults = new ArrayList<>(queries.size());

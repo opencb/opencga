@@ -670,11 +670,11 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals(0, queryResults.get(0).getNumResults());
 
         // Get sample permissions for those members
-        List<QueryResult<SampleAclEntry>> acls = catalogManager.getAuthorizationManager().getAcls(sampleIds,
-                Arrays.asList("user2", "user3"), MongoDBAdaptorFactory.SAMPLE_COLLECTION);
-        assertEquals(sampleIds.size(), acls.size());
-        for (QueryResult<SampleAclEntry> acl : acls) {
-            assertEquals(0, acl.getNumResults());
+        for (Long sampleId : sampleIds) {
+            QueryResult<SampleAclEntry> sampleAcl = catalogManager.getAuthorizationManager().getSampleAcl("user", sampleId, "user2");
+            assertEquals(0, sampleAcl.getNumResults());
+            sampleAcl = catalogManager.getAuthorizationManager().getSampleAcl("user", sampleId, "user3");
+            assertEquals(0, sampleAcl.getNumResults());
         }
     }
 
@@ -716,10 +716,11 @@ public class CatalogManagerTest extends GenericTest {
 
         catalogManager.getStudyManager().updateGroup(Long.toString(studyId), "@members",
                 new GroupParams("user2,user3", GroupParams.Action.REMOVE), sessionIdUser);
-        List<QueryResult<AbstractAclEntry>> aclQR = catalogManager.getAuthorizationManager().getAcls(Arrays.asList(studyId),
-                Arrays.asList("user2", "user3"), MongoDBAdaptorFactory.STUDY_COLLECTION);
-        assertEquals(1, aclQR.size());
-        assertEquals(0, aclQR.get(0).getNumResults());
+
+        QueryResult<StudyAclEntry> studyAcl = catalogManager.getStudyAcl(Long.toString(studyId), "user2", sessionIdUser);
+        assertEquals(0, studyAcl.getNumResults());
+        studyAcl = catalogManager.getStudyAcl(Long.toString(studyId), "user3", sessionIdUser);
+        assertEquals(0, studyAcl.getNumResults());
 
         QueryResult<Group> groupQueryResult = catalogManager.getStudyManager().getGroup(Long.toString(studyId), null, sessionIdUser);
         for (Group group : groupQueryResult.getResult()) {
@@ -727,10 +728,11 @@ public class CatalogManagerTest extends GenericTest {
             assertTrue(!group.getUserIds().contains("user3"));
         }
 
-        List<QueryResult<SampleAclEntry>> sampleQR = catalogManager.getAuthorizationManager().getAcls(sampleIds,
-                Arrays.asList("user2", "user3"), MongoDBAdaptorFactory.SAMPLE_COLLECTION);
-        for (QueryResult<SampleAclEntry> aclEntryQueryResult : sampleQR) {
-            assertEquals(0, aclEntryQueryResult.getNumResults());
+        for (Long sampleId : sampleIds) {
+            QueryResult<SampleAclEntry> sampleAcl = catalogManager.getAuthorizationManager().getSampleAcl("user", sampleId, "user2");
+            assertEquals(0, sampleAcl.getNumResults());
+            sampleAcl = catalogManager.getAuthorizationManager().getSampleAcl("user", sampleId, "user3");
+            assertEquals(0, sampleAcl.getNumResults());
         }
     }
 

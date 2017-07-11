@@ -28,7 +28,6 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -412,11 +411,11 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     }
 
 
-    private boolean memberExists(long studyId, String member) throws CatalogException {
-        QueryResult<StudyAclEntry> acl = authorizationManager.getAcl(studyId, Arrays.asList(member),
-                MongoDBAdaptorFactory.STUDY_COLLECTION);
-        return acl.getNumResults() > 0;
-    }
+//    private boolean memberExists(long studyId, String member) throws CatalogException {
+//        QueryResult<StudyAclEntry> acl = authorizationManager.getAcl(studyId, Arrays.asList(member),
+//                MongoDBAdaptorFactory.STUDY_COLLECTION);
+//        return acl.getNumResults() > 0;
+//    }
 
     @Override
     public QueryResult<Study> get(Long studyId, QueryOptions options, String sessionId) throws CatalogException {
@@ -424,12 +423,14 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
         String userId = catalogManager.getUserManager().getId(sessionId);
         studyDBAdaptor.checkId(studyId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
-
-        QueryResult<Study> studyResult = studyDBAdaptor.get(studyId, options);
-        authorizationManager.filterStudies(userId, studyResult.getResult());
-
-        return studyResult;
+        Query query = new Query(StudyDBAdaptor.QueryParams.ID.key(), studyId);
+        return studyDBAdaptor.get(query, options, userId);
+//        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
+//
+//        QueryResult<Study> studyResult = studyDBAdaptor.get(studyId, options);
+//        authorizationManager.filterStudies(userId, studyResult.getResult());
+//
+//        return studyResult;
     }
 
     @Override
@@ -442,12 +443,12 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             qOptions.addToListOption("exclude", "projects.studies.attributes.studyConfiguration");
         }
 
-        QueryResult<Study> allStudies = studyDBAdaptor.get(query, qOptions);
-        List<Study> studies = allStudies.getResult();
-
-        authorizationManager.filterStudies(userId, studies);
-        allStudies.setResult(studies);
-        allStudies.setNumResults(studies.size());
+        QueryResult<Study> allStudies = studyDBAdaptor.get(query, qOptions, userId);
+//        List<Study> studies = allStudies.getResult();
+//
+//        authorizationManager.filterStudies(userId, studies);
+//        allStudies.setResult(studies);
+//        allStudies.setNumResults(studies.size());
 
         return allStudies;
     }
@@ -725,10 +726,12 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             case REMOVE:
                 return authorizationManager.removeStudyAcls(studyIds, members, permissions);
             case RESET:
+                List<QueryResult<StudyAclEntry>> aclResult = new ArrayList<>(studyIds.size());
                 for (Long studyId : studyIds) {
                     authorizationManager.resetPermissionsFromAllEntities(studyId, members);
+                    aclResult.add(authorizationManager.getAllStudyAcls(userId, studyId));
                 }
-                return authorizationManager.getAcls(studyIds, members, MongoDBAdaptorFactory.STUDY_COLLECTION);
+                return aclResult;
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }
@@ -897,8 +900,8 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             case REMOVE:
                 if (groupId.equals(MEMBERS)) {
                     // We remove the users from all the groups and acls
-                    studyDBAdaptor.removeUsersFromAllGroups(studyId, users);
                     authorizationManager.resetPermissionsFromAllEntities(studyId, users);
+                    studyDBAdaptor.removeUsersFromAllGroups(studyId, users);
                 } else {
                     studyDBAdaptor.removeUsersFromGroup(studyId, groupId, users);
                 }

@@ -314,8 +314,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 //        catalogManager.addUsersToGroup(s1, group, newUser, studyAdmin1SessionId);
         catalogManager.createGroup(Long.toString(s1), group, newUser, studyAdmin1SessionId);
         catalogManager.createStudyAcls(Long.toString(s1), group, "", AuthorizationManager.ROLE_ANALYST, studyAdmin1SessionId);
-        QueryResult<StudyAclEntry> studyAcls = catalogManager.getAuthorizationManager().getAcl(s1, Arrays.asList(group),
-                MongoDBAdaptorFactory.STUDY_COLLECTION);
+        QueryResult<StudyAclEntry> studyAcls = catalogManager.getAuthorizationManager().getStudyAcl(studyAdminUser1, s1, group);
         assertEquals(1, studyAcls.getNumResults());
         assertEquals(group, studyAcls.first().getMember());
         assertArrayEquals(AuthorizationManager.getAnalystAcls().toArray(), studyAcls.first().getPermissions().toArray());
@@ -339,8 +338,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void changeUserRole() throws CatalogException {
-        QueryResult<StudyAclEntry> studyAcls = catalogManager.getAuthorizationManager().getAcl(s1, Arrays.asList(externalUser),
-                MongoDBAdaptorFactory.STUDY_COLLECTION);
+        QueryResult<StudyAclEntry> studyAcls = catalogManager.getAuthorizationManager().getStudyAcl(studyAdminUser1, s1, externalUser);
         assertEquals(1, studyAcls.getNumResults());
         assertEquals(externalUser, studyAcls.first().getMember());
 

@@ -187,8 +187,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                     .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                     .append(FamilyDBAdaptor.QueryParams.CHILDREN_IDS.key(), individual.getId());
             try {
-                QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions);
-                authorizationManager.filterFamilies(userId, studyId, familyQueryResult.getResult());
+                QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions, userId);
                 if (familyQueryResult.getNumResults() == 0) {
                     continue;
                 }

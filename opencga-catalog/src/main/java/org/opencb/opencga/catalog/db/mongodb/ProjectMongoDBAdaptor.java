@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
+import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Status;
@@ -290,6 +291,77 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 } catch (CatalogDBException e) {
                     e.printStackTrace();
                 }
+            }
+        }
+
+        return endQuery("Get project", startTime, projectQueryResult.getResult());
+    }
+
+    @Override
+    public QueryResult<Project> get(Query query, QueryOptions options, String user) throws CatalogDBException {
+        long startTime = startQuery();
+
+        // Fetch all the studies that the user can see
+        List<Long> projectIds = query.getAsLongList(QueryParams.ID.key());
+        Query studyQuery = new Query();
+        if (projectIds != null && projectIds.size() > 0) {
+            studyQuery.append(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectIds);
+        }
+        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, new QueryOptions(), user);
+
+        // We build a map of projectId - list<studies>
+        Map<Long, List<Study>> studyMap = new HashMap<>();
+        StudyConverter studyConverter = new StudyConverter();
+        for (Document studyDocument : queryResult.getResult()) {
+            Long projectId = studyDocument.getLong("_projectId");
+            if (!studyMap.containsKey(projectId)) {
+                studyMap.put(projectId, new ArrayList<>());
+            }
+            studyMap.get(projectId).add(studyConverter.convertToDataModelType(studyDocument));
+        }
+
+        // We get all the projects the user can see
+        projectIds = new ArrayList<>(studyMap.keySet());
+        if (projectIds.size() == 0) {
+            return new QueryResult<>("Get project");
+        }
+        query.put(QueryParams.ID.key(), projectIds);
+
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        }
+        List<Bson> aggregates = new ArrayList<>();
+
+        aggregates.add(Aggregates.unwind("$projects"));
+        aggregates.add(Aggregates.match(parseQuery(query)));
+
+        // Check include
+        if (options != null && options.get(QueryOptions.INCLUDE) != null) {
+            List<String> includeList = new ArrayList<>();
+            List<String> optionsAsStringList = options.getAsStringList(QueryOptions.INCLUDE);
+            includeList.addAll(optionsAsStringList.stream().collect(Collectors.toList()));
+            if (!includeList.contains(QueryParams.ID.key())) {
+                includeList.add(QueryParams.ID.key());
+            }
+
+            // Check if they start with projects.
+            for (int i = 0; i < includeList.size(); i++) {
+                if (!includeList.get(i).startsWith("projects.")) {
+                    String param = "projects." + includeList.get(i);
+                    includeList.set(i, param);
+                }
+            }
+            if (includeList.size() > 0) {
+                aggregates.add(Aggregates.project(Projections.include(includeList)));
+            }
+        }
+
+        QueryResult<Project> projectQueryResult = userCollection.aggregate(aggregates, projectConverter, options);
+
+        if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
+                || !options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")) {
+            for (Project project : projectQueryResult.getResult()) {
+                project.setStudies(studyMap.get(project.getId()));
             }
         }
 

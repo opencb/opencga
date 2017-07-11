@@ -1080,8 +1080,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         QueryResult<File> fileQueryResult = new QueryResult<>("Search files by directory");
         for (Long studyId : studyIds) {
             query.put(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-            QueryResult<File> tmpQueryResult = fileDBAdaptor.get(query, options);
-            authorizationManager.filterFiles(userId, studyId, tmpQueryResult.getResult());
+            QueryResult<File> tmpQueryResult = fileDBAdaptor.get(query, options, userId);
             if (tmpQueryResult.getResult().size() > 0) {
                 fileQueryResult.getResult().addAll(tmpQueryResult.getResult());
                 fileQueryResult.setDbTime(fileQueryResult.getDbTime() + tmpQueryResult.getDbTime());
