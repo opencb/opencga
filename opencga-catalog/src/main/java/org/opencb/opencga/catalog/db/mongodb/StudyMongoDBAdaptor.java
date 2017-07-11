@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -897,6 +898,14 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException {
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        if (options.containsKey(QueryOptions.INCLUDE)) {
+            options = new QueryOptions(options);
+            List<String> includeList = new ArrayList<>(options.getAsStringList(QueryOptions.INCLUDE));
+            includeList.add("_ownerId");
+            options.put(QueryOptions.INCLUDE, includeList);
+        }
+
         QueryResult queryResult = nativeGet(query, options);
 
         Iterator iterator = queryResult.getResult().iterator();

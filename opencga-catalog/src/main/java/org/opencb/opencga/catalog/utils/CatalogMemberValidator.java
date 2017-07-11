@@ -54,7 +54,6 @@ public class CatalogMemberValidator {
      *
      * The "member" can be:
      *  - '*' referring to all the users.
-     *  - 'anonymous' referring to the anonymous user.
      *  - '@{groupId}' referring to a {@link Group}.
      *  - '{userId}' referring to a specific user.
      * @param dbAdaptorFactory dbAdaptorFactory
@@ -64,7 +63,7 @@ public class CatalogMemberValidator {
      */
     public static void checkMember(DBAdaptorFactory dbAdaptorFactory, long studyId, String member)
             throws CatalogDBException {
-        if (member.equals("*") || member.equals("anonymous")) {
+        if (member.equals("*")) {
             return;
         } else if (member.startsWith("@")) {
             QueryResult<Group> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member,

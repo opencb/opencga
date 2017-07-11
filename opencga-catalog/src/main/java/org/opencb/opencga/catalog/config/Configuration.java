@@ -18,14 +18,12 @@ package org.opencb.opencga.catalog.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.List;
 
 /**
  * Created by imedina on 16/03/16.
@@ -47,8 +45,6 @@ public class Configuration {
     private Monitor monitor;
     private Execution execution;
     private Audit audit;
-
-    private List<StudyAclEntry> acl;
 
     private Email email;
     private Catalog catalog;
@@ -104,7 +100,6 @@ public class Configuration {
         sb.append(", monitor=").append(monitor);
         sb.append(", execution=").append(execution);
         sb.append(", audit=").append(audit);
-        sb.append(", acl=").append(acl);
         sb.append(", email=").append(email);
         sb.append(", catalog=").append(catalog);
         sb.append(", server=").append(server);
@@ -236,15 +231,6 @@ public class Configuration {
 
     public Configuration setAudit(Audit audit) {
         this.audit = audit;
-        return this;
-    }
-
-    public List<StudyAclEntry> getAcl() {
-        return acl;
-    }
-
-    public Configuration setAcl(List<StudyAclEntry> acl) {
-        this.acl = acl;
         return this;
     }
 

@@ -66,12 +66,6 @@ public class ConfigurationTest {
         Audit audit = new Audit(20000000, 100000000000L, "", Collections.emptyList());
         configuration.setAudit(audit);
 
-        StudyAclEntry studyAcl = new StudyAclEntry("admin", EnumSet.of(
-                StudyAclEntry.StudyPermissions.VIEW_FILE_HEADERS, StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENTS,
-                StudyAclEntry.StudyPermissions.VIEW_FILES, StudyAclEntry.StudyPermissions.WRITE_FILES,
-                StudyAclEntry.StudyPermissions.VIEW_JOBS, StudyAclEntry.StudyPermissions.WRITE_JOBS));
-        configuration.setAcl(Arrays.asList(studyAcl));
-
         ServerConfiguration serverConfiguration = new ServerConfiguration();
         RestServerConfiguration rest = new RestServerConfiguration(1000, 100, 1000);
         GrpcServerConfiguration grpc = new GrpcServerConfiguration(1001);

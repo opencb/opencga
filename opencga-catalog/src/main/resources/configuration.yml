@@ -40,19 +40,6 @@ email:
   from: ""
   ssl: false
 
-acl:                 # Do not touch the acl configuration. If this is not properly set, the daemons might not work.
-- member: "admin"
-  permissions:
-  - "VIEW_FILE_HEADERS"
-  - "VIEW_FILE_CONTENTS"
-  - "VIEW_FILES"
-  - "WRITE_FILES"
-  - "VIEW_JOBS"
-  - "WRITE_JOBS"
-  - "VIEW_STUDY"
-  - "UPDATE_STUDY"
-  - "SHARE_STUDY"
-
 catalog:
   # offset: Starting point for the catalog internal ids. Use a big offset number (1000000 for instance) if you plan to use numerical ids
   #         for names or aliases of any entity.

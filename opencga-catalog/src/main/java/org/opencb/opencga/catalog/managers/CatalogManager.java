@@ -499,8 +499,7 @@ public class CatalogManager implements AutoCloseable {
         return getStudy(studyId, null, sessionId);
     }
 
-    public QueryResult<Study> getStudy(long studyId, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public QueryResult<Study> getStudy(long studyId, QueryOptions options, String sessionId) throws CatalogException {
         return studyManager.get(studyId, options, sessionId);
     }
 

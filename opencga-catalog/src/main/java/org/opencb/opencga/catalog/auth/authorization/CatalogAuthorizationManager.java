@@ -49,12 +49,8 @@ import static org.opencb.opencga.catalog.utils.CatalogMemberValidator.checkMembe
  */
 public class CatalogAuthorizationManager implements AuthorizationManager {
 
-    private static final QueryOptions FILE_INCLUDE_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE,
-            Arrays.asList(FILTER_ROUTE_FILES + FileDBAdaptor.QueryParams.ID.key(),
-                    FILTER_ROUTE_FILES + FileDBAdaptor.QueryParams.PATH.key(),
-                    FILTER_ROUTE_FILES + FileDBAdaptor.QueryParams.ACL.key()
-            ));
     private static final String MEMBERS_GROUP = "@members";
+    private static final String ADMIN = "admin";
 
     private final Logger logger;
 
@@ -74,14 +70,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final AuditManager auditManager;
 
     // List of Acls defined for the special users (admin, daemon...) read from the main configuration file.
-    private final List<StudyAclEntry> specialAclList;
+    private static final List<StudyAclEntry> SPECIAL_ACL_LIST = Arrays.asList(
+            new StudyAclEntry(ADMIN, Arrays.asList("VIEW_FILE_HEADERS", "VIEW_FILE_CONTENTS", "VIEW_FILES", "WRITE_FILES",
+                    "VIEW_JOBS", "WRITE_JOBS", "VIEW_STUDY", "UPDATE_STUDY", "SHARE_STUDY")));
 
     private final boolean openRegister;
 
     private final AuthorizationDBAdaptor aclDBAdaptor;
-
-    private final String ADMIN = "admin";
-//    private final String ANONYMOUS = "anonymous";
 
     public CatalogAuthorizationManager(DBAdaptorFactory dbFactory, CatalogAuditManager auditManager, Configuration configuration)
             throws CatalogDBException, CatalogAuthorizationException {
@@ -89,10 +84,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         this.auditManager = auditManager;
         this.aclDBAdaptor = new AuthorizationMongoDBAdaptor(configuration);
 
-        if (configuration.getAcl() == null || configuration.getAcl().size() == 0) {
-            throw new CatalogAuthorizationException("No Acls defined in the configuration file for special users");
-        }
-        this.specialAclList = configuration.getAcl();
         this.openRegister = configuration.isOpenRegister();
 
         this.dbAdaptorFactory = dbFactory;
@@ -110,14 +101,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         metaDBAdaptor = dbFactory.getCatalogMetaDBAdaptor();
     }
 
-//    private StudyAclEntry getSpecialPermissions(String member) {
-//        for (StudyAclEntry studyAclEntry : specialAclList) {
-//            if (studyAclEntry.getMember().equals(member)) {
-//                return studyAclEntry;
-//            }
-//        }
-//        return null;
-//    }
+    private StudyAclEntry getSpecialPermissions(String member) {
+        for (StudyAclEntry studyAclEntry : SPECIAL_ACL_LIST) {
+            if (studyAclEntry.getMember().equals(member)) {
+                return studyAclEntry;
+            }
+        }
+        return null;
+    }
 
     @Override
     public boolean isPublicRegistration() {
@@ -1576,6 +1567,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public QueryResult<FileAclEntry> getAllFileAcls(String userId, long fileId) throws CatalogException {
         fileDBAdaptor.checkId(fileId);
+        checkFilePermission(fileDBAdaptor.getStudyIdByFileId(fileId), fileId, userId, FileAclEntry.FilePermissions.VIEW);
         // Check if the userId has proper permissions for all the samples.
 //        checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
 
