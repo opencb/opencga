@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.auth.authorization;
 
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.*;
 
 import javax.annotation.Nullable;
@@ -114,108 +113,6 @@ public interface AuthorizationManager {
 
     void checkClinicalAnalysisPermission(long studyId, long analysisId, String userId,
                                          ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions permission) throws CatalogException;
-
-//    <E extends Enum<E>> void checkPermissions(AbstractManager.MyResourceId resource, E permission, String entity) throws CatalogException;
-
-//    /**
-//     * Removes from the list the projects that the user can not read.
-//     * From the remaining projects, filters the studies.
-//     *
-//     * @param userId   UserId.
-//     * @param projects Project list.
-//     * @throws CatalogException CatalogException
-//     */
-//    void filterProjects(String userId, List<Project> projects) throws CatalogException;
-
-//    /**
-//     * Removes from the list the studies that the user can not read.
-//     * From the remaining studies, filters the files.
-//     *
-//     * @param userId  UserId.
-//     * @param studies Studies list.
-//     * @throws CatalogException CatalogException
-//     */
-//    void filterStudies(String userId, List<Study> studies) throws CatalogException;
-//
-//    /**
-//     * Removes from the list the files that the user can not read.
-//     *
-//     * @param userId  UserId
-//     * @param studyId StudyId
-//     * @param files   Files list
-//     * @throws CatalogException CatalogException
-//     */
-//    void filterFiles(String userId, long studyId, List<File> files) throws CatalogException;
-
-//    /**
-//     * Removes from the list the samples that the user can not read.
-//     *
-//     * @param userId  UserId
-//     * @param studyId StudyId
-//     * @param samples Samples
-//     * @throws CatalogException CatalogException
-//     */
-//    void filterSamples(String userId, long studyId, List<Sample> samples) throws CatalogException;
-
-//    /**
-//     * Removes from the list the families that the user can not read.
-//     *
-//     * @param userId  UserId
-//     * @param studyId StudyId
-//     * @param families Families
-//     * @throws CatalogException CatalogException
-//     */
-//    void filterFamilies(String userId, long studyId, List<Family> families) throws CatalogException;
-
-//    /**
-//     * Removes from the list the individuals that the user can not read.
-//     *
-//     * @param userId      UserId
-//     * @param studyId     StudyId
-//     * @param individuals Individuals
-//     * @throws CatalogException CatalogException
-//     */
-//    void filterIndividuals(String userId, long studyId, List<Individual> individuals) throws CatalogException;
-
-//    /**
-//     * Removes from the list the cohorts that the user can not read.
-//     *
-//     * @param userId  UserId.
-//     * @param studyId StudyId.
-//     * @param cohorts Cohorts.
-//     * @throws CatalogException CatalogException.
-//     */
-//    void filterCohorts(String userId, long studyId, List<Cohort> cohorts) throws CatalogException;
-//
-//    /**
-//     * Removes from the list the jobs that the user can not read.
-//     *
-//     * @param userId  UserId.
-//     * @param studyId StudyId.
-//     * @param jobs    Jobs.
-//     * @throws CatalogException CatalogException.
-//     */
-//    void filterJobs(String userId, long studyId, List<Job> jobs) throws CatalogException;
-//
-//    /**
-//     * Removes from the list the datasets that the user can not read.
-//     *
-//     * @param userId   UserId.
-//     * @param studyId  StudyId.
-//     * @param datasets datasets.
-//     * @throws CatalogException CatalogException.
-//     */
-//    void filterDatasets(String userId, long studyId, List<Dataset> datasets) throws CatalogException;
-//
-//    /**
-//     * Removes from the list the clinical analysis that the user can not read.
-//     *
-//     * @param userId  UserId
-//     * @param studyId StudyId
-//     * @param clinicalAnalysis Clinical analysis list
-//     * @throws CatalogException CatalogException
-//     */
-//    void filterClinicalAnalysis(String userId, long studyId, List<ClinicalAnalysis> clinicalAnalysis) throws CatalogException;
 
     //------------------------- Study ACL -----------------------------
 
@@ -412,18 +309,6 @@ public interface AuthorizationManager {
     <E extends AbstractAclEntry> List<QueryResult<E>> replicateAcls(long studyId, List<Long> ids, List<E> aclEntries, String entity)
             throws CatalogException;
 
-//    <E extends Enum<E>> void checkValidPermission(List<String> permissions, Class<E> enumClass) throws CatalogException;
-
     void resetPermissionsFromAllEntities(long studyId, List<String> members) throws CatalogException;
-
-    /**
-     * Checks if the member belongs to one role or not.
-     *
-     * @param studyId study id.
-     * @param member  User or group id.
-     * @return true if the member belongs to one role. False otherwise.
-     * @throws CatalogException CatalogException.
-     */
-//    boolean memberHasPermissionsInStudy(long studyId, String member) throws CatalogException;
 
 }
