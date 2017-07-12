@@ -459,11 +459,78 @@ public class VariantQueryUtils {
             samples = null;
         }
         if (samples != null) {
-            samples.stream()
+            samples = samples.stream()
                     .map(s -> s.contains(":") ? s.split(":")[1] : s)
                     .collect(Collectors.toList());
         }
         return samples;
+    }
+
+    /**
+     * Gets a list of elements formats to return.
+     *
+     * @see VariantQueryParam#INCLUDE_FORMAT
+     * @see VariantQueryParam#INCLUDE_GENOTYPE
+     *
+     * @param query Variants Query
+     * @return List of formats to include. Null if undefined or all. Empty list if none.
+     */
+    public static List<String> getIncludeFormats(Query query) {
+        final Set<String> formatsSet;
+        boolean all = false;
+        boolean none = false;
+        boolean gt = query.getBoolean(INCLUDE_GENOTYPE.key(), false);
+
+        if (isValidParam(query, INCLUDE_FORMAT)) {
+            List<String> includeFormat = query.getAsStringList(INCLUDE_FORMAT.key());
+            if (includeFormat.size() == 1) {
+                String format = includeFormat.get(0);
+                if (format.equals(NONE)) {
+                    none = true;
+                    formatsSet = Collections.emptySet();
+                } else if (format.equals(ALL)) {
+                    all = true;
+                    formatsSet = Collections.emptySet();
+                } else {
+                    if (format.equals("GT")) {
+                        gt = true;
+                        formatsSet = Collections.emptySet();
+                    } else {
+                        formatsSet = Collections.singleton(format);
+                    }
+                }
+            } else {
+                formatsSet = new LinkedHashSet<>(includeFormat);
+                if (formatsSet.contains("GT")) {
+                    formatsSet.remove("GT");
+                    gt = true;
+                }
+            }
+        } else {
+            formatsSet = Collections.emptySet();
+        }
+
+        if (none) {
+            if (gt) {
+                // None but genotype
+                return Collections.singletonList("GT");
+            } else {
+                // Empty list as none elements
+                return Collections.emptyList();
+            }
+        } else if (all || formatsSet.isEmpty() && !gt) {
+            // Null as all or undefined
+            return null;
+        } else {
+            // Ensure GT is the first element
+            ArrayList<String> formats = new ArrayList<>(formatsSet.size());
+            if (gt) {
+                formats.add("GT");
+            }
+            formats.addAll(formatsSet);
+
+            return formats;
+        }
     }
 
     /**

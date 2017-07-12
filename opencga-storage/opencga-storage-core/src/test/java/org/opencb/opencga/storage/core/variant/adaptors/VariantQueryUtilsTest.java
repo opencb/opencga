@@ -26,7 +26,7 @@ import org.opencb.commons.test.GenericTest;
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOTATION_EXISTS;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 /**
@@ -171,5 +171,38 @@ public class VariantQueryUtilsTest extends GenericTest {
         parseGenotypeFilter("sample:1/1,2/2,sample2:0/0,2/2;sample3:0/0,2/2", map);
     }
 
+    @Test
+    public void testIncludeFormats() {
+        checkIncludeFormats("GT", "GT");
+        checkIncludeFormats("DP", "DP");
+        checkIncludeFormats("GT,DP,AD", "GT,DP,AD");
+        checkIncludeFormats("GT,DP", "DP,GT");
+        checkIncludeFormats("GT,DP", "DP,GT,DP");
+        checkIncludeFormats(null, ALL);
+        checkIncludeFormats(null, "");
+        checkIncludeFormats(null, false, "");
+        checkIncludeFormats("GT", true, "");
+        checkIncludeFormats("", NONE);
+        checkIncludeFormats("GT", true, NONE);
+        checkIncludeFormats("GT,DP,AD", true, "DP,AD");
+        checkIncludeFormats("GT,DP,AD", true, "GT,DP,AD");
+        checkIncludeFormats("DP,AD", false, "DP,AD");
+        checkIncludeFormats("GT,DP,AD", true, "DP,AD");
+    }
+
+    private void checkIncludeFormats(String expected, boolean includeGenotype, String includeFormat) {
+        checkIncludeFormats(expected, new Query(INCLUDE_FORMAT.key(), includeFormat).append(INCLUDE_GENOTYPE.key(), includeGenotype));
+    }
+
+    private void checkIncludeFormats(String expected, String includeFormat) {
+        checkIncludeFormats(expected, new Query(INCLUDE_FORMAT.key(), includeFormat));
+    }
+
+    private static void checkIncludeFormats(String expected, Query query) {
+        List<String> expectedList = expected == null ? null
+                : expected.isEmpty() ? Collections.emptyList() : Arrays.asList(expected.split(","));
+
+        assertEquals(expectedList, getIncludeFormats(query));
+    }
 
 }
