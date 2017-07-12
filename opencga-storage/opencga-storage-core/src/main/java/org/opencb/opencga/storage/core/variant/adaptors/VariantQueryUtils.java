@@ -54,6 +54,7 @@ public class VariantQueryUtils {
 
     public static final String NONE = "none";
     public static final String ALL = "all";
+    public static final String GT = "GT";
 
     private static Logger logger = LoggerFactory.getLogger(VariantQueryUtils.class);
 
@@ -492,7 +493,7 @@ public class VariantQueryUtils {
                     all = true;
                     formatsSet = Collections.emptySet();
                 } else {
-                    if (format.equals("GT")) {
+                    if (format.equals(GT)) {
                         gt = true;
                         formatsSet = Collections.emptySet();
                     } else {
@@ -501,8 +502,8 @@ public class VariantQueryUtils {
                 }
             } else {
                 formatsSet = new LinkedHashSet<>(includeFormat);
-                if (formatsSet.contains("GT")) {
-                    formatsSet.remove("GT");
+                if (formatsSet.contains(GT)) {
+                    formatsSet.remove(GT);
                     gt = true;
                 }
             }
@@ -513,7 +514,7 @@ public class VariantQueryUtils {
         if (none) {
             if (gt) {
                 // None but genotype
-                return Collections.singletonList("GT");
+                return Collections.singletonList(GT);
             } else {
                 // Empty list as none elements
                 return Collections.emptyList();
@@ -525,7 +526,7 @@ public class VariantQueryUtils {
             // Ensure GT is the first element
             ArrayList<String> formats = new ArrayList<>(formatsSet.size());
             if (gt) {
-                formats.add("GT");
+                formats.add(GT);
             }
             formats.addAll(formatsSet);
 

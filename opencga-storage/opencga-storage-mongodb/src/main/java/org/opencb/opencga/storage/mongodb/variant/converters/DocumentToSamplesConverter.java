@@ -401,8 +401,10 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             Set<String> extraFieldsSet = new HashSet<>();
             for (Integer fid : filesWithSamplesData) {
                 if (files.containsKey(fid)) {
-                    Document sampleDatas = (Document) files.get(fid).get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD);
-                    extraFieldsSet.addAll(sampleDatas.keySet());
+                    Document sampleData = (Document) files.get(fid).get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD);
+                    if (sampleData != null) {
+                        extraFieldsSet.addAll(sampleData.keySet());
+                    }
                 }
             }
             extraFields = new ArrayList<>(extraFieldsSet.size());

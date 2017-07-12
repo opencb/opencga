@@ -1812,6 +1812,21 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     }
 
+    @Test
+    public void testIncludeFormat() {
+        Variant variant = dbAdaptor.get(new Query(INCLUDE_FORMAT.key(), "GT"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
+        System.out.println("variant.toJson() = " + variant.toJson());
+        assertEquals("GT", variant.getStudies().get(0).getFormatAsString());
+
+        variant = dbAdaptor.get(new Query(INCLUDE_FORMAT.key(), "GL"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
+        System.out.println("variant.toJson() = " + variant.toJson());
+        assertEquals("GL", variant.getStudies().get(0).getFormatAsString());
+
+        variant = dbAdaptor.get(new Query(INCLUDE_FORMAT.key(), "GT,DS,GL"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
+        System.out.println("variant.toJson() = " + variant.toJson());
+        assertEquals("GT:DS:GL", variant.getStudies().get(0).getFormatAsString());
+    }
+
 /*
     @Test
     public void testGetAllVariants() {
