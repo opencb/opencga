@@ -297,17 +297,9 @@ public class JobManager extends AbstractManager implements IJobManager {
         }
         query.put(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
-        String userId;
-        if (sessionId.length() == 40) {
-            catalogManager.getUserManager().getId(sessionId);
-            userId = "admin";
-        } else {
-            userId = userManager.getId(sessionId);
-        }
+        String userId = userManager.getId(sessionId);
 
         QueryResult<Job> queryResult = jobDBAdaptor.get(query, options, userId);
-//        authorizationManager.filterJobs(userId, studyId, queryResult.getResult());
-//        queryResult.setNumResults(queryResult.getResult().size());
         return queryResult;
     }
 

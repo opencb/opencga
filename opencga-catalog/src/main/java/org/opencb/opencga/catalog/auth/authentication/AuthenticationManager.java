@@ -55,7 +55,7 @@ public abstract class AuthenticationManager {
      */
     public String getUserId(String token) throws CatalogException {
         if (token == null || token.isEmpty() || token.equalsIgnoreCase("null")) {
-            return "anonymous";
+            return "*";
         }
 
         return jwtSessionManager.getUserId(token);

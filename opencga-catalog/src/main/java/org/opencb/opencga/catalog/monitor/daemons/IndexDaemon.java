@@ -21,11 +21,11 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.api.IJobManager;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
 import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
@@ -70,24 +70,25 @@ public class IndexDaemon extends MonitorParentDaemon {
             .append(QueryOptions.LIMIT, 1);
 
     private CatalogIOManager catalogIOManager;
+    private JobDBAdaptor jobDBAdaptor;
+
     private String binHome;
     private Path tempJobFolder;
 //    private VariantIndexOutputRecorder variantIndexOutputRecorder;
 
     public IndexDaemon(int interval, String sessionId, CatalogManager catalogManager, String appHome)
-            throws URISyntaxException, CatalogIOException {
+            throws URISyntaxException, CatalogIOException, CatalogDBException {
         super(interval, sessionId, catalogManager);
         this.binHome = appHome + "/bin/";
         URI uri = UriUtils.createUri(catalogManager.getConfiguration().getTempJobsDir());
         this.tempJobFolder = Paths.get(uri.getPath());
         this.catalogIOManager = catalogManager.getCatalogIOManagerFactory().get("file");
+        this.jobDBAdaptor = dbAdaptorFactory.getCatalogJobDBAdaptor();
 //        this.variantIndexOutputRecorder = new VariantIndexOutputRecorder(catalogManager, catalogIOManager, sessionId);
     }
 
     @Override
     public void run() {
-
-        IJobManager jobManager = catalogManager.getJobManager();
 
         int maxConcurrentIndexJobs = 1; // TODO: Read from configuration?
 
@@ -106,7 +107,7 @@ public class IndexDaemon extends MonitorParentDaemon {
             RUNNING JOBS
              */
                 try {
-                    QueryResult<Job> runningJobs = jobManager.get(RUNNING_JOBS_QUERY, QUERY_OPTIONS, sessionId);
+                    QueryResult<Job> runningJobs = jobDBAdaptor.get(RUNNING_JOBS_QUERY, QUERY_OPTIONS);
                     logger.debug("Checking running jobs. {} running jobs found", runningJobs.getNumResults());
                     for (Job job : runningJobs.getResult()) {
                         checkRunningJob(job);
@@ -119,7 +120,7 @@ public class IndexDaemon extends MonitorParentDaemon {
             QUEUED JOBS
              */
                 try {
-                    QueryResult<Job> queuedJobs = jobManager.get(QUEUED_JOBS_QUERY, QUERY_OPTIONS, sessionId);
+                    QueryResult<Job> queuedJobs = jobDBAdaptor.get(QUEUED_JOBS_QUERY, QUERY_OPTIONS);
                     logger.debug("Checking queued jobs. {} queued jobs found", queuedJobs.getNumResults());
                     for (Job job : queuedJobs.getResult()) {
                         checkQueuedJob(job);
@@ -132,7 +133,7 @@ public class IndexDaemon extends MonitorParentDaemon {
             PREPARED JOBS
              */
                 try {
-                    QueryResult<Job> preparedJobs = jobManager.get(PREPARED_JOBS_QUERY, QUERY_OPTIONS_LIMIT_1, sessionId);
+                    QueryResult<Job> preparedJobs = jobDBAdaptor.get(PREPARED_JOBS_QUERY, QUERY_OPTIONS_LIMIT_1);
                     if (preparedJobs != null && preparedJobs.getNumResults() > 0) {
                         if (getRunningOrQueuedJobs() < maxConcurrentIndexJobs) {
                             queuePreparedIndex(preparedJobs.first());
@@ -193,7 +194,7 @@ public class IndexDaemon extends MonitorParentDaemon {
                 }
 
                 try {
-                    catalogManager.getJobManager().update(job.getId(), parameters, new QueryOptions(), sessionId);
+                    jobDBAdaptor.update(job.getId(), parameters);
                 } catch (CatalogException e) {
                     logger.error("Error updating job {} with {}", job.getId(), parameters.toJson(), e);
                 }
@@ -242,8 +243,7 @@ public class IndexDaemon extends MonitorParentDaemon {
             if (!status.equalsIgnoreCase(Job.JobStatus.UNKNOWN) && !status.equalsIgnoreCase(Job.JobStatus.QUEUED)) {
                 try {
                     logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.QUEUED, Job.JobStatus.RUNNING);
-                    catalogManager.getJobManager()
-                            .setStatus(Long.toString(job.getId()), Job.JobStatus.RUNNING, "The job is running", sessionId);
+                    setNewStatus(job.getId(), Job.JobStatus.RUNNING, "The job is running");
                 } catch (CatalogException e) {
                     logger.warn("Could not update job {} to status running", job.getId());
                 }
@@ -278,6 +278,13 @@ public class IndexDaemon extends MonitorParentDaemon {
 //                }
 //            }
         }
+    }
+
+    private void setNewStatus(long jobId, String status, String message) throws CatalogDBException {
+        ObjectMap parameters = new ObjectMap();
+        parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_NAME.key(), status);
+        parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_MSG.key(), message);
+        jobDBAdaptor.update(jobId, parameters);
     }
 
     private void queuePreparedIndex(Job job) {
@@ -357,8 +364,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         logger.info("Updating job CLI '{}' from '{}' to '{}'", commandLine.toString(), Job.JobStatus.PREPARED, Job.JobStatus.QUEUED);
 
         try {
-            catalogManager.getJobManager().setStatus(Long.toString(job.getId()), Job.JobStatus.QUEUED,
-                    "The job is in the queue waiting to be executed", sessionId);
+            setNewStatus(job.getId(), Job.JobStatus.QUEUED, "The job is in the queue waiting to be executed");
 //            Job.JobStatus jobStatus = new Job.JobStatus(Job.JobStatus.QUEUED, "The job is in the queue waiting to be executed");
 //            updateObjectMap.put(JobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
             ObjectMap updateObjectMap = new ObjectMap();
@@ -373,7 +379,7 @@ public class IndexDaemon extends MonitorParentDaemon {
             job.getResourceManagerAttributes().put(AbstractExecutor.OUTDIR, path.toString());
             updateObjectMap.put(JobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key(), job.getResourceManagerAttributes());
 
-            QueryResult<Job> update = catalogManager.getJobManager().update(job.getId(), updateObjectMap, new QueryOptions(), sessionId);
+            QueryResult<Job> update = jobDBAdaptor.update(job.getId(), updateObjectMap);
             if (update.getNumResults() == 1) {
                 job = update.first();
                 try {
@@ -411,7 +417,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         Query runningJobsQuery = new Query()
                 .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Arrays.asList(Job.JobStatus.RUNNING, Job.JobStatus.QUEUED))
                 .append(JobDBAdaptor.QueryParams.TYPE.key(), Job.Type.INDEX);
-        return catalogManager.getJobManager().get(runningJobsQuery, QueryOptions.empty(), sessionId).getNumTotalResults();
+        return jobDBAdaptor.get(runningJobsQuery, QueryOptions.empty()).getNumTotalResults();
     }
 
     private void closeSessionId(Job job) {
@@ -420,7 +426,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         job.getAttributes().remove("sessionId");
         ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
         try {
-            catalogManager.getJobManager().update(job.getId(), params, new QueryOptions(), this.sessionId);
+            jobDBAdaptor.update(job.getId(), params);
         } catch (CatalogException e) {
             logger.error("Could not remove session id from attributes of job {}. ", job.getId(), e);
         }
