@@ -76,7 +76,7 @@ public class StudyConfigurationManager implements AutoCloseable {
 
     public <E extends Exception> StudyConfiguration lockAndUpdate(String studyName, UpdateStudyConfiguration<E> updater)
             throws StorageEngineException, E {
-        Integer studyId = getStudies(QueryOptions.empty()).get(studyName);
+        Integer studyId = getStudyId(studyName, null);
         return lockAndUpdate(studyId, updater);
     }
 

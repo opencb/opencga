@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.variant.dummy;
 
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -16,6 +17,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created on 28/11/16.
@@ -71,12 +73,19 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public void removeFile(String study, int fileId) throws StorageEngineException {
-
+        getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+            studyConfiguration.getIndexedFiles().remove(fileId);
+            return null;
+        });
     }
 
     @Override
     public void removeFiles(String study, List<String> files) throws StorageEngineException {
-
+        getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+            List<Integer> fileIds = files.stream().map(Integer::parseInt).collect(Collectors.toList());
+            studyConfiguration.getIndexedFiles().removeAll(fileIds);
+            return studyConfiguration;
+        });
     }
 
     @Override

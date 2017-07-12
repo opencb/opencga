@@ -186,14 +186,18 @@ public class VariantStorageManager extends StorageManager {
         variantStorageEngine.searchIndex(query, queryOptions);
     }
 
-
-
-    public void deleteStudy(String studyId, String sessionId) {
+    public void removeStudy(String study, String sessionId) {
         throw new UnsupportedOperationException();
     }
 
-    public void deleteFile(String fileId, String studyId, String sessionId) {
-        throw new UnsupportedOperationException();
+    public List<File> removeFile(List<String> files, String study, String sessionId)
+            throws CatalogException, IOException, StorageEngineException {
+        VariantRemoveStorageOperation removeOperation = new VariantRemoveStorageOperation(catalogManager, storageEngineFactory);
+
+//        QueryOptions options = new QueryOptions(config);
+        QueryOptions options = new QueryOptions();
+        StudyInfo studyInfo = getStudyInfo(study, files, sessionId);
+        return removeOperation.removeFiles(studyInfo, options, sessionId);
     }
 
     public List<File> annotate(String study, Query query, String outDir, ObjectMap config, String sessionId)
