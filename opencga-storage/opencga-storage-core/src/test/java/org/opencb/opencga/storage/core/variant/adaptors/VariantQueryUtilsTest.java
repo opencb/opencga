@@ -192,10 +192,12 @@ public class VariantQueryUtilsTest extends GenericTest {
 
     private void checkIncludeFormats(String expected, boolean includeGenotype, String includeFormat) {
         checkIncludeFormats(expected, new Query(INCLUDE_FORMAT.key(), includeFormat).append(INCLUDE_GENOTYPE.key(), includeGenotype));
+        checkIncludeFormats(expected, new Query(INCLUDE_FORMAT.key(), includeFormat.replace(',', ':')).append(INCLUDE_GENOTYPE.key(), includeGenotype));
     }
 
     private void checkIncludeFormats(String expected, String includeFormat) {
         checkIncludeFormats(expected, new Query(INCLUDE_FORMAT.key(), includeFormat));
+        checkIncludeFormats(expected, new Query(INCLUDE_FORMAT.key(), includeFormat.replace(',', ':')));
     }
 
     private static void checkIncludeFormats(String expected, Query query) {

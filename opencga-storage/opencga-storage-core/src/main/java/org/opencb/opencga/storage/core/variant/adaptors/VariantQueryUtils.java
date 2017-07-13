@@ -483,7 +483,7 @@ public class VariantQueryUtils {
         boolean gt = query.getBoolean(INCLUDE_GENOTYPE.key(), false);
 
         if (isValidParam(query, INCLUDE_FORMAT)) {
-            List<String> includeFormat = query.getAsStringList(INCLUDE_FORMAT.key());
+            List<String> includeFormat = query.getAsStringList(INCLUDE_FORMAT.key(), "[,:]");
             if (includeFormat.size() == 1) {
                 String format = includeFormat.get(0);
                 if (format.equals(NONE)) {
