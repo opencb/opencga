@@ -27,9 +27,11 @@ public class VariantSearchUtils {
             Arrays.asList(VariantQueryParam.RETURNED_FILES,
                     VariantQueryParam.RETURNED_SAMPLES,
                     VariantQueryParam.RETURNED_STUDIES,
-                    VariantQueryParam.UNKNOWN_GENOTYPE
+                    VariantQueryParam.UNKNOWN_GENOTYPE,
+                    VariantQueryParam.INCLUDE_FORMAT,
+                    VariantQueryParam.INCLUDE_GENOTYPE,
+                    VariantQueryParam.SAMPLES_METADATA
                     // RETURNED_COHORTS
-                    // INCLUDED_FORMATS
             )));
 
     private static final List<VariantField> UNSUPPORTED_VARIANT_FIELDS =
