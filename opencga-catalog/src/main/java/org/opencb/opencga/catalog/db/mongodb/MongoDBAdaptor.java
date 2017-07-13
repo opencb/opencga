@@ -142,7 +142,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
     }
 
-    protected boolean checkStudyPermission(Document study, String user, String studyPermission) throws CatalogAuthorizationException {
+    protected boolean checkStudyPermission(Document study, String user, String studyPermission) {
         // 0. If the user corresponds with the owner, we don't have to check anything else
         if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
             return true;
@@ -150,8 +150,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
         // If user does not exist in the members group, the user will not have any permission
         if (!isUserInMembers(study, user)) {
-            throw new CatalogAuthorizationException("User " + user + " does not have any permissions in study "
-                    + study.getString(StudyDBAdaptor.QueryParams.ALIAS.key()));
+            return false;
         }
 
         if (user.equals(ANONYMOUS)) {

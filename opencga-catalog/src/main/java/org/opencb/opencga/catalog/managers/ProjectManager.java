@@ -536,7 +536,12 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         queryOptions = ParamUtils.defaultObject(queryOptions, QueryOptions::new);
         String user = catalogManager.getUserManager().getId(sessionId);
         if (!user.equals(userId)) {
-            throw new CatalogException("User " + user + " cannot see shared projects from other users");
+            // TODO: Remove this line
+            if (userId.equals("anonymous") && user.equals("*")) {
+                logger.info("Remove this condition !!");
+            } else {
+                throw new CatalogException("User " + user + " cannot see shared projects from other users");
+            }
         }
 
         Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + userId);

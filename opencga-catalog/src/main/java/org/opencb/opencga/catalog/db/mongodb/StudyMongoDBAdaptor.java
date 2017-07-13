@@ -32,7 +32,6 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
@@ -183,8 +182,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public boolean hasStudyPermission(long studyId, String user, StudyAclEntry.StudyPermissions permission)
-            throws CatalogDBException, CatalogAuthorizationException {
+    public boolean hasStudyPermission(long studyId, String user, StudyAclEntry.StudyPermissions permission) throws CatalogDBException {
         Query query = new Query(QueryParams.ID.key(), studyId);
         QueryResult queryResult = nativeGet(query, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
@@ -866,7 +864,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<Study> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+    public QueryResult<Study> get(Query query, QueryOptions options, String user) throws CatalogDBException {
         QueryResult queryResult = nativeGet(query, options, user);
         List<Study> studyList = new ArrayList<>(queryResult.getNumResults());
         for (Object studyDocument : queryResult.getResult()) {
@@ -894,7 +892,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         if (options.containsKey(QueryOptions.INCLUDE)) {
             options = new QueryOptions(options);

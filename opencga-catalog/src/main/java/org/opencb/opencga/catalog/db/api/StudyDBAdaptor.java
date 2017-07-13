@@ -22,7 +22,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Study;
@@ -65,8 +64,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
     QueryResult<Study> insert(long projectId, Study study, String owner, QueryOptions options) throws CatalogDBException;
 
-    boolean hasStudyPermission(long studyId, String user, StudyAclEntry.StudyPermissions permission)
-            throws CatalogDBException, CatalogAuthorizationException;
+    boolean hasStudyPermission(long studyId, String user, StudyAclEntry.StudyPermissions permission) throws CatalogDBException;
 
     //@Deprecated
     //QueryResult<Study> getAllStudies(QueryOptions options) throws CatalogDBException;
@@ -75,7 +73,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
     QueryResult<Study> get(long studyId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
+    QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException;
 
     void updateStudyLastModified(long studyId) throws CatalogDBException;
 
