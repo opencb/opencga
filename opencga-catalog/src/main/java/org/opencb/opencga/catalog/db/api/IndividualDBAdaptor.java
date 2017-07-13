@@ -96,9 +96,6 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         KARYOTYPIC_SEX("karyotypicSex", TEXT, ""),
         LIFE_STATUS("lifeStatus", TEXT, ""),
         AFFECTATION_STATUS("affectationStatus", TEXT, ""),
-        ACL("acl", TEXT_ARRAY, ""),
-        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
-        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"

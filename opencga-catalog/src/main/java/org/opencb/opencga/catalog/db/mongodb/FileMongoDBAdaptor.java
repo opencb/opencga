@@ -21,7 +21,6 @@ import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
@@ -221,41 +220,6 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     }
 
     @Override
-    public QueryResult<Map<String, Map<String, FileAclEntry>>> getAcls(long studyId, List<String> filePaths, List<String> userIds)
-            throws CatalogDBException {
-
-        long startTime = startQuery();
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-
-        Bson match = Aggregates.match(Filters.and(Filters.eq(PRIVATE_STUDY_ID, studyId), Filters.in(QueryParams.PATH.key(), filePaths)));
-        Bson unwind = Aggregates.unwind("$" + QueryParams.ACL.key());
-        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACL_MEMBER.key(), userIds));
-        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.PATH.key(), QueryParams.ACL.key()));
-        QueryResult<Document> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
-
-        List<File> files = parseFiles(result);
-        Map<String, Map<String, FileAclEntry>> pathAclMap = new HashMap<>();
-        for (File file : files) {
-//            AclEntry acl = file.getAcl().get(0);
-            for (FileAclEntry acl : file.getAcl()) {
-                if (pathAclMap.containsKey(file.getPath())) {
-                    Map<String, FileAclEntry> userAclMap = pathAclMap.get(file.getPath());
-                    if (!userAclMap.containsKey(acl.getMember())) {
-                        userAclMap.put(acl.getMember(), acl);
-                    }
-                } else {
-                    HashMap<String, FileAclEntry> userAclMap = new HashMap<>();
-                    userAclMap.put(acl.getMember(), acl);
-                    pathAclMap.put(file.getPath(), userAclMap);
-                }
-            }
-        }
-//        Map<String, Acl> pathAclMap = files.stream().collect(Collectors.toMap(File::getPath, file -> file.getAcl().get(0)));
-        logger.debug("getFilesAcl for {} paths and {} users, dbTime: {} ", filePaths.size(), userIds.size(), result.getDbTime());
-        return endQuery("getFilesAcl", startTime, Collections.singletonList(pathAclMap));
-    }
-
-    @Override
     public long getStudyIdByFileId(long fileId) throws CatalogDBException {
         QueryResult queryResult = nativeGet(new Query(QueryParams.ID.key(), fileId), null);
 
@@ -264,12 +228,6 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         } else {
             throw CatalogDBException.idNotFound("File", fileId);
         }
-    }
-
-    @Override
-    public List<Long> getStudyIdsByFileIds(String fileIds) throws CatalogDBException {
-        Bson query = parseQuery(new Query(QueryParams.ID.key(), fileIds), false);
-        return fileCollection.distinct(PRIVATE_STUDY_ID, query, Long.class).getResult();
     }
 
     @Override
@@ -659,9 +617,6 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                     case EXPERIMENT_ID:
                     case SAMPLE_IDS:
                     case JOB_ID:
-                    case ACL:
-                    case ACL_MEMBER:
-                    case ACL_PERMISSIONS:
                     case INDEX:
                     case INDEX_USER_ID:
                     case INDEX_CREATION_DATE:

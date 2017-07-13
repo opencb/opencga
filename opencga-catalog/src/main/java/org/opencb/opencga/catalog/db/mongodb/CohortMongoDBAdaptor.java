@@ -572,9 +572,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
                     case STATUS_MSG:
                     case STATUS_DATE:
                     case DESCRIPTION:
-                    case ACL:
-                    case ACL_MEMBER:
-                    case ACL_PERMISSIONS:
                     case ANNOTATION_SETS:
                     case VARIABLE_NAME:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);

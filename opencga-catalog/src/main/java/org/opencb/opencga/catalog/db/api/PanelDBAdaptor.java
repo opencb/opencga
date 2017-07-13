@@ -47,10 +47,6 @@ public interface PanelDBAdaptor extends DBAdaptor<DiseasePanel> {
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
 
-        ACL("acl", TEXT_ARRAY, ""),
-        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
-        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
-
         STUDY_ID("studyId", INTEGER_ARRAY, "");
 
         private static Map<String, QueryParams> map = new HashMap<>();

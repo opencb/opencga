@@ -115,14 +115,9 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                         throw new CatalogException("More than one project found for user " + userId);
                     }
                 }
-            } else {
-                // Anonymous user
-                // 1. Check if the anonymous user has been given permissions in any study
-                query.append(StudyDBAdaptor.QueryParams.ACL_MEMBER.key(), ANONYMOUS);
-                query.append(StudyDBAdaptor.QueryParams.ACL_PERMISSIONS.key(), StudyAclEntry.StudyPermissions.VIEW_STUDY);
             }
 
-            QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions);
+            QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions, userId);
             if (studyQueryResult.getNumResults() == 0) {
                 throw new CatalogException("No studies found for user " + userId);
             } else {
@@ -184,10 +179,6 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                     projectIds = catalogManager.getProjectManager().getIds(userId, aliasProject);
                     query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectIds);
                 }
-
-                // Add permissions for user anonymous in the query
-                query.append(StudyDBAdaptor.QueryParams.ACL_MEMBER.key(), ANONYMOUS);
-                query.append(StudyDBAdaptor.QueryParams.ACL_PERMISSIONS.key(), StudyAclEntry.StudyPermissions.VIEW_STUDY);
             }
 
             if (aliasList.size() > 0) {
@@ -195,7 +186,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 query.put(StudyDBAdaptor.QueryParams.ALIAS.key(), aliasList);
             }
 
-            QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions);
+            QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions, userId);
             if (studyQueryResult.getNumResults() == 0) {
                 throw new CatalogException("No studies found for user " + userId);
             } else {

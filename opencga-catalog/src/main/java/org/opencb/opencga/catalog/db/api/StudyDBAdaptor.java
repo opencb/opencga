@@ -221,9 +221,6 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         DATASTORES("dataStores", TEXT_ARRAY, ""),
         SIZE("size", INTEGER_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),
-        ACL("acl", TEXT_ARRAY, ""),
-        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
-        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
         PROJECT_ID("projectId", INTEGER_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]",
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

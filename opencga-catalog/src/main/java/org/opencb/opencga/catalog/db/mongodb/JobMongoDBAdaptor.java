@@ -685,9 +685,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case OUT_DIR_ID:
                     case TMP_OUT_DIR_URI:
                     case TAGS:
-                    case ACL:
-                    case ACL_MEMBER:
-                    case ACL_PERMISSIONS:
                     case ERROR:
                     case ERROR_DESCRIPTION:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);

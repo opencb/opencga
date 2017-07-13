@@ -43,9 +43,6 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         DESCRIPTION("description", TEXT, ""),
         RELEASE("release", INTEGER, ""),
 
-        ACL("acl", TEXT_ARRAY, ""),
-        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
-        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
         SAMPLES("samples", TEXT_ARRAY, ""),
         SAMPLE_IDS("samples.id", INTEGER, ""),
 

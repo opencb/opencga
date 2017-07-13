@@ -112,7 +112,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
                 query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), userOwner);
             }
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
-            QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options);
+            QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options, userId);
 
             if (projectQueryResult.getNumResults() != 1) {
                 if (projectQueryResult.getNumResults() == 0) {

@@ -46,9 +46,6 @@ public interface DatasetDBAdaptor extends DBAdaptor<Dataset> {
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
-        ACL("acl", TEXT_ARRAY, ""),
-        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
-        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"

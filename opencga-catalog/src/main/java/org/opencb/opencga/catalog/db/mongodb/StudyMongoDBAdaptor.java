@@ -1286,9 +1286,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     case DATASTORES:
                     case SIZE:
                     case URI:
-                    case ACL:
-                    case ACL_MEMBER:
-                    case ACL_PERMISSIONS:
                     case STATS:
                     case TYPE:
                     case GROUPS:

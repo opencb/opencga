@@ -507,9 +507,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                     case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
-                    case ACL:
-                    case ACL_MEMBER:
-                    case ACL_PERMISSIONS:
                     case ONTOLOGY_TERMS_ID:
                     case ONTOLOGY_TERMS_NAME:
                     case ONTOLOGY_TERMS_SOURCE:

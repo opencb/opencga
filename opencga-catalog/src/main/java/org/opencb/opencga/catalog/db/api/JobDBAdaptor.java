@@ -139,9 +139,6 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         INPUT_ID("input.id", INTEGER_ARRAY, ""),
         OUTPUT_ID("output.id", INTEGER_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
-        ACL("acl", TEXT_ARRAY, ""),
-        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
-        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"

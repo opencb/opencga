@@ -48,7 +48,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
-import static org.opencb.opencga.catalog.utils.CatalogMemberValidator.checkMembers;
 
 /**
  * Created by hpccoll1 on 14/08/15.
@@ -200,28 +199,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         }
 
         return endQuery("Modify sample", startTime, get(sampleId, new QueryOptions()));
-    }
-
-    public void unsetSampleAcl(long sampleId, List<String> members, List<String> permissions) throws CatalogDBException {
-        // Check that all the members (users) are correct and exist.
-        checkMembers(dbAdaptorFactory, getStudyId(sampleId), members);
-
-        // Remove the permissions the members might have had
-        for (String member : members) {
-            Document query = new Document(PRIVATE_ID, sampleId).append(QueryParams.ACL_MEMBER.key(), member);
-            Bson update;
-            if (permissions.size() == 0) {
-                update = new Document("$pull", new Document("acl", new Document("member", member)));
-            } else {
-                update = new Document("$pull", new Document("acl.$.permissions", new Document("$in", permissions)));
-            }
-            QueryResult<UpdateResult> updateResult = sampleCollection.update(query, update, null);
-            if (updateResult.first().getModifiedCount() == 0) {
-                throw new CatalogDBException("unsetSampleAcl: An error occurred when trying to stop sharing sample " + sampleId
-                        + " with other " + member + ".");
-            }
-        }
-
     }
 
     @Override
@@ -720,9 +697,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     case SOMATIC:
                     case TYPE:
                     case RELEASE:
-                    case ACL:
-                    case ACL_MEMBER:
-                    case ACL_PERMISSIONS:
                     case ONTOLOGY_TERMS_ID:
                     case ONTOLOGY_TERMS_NAME:
                     case ONTOLOGY_TERMS_SOURCE:

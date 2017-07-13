@@ -761,9 +761,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
                     case AFFECTATION_STATUS:
                     case CREATION_DATE:
                     case RELEASE:
-                    case ACL:
-                    case ACL_MEMBER:
-                    case ACL_PERMISSIONS:
                     case ANNOTATION_SETS:
                     case ONTOLOGY_TERMS_ID:
                     case ONTOLOGY_TERMS_NAME:
