@@ -210,6 +210,12 @@
                 <groupId>org.opencb.biodata</groupId>
                 <artifactId>biodata-models</artifactId>
                 <version>${biodata.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.google.protobuf</groupId>
+                        <artifactId>protobuf-lite</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.opencb.biodata</groupId>
