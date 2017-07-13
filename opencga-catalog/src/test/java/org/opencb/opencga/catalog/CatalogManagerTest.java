@@ -1543,6 +1543,19 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
+    public void getSharedProject() throws CatalogException, IOException {
+        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", "dummy", "", 50000L,
+                Account.GUEST, QueryOptions.empty());
+        catalogManager.getStudyManager().updateAcl("user@1000G:phase1", "dummy",
+                new Study.StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_STUDY.name(), AclParams.Action.SET, ""), sessionIdUser);
+
+        QueryResult<Session> login = catalogManager.getUserManager().login("dummy", "dummy", "oo");
+        QueryResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("dummy", QueryOptions.empty(),
+                login.first().getId());
+        assertEquals(1, queryResult.getNumResults());
+    }
+
+    @Test
     public void testCreateSampleWithIndividual() throws CatalogException {
         long studyId = catalogManager.getStudyId("user@1000G:phase1", sessionIdUser);
         long individualId = catalogManager.createIndividual(studyId, "Individual1", "", 0, 0, Individual.Sex.MALE, new QueryOptions(),

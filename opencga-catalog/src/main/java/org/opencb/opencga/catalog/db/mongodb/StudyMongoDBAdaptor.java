@@ -909,6 +909,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 iterator.remove();
             }
         }
+        queryResult.setNumResults(queryResult.getResult().size());
+        queryResult.setNumTotalResults(-1);
 
         return queryResult;
     }
