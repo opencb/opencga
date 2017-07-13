@@ -22,6 +22,7 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.catalog.models.GroupParams;
+import org.opencb.opencga.catalog.models.MemberParams;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
@@ -51,6 +52,7 @@ public class StudyCommandOptions {
     public GroupsCreateCommandOptions groupsCreateCommandOptions;
     public GroupsDeleteCommandOptions groupsDeleteCommandOptions;
     public GroupsUpdateCommandOptions groupsUpdateCommandOptions;
+    public MemberGroupUpdateCommandOptions memberGroupUpdateCommandOptions;
 
     public AclsCommandOptions aclsCommandOptions;
     public AclsUpdateCommandOptions aclsUpdateCommandOptions;
@@ -87,6 +89,7 @@ public class StudyCommandOptions {
         this.groupsCreateCommandOptions = new GroupsCreateCommandOptions();
         this.groupsDeleteCommandOptions = new GroupsDeleteCommandOptions();
         this.groupsUpdateCommandOptions = new GroupsUpdateCommandOptions();
+        this.memberGroupUpdateCommandOptions = new MemberGroupUpdateCommandOptions();
 
         this.aclsCommandOptions = new AclsCommandOptions();
         this.aclsUpdateCommandOptions = new AclsUpdateCommandOptions();
@@ -558,11 +561,21 @@ public class StudyCommandOptions {
         @Parameter(names = {"--name"}, description = "Group name", required = true, arity = 1)
         public String groupId;
 
-        @Parameter(names = {"--users"}, description = "Comma separated list of users", arity = 1)
+        @Parameter(names = {"--users"}, description = "Comma separated list of users", required = true, arity = 1)
         public String users;
 
         @Parameter(names = {"--action"}, description = "Action to be performed over users (ADD, SET, REMOVE)", required = true, arity = 1)
         public GroupParams.Action action;
+    }
+
+    @Parameters(commandNames = {"members-update"}, commandDescription = "Add/Remove users to access the study")
+    public class MemberGroupUpdateCommandOptions extends BaseStudyCommand {
+
+        @Parameter(names = {"--users"}, description = "Comma separated list of users", required = true, arity = 1)
+        public String users;
+
+        @Parameter(names = {"--action"}, description = "Action to be performed over users (ADD, REMOVE)", required = true, arity = 1)
+        public MemberParams.Action action;
     }
 
     @Parameters(commandNames = {"acl"}, commandDescription = "Return the acls set for the resource")

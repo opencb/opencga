@@ -152,6 +152,11 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
         return execute(STUDY_URL, studyId, "groups", groupId, "update", bodyParams, POST, ObjectMap.class);
     }
 
+    public QueryResponse<ObjectMap> updateGroupMember(String studyId, ObjectMap objectMap) throws CatalogException, IOException {
+        ObjectMap bodyParams = new ObjectMap("body", objectMap);
+        return execute(STUDY_URL, studyId, "groups", "members", "update", bodyParams, POST, ObjectMap.class);
+    }
+
     public QueryResponse<ObjectMap> groups(String studyId, ObjectMap objectMap) throws CatalogException, IOException {
         ObjectMap params = new ObjectMap(objectMap);
         return execute(STUDY_URL, studyId, "groups", params, GET, ObjectMap.class);

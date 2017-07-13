@@ -124,6 +124,9 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
             case "groups-update":
                 queryResponse = groupsUpdate();
                 break;
+            case "members-update":
+                queryResponse = membersUpdate();
+                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -510,6 +513,19 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
         return openCGAClient.getStudyClient().updateGroup(studiesCommandOptions.groupsUpdateCommandOptions.study,
                 studiesCommandOptions.groupsUpdateCommandOptions.groupId, params);
+    }
+
+    private QueryResponse<ObjectMap> membersUpdate() throws CatalogException,IOException {
+        logger.debug("Updating users from members group");
+
+        studiesCommandOptions.memberGroupUpdateCommandOptions.study =
+                getSingleValidStudy(studiesCommandOptions.memberGroupUpdateCommandOptions.study);
+
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull("action", studiesCommandOptions.memberGroupUpdateCommandOptions.action);
+        params.putIfNotNull("users", studiesCommandOptions.memberGroupUpdateCommandOptions.users);
+
+        return openCGAClient.getStudyClient().updateGroupMember(studiesCommandOptions.memberGroupUpdateCommandOptions.study, params);
     }
 
     /************************************************* Acl commands *********************************************************/
