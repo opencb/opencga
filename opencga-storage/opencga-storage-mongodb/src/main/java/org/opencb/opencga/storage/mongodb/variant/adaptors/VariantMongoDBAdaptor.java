@@ -63,6 +63,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.MULTI;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getIncludeFormats;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getReturnedFiles;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getSamplesMetadata;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_STAGE;
@@ -394,10 +395,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // Short unsorted queries with timeout or limit don't need the persistent cursor.
         if (options.containsKey(QueryOptions.TIMEOUT)
                 || options.containsKey(QueryOptions.LIMIT)
-                || !options.containsKey(QueryOptions.SORT)) {
+                || !options.getBoolean(QueryOptions.SORT, false)) {
+            StopWatch stopWatch = StopWatch.createStarted();
             FindIterable<Document> dbCursor = variantsCollection.nativeQuery().find(mongoQuery, projection, options);
-            return new VariantMongoDBIterator(dbCursor, converter);
+            VariantMongoDBIterator dbIterator = new VariantMongoDBIterator(dbCursor, converter);
+            dbIterator.setTimeFetching(dbIterator.getTimeFetching() + stopWatch.getNanoTime());
+            return dbIterator;
         } else {
+            logger.debug("Using mongodb persistent iterator");
             return VariantMongoDBIterator.persistentIterator(variantsCollection, mongoQuery, projection, options, converter);
         }
     }
@@ -803,6 +808,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         List<Integer> returnedStudies = getReturnedStudies(query, options);
         DocumentToSamplesConverter samplesConverter;
         samplesConverter = new DocumentToSamplesConverter(studyConfigurationManager);
+        samplesConverter.setFormat(getIncludeFormats(query));
         // Fetch some StudyConfigurations that will be needed
         if (returnedStudies != null) {
             for (Integer studyId : returnedStudies) {

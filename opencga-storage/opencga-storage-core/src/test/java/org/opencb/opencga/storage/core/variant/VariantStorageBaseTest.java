@@ -126,10 +126,14 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     }
 
     public static URI getResourceUri(String resourceName) throws IOException {
+        return getResourceUri(resourceName, resourceName);
+    }
+
+    public static URI getResourceUri(String resourceName, String targetName) throws IOException {
         Path rootDir = getTmpRootDir();
-        Path resourcePath = rootDir.resolve(resourceName);
+        Path resourcePath = rootDir.resolve(targetName);
         if (!resourcePath.getParent().toFile().exists()) {
-            Files.createDirectory(resourcePath.getParent());
+            Files.createDirectories(resourcePath.getParent());
         }
         if (!resourcePath.toFile().exists()) {
             Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(resourceName), resourcePath, StandardCopyOption

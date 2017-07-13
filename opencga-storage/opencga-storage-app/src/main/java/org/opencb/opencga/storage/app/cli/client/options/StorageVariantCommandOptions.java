@@ -317,6 +317,12 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--output-file"}, description = "A comma separated list of files from the SAME study to be returned")
         public String returnFile;
 
+        @Parameter(names = {"--include-format"}, description = VariantQueryParam.INCLUDE_FORMAT_DESCR)
+        public String includeFormat;
+
+        @Parameter(names = {"--include-genotype"}, description = VariantQueryParam.INCLUDE_GENOTYPE_DESCR)
+        public String includeGenotype;
+
         @Parameter(names = {"--output-sample"}, description = "A comma separated list of samples from the SAME study to be returned")
         public String returnSample;
 

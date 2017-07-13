@@ -178,6 +178,8 @@ public class VariantQueryCommandUtils {
         addParam(query, GENOTYPE, queryVariantsOptions.sampleGenotype);
         addParam(query, SAMPLES, queryVariantsOptions.samples);
         addParam(query, RETURNED_SAMPLES, queryVariantsOptions.returnSample);
+        addParam(query, INCLUDE_FORMAT, queryVariantsOptions.includeFormat);
+        addParam(query, INCLUDE_GENOTYPE, queryVariantsOptions.includeGenotype);
         addParam(query, UNKNOWN_GENOTYPE, queryVariantsOptions.unknownGenotype);
 
 
@@ -290,7 +292,7 @@ public class VariantQueryCommandUtils {
         }
 
         if (StringUtils.isNotEmpty(queryVariantsOptions.commonQueryOptions.exclude)) {
-            queryOptions.add("exclude", queryVariantsOptions.commonQueryOptions.exclude + ",_id");
+            queryOptions.add("exclude", queryVariantsOptions.commonQueryOptions.exclude);
         }
 //        else {
 //            queryOptions.put("exclude", "_id");

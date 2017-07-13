@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +55,7 @@ public class VariantQueryUtils {
 
     public static final String NONE = "none";
     public static final String ALL = "all";
+    public static final String GT = "GT";
 
     private static Logger logger = LoggerFactory.getLogger(VariantQueryUtils.class);
 
@@ -94,6 +96,17 @@ public class VariantQueryUtils {
         return (value != null)
                 && !(value instanceof String && ((String) value).isEmpty()
                 || value instanceof Collection && ((Collection) value).isEmpty());
+    }
+
+    public static Set<VariantQueryParam> validParams(Query query) {
+        Set<VariantQueryParam> params = new HashSet<>(query.size());
+
+        for (VariantQueryParam queryParam : values()) {
+            if (isValidParam(query, queryParam)) {
+                params.add(queryParam);
+            }
+        }
+        return params;
     }
 
     /**
@@ -459,11 +472,78 @@ public class VariantQueryUtils {
             samples = null;
         }
         if (samples != null) {
-            samples.stream()
+            samples = samples.stream()
                     .map(s -> s.contains(":") ? s.split(":")[1] : s)
                     .collect(Collectors.toList());
         }
         return samples;
+    }
+
+    /**
+     * Gets a list of elements formats to return.
+     *
+     * @see VariantQueryParam#INCLUDE_FORMAT
+     * @see VariantQueryParam#INCLUDE_GENOTYPE
+     *
+     * @param query Variants Query
+     * @return List of formats to include. Null if undefined or all. Empty list if none.
+     */
+    public static List<String> getIncludeFormats(Query query) {
+        final Set<String> formatsSet;
+        boolean all = false;
+        boolean none = false;
+        boolean gt = query.getBoolean(INCLUDE_GENOTYPE.key(), false);
+
+        if (isValidParam(query, INCLUDE_FORMAT)) {
+            List<String> includeFormat = query.getAsStringList(INCLUDE_FORMAT.key(), "[,:]");
+            if (includeFormat.size() == 1) {
+                String format = includeFormat.get(0);
+                if (format.equals(NONE)) {
+                    none = true;
+                    formatsSet = Collections.emptySet();
+                } else if (format.equals(ALL)) {
+                    all = true;
+                    formatsSet = Collections.emptySet();
+                } else {
+                    if (format.equals(GT)) {
+                        gt = true;
+                        formatsSet = Collections.emptySet();
+                    } else {
+                        formatsSet = Collections.singleton(format);
+                    }
+                }
+            } else {
+                formatsSet = new LinkedHashSet<>(includeFormat);
+                if (formatsSet.contains(GT)) {
+                    formatsSet.remove(GT);
+                    gt = true;
+                }
+            }
+        } else {
+            formatsSet = Collections.emptySet();
+        }
+
+        if (none) {
+            if (gt) {
+                // None but genotype
+                return Collections.singletonList(GT);
+            } else {
+                // Empty list as none elements
+                return Collections.emptyList();
+            }
+        } else if (all || formatsSet.isEmpty() && !gt) {
+            // Null as all or undefined
+            return null;
+        } else {
+            // Ensure GT is the first element
+            ArrayList<String> formats = new ArrayList<>(formatsSet.size());
+            if (gt) {
+                formats.add(GT);
+            }
+            formats.addAll(formatsSet);
+
+            return formats;
+        }
     }
 
     /**
@@ -596,6 +676,53 @@ public class VariantQueryUtils {
         }
 
         return new String[]{key.trim(), operator.trim(), filter.trim()};
+    }
+
+
+    public static void convertExpressionToGeneQuery(Query query, CellBaseUtils cellBaseUtils) {
+        if (isValidParam(query, VariantQueryParam.ANNOT_EXPRESSION)) {
+            String value = query.getString(VariantQueryParam.ANNOT_EXPRESSION.key());
+            // Check if comma separated of semi colon separated (AND or OR)
+            VariantQueryUtils.QueryOperation queryOperation = checkOperator(value);
+            // Split by comma or semi colon
+            List<String> expressionValues = splitValue(value, queryOperation);
+
+            if (queryOperation == VariantQueryUtils.QueryOperation.AND) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_EXPRESSION, value, "Unimplemented AND operator");
+            }
+            query.remove(VariantQueryParam.ANNOT_EXPRESSION.key());
+            List<String> genes = new ArrayList<>(query.getAsStringList(VariantQueryParam.GENE.key()));
+            Set<String> genesByExpression = cellBaseUtils.getGenesByExpression(expressionValues);
+            if (genesByExpression.isEmpty()) {
+                genes.add("none");
+            } else {
+                genes.addAll(genesByExpression);
+            }
+            query.put(VariantQueryParam.GENE.key(), genes);
+        }
+    }
+
+    public static void convertGoToGeneQuery(Query query, CellBaseUtils cellBaseUtils) {
+        if (isValidParam(query, VariantQueryParam.ANNOT_GO)) {
+            String value = query.getString(VariantQueryParam.ANNOT_GO.key());
+            // Check if comma separated of semi colon separated (AND or OR)
+            VariantQueryUtils.QueryOperation queryOperation = checkOperator(value);
+            // Split by comma or semi colon
+            List<String> goValues = splitValue(value, queryOperation);
+
+            if (queryOperation == VariantQueryUtils.QueryOperation.AND) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_GO, value, "Unimplemented AND operator");
+            }
+            query.remove(VariantQueryParam.ANNOT_GO.key());
+            List<String> genes = new ArrayList<>(query.getAsStringList(VariantQueryParam.GENE.key()));
+            Set<String> genesByGo = cellBaseUtils.getGenesByGo(goValues);
+            if (genesByGo.isEmpty()) {
+                genes.add("none");
+            } else {
+                genes.addAll(genesByGo);
+            }
+            query.put(VariantQueryParam.GENE.key(), genes);
+        }
     }
 
 }
