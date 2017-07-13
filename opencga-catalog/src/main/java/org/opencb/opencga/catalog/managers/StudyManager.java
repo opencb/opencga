@@ -836,7 +836,9 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 // Anonymous user is only allowed in MEMBERS group, otherwise we keep it as if it is present it should fail.
                 tmpUsers = users.stream().filter(user -> !user.equals(ANONYMOUS)).collect(Collectors.toList());
             }
-            userDBAdaptor.checkIds(tmpUsers);
+            if (tmpUsers.size() > 0) {
+                userDBAdaptor.checkIds(tmpUsers);
+            }
         } else {
             users = Collections.emptyList();
         }

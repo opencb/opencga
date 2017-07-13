@@ -790,6 +790,21 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
+    @POST
+    @Path("/{study}/groups/members/update")
+    @ApiOperation(value = "Add/Remove users with access to study")
+    public Response registerUsersToStudy(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
+                @PathParam("study") String studyStr,
+            @ApiParam(value="JSON containing the action to be performed", required = true) MemberParams params) {
+        try {
+            return createOkResponse(
+                    catalogManager.getStudyManager().updateGroup(studyStr, "@members", params.toGroupParams(), sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @GET
     @Path("/{study}/groups/{group}/delete")
     @ApiOperation(value = "Delete the group", position = 17, notes = "Delete the group selected from the study.")
