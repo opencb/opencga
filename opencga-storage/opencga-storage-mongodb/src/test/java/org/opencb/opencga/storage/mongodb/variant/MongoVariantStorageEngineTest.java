@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
 import org.bson.Document;
+import org.bson.types.Binary;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,6 +29,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
+import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -44,10 +46,12 @@ import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesCo
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
+import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.*;
@@ -56,6 +60,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.zip.DataFormatException;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
@@ -865,7 +870,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
     @Test
     @Override
     public void multiIndexPlatinum() throws Exception {
-        super.multiIndexPlatinum();
+        super.multiIndexPlatinum(new ObjectMap(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DP,AD,PL"));
         checkPlatinumDatabase(d -> 17, Collections.singleton("0/0"));
     }
 
@@ -926,8 +931,10 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
                 assertEquals(id, studies.get(0).get(FILES_FIELD, List.class).size(), studies.get(1).get(FILES_FIELD, List.class).size());
                 assertEquals(id, files1.size(), files2.size());
                 for (Map.Entry<String, Document> entry : files1.entrySet()) {
-                    Document attrs = entry.getValue().get(ATTRIBUTES_FIELD, Document.class);
-                    Document attrs2 = files2.get(entry.getKey()).get(ATTRIBUTES_FIELD, Document.class);
+                    Document file1 = entry.getValue();
+                    Document file2 = files2.get(entry.getKey());
+                    Document attrs = file1.get(ATTRIBUTES_FIELD, Document.class);
+                    Document attrs2 = file2.get(ATTRIBUTES_FIELD, Document.class);
                     String ac1 = Objects.toString(attrs.remove("AC"));
                     String ac2 = Objects.toString(attrs2.remove("AC"));
                     if (!ac1.equals(ac2)) {
@@ -942,13 +949,52 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
                         af2 = Arrays.stream(af2.split(",")).map(Double::parseDouble).map(String::valueOf).collect(Collectors.joining(","));
                         assertTrue(id + ' ' + af1 + ' ' + af2 , af1.startsWith(af2) || af2.startsWith(af1));
                     }
-                    assertEquals(id, entry.getValue(), files2.get(entry.getKey()));
+                    Document samplesData1 = (Document) file1.remove(SAMPLE_DATA_FIELD);
+                    Document samplesData2 = (Document) file2.remove(SAMPLE_DATA_FIELD);
+                    for (String key : samplesData1.keySet()) {
+                        VariantMongoDBProto.OtherFields data1 = readSamplesData(samplesData1, key);
+                        VariantMongoDBProto.OtherFields data2 = readSamplesData(samplesData2, key);
+                        if (data1 == null) {
+                            assertNull(data2);
+                        } else {
+                            assertEquals(data1.getStringValuesCount(), data2.getStringValuesCount());
+                            if (1 == data2.getStringValuesCount()) {
+                                String value1 = data1.getStringValues(0);
+                                String value2 = data2.getStringValues(0);
+                                assertTrue(id + ' ' + value1 + ' ' + value2 , value1.startsWith(value2) || value2.startsWith(value1));
+                            } else {
+                                assertEquals(data1, data2);
+                            }
+                        }
+                    }
+                    assertEquals(id, file1, file2);
                 }
 
             }
+//            VariantExporter variantExporter = new VariantExporter(dbAdaptor);
+//            URI uri = newOutputUri();
+//            variantExporter.export(uri.resolve("s1.vcf"), VariantWriterFactory.VariantOutputFormat.VCF, new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), ".").append(VariantQueryParam.STUDIES.key(), 1), new QueryOptions(QueryOptions.SORT, true));
+//            variantExporter.export(uri.resolve("s2.vcf"), VariantWriterFactory.VariantOutputFormat.VCF, new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), ".").append(VariantQueryParam.STUDIES.key(), 2), new QueryOptions(QueryOptions.SORT, true));
         }
+
     }
 
+    private VariantMongoDBProto.OtherFields readSamplesData(Document samplesData1, String key) throws com.google.protobuf.InvalidProtocolBufferException {
+
+        byte[] data = samplesData1.get(key, Binary.class).getData();
+        try {
+            data = CompressionUtils.decompress(data);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } catch (DataFormatException ignore) {
+            //It was not actually compressed, so it failed decompressing
+        }
+        if (data != null && data.length > 0) {
+            return VariantMongoDBProto.OtherFields.parseFrom(data);
+        } else {
+            return null;
+        }
+    }
 
 
     @Test

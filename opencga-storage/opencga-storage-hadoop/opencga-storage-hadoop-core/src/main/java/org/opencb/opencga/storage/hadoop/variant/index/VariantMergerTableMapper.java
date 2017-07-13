@@ -37,6 +37,7 @@ import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
@@ -118,19 +119,28 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
         expectedFormats = HBaseToVariantConverter.getFormat(getStudyConfiguration());
 
 
-        variantMerger = new VariantMerger(collapseDeletions);
-        variantMerger.setStudyId(Integer.toString(getStudyConfiguration().getStudyId()));
-        variantMerger.setExpectedFormats(expectedFormats);
+        variantMerger = newVariantMerger(collapseDeletions);
         variantMerger.setExpectedSamples(this.getIndexedSamples().keySet());
         // Add all samples which are currently being indexed.
         variantMerger.addExpectedSamples(samplesToIndex);
 
 
-        variantMergerSamplesToIndex = new VariantMerger(collapseDeletions);
-        variantMergerSamplesToIndex.setStudyId(Integer.toString(getStudyConfiguration().getStudyId()));
-        variantMergerSamplesToIndex.setExpectedFormats(expectedFormats);
+        variantMergerSamplesToIndex = newVariantMerger(collapseDeletions);
         variantMergerSamplesToIndex.setExpectedSamples(samplesToIndex);
 
+    }
+
+    public VariantMerger newVariantMerger(boolean collapseDeletions) {
+        VariantMerger variantMerger = new VariantMerger(collapseDeletions);
+        variantMerger.setStudyId(Integer.toString(getStudyConfiguration().getStudyId()));
+        variantMerger.setExpectedFormats(expectedFormats);
+        for (VariantStudyMetadata.VariantMetadataRecord record : getStudyConfiguration().getVariantMetadata().getFormat().values()) {
+            variantMerger.configure(record.getId(), record.getNumberType(), record.getType());
+        }
+        for (VariantStudyMetadata.VariantMetadataRecord record : getStudyConfiguration().getVariantMetadata().getInfo().values()) {
+            variantMerger.configure(record.getId(), record.getNumberType(), record.getType());
+        }
+        return variantMerger;
     }
 
     public static  ForkJoinPool createForkJoinPool(final String prefix, int vcores) {

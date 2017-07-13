@@ -36,6 +36,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -271,7 +272,8 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
             int loadedSamplesSize = loadedSamples.size();
 
             // Load Secondary Index
-            List<AlternateCoordinate> secAltArr = getAlternateCoordinates(variant, studyId, format, rowsMap, fullSamplesData);
+            List<AlternateCoordinate> secAltArr = getAlternateCoordinates(variant, studyId,
+                    studyConfiguration.getVariantMetadata(), format, rowsMap, fullSamplesData);
 
             Integer nSamples = returnedSamplesPosition.size();
 
@@ -460,15 +462,15 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return defaultGenotype;
     }
 
-    private List<AlternateCoordinate> getAlternateCoordinates(Variant variant, Integer studyId, List<String> format,
-                                                              Map<Integer, VariantTableStudyRow> rowsMap,
+    private List<AlternateCoordinate> getAlternateCoordinates(Variant variant, Integer studyId, VariantStudyMetadata variantMetadata,
+                                                              List<String> format, Map<Integer, VariantTableStudyRow> rowsMap,
                                                               Map<Integer, Map<Integer, List<String>>> fullSamplesData) {
         List<AlternateCoordinate> secAltArr;
         if (rowsMap.containsKey(studyId)) {
             VariantTableStudyRow row = rowsMap.get(studyId);
             secAltArr = getAlternateCoordinates(variant, row);
         } else {
-            secAltArr = getAlternateCoordinatesFromSampleColumns(variant, format, studyId, fullSamplesData);
+            secAltArr = samplesDataConverter.extractSecondaryAlternates(variant, variantMetadata, format, fullSamplesData.get(studyId));
         }
         return secAltArr;
     }
@@ -492,11 +494,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
             }
         }
         return secAltArr;
-    }
-
-    protected List<AlternateCoordinate> getAlternateCoordinatesFromSampleColumns(Variant variant, List<String> format, Integer studyId,
-                                                                                 Map<Integer, Map<Integer, List<String>>> fullSamplesData) {
-        return samplesDataConverter.extractSecondaryAlternates(variant, format, fullSamplesData.get(studyId));
     }
 
     private void calculatePassCallRates(VariantTableStudyRow row, Map<String, String> attributesMap, int

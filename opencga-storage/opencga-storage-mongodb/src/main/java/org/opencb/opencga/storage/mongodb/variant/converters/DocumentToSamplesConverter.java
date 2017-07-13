@@ -294,10 +294,15 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
 
         if (!extraFields.isEmpty()) {
             for (Integer fid : filesWithSamplesData) {
+                Document samplesDataDocument = null;
                 if (files.containsKey(fid) && files.get(fid).containsKey(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD)) {
-                    Document samplesDataDocument = files.get(fid)
+                    samplesDataDocument = files.get(fid)
                             .get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD, Document.class);
-
+                } else if (files.containsKey(-fid) && files.get(-fid).containsKey(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD)) {
+                    samplesDataDocument = files.get(-fid)
+                            .get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD, Document.class);
+                }
+                if (samplesDataDocument != null) {
                     int extraFieldPosition;
                     if (excludeGenotypes) {
                         extraFieldPosition = 0; //There are no GT

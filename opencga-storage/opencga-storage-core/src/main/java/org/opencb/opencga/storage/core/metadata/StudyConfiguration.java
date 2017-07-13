@@ -60,6 +60,8 @@ public class StudyConfiguration {
 
     private Long timeStamp;
 
+    private VariantStudyMetadata variantMetadata;
+
     private ObjectMap attributes;
 
     protected StudyConfiguration() {
@@ -87,6 +89,7 @@ public class StudyConfiguration {
         }
         this.aggregation = other.aggregation;
         this.timeStamp = other.timeStamp;
+        this.variantMetadata = new VariantStudyMetadata(other.variantMetadata);
         this.attributes = new ObjectMap(other.attributes);
     }
 
@@ -120,6 +123,7 @@ public class StudyConfiguration {
         this.batches = new ArrayList<>();
         this.aggregation = VariantSource.Aggregation.NONE;
         this.timeStamp = 0L;
+        this.variantMetadata = new VariantStudyMetadata();
         this.attributes = new ObjectMap();
     }
 
@@ -281,6 +285,15 @@ public class StudyConfiguration {
 
     public void setTimeStamp(Long timeStamp) {
         this.timeStamp = timeStamp;
+    }
+
+    public VariantStudyMetadata getVariantMetadata() {
+        return variantMetadata;
+    }
+
+    public StudyConfiguration setVariantMetadata(VariantStudyMetadata variantMetadata) {
+        this.variantMetadata = variantMetadata;
+        return this;
     }
 
     public ObjectMap getAttributes() {
