@@ -544,8 +544,8 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             }
         }
 
-        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + userId);
-        QueryResult<Project> allProjects = projectDBAdaptor.get(query, queryOptions, userId);
+        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + user);
+        QueryResult<Project> allProjects = projectDBAdaptor.get(query, queryOptions, user);
         for (Project project : allProjects.getResult()) {
             // Add user info to the alias
             String ownerId = projectDBAdaptor.getOwnerId(project.getId());

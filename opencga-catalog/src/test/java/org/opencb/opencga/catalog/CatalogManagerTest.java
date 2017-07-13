@@ -1553,6 +1553,11 @@ public class CatalogManagerTest extends GenericTest {
         QueryResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("dummy", QueryOptions.empty(),
                 login.first().getId());
         assertEquals(1, queryResult.getNumResults());
+
+        catalogManager.getStudyManager().updateAcl("user@1000G:phase1", "*",
+                new Study.StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_STUDY.name(), AclParams.Action.SET, ""), sessionIdUser);
+        queryResult = catalogManager.getProjectManager().getSharedProjects("anonymous", QueryOptions.empty(), null);
+        assertEquals(1, queryResult.getNumResults());
     }
 
     @Test
