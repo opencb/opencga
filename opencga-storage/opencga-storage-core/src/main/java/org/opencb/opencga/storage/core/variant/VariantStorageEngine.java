@@ -76,6 +76,7 @@ import static org.opencb.opencga.storage.core.search.solr.VariantSearchManager.Q
 import static org.opencb.opencga.storage.core.search.solr.VariantSearchUtils.*;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ID;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.RETURNED_STUDIES;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDIES;
 
 /**
@@ -567,8 +568,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             if (doIntersectWithSearch(query, params, options)) {
                 // Intersect Solr+Engine
 
-                int limit = options.getInt(QueryOptions.LIMIT, -1);
-                int skip = options.getInt(QueryOptions.SKIP, -1);
+                int limit = options.getInt(QueryOptions.LIMIT, 0);
+                int skip = options.getInt(QueryOptions.SKIP, 0);
                 boolean pagination = skip > 0 || limit > 0;
 
                 Iterator<?> variantsIterator;
@@ -610,10 +611,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     engineQuery.put(uncoveredParam.key(), query.get(uncoveredParam.key()));
                 }
                 // Despite STUDIES is a covered filter by Solr, it has to be in the underlying
-                // query to filter by the rest of uncovered filters
-                if (!uncoveredParams.isEmpty()) {
-                    if (params.contains(STUDIES)) {
+                // query to be used as defaultStudy
+                if (params.contains(STUDIES)) {
+                    if (!uncoveredParams.isEmpty()) {
+                        // This will set the default study, if needed
                         engineQuery.put(STUDIES.key(), query.get(STUDIES.key()));
+                    } else if (!params.contains(RETURNED_STUDIES)) {
+                        // If returned studies is not defined, we need to define it with the values from STUDIES
+                        List<Integer> studies = VariantQueryUtils.getReturnedStudies(query, options, getStudyConfigurationManager());
+                        engineQuery.put(RETURNED_STUDIES.key(), studies);
                     }
                 }
 
@@ -626,6 +632,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     if (numTotalResults != null) {
                         queryResult.setNumTotalResults(numTotalResults.longValue());
                     }
+                    queryResult.setWarningMsg("Data from Solr + " + getStorageEngineId());
                     return queryResult;
                 }
             } else {

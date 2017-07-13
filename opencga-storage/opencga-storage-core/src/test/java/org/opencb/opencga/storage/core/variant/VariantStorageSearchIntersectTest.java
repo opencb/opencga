@@ -9,6 +9,7 @@ import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -225,12 +226,16 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 
     @Test
     public void testQueryWithIds() throws Exception {
-        List<String> variantIds = allVariants.getResult().stream().map(Variant::toString).limit(400).collect(Collectors.toList());
+        List<String> variantIds = allVariants.getResult().stream()
+                .filter(v -> EnumSet.of(VariantType.SNV, VariantType.SNP).contains(v.getType()))
+                .map(Variant::toString)
+                .limit(400)
+                .collect(Collectors.toList());
         Query query = new Query(SAMPLES.key(), "NA19660")
                 .append(ANNOT_CONSERVATION.key(), "gerp>0.2")
                 .append(ID.key(), variantIds);
         QueryOptions options = new QueryOptions(QUERY_INTERSECT, true);
-        skipLimit(query, options, 50, false);
+        skipLimit(query, options, 50, true);
     }
 
     @Test
