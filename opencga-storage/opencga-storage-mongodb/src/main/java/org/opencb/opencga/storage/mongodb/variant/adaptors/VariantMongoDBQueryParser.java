@@ -733,45 +733,20 @@ public class VariantMongoDBQueryParser {
         Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
         // Add all required fields
         returnedFields.addAll(DocumentToVariantConverter.REQUIRED_FIELDS_SET);
+        // StudyID is mandatory if returning any STUDY element
         if (returnedFields.contains(VariantField.STUDIES) && !returnedFields.contains(VariantField.STUDIES_STUDY_ID)) {
             returnedFields.add(VariantField.STUDIES_STUDY_ID);
         }
 
-        returnedFields = VariantField.prune(returnedFields);
-
-        if (!returnedFields.isEmpty()) { //Include some
-            for (VariantField s : returnedFields) {
-                List<String> keys = DocumentToVariantConverter.toShortFieldName(s);
-//                String key = DocumentToVariantConverter.toShortFieldName(s.fieldName());
-                if (keys != null) {
-                    for (String key : keys) {
-                        projection.put(key, 1);
-                    }
-                } else {
-                    logger.warn("Unknown include field: {}", s);
-                }
-            }
-        }
-
-//        if (query.containsKey(VariantQueryParams.RETURNED_FILES.key()) && projection.containsKey(DocumentToVariantConverter
-//                .STUDIES_FIELD)) {
-//            List<Integer> files = query.getAsIntegerList(VariantQueryParams.RETURNED_FILES.key());
-//            projection.put(
-//                    DocumentToVariantConverter.STUDIES_FIELD,
-//                    new Document(
-//                            "$elemMatch",
-//                            new Document(
-//                                    DocumentToStudyVariantEntryConverter.FILES_FIELD + "." + DocumentToStudyVariantEntryConverter
-//                                            .FILEID_FIELD,
-//                                    new Document(
-//                                            "$in",
-//                                            files
-//                                    )
-//                            )
-//                    )
-//            );
-//        }
-
+        // Top level $elemMatch MUST be at the very beginning in the projection document, so all the fields apply correctly.
+        //
+        // This two queries return different values:
+        //
+        // > db.variants.find({}, {studies:{$elemMatch:{sid:1}}, "studies.files":1})
+        // {  studies : [ { sid : 1, files : [ ... ] } ]  }
+        //
+        // > db.variants.find({}, {"studies.files":1, studies:{$elemMatch:{sid:1}}})
+        // {  studies : [ { sid : 1, files : [ ... ] , gt : { ... } } ]  }
         List<Integer> studiesIds = VariantQueryUtils.getReturnedStudies(query, options, studyConfigurationManager);
         // Use elemMatch only if there is one study to return.
         if (studiesIds.size() == 1) {
@@ -788,6 +763,44 @@ public class VariantMongoDBQueryParser {
                             )
                     )
             );
+        }
+
+        if (returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
+            List<String> formats = VariantQueryUtils.getIncludeFormats(query);
+            if (formats != null) { // If null, undefined. Return all
+                // Special conversion
+                returnedFields.remove(VariantField.STUDIES_SAMPLES_DATA);
+
+                for (String format : formats) {
+                    if (format.equals(GT)) {
+                        projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
+                                + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, 1);
+                    } else {
+                        projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
+                                + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
+                                + DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD + '.' + format.toLowerCase(), 1);
+                        projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
+                                + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
+                                + DocumentToStudyVariantEntryConverter.FILEID_FIELD, 1);
+                    }
+                }
+            }
+        }
+
+        returnedFields = VariantField.prune(returnedFields);
+
+        if (!returnedFields.isEmpty()) { //Include some
+            for (VariantField s : returnedFields) {
+                List<String> keys = DocumentToVariantConverter.toShortFieldName(s);
+                if (keys != null) {
+                    for (String key : keys) {
+                        // Put if absent. Do not overwrite $elemMatch, if any
+                        projection.putIfAbsent(key, 1);
+                    }
+                } else {
+                    logger.warn("Unknown include field: {}", s);
+                }
+            }
         }
 
         logger.debug("QueryOptions: = {}", options.toJson());

@@ -118,6 +118,8 @@ public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli
                 query.put(RETURNED_SAMPLES.key(), queryVariantsOptions.genericVariantQueryOptions.returnSample);
             }
         }
+        addParam(query, INCLUDE_FORMAT, queryVariantsOptions.genericVariantQueryOptions.includeFormat);
+        addParam(query, INCLUDE_GENOTYPE, queryVariantsOptions.genericVariantQueryOptions.includeGenotype);
         addParam(query, UNKNOWN_GENOTYPE, queryVariantsOptions.genericVariantQueryOptions.unknownGenotype);
 
 

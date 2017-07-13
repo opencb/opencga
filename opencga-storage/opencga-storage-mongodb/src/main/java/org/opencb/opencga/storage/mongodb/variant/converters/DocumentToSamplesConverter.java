@@ -28,6 +28,7 @@ import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
 import org.slf4j.LoggerFactory;
 
@@ -99,6 +100,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             }
         }
     };
+    private List<String> format;
 
 
     /**
@@ -397,12 +399,16 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
 
     public List<String> getExtraFormatFields(Set<Integer> filesWithSamplesData, Map<Integer, Document> files) {
         final List<String> extraFields;
-        if (!files.isEmpty()) {
+        if (format != null) {
+            extraFields = format;
+        } else if (!files.isEmpty()) {
             Set<String> extraFieldsSet = new HashSet<>();
             for (Integer fid : filesWithSamplesData) {
                 if (files.containsKey(fid)) {
-                    Document sampleDatas = (Document) files.get(fid).get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD);
-                    extraFieldsSet.addAll(sampleDatas.keySet());
+                    Document sampleData = (Document) files.get(fid).get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD);
+                    if (sampleData != null) {
+                        extraFieldsSet.addAll(sampleData.keySet());
+                    }
                 }
             }
             extraFields = new ArrayList<>(extraFieldsSet.size());
@@ -645,6 +651,15 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
 
     public void setReturnedUnknownGenotype(String returnedUnknownGenotype) {
         this.returnedUnknownGenotype = returnedUnknownGenotype;
+    }
+
+    public void setFormat(List<String> format) {
+        if (format != null && format.contains(VariantQueryUtils.GT)) {
+            this.format = new ArrayList<>(format);
+            this.format.remove(VariantQueryUtils.GT);
+        } else {
+            this.format = format;
+        }
     }
 
     /**

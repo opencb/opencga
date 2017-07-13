@@ -88,6 +88,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
     protected boolean readFullSamplesData = true;
     protected Set<VariantField> variantFields = null;
     protected String unknownGenotype = UNKNOWN_GENOTYPE;
+    protected List<String> expectedFormat;
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
         this(variantTableHelper, new StudyConfigurationManager(
@@ -170,6 +171,17 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return this;
     }
 
+    /**
+     * Format of the converted variants. Discard other values.
+     * @see org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils#getIncludeFormats
+     * @param formats Formats for converted variants
+     * @return this
+     */
+    public HBaseToVariantConverter<T> setFormats(List<String> formats) {
+        this.expectedFormat = formats;
+        return this;
+    }
+
     public static HBaseToVariantConverter<Result> fromResult(VariantTableHelper helper) throws IOException {
         return new ResultToVariantConverter(helper);
     }
@@ -233,12 +245,26 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
             BiMap<String, Integer> loadedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration);
 
             List<String> format;
+            List<String> expectedFormat;
             if (fullSamplesData == null) {
                 // Only GT and FT available.
                 format = Arrays.asList(VariantMerger.GT_KEY, VariantMerger.GENOTYPE_FILTER_KEY);
             } else {
                 format = getFormat(studyConfiguration);
             }
+
+            int[] formatsMap;
+            if (this.expectedFormat != null && !this.expectedFormat.equals(format)) {
+                expectedFormat = this.expectedFormat;
+                formatsMap = new int[expectedFormat.size()];
+                for (int i = 0; i < expectedFormat.size(); i++) {
+                    formatsMap[i] = format.indexOf(expectedFormat.get(i));
+                }
+            } else {
+                formatsMap = null;
+                expectedFormat = format;
+            }
+
             int gtIdx = format.indexOf(VariantMerger.GT_KEY);
             int ftIdx = format.indexOf(VariantMerger.GENOTYPE_FILTER_KEY);
 
@@ -270,14 +296,25 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
                             String simpleGenotype = getSimpleGenotype(sampleData.get(gtIdx));
                             sampleData.set(gtIdx, simpleGenotype);
                         }
+                        if (formatsMap != null) {
+                            List<String> filteredSampleData = new ArrayList<>(formatsMap.length);
+                            for (int i : formatsMap) {
+                                if (i < 0) {
+                                    filteredSampleData.add(VCFConstants.MISSING_VALUE_v4);
+                                } else {
+                                    filteredSampleData.add(sampleData.get(i));
+                                }
+                            }
+                            sampleData = filteredSampleData;
+                        }
                         samplesDataArray[samplePosition] = sampleData;
                     } else {
                         logger.warn("ResultSet containing unwanted samples data returnedSamples: "
                                 + returnedSamplesPosition + "  sample: " + sampleName + " id: " + sampleId);
                     }
                 }
-                List<String> defaultSampleData = new ArrayList<>(format.size());
-                for (String f : format) {
+                List<String> defaultSampleData = new ArrayList<>(expectedFormat.size());
+                for (String f : expectedFormat) {
                     if (f.equals(VariantMerger.GT_KEY)) {
                         String defaultGenotype = getDefaultGenotype(studyConfiguration);
                         defaultSampleData.add(defaultGenotype); // Read from default genotype
@@ -385,7 +422,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
             }
             studyEntry.setSortedSamplesPosition(returnedSamplesPosition);
             studyEntry.setSamplesData(samplesData);
-            studyEntry.setFormat(format);
+            studyEntry.setFormat(expectedFormat);
             studyEntry.setFiles(Collections.singletonList(new FileEntry("", "", attributesMap)));
             studyEntry.setSecondaryAlternates(secAltArr);
 
