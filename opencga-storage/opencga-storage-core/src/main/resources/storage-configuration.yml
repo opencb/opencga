@@ -107,6 +107,9 @@ storageEngines:
       load.threads: 6
       #load.bulk_size: 100
       #load.compress_genotypes: true
+      intersect.active : true          # Allow intersect queries with the SearchEngine (Solr)
+      intersect.always : false         # Force intersect queries
+      intersect.params.threshold : 3   # Minimum number of QueryParams in the query to intersect
     database:
       hosts:
       - "${OPENCGA.STORAGE.VARIANT.DB.HOSTS}"
@@ -154,6 +157,9 @@ storageEngines:
       opencga.variant.table.compression: "snappy"
       opencga.storage.hadoop.variant.hbase.namespace: "${OPENCGA.STORAGE.HADOOP.VARIANT.HBASE.NAMESPACE}"
       opencga.storage.hadoop.variant.archive.table.prefix: "${OPENCGA.STORAGE.HADOOP.VARIANT.ARCHIVE.TABLE.PREFIX}"
+      intersect.active : true          # Allow intersect queries with the SearchEngine (Solr)
+      intersect.always : false         # Force intersect queries
+      intersect.params.threshold : 3   # Minimum number of QueryParams in the query to intersect
 
 ### hadoop properties
       mapreduce.map.cpu.vcores: 1

@@ -65,6 +65,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class VariantSearchManager {
 
+    public static final String CONF_SET = "OpenCGAConfSet";
+
     private SolrClient solrClient;
     private StorageConfiguration storageConfiguration;
     private VariantSearchToVariantConverter variantSearchToVariantConverter;
@@ -72,7 +74,7 @@ public class VariantSearchManager {
 
     private Logger logger;
 
-    public static final String SUMMARY = "summary";
+    public static final String QUERY_INTERSECT = "queryIntersect";
     private static final int DEFAULT_INSERT_SIZE = 10000;
 
     @Deprecated

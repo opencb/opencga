@@ -5,6 +5,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -22,6 +23,10 @@ public interface VariantIterable extends Iterable<Variant> {
     @Override
     default VariantDBIterator iterator() {
         return iterator(new Query(), new QueryOptions());
+    }
+
+    default VariantDBIterator iterator(Iterator<?> variants, Query query, QueryOptions options) {
+        return new MultiVariantDBIterator(variants, 100, query, options, this::iterator);
     }
 
     VariantDBIterator iterator(Query query, QueryOptions options);

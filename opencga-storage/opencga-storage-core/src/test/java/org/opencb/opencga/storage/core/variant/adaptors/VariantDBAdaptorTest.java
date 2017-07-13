@@ -40,9 +40,9 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
@@ -58,8 +58,8 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 /**
@@ -112,7 +112,6 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                     .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
                     .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DS,GL")
                     .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseRestVariantAnnotator.class.getName())
-                    .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "json")
                     .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
             params.putAll(getOtherParams());
             FORMAT = new HashSet<>();
@@ -216,6 +215,19 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     protected ObjectMap getOtherParams() {
         return new ObjectMap();
+    }
+
+    @Test
+    public void multiIterator() throws Exception {
+        List<String> variantsToQuery = allVariants.getResult()
+                .stream()
+                .map(Variant::toString).limit(allVariants.getResult().size() / 2)
+                .collect(Collectors.toList());
+
+        VariantDBIterator iterator = dbAdaptor.iterator(variantsToQuery.iterator(), new Query(), new QueryOptions());
+
+        QueryResult<Variant> queryResult = iterator.toQueryResult();
+        assertEquals(variantsToQuery.size(), queryResult.getResult().size());
     }
 
     @Test

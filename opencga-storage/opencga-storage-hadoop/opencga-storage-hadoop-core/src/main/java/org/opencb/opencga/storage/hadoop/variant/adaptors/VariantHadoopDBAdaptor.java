@@ -21,7 +21,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
@@ -37,17 +36,15 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.utils.CellBaseUtils;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
@@ -58,7 +55,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotat
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotationUpsertExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.slf4j.Logger;
@@ -74,12 +70,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getReturnedSamplesList;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getSamplesMetadata;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isValidParam;
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.BIOTYPE;
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION;
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.GENES;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 /**
  * Created by mh719 on 16/06/15.
@@ -94,6 +85,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final GenomeHelper genomeHelper;
     private final AtomicReference<java.sql.Connection> phoenixCon = new AtomicReference<>();
     private final VariantSqlQueryParser queryParser;
+    private final VariantHBaseQueryParser hbaseQueryParser;
     private final HadoopVariantSourceDBAdaptor variantSourceDBAdaptor;
     private boolean clientSideSkip;
     private HBaseManager hBaseManager;
@@ -125,6 +117,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 studyConfigurationManager.get(), cellBaseUtils, clientSideSkip);
 
         phoenixHelper = new VariantPhoenixHelper(genomeHelper);
+
+        hbaseQueryParser = new VariantHBaseQueryParser(genomeHelper, studyConfigurationManager.get());
     }
 
     public java.sql.Connection getJdbcConnection() {
@@ -338,7 +332,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             query = new Query();
         }
 
-        if (options.getBoolean("archive", false)) {
+        boolean archiveIterator = options.getBoolean("archive", false);
+        boolean hbaseIterator = options.getBoolean("native", false);
+        // || VariantHBaseQueryParser.fullySupportedQuery(query);
+
+        if (archiveIterator) {
             String study = query.getString(STUDIES.key());
             StudyConfiguration studyConfiguration;
             int studyId;
@@ -377,7 +375,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
             Scan scan = new Scan();
             scan.addColumn(archiveHelper.getColumnFamily(), Bytes.toBytes(ArchiveTableHelper.getColumnName(fileId)));
-            addArchiveRegionFilter(scan, region, archiveHelper);
+            VariantHBaseQueryParser.addArchiveRegionFilter(scan, region, archiveHelper);
             scan.setMaxResultSize(options.getInt("limit"));
             String tableName = HadoopVariantStorageEngine.getArchiveTableName(studyId, genomeHelper.getConf());
 
@@ -396,9 +394,9 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-        } else if (options.getBoolean("native", false)) {
+        } else if (hbaseIterator) {
             logger.debug("Creating {} iterator", VariantHBaseScanIterator.class);
-            Scan scan = parseQuery(query, options);
+            Scan scan = hbaseQueryParser.parseQuery(query, options);
             try {
                 Table table = getConnection().getTable(TableName.valueOf(variantTable));
                 ResultScanner resScan = table.getScanner(scan);
@@ -567,110 +565,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         if (value != null) {
             collection.add(value);
         }
-    }
-
-
-    ////// Util methods:
-    private Scan parseQuery(Query query, QueryOptions options) {
-
-        Scan scan = new Scan();
-        scan.addFamily(genomeHelper.getColumnFamily());
-        FilterList filters = new FilterList(FilterList.Operator.MUST_PASS_ALL);
-        List<byte[]> columnPrefixes = new LinkedList<>();
-
-        if (!StringUtils.isEmpty(query.getString(REGION.key()))) {
-            Region region = Region.parseRegion(query.getString(REGION.key()));
-            logger.debug("region = " + region);
-            addRegionFilter(scan, region);
-        } else {
-            addDefaultRegionFilter(scan);
-        }
-
-        if (!StringUtils.isEmpty(query.getString(GENE.key()))) {
-            addValueFilter(filters, GENES.bytes(), query.getAsStringList(GENE.key()));
-        }
-        if (!StringUtils.isEmpty(query.getString(ANNOT_BIOTYPE.key()))) {
-            addValueFilter(filters, BIOTYPE.bytes(), query.getAsStringList(ANNOT_BIOTYPE.key()));
-        }
-
-        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
-        Map<Integer, List<Integer>> returnedSamples
-                = VariantQueryUtils.getReturnedSamples(query, options, studyConfigurationManager.get());
-
-        if (returnedFields.contains(VariantField.STUDIES)) {
-            if (isValidParam(query, STUDIES)) {
-                //TODO: Handle negations(!), and(;) and or(,)
-                List<Integer> studyIdList = query.getAsIntegerList(STUDIES.key());
-                for (Integer studyId : studyIdList) {
-                    columnPrefixes.add(Bytes.toBytes(studyId.toString() + genomeHelper.getSeparator()));
-                }
-            }
-        }
-
-        returnedSamples.forEach((studyId, sampleIds) -> {
-            scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.getStudyColumn(studyId).bytes());
-            for (Integer sampleId : sampleIds) {
-                scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.buildSampleColumnKey(studyId, sampleId));
-            }
-        });
-
-        if (returnedFields.contains(VariantField.ANNOTATION)) {
-            scan.addColumn(genomeHelper.getColumnFamily(), FULL_ANNOTATION.bytes());
-        }
-
-        if (!returnedFields.contains(VariantField.ANNOTATION) && !returnedFields.contains(VariantField.STUDIES)) {
-            KeyOnlyFilter keyOnlyFilter = new KeyOnlyFilter();
-            filters.addFilter(keyOnlyFilter);
-        }
-
-        MultipleColumnPrefixFilter columnPrefixFilter = new MultipleColumnPrefixFilter(
-                columnPrefixes.toArray(new byte[columnPrefixes.size()][]));
-        filters.addFilter(columnPrefixFilter);
-
-        scan.setFilter(filters);
-        scan.setMaxResultSize(options.getInt(QueryOptions.LIMIT));
-
-        logger.debug("StartRow = " + new String(scan.getStartRow()));
-        logger.debug("StopRow = " + new String(scan.getStopRow()));
-        logger.debug("MaxResultSize = " + scan.getMaxResultSize());
-        logger.debug("Filters = " + scan.getFilter().toString());
-        return scan;
-    }
-
-    private void addValueFilter(FilterList filters, byte[] column, List<String> values) {
-        List<Filter> valueFilters = new ArrayList<>(values.size());
-        for (String value : values) {
-            SingleColumnValueFilter valueFilter = new SingleColumnValueFilter(genomeHelper.getColumnFamily(),
-                    column, CompareFilter.CompareOp.EQUAL, new SubstringComparator(value));
-            valueFilter.setFilterIfMissing(true);
-            valueFilters.add(valueFilter);
-        }
-        filters.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE, valueFilters));
-    }
-
-    public void addArchiveRegionFilter(Scan scan, Region region, ArchiveTableHelper archiveHelper) {
-        if (region == null) {
-            addDefaultRegionFilter(scan);
-        } else {
-            ArchiveRowKeyFactory keyFactory = archiveHelper.getKeyFactory();
-            scan.setStartRow(keyFactory.generateBlockIdAsBytes(region.getChromosome(), region.getStart()));
-            long endSlice = keyFactory.getSliceId((long) region.getEnd()) + 1;
-            // +1 because the stop row is exclusive
-            scan.setStopRow(Bytes.toBytes(keyFactory.generateBlockIdFromSlice(region.getChromosome(), endSlice)));
-        }
-    }
-
-    public void addRegionFilter(Scan scan, Region region) {
-        if (region == null) {
-            addDefaultRegionFilter(scan);
-        } else {
-            scan.setStartRow(VariantPhoenixKeyFactory.generateVariantRowKey(region.getChromosome(), region.getStart()));
-            scan.setStopRow(VariantPhoenixKeyFactory.generateVariantRowKey(region.getChromosome(), region.getEnd()));
-        }
-    }
-
-    public Scan addDefaultRegionFilter(Scan scan) {
-        return scan.setStopRow(Bytes.toBytes(String.valueOf(GenomeHelper.METADATA_PREFIX)));
     }
 
 }

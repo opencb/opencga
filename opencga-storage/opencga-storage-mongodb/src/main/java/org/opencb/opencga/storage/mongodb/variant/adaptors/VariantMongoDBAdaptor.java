@@ -394,10 +394,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // Short unsorted queries with timeout or limit don't need the persistent cursor.
         if (options.containsKey(QueryOptions.TIMEOUT)
                 || options.containsKey(QueryOptions.LIMIT)
-                || !options.containsKey(QueryOptions.SORT)) {
+                || !options.getBoolean(QueryOptions.SORT, false)) {
+            StopWatch stopWatch = StopWatch.createStarted();
             FindIterable<Document> dbCursor = variantsCollection.nativeQuery().find(mongoQuery, projection, options);
-            return new VariantMongoDBIterator(dbCursor, converter);
+            VariantMongoDBIterator dbIterator = new VariantMongoDBIterator(dbCursor, converter);
+            dbIterator.setTimeFetching(dbIterator.getTimeFetching() + stopWatch.getNanoTime());
+            return dbIterator;
         } else {
+            logger.debug("Using mongodb persistent iterator");
             return VariantMongoDBIterator.persistentIterator(variantsCollection, mongoQuery, projection, options, converter);
         }
     }
