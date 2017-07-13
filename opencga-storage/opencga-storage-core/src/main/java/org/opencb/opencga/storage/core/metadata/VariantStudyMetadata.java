@@ -34,11 +34,11 @@ public class VariantStudyMetadata {
     }
 
     public VariantStudyMetadata(VariantStudyMetadata copy) {
-        info = new HashMap<>(copy.info); // VariantMetadataRecord are immutable objects
-        format = new HashMap<>(copy.format); // VariantMetadataRecord are immutable objects
-        alternates = new HashMap<>(copy.alternates);
-        filter = new HashMap<>(copy.filter);
-        contig = new LinkedHashMap<>(copy.contig);
+        info = new HashMap<>(copy == null ? Collections.emptyMap() : copy.info); // VariantMetadataRecord are immutable objects
+        format = new HashMap<>(copy == null ? Collections.emptyMap() : copy.format); // VariantMetadataRecord are immutable objects
+        alternates = new HashMap<>(copy == null ? Collections.emptyMap() : copy.alternates);
+        filter = new HashMap<>(copy == null ? Collections.emptyMap() : copy.filter);
+        contig = new LinkedHashMap<>(copy == null ? Collections.emptyMap() : copy.contig);
     }
 
     public Map<String, VariantMetadataRecord> getInfo() {

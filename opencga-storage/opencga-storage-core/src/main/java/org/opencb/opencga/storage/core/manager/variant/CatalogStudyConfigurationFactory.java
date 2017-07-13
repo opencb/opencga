@@ -50,8 +50,8 @@ public class CatalogStudyConfigurationFactory {
             FileDBAdaptor.QueryParams.ID.key(),
             FileDBAdaptor.QueryParams.NAME.key(),
             FileDBAdaptor.QueryParams.PATH.key(),
-            FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),
-            FileDBAdaptor.QueryParams.ATTRIBUTES.key() + ".variantSource.metadata.variantFileHeader"));
+            FileDBAdaptor.QueryParams.SAMPLE_IDS.key()));
+//            FileDBAdaptor.QueryParams.ATTRIBUTES.key() + ".variantSource.metadata.variantFileHeader"));
     public static final Query ALL_FILES_QUERY = new Query()
             .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), Arrays.asList(File.Bioformat.VARIANT, File.Bioformat.ALIGNMENT));
 
