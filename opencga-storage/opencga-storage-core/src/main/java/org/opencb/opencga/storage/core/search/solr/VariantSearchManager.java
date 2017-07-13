@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.response.*;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
@@ -109,7 +110,7 @@ public class VariantSearchManager {
             SolrPing solrPing = new SolrPing();
             SolrPingResponse response = solrPing.process(solrClient, collection);
             return response.getResponse().get("status").equals("OK");
-        } catch (SolrServerException | IOException e) {
+        } catch (SolrServerException | IOException | SolrException e) {
             return false;
         }
     }
