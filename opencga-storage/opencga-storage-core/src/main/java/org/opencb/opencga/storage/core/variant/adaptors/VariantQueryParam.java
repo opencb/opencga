@@ -90,11 +90,11 @@ public final class VariantQueryParam implements QueryParam {
             = new VariantQueryParam("samplesMetadata", TEXT_ARRAY, SAMPLES_METADATA_DESCR);
 
     public static final String INCLUDE_FORMAT_DESCR
-            = "List of FORMAT elements from Samples Data to include in the output. e.g: DP,AD. Accepts " + ALL + " and " + NONE;
+            = "List of FORMAT names from Samples Data to include in the output. e.g: DP,AD. Accepts " + ALL + " and " + NONE;
     public static final VariantQueryParam INCLUDE_FORMAT = new VariantQueryParam("include-format", TEXT_ARRAY, INCLUDE_FORMAT_DESCR);
 
     public static final String INCLUDE_GENOTYPE_DESCR
-            = "Include genotypes, apart of other formats defined with " + INCLUDE_FORMAT.key();
+            = "Include genotypes, apart of other formats defined with include-format";
     public static final VariantQueryParam INCLUDE_GENOTYPE = new VariantQueryParam("include-genotype", BOOLEAN, INCLUDE_GENOTYPE_DESCR);
 
 
