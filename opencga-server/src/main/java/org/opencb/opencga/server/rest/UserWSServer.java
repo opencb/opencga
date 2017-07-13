@@ -142,17 +142,22 @@ public class UserWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{user}/login")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Get identified and gain access to the systemn")
+    @ApiOperation(value = "Get identified and gain access to the system",
+            notes = "If password is provided it will attempt to login the user. If no password is provided and a valid token is given, "
+                    + "a new token will be provided extending the expiration time.")
     public Response loginPost(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                              @ApiParam(value = "JSON containing the parameter 'password'", required = true) Map<String, String> map) {
+                              @ApiParam(value = "JSON containing the parameter 'password'") Map<String, String> map) {
         sessionIp = httpServletRequest.getRemoteAddr();
         QueryResult<Session> queryResult;
         try {
-            if (!map.containsKey("password")) {
-                throw new Exception("The json does not contain the key password.");
+            if (map.containsKey("password")) {
+                String password = map.get("password");
+                queryResult = catalogManager.login(userId, password, sessionIp);
+            } else if (StringUtils.isNotEmpty(sessionId)) {
+                queryResult = catalogManager.getUserManager().refreshToken(userId, sessionId, sessionIp);
+            } else {
+                throw new Exception("Neither a password nor a token was provided.");
             }
-            String password = map.get("password");
-            queryResult = catalogManager.login(userId, password, sessionIp);
 
             ObjectMap sessionMap = new ObjectMap();
             sessionMap.append("sessionId", queryResult.first().getId())

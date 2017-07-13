@@ -631,6 +631,14 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
+    public QueryResult<Session> refreshToken(String userId, String token, String sessionIp) throws CatalogException {
+        if (!userId.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
+            throw new CatalogException("Cannot refresh token. The token received does not correspond to " + userId);
+        }
+        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(userId, sessionIp, Session.Type.USER);
+    }
+
+    @Override
     public QueryResult<Session> getSystemTokenForUser(String userId, String adminCredentials) throws CatalogException {
         authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", adminCredentials, true);
         return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(userId, "localhost", Session.Type.SYSTEM);
