@@ -73,6 +73,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.search.solr.VariantSearchManager.QUERY_INTERSECT;
+import static org.opencb.opencga.storage.core.search.solr.VariantSearchManager.SKIP_SEARCH;
 import static org.opencb.opencga.storage.core.search.solr.VariantSearchUtils.*;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ID;
@@ -659,7 +660,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException StorageEngineException
      */
     protected boolean doQuerySearchManager(Query query, QueryOptions options) throws StorageEngineException {
-        return isQueryCovered(query) && (options.getBoolean(QueryOptions.COUNT) || isIncludeCovered(options)) && searchActiveAndAlive();
+        return !options.getBoolean(SKIP_SEARCH, false)
+                && isQueryCovered(query)
+                && (options.getBoolean(QueryOptions.COUNT) || isIncludeCovered(options))
+                && searchActiveAndAlive();
     }
 
     /**
@@ -673,11 +677,21 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     protected boolean doIntersectWithSearch(Query query, Collection<VariantQueryParam> validParams, QueryOptions options)
             throws StorageEngineException {
-        if (!getOptions().getBoolean(INTERSECT_ACTIVE.key(), INTERSECT_ACTIVE.defaultValue())) {
+        if (options.getBoolean(SKIP_SEARCH, false)) {
+            return false;
+        }
+
+        Boolean queryIntersect = null;
+        if (options.get(QUERY_INTERSECT) != null) {
+            queryIntersect = options.getBoolean(QUERY_INTERSECT, false);
+        }
+        if (!getOptions().getBoolean(INTERSECT_ACTIVE.key(), INTERSECT_ACTIVE.defaultValue())
+                || Boolean.FALSE.equals(queryIntersect)) {
             // If intersect is not active, do not intersect.
             return false;
-        } else if (getOptions().getBoolean(INTERSECT_ALWAYS.key(), INTERSECT_ALWAYS.defaultValue())) {
-            return true;
+        } else if (getOptions().getBoolean(INTERSECT_ALWAYS.key(), INTERSECT_ALWAYS.defaultValue())
+                || Boolean.TRUE.equals(queryIntersect)) {
+            return searchActiveAndAlive();
         }
         // TODO: Improve this heuristic
         // Count only real params

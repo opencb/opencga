@@ -74,6 +74,7 @@ public class VariantSearchManager {
 
     private Logger logger;
 
+    public static final String SKIP_SEARCH = "skipSearch";
     public static final String QUERY_INTERSECT = "queryIntersect";
     private static final int DEFAULT_INSERT_SIZE = 10000;
 
