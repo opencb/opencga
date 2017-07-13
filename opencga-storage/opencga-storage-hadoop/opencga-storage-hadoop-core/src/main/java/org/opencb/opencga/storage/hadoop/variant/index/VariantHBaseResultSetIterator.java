@@ -50,7 +50,8 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
 
     public VariantHBaseResultSetIterator(
             Statement statement, ResultSet resultSet, GenomeHelper genomeHelper, StudyConfigurationManager scm,
-            List<String> returnedSamples, Set<VariantField> returnedFields, String unknownGenotype, QueryOptions options)
+            List<String> returnedSamples, Set<VariantField> returnedFields, List<String> formats,
+            String unknownGenotype, QueryOptions options)
             throws SQLException {
         this.statement = statement;
         this.resultSet = resultSet;
@@ -65,7 +66,8 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
                 .setMutableSamplesPosition(false)
                 .setStudyNameAsStudyId(true)
                 .setUnknownGenotype(unknownGenotype)
-                .setSimpleGenotypes(options.getBoolean("simpleGenotypes", true));
+                .setSimpleGenotypes(options.getBoolean("simpleGenotypes", true))
+                .setFormats(formats);
         hasNext = fetch(resultSet::next);
     }
 
