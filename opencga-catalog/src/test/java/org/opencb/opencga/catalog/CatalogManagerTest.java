@@ -573,7 +573,7 @@ public class CatalogManagerTest extends GenericTest {
         IStudyManager studyManager = catalogManager.getStudyManager();
 
         try {
-            studyManager.getIds("anonymous", null);
+            studyManager.getIds("*", null);
             fail("This should throw an exception. No studies should be found for user anonymous");
         } catch (CatalogException e) {
         }
@@ -581,14 +581,14 @@ public class CatalogManagerTest extends GenericTest {
         // Create another study with alias phase3
         QueryResult<Study> study = catalogManager.createStudy(project2, "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser2);
         try {
-            studyManager.getIds("anonymous", null);
+            studyManager.getIds("*", null);
             fail("This should throw an exception. No studies should be found for user anonymous");
         } catch (CatalogException e) {
         }
 
-        catalogManager.createStudyAcls("phase3", "anonymous", "VIEW_STUDY", null, sessionIdUser2);
+        catalogManager.createStudyAcls("phase3", "*", "VIEW_STUDY", null, sessionIdUser2);
 
-        List<Long> ids = studyManager.getIds("anonymous", null);
+        List<Long> ids = studyManager.getIds("*", null);
         assertEquals(1, ids.size());
         assertEquals(study.first().getId(), (long) ids.get(0));
     }
@@ -598,16 +598,16 @@ public class CatalogManagerTest extends GenericTest {
         IStudyManager studyManager = catalogManager.getStudyManager();
 
         try {
-            studyManager.getIds("anonymous", "phase3");
+            studyManager.getIds("*", "phase3");
             fail("This should throw an exception. No studies should be found for user anonymous");
         } catch (CatalogException e) {
         }
 
         // Create another study with alias phase3
         QueryResult<Study> study = catalogManager.createStudy(project2, "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser2);
-        catalogManager.createStudyAcls("phase3", "anonymous", "VIEW_STUDY", null, sessionIdUser2);
+        catalogManager.createStudyAcls("phase3", "*", "VIEW_STUDY", null, sessionIdUser2);
 
-        List<Long> ids = studyManager.getIds("anonymous", "phase3");
+        List<Long> ids = studyManager.getIds("*", "phase3");
         assertEquals(1, ids.size());
         assertEquals(study.first().getId(), (long) ids.get(0));
     }
@@ -1556,7 +1556,7 @@ public class CatalogManagerTest extends GenericTest {
 
         catalogManager.getStudyManager().updateAcl("user@1000G:phase1", "*",
                 new Study.StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_STUDY.name(), AclParams.Action.SET, ""), sessionIdUser);
-        queryResult = catalogManager.getProjectManager().getSharedProjects("anonymous", QueryOptions.empty(), null);
+        queryResult = catalogManager.getProjectManager().getSharedProjects("*", QueryOptions.empty(), null);
         assertEquals(1, queryResult.getNumResults());
     }
 

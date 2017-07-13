@@ -81,7 +81,7 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
 
     @Test
     public void testQueryAnonymous() throws Exception {
-        catalogManager.createStudyAcls(studyStr, "anonymous", StudyAclEntry.StudyPermissions.VIEW_STUDY.name(), null, sessionId);
+        catalogManager.createStudyAcls(studyStr, "*", StudyAclEntry.StudyPermissions.VIEW_STUDY.name(), null, sessionId);
 
 //        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), "s1");
 //        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), "p1:s1");
@@ -99,7 +99,7 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
     public void testQueryAnonymousWithoutPermissions() throws Exception {
         Query query = new Query(VariantQueryParam.STUDIES.key(), studyId);
         CatalogAuthorizationException exception = CatalogAuthorizationException
-                .deny("anonymous", StudyAclEntry.StudyPermissions.VIEW_STUDY.toString(), "Study", studyId, null);
+                .deny("*", StudyAclEntry.StudyPermissions.VIEW_STUDY.toString(), "Study", studyId, null);
         thrown.expectMessage(exception.getMessage());
         thrown.expect(exception.getClass());
         variantManager.get(query, new QueryOptions(), null);
