@@ -77,8 +77,6 @@ import static org.opencb.opencga.storage.core.search.solr.VariantSearchManager.S
 import static org.opencb.opencga.storage.core.search.solr.VariantSearchUtils.*;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ID;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.RETURNED_STUDIES;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDIES;
 
 /**
  * Created by imedina on 13/08/14.
@@ -564,9 +562,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
         } else {
             VariantDBAdaptor dbAdaptor = getDBAdaptor();
-            Set<VariantQueryParam> params = VariantQueryUtils.validParams(query);
-            List<VariantQueryParam> uncoveredParams = uncoveredParams(params);
-            if (doIntersectWithSearch(query, params, options)) {
+            if (doIntersectWithSearch(query, options)) {
                 // Intersect Solr+Engine
 
                 int limit = options.getInt(QueryOptions.LIMIT, 0);
@@ -607,22 +603,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 } else {
                     variantsIterator = variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0, searchCount);
                 }
-                Query engineQuery = new Query();
-                for (VariantQueryParam uncoveredParam : uncoveredParams) {
-                    engineQuery.put(uncoveredParam.key(), query.get(uncoveredParam.key()));
-                }
-                // Despite STUDIES is a covered filter by Solr, it has to be in the underlying
-                // query to be used as defaultStudy
-                if (params.contains(STUDIES)) {
-                    if (!uncoveredParams.isEmpty()) {
-                        // This will set the default study, if needed
-                        engineQuery.put(STUDIES.key(), query.get(STUDIES.key()));
-                    } else if (!params.contains(RETURNED_STUDIES)) {
-                        // If returned studies is not defined, we need to define it with the values from STUDIES
-                        List<Integer> studies = VariantQueryUtils.getReturnedStudies(query, options, getStudyConfigurationManager());
-                        engineQuery.put(RETURNED_STUDIES.key(), studies);
-                    }
-                }
+                Query engineQuery = getEngineQuery(query, options, getStudyConfigurationManager());
 
                 logger.debug("Intersect query " + engineQuery.toJson() + " options " + options.toJson());
                 if (iterator) {
@@ -670,12 +651,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * Decide if a query should be resolved intersecting with SearchManager or not.
      *
      * @param query       Query
-     * @param validParams Valid query params
      * @param options     QueryOptions
      * @return            true if should intersect
      * @throws StorageEngineException StorageEngineException
      */
-    protected boolean doIntersectWithSearch(Query query, Collection<VariantQueryParam> validParams, QueryOptions options)
+    protected boolean doIntersectWithSearch(Query query, QueryOptions options)
             throws StorageEngineException {
         if (options.getBoolean(SKIP_SEARCH, false)) {
             return false;
@@ -695,7 +675,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
         // TODO: Improve this heuristic
         // Count only real params
-        List<VariantQueryParam> coveredParams = coveredParams(validParams);
+        Collection<VariantQueryParam> coveredParams = coveredParams(query);
         int intersectParamsThreshold = getOptions().getInt(INTERSECT_PARAMS_THRESHOLD.key(), INTERSECT_PARAMS_THRESHOLD.defaultValue());
         return searchActiveAndAlive()
                 && (coveredParams.size() >= intersectParamsThreshold || options.getBoolean(QUERY_INTERSECT, false));
@@ -755,10 +735,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 }
                 long numSearchResults = nativeResult.getNumTotalResults();
 
-                Query engineQuery = new Query();
-                for (VariantQueryParam uncoveredParam : uncoveredParams(query)) {
-                    engineQuery.put(uncoveredParam.key(), query.get(uncoveredParam.key()));
-                }
+                Query engineQuery = getEngineQuery(query, options, getStudyConfigurationManager());
+
                 engineQuery.put(ID.key(), variantIds);
                 long numResults = getDBAdaptor().count(engineQuery).first();
                 logger.debug("NumResults: {}, NumSearchResults: {}, NumSamples: {}", numResults, numSearchResults, numSamples);
