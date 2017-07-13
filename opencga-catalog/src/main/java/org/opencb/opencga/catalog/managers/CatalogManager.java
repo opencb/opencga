@@ -530,9 +530,21 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.getGroup(studyStr, groupId, sessionId);
     }
 
+    @Deprecated
     public QueryResult<Group> updateGroup(String studyStr, String groupId, @Nullable String addUsers, @Nullable String removeUsers,
                                           @Nullable String setUsers, String sessionId) throws CatalogException {
-        return studyManager.updateGroup(studyStr, groupId, addUsers, removeUsers, setUsers, sessionId);
+        GroupParams groupParams = null;
+        if (StringUtils.isNotEmpty(addUsers)) {
+            groupParams = new GroupParams(addUsers, GroupParams.Action.ADD);
+        } else if (StringUtils.isNotEmpty(removeUsers)) {
+            groupParams = new GroupParams(removeUsers, GroupParams.Action.REMOVE);
+        } else if (StringUtils.isNotEmpty(setUsers)) {
+            groupParams = new GroupParams(setUsers, GroupParams.Action.SET);
+        }
+        if (groupParams == null) {
+            throw new CatalogException("No action");
+        }
+        return studyManager.updateGroup(studyStr, groupId, groupParams, sessionId);
     }
 
     public QueryResult<Group> deleteGroup(String studyStr, String groupId, String sessionId) throws CatalogException {

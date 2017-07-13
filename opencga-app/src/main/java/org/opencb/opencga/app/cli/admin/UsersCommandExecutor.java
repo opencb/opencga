@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Group;
+import org.opencb.opencga.catalog.models.GroupParams;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.core.results.LdapImportResult;
@@ -93,8 +94,9 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                         logger.info("Synchronising users from {} to {}", group.getSyncedFrom().getRemoteGroup(), group.getName());
 
                         // Sync
-                        QueryResult<Group> deleteUsers = catalogManager.getStudyManager().updateGroup(executor.study, group.getName(), null,
-                                StringUtils.join(group.getUserIds(), ","), null, sessionId);
+                        GroupParams groupParams = new GroupParams(StringUtils.join(group.getUserIds(), ","), GroupParams.Action.REMOVE);
+                        QueryResult<Group> deleteUsers = catalogManager.getStudyManager()
+                                .updateGroup(executor.study, group.getName(), groupParams, sessionId);
                         if (deleteUsers.first().getUserIds().size() > 0) {
                             logger.error("Could not sync. An internal error happened. {} users could not be removed from {}.",
                                     deleteUsers.first().getUserIds().size(), deleteUsers.first().getName());
@@ -132,8 +134,9 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                     }
 
                     // Remove all users from the group
-                    QueryResult<Group> deleteUsers = catalogManager.getStudyManager().updateGroup(executor.study, executor.to, null,
-                            StringUtils.join(group.first().getUserIds(), ","), null, sessionId);
+                    GroupParams groupParams = new GroupParams(StringUtils.join(group.first().getUserIds(), ","), GroupParams.Action.REMOVE);
+                    QueryResult<Group> deleteUsers = catalogManager.getStudyManager().updateGroup(executor.study, executor.to, groupParams,
+                            sessionId);
                     if (deleteUsers.first().getUserIds().size() > 0) {
                         logger.error("Could not sync. An internal error happened. {} users could not be removed from {}.",
                                 deleteUsers.first().getUserIds().size(), deleteUsers.first().getName());

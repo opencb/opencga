@@ -256,22 +256,6 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      */
     QueryResult<Group> getGroup(String studyStr, String groupId, String sessionId) throws CatalogException;
 
-    /**
-     * Update the members of a group.
-     *
-     * @param studyStr study.
-     * @param groupId group id.
-     * @param addUsers Comma separated list of users that will be added to the group.
-     * @param removeUsers Comma separated list of users that will be removed from the group.
-     * @param setUsers Comma separated list of users that will be set to the group. Previous users will be removed.
-     * @param sessionId session id of the user that wants to perform this action.
-     * @return the group after the update action.
-     * @throws CatalogException catalogException.
-     */
-    @Deprecated
-    QueryResult<Group> updateGroup(String studyStr, String groupId, @Nullable String addUsers, @Nullable String removeUsers,
-                                   @Nullable String setUsers, String sessionId) throws CatalogException;
-
     QueryResult<Group> updateGroup(String studyStr, String groupId, GroupParams groupParams, String sessionId) throws CatalogException;
 
     /**

@@ -65,6 +65,8 @@ public abstract class AbstractManager {
     protected final PanelDBAdaptor panelDBAdaptor;
     protected final ClinicalAnalysisDBAdaptor clinicalDBAdaptor;
 
+    protected static final String ANONYMOUS = "*";
+
     @Deprecated
     public AbstractManager(AuthorizationManager authorizationManager, AuditManager auditManager,
                            DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,

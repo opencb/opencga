@@ -32,6 +32,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
@@ -182,7 +183,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public boolean hasStudyPermission(long studyId, String user, StudyAclEntry.StudyPermissions permission) throws CatalogDBException {
+    public boolean hasStudyPermission(long studyId, String user, StudyAclEntry.StudyPermissions permission)
+            throws CatalogDBException, CatalogAuthorizationException {
         Query query = new Query(QueryParams.ID.key(), studyId);
         QueryResult queryResult = nativeGet(query, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
@@ -329,9 +331,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throw new CatalogDBException("Unable to add members to group. List of members is empty");
         }
 
-        // Check that the members exist.
-        dbAdaptorFactory.getCatalogUserDBAdaptor().checkIds(members);
-
         Document query = new Document()
                 .append(PRIVATE_ID, studyId)
                 .append(QueryParams.GROUP_NAME.key(), groupId)
@@ -349,8 +348,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         if (members == null || members.size() == 0) {
             throw new CatalogDBException("Unable to remove members from group. List of members is empty");
         }
-
-        dbAdaptorFactory.getCatalogUserDBAdaptor().checkIds(members);
 
         Document query = new Document()
                 .append(PRIVATE_ID, studyId)
@@ -869,7 +866,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<Study> get(Query query, QueryOptions options, String user) throws CatalogDBException {
+    public QueryResult<Study> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
         QueryResult queryResult = nativeGet(query, options, user);
         List<Study> studyList = new ArrayList<>(queryResult.getNumResults());
         for (Object studyDocument : queryResult.getResult()) {
@@ -897,7 +894,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException {
+    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         if (options.containsKey(QueryOptions.INCLUDE)) {
             options = new QueryOptions(options);

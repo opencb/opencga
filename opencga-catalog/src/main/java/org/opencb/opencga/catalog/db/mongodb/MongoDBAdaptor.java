@@ -23,11 +23,15 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Family;
 import org.opencb.opencga.catalog.models.Individual;
@@ -58,8 +62,9 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String FILTER_ROUTE_PANELS = "projects.studies.panels.";
 
     private static final String PRIVATE_ACL = "_acl";
-    private static final Pattern REGISTERED_PATTERN = Pattern.compile("^\\*");
-    private static final Pattern ANONYMOUS_PATTERN = Pattern.compile("^anonymous");
+    private static final String ANONYMOUS = "*";
+    private static final Pattern MEMBERS_PATTERN = Pattern.compile("^@members");
+    private static final Pattern ANONYMOUS_PATTERN = Pattern.compile("^\\" + ANONYMOUS);
 
     protected MongoDBAdaptorFactory dbAdaptorFactory;
 
@@ -137,34 +142,64 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
     }
 
-    protected boolean checkStudyPermission(Document study, String user, String studyPermission) {
+    protected boolean checkStudyPermission(Document study, String user, String studyPermission) throws CatalogAuthorizationException {
         // 0. If the user corresponds with the owner, we don't have to check anything else
         if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
             return true;
         }
 
-        // 1. We obtain the groups of the user
-        List<String> groups = getGroups(study, user);
+        // If user does not exist in the members group, the user will not have any permission
+        if (!isUserInMembers(study, user)) {
+            throw new CatalogAuthorizationException("User " + user + " does not have any permissions in study "
+                    + study.getString(StudyDBAdaptor.QueryParams.ALIAS.key()));
+        }
 
-        // 2. We check if the study contains the studies expected for the user
-        return checkUserHasPermission(study, user, groups, studyPermission);
+        if (user.equals(ANONYMOUS)) {
+            return checkAnonymousHasPermission(study, studyPermission);
+        } else {
+            // 1. We obtain the groups of the user
+            List<String> groups = getGroups(study, user);
+
+            // 2. We check if the study contains the studies expected for the user
+            return checkUserHasPermission(study, user, groups, studyPermission);
+        }
     }
 
-    protected Document getQueryForAuthorisedEntries(Document study, String user, String studyPermission, String entryPermission) {
+    protected Document getQueryForAuthorisedEntries(Document study, String user, String studyPermission, String entryPermission)
+            throws CatalogAuthorizationException {
         // 0. If the user corresponds with the owner, we don't have to check anything else
         if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
             return new Document();
         }
 
-        // 1. We obtain the groups of the user
-        List<String> groups = getGroups(study, user);
+        // If user does not exist in the members group, the user will not have any permission
+        if (!isUserInMembers(study, user)) {
+            throw new CatalogAuthorizationException("User " + user + " does not have any permissions in study "
+                    + study.getString(StudyDBAdaptor.QueryParams.ALIAS.key()));
+        }
 
-        // 2. We check if the study contains the studies expected for the user
-        boolean hasStudyPermissions = checkUserHasPermission(study, user, groups, studyPermission);
+        boolean isAnonymousPresent = false;
+        List<String> groups;
+        boolean hasStudyPermissions;
+        if (!user.equals(ANONYMOUS)) {
+            // 0. Check if anonymous has any permission defined (just for performance)
+            isAnonymousPresent = isUserInMembers(study, ANONYMOUS);
 
-        Document queryDocument = getAuthorisedEntries(user, groups, entryPermission);
+            // 1. We obtain the groups of the user
+            groups = getGroups(study, user);
+
+            // 2. We check if the study contains the studies expected for the user
+            hasStudyPermissions = checkUserHasPermission(study, user, groups, studyPermission);
+        } else {
+            // 1. Anonymous user will not belong to any group
+            groups = Collections.emptyList();
+
+            // 2. We check if the study contains the studies expected for the user
+            hasStudyPermissions = checkAnonymousHasPermission(study, studyPermission);
+        }
+        Document queryDocument = getAuthorisedEntries(user, groups, entryPermission, isAnonymousPresent);
         if (hasStudyPermissions) {
-            // The user has permissions defined globally, so we also have to check the entries where the user/groups/anonymous/* have no
+            // The user has permissions defined globally, so we also have to check the entries where the user/groups/members/* have no
             // permissions defined as the user will also be allowed to see them
             queryDocument = new Document("$or", Arrays.asList(
                     getNoPermissionsDefined(user, groups),
@@ -175,6 +210,35 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         logger.debug("Query for authorised entries: {}", queryDocument.toBsonDocument(Document.class,
                 MongoClient.getDefaultCodecRegistry()));
         return queryDocument;
+    }
+
+    private boolean isUserInMembers(Document study, String user) {
+        List<Document> groupDocumentList = study.get(StudyDBAdaptor.QueryParams.GROUPS.key(), ArrayList.class);
+        if (groupDocumentList != null && groupDocumentList.size() > 0) {
+            for (Document group : groupDocumentList) {
+                if (group.getString("name").equals("@members")) {
+                    List<String> userIds = group.get("userIds", ArrayList.class);
+                    for (String userId : userIds) {
+                        if (userId.equals(user)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean checkAnonymousHasPermission(Document study, String studyPermission) {
+        List<String> aclList = study.get(PRIVATE_ACL, ArrayList.class);
+        Map<String, Set<String>> permissionMap = parsePermissions(aclList, "*", Collections.emptyList());
+
+        // We now check if the anonymous user has the permission defined at the study level
+        boolean hasStudyPermissions = false;
+        if (permissionMap.get("user") != null) {
+            hasStudyPermissions = permissionMap.get("user").contains(studyPermission);
+        }
+        return hasStudyPermissions;
     }
 
     private boolean checkUserHasPermission(Document study, String user, List<String> groups, String studyPermission) {
@@ -189,8 +253,8 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             hasStudyPermissions = permissionMap.get("group").contains(studyPermission);
         } else if (permissionMap.get("members") != null) {
             hasStudyPermissions = permissionMap.get("members").contains(studyPermission);
-        } else if (permissionMap.get("*") != null) {
-            hasStudyPermissions = permissionMap.get("*").contains(studyPermission);
+        } else if (permissionMap.get(ANONYMOUS) != null) {
+            hasStudyPermissions = permissionMap.get(ANONYMOUS).contains(studyPermission);
         }
         return hasStudyPermissions;
     }
@@ -212,21 +276,6 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             }
         }
         return groups;
-    }
-
-    protected Document getQueryForAuthorisedEntries(long studyId, String user, String studyPermission, String entryPermission)
-            throws CatalogDBException {
-        // We obtain the study information (groups and acls)
-        Query query = new Query(StudyDBAdaptor.QueryParams.ID.key(), studyId);
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(StudyDBAdaptor.QueryParams.GROUPS.key(), PRIVATE_ACL, PRIVATE_OWNER_ID));
-        QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(query, options);
-        if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + studyId + " not found");
-        }
-        Document studyObject = (Document) queryResult.first();
-
-        return getQueryForAuthorisedEntries(studyObject, user, studyPermission, entryPermission);
     }
 
     private Map<String, Set<String>> parsePermissions(List<String> permissionList, String user, List<String> groupList) {
@@ -266,39 +315,48 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
      * @param user User asking for the entries.
      * @param groups Group names where the user belongs to.
      * @param permission Permission to be checked.
+     * @param isAnonymousPresent Boolean indicating whether the anonymous user has been registered in the @members group.
      * @return The document containing the query to be made in mongo database.
      */
-    private Document getAuthorisedEntries(String user, List<String> groups, String permission) {
+    private Document getAuthorisedEntries(String user, List<String> groups, String permission, boolean isAnonymousPresent) {
         List<Document> queryList = new ArrayList<>();
+        // 1. Check if the user has the permission
         queryList.add(new Document(PRIVATE_ACL, user + "_" + permission));
 
-        // This pattern list will contain patterns that should not match
-        List<Pattern> patternList = new ArrayList<>();
-        patternList.add(Pattern.compile("^" + user));
+        // The rest of the queries would only be needed for registered users (not anonymous)
+        if (!user.equals(ANONYMOUS)) {
+            // This pattern list will contain patterns that should not match
+            List<Pattern> patternList = new ArrayList<>();
+            patternList.add(Pattern.compile("^" + user));
 
-        if (groups != null && groups.size() > 0) {
-            List<String> groupPermissionList = groups.stream().map(group -> group + "_" + permission).collect(Collectors.toList());
+            // 2. Check if the groups have the permission (& not the user)
+            if (groups != null && groups.size() > 0) {
+                List<String> groupPermissionList = groups.stream().map(group -> group + "_" + permission).collect(Collectors.toList());
+                queryList.add(new Document("$and",
+                        Arrays.asList(
+                                new Document(PRIVATE_ACL, new Document("$in", groupPermissionList)),
+                                new Document(PRIVATE_ACL, new Document("$nin", patternList)))));
+
+                // Add groups to pattern
+                patternList = new ArrayList<>(patternList);
+                patternList.addAll(groups.stream().map(group -> Pattern.compile("^" + group)).collect(Collectors.toList()));
+            }
+
+            // 3. Check if the @members group have the permission (& not the user & not the other groups)
             queryList.add(new Document("$and", Arrays.asList(
-                    new Document(PRIVATE_ACL, new Document("$in", groupPermissionList)),
-                    new Document(PRIVATE_ACL, new Document("$nin", patternList))
-            )));
+                    new Document(PRIVATE_ACL, "@members_" + permission),
+                    new Document(PRIVATE_ACL, new Document("$nin", patternList)))));
 
-            // Add groups to pattern
-            patternList = new ArrayList<>(patternList);
-            patternList.addAll(groups.stream().map(group -> Pattern.compile("^" + group)).collect(Collectors.toList()));
+            if (isAnonymousPresent) {
+                // If anonymous is not present in the study, this query will not be needed
+                // 4. Check if the anonymous user have the permission (& not the user & not the groups & not @members)
+                patternList = new ArrayList<>(patternList);
+                patternList.add(MEMBERS_PATTERN);
+                queryList.add(new Document("$and", Arrays.asList(
+                        new Document(PRIVATE_ACL, ANONYMOUS + "_" + permission),
+                        new Document(PRIVATE_ACL, new Document("$nin", patternList)))));
+            }
         }
-
-        queryList.add(new Document("$and", Arrays.asList(
-                new Document(PRIVATE_ACL, "*_" + permission),
-                new Document(PRIVATE_ACL, new Document("$nin", patternList))
-        )));
-        patternList = new ArrayList<>(patternList);
-        patternList.add(REGISTERED_PATTERN);
-
-        queryList.add(new Document("$and", Arrays.asList(
-                new Document(PRIVATE_ACL, "anonymous_" + permission),
-                new Document(PRIVATE_ACL, new Document("$nin", patternList))
-        )));
 
         return new Document("$or", queryList);
     }
@@ -313,12 +371,14 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     private Document getNoPermissionsDefined(String user, List<String> groups) {
         List<Pattern> patternList = new ArrayList<>();
 
-        patternList.add(Pattern.compile("^" + user));
-        if (groups != null && groups.size() > 0) {
-            patternList.addAll(groups.stream().map(group -> Pattern.compile("^" + group)).collect(Collectors.toList()));
-        }
+        if (!user.equals(ANONYMOUS)) {
+            patternList.add(Pattern.compile("^" + user));
+            if (groups != null && groups.size() > 0) {
+                patternList.addAll(groups.stream().map(group -> Pattern.compile("^" + group)).collect(Collectors.toList()));
+            }
 
-        patternList.add(REGISTERED_PATTERN);
+            patternList.add(MEMBERS_PATTERN);
+        }
         patternList.add(ANONYMOUS_PATTERN);
 
         return new Document(PRIVATE_ACL, new Document("$nin", patternList));

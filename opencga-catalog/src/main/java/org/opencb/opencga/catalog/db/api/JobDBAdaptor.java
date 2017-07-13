@@ -72,8 +72,6 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         return jobQueryResult;
     }
 
-    QueryResult<Job> get(Query query, QueryOptions options, String user) throws CatalogDBException;
-
     QueryResult<Job> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
     String getStatus(long jobId, String sessionId) throws CatalogDBException;

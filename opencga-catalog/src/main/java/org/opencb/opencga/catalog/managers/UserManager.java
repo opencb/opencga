@@ -377,8 +377,9 @@ public class UserManager extends AbstractManager implements IUserManager {
                 return retResult;
             }
             try {
-                catalogManager.getStudyManager().updateGroup(Long.toString(studyId), retResult.getInput().getStudyGroup(),
-                        StringUtils.join(userList, ","), null, null, sessionId);
+                GroupParams groupParams = new GroupParams(StringUtils.join(userList, ","), GroupParams.Action.ADD);
+                catalogManager.getStudyManager().updateGroup(Long.toString(studyId), retResult.getInput().getStudyGroup(), groupParams,
+                        sessionId);
             } catch (CatalogException e1) {
                 retResult.setErrorMsg(e1.getMessage());
                 return retResult;

@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 
@@ -51,7 +52,8 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     QueryResult<Long> count(Query query) throws CatalogDBException;
 
-    QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission) throws CatalogDBException;
+    QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+            throws CatalogDBException, CatalogAuthorizationException;
 
     default QueryResult distinct(String field) throws CatalogDBException {
         return distinct(new Query(), field);
@@ -69,7 +71,7 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     QueryResult<T> get(Query query, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<T> get(Query query, QueryOptions options, String user) throws CatalogDBException;
+    QueryResult<T> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
 
     default List<QueryResult<T>> get(List<Query> queries, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(queries);

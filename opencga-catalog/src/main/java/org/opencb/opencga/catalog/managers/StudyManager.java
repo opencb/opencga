@@ -813,47 +813,6 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     }
 
     @Override
-    public QueryResult<Group> updateGroup(String studyStr, String groupId, @Nullable String addUsers, @Nullable String removeUsers,
-                                          @Nullable String setUsers, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
-        long studyId = getId(userId, studyStr);
-        studyDBAdaptor.checkId(studyId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPDATE_STUDY);
-
-        // Fix the groupId
-        if (!groupId.startsWith("@")) {
-            groupId = "@" + groupId;
-        }
-
-        // Check the group exists
-        Query query = new Query()
-                .append(StudyDBAdaptor.QueryParams.ID.key(), studyId)
-                .append(StudyDBAdaptor.QueryParams.GROUP_NAME.key(), groupId);
-        if (studyDBAdaptor.count(query).first() == 0) {
-            throw new CatalogException("The group " + groupId + " does not exist.");
-        }
-
-        List<String> userList;
-        if (StringUtils.isNotEmpty(setUsers)) {
-            userList = Arrays.asList(setUsers.split(","));
-            studyDBAdaptor.setUsersToGroup(studyId, groupId, userList);
-        } else {
-            if (StringUtils.isNotEmpty(addUsers)) {
-                userList = Arrays.asList(addUsers.split(","));
-                studyDBAdaptor.addUsersToGroup(studyId, groupId, userList);
-            }
-
-            if (StringUtils.isNotEmpty(removeUsers)) {
-                userList = Arrays.asList(removeUsers.split(","));
-                studyDBAdaptor.removeUsersFromGroup(studyId, groupId, userList);
-            }
-        }
-
-        return studyDBAdaptor.getGroup(studyId, groupId, Collections.emptyList());
-    }
-
-    @Override
     public QueryResult<Group> updateGroup(String studyStr, String groupId, GroupParams groupParams, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(groupParams, "Group parameters");
@@ -863,10 +822,21 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         String userId = catalogManager.getUserManager().getId(sessionId);
         long studyId = getId(userId, studyStr);
 
+        // Fix the group name
+        if (!groupId.startsWith("@")) {
+            groupId = "@" + groupId;
+        }
+
         List<String> users;
         if (StringUtils.isNotEmpty(groupParams.getUsers())) {
             users = Arrays.asList(groupParams.getUsers().split(","));
-            userDBAdaptor.checkIds(users);
+            List<String> tmpUsers = users;
+            if (groupId.equals(MEMBERS)) {
+                // Remove anonymous user if present for the checks.
+                // Anonymous user is only allowed in MEMBERS group, otherwise we keep it as if it is present it should fail.
+                tmpUsers = users.stream().filter(user -> !user.equals(ANONYMOUS)).collect(Collectors.toList());
+            }
+            userDBAdaptor.checkIds(tmpUsers);
         } else {
             users = Collections.emptyList();
         }

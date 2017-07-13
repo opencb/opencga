@@ -179,8 +179,6 @@ public interface FileDBAdaptor extends DBAdaptor<File> {
      */
     QueryResult<File> get(long fileId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<File> get(Query query, QueryOptions options, String user) throws CatalogDBException;
-
     /***
      * Retrieves all the files belonging to the given study.
      *

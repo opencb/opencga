@@ -15,6 +15,7 @@ import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ClinicalAnalysisConverter;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.ClinicalAnalysis;
 import org.opencb.opencga.catalog.models.Status;
@@ -53,7 +54,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission) throws CatalogDBException {
+    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+            throws CatalogDBException, CatalogAuthorizationException {
         if (studyPermission == null) {
             studyPermission = StudyAclEntry.StudyPermissions.VIEW_CLINICAL_ANALYSIS;
         }
@@ -219,7 +221,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public QueryResult<ClinicalAnalysis> get(Query query, QueryOptions options, String user) throws CatalogDBException {
+    public QueryResult<ClinicalAnalysis> get(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
         // Get the study document

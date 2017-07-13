@@ -127,8 +127,6 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
 
     QueryResult<Cohort> get(long cohortId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Cohort> get(Query query, QueryOptions options, String user) throws CatalogDBException;
-
     QueryResult<Cohort> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Cohort> update(long cohortId, ObjectMap parameters, QueryOptions options) throws CatalogDBException;

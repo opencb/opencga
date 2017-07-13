@@ -206,7 +206,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private boolean checkUserPermission(String userId, Query query, StudyAclEntry.StudyPermissions studyPermission, DBAdaptor dbAdaptor)
-            throws CatalogDBException {
+            throws CatalogDBException, CatalogAuthorizationException {
         if (userId.equals(ADMIN)) {
             if (getSpecialPermissions(ADMIN).getPermissions().contains(studyPermission)) {
                 return true;
@@ -726,7 +726,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throws CatalogException {
         // We obtain which of those members are actually users to add them to the @members group automatically
         List<String> userList = members.stream()
-                .filter(member -> !member.equals("*"))
                 .filter(member -> !member.startsWith("@"))
                 .collect(Collectors.toList());
         if (userList.size() > 0) {
@@ -745,7 +744,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throws CatalogException {
         // We obtain which of those members are actually users to add them to the @members group automatically
         List<String> userList = members.stream()
-                .filter(member -> !member.equals("*"))
                 .filter(member -> !member.startsWith("@"))
                 .collect(Collectors.toList());
         if (userList.size() > 0) {
@@ -780,7 +778,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         // We obtain which of those members are actually users to add them to the @members group automatically
         List<String> userList = members.stream()
-                .filter(member -> !member.equals("*"))
                 .filter(member -> !member.startsWith("@"))
                 .collect(Collectors.toList());
         if (userList.size() > 0) {
@@ -811,7 +808,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         // We obtain which of those members are actually users to add them to the @members group automatically
         List<String> userList = members.stream()
-                .filter(member -> !member.equals("*"))
                 .filter(member -> !member.startsWith("@"))
                 .collect(Collectors.toList());
         if (userList.size() > 0) {

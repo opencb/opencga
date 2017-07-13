@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Status;
@@ -298,7 +299,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public QueryResult<Project> get(Query query, QueryOptions options, String user) throws CatalogDBException {
+    public QueryResult<Project> get(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
         // Fetch all the studies that the user can see

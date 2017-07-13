@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.IndividualConverter;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
@@ -116,7 +117,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Individual> get(Query query, QueryOptions options, String user) throws CatalogDBException {
+    public QueryResult<Individual> get(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
         // Get the study document
@@ -275,7 +277,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission) throws CatalogDBException {
+    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+            throws CatalogDBException, CatalogAuthorizationException {
         if (studyPermission == null) {
             studyPermission = StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS;
         }

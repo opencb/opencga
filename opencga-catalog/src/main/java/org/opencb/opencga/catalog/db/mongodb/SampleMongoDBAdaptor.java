@@ -34,6 +34,7 @@ import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
@@ -114,7 +115,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     }
 
     @Override
-    public QueryResult<Sample> get(Query query, QueryOptions options, String user) throws CatalogDBException {
+    public QueryResult<Sample> get(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
         // Get the study document
@@ -391,7 +393,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     }
 
     @Override
-    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission) throws CatalogDBException {
+    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+            throws CatalogDBException, CatalogAuthorizationException {
         if (studyPermission == null) {
             studyPermission = StudyAclEntry.StudyPermissions.VIEW_SAMPLES;
         }
