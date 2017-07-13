@@ -898,6 +898,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             options = new QueryOptions(options);
             List<String> includeList = new ArrayList<>(options.getAsStringList(QueryOptions.INCLUDE));
             includeList.add("_ownerId");
+            includeList.add("_acl");
+            includeList.add(QueryParams.GROUPS.key());
             options.put(QueryOptions.INCLUDE, includeList);
         }
 

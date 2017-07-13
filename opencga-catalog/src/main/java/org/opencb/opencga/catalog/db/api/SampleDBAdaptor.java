@@ -70,11 +70,6 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         ANNOTATION_SET_NAME("annotationSetName", TEXT_ARRAY, ""),
         ANNOTATION("annotation", TEXT_ARRAY, "");
 
-        /*
-        ANNOTATIONS_SET_VARIABLE_SET_ID("annotationSets.variableSetId", DOUBLE, ""),
-        ANNOTATION_SET_NAME("annotationSets.id", TEXT, ""),
-        ANNOTATION_SET("annotationSets", TEXT_ARRAY, "");
-*/
         private static Map<String, QueryParams> map;
         static {
             map = new LinkedMap();

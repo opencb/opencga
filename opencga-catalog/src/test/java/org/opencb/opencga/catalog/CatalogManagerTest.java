@@ -1561,6 +1561,14 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
+    public void smartResolutorStudyAliasFromAnonymousUser() throws CatalogException {
+        catalogManager.getStudyManager().updateAcl("user@1000G:phase1", "*",
+                new Study.StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_STUDY.name(), AclParams.Action.SET, ""), sessionIdUser);
+        long id = catalogManager.getStudyManager().getId("*", "1000G:phase1");
+        assertTrue(id > 0);
+    }
+
+    @Test
     public void testCreateSampleWithIndividual() throws CatalogException {
         long studyId = catalogManager.getStudyId("user@1000G:phase1", sessionIdUser);
         long individualId = catalogManager.createIndividual(studyId, "Individual1", "", 0, 0, Individual.Sex.MALE, new QueryOptions(),
