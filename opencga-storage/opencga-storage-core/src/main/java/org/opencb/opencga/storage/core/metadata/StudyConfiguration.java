@@ -89,7 +89,11 @@ public class StudyConfiguration {
         }
         this.aggregation = other.aggregation;
         this.timeStamp = other.timeStamp;
-        this.variantMetadata = new VariantStudyMetadata(other.variantMetadata);
+        if (other.variantMetadata == null) {
+            this.variantMetadata = new VariantStudyMetadata();
+        } else {
+            this.variantMetadata = new VariantStudyMetadata(other.variantMetadata);
+        }
         this.attributes = new ObjectMap(other.attributes);
     }
 
