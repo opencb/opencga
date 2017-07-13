@@ -186,7 +186,7 @@ public abstract class AbstractManager {
         String aliasProject = (String) parameters.get("project");
         String aliasStudy = (String) parameters.get("study");
 
-        if (ownerId.equalsIgnoreCase("anonymous")) {
+        if (ownerId.equalsIgnoreCase(ANONYMOUS)) {
             return new LinkedList<>();
         }
 

@@ -101,7 +101,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         final QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ID.key());
 
         if (StringUtils.isEmpty(studyStr)) {
-            if (!userId.equals("anonymous")) {
+            if (!userId.equals(ANONYMOUS)) {
                 // Obtain the projects of the user
                 QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
                 QueryResult<Project> projectQueryResult = projectDBAdaptor.get(userId, options);
@@ -118,7 +118,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             } else {
                 // Anonymous user
                 // 1. Check if the anonymous user has been given permissions in any study
-                query.append(StudyDBAdaptor.QueryParams.ACL_MEMBER.key(), "anonymous");
+                query.append(StudyDBAdaptor.QueryParams.ACL_MEMBER.key(), ANONYMOUS);
                 query.append(StudyDBAdaptor.QueryParams.ACL_PERMISSIONS.key(), StudyAclEntry.StudyPermissions.VIEW_STUDY);
             }
 
@@ -164,7 +164,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 return retStudies;
             }
 
-            if (!userId.equals("anonymous")) {
+            if (!userId.equals(ANONYMOUS)) {
                 if (aliasProject != null) {
                     projectIds = Arrays.asList(catalogManager.getProjectManager().getId(userId, aliasProject));
                 } else {
@@ -186,7 +186,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 }
 
                 // Add permissions for user anonymous in the query
-                query.append(StudyDBAdaptor.QueryParams.ACL_MEMBER.key(), "anonymous");
+                query.append(StudyDBAdaptor.QueryParams.ACL_MEMBER.key(), ANONYMOUS);
                 query.append(StudyDBAdaptor.QueryParams.ACL_PERMISSIONS.key(), StudyAclEntry.StudyPermissions.VIEW_STUDY);
             }
 

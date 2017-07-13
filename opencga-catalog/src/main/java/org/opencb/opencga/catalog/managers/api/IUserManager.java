@@ -133,6 +133,8 @@ public interface IUserManager extends ResourceManager<String, User> {
 
     QueryResult<Session> login(String userId, String password, String sessionIp) throws CatalogException, IOException;
 
+    QueryResult<Session> refreshToken(String userId, String token, String sessionIp) throws CatalogException, IOException;
+
     /**
      * This method will be only callable by the system. It generates a new session id for the user.
      *

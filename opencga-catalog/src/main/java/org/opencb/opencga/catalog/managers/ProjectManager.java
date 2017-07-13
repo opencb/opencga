@@ -100,7 +100,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             }
         }
 
-        if (!userOwner.equals("anonymous") && StringUtils.isNotBlank(projectAlias)) {
+        if (!userOwner.equals(ANONYMOUS) && StringUtils.isNotBlank(projectAlias)) {
             return projectDBAdaptor.getId(userOwner, projectAlias);
         } else {
             // Anonymous user
@@ -108,7 +108,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             if (StringUtils.isNotBlank(projectAlias)) {
                 query.put(ProjectDBAdaptor.QueryParams.ALIAS.key(), projectAlias);
             }
-            if (!userOwner.equals("anonymous")) {
+            if (!userOwner.equals(ANONYMOUS)) {
                 query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), userOwner);
             }
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
@@ -146,7 +146,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             projectAlias = projectStr;
         }
 
-        if (!userOwner.equals("anonymous")) {
+        if (!userOwner.equals(ANONYMOUS)) {
             return Arrays.asList(projectDBAdaptor.getId(userOwner, projectAlias));
         } else {
             // Anonymous user
@@ -537,7 +537,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         String user = catalogManager.getUserManager().getId(sessionId);
         if (!user.equals(userId)) {
             // TODO: Remove this line
-            if (userId.equals("anonymous") && user.equals("*")) {
+            if (userId.equals("anonymous") && user.equals(ANONYMOUS)) {
                 logger.info("Remove this condition !!");
             } else {
                 throw new CatalogException("User " + user + " cannot see shared projects from other users");

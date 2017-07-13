@@ -631,6 +631,14 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
+    public QueryResult<Session> refreshToken(String userId, String token, String sessionIp) throws CatalogException {
+        if (!userId.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
+            throw new CatalogException("Cannot refresh token. The token received does not correspond to " + userId);
+        }
+        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(userId, sessionIp, Session.Type.USER);
+    }
+
+    @Override
     public QueryResult<Session> getSystemTokenForUser(String userId, String adminCredentials) throws CatalogException {
         authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", adminCredentials, true);
         return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(userId, "localhost", Session.Type.SYSTEM);
@@ -870,7 +878,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     private void checkUserExists(String userId) throws CatalogException {
         if (userId.toLowerCase().equals("admin")) {
             throw new CatalogException("Permission denied: It is not allowed the creation of another admin user.");
-        } else if (userId.toLowerCase().equals("anonymous") || userId.toLowerCase().equals("daemon") || userId.equals("*")) {
+        } else if (userId.toLowerCase().equals(ANONYMOUS) || userId.toLowerCase().equals("daemon")) {
             throw new CatalogException("Permission denied: Cannot create users with special treatments in catalog.");
         }
 
