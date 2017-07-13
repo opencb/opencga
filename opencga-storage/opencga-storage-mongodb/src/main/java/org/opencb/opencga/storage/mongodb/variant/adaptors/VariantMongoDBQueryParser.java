@@ -538,6 +538,7 @@ public class VariantMongoDBQueryParser {
                 Set<Integer> files = new HashSet<>();
                 String samples = query.getString(SAMPLES.key());
 
+                boolean filesFilterBySamples = !isValidParam(query, FILES) && defaultStudyConfiguration != null;
                 for (String sample : samples.split(",")) {
                     int sampleId = studyConfigurationManager.getSampleId(sample, defaultStudyConfiguration);
                     genotypesFilter.put(sampleId, Arrays.asList(
@@ -546,17 +547,25 @@ public class VariantMongoDBQueryParser {
                             "1/1", "1|1",
                             "1/2", "1|2", "2|1"
                     ));
-                    if (!isValidParam(query, FILES) && defaultStudyConfiguration != null) {
+                    if (filesFilterBySamples) {
+                        int filesFromSample = 0;
                         for (Integer file : defaultStudyConfiguration.getIndexedFiles()) {
                             if (defaultStudyConfiguration.getSamplesInFiles().get(file).contains(sampleId)) {
                                 files.add(file);
+                                filesFromSample++;
+                                if (filesFromSample > 1) {
+                                    // If there are more than one indexed file per sample, do not use filesFilterBySamples
+                                    filesFilterBySamples = false;
+                                    break;
+                                }
                             }
                         }
                     }
                 }
 
                 // If there is no valid files filter, add files filter to speed up this query
-                if (!isValidParam(query, FILES) && !files.isEmpty()) {
+                if (filesFilterBySamples && !files.isEmpty()
+                        && !defaultStudyConfiguration.getIndexedFiles().containsAll(files)) {
                     addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
                                     + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD, files, studyBuilder, QueryOperation.AND,
                             f -> studyConfigurationManager.getFileId(f, false, defaultStudyConfiguration));
