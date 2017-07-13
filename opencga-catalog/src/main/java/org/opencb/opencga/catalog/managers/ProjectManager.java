@@ -40,8 +40,8 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -254,7 +254,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         String userId = catalogManager.getUserManager().getId(sessionId);
 
         if (userId.equals(ANONYMOUS)) {
-            return new QueryResult<>(ANONYMOUS, 0, 0, 0, "", "", Collections.emptyList());
+            return new QueryResult<>(ANONYMOUS, 0, 0, 0, "", "", new ArrayList<>());
         }
         String ownerId = query.getString("ownerId", query.getString("userId", userId));
         ParamUtils.checkParameter(ownerId, "ownerId");
