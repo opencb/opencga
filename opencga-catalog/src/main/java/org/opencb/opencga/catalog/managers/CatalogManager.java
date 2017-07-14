@@ -421,8 +421,7 @@ public class CatalogManager implements AutoCloseable {
         return projectManager.getId(userId, projectId);
     }
 
-    public QueryResult<Project> getProject(long projectId, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public QueryResult<Project> getProject(long projectId, QueryOptions options, String sessionId) throws CatalogException {
         return projectManager.get(projectId, options, sessionId);
     }
 
@@ -786,7 +785,7 @@ public class CatalogManager implements AutoCloseable {
         List<QueryResult<FileAclEntry>> aclList = new ArrayList<>(resource.getResourceIds().size());
         for (int i = 0; i < resource.getResourceIds().size(); i++) {
             Long fileId = resource.getResourceIds().get(i);
-            QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(resource.getUser(), fileId);
+            QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(resource.getUser(), fileId, true);
             allFileAcls.setId(Long.toString(resource.getResourceIds().get(i)));
             aclList.add(allFileAcls);
         }
@@ -850,18 +849,6 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Job> getJob(long jobId, QueryOptions options, String sessionId) throws CatalogException {
         return jobManager.get(jobId, options, sessionId);
     }
-
-    public QueryResult<Job> getUnfinishedJobs(String sessionId) throws CatalogException {
-        return jobManager.get(new Query("status.name",
-                Arrays.asList(
-                        Job.JobStatus.PREPARED,
-                        Job.JobStatus.QUEUED,
-                        Job.JobStatus.RUNNING,
-                        Job.JobStatus.DONE
-                )
-        ), null, sessionId);
-    }
-
 
     public QueryResult<Job> getAllJobs(long studyId, String sessionId) throws CatalogException {
         return jobManager.get(studyId, null, null, sessionId);

@@ -149,10 +149,9 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                 .append(IndividualDBAdaptor.QueryParams.ID.key(), individualId)
                 .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options, userId);
-
-//        authorizationManager.checkIndividualPermission(studyId, individualId, userId, IndividualAclEntry.IndividualPermissions.VIEW);
-//        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(individualId, options);
-//        authorizationManager.filterIndividuals(userId, studyId, individualQueryResult.getResult());
+        if (individualQueryResult.getNumResults() <= 0) {
+            throw CatalogAuthorizationException.deny(userId, "view", "individual", individualId, "");
+        }
         addChildrenInformation(userId, studyId, individualQueryResult);
         individualQueryResult.setNumResults(individualQueryResult.getResult().size());
         return individualQueryResult;

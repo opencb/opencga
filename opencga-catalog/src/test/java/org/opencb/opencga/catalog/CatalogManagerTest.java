@@ -616,6 +616,7 @@ public class CatalogManagerTest extends GenericTest {
     public void testUpdateGroupInfo() throws CatalogException {
         IStudyManager studyManager = catalogManager.getStudyManager();
 
+
         studyManager.createGroup(Long.toString(studyId), "group1", "", sessionIdUser);
         studyManager.createGroup(Long.toString(studyId), "group2", "", sessionIdUser);
 
@@ -771,11 +772,14 @@ public class CatalogManagerTest extends GenericTest {
                 outDir.getId(),
                 Collections.emptyList(), null, new HashMap<>(), null, new Job.JobStatus(Job.JobStatus.ERROR), 0, 0, null, sessionIdUser);
 
-        String sessionId = catalogManager.login("admin", "admin", "localhost").first().getId().toString();
-        QueryResult<Job> unfinishedJobs = catalogManager.getUnfinishedJobs(sessionId);
+        Query query = new Query()
+                .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Arrays.asList(Job.JobStatus.PREPARED, Job.JobStatus.QUEUED,
+                        Job.JobStatus.RUNNING, Job.JobStatus.DONE))
+                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Job> unfinishedJobs = catalogManager.getJobManager().get(query, null, sessionIdUser);
         assertEquals(2, unfinishedJobs.getNumResults());
 
-        QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId, sessionId);
+        QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId, sessionIdUser);
         assertEquals(4, allJobs.getNumResults());
     }
 
@@ -1819,7 +1823,10 @@ public class CatalogManagerTest extends GenericTest {
 
         assertEquals(myCohort.getId(), myDeletedCohort.getId());
 
-        Cohort cohort = catalogManager.getCohort(myCohort.getId(), null, sessionIdUser).first();
+        Query query = new Query()
+                .append(CohortDBAdaptor.QueryParams.ID.key(), myCohort.getId())
+                .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Cohort.CohortStatus.READY);
+        Cohort cohort = catalogManager.getCohortManager().get(studyId, query, null, sessionIdUser).first();
         assertEquals(Status.TRASHED, cohort.getStatus().getName());
     }
 
@@ -1871,7 +1878,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testUpdateIndividualInfo() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("", "user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudy(studyId, sessionIdUser).first();
 
         IIndividualManager individualManager = catalogManager.getIndividualManager();

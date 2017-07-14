@@ -540,9 +540,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<FileAclEntry> getAllFileAcls(String userId, long fileId) throws CatalogException {
+    public QueryResult<FileAclEntry> getAllFileAcls(String userId, long fileId, boolean checkPermission) throws CatalogException {
         fileDBAdaptor.checkId(fileId);
-        checkFilePermission(fileDBAdaptor.getStudyIdByFileId(fileId), fileId, userId, FileAclEntry.FilePermissions.SHARE);
+        if (checkPermission) {
+            checkFilePermission(fileDBAdaptor.getStudyIdByFileId(fileId), fileId, userId, FileAclEntry.FilePermissions.SHARE);
+        }
         return aclDBAdaptor.get(fileId, null, MongoDBAdaptorFactory.FILE_COLLECTION);
     }
 

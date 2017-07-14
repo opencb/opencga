@@ -143,6 +143,9 @@ public class CohortManager extends AbstractManager implements ICohortManager {
                 .append(CohortDBAdaptor.QueryParams.ID.key(), cohortId)
                 .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Cohort> queryResult = cohortDBAdaptor.get(query, options, userId);
+        if (queryResult.getNumResults() <= 0) {
+            throw CatalogAuthorizationException.deny(userId, "view", "cohort", cohortId, "");
+        }
         queryResult.setId(Long.toString(cohortId));
         return queryResult;
     }

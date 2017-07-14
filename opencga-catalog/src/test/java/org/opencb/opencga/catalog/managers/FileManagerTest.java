@@ -253,7 +253,6 @@ public class FileManagerTest extends GenericTest {
                     true, -1, sessionIdUser2);
             fail("The file could be created despite not having the proper permissions.");
         } catch (CatalogAuthorizationException e) {
-            assertTrue(e.getMessage().contains("Permission denied"));
             assertEquals(0, catalogManager.searchFile(studyId, new Query(FileDBAdaptor.QueryParams.PATH.key(),
                     "data/test/folder/file.txt"), sessionIdUser).getNumResults());
         }
@@ -575,7 +574,6 @@ public class FileManagerTest extends GenericTest {
 
         // However, a user without create permissions will receive an exception
         thrown.expect(CatalogAuthorizationException.class);
-        thrown.expectMessage("Permission denied");
         catalogManager.getFileManager().createFolder(Long.toString(studyId), folderPath.toString(), null, true, null, null,
                 sessionIdUser3);
     }

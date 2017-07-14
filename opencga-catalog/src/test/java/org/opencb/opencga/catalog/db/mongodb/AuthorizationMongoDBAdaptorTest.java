@@ -38,8 +38,6 @@ public class AuthorizationMongoDBAdaptorTest {
     private Sample s1;
     private SampleAclEntry acl_s1_user1;
     private SampleAclEntry acl_s1_user2;
-    private SampleAclEntry acl_s2_user1;
-    private SampleAclEntry acl_s2_user2;
 
     @AfterClass
     public static void afterClass() {
@@ -60,6 +58,8 @@ public class AuthorizationMongoDBAdaptorTest {
         aclDBAdaptor = new AuthorizationMongoDBAdaptor(configuration);
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        s1 = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(new Sample(0, "s1", "", new Individual(), "", "", false, 1, null,
+                Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), studyId, null).first();
         acl_s1_user1 = new SampleAclEntry(user1.getId(), Arrays.asList());
         acl_s1_user2 = new SampleAclEntry(user2.getId(), Arrays.asList(
                 SampleAclEntry.SamplePermissions.VIEW.name(),
@@ -67,19 +67,13 @@ public class AuthorizationMongoDBAdaptorTest {
                 SampleAclEntry.SamplePermissions.SHARE.name(),
                 SampleAclEntry.SamplePermissions.UPDATE.name()
         ));
-        s1 = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(new Sample(0, "s1", "", new Individual(), "", "", false, 1, Arrays
-                .asList(acl_s1_user1, acl_s1_user2), Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), studyId, null).first();
-        acl_s2_user1 = new SampleAclEntry(user1.getId(), Arrays.asList());
-        acl_s2_user2 = new SampleAclEntry(user2.getId(), Arrays.asList(
-                SampleAclEntry.SamplePermissions.VIEW.name(),
-                SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name(),
-                SampleAclEntry.SamplePermissions.SHARE.name(),
-                SampleAclEntry.SamplePermissions.UPDATE.name()
-        ));
+        aclDBAdaptor.setAcls(Arrays.asList(s1.getId()), Arrays.asList(acl_s1_user1, acl_s1_user2), MongoDBAdaptorFactory.SAMPLE_COLLECTION);
     }
 
     @Test
     public void addSetGetAndRemoveAcls() throws Exception {
+
+        aclDBAdaptor.resetMembersFromAllEntries(studyId, Arrays.asList(user1.getId(), user2.getId()));
 
         aclDBAdaptor.addToMembers(Arrays.asList(s1.getId()), Arrays.asList("user1", "user2", "user3"), Arrays.asList("VIEW", "UPDATE"),
                 MongoDBAdaptorFactory.SAMPLE_COLLECTION);

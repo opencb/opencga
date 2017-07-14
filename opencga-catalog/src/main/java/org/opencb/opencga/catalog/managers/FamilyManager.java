@@ -13,6 +13,7 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IAnnotationSetManager;
@@ -304,11 +305,9 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
                 .append(FamilyDBAdaptor.QueryParams.ID.key(), id)
                 .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, options, userId);
-//        authorizationManager.checkFamilyPermission(studyId, id, userId, FamilyAclEntry.FamilyPermissions.VIEW);
-//
-//        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(id, options);
-//        authorizationManager.filterFamilies(userId, studyId, familyQueryResult.getResult());
-//        familyQueryResult.setNumResults(familyQueryResult.getResult().size());
+        if (familyQueryResult.getNumResults() <= 0) {
+            throw CatalogAuthorizationException.deny(userId, "view", "family", id, "");
+        }
         return familyQueryResult;
     }
 

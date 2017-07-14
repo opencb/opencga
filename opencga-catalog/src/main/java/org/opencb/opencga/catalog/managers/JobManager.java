@@ -274,8 +274,9 @@ public class JobManager extends AbstractManager implements IJobManager {
                 .append(JobDBAdaptor.QueryParams.ID.key(), jobId)
                 .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudyId());
         QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, options, resource.getUser());
-//        authorizationManager.checkJobPermission(resource.getStudyId(), jobId, resource.getUser(), JobAclEntry.JobPermissions.VIEW);
-//        QueryResult<Job> queryResult = jobDBAdaptor.get(jobId, options);
+        if (jobQueryResult.getNumResults() <= 0) {
+            throw CatalogAuthorizationException.deny(resource.getUser(), "view", "job", jobId, "");
+        }
         return jobQueryResult;
     }
 

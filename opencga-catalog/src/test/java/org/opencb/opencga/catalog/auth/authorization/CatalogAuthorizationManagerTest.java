@@ -67,7 +67,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     private final String password = "1234";
 
     private final String groupAdmin = "@admins";
-    private final String groupMember = "@memberss";
+    private final String groupMember = "@analyst";
 
     private final String ALL_FILE_PERMISSIONS = join(
             EnumSet.allOf(FileAclEntry.FilePermissions.class)
@@ -332,8 +332,9 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void addNonExistingGroupToRole() throws CatalogException {
         String groupNotRegistered = "@groupNotRegistered";
         thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("does not exist");
-        catalogManager.createStudyAcls(Long.toString(s1), groupNotRegistered, "", AuthorizationManager.ROLE_ANALYST, studyAdmin1SessionId);
+        thrown.expectMessage("not found");
+        catalogManager.getStudyManager().updateAcl(Long.toString(s1), groupNotRegistered, new Study.StudyAclParams("",
+                AclParams.Action.SET, AuthorizationManager.ROLE_ANALYST), studyAdmin1SessionId);
     }
 
     @Test
@@ -379,19 +380,10 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         assertEquals(groupAdmin, studyAcls.first().getMember());
         assertArrayEquals(AuthorizationManager.getAdminAcls().toArray(), studyAcls.first().getPermissions().toArray());
 
-//        catalogManager.unshareStudy(s1, groupAdmin, studyAdmin1SessionId);
-        catalogManager.removeStudyAcl(Long.toString(s1), groupAdmin, studyAdmin1SessionId);
+        catalogManager.removeStudyAcl(Long.toString(s1), groupAdmin, ownerSessionId);
         studyAcls = catalogManager.getStudyAcl(Long.toString(s1), groupAdmin, ownerSessionId);
         assertEquals(0, studyAcls.getNumResults());
     }
-
-//    @Test
-//    public void removeOwnerFromRoleAdmin() throws CatalogException {
-//        thrown.expect(CatalogException.class);
-//        thrown.expectMessage("not allowed");
-////        catalogManager.unshareStudy(s1, ownerUser, ownerSessionId);
-//        catalogManager.removeStudyAcl(Long.toString(s1), ownerUser, ownerSessionId);
-//    }
 
     @Test
     public void removeNonExistingUserFromRole() throws CatalogException {
@@ -406,8 +398,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void removeNonExistingGroupFromRole() throws CatalogException {
         String groupNotRegistered = "@groupNotRegistered";
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("does not exist");
-//        catalogManager.unshareStudy(s1, groupNotRegistered, ownerSessionId);
+        thrown.expectMessage("not found");
         catalogManager.removeStudyAcl(Long.toString(s1), groupNotRegistered, ownerSessionId);
     }
 
@@ -712,6 +703,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         String newUser = "newUser";
         catalogManager.createUser(newUser, newUser, "asda@mail.com", password, "org", 1000L, null);
         String sessionId = catalogManager.login(newUser, password, "localhost").first().getId().toString();
+        catalogManager.getStudyManager().updateGroup(Long.toString(s1), "@members", new GroupParams(newUser, GroupParams.Action.ADD),
+                ownerSessionId);
 
         QueryResult<Sample> sample = catalogManager.getSample(smp6.getId(), null, sessionId);
         assertEquals(1, sample.getNumResults());

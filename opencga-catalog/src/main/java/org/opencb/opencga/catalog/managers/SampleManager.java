@@ -439,18 +439,16 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
     @Override
     public QueryResult<Sample> get(Long sampleId, QueryOptions options, String sessionId) throws CatalogException {
-
         String userId = userManager.getId(sessionId);
         long studyId = sampleDBAdaptor.getStudyId(sampleId);
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId)
                 .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-        return sampleDBAdaptor.get(query, options, userId);
-//        authorizationManager.checkSamplePermission(studyId, sampleId, userId, SampleAclEntry.SamplePermissions.VIEW);
-//        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(sampleId, options);
-//        authorizationManager.filterSamples(userId, getStudyId(sampleId), sampleQueryResult.getResult());
-//        sampleQueryResult.setNumResults(sampleQueryResult.getResult().size());
-//        return sampleQueryResult;
+        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, options, userId);
+        if (sampleQueryResult.getNumResults() <= 0) {
+            throw CatalogAuthorizationException.deny(userId, "view", "sample", sampleId, "");
+        }
+        return sampleQueryResult;
     }
 
     @Override

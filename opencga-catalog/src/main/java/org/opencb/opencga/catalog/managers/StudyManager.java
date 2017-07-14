@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -415,13 +416,11 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         String userId = catalogManager.getUserManager().getId(sessionId);
         studyDBAdaptor.checkId(studyId);
         Query query = new Query(StudyDBAdaptor.QueryParams.ID.key(), studyId);
-        return studyDBAdaptor.get(query, options, userId);
-//        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
-//
-//        QueryResult<Study> studyResult = studyDBAdaptor.get(studyId, options);
-//        authorizationManager.filterStudies(userId, studyResult.getResult());
-//
-//        return studyResult;
+        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, options, userId);
+        if (studyQueryResult.getNumResults() <= 0) {
+            throw CatalogAuthorizationException.deny(userId, "view", "study", studyId, "");
+        }
+        return studyQueryResult;
     }
 
     @Override

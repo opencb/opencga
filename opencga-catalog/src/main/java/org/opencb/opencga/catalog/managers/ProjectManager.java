@@ -244,7 +244,11 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         String userId = catalogManager.getUserManager().getId(sessionId);
 
         Query query = new Query(ProjectDBAdaptor.QueryParams.ID.key(), projectId);
-        return projectDBAdaptor.get(query, options, userId);
+        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options, userId);
+        if (projectQueryResult.getNumResults() <= 0) {
+            throw CatalogAuthorizationException.deny(userId, "view", "project", projectId, "");
+        }
+        return projectQueryResult;
     }
 
     @Override

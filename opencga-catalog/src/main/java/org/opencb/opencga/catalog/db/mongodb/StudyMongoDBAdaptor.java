@@ -325,8 +325,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public void addUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
-        if (members == null || members.size() == 0) {
-            throw new CatalogDBException("Unable to add members to group. List of members is empty");
+        if (members == null) {
+            members = Collections.emptyList();
         }
 
         Document query = new Document()

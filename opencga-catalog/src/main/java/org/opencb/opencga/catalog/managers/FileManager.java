@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -769,7 +770,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         QueryResult<File> queryResult = fileDBAdaptor.insert(file, studyId, options);
         // We obtain the permissions set in the parent folder and set them to the file or folder being created
-        QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId);
+        QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId, false);
         // Propagate ACLs
         if (allFileAcls.getNumResults() > 0) {
             authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()), allFileAcls.getResult(),
@@ -832,15 +833,15 @@ public class FileManager extends AbstractManager implements IFileManager {
                 .append(FileDBAdaptor.QueryParams.ID.key(), id)
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options, userId);
+        if (fileQueryResult.getNumResults() <= 0) {
+            throw CatalogAuthorizationException.deny(userId, "view", "file", id, "");
+        }
         fileQueryResult.setId(Long.toString(id));
         return fileQueryResult;
     }
 
     @Override
-    public QueryResult<File> getParent(long fileId, QueryOptions options, String sessionId)
-            throws CatalogException {
-
-        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
+    public QueryResult<File> getParent(long fileId, QueryOptions options, String sessionId) throws CatalogException {
         File file = get(fileId, null, sessionId).first();
         Path parent = Paths.get(file.getPath()).getParent();
         String parentPath;
@@ -849,7 +850,17 @@ public class FileManager extends AbstractManager implements IFileManager {
         } else {
             parentPath = parent.toString().endsWith("/") ? parent.toString() : parent.toString() + "/";
         }
-        return get(fileDBAdaptor.getId(studyId, parentPath), options, sessionId);
+        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
+        String user = userManager.getId(sessionId);
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.PATH.key(), parentPath);
+        QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options, user);
+        if (fileQueryResult.getNumResults() == 0) {
+            throw CatalogAuthorizationException.deny(user, "view", "file", fileId, "");
+        }
+        fileQueryResult.setId(Long.toString(fileId));
+        return fileQueryResult;
     }
 
     @Override
@@ -1625,7 +1636,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         String parentPath = getParentPath(stringPath);
         long parentFileId = fileDBAdaptor.getId(studyId, parentPath);
         // We obtain the permissions set in the parent folder and set them to the file or folder being created
-        QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId);
+        QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId, checkPermissions);
 
         URI completeURI = Paths.get(studyURI).resolve(path).toUri();
 
@@ -1789,7 +1800,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                 String parentPath = getParentPath(externalPathDestinyStr);
                 long parentFileId = fileDBAdaptor.getId(studyId, parentPath);
                 // We obtain the permissions set in the parent folder and set them to the file or folder being created
-                QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId);
+                QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId, true);
 
                 File subfile = new File(-1, externalPathDestiny.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                         File.Bioformat.NONE, normalizedUri, externalPathDestinyStr, TimeUtils.getTime(), TimeUtils.getTime(), description,
@@ -1850,7 +1861,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                             // We obtain the permissions set in the parent folder and set them to the file or folder being created
                             QueryResult<FileAclEntry> allFileAcls;
                             try {
-                                allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId);
+                                allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId, true);
                             } catch (CatalogException e) {
                                 throw new RuntimeException(e);
                             }
@@ -1894,7 +1905,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                             // We obtain the permissions set in the parent folder and set them to the file or folder being created
                             QueryResult<FileAclEntry> allFileAcls;
                             try {
-                                allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId);
+                                allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId, true);
                             } catch (CatalogException e) {
                                 throw new RuntimeException(e);
                             }

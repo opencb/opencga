@@ -172,10 +172,13 @@ public interface AuthorizationManager {
      *
      * @param userId user id asking for the ACLs.
      * @param fileId file id.
+     * @param checkPermission Boolean indicating whether to check the SHARE permission and possibly fail or not. Added to be able to
+     *                        propagate permissions to children files/folders when a user with WRITE permissions links or creates but it
+     *                        is not able to see all the ACLs in the parent folder.
      * @return a list of FileAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    QueryResult<FileAclEntry> getAllFileAcls(String userId, long fileId) throws CatalogException;
+    QueryResult<FileAclEntry> getAllFileAcls(String userId, long fileId, boolean checkPermission) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
