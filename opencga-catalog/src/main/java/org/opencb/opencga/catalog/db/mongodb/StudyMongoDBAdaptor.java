@@ -22,6 +22,7 @@ import com.mongodb.client.model.*;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -392,7 +393,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public void updateSyncFromGroup(long studyId, String groupId, Group.Sync syncedFrom) throws CatalogDBException {
+    public void syncGroup(long studyId, String groupId, Group.Sync syncedFrom) throws CatalogDBException {
         Document mongoDBDocument = getMongoDBDocument(syncedFrom, "Group.Sync");
 
         Document query = new Document()
@@ -401,6 +402,56 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 .append("$isolated", 1);
         Document updates = new Document("$set", new Document("groups.$.syncedFrom", mongoDBDocument));
         studyCollection.update(query, updates, null);
+    }
+
+    @Override
+    public void resyncUserWithSyncedGroups(String user, List<String> groupList, String authOrigin) throws CatalogDBException {
+        if (StringUtils.isEmpty(user)) {
+            throw new CatalogDBException("Missing user field");
+        }
+
+        // 1. Take the user out from all synced groups
+        Document query = new Document()
+                .append(QueryParams.GROUPS.key(), new Document("$elemMatch", new Document()
+                                .append("userIds", user)
+                                .append("syncedFrom.authOrigin", authOrigin)
+                        ))
+                .append("$isolated", 1);
+        Bson pull = Updates.pull("groups.$.userIds", user);
+
+        // Pull the user while it still belongs to a synced group
+        QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+        QueryResult<UpdateResult> update;
+        do {
+            update = studyCollection.update(query, pull, multi);
+        } while (update.first().getModifiedCount() > 0);
+
+        // 2. Add user to all synced groups
+        if (groupList != null && groupList.size() > 0) {
+            // Add the user to all the synced groups matching
+            query = new Document()
+                    .append(QueryParams.GROUPS.key(), new Document("$elemMatch", new Document()
+                            .append("userIds", new Document("$ne", user))
+                            .append("name", new Document("$in", groupList))
+                            .append("syncedFrom.authOrigin", authOrigin)
+                    ))
+                    .append("$isolated", 1);
+            Document push = new Document("$addToSet", new Document("groups.$.userIds", user));
+            do {
+                update = studyCollection.update(query, push, multi);
+            } while (update.first().getModifiedCount() > 0);
+
+            // We need to be updated with the internal @members group, so we fetch all the studies where the user has been added
+            // and attempt to add it to the each @members group
+            query = new Document()
+                    .append(QueryParams.GROUP_USER_IDS.key(), user)
+                    .append(QueryParams.GROUP_SYNCED_FROM_AUTH_ORIGIN.key(), authOrigin);
+            QueryResult<Study> studyQueryResult = studyCollection.find(query, studyConverter, new QueryOptions(QueryOptions.INCLUDE,
+                    QueryParams.ID.key()));
+            for (Study study : studyQueryResult.getResult()) {
+                addUsersToGroup(study.getId(), "@members", Arrays.asList(user));
+            }
+        }
     }
 
     /*

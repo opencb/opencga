@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -168,6 +169,74 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
         catalogStudyDBAdaptor.removeUsersFromAllGroups(5L, Arrays.asList("user1", "user3"));
         group = catalogStudyDBAdaptor.getGroup(5L, null,  Arrays.asList("user1", "user3"));
         assertEquals(0, group.getNumResults());
+    }
+
+    @Test
+    public void resyncUserWithSyncedGroups() throws CatalogDBException {
+        // We create synced groups and not synced groups in study 5
+        Group group = new Group("@notSyncedGroup", Arrays.asList("user1", "user2", "user3"));
+        catalogStudyDBAdaptor.createGroup(5L, group);
+        group.setName("@syncedGroup1");
+        group.setSyncedFrom(new Group.Sync("origin1", "@syncedGroup1"));
+        catalogStudyDBAdaptor.createGroup(5L, group);
+        group.setName("@syncedGroup2");
+        group.setSyncedFrom(new Group.Sync("origin1", "@syncedGroup2"));
+        catalogStudyDBAdaptor.createGroup(5L, group);
+        group.setName("@syncedGroup3");
+        group.setSyncedFrom(new Group.Sync("otherOrigin", "@syncedGroup2"));
+        catalogStudyDBAdaptor.createGroup(5L, group);
+        group = new Group("@otherNotSyncedGroup", Arrays.asList("user1", "user3"));
+        catalogStudyDBAdaptor.createGroup(5L, group);
+
+        // We create the same synced groups and not synced groups in study 9
+        group = new Group("@notSyncedGroup", Arrays.asList("user1", "user2", "user3"));
+        catalogStudyDBAdaptor.createGroup(9L, group);
+        group.setName("@syncedGroup1");
+        group.setSyncedFrom(new Group.Sync("origin1", "@syncedGroup1"));
+        catalogStudyDBAdaptor.createGroup(9L, group);
+        group.setName("@syncedGroup2");
+        group.setSyncedFrom(new Group.Sync("origin1", "@syncedGroup2"));
+        catalogStudyDBAdaptor.createGroup(9L, group);
+        group.setName("@syncedGroup3");
+        group.setSyncedFrom(new Group.Sync("otherOrigin", "@syncedGroup2"));
+        catalogStudyDBAdaptor.createGroup(9L, group);
+        group = new Group("@otherNotSyncedGroup", Arrays.asList("user1", "user3"));
+        catalogStudyDBAdaptor.createGroup(9L, group);
+
+        catalogStudyDBAdaptor.resyncUserWithSyncedGroups("user2", Collections.emptyList(), "origin1");
+        QueryResult<Group> groupsStudy1 = catalogStudyDBAdaptor.getGroup(5L, null, Arrays.asList("user2"));
+        QueryResult<Group> groupsStudy2 = catalogStudyDBAdaptor.getGroup(9L, null, Arrays.asList("user2"));
+        assertEquals(groupsStudy1.getNumResults(), groupsStudy2.getNumResults());
+        assertEquals(2, groupsStudy1.getNumResults());
+        assertTrue(groupsStudy1.getResult().stream().map(Group::getName).collect(Collectors.toList())
+                .containsAll(Arrays.asList("@notSyncedGroup", "@syncedGroup3")));
+
+        // Nothing should change with this resync. Group1 doesn't exist and syncedGroup3 is not from origin1.
+        // But because this time it will try to insert users to groups, user2 will be automatically added to group @members
+        catalogStudyDBAdaptor.resyncUserWithSyncedGroups("user2", Arrays.asList("@group1", "@syncedGroup3"), "origin1");
+        groupsStudy1 = catalogStudyDBAdaptor.getGroup(5L, null, Arrays.asList("user2"));
+        groupsStudy2 = catalogStudyDBAdaptor.getGroup(9L, null, Arrays.asList("user2"));
+        assertEquals(groupsStudy1.getNumResults(), groupsStudy2.getNumResults());
+        assertEquals(3, groupsStudy1.getNumResults());
+        assertTrue(groupsStudy1.getResult().stream().map(Group::getName).collect(Collectors.toList())
+                .containsAll(Arrays.asList("@notSyncedGroup", "@syncedGroup3", "@members")));
+
+        // Now we add one new user that will have to be added to @syncedGroup3 only. It didn't still exist there
+        catalogStudyDBAdaptor.resyncUserWithSyncedGroups("user5", Arrays.asList("@group1", "@syncedGroup3"), "otherOrigin");
+        groupsStudy1 = catalogStudyDBAdaptor.getGroup(5L, null, Arrays.asList("user5"));
+        groupsStudy2 = catalogStudyDBAdaptor.getGroup(9L, null, Arrays.asList("user5"));
+        assertEquals(groupsStudy1.getNumResults(), groupsStudy2.getNumResults());
+        assertEquals(2, groupsStudy1.getNumResults());
+        assertTrue(groupsStudy1.getResult().stream().map(Group::getName).collect(Collectors.toList())
+                .containsAll(Arrays.asList("@syncedGroup3", "@members")));
+
+        catalogStudyDBAdaptor.resyncUserWithSyncedGroups("user2", Arrays.asList("@group1", "@syncedGroup2", "@syncedGroup3"), "origin1");
+        groupsStudy1 = catalogStudyDBAdaptor.getGroup(5L, null, Arrays.asList("user2"));
+        groupsStudy2 = catalogStudyDBAdaptor.getGroup(9L, null, Arrays.asList("user2"));
+        assertEquals(groupsStudy1.getNumResults(), groupsStudy2.getNumResults());
+        assertEquals(4, groupsStudy1.getNumResults());
+        assertTrue(groupsStudy1.getResult().stream().map(Group::getName).collect(Collectors.toList())
+                .containsAll(Arrays.asList("@notSyncedGroup", "@syncedGroup2", "@syncedGroup3", "@members")));
     }
 
 }

@@ -910,7 +910,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             throw new CatalogException("The group " + groupId + " does not exist.");
         }
 
-        studyDBAdaptor.updateSyncFromGroup(studyId, groupId, syncedFrom);
+        studyDBAdaptor.syncGroup(studyId, groupId, syncedFrom);
 
         return studyDBAdaptor.getGroup(studyId, groupId, Collections.emptyList());
     }

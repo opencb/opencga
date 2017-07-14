@@ -148,7 +148,19 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      */
     void deleteGroup(long studyId, String groupId) throws CatalogDBException;
 
-    void updateSyncFromGroup(long studyId, String groupId, Group.Sync syncedFrom) throws CatalogDBException;
+    void syncGroup(long studyId, String groupId, Group.Sync syncedFrom) throws CatalogDBException;
+
+    /**
+     * Resync the user groups from an authentication origin.
+     * 1. Take the user out of all the synced groups.
+     * 2. Add the user to any group from the groupList that matches the name in the database and is synced with the authOrigin given.
+     *
+     * @param user User to be resynced in groups.
+     * @param groupList List containing possible groups that are synced and where the user should be added to.
+     * @param authOrigin Authentication origin of the synced groups.
+     * @throws CatalogDBException CatalogDBException.
+     */
+    void resyncUserWithSyncedGroups(String user, List<String> groupList, String authOrigin) throws CatalogDBException;
 
     /*
      * VariableSet Methods
@@ -233,6 +245,8 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         GROUP_NAME("groups.name", TEXT_ARRAY, ""),
         GROUP_USER_IDS("groups.userIds", TEXT_ARRAY, ""),
         GROUP_SYNCED_FROM("groups.syncedFrom", TEXT_ARRAY, ""),
+        GROUP_SYNCED_FROM_AUTH_ORIGIN("groups.syncedFrom.authOrigin", TEXT, ""),
+        GROUP_SYNCED_FROM_REMOTE_GROUP("groups.syncedFrom.remoteGroup", TEXT, ""),
 
         ROLES("roles", TEXT_ARRAY, ""),
         ROLES_ID("roles.id", TEXT, ""),
