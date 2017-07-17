@@ -91,7 +91,7 @@ public abstract class AuthenticationManager {
      */
     public abstract void newPassword(String userId, String newPassword) throws CatalogException;
 
-    public QueryResult<Session> createToken(String userId, String ip, Session.Type type) throws CatalogException {
+    public QueryResult<Session> createToken(String userId, String ip, Session.Type type) {
         return jwtSessionManager.createToken(userId, ip, type);
     }
 }

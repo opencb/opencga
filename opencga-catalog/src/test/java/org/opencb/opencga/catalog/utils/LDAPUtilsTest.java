@@ -20,15 +20,13 @@ public class LDAPUtilsTest {
 
     @Test
     public void getUsersFromLDAPGroup() throws Exception {
-        DirContext dirContext = LDAPUtils.getDirContext("ldap://localhost:9000");
-        List<String> bioUsers = LDAPUtils.getUsersFromLDAPGroup(dirContext, "bio", "ou=general,ou=groups,dc=ge,dc=co,dc=uk");
+        List<String> bioUsers = LDAPUtils.getUsersFromLDAPGroup("ldap://localhost:9000", "bio", "ou=general,ou=groups,dc=ge,dc=co,dc=uk");
         assertEquals(59, bioUsers.size());
     }
 
     @Test
     public void getUserInfoFromLDAP() throws Exception {
-        DirContext dirContext = LDAPUtils.getDirContext("ldap://localhost:9000");
-        List<Attributes> userInfoList = LDAPUtils.getUserInfoFromLDAP(dirContext, Arrays.asList("pfurio", "imedina"), "dc=ge,dc=co,dc=uk");
+        List<Attributes> userInfoList = LDAPUtils.getUserInfoFromLDAP("ldap://localhost:9000", Arrays.asList("pfurio", "imedina"), "dc=ge,dc=co,dc=uk");
         assertEquals(2, userInfoList.size());
 
         List<String> userList = Arrays.asList("pfurio", "imedina");

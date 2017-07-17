@@ -30,7 +30,7 @@ public class JwtSessionManager {
         this.expiration = this.configuration.getAuthentication().getExpiration();
     }
 
-    String createJWTToken(String userId, long expiration) throws CatalogException {
+    String createJWTToken(String userId, long expiration) {
         String jwt = null;
 
         try {
@@ -69,7 +69,7 @@ public class JwtSessionManager {
         return parseClaims(jwtKey).getBody().getSubject();
     }
 
-    public QueryResult<Session> createToken(String userId, String ip, Type type) throws CatalogException {
+    public QueryResult<Session> createToken(String userId, String ip, Type type) {
         QueryResult result = new QueryResult();
         String jwtToken = null;
 

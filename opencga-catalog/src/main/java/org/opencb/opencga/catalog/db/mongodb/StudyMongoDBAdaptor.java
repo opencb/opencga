@@ -432,7 +432,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             query = new Document()
                     .append(QueryParams.GROUPS.key(), new Document("$elemMatch", new Document()
                             .append("userIds", new Document("$ne", user))
-                            .append("name", new Document("$in", groupList))
+                            .append("syncedFrom.remoteGroup", new Document("$in", groupList))
                             .append("syncedFrom.authOrigin", authOrigin)
                     ))
                     .append("$isolated", 1);

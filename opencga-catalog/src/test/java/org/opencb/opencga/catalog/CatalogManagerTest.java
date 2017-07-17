@@ -27,6 +27,7 @@ import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -373,6 +374,27 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals(2, ldapImportResult.getResult().getUserSummary().getTotal());
     }
 
+    // To make this test work we will need to add a correct user and password to be able to login
+    @Ignore
+    @Test
+    public void loginNotRegisteredUsers() throws CatalogException, NamingException, IOException {
+        // Action only for admins
+        catalogManager.getStudyManager().createGroup(Long.toString(studyId), "ldap", "", sessionIdUser);
+        catalogManager.getStudyManager().syncGroupWith(Long.toString(studyId), "ldap", new Group.Sync("ldap", "bio"), sessionIdUser);
+        catalogManager.getStudyManager().updateAcl(Long.toString(studyId), "@ldap", new Study.StudyAclParams("",
+                AclParams.Action.SET, "view_only"), sessionIdUser);
+        QueryResult<Session> login = catalogManager.getUserManager().login("user", "password", "hh");
+
+        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), login.first().getId());
+        assertEquals(1, studyQueryResult.getNumResults());
+
+        // We remove the permissions for group ldap
+        catalogManager.getStudyManager().updateAcl(Long.toString(studyId), "@ldap", new Study.StudyAclParams("",
+                AclParams.Action.RESET, ""), sessionIdUser);
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), login.first().getId());
+    }
+
     @Ignore
     @Test
     public void importLdapGroups() throws CatalogException, NamingException, IOException {
@@ -615,7 +637,6 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testUpdateGroupInfo() throws CatalogException {
         IStudyManager studyManager = catalogManager.getStudyManager();
-
 
         studyManager.createGroup(Long.toString(studyId), "group1", "", sessionIdUser);
         studyManager.createGroup(Long.toString(studyId), "group2", "", sessionIdUser);

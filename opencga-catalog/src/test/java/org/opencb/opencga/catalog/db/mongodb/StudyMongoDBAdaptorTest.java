@@ -183,7 +183,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
         group.setSyncedFrom(new Group.Sync("origin1", "@syncedGroup2"));
         catalogStudyDBAdaptor.createGroup(5L, group);
         group.setName("@syncedGroup3");
-        group.setSyncedFrom(new Group.Sync("otherOrigin", "@syncedGroup2"));
+        group.setSyncedFrom(new Group.Sync("otherOrigin", "@syncedGroup3"));
         catalogStudyDBAdaptor.createGroup(5L, group);
         group = new Group("@otherNotSyncedGroup", Arrays.asList("user1", "user3"));
         catalogStudyDBAdaptor.createGroup(5L, group);
@@ -198,7 +198,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
         group.setSyncedFrom(new Group.Sync("origin1", "@syncedGroup2"));
         catalogStudyDBAdaptor.createGroup(9L, group);
         group.setName("@syncedGroup3");
-        group.setSyncedFrom(new Group.Sync("otherOrigin", "@syncedGroup2"));
+        group.setSyncedFrom(new Group.Sync("otherOrigin", "@syncedGroup3"));
         catalogStudyDBAdaptor.createGroup(9L, group);
         group = new Group("@otherNotSyncedGroup", Arrays.asList("user1", "user3"));
         catalogStudyDBAdaptor.createGroup(9L, group);

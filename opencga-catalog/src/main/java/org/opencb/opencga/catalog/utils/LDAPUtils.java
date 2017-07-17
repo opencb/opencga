@@ -17,7 +17,7 @@ public class LDAPUtils {
 
     private static DirContext dctx;
 
-    public static DirContext getDirContext(String host) throws NamingException {
+    private static DirContext getDirContext(String host) throws NamingException {
         if (dctx == null) {
             // Obtain users from external origin
             Hashtable env = new Hashtable();
@@ -31,14 +31,16 @@ public class LDAPUtils {
 
     }
 
-    public static List<String> getUsersFromLDAPGroup(DirContext dirContext, String groupName, String groupBase) throws NamingException {
+    public static List<String> getUsersFromLDAPGroup(String host, String groupName, String groupBase) throws NamingException {
+
+
         String groupFilter = "(cn=" + groupName + ")";
 
         String[] attributeFilter = {"uniqueMember"};
         SearchControls sc = new SearchControls();
         sc.setSearchScope(SearchControls.SUBTREE_SCOPE);
         sc.setReturningAttributes(attributeFilter);
-        NamingEnumeration<SearchResult> search = dirContext.search(groupBase, groupFilter, sc);
+        NamingEnumeration<SearchResult> search = getDirContext(host).search(groupBase, groupFilter, sc);
 
         List<String> users = new ArrayList<>();
         while (search.hasMore()) {
@@ -62,8 +64,7 @@ public class LDAPUtils {
         return users;
     }
 
-    public static List<Attributes> getUserInfoFromLDAP(DirContext dirContext, List<String> userList, String userBase)
-            throws NamingException {
+    public static List<Attributes> getUserInfoFromLDAP(String host, List<String> userList, String userBase) throws NamingException {
         String userFilter;
 
         if (userList.size() == 1) {
@@ -77,7 +78,7 @@ public class LDAPUtils {
         SearchControls sc = new SearchControls();
         sc.setSearchScope(SearchControls.SUBTREE_SCOPE);
 //        sc.setReturningAttributes(attributeFilter);
-        NamingEnumeration<SearchResult> search = dirContext.search(userBase, userFilter, sc);
+        NamingEnumeration<SearchResult> search = getDirContext(host).search(userBase, userFilter, sc);
 
         List<Attributes> resultList = new ArrayList<>();
         while (search.hasMore()) {
@@ -87,21 +88,35 @@ public class LDAPUtils {
         return resultList;
     }
 
-//    public static boolean checkUserBelongsToGroup(DirContext dirContext, String user, String group, String userBase)
-//            throws NamingException {
-//        String userFilter = "(&(objectclass=user)(samaccountname=+" + user + "+))";
-//
-////        String[] attributeFilter = {"cn", "memberOf"};
-//        SearchControls sc = new SearchControls();
-//        sc.setSearchScope(SearchControls.ONELEVEL_SCOPE);
-////        sc.setReturningAttributes(attributeFilter);
-//        NamingEnumeration<SearchResult> search = dirContext.search(userBase, userFilter, sc);
-//
-//        List<Attributes> resultList = new ArrayList<>();
-//        while (search.hasMore()) {
-//            resultList.add(search.next().getAttributes());
-//        }
-//
-//        return true;
-//    }
+    public static String getMail(Attributes attributes) throws NamingException {
+        return (String) attributes.get("mail").get(0);
+    }
+
+    public static String getUID(Attributes attributes) throws NamingException {
+        return (String) attributes.get("uid").get(0);
+    }
+
+    public static String getRDN(Attributes attributes) throws NamingException {
+        return (String) attributes.get("gecos").get(0);
+    }
+
+    public static String getFullName(Attributes attributes) throws NamingException {
+        return (String) attributes.get("displayname").get(0);
+    }
+
+    public static List<String> getGroupsFromLdapUser(String host, String user, String base) throws NamingException {
+        String userFilter = "(uniqueMember=" + user + ")";
+
+        SearchControls sc = new SearchControls();
+        sc.setSearchScope(SearchControls.SUBTREE_SCOPE);
+        sc.setReturningAttributes(new String[]{"cn"});
+        NamingEnumeration<SearchResult> search = getDirContext(host).search(base, userFilter, sc);
+
+        List<String> resultList = new ArrayList<>();
+        while (search.hasMore()) {
+            resultList.add((String) search.next().getAttributes().get("cn").get(0));
+        }
+        return resultList;
+    }
+
 }
