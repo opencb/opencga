@@ -72,13 +72,13 @@
 
 !3 Create Group
 !|Table: Rest Fixture | $baseURL |
-| setBody | {"groupId" : "$groupId",  "users" : "$userA,$userB"}|
+| setBody | {"name" : "$groupId",  "users" : "$userA,$userB"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/studies/$studyId/groups/create?sid=$sessionId |200|  Content-Type: application/json ||
 
 !3 Create Empty Group
 !|Table: Rest Fixture | $baseURL |
-| setBody | {"groupId" : "$emptyGroup"}|
+| setBody | {"name" : "$emptyGroup"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/studies/$studyId/groups/create?sid=$sessionId |200|  Content-Type: application/json ||
 
@@ -88,7 +88,7 @@
 
 !3 Get Groups From A Study
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/groups?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result.length == '2.0'|
+| GET | /v1/studies/$studyId/groups?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result.length == '3.0'|
 
 #@groupId in above line is exception to handle groups
 
