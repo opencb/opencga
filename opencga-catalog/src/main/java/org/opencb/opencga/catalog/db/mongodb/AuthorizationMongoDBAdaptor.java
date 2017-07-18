@@ -378,6 +378,10 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         validateCollection(entity);
         MongoDBCollection collection = dbCollectionMap.get(entity);
 
+        // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
+        permissions = new ArrayList<>(permissions);
+        permissions.add("NONE");
+
         for (long resourceId : resourceIds) {
             // Get current permissions for resource and override with new ones set for members (already existing or not)
             Map<String, List<String>> currentPermissions = internalGet(resourceId, Collections.emptyList(), entity);
@@ -404,6 +408,10 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             throws CatalogDBException {
         validateCollection(entity);
         MongoDBCollection collection = dbCollectionMap.get(entity);
+
+        // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
+        permissions = new ArrayList<>(permissions);
+        permissions.add("NONE");
 
         List<String> myPermissions = createPermissionArray(members, permissions);
 
@@ -473,6 +481,9 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             Map<String, List<String>> currentPermissions = internalGet(resourceId, Collections.emptyList(), entity);
             for (E acl : acls) {
                 List<String> permissions = (List<String>) acl.getPermissions().stream().map(a -> a.toString()).collect(Collectors.toList());
+                // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
+                permissions = new ArrayList<>(permissions);
+                permissions.add("NONE");
                 currentPermissions.put(acl.getMember(), permissions);
             }
 

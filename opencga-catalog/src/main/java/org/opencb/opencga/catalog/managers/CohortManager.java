@@ -318,7 +318,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
             }
         }
 
-        Cohort cohort = get(cohortId, new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.STATUS_NAME.key()), sessionId)
+        Cohort cohort = cohortDBAdaptor.get(cohortId, new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.STATUS_NAME.key()))
                 .first();
         if (parameters.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())
                 || parameters.containsKey(CohortDBAdaptor.QueryParams.NAME.key())/* || params.containsKey("type")*/) {

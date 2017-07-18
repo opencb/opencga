@@ -563,7 +563,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         // Check that the samples are not being used in cohorts
         Query query = new Query()
                 .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId())
-                .append(CohortDBAdaptor.QueryParams.SAMPLES.key(), resources.getResourceIds());
+                .append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), resources.getResourceIds());
         long count = cohortDBAdaptor.count(query).first();
         if (count > 0) {
             if (resources.getResourceIds().size() == 1) {

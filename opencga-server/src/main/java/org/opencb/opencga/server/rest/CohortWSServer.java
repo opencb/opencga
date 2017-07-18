@@ -319,7 +319,8 @@ public class CohortWSServer extends OpenCGAWSServer {
                                  @ApiParam(value = "params", required = true) Map<String, Object> params) {
         try {
             long cohortId = cohortManager.getId(cohortStr, studyStr, sessionId).getResourceId();
-            return createOkResponse(catalogManager.modifyCohort(cohortId, new ObjectMap(params), queryOptions, sessionId));
+            return createOkResponse(catalogManager.getCohortManager().update(cohortId, new ObjectMap(params), queryOptions,
+                    sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

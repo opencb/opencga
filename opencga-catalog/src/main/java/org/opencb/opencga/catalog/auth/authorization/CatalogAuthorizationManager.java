@@ -703,7 +703,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             checkAskingOwnPermissions(userId, member, studyId);
         }
 
-        return aclDBAdaptor.get(familyId, Arrays.asList(member), MongoDBAdaptorFactory.JOB_COLLECTION);
+        return aclDBAdaptor.get(familyId, Arrays.asList(member), MongoDBAdaptorFactory.FAMILY_COLLECTION);
     }
 
     private void checkAskingOwnPermissions(String userId, String member, long studyId) throws CatalogException {

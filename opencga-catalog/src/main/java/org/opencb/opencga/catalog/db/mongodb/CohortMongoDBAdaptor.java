@@ -319,21 +319,19 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
 
         // Check if the samples exist.
         if (parameters.containsKey(QueryParams.SAMPLES.key())) {
-            List<Object> objectSampleList = parameters.getAsList(QueryParams.SAMPLES.key());
+            List<Long> objectSampleList = parameters.getAsLongList(QueryParams.SAMPLES.key());
             List<Sample> sampleList = new ArrayList<>();
-            for (Object sampleId : objectSampleList) {
-                if (sampleId instanceof Long) {
-                    if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().exists(((Long) sampleId))) {
-                        throw CatalogDBException.idNotFound("Sample", ((Long) sampleId));
-                    }
-                    sampleList.add(new Sample().setId((Long) sampleId));
+            for (Long sampleId : objectSampleList) {
+                if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().exists((sampleId))) {
+                    throw CatalogDBException.idNotFound("Sample", (sampleId));
                 }
+                sampleList.add(new Sample().setId(sampleId));
+
             }
             if (sampleList.size() > 0) {
                 cohortParams.put(QueryParams.SAMPLES.key(), cohortConverter.convertSamplesToDocument(sampleList));
             }
         }
-
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
         filterMapParams(parameters, cohortParams, acceptedMapParams);
 

@@ -320,10 +320,13 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             studyMap.get(projectId).add(studyConverter.convertToDataModelType(studyDocument));
         }
 
-        // We get all the projects the user can see
-        projectIds = new ArrayList<>(studyMap.keySet());
-        if (projectIds.size() == 0) {
-            return new QueryResult<>("Get project");
+        if (studyMap.size() == 0) {
+            // It might be that the owner of the study is asking for its own projects but no studies have been created yet, so we will
+            // add the user as part of the query to see if any project is returned
+            query.put(QueryParams.USER_ID.key(), user);
+        } else {
+            // We get all the projects the user can see
+            projectIds = new ArrayList<>(studyMap.keySet());
         }
         query.put(QueryParams.ID.key(), projectIds);
 

@@ -83,6 +83,7 @@ public class JobWSServer extends OpenCGAWSServer {
         public String commandLine;
         public Status status = Status.READY;
         public String statusMessage;
+        public String outDirId;
         @ApiModelProperty(required = true)
         public String outDir;
         public List<Long> input;
@@ -107,6 +108,9 @@ public class JobWSServer extends OpenCGAWSServer {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
+            }
+            if (StringUtils.isNotEmpty(job.outDirId) && StringUtils.isEmpty(job.outDir)) {
+                job.outDir = job.outDirId;
             }
             long studyId = catalogManager.getStudyId(studyStr, sessionId);
             Job.JobStatus jobStatus;
