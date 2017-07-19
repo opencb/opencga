@@ -1,7 +1,7 @@
 !define TEST_SYSTEM {slim}
 !path target/appassembler/dependencies/*.jar
 !define OPENCGA_VERSION {opencga-1.2.0-dev}
-!define TEST_HOST {localhost:8080}
+!define TEST_HOST {bioinfoint.hpc.cam.ac.uk}
 !define VERSION {v1}
 
 

@@ -87,12 +87,6 @@
 | setHeader|Content-Type:application/json|
 | POST | /v1/cohorts/acl/$userA/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
 
-!3 (Negative) Create ACL For A Member Without Permissions 
-!|Table: Rest Fixture | $baseURL |
-| setBody | {  "permissions": "VIEW", "action": "ADD", "cohort":"$cohortId"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/cohorts/acl/$userB/update?sid=$sessionId|500|Content-Type: application/json|jsonbody.error == 'Cannot update ACL for $userB. First, a general study permission must be defined for that member.'|
-
 !3 Get ACL For A Member
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/cohorts/$cohortId/acl?sid=$sessionId&name=$CohortName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|

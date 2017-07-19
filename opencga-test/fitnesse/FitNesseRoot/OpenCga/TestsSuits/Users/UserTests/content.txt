@@ -11,7 +11,7 @@
 
 !3 Get Projects for User
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/users/$user/projects?sid=$sessionId&limit=5 | 200 |  Content-Type: application/json | jsonbody.response[0].id === 'User projects list' && jsonbody.error === ''|
+| GET | /v1/users/$user/projects?sid=$sessionId&limit=5 | 200 |  Content-Type: application/json | jsonbody.response[0].result.length > 0 && jsonbody.error === ''|
 
 !3 Update User
 !|Table: Rest Fixture | $baseURL |

@@ -94,7 +94,7 @@
 
 !3 Update Group 
 !|Table: Rest Fixture | $baseURL |
-| setBody | {"removeUsers" : "$userB" }|
+| setBody | {"users" : "$userB", "action" : "REMOVE" }|
 | setHeader|Content-Type:application/json|
 | POST |/v1/studies/$studyId/groups/$groupId/update?sid=$sessionId|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds.length == '1'|
 
@@ -108,7 +108,7 @@
 
 !3 Get Deleted Group 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/groups/$groupId/info?sid=$sessionId|500|  Content-Type: application/json ||
+| GET | /v1/studies/$studyId/groups/$groupId/info?sid=$sessionId|200|  Content-Type: application/json ||
 
 !3 Get Study Samples
 !|Table: Rest Fixture | $baseURL |
