@@ -64,6 +64,8 @@ public class File extends AbstractAcl<FileAclEntry> {
     private long size;
     private Experiment experiment;
     private List<Sample> samples;
+    @Deprecated
+    private List<Long> sampleIds;
 
 
     /**
@@ -499,6 +501,15 @@ public class File extends AbstractAcl<FileAclEntry> {
 
     public File setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
+    }
+
+    public List<Long> getSampleIds() {
+        return sampleIds;
+    }
+
+    public File setSampleIds(List<Long> sampleIds) {
+        this.sampleIds = sampleIds;
         return this;
     }
 

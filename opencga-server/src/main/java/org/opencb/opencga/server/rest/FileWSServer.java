@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.FileIndex;
 import org.opencb.opencga.catalog.models.FileTree;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
@@ -64,6 +65,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 
@@ -189,7 +191,9 @@ public class FileWSServer extends OpenCGAWSServer {
             AbstractManager.MyResourceIds resourceIds = fileManager.getIds(fileStr, studyStr, sessionId);
 
             for (Long fileId : resourceIds.getResourceIds()) {
-                queryResults.add(catalogManager.getFile(fileId, queryOptions, sessionId));
+                QueryResult<File> fileQueryResult = catalogManager.getFile(fileId, queryOptions, sessionId);
+                populateOldDeprecatedSampleIdsField(fileQueryResult);
+                queryResults.add(fileQueryResult);
             }
             return createOkResponse(queryResults);
         } catch (Exception e) {
@@ -690,6 +694,7 @@ public class FileWSServer extends OpenCGAWSServer {
             } else {
                 result = fileManager.search(studyStr, query, queryOptions, sessionId);
             }
+            populateOldDeprecatedSampleIdsField(result);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -711,7 +716,8 @@ public class FileWSServer extends OpenCGAWSServer {
                          @QueryParam("study") String studyStr) {
         try {
             AbstractManager.MyResourceId resource = fileManager.getId(folder, studyStr, sessionId);
-            QueryResult result = catalogManager.getAllFilesInFolder(resource.getResourceId(), queryOptions, sessionId);
+            QueryResult<File> result = catalogManager.getAllFilesInFolder(resource.getResourceId(), queryOptions, sessionId);
+            populateOldDeprecatedSampleIdsField(result);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1223,6 +1229,7 @@ public class FileWSServer extends OpenCGAWSServer {
             }
 
             QueryResult<File> queryResult = fileManager.update(resource.getResourceId(), map, queryOptions, sessionId);
+            populateOldDeprecatedSampleIdsField(queryResult);
             queryResult.setId("Update file");
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -1723,6 +1730,16 @@ public class FileWSServer extends OpenCGAWSServer {
             return pathList;
         } else {
             return Collections.singletonList(convertPath(path, sessionId));
+        }
+    }
+
+    @Deprecated
+    private void populateOldDeprecatedSampleIdsField(QueryResult<File> queryResult) {
+        for (File file : queryResult.getResult()) {
+            if (file.getSamples() != null && file.getSamples().size() > 0) {
+                List<Long> sampleIds = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+                file.setSampleIds(sampleIds);
+            }
         }
     }
 
