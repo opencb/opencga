@@ -514,85 +514,10 @@ public class SampleWSServer extends OpenCGAWSServer {
         }
     }
 
-
-    @GET
-    @Path("/{samples}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of members", hidden = true, position = 19)
-    public Response createRole(@ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("samples")
-                                           String sampleIdsStr,
-                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                               @QueryParam("study") String studyStr,
-                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list")
-                                   @DefaultValue("") @QueryParam("permissions") String permissions,
-                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true)
-                                   @DefaultValue("") @QueryParam("members") String members) {
-        try {
-            Sample.SampleAclParams sampleAclParams = getAclParams(permissions, null, null);
-            sampleAclParams.setAction(AclParams.Action.SET);
-            return createOkResponse(sampleManager.updateAcl(sampleIdsStr, studyStr, members, sampleAclParams, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @POST
-    @Path("/{samples}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of members [DEPRECATED]", position = 19, hidden = true,
-            notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
-                    + "/acl/{members}/update entrypoint.")
-    public Response createRolePOST(
-            @ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("samples") String sampleIdsStr,
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
-                    String studyStr,
-            @ApiParam(value="JSON containing the parameters defined in GET. Mandatory keys: 'members'", required = true)
-                    StudyWSServer.CreateAclCommands params) {
-        try {
-            Sample.SampleAclParams sampleAclParams = getAclParams(params.permissions, null, null);
-            sampleAclParams.setAction(AclParams.Action.SET);
-            return createOkResponse(sampleManager.updateAcl(sampleIdsStr, studyStr, params.members, sampleAclParams, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{sample}/acl/{memberId}/info")
-    @ApiOperation(value = "Returns the set of permissions granted for the member [DEPRECATED]", position = 20, hidden = true,
-            notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
-                    + "/acl entrypoint.")
-    public Response getAcl(@ApiParam(value = "Sample id or name", required = true) @PathParam("sample") String sampleIdStr,
-                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                           @QueryParam("study") String studyStr,
-                           @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
-        try {
-            return createOkResponse(catalogManager.getSampleAcl(sampleIdStr, studyStr, memberId, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{sample}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", hidden = true, position = 21)
-    public Response updateAcl(@ApiParam(value = "Sample id or name", required = true) @PathParam("sample") String sampleIdStr,
-                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                              @QueryParam("study") String studyStr,
-                              @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
-                              @ApiParam(value = "Comma separated list of permissions to add", required = false) @QueryParam("add") String addPermissions,
-                              @ApiParam(value = "Comma separated list of permissions to remove", required = false) @QueryParam("remove") String removePermissions,
-                              @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("set") String setPermissions) {
-        try {
-            Sample.SampleAclParams sampleAclParams = getAclParams(addPermissions, removePermissions, setPermissions);
-            return createOkResponse(sampleManager.updateAcl(sampleIdStr, studyStr, memberId, sampleAclParams, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
     @POST
     @Path("/{sample}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member [WARNING]", position = 21,
-            notes = "WARNING: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
+    @ApiOperation(value = "Update the set of permissions granted for the member [DEPRECATED]", position = 21,
+            notes = "DEPRECATED: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
                     + "to also support changing permissions using queries.")
     public Response updateAclPOST(
             @ApiParam(value = "Sample id or name", required = true) @PathParam("sample") String sampleIdStr,
@@ -662,24 +587,6 @@ public class SampleWSServer extends OpenCGAWSServer {
             Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(
                     params.getPermissions(), params.getAction(), params.individual, params.file, params.cohort);
             return createOkResponse(sampleManager.updateAcl(params.sample, studyStr, memberId, sampleAclParams, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{samples}/acl/{memberId}/delete")
-    @ApiOperation(value = "Remove all the permissions granted for the member [DEPRECATED]", position = 22, hidden = true,
-            notes = "DEPRECATED: The usage of this webservice is discouraged. A RESET action has been added to the /acl/{members}/update "
-                    + "entrypoint.")
-    public Response deleteAcl(@ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("samples")
-                                          String sampleIdsStr,
-                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                  @QueryParam("study") String studyStr,
-                              @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
-        try {
-            Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(null, AclParams.Action.RESET, null, null, null);
-            return createOkResponse(sampleManager.updateAcl(sampleIdsStr, studyStr, memberId, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

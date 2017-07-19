@@ -1496,90 +1496,10 @@ public class FileWSServer extends OpenCGAWSServer {
         return new org.opencb.opencga.catalog.models.File.FileAclParams(permissions, action, null);
     }
 
-    @GET
-    @Path("/{files}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of users or groups", hidden = true, position = 19,
-            response = QueryResponse.class)
-    public Response createAcl(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("files")
-                                      String fileIdStr,
-                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                              @QueryParam("study") String studyStr,
-                              @ApiParam(value = "Comma separated list of permissions that will be granted to the member list",
-                                      required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
-                              @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
-                                      required = true) @DefaultValue("") @QueryParam("members") String members) {
-        try {
-            File.FileAclParams aclParams = getAclParams(permissions, null, null);
-            aclParams.setAction(AclParams.Action.SET);
-            return createOkResponse(fileManager.updateAcl(fileIdStr, studyStr, members, aclParams, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @POST
-    @Path("/{files}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of users or groups [DEPRECATED]", hidden = true, response = QueryResponse.class,
-            notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
-                    + "/acl/{members}/update entrypoint.")
-    public Response createAclPOST(
-            @ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("files") String fileIdStr,
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
-                    String studyStr,
-            @ApiParam(value="JSON containing the parameters defined in GET. Mandatory keys: 'members'", required = true)
-                    StudyWSServer.CreateAclCommands params) {
-        try {
-            File.FileAclParams aclParams = getAclParams(params.permissions, null, null);
-            aclParams.setAction(AclParams.Action.SET);
-            return createOkResponse(fileManager.updateAcl(fileIdStr, studyStr, params.members, aclParams, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{file}/acl/{memberId}/info")
-    @ApiOperation(value = "Return the permissions granted for the user or group [DEPRECATED]", position = 20, hidden = true,
-            response = QueryResponse.class,
-            notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
-                    + "/acl entrypoint.")
-    public Response getAcl(@ApiParam(value = "File id", required = true) @PathParam("file") String fileIdStr,
-                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                           @QueryParam("study") String studyStr,
-                           @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
-        try {
-            return createOkResponse(catalogManager.getFileAcl(fileIdStr, studyStr, memberId, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{file}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the permissions granted for the user or group", hidden = true, position = 21,
-            response = QueryResponse.class)
-    public Response updateAcl(@ApiParam(value = "File id", required = true) @PathParam("file") String fileIdStr,
-                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                              @QueryParam("study") String studyStr,
-                              @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
-                              @ApiParam(value = "Comma separated list of permissions to add", required = false)
-                              @QueryParam("add") String addPermissions,
-                              @ApiParam(value = "Comma separated list of permissions to remove", required = false)
-                              @QueryParam("remove") String removePermissions,
-                              @ApiParam(value = "Comma separated list of permissions to set", required = false)
-                              @QueryParam("set") String setPermissions) {
-        try {
-            File.FileAclParams aclParams = getAclParams(addPermissions, removePermissions, setPermissions);
-            return createOkResponse(fileManager.updateAcl(fileIdStr, studyStr, memberId, aclParams, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
     @POST
     @Path("/{file}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the permissions granted for the user or group [WARNING]", position = 21, response = QueryResponse.class,
-            notes = "WARNING: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
+    @ApiOperation(value = "Update the permissions granted for the user or group [DEPRECATED]", position = 21, response = QueryResponse.class,
+            notes = "DEPRECATED: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
                     + "to also support changing permissions using queries.")
     public Response updateAclPOST(
             @ApiParam(value = "File id", required = true) @PathParam("file") String fileIdStr,
@@ -1612,27 +1532,6 @@ public class FileWSServer extends OpenCGAWSServer {
             File.FileAclParams aclParams = new File.FileAclParams(
                     params.getPermissions(), params.getAction(), params.sample);
             return createOkResponse(fileManager.updateAcl(params.file, studyStr, memberId, aclParams, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{files}/acl/{memberIds}/delete")
-    @ApiOperation(value = "Remove all the permissions granted for the user or group [DEPRECATED]", position = 22, hidden = true,
-            response = QueryResponse.class,
-            notes = "DEPRECATED: The usage of this webservice is discouraged. A RESET action has been added to the /acl/{members}/update "
-                    + "entrypoint.")
-    public Response deleteAcl(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("files")
-                                      String fileIdsStr,
-                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                              @QueryParam("study") String studyStr,
-                              @ApiParam(value = "Comma separated list of members", required = true) @PathParam("memberIds") String
-                                          members) {
-        try {
-            File.FileAclParams aclParams = new File.FileAclParams(
-                    null, AclParams.Action.RESET, null);
-            return createOkResponse(fileManager.updateAcl(fileIdsStr, studyStr, members, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

@@ -118,8 +118,6 @@ public class FamilyWSServer extends OpenCGAWSServer {
         }
     }
 
-
-
     @POST
     @Path("/{family}/update")
     @Consumes(MediaType.APPLICATION_JSON)

@@ -392,10 +392,6 @@ public class CatalogManager implements AutoCloseable {
         return userManager.getId(sessionId);
     }
 
-    public String getUserIdByStudyId(long studyId) throws CatalogException {
-        return studyManager.getUserId(studyId);
-    }
-
     public String getUserIdByProjectId(long projectId) throws CatalogException {
         return projectManager.getUserId(projectId);
     }
@@ -798,11 +794,6 @@ public class CatalogManager implements AutoCloseable {
         return authorizationManager.getFileAcl(resource.getUser(), resource.getResourceId(), member);
     }
 
-    /*Require role admin*/
-    public QueryResult<File> searchFile(Query query, QueryOptions options, String sessionId) throws CatalogException {
-        return searchFile(-1, query, options, sessionId);
-    }
-
     public QueryResult<File> searchFile(long studyId, Query query, String sessionId) throws CatalogException {
         return searchFile(studyId, query, null, sessionId);
     }
@@ -896,16 +887,6 @@ public class CatalogManager implements AutoCloseable {
      * ***************************
      */
 
-    public long getIndividualId(String individualStr, String sessionId) throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        return individualManager.getId(userId, individualStr);
-    }
-
-    public List<Long> getIndividualIds(String individualStr, String sessionId) throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        return individualManager.getIds(userId, individualStr);
-    }
-
     @Deprecated
     public QueryResult<Individual> createIndividual(long studyId, String name, String family, long fatherId, long motherId,
                                                     Individual.Sex sex, QueryOptions options, String sessionId)
@@ -961,11 +942,6 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.create(Long.toString(studyId), name, source, description, null, false, null, attributes, options, sessionId);
     }
 
-    public long getSampleId(String sampleId, String sessionId) throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        return sampleManager.getId(userId, sampleId);
-    }
-
     public List<Long> getSampleIds(String sampleIds, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         return sampleManager.getIds(userId, sampleIds);
@@ -1017,13 +993,6 @@ public class CatalogManager implements AutoCloseable {
                                                          String sessionId)
             throws CatalogException {
         return individualManager.annotate(individualId, annotationSetName, variableSetId, annotations, attributes, sessionId);
-    }
-
-    public QueryResult<AnnotationSet> updateIndividualAnnotation(long individualId, String annotationSetName,
-                                                                 Map<String, Object> annotations,
-                                                                 String sessionId)
-            throws CatalogException {
-        return individualManager.updateAnnotation(individualId, annotationSetName, annotations, sessionId);
     }
 
     @Deprecated

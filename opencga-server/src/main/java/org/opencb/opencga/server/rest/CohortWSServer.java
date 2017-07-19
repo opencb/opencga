@@ -560,87 +560,10 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{cohorts}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of members", hidden = true, position = 19)
-    public Response createRole(@ApiParam(value = "Comma separated list of cohort ids", required = true) @PathParam("cohorts")
-                                           String cohortIdsStr,
-                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                    @QueryParam("study") String studyStr,
-                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list")
-                                   @DefaultValue("") @QueryParam("permissions") String permissions,
-                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
-                                       required = true) @DefaultValue("") @QueryParam("members") String members) {
-        try {
-            AclParams aclParams = getAclParams(permissions, null, null);
-            aclParams.setAction(AclParams.Action.SET);
-            return createOkResponse(cohortManager.updateAcl(cohortIdsStr, studyStr, members, aclParams, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @POST
-    @Path("/{cohorts}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of members [DEPRECATED]", hidden = true, position = 19,
-            notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
-                    + "/acl/{members}/update entrypoint.")
-    public Response createRolePOST(
-            @ApiParam(value = "Comma separated list of cohort ids", required = true) @PathParam("cohorts") String cohortIdsStr,
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
-                    String studyStr,
-            @ApiParam(value="JSON containing the parameters defined in GET. Mandatory keys: 'members'", required = true)
-                    StudyWSServer.CreateAclCommands params) {
-        try {
-            AclParams aclParams = getAclParams(params.permissions, null, null);
-            aclParams.setAction(AclParams.Action.SET);
-            return createOkResponse(cohortManager.updateAcl(cohortIdsStr, studyStr, params.members, aclParams, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{cohort}/acl/{memberId}/info")
-    @ApiOperation(value = "Return the set of permissions granted for the member [DEPRECATED]", hidden = true, position = 20,
-            notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
-                    + "/acl entrypoint.")
-    public Response getAcl(@ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortIdStr,
-                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                @QueryParam("study") String studyStr,
-                           @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
-        try {
-            return createOkResponse(catalogManager.getCohortAcl(cohortIdStr, studyStr, memberId, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{cohort}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", hidden = true, position = 21)
-    public Response updateAcl(@ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortIdStr,
-                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                    @QueryParam("study") String studyStr,
-                              @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
-                              @ApiParam(value = "Comma separated list of permissions to add", required = false)
-                                  @QueryParam("add") String addPermissions,
-                              @ApiParam(value = "Comma separated list of permissions to remove", required = false)
-                                  @QueryParam("remove") String removePermissions,
-                              @ApiParam(value = "Comma separated list of permissions to set", required = false)
-                                  @QueryParam("set") String setPermissions) {
-        try {
-            AclParams aclParams = getAclParams(addPermissions, removePermissions, setPermissions);
-            return createOkResponse(cohortManager.updateAcl(cohortIdStr, studyStr, memberId, aclParams, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
     @POST
     @Path("/{cohort}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member [WARNING]", position = 21,
-            notes = "WARNING: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
+    @ApiOperation(value = "Update the set of permissions granted for the member [DEPRECATED]", position = 21,
+            notes = "DEPRECATED: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
                     + "to also support changing permissions using queries.")
     public Response updateAcl(
             @ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortIdStr,
@@ -671,23 +594,6 @@ public class CohortWSServer extends OpenCGAWSServer {
         try {
             AclParams aclParams = new AclParams(params.getPermissions(), params.getAction());
             return createOkResponse(cohortManager.updateAcl(params.cohort, studyStr, memberId, aclParams, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{cohort}/acl/{memberId}/delete")
-    @ApiOperation(value = "Delete all the permissions granted for the member [DEPRECATED]", hidden = true, position = 22,
-            notes = "DEPRECATED: The usage of this webservice is discouraged. A RESET action has been added to the /acl/{members}/update "
-                    + "entrypoint.")
-    public Response deleteAcl(@ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortIdStr,
-                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                    @QueryParam("study") String studyStr,
-                              @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
-        try {
-            AclParams aclParams = new AclParams(null, AclParams.Action.RESET);
-            return createOkResponse(cohortManager.updateAcl(cohortIdStr, studyStr, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
