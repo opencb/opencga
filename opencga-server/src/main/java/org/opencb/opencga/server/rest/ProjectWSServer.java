@@ -113,7 +113,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
+    @POST
     @Path("/{project}/increlease")
     @ApiOperation(value = "Increment current release number in the project", response = Integer.class)
     public Response incrementRelease(
