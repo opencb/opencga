@@ -425,11 +425,6 @@ public class CatalogManager implements AutoCloseable {
         return projectManager.get(new Query("ownerId", ownerId), options, sessionId);
     }
 
-    public QueryResult renameProject(long projectId, String newProjectAlias, String sessionId)
-            throws CatalogException {
-        return projectManager.update(projectId, new QueryOptions("alias", newProjectAlias), null, sessionId); //TODO: Add query options
-    }
-
     /**
      * Modify some params from the specified project.
      * <p>
@@ -510,11 +505,6 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Study> getAllStudies(Query query, QueryOptions options, String sessionId)
             throws CatalogException {
         return studyManager.get(query, options, sessionId);
-    }
-
-    public QueryResult renameStudy(long studyId, String newStudyAlias, String sessionId)
-            throws CatalogException {
-        return studyManager.update(studyId, new ObjectMap("alias", newStudyAlias), null, sessionId);
     }
 
     public QueryResult createGroup(String studyId, String groupId, String userList, String sessionId) throws CatalogException {
@@ -1066,12 +1056,6 @@ public class CatalogManager implements AutoCloseable {
     * Disease panel methods
     * ***************************
      */
-
-    public QueryResult<DiseasePanel> createDiseasePanel(String studyStr, String name, String disease, String description,
-                                                        String genes, String regions, String variants,
-                                                        QueryOptions options, String sessionId) throws CatalogException {
-        return studyManager.createDiseasePanel(studyStr, name, disease, description, genes, regions, variants, options, sessionId);
-    }
 
     public QueryResult<DiseasePanel> getDiseasePanel(String panelStr, QueryOptions options, String sessionId) throws CatalogException {
         return studyManager.getDiseasePanel(panelStr, options, sessionId);

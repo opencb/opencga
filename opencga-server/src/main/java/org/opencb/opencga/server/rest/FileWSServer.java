@@ -156,30 +156,6 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
-    @Deprecated
-    @GET
-    @Path("/{fileId}/uri")
-    @ApiOperation(value = "File uri [DEPRECATED]", position = 3, notes = "Deprecated method. Use /info with include query options instead.",
-            hidden = true)
-    public Response getUri(@ApiParam(value = "fileId") @PathParam(value = "fileId") String fileStr,
-                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                           @QueryParam("study") String studyStr) {
-        try {
-            List<QueryResult> results = new LinkedList<>();
-            AbstractManager.MyResourceIds resourceIds = fileManager.getIds(fileStr, studyStr, sessionId);
-
-            for (long fileId : resourceIds.getResourceIds()) {
-                System.out.println("fileId = " + fileId);
-                QueryResult<File> result = catalogManager.getFile(fileId, queryOptions, sessionId);
-                URI fileUri = result.first().getUri();
-                results.add(new QueryResult<>(Long.toString(fileId), 0, 1, 1, "", "", Collections.singletonList(fileUri)));
-            }
-            return createOkResponse(results);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
     @GET
     @Path("/bioformats")
     @ApiOperation(value = "List of accepted file bioformats", position = 3)
