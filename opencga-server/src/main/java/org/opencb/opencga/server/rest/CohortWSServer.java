@@ -106,43 +106,6 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/create")
-    @ApiOperation(value = "Create a cohort [DEPRECATED]", hidden = true, notes = "DEPRECATED: the usage of this web service is "
-            + "discouraged, "
-            + "please use the POST version instead. Be aware that this is web service is not tested and this can be deprecated in a "
-            + "future version. <br>"
-            + "A cohort can be created by providing a list of SampleIds, "
-            + "or providing a categorical variable (both variableSet and variable). "
-            + "If none of this is given, an empty cohort will be created.", response = Cohort.class)
-    public Response createCohort(@ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId")
-                                             String studyIdStr,
-                                 @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                 @QueryParam("study") String studyStr,
-                                 @ApiParam(value = "Name of the cohort.", required = true) @QueryParam ("name") String cohortName,
-                                 @ApiParam(value = "type", required = false) @QueryParam("type") @DefaultValue("COLLECTION")
-                                             Study.Type type,
-                                 @ApiParam(value = "Variable set id or name", hidden = true) @QueryParam("variableSetId")
-                                             String variableSetId,
-                                 @ApiParam(value = "Variable set id or name") @QueryParam("variableSet") String variableSet,
-                                 @ApiParam(value = "description", required = false) @QueryParam("description") String cohortDescription,
-                                 @ApiParam(value = "(DEPRECATED) sampleIds", hidden = true) @QueryParam("sampleIds") String sampleIdsStr,
-                                 @ApiParam(value = "Samples", required = false) @QueryParam("samples") String samplesStr,
-                                 @ApiParam(value = "Variable name", required = false) @QueryParam("variable") String variableName) {
-
-        if (StringUtils.isNotEmpty(studyIdStr)) {
-            studyStr = studyIdStr;
-        }
-        if (StringUtils.isNotEmpty(sampleIdsStr)) {
-            samplesStr = sampleIdsStr;
-        }
-        if (StringUtils.isNotEmpty(variableSetId)) {
-            variableSet = variableSetId;
-        }
-        return createCohort(studyStr, cohortName, type, variableSet, cohortDescription, samplesStr, Collections.emptyList(),
-                variableName);
-    }
-
     @POST
     @Path("/create")
     @ApiOperation(value = "Create a cohort", position = 1, notes = "A cohort can be created by providing a list of SampleIds, " +
@@ -286,28 +249,6 @@ public class CohortWSServer extends OpenCGAWSServer {
         return catalogManager.getCohortManager().create(studyId, cohortName, type, cohortDescription, queryResult.getResult(), annotationSetList,
                 null, sessionId);
     }
-
-    @GET
-    @Path("/{cohort}/update")
-    @ApiOperation(value = "Update some user attributes using GET method [DEPRECATED]", hidden = true, position = 4, response = Cohort.class,
-        notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web "
-                + "service is not tested and this can be deprecated in a future version.")
-    public Response update(@ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
-                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                @QueryParam("study") String studyStr,
-                           @ApiParam(value = "") @QueryParam("name") String name,
-                           @ApiParam(value = "") @QueryParam("creationDate") String creationDate,
-                           @ApiParam(value = "") @QueryParam("description") String description,
-                           @ApiParam(value = "Comma separated values of sampleIds. Will replace all existing sampleIds")
-                               @QueryParam("samples") String samples) {
-        try {
-            long cohortId = cohortManager.getId(cohortStr, studyStr, sessionId).getResourceId();
-            query.remove(CohortDBAdaptor.QueryParams.STUDY.key());
-            // TODO: Change queryOptions, queryOptions
-            return createOkResponse(catalogManager.modifyCohort(cohortId, query, queryOptions, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }    }
 
     @POST
     @Path("/{cohort}/update")

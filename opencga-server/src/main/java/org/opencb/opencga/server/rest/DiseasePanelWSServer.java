@@ -42,24 +42,24 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
 
-    @GET
-    @Path("/create")
-    @ApiOperation(value = "Create disease panel", position = 1, response = DiseasePanel.class)
-    public Response createSample(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
-                                 @ApiParam(value = "name", required = true) @QueryParam("name") String name,
-                                 @ApiParam(value = "disease", required = true) @QueryParam("disease") String disease,
-                                 @ApiParam(value = "description", required = false) @QueryParam("description") String description,
-                                 @ApiParam(value = "genes", required = false) @QueryParam("genes") String genes,
-                                 @ApiParam(value = "regions", required = false) @QueryParam("regions") String regions,
-                                 @ApiParam(value = "variants", required = false) @QueryParam("variants") String variants) {
-        try {
-            QueryResult<DiseasePanel> queryResult = catalogManager.createDiseasePanel(studyIdStr, name, disease, description, genes,
-                    regions, variants, queryOptions, sessionId);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @GET
+//    @Path("/create")
+//    @ApiOperation(value = "Create disease panel", position = 1, response = DiseasePanel.class)
+//    public Response createSample(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
+//                                 @ApiParam(value = "name", required = true) @QueryParam("name") String name,
+//                                 @ApiParam(value = "disease", required = true) @QueryParam("disease") String disease,
+//                                 @ApiParam(value = "description", required = false) @QueryParam("description") String description,
+//                                 @ApiParam(value = "genes", required = false) @QueryParam("genes") String genes,
+//                                 @ApiParam(value = "regions", required = false) @QueryParam("regions") String regions,
+//                                 @ApiParam(value = "variants", required = false) @QueryParam("variants") String variants) {
+//        try {
+//            QueryResult<DiseasePanel> queryResult = catalogManager.createDiseasePanel(studyIdStr, name, disease, description, genes,
+//                    regions, variants, queryOptions, sessionId);
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @GET
     @Path("/{panelId}/info")

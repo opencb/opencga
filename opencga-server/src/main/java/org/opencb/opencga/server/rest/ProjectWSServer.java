@@ -44,33 +44,6 @@ public class ProjectWSServer extends OpenCGAWSServer {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
 
-    @GET
-    @Path("/create")
-    @ApiOperation(value = "Create a new project [DEPRECATED]", response = Project.class, hidden = true,
-            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
-            + "is not tested and this can be deprecated in a future version.")
-    public Response createProject(@ApiParam(value = "Project name", required = true) @QueryParam("name") String name,
-                                  @ApiParam(value = "Project alias. Unique name without spaces that will be used to identify the project",
-                                          required = true) @QueryParam("alias") String alias,
-                                  @ApiParam(value = "Project description") @QueryParam("description") String description,
-                                  @ApiParam(value = "Project organization") @QueryParam("organization") String organization,
-                                  @ApiParam(value = "Organism scientific name", required = true) @QueryParam("organism.scientificName")
-                                              String scientificName,
-                                  @ApiParam(value = "Organism common name") @QueryParam("organism.commonName") String commonName,
-                                  @ApiParam(value = "Organism taxonomy code") @QueryParam("organism.taxonomyCode") String taxonomyCode,
-                                  @ApiParam(value = "Organism assembly", required = true) @QueryParam("organism.assembly")
-                                              String assembly) {
-        try {
-            QueryResult queryResult = catalogManager.getProjectManager()
-                    .create(name, alias, description, organization, scientificName, commonName, taxonomyCode, assembly, queryOptions,
-                            sessionId);
-            return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            e.printStackTrace();
-            return createErrorResponse(e);
-        }
-    }
-
     @POST
     @Path("/create")
     @ApiOperation(value = "Create a new project", response = Project.class)
@@ -152,36 +125,6 @@ public class ProjectWSServer extends OpenCGAWSServer {
                 results.add(allStudiesInProject);
             }
             return createOkResponse(results);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{project}/update")
-    @ApiOperation(value = "Update some project attributes [DEPRECATED]", position = 4, hidden = true,
-            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
-            + "is not tested and this can be deprecated in a future version.")
-    public Response update(@ApiParam(value = "Project id or alias", required = true) @PathParam("project") String projectStr,
-                           @ApiParam(value = "Project name") @QueryParam("name") String name,
-                           @ApiParam(value = "Project description") @QueryParam("description") String description,
-                           @ApiParam(value = "Project organization") @QueryParam("organization") String organization,
-                           @ApiParam(value = "Project attributes") @QueryParam("attributes") String attributes,
-                           @ApiParam(value = "Organism common name") @QueryParam("organism.commonName") String commonName,
-                           @ApiParam(value = "Organism taxonomy code") @QueryParam("organism.taxonomyCode") String taxonomyCode) throws IOException {
-        try {
-            ObjectMap params = new ObjectMap();
-            params.putIfNotNull("name", name);
-            params.putIfNotNull("description", description);
-            params.putIfNotNull("organization", organization);
-            params.putIfNotNull("attributes", attributes);
-            params.putIfNotNull("organism.commonName", commonName);
-            params.putIfNotNull("organism.taxonomyCode", taxonomyCode);
-
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            long projectId = catalogManager.getProjectManager().getId(userId, projectStr);
-            QueryResult result = catalogManager.modifyProject(projectId, params, sessionId);
-            return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

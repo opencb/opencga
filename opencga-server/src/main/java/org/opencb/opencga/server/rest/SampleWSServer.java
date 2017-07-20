@@ -83,31 +83,6 @@ public class SampleWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/create")
-    @ApiOperation(value = "Create sample [DEPRECATED]", position = 2, response = Sample.class, hidden = true,
-            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
-            + "is not tested and this can be deprecated in a future version.")
-    public Response createSample(@ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
-                                 @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                 @QueryParam("study") String studyStr,
-                                 @ApiParam(value = "name", required = true) @QueryParam("name") String name,
-                                 @ApiParam(value = "source", required = false) @QueryParam("source") String source,
-                                 @ApiParam(value = "somatic", defaultValue = "false") @QueryParam("somatic") boolean somatic,
-                                 @ApiParam(value = "type") @QueryParam("type") String type,
-                                 @ApiParam(value = "description", required = false) @QueryParam("description") String description) {
-        try {
-            if (StringUtils.isNotEmpty(studyIdStr)) {
-                studyStr = studyIdStr;
-            }
-            QueryResult<Sample> queryResult = sampleManager.create(studyStr, name, source, description, type, somatic, null, null, null,
-                    sessionId);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
     @POST
     @Path("/create")
     @ApiOperation(value = "Create sample", position = 2, response = Sample.class)
@@ -210,46 +185,6 @@ public class SampleWSServer extends OpenCGAWSServer {
             } else {
                 queryResult = sampleManager.search(studyStr, query, queryOptions, sessionId);
             }
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{sample}/update")
-    @ApiOperation(value = "Update some sample attributes using GET method [DEPRECATED]", position = 6, response = Sample.class, hidden = true,
-            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
-            + "is not tested and this can be deprecated in a future version.")
-    public Response update(@ApiParam(value = "Sample id or name", required = true) @PathParam("sample") String sampleStr,
-                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                           @QueryParam("study") String studyStr,
-                           @ApiParam(value = "name", required = false) @QueryParam("name") String name,
-                           @ApiParam(value = "description", required = false) @QueryParam("description") String description,
-                           @ApiParam(value = "source", required = false) @QueryParam("source") String source,
-                           @ApiParam(value = "somatic", defaultValue = "false") @QueryParam("somatic") boolean somatic,
-                           @ApiParam(value = "Individual id or name", hidden = true) @QueryParam("individual.id") String individualId,
-                           @ApiParam(value = "Individual id or name") @QueryParam("individual") String individual,
-                           @ApiParam(value = "Attributes", required = false) @QueryParam("attributes") String attributes) {
-        try {
-            AbstractManager.MyResourceId resourceId = catalogManager.getSampleManager().getId(sampleStr, studyStr, sessionId);
-
-            ObjectMap params = new ObjectMap(query);
-            // TODO: individualId is deprecated. Remember to remove this if after next release
-            if (params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
-                if (!params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL.key())) {
-                    params.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), params.get(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()));
-                }
-                params.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
-            }
-            params.remove(SampleDBAdaptor.QueryParams.STUDY.key());
-//            params.putIfNotNull(SampleDBAdaptor.QueryParams.NAME.key(), name);
-//            params.putIfNotNull(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), description);
-//            params.putIfNotNull(SampleDBAdaptor.QueryParams.SOURCE.key(), source);
-//            params.putIfNotNull(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
-//            params.putIfNotNull(SampleDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
-
-            QueryResult<Sample> queryResult = catalogManager.getSampleManager().update(resourceId.getResourceId(), params, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

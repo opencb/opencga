@@ -64,26 +64,6 @@ public class StudyWSServer extends OpenCGAWSServer {
         studyManager = catalogManager.getStudyManager();
     }
 
-    @GET
-    @Path("/create")
-    @ApiOperation(value = "Create a new study [DEPRECATED]", response = Study.class, hidden = true,
-            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web "
-                    + "service is not tested and this can be deprecated in a future version.")
-    public Response createStudy(@ApiParam(value = "Project id or alias", required = true) @QueryParam("projectId") String projectIdStr,
-                                @ApiParam(value = "Study name", required = true) @QueryParam("name") String name,
-                                @ApiParam(value = "Study alias", required = true) @QueryParam("alias") String alias,
-                                @ApiParam(value = "Study type") @DefaultValue("CASE_CONTROL") @QueryParam("type") Study.Type type,
-                                @ApiParam(value = "Study description") @QueryParam("description") String description) {
-        try {
-            long projectId = catalogManager.getProjectId(projectIdStr, sessionId);
-            QueryResult queryResult = catalogManager.createStudy(projectId, name, alias, type, description, sessionId);
-            queryResult.setId("Create study in " + projectIdStr);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
     @POST
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -164,37 +144,6 @@ public class StudyWSServer extends OpenCGAWSServer {
 
             QueryResult<Study> queryResult = catalogManager.getAllStudies(query, queryOptions, sessionId);
             return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{study}/update")
-    @ApiOperation(value = "Update some study attributes [DEPRECATED]", response = Study.class, hidden = true,
-            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
-                    + "is not tested and this can be deprecated in a future version.")
-    public Response update(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-            required = true) @PathParam("study") String studyStr,
-                           @ApiParam(value = "Study name") @QueryParam("name") String name,
-                           @ApiParam(value = "Study alias") @QueryParam("alias") String alias,
-                           @ApiParam(value = "Study type") @QueryParam("type") String type,
-                           @ApiParam(value = "Study description") @QueryParam("description") String description,
-                           @ApiParam(value = "Study attributes") @QueryParam("attributes") String attributes,
-                           @ApiParam(value = "Study stats") @QueryParam("stats") String stats) throws IOException {
-        try {
-            ObjectMap params = new ObjectMap();
-            params.putIfNotNull(StudyDBAdaptor.QueryParams.NAME.key(), name);
-            params.putIfNotNull(StudyDBAdaptor.QueryParams.ALIAS.key(), alias);
-            params.putIfNotNull(StudyDBAdaptor.QueryParams.TYPE.key(), type);
-            params.putIfNotNull(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), description);
-            params.putIfNotNull(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
-            params.putIfNotNull(StudyDBAdaptor.QueryParams.STATS.key(), stats);
-
-            logger.debug(params.toJson());
-            long studyId = catalogManager.getStudyId(studyStr, sessionId);
-            QueryResult result = catalogManager.modifyStudy(studyId, params, sessionId);
-            return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

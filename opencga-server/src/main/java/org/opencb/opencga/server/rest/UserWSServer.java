@@ -49,30 +49,6 @@ public class UserWSServer extends OpenCGAWSServer {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
 
-    @GET
-    @Path("/create")
-    @ApiOperation(value = "Create a new user [DEPRECATED]", response = User.class, hidden = true,
-            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
-            + "is not tested and this can be deprecated in a future version.")
-    public Response createUser(
-            @ApiParam(value = "User id", hidden = true) @QueryParam("userId") String userId,
-            @ApiParam(value = "User id", required = true) @QueryParam("id") String id,
-            @ApiParam(value = "User name", required = true) @QueryParam("name") String name,
-            @ApiParam(value = "User's email", required = true) @QueryParam("email") String email,
-            @ApiParam(value = "User's password", required = true) @QueryParam("password") String password,
-            @ApiParam(value = "User's organization") @QueryParam("organization") String organization) {
-        try {
-            queryOptions.remove("password");
-            if (StringUtils.isNotEmpty(userId)) {
-                id = userId;
-            }
-            QueryResult queryResult = catalogManager.createUser(id, name, email, password, organization, null, queryOptions);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
     @POST
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -246,31 +222,6 @@ public class UserWSServer extends OpenCGAWSServer {
                 queryResult.setDbTime(queryResult.getDbTime() + sharedResults.getDbTime());
             }
             return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{user}/update")
-    @ApiOperation(value = "Update some user attributes [DEPRECATED]", response = User.class, hidden = true,
-            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
-            + "is not tested and this can be deprecated in a future version.")
-    public Response update(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                           @ApiParam(value = "User name") @QueryParam("name") String name,
-                           @ApiParam(value = "User's email") @QueryParam("email") String email,
-                           @ApiParam(value = "User's organization") @QueryParam("organization") String organization,
-                           @ApiParam(value = "JSON string containing additional information to be stored") @QueryParam("attributes")
-                                       String attributes) {
-        try {
-            ObjectMap objectMap = new ObjectMap();
-            objectMap.putIfNotNull("name", name);
-            objectMap.putIfNotNull("email", email);
-            objectMap.putIfNotNull("organization", organization);
-            objectMap.putIfNotNull("attributes", attributes);
-
-            QueryResult result = catalogManager.modifyUser(userId, objectMap, sessionId);
-            return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

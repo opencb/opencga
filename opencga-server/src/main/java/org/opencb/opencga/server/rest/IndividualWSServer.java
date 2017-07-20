@@ -55,50 +55,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
         individualManager = catalogManager.getIndividualManager();
     }
 
-    @GET
-    @Path("/create")
-    @ApiOperation(value = "Create individual [DEPRECATED]", position = 1, response = Individual.class, hidden = true,
-            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web "
-                    + "service is not tested and this can be deprecated in a future version.")
-    public Response createIndividual(@ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId")
-                                                 String studyIdStr,
-                                     @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                            @QueryParam("study") String studyStr,
-                                     @ApiParam(value = "name", required = true) @QueryParam("name") String name,
-                                     @ApiParam(value = "family", required = false) @QueryParam("family") String family,
-                                     @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") long fatherId,
-                                     @ApiParam(value = "motherId", required = false) @QueryParam("motherId") long motherId,
-                                     @ApiParam(value = "sex", required = false) @QueryParam("sex") @DefaultValue("UNKNOWN")
-                                                 Individual.Sex sex,
-                                     @ApiParam(value = "Date of birth. Format: yyyyMMdd", required = false) @QueryParam("dateOfBirth")
-                                                 String dateOfBirth,
-                                     @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-                                     @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
-                                                 String populationName,
-                                     @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
-                                                 String populationSubpopulation,
-                                     @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
-                                                 String populationDescription,
-                                     @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
-                                                 Individual.KaryotypicSex karyotypicSex,
-                                     @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
-                                                 Individual.LifeStatus lifeStatus,
-                                     @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
-                                                 Individual.AffectationStatus affectationStatus){
-        try {
-            if (StringUtils.isNotEmpty(studyIdStr)) {
-                studyStr = studyIdStr;
-            }
-            long studyId = catalogManager.getStudyId(studyStr, sessionId);
-            QueryResult<Individual> queryResult = individualManager.create(studyId, name, family, fatherId, motherId, sex, ethnicity,
-                    populationName, populationSubpopulation, populationDescription, dateOfBirth, karyotypicSex, lifeStatus, affectationStatus,
-                    queryOptions, sessionId);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
     @POST
     @Path("/create")
     @ApiOperation(value = "Create individual", position = 1, response = Individual.class)
@@ -364,58 +320,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     annotations, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
-            return createErrorResponse(e);
-        }
-    }
-
-
-    @GET
-    @Path("/{individual}/update")
-    @ApiOperation(value = "Update individual information [DEPRECATED]", position = 6, response = Individual.class, hidden = true,
-            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
-            + "is not tested and this can be deprecated in a future version.")
-    public Response updateIndividual(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
-                                     @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                            @QueryParam("study") String studyStr,
-                                     @ApiParam(value = "name", required = false) @QueryParam("name") String name,
-                                     @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") Long fatherId,
-                                     @ApiParam(value = "motherId", required = false) @QueryParam("motherId") Long motherId,
-                                     @ApiParam(value = "family", required = false) @QueryParam("family") String family,
-                                     @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
-                                     @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-                                     @ApiParam(value = "Date of birth. Format: yyyyMMdd", required = false) @QueryParam("dateOfBirth")
-                                                 String dateOfBirth,
-                                     @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
-                                                 String populationName,
-                                     @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
-                                                 String populationSubpopulation,
-                                     @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
-                                                 String populationDescription,
-                                     @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
-                                                 Individual.KaryotypicSex karyotypicSex,
-                                     @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
-                                                 Individual.LifeStatus lifeStatus,
-                                     @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
-                                                 Individual.AffectationStatus affectationStatus) {
-        try {
-            AbstractManager.MyResourceId resource = individualManager.getId(individualStr, studyStr, sessionId);
-            ObjectMap params = new ObjectMap();
-            params.putIfNotNull(IndividualDBAdaptor.QueryParams.NAME.key(), name);
-            params.putIfNotNull(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), fatherId);
-            params.putIfNotNull(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), motherId);
-            params.putIfNotNull(IndividualDBAdaptor.QueryParams.FAMILY.key(), family);
-            params.putIfNotNull(IndividualDBAdaptor.QueryParams.SEX.key(), sex);
-            params.putIfNotNull(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), ethnicity);
-            params.putIfNotNull(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(), populationName);
-            params.putIfNotNull(IndividualDBAdaptor.QueryParams.POPULATION_DESCRIPTION.key(), populationDescription);
-            params.putIfNotNull(IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key(), populationSubpopulation);
-            params.putIfNotNull(IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), karyotypicSex);
-            params.putIfNotNull(IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(), lifeStatus);
-            params.putIfNotNull(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), affectationStatus);
-            params.putIfNotNull(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), dateOfBirth);
-            QueryResult<Individual> queryResult = individualManager.update(resource.getResourceId(), params, queryOptions, sessionId);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }

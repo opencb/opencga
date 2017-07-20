@@ -128,51 +128,6 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/create-folder")
-    @ApiOperation(value = "Create a folder in the catalog environment [DEPRECATED]", hidden = true, position = 2, response = File.class,
-            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST /create version instead. Be aware that "
-                    + "this is web service is not tested and this can be deprecated in a future version.")
-    public Response createFolder(@ApiParam(value = "(DEPRECATED) Use study instead", hidden = true)
-                                 @QueryParam("studyId") String studyIdStr,
-                                 @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                 @QueryParam("study") String studyStr,
-                                 @ApiParam(value = "CSV list of paths where the folders will be created", required = true)
-                                 @QueryParam("folders") String folders,
-                                 @ApiParam(value = "Paths where the folder will be created", required = true)
-                                 @QueryParam("path") String path,
-                                 @ApiParam(value = "Create the parent directories if they do not exist")
-                                 @QueryParam("parents") @DefaultValue("false") boolean parents) {
-        try {
-            if (StringUtils.isNotEmpty(studyIdStr)) {
-                studyStr = studyIdStr;
-            }
-            if (StringUtils.isNotEmpty(path)) {
-                folders = path;
-                query.put("folders", folders);
-            }
-
-            long studyId = catalogManager.getStudyId(studyStr, sessionId);
-            List<String> folderList = Arrays.asList(folders.replace(":", "/").split(","));
-
-            List<QueryResult> queryResultList = new ArrayList<>(folderList.size());
-            for (String folder : folderList) {
-                try {
-                    java.nio.file.Path folderPath = Paths.get(folder);
-                    QueryResult<File> newFolder = catalogManager.getFileManager().createFolder(Long.toString(studyId), folderPath.toString(),
-                            null, parents, null, queryOptions, sessionId);
-                    newFolder.setId("Create folder");
-                    queryResultList.add(newFolder);
-                } catch (CatalogException e) {
-                    queryResultList.add(new QueryResult<>("Create folder", -1, 0, 0, "", e.getMessage(), Collections.emptyList()));
-                }
-            }
-            return createOkResponse(queryResultList);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
     @Path("/{files}/info")
     @ApiOperation(value = "File info", position = 3, response = File[].class)
     @ApiImplicitParams({
@@ -1140,70 +1095,6 @@ public class FileWSServer extends OpenCGAWSServer {
         return files;
     }
 
-    @GET
-    @Path("/{file}/update")
-    @ApiOperation(value = "Update fields of a file [DEPRECATED]", hidden = true, position = 16, response = File.class,
-            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web "
-                    + "service is not tested and this can be deprecated in a future version.")
-    public Response update(@ApiParam(value = "File id") @PathParam(value = "file") String fileIdStr,
-                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                           @QueryParam("study") String studyStr,
-                           @ApiParam(value = "File name", required = false) @QueryParam("name") String name,
-                           @ApiParam(value = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)", required = false) @QueryParam("format") String format,
-                           @ApiParam(value = "Bioformat of the file (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)", required = false) @QueryParam("bioformat") String bioformat,
-                           @ApiParam(value = "Description of the file", required = false) @QueryParam("description") String description,
-                           @ApiParam(value = "Attributes", required = false) @QueryParam("attributes") String attributes,
-                           @ApiParam(value = "Stats", required = false) @QueryParam("stats") String stats,
-                           @ApiParam(value = "Sample ids", required = false) @QueryParam("sampleIds") String sampleIds,
-                           @ApiParam(value = "(DEPRECATED) Job id", hidden = true) @QueryParam("jobId") String jobIdOld,
-                           @ApiParam(value = "Job id", required = false) @QueryParam("job.id") String jobId) {
-        try {
-            /*ObjectMap parameters = new ObjectMap();
-            QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, parameters, qOptions);*/
-            ObjectMap params = new ObjectMap(query);
-            // TODO: jobId is deprecated. Remember to remove this if after next release
-            if (params.containsKey("jobId") && !params.containsKey(FileDBAdaptor.QueryParams.JOB_ID.key())) {
-                params.put(FileDBAdaptor.QueryParams.JOB_ID.key(), params.get("jobId"));
-                params.remove("jobId");
-            }
-            params.remove(FileDBAdaptor.QueryParams.STUDY.key());
-//            params.putIfNotEmpty(FileDBAdaptor.QueryParams.NAME.key(), name);
-//            params.putIfNotEmpty(FileDBAdaptor.QueryParams.FORMAT.key(), format);
-//            params.putIfNotEmpty(FileDBAdaptor.QueryParams.BIOFORMAT.key(), bioformat);
-//            params.putIfNotEmpty(FileDBAdaptor.QueryParams.DESCRIPTION.key(), description);
-//            params.putIfNotEmpty(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
-//            params.putIfNotEmpty(FileDBAdaptor.QueryParams.STATS.key(), stats);
-//            params.putIfNotEmpty(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleIds);
-//            params.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_ID.key(), jobIdOld);
-//            params.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_ID.key(), jobId);
-            AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
-            QueryResult queryResult = fileManager.update(resource.getResourceId(), params, queryOptions, sessionId);
-            queryResult.setId("Update file");
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @Deprecated
-    public static class UpdateFile {
-        public String name;
-        public File.Format format;
-        public File.Bioformat bioformat;
-        //        public String path;
-//        public String ownerId;
-//        public String creationDate;
-//        public String modificationDate;
-        public String description;
-        //        public Long size;
-//        public int experimentId;
-        public String sampleIds;
-        public Long jobId;
-        public Map<String, Object> stats;
-        public Map<String, Object> attributes;
-    }
-
     @POST
     @Path("/{file}/update")
     @ApiOperation(value = "Modify file", position = 16, response = File.class)
@@ -1554,81 +1445,6 @@ public class FileWSServer extends OpenCGAWSServer {
             return createOkResponse(new QueryResult<>("Scan", 0, scan.size(), scan.size(), "", "", scan));
         } catch (Exception e) {
             return createErrorResponse(e);
-        }
-    }
-
-    @Deprecated
-    public static String convertPath(String path, String sessionId) throws CatalogException {
-        return convertPath(path, sessionId, catalogManager);
-    }
-
-    // Visible only for testing purposes
-    @Deprecated
-    static String convertPath(String path, String sessionId, CatalogManager catalogManager) throws CatalogException {
-        if (path == null) {
-            return null;
-        }
-        if (path.contains("/") || !path.contains(":")) {
-            return path;
-        }
-        // Path contains :
-        if (path.startsWith(":")) {
-            return path.replace(":", "/");
-        } else {
-            // Get the user id
-            String userId = catalogManager.getUserManager().getId(sessionId);
-
-            // Get only the first part to check if it corresponds with user@project
-            int position = path.indexOf(":");
-            String project = path.substring(0, position);
-            // Check if it corresponds with a project
-            long id = catalogManager.getProjectManager().getId(userId, project);
-            if (id <= 0) {
-                // Was it a study user@study:filePath/...?
-                id = catalogManager.getStudyManager().getId(userId, project);
-                if (id <= 0) {
-                    // Then it must be user@filePath/...
-                    return path.replace(":", "/");
-                } else {
-                    // It must be user@study:filePath/...
-                    return project + ":" + path.substring(position + 1).replace(":", "/");
-                }
-            } else {
-                // Does it have the study as well? user@project:study:filePath/...
-                int position2 = path.substring(position + 1).indexOf(":");
-                if (position2 == -1) {
-                    throw new CatalogException("No file was found in " + path);
-                } else {
-                    // We should have something like user@project:study
-                    String study = project + path.substring(position).substring(0, position2 + 1);
-                    // Check if the study exists
-                    id = catalogManager.getStudyManager().getId(userId, study);
-                    if (id <= 0) {
-                        // Then it must be user@project:filePath/...
-                        throw new CatalogException("Passing files with this structure user@project:filePath/... is not supported.");
-                    } else {
-                        // The structure seems to be user@project:study:filePath/...
-                        return study + ":" + path.substring(position).substring(position2 + 2).replace(":", "/");
-                    }
-                }
-            }
-//            return path.substring(0, position + 1) + path.substring(position + 1).replace(":", "/");
-        }
-    }
-
-    @Deprecated
-    public static List<String> convertPathList(String path, String sessionId) throws CatalogException {
-        if (path == null) {
-            return Collections.emptyList();
-        } else if (path.contains(",")) {
-            String[] split = path.split(",");
-            List<String> pathList = new ArrayList<>(split.length);
-            for (String s : split) {
-                pathList.add(convertPath(s, sessionId));
-            }
-            return pathList;
-        } else {
-            return Collections.singletonList(convertPath(path, sessionId));
         }
     }
 
