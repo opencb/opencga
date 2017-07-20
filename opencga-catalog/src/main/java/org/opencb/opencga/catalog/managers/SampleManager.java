@@ -478,7 +478,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Sample> queryResult = sampleDBAdaptor.get(query, options, userId);
-//        authorizationManager.filterSamples(userId, studyId, queryResultAux.getResult());
 
         return queryResult;
     }

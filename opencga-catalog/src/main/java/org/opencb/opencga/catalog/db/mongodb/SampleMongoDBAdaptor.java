@@ -387,6 +387,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
                 studyPermission.name(), studyPermission.getSamplePermission().name());
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        logger.debug("Sample count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return sampleCollection.count(bson);
     }
 

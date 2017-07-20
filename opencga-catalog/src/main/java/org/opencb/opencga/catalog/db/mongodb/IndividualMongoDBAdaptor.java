@@ -294,6 +294,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
                 studyPermission.name(), studyPermission.getIndividualPermission().name());
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        logger.debug("Individual count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class,
+                MongoClient.getDefaultCodecRegistry()));
         return individualCollection.count(bson);
     }
 

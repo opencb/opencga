@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.mongodb.MongoClient;
 import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
@@ -251,6 +252,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
                 studyPermission.name(), studyPermission.getCohortPermission().name());
         Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        logger.debug("Cohort count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return cohortCollection.count(bson);
     }
 
