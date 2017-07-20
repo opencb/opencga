@@ -47,9 +47,9 @@
 
 !3 Create ACL For A Member 
 !|Table: Rest Fixture | $baseURL |
-| setBody | {  "permissions": "VIEW",  "members": "$userA"}|
+| setBody | {  "permissions": "VIEW",  "action" : "ADD", "job": "$jobId"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/jobs/$jobId/acl/create?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
+| POST | /v1/jobs/acl/$userA/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
 
 !3 Get ACL For A Member
 !|Table: Rest Fixture | $baseURL |
@@ -67,7 +67,9 @@
 
 !3 Delete ACL For A Member
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/jobs/$jobId/acl/$userA/delete?sid=$sessionId|200|  Content-Type: application/json |jsonbody.error == ''|
+| setBody | { "action" : "RESET", "job": "$jobId"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/jobs/acl/$userA/update?sid=$sessionId |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].id == '$jobId' && jsonbody.response[0].result.length == '0'|
 
 !3 Get Deleted ACL For The Member
 !|Table: Rest Fixture | $baseURL |

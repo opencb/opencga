@@ -7,13 +7,17 @@
 
 !3 Create Panel 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/panels/create?sid=$sessionId&studyId=$studyId&name=$panelName1&disease=disease&genes=genes |200|  Content-Type: application/json ||
+| setBody |{ "name": "$panelName1", "disease" : "disease", "genes" : "genes"}|
+| setHeader|Content-Type:application/json|
+| POST |  /v1/panels/create?sid=$sessionId&studyId=$studyId |200|  Content-Type: application/json ||
 |let|panelId|js|response.jsonbody.response[0].result[0].id||
 
 !3 Create Second Panel 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/panels/create?sid=$sessionId&studyId=$studyId&name=$panelName2&disease=disease&genes=genes |200|  Content-Type: application/json ||
-|let|panelId|js|response.jsonbody.response[0].result[0].id||
+| setBody |{ "name": "$panelName2", "disease" : "disease", "genes" : "genes"}|
+| setHeader|Content-Type:application/json|
+| POST |  /v1/panels/create?sid=$sessionId&studyId=$studyId |200|  Content-Type: application/json ||
+|let|panelId2|js|response.jsonbody.response[0].result[0].id||
 
 !3 Get Panel Info 
 !|Table: Rest Fixture | $baseURL |
