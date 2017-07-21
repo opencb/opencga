@@ -93,6 +93,7 @@ public class OpencgaCliOptionsParser {
         JCommander projectSubCommands = jCommander.getCommands().get("projects");
         projectSubCommands.addCommand("create", projectCommandOptions.createCommandOptions);
         projectSubCommands.addCommand("info", projectCommandOptions.infoCommandOptions);
+        projectSubCommands.addCommand("search", projectCommandOptions.searchCommandOptions);
         projectSubCommands.addCommand("studies", projectCommandOptions.studiesCommandOptions);
         projectSubCommands.addCommand("update", projectCommandOptions.updateCommandOptions);
         projectSubCommands.addCommand("delete", projectCommandOptions.deleteCommandOptions);

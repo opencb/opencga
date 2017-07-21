@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
@@ -53,6 +54,9 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
             case "create":
                 queryResponse = create();
+                break;
+            case "search":
+                queryResponse = search();
                 break;
             case "info":
                 queryResponse = info();
@@ -104,8 +108,31 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, projectsCommandOptions.infoCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, projectsCommandOptions.infoCommandOptions.dataModelOptions.exclude);
-        return openCGAClient.getProjectClient().get(projectsCommandOptions.infoCommandOptions.project, null);
+        return openCGAClient.getProjectClient().get(projectsCommandOptions.infoCommandOptions.project, queryOptions);
     }
+
+    private QueryResponse<Project> search() throws CatalogException, IOException {
+        logger.debug("Search projects");
+
+        ProjectCommandOptions.SearchCommandOptions commandOptions = projectsCommandOptions.searchCommandOptions;
+
+        Query query = new Query();
+        query.putIfNotEmpty("owner", commandOptions.owner);
+        query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
+        query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), commandOptions.name);
+        query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ALIAS.key(), commandOptions.alias);
+        query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), commandOptions.organization);
+        query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), commandOptions.description);
+        query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.CREATION_DATE.key(), commandOptions.creationDate);
+        query.putIfNotEmpty("status", commandOptions.status);
+        query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ATTRIBUTES.key(), commandOptions.attributes);
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, projectsCommandOptions.infoCommandOptions.dataModelOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, projectsCommandOptions.infoCommandOptions.dataModelOptions.exclude);
+        return openCGAClient.getProjectClient().search(query, queryOptions);
+    }
+
 
     private QueryResponse<Project> update() throws CatalogException, IOException {
         logger.debug("Updating project");
