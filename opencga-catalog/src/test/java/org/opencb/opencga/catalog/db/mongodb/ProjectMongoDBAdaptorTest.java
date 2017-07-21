@@ -133,7 +133,7 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
             System.out.println("correct exception: " + e);
         }
         try {
-            System.out.println(catalogProjectDBAdaptor.renameAlias(p1.getId(), p2.getAlias()));
+            System.out.println(catalogProjectDBAdaptor.renameAlias(p1.getId(), p2.getAlias().split("@")[1]));
             fail("renamed project with name collision");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);

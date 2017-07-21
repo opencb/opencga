@@ -195,6 +195,9 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     @Override
     public long getId(String userId, String projectAlias) throws CatalogDBException {
+        if (projectAlias.contains("@")) {
+            projectAlias = projectAlias.split("@", 2)[1];
+        }
         QueryResult<Document> queryResult = userCollection.find(
                 new BsonDocument("projects.alias", new BsonString(projectAlias))
                         .append("id", new BsonString(userId)),
@@ -376,25 +379,16 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         for (Bson aggregate : aggregates) {
             logger.debug("Get project: Aggregate : {}", aggregate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         }
-        QueryResult<Document> aggregateResult = userCollection.aggregate(aggregates, options);
-        List<Project> projectList = new ArrayList<>(aggregateResult.getNumResults());
-        for (Document document : aggregateResult.getResult()) {
-            Project project = projectConverter.convertToDataModelType(document);
-
-            // Add the alias with the owner in front of it
-            project.setAlias(document.getString("id") + "@" + project.getAlias());
-
-            // Add studies if they are not excluded
-            if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
-                    || (!options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")
-                    && !options.getAsStringList(QueryOptions.EXCLUDE).contains("studies"))) {
+        QueryResult<Project> aggregateResult = userCollection.aggregate(aggregates, projectConverter, options);
+        if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
+                || (!options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")
+                && !options.getAsStringList(QueryOptions.EXCLUDE).contains("studies"))) {
+            for (Project project : aggregateResult.getResult()) {
                 project.setStudies(studyMap.get(project.getId()));
             }
-
-            projectList.add(project);
         }
-        return new QueryResult<>("Get project", (int) (System.currentTimeMillis() - startTime), aggregateResult.getNumResults(),
-                aggregateResult.getNumTotalResults(), aggregateResult.getWarningMsg(), aggregateResult.getErrorMsg(), projectList);
+
+        return endQuery("Get project", startTime, aggregateResult);
     }
 
     @Override
