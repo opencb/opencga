@@ -74,6 +74,8 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
     @Deprecated
     long getId(String projectId) throws CatalogException;
 
+    QueryResult<Project> getOwnProjects(Query query, QueryOptions options, String sessionId) throws CatalogException;
+
     QueryResult<Project> create(String name, String alias, String description, String organization, String scientificName,
                                 String commonName, String taxonomyCode, String assembly, QueryOptions options, String sessionId)
             throws CatalogException;

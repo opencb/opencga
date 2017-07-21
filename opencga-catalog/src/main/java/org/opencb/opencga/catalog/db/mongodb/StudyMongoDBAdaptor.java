@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.mongodb.MongoClient;
 import com.mongodb.WriteResult;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.*;
@@ -938,6 +939,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             qOptions = new QueryOptions();
         }
         qOptions = filterOptions(qOptions, FILTER_ROUTE_STUDIES);
+        logger.debug("Study native get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         // Fixme: If necessary, include in the results also the files, jobs, individuals...
         return studyCollection.find(bson, qOptions);
     }
@@ -1363,6 +1365,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     case VARIABLE_SET_ID:
                     case VARIABLE_SET_NAME:
                     case VARIABLE_SET_DESCRIPTION:
+                    case OWNER:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     default:

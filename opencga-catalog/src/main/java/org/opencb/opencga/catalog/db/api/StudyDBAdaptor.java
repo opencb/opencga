@@ -263,6 +263,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         EXPERIMENT_CENTER("experiments.center", TEXT_ARRAY, ""),
         EXPERIMENT_RESPONSIBLE("experiments.responsible", TEXT_ARRAY, ""),
 
+        OWNER("_ownerId", TEXT, ""),
 //        FILE_ID("files.id", INTEGER_ARRAY, ""),
 //        FILE_NAME("files.name", TEXT_ARRAY, ""),
 //        FILE_TYPE("files.type", TEXT_ARRAY, ""),

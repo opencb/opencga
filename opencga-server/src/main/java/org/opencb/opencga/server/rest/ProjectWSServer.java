@@ -19,8 +19,10 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Study;
@@ -81,6 +83,40 @@ public class ProjectWSServer extends OpenCGAWSServer {
                 queryResults.add(catalogManager.getProject(projectId, queryOptions, sessionId));
             }
             return createOkResponse(queryResults);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/search")
+    @ApiOperation(value = "Search projects", response = Project[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Set which fields are excluded in the response, e.g.: name,alias...",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Max number of results to be returned.", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to be skipped.", dataType = "integer", paramType = "query")
+    })
+    public Response searchProjects(
+            @ApiParam(value = "Owner of the project") @QueryParam("owner") String owner,
+            @ApiParam(value = "Project name") @QueryParam("name") String name,
+            @ApiParam(value = "Project alias") @QueryParam("alias") String alias,
+            @ApiParam(value = "Project organization") @QueryParam("organization") String organization,
+            @ApiParam(value = "Project description") @QueryParam("description") String description,
+            @ApiParam(value = "Study id or alias") @QueryParam("study") String study,
+            @ApiParam(value = "Creation date") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Status") @QueryParam("status") String status,
+            @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes) {
+        try {
+            if (StringUtils.isNotEmpty(owner)) {
+                query.remove("owner");
+                query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), owner);
+            }
+
+            QueryResult<Project> queryResult = catalogManager.getProjectManager().get(query, queryOptions, sessionId);
+            return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

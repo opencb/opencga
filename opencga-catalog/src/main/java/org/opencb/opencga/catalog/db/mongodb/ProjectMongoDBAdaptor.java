@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
@@ -23,6 +24,7 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.Document;
@@ -300,13 +302,15 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     @Override
     public QueryResult<Project> get(Query query, QueryOptions options, String user) throws CatalogDBException {
         long startTime = startQuery();
-
         // Fetch all the studies that the user can see
         List<Long> projectIds = query.getAsLongList(QueryParams.ID.key());
         Query studyQuery = new Query();
         if (projectIds != null && projectIds.size() > 0) {
             studyQuery.append(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectIds);
         }
+        studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), query.getString(QueryParams.STUDY_ID.key()));
+        studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), query.getString(QueryParams.STUDY_ALIAS.key()));
+        studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.OWNER.key(), query.getString(QueryParams.USER_ID.key()));
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, new QueryOptions(), user);
 
         // We build a map of projectId - list<studies>
@@ -321,9 +325,19 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         }
 
         if (studyMap.size() == 0) {
-            // It might be that the owner of the study is asking for its own projects but no studies have been created yet, so we will
-            // add the user as part of the query to see if any project is returned
-            query.put(QueryParams.USER_ID.key(), user);
+            // It might be that the owner of the study is asking for its own projects but no studies have been created yet. Just in case,
+            // we check if any study matches the query. If that's the case, the user does not have proper permissions. Otherwise, he might
+            // be the owner...
+            if (dbAdaptorFactory.getCatalogStudyDBAdaptor().count(studyQuery).first() == 0) {
+                if (StringUtils.isEmpty(query.getString(QueryParams.USER_ID.key()))
+                        || !user.equals(query.getString(QueryParams.USER_ID.key()))) {
+                    // User does not have proper permissions
+                    return new QueryResult<>("Get project", -1, 0, -1, "", "", new ArrayList<>());
+                }
+            } else {
+                // User does not have proper permissions
+                return new QueryResult<>("Get project", -1, 0, -1, "", "", new ArrayList<>());
+            }
         } else {
             // We get all the projects the user can see
             projectIds = new ArrayList<>(studyMap.keySet());
@@ -359,16 +373,28 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             }
         }
 
-        QueryResult<Project> projectQueryResult = userCollection.aggregate(aggregates, projectConverter, options);
+        for (Bson aggregate : aggregates) {
+            logger.debug("Get project: Aggregate : {}", aggregate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        }
+        QueryResult<Document> aggregateResult = userCollection.aggregate(aggregates, options);
+        List<Project> projectList = new ArrayList<>(aggregateResult.getNumResults());
+        for (Document document : aggregateResult.getResult()) {
+            Project project = projectConverter.convertToDataModelType(document);
 
-        if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
-                || !options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")) {
-            for (Project project : projectQueryResult.getResult()) {
+            // Add the alias with the owner in front of it
+            project.setAlias(document.getString("id") + "@" + project.getAlias());
+
+            // Add studies if they are not excluded
+            if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
+                    || (!options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")
+                    && !options.getAsStringList(QueryOptions.EXCLUDE).contains("studies"))) {
                 project.setStudies(studyMap.get(project.getId()));
             }
-        }
 
-        return endQuery("Get project", startTime, projectQueryResult.getResult());
+            projectList.add(project);
+        }
+        return new QueryResult<>("Get project", (int) (System.currentTimeMillis() - startTime), aggregateResult.getNumResults(),
+                aggregateResult.getNumTotalResults(), aggregateResult.getWarningMsg(), aggregateResult.getErrorMsg(), projectList);
     }
 
     @Override
@@ -661,12 +687,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                     case LAST_MODIFIED:
                     case SIZE:
                     case DATASTORES:
-                    case STUDY_ID:
-                    case STUDY_NAME:
-                    case STUDY_ALIAS:
-                    case STUDY_CREATOR_ID:
-                    case STUDY_STATUS:
-                    case STUDY_LAST_MODIFIED:
                     case ACL_USER_ID:
                         addAutoOrQuery("projects." + queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
