@@ -50,12 +50,4 @@ public class ProjectClient extends CatalogClient<Project, Project> {
         return execute(PROJECTS_URL, projectId, "studies", options, GET, Study.class);
     }
 
-//    public QueryResponse<Project> update(String projectId, ObjectMap params) throws CatalogException, IOException {
-//        return execute(PROJECTS_URL, projectId, "update", params, Project.class);
-//    }
-//
-//    public QueryResponse<Project> delete(String projectId, ObjectMap params) throws CatalogException, IOException {
-//        return execute(PROJECTS_URL, projectId, "delete", params, Project.class);
-//    }
-
 }

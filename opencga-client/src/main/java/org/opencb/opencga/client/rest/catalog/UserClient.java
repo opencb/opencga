@@ -121,18 +121,7 @@ public class UserClient extends CatalogClient<User, User> {
         String userId = getUserId(options);
         return execute(USERS_URL, userId, "projects", options, GET, Project.class);
     }
-    /*Deprecated
-    public QueryResponse<User> changePassword(String currentPassword, String newPassword, ObjectMap params)
-            throws CatalogException, IOException {
 
-        params = addParamsToObjectMap(params, "password", currentPassword, "npassword", newPassword);
-        QueryResponse<User> execute = execute(USERS_URL, getUserId(), "change-password", params, POST, User.class);
-        if (!execute.getError().isEmpty()) {
-            throw new CatalogException(execute.getError());
-        }
-        return execute;
-    }
-    */
     public QueryResponse<User> changePassword(String currentPassword, String newPassword, ObjectMap params)
             throws CatalogException, IOException {
         ObjectMapper mapper = new ObjectMapper();
