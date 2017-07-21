@@ -421,11 +421,6 @@ public class CatalogManager implements AutoCloseable {
         return projectManager.get(projectId, options, sessionId);
     }
 
-    @Deprecated
-    public QueryResult<Project> getAllProjects(String ownerId, QueryOptions options, String sessionId) throws CatalogException {
-        return projectManager.getOwnProjects(new Query("ownerId", ownerId), options, sessionId);
-    }
-
     /**
      * Modify some params from the specified project.
      * <p>

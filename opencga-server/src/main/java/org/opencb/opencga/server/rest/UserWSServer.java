@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Project;
@@ -198,8 +199,8 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{user}/projects")
-    @ApiOperation(value = "Retrieve the projects of the user", notes = "Retrieve the list of projects and studies belonging or shared with "
-            + "the user", response = Project[].class)
+    @ApiOperation(value = "Retrieve the projects of the user", notes = "Retrieve the list of projects and studies belonging to the user",
+            response = Project[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
                     dataType = "string", paramType = "query"),
@@ -208,20 +209,11 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "limit", value = "Max number of results to be returned.", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to be skipped.", dataType = "integer", paramType = "query")
     })
-    public Response getAllProjects(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                                   @ApiParam(value = "When false, it will return only the projects and studies belonging to the user. "
-                                           + "However, if this parameter is set to true, it will also show the projects and studies " +
-                                           "shared with the user.", defaultValue = "false") @QueryParam ("shared") boolean shared) {
+    public Response getAllProjects(@ApiParam(value = "User id", required = true) @PathParam("user") String userId) {
         try {
-            QueryResult<Project> queryResult = catalogManager.getAllProjects(userId, queryOptions, sessionId);
-            if (shared) {
-                QueryResult<Project> sharedResults = catalogManager.getProjectManager().getSharedProjects(userId, queryOptions, sessionId);
-                queryResult.getResult().addAll(sharedResults.getResult());
-                queryResult.setNumTotalResults(queryResult.getNumTotalResults() + sharedResults.getNumTotalResults());
-                queryResult.setNumResults(queryResult.getNumResults() + sharedResults.getNumResults());
-                queryResult.setDbTime(queryResult.getDbTime() + sharedResults.getDbTime());
-            }
-            return createOkResponse(queryResult);
+            query.remove("user");
+            query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId);
+            return createOkResponse(catalogManager.getProjectManager().get(query, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

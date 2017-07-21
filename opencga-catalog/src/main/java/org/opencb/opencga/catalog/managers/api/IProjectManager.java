@@ -74,8 +74,6 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
     @Deprecated
     long getId(String projectId) throws CatalogException;
 
-    QueryResult<Project> getOwnProjects(Query query, QueryOptions options, String sessionId) throws CatalogException;
-
     QueryResult<Project> create(String name, String alias, String description, String organization, String scientificName,
                                 String commonName, String taxonomyCode, String assembly, QueryOptions options, String sessionId)
             throws CatalogException;
@@ -167,5 +165,7 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
      * @return A QueryResult object containing the list of projects and studies that are shared with the user.
      * @throws CatalogException CatalogException
      */
-    QueryResult<Project> getSharedProjects(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException;
+    default QueryResult<Project> getSharedProjects(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException {
+        return get(new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + userId), queryOptions, sessionId);
+    }
 }

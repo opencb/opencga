@@ -29,6 +29,7 @@ import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -480,7 +481,8 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void testCreateFile() throws CatalogException, IOException {
-        long projectId = catalogManager.getAllProjects("user2", null, sessionIdUser2).first().getId();
+        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user2");
+        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser2).first().getId();
         Study study = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser2).first();
 
         String content = "This is the content\tof the file";
@@ -506,7 +508,8 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void testCreateFolder() throws Exception {
-        long projectId = catalogManager.getAllProjects("user2", null, sessionIdUser2).first().getId();
+        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user2");
+        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser2).first().getId();
         long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser2).first().getId();
 
         Set<String> paths = catalogManager.getAllFiles(studyId, new Query("type", File.Type.DIRECTORY), new QueryOptions(), sessionIdUser2)
@@ -548,7 +551,8 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void testCreateFolderAlreadyExists() throws Exception {
-        long projectId = catalogManager.getAllProjects("user2", null, sessionIdUser2).first().getId();
+        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user2");
+        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser2).first().getId();
         long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser2).first().getId();
 
         Set<String> paths = catalogManager.getAllFiles(studyId, new Query("type", File.Type.DIRECTORY), new QueryOptions(), sessionIdUser2)
@@ -659,7 +663,8 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void testDownloadAndHeadFile() throws CatalogException, IOException, InterruptedException {
-        long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
+        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();
         long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser).first().getId();
         CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
 
@@ -1140,11 +1145,12 @@ public class FileManagerTest extends GenericTest {
     // Try to delete files/folders whose status is STAGED, MISSING...
     @Test
     public void testDelete1() throws CatalogException, IOException {
-        long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
+        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();
         long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser).first().getId();
 
         String filePath = "data/";
-        Query query = new Query()
+        query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), filePath);
         QueryResult<File> fileQueryResult = catalogManager.searchFile(studyId, query, sessionIdUser);
@@ -1175,11 +1181,12 @@ public class FileManagerTest extends GenericTest {
     // It will try to delete a folder in status ready
     @Test
     public void testDelete2() throws CatalogException, IOException {
-        long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
+        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();
         long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser).first().getId();
 
         String filePath = "data/";
-        Query query = new Query()
+        query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), filePath);
         File file = catalogManager.searchFile(studyId, query, sessionIdUser).first();
@@ -1207,11 +1214,12 @@ public class FileManagerTest extends GenericTest {
     // It will try to delete a folder in status ready and skip the trash
     @Test
     public void testDelete3() throws CatalogException, IOException {
-        long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
+        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();
         long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser).first().getId();
 
         String filePath = "data/";
-        Query query = new Query()
+        query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), filePath);
         File file = catalogManager.searchFile(studyId, query, sessionIdUser).first();
@@ -1239,8 +1247,8 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void testDeleteFile() throws CatalogException, IOException {
-
-        long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
+        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();
         long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser).first().getId();
 
         List<File> result = catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"),
@@ -1248,7 +1256,7 @@ public class FileManagerTest extends GenericTest {
         for (File file : result) {
             catalogManager.getFileManager().delete(Long.toString(file.getId()), null, null, sessionIdUser);
         }
-        CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
+//        CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
         catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
                 sessionIdUser).getResult().forEach(f -> {
             assertEquals(f.getStatus().getName(), File.FileStatus.TRASHED);

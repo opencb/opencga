@@ -252,24 +252,6 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     @Override
-    public QueryResult<Project> getOwnProjects(Query query, QueryOptions options, String sessionId) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-        String userId = catalogManager.getUserManager().getId(sessionId);
-
-        if (userId.equals(ANONYMOUS)) {
-            return new QueryResult<>(ANONYMOUS, 0, 0, 0, "", "", new ArrayList<>());
-        }
-        String ownerId = query.getString("ownerId", query.getString("userId", userId));
-        ParamUtils.checkParameter(ownerId, "ownerId");
-
-        query.append(ProjectDBAdaptor.QueryParams.USER_ID.key(), ownerId);
-        QueryResult<Project> allProjects = projectDBAdaptor.get(query, options, userId);
-
-        return allProjects;
-    }
-
-    @Override
     public QueryResult<Project> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -567,20 +549,4 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
-    @Override
-    public QueryResult<Project> getSharedProjects(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException {
-        queryOptions = ParamUtils.defaultObject(queryOptions, QueryOptions::new);
-        String user = catalogManager.getUserManager().getId(sessionId);
-        if (!user.equals(userId)) {
-            // TODO: Remove this line
-            if (userId.equals("anonymous") && user.equals(ANONYMOUS)) {
-                logger.info("Remove this condition !!");
-            } else {
-                throw new CatalogException("User " + user + " cannot see shared projects from other users");
-            }
-        }
-
-        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + user);
-        return projectDBAdaptor.get(query, queryOptions, user);
-    }
 }

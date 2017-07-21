@@ -437,10 +437,11 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testGetAllProjects() throws Exception {
-        QueryResult<Project> projects = catalogManager.getAllProjects("user", null, sessionIdUser);
+        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
+        QueryResult<Project> projects = catalogManager.getProjectManager().get(query, null, sessionIdUser);
         assertEquals(1, projects.getNumResults());
 
-        projects = catalogManager.getAllProjects("user", null, sessionIdUser2);
+        projects = catalogManager.getProjectManager().get(query, null, sessionIdUser2);
         assertEquals(0, projects.getNumResults());
     }
 
@@ -497,7 +498,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testModifyStudy() throws Exception {
-        long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
+        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();
         long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser).first().getId();
         String newName = "Phase 1 " + StringUtils.randomString(20);
         String newDescription = StringUtils.randomString(500);
@@ -521,7 +523,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testGetAllStudies() throws CatalogException {
-        long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
+        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();
         catalogManager.createStudy(projectId, "study_1", "study_1", Study.Type.CASE_CONTROL, "creationDate", "description",
                 new Status(), null, null, null, null, null, null, null, sessionIdUser);
         catalogManager.createStudy(projectId, "study_2", "study_2", Study.Type.CASE_CONTROL, "creationDate", "description",
@@ -765,7 +768,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateJob() throws CatalogException, IOException {
-        long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
+        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();
         long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser).first().getId();
 
         File outDir = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("jobs", "myJob").toString(),
@@ -793,7 +797,7 @@ public class CatalogManagerTest extends GenericTest {
                 outDir.getId(),
                 Collections.emptyList(), null, new HashMap<>(), null, new Job.JobStatus(Job.JobStatus.ERROR), 0, 0, null, sessionIdUser);
 
-        Query query = new Query()
+        query = new Query()
                 .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Arrays.asList(Job.JobStatus.PREPARED, Job.JobStatus.QUEUED,
                         Job.JobStatus.RUNNING, Job.JobStatus.DONE))
                 .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
@@ -806,7 +810,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateFailJob() throws CatalogException {
-        long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
+        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();
         long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser).first().getId();
 
         URI tmpJobOutDir = catalogManager.createJobOutDir(studyId, StringUtils.randomString(5), sessionIdUser);
@@ -819,7 +824,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testGetAllJobs() throws CatalogException {
-        long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
+        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();
         long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser).first().getId();
         File outDir = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("jobs", "myJob").toString(),
                 null, true, null, QueryOptions.empty(), sessionIdUser).first();
@@ -985,7 +991,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateSample() throws CatalogException {
-        long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
+        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();
         long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser).first().getId();
 
         QueryResult<Sample> sampleQueryResult = catalogManager.createSample(studyId, "HG007", "IMDb", "", null, null, sessionIdUser);
@@ -994,7 +1001,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateSampleWithDotInName() throws CatalogException {
-        long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
+        long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();
         long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser).first().getId();
 
         String name = "HG007.sample";
