@@ -41,6 +41,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     private Map<String, MongoDBCollection> dbCollectionMap = new HashMap<>();
     private Map<String, List<String>> fullPermissionsMap = new HashMap<>();
 
+    private static final String ANONYMOUS = "*";
+
     public AuthorizationMongoDBAdaptor(Configuration configuration) throws CatalogDBException {
         super(LoggerFactory.getLogger(AuthorizationMongoDBAdaptor.class));
         initMongoDatastore(configuration);
@@ -225,9 +227,14 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
         List<Bson> filters = new ArrayList<>();
         if (members.size() > 0) {
-            List<Pattern> regexMemberList = members.stream()
-                    .map(member -> Pattern.compile("^" + member))
-                    .collect(Collectors.toList());
+            List<Pattern> regexMemberList = new ArrayList<>(members.size());
+            for (String member : members) {
+                if (!member.equals(ANONYMOUS)) {
+                    regexMemberList.add(Pattern.compile("^" + member));
+                } else {
+                    regexMemberList.add(Pattern.compile("^\\*"));
+                }
+            }
             filters.add(Filters.in(QueryParams.ACL.key(), regexMemberList));
         }
 
