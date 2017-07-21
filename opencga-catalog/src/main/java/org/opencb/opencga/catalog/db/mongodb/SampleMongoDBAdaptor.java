@@ -140,18 +140,25 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
             qOptions = new QueryOptions();
         }
         qOptions = filterOptions(qOptions, FILTER_ROUTE_SAMPLES);
-        QueryResult<Sample> sampleQueryResult;
+        QueryResult<Document> documentQueryResult;
         if (qOptions.get("lazy") != null && !qOptions.getBoolean("lazy")) {
             Bson match = Aggregates.match(bson);
             Bson lookup = Aggregates.lookup("individual", QueryParams.INDIVIDUAL_ID.key(), IndividualDBAdaptor.QueryParams.ID.key(),
                     "individual");
-            sampleQueryResult = sampleCollection.aggregate(Arrays.asList(match, lookup), sampleConverter, qOptions);
+            documentQueryResult = sampleCollection.aggregate(Arrays.asList(match, lookup), qOptions);
         } else {
-            sampleQueryResult = sampleCollection.find(bson, sampleConverter, qOptions);
+            documentQueryResult = sampleCollection.find(bson, qOptions);
         }
-        logger.debug("Sample get: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                qOptions == null ? "" : qOptions.toJson(), sampleQueryResult.getDbTime());
-        return endQuery("Get sample", startTime, sampleQueryResult);
+        filterAnnotationSets((Document) queryResult.first(), documentQueryResult, user,
+                StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(), SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
+        List<Sample> sampleList = new ArrayList<>(documentQueryResult.getNumResults());
+        for (Document document : documentQueryResult.getResult()) {
+            sampleList.add(sampleConverter.convertToDataModelType(document));
+        }
+        logger.debug("Sample get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        return new QueryResult<>("Get sample", (int) (System.currentTimeMillis() - startTime), documentQueryResult.getNumResults(),
+                documentQueryResult.getNumTotalResults(), documentQueryResult.getWarningMsg(), documentQueryResult.getErrorMsg(),
+                sampleList);
     }
 
     @Override

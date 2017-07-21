@@ -62,6 +62,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String FILTER_ROUTE_PANELS = "projects.studies.panels.";
 
     private static final String PRIVATE_ACL = "_acl";
+    private static final String ANNOTATION_SETS = "annotationSets";
     private static final String ANONYMOUS = "*";
     private static final Pattern MEMBERS_PATTERN = Pattern.compile("^@members");
     private static final Pattern ANONYMOUS_PATTERN = Pattern.compile("^\\" + ANONYMOUS);
@@ -160,7 +161,40 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             List<String> groups = getGroups(study, user);
 
             // 2. We check if the study contains the studies expected for the user
-            return checkUserHasPermission(study, user, groups, studyPermission);
+            return checkUserHasPermission(study, user, groups, studyPermission, false);
+        }
+    }
+
+    /**
+     * Removes annotation sets from results if the user does not have the proper permissions.
+     *
+     * @param study study document.
+     * @param queryResult QueryResult of annotable entries.
+     * @param user user.
+     * @param studyPermission studyPermission to check.
+     * @param entryPermission entry permission to check.
+     */
+    protected void filterAnnotationSets(Document study, QueryResult<Document> queryResult, String user, String studyPermission,
+                                        String entryPermission) {
+        if (study == null || queryResult == null || queryResult.getNumResults() == 0) {
+            return;
+        }
+
+        // If the user corresponds with the owner, we don't have to check anything else
+        if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
+            return;
+        }
+
+        List<String> groups = Collections.emptyList();
+        if (!user.equals(ANONYMOUS)) {
+            groups = getGroups(study, user);
+        }
+        boolean hasStudyPermission = checkUserHasPermission(study, user, groups, studyPermission, false);
+
+        for (Document entryDocument : queryResult.getResult()) {
+            if (!checkUserHasPermission(entryDocument, user, groups, entryPermission, hasStudyPermission)) {
+                entryDocument.remove(ANNOTATION_SETS);
+            }
         }
     }
 
@@ -188,7 +222,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             groups = getGroups(study, user);
 
             // 2. We check if the study contains the studies expected for the user
-            hasStudyPermissions = checkUserHasPermission(study, user, groups, studyPermission);
+            hasStudyPermissions = checkUserHasPermission(study, user, groups, studyPermission, false);
         } else {
             // 1. Anonymous user will not belong to any group
             groups = Collections.emptyList();
@@ -240,22 +274,23 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         return hasStudyPermissions;
     }
 
-    private boolean checkUserHasPermission(Document study, String user, List<String> groups, String studyPermission) {
-        List<String> aclList = study.get(PRIVATE_ACL, ArrayList.class);
+    private boolean checkUserHasPermission(Document document, String user, List<String> groups, String permission,
+                                           boolean defaultValue) {
+        List<String> aclList = document.get(PRIVATE_ACL, ArrayList.class);
         Map<String, Set<String>> permissionMap = parsePermissions(aclList, user, groups);
 
         // 2.2. We now check if the user will have those effective permissions defined at the study level
-        boolean hasStudyPermissions = false;
+        boolean hasPermission = defaultValue;
         if (permissionMap.get("user") != null) {
-            hasStudyPermissions = permissionMap.get("user").contains(studyPermission);
+            hasPermission = permissionMap.get("user").contains(permission);
         } else if (permissionMap.get("group") != null) {
-            hasStudyPermissions = permissionMap.get("group").contains(studyPermission);
+            hasPermission = permissionMap.get("group").contains(permission);
         } else if (permissionMap.get("members") != null) {
-            hasStudyPermissions = permissionMap.get("members").contains(studyPermission);
+            hasPermission = permissionMap.get("members").contains(permission);
         } else if (permissionMap.get(ANONYMOUS) != null) {
-            hasStudyPermissions = permissionMap.get(ANONYMOUS).contains(studyPermission);
+            hasPermission = permissionMap.get(ANONYMOUS).contains(permission);
         }
-        return hasStudyPermissions;
+        return hasPermission;
     }
 
     private List<String> getGroups(Document study, String user) {

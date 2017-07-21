@@ -129,8 +129,18 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
             qOptions = new QueryOptions();
         }
         qOptions = filterOptions(qOptions, FILTER_ROUTE_COHORTS);
-        QueryResult<Cohort> cohortQueryResult = cohortCollection.find(bson, cohortConverter, qOptions);
-        return endQuery("Get cohort", startTime, cohortQueryResult);
+
+        QueryResult<Document> documentQueryResult = cohortCollection.find(bson, qOptions);
+        filterAnnotationSets((Document) queryResult.first(), documentQueryResult, user,
+                StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.name(),
+                CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name());
+        List<Cohort> cohortList = new ArrayList<>(documentQueryResult.getNumResults());
+        for (Document document : documentQueryResult.getResult()) {
+            cohortList.add(cohortConverter.convertToDataModelType(document));
+        }
+        return new QueryResult<>("Get cohort", (int) (System.currentTimeMillis() - startTime), documentQueryResult.getNumResults(),
+                documentQueryResult.getNumTotalResults(), documentQueryResult.getWarningMsg(), documentQueryResult.getErrorMsg(),
+                cohortList);
     }
 
     @Override

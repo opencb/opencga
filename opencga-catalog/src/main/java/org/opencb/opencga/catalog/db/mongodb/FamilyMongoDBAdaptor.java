@@ -400,14 +400,22 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
             qOptions = new QueryOptions();
         }
 
-        QueryResult<Family> familyQueryResult;
-
-        familyQueryResult = familyCollection.find(bson, familyConverter, qOptions);
+        QueryResult<Document> documentQueryResult = familyCollection.find(bson, qOptions);
+        filterAnnotationSets((Document) queryResult.first(), documentQueryResult, user,
+                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(),
+                FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
+        List<Family> familyList = new ArrayList<>(documentQueryResult.getNumResults());
+        for (Document document : documentQueryResult.getResult()) {
+            familyList.add(familyConverter.convertToDataModelType(document));
+        }
+        QueryResult<Family> familyQueryResult = new QueryResult<>("Get family", (int) (System.currentTimeMillis() - startTime),
+                documentQueryResult.getNumResults(), documentQueryResult.getNumTotalResults(), documentQueryResult.getWarningMsg(),
+                documentQueryResult.getErrorMsg(), familyList);
         addMemberInfoToFamily(familyQueryResult);
 
         logger.debug("Family get: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                qOptions == null ? "" : qOptions.toJson(), familyQueryResult.getDbTime());
-        return endQuery("Get family", startTime, familyQueryResult);
+                familyQueryResult.getDbTime());
+        return endQuery("Get family", startTime, familyList);
     }
 
     @Override

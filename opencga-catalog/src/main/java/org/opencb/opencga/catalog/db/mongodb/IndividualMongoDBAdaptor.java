@@ -143,9 +143,21 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             qOptions = new QueryOptions();
         }
         qOptions = filterOptions(qOptions, FILTER_ROUTE_INDIVIDUALS);
-        QueryResult<Individual> individualQueryResult = individualCollection.find(bson, individualConverter, qOptions);
-        addSamples(individualQueryResult);
-        return endQuery("Get Individual", startTime, individualQueryResult.getResult());
+
+        QueryResult<Document> documentQueryResult = individualCollection.find(bson, qOptions);
+        filterAnnotationSets((Document) queryResult.first(), documentQueryResult, user,
+                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
+                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
+        List<Individual> individualList = new ArrayList<>(documentQueryResult.getNumResults());
+        for (Document document : documentQueryResult.getResult()) {
+            individualList.add(individualConverter.convertToDataModelType(document));
+        }
+        QueryResult<Individual> individualQueryResult = new QueryResult<>("Get Individual",
+                (int) (System.currentTimeMillis() - startTime), documentQueryResult.getNumResults(),
+                documentQueryResult.getNumTotalResults(), documentQueryResult.getWarningMsg(), documentQueryResult.getErrorMsg(),
+                individualList);
+        addSamples(individualQueryResult, user);
+        return individualQueryResult;
     }
 
     @Override
@@ -328,11 +340,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         }
         qOptions = filterOptions(qOptions, FILTER_ROUTE_INDIVIDUALS);
         QueryResult<Individual> individualQueryResult = individualCollection.find(bson, individualConverter, qOptions);
-        addSamples(individualQueryResult);
+//        addSamples(individualQueryResult);
         return endQuery("Get Individual", startTime, individualQueryResult.getResult());
     }
 
-    private void addSamples(QueryResult<Individual> queryResult) {
+    private void addSamples(QueryResult<Individual> queryResult, String user) throws CatalogAuthorizationException {
         if (queryResult.getNumResults() == 0) {
             return;
         }
@@ -344,7 +356,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             }
             Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individual.getId());
             try {
-                QueryResult<Sample> sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+                QueryResult<Sample> sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options, user);
                 individual.setSamples(sampleQueryResult.getResult());
             } catch (CatalogDBException e) {
                 logger.warn("Could not retrieve samples for individual {}", individual.getId(), e);

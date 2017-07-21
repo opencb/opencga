@@ -23,7 +23,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.biodata.models.pedigree.Individual;
 import org.opencb.biodata.models.pedigree.Pedigree;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -92,7 +91,6 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         Pedigree pedigree = loader.readPedigree(pedFile.getPath());
         VariableSet variableSet = loader.getVariableSetFromPedFile(pedigree);
 
-        System.out.println(new ObjectMapper().defaultPrettyPrintingWriter().writeValueAsString(variableSet));
         validate(pedigree, variableSet);
     }
 
@@ -120,36 +118,27 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         QueryResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedFile, null, sessionId);
         long variableSetId = sampleQueryResult.getResult().get(0).getAnnotationSets().get(0).getVariableSetId();
 
-//        int variableSetId ;//= sampleQueryResult.getResult().get(0).getAnnotationSets().get(0).getVariableSetId();
-//        sessionId = "nIXANk1L8EmLCRhOwiZQ";
-//        studyId = 2;
-//        variableSetId = 7;
-
 //        Query query = new Query("variableSetId", variableSetId).append("annotation", "family:GB84");
         Query query = new Query("variableSetId", variableSetId)
                 .append("annotation.family", "GB84");
         QueryOptions options = new QueryOptions("limit", 2);
 
         QueryResult<Sample> allSamples = catalogManager.getAllSamples(studyId, query, options, sessionId);
-        System.out.println(allSamples);
         Assert.assertNotEquals(0, allSamples.getNumResults());
         query.remove("annotation.family");
 
         query.put("annotation.sex", "2");
         query.put("annotation.Population","ITU");
         QueryResult<Sample> femaleIta = catalogManager.getAllSamples(studyId, query, options, sessionId);
-        System.out.println(femaleIta);
         Assert.assertNotEquals(0, femaleIta.getNumResults());
 
         query.put("annotation.sex", "1");
         query.put("annotation.Population", "ITU");
         QueryResult<Sample> maleIta = catalogManager.getAllSamples(studyId, query, options, sessionId);
-        System.out.println(maleIta);
         Assert.assertNotEquals(0, maleIta.getNumResults());
 
         query.remove("annotation.sex");
         QueryResult<Sample> ita = catalogManager.getAllSamples(studyId, query, options, sessionId);
-        System.out.println(ita);
         Assert.assertNotEquals(0, ita.getNumResults());
 
         Assert.assertEquals("Fail sample query", ita.getNumTotalResults(), maleIta.getNumTotalResults() + femaleIta.getNumTotalResults());
