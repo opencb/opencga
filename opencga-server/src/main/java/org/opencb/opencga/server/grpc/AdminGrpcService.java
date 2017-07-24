@@ -18,7 +18,7 @@ package org.opencb.opencga.server.grpc;
 
 import io.grpc.stub.StreamObserver;
 import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 /**

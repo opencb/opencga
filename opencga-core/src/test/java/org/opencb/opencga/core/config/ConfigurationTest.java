@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.config;
+package org.opencb.opencga.core.config;
 
 import org.junit.Test;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.config.*;
 
 import java.io.FileOutputStream;
 import java.io.IOException;

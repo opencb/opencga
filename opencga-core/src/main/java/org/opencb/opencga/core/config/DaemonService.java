@@ -14,18 +14,14 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.config;
+package org.opencb.opencga.core.config;
 
 /**
- * Created by imedina on 22/05/16.
+ * Created by imedina on 16/03/16.
  */
-public class GrpcServerConfiguration extends AbstractServerConfiguration {
+public class DaemonService {
 
-    public GrpcServerConfiguration() {
-    }
-
-    public GrpcServerConfiguration(int port) {
-        super(port);
-    }
+    private int port;
+    private int sleepTime;
 
 }

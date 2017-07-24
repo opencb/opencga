@@ -24,7 +24,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.RollingFileAppender;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;

@@ -17,7 +17,7 @@
 package org.opencb.opencga.catalog.monitor.executors;
 
 import org.apache.tools.ant.types.Commandline;
-import org.opencb.opencga.catalog.config.Execution;
+import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.SgeManager;
 import org.opencb.opencga.core.exec.Command;

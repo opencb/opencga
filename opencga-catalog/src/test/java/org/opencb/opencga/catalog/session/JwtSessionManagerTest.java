@@ -19,7 +19,7 @@ package org.opencb.opencga.catalog.session;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogTokenException;
 

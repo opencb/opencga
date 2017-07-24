@@ -21,7 +21,7 @@ package org.opencb.opencga.app.cli.admin;
  */
 
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser.MetaCommandOptions;
-import org.opencb.opencga.catalog.config.Admin;
+import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 

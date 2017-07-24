@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.config;
+package org.opencb.opencga.core.config;
 
 /**
  * Created by imedina on 25/04/16.

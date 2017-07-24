@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.io;
 
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.UriUtils;
 import org.slf4j.Logger;

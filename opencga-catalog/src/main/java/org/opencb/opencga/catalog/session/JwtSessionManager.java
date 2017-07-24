@@ -25,7 +25,7 @@ import java.util.Collections;
 import java.util.Date;
 
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogTokenException;
 import org.opencb.opencga.catalog.models.Session;

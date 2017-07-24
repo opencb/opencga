@@ -14,31 +14,18 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.config;
+package org.opencb.opencga.core.config;
 
 /**
- * Created by pfurio on 07/04/16.
+ * Created by imedina on 22/05/16.
  */
-@Deprecated
-public class Policies {
+public class GrpcServerConfiguration extends AbstractServerConfiguration {
 
-    private UserCreation userCreation;
-
-    public Policies() {
-        this.userCreation = UserCreation.ALWAYS;
+    public GrpcServerConfiguration() {
     }
 
-    public UserCreation getUserCreation() {
-        return userCreation;
-    }
-
-    public Policies setUserCreation(UserCreation userCreation) {
-        this.userCreation = userCreation;
-        return this;
-    }
-
-    public enum UserCreation {
-        ONLY_ADMIN, ANY_LOGGED_USER, ALWAYS
+    public GrpcServerConfiguration(int port) {
+        super(port);
     }
 
 }

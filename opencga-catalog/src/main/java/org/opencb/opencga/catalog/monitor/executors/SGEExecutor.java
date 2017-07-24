@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.monitor.executors;
 
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.SgeManager;
 import org.slf4j.LoggerFactory;

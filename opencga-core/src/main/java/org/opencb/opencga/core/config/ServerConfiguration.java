@@ -14,43 +14,43 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.config;
+package org.opencb.opencga.core.config;
 
 /**
- * Created by pfurio on 01/02/17.
+ * Created by pfurio on 04/01/17.
  */
-public class Catalog {
+public class ServerConfiguration {
 
-    private long offset;
-    private CatalogDBCredentials database;
+    private RestServerConfiguration rest;
+    private GrpcServerConfiguration grpc;
 
-    public Catalog() {
+    public ServerConfiguration() {
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Catalog{");
-        sb.append("offset=").append(offset);
-        sb.append(", database=").append(database);
+        final StringBuilder sb = new StringBuilder("ServerConfiguration{");
+        sb.append("rest=").append(rest);
+        sb.append(", grpc=").append(grpc);
         sb.append('}');
         return sb.toString();
     }
 
-    public long getOffset() {
-        return offset;
+    public RestServerConfiguration getRest() {
+        return rest;
     }
 
-    public Catalog setOffset(long offset) {
-        this.offset = offset;
+    public ServerConfiguration setRest(RestServerConfiguration rest) {
+        this.rest = rest;
         return this;
     }
 
-    public CatalogDBCredentials getDatabase() {
-        return database;
+    public GrpcServerConfiguration getGrpc() {
+        return grpc;
     }
 
-    public Catalog setDatabase(CatalogDBCredentials database) {
-        this.database = database;
+    public ServerConfiguration setGrpc(GrpcServerConfiguration grpc) {
+        this.grpc = grpc;
         return this;
     }
 }

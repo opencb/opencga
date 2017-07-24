@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.monitor.executors;
 
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.core.config.Configuration;
 
 /**
  * Created by pfurio on 22/08/16.

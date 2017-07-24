@@ -14,14 +14,31 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.config;
+package org.opencb.opencga.core.config;
 
 /**
- * Created by imedina on 16/03/16.
+ * Created by pfurio on 07/04/16.
  */
-public class DaemonService {
+@Deprecated
+public class Policies {
 
-    private int port;
-    private int sleepTime;
+    private UserCreation userCreation;
+
+    public Policies() {
+        this.userCreation = UserCreation.ALWAYS;
+    }
+
+    public UserCreation getUserCreation() {
+        return userCreation;
+    }
+
+    public Policies setUserCreation(UserCreation userCreation) {
+        this.userCreation = userCreation;
+        return this;
+    }
+
+    public enum UserCreation {
+        ONLY_ADMIN, ANY_LOGGED_USER, ALWAYS
+    }
 
 }

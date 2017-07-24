@@ -20,7 +20,7 @@ package org.opencb.opencga.catalog.db.api;
  * Created by pfurio on 23/05/16.
  */
 
-import org.opencb.opencga.catalog.config.Admin;
+import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
 public interface MetaDBAdaptor {

@@ -17,7 +17,7 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.session.JwtSessionManager;
