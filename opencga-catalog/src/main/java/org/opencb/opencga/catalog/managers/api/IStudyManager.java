@@ -128,11 +128,11 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      */
     AbstractManager.MyResourceId getVariableSetId(String variableStr, @Nullable String studyStr, String sessionId) throws CatalogException;
 
-    QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique, String description,
+    QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique, Boolean confidential, String description,
                                                Map<String, Object> attributes, List<Variable> variables, String sessionId)
             throws CatalogException;
 
-    QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique, String description,
+    QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique, Boolean confidential, String description,
                                                Map<String, Object> attributes, Set<Variable> variables, String sessionId)
             throws CatalogException;
 

@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Study;
@@ -203,17 +204,38 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
     QueryResult<VariableSet> createVariableSet(long studyId, VariableSet variableSet) throws CatalogDBException;
 
-    QueryResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable) throws CatalogDBException;
+    QueryResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable, String user)
+            throws CatalogDBException, CatalogAuthorizationException;
 
-    QueryResult<VariableSet> renameFieldVariableSet(long variableSetId, String oldName, String newName) throws CatalogDBException;
+    QueryResult<VariableSet> renameFieldVariableSet(long variableSetId, String oldName, String newName, String user)
+            throws CatalogDBException, CatalogAuthorizationException;
 
-    QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name) throws CatalogDBException;
+    QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name, String user)
+            throws CatalogDBException, CatalogAuthorizationException;
 
     QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options) throws CatalogDBException;
 
+    /**
+     * Get variable set.
+     *
+     * @param variableSetId variable set id.
+     * @param options Query options.
+     * @param user User asking for the variable set.
+     * @param additionalPermission Additional permission to be checked apart from VIEW_VARIABLE_SET
+     * @return variableSet
+     * @throws CatalogDBException catalogDBException.
+     * @throws CatalogAuthorizationException if there is any permission error.
+     */
+    QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options, String user, String additionalPermission)
+            throws CatalogDBException, CatalogAuthorizationException;
+
     QueryResult<VariableSet> getVariableSets(Query query, QueryOptions queryOptions) throws CatalogDBException;
 
-    QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions) throws CatalogDBException;
+    QueryResult<VariableSet> getVariableSets(Query query, QueryOptions queryOptions, String user)
+            throws CatalogDBException, CatalogAuthorizationException;
+
+    QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions, String user)
+            throws CatalogDBException, CatalogAuthorizationException;
 
     long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException;
 

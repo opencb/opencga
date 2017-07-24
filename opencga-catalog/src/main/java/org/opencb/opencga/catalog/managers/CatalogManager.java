@@ -988,25 +988,6 @@ public class CatalogManager implements AutoCloseable {
     }
 
     /*
-     * VariableSet methods
-     * ***************************
-     */
-
-    public QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique,
-                                                      String description, Map<String, Object> attributes,
-                                                      List<Variable> variables, String sessionId)
-            throws CatalogException {
-        return studyManager.createVariableSet(studyId, name, unique, description, attributes, variables, sessionId);
-    }
-
-    public QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique,
-                                                      String description, Map<String, Object> attributes,
-                                                      Set<Variable> variables, String sessionId)
-            throws CatalogException {
-        return studyManager.createVariableSet(studyId, name, unique, description, attributes, variables, sessionId);
-    }
-
-    /*
      * Cohort methods
      * ***************************
      */

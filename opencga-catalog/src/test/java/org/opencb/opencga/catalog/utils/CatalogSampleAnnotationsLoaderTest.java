@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.utils;
 
-import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -108,7 +107,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         variables.add(new Variable("NonExistingField", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, null, "",
                 null, null));
 
-        VariableSet variableSet = new VariableSet(5, "", false, "", variables, 1, null);
+        VariableSet variableSet = new VariableSet(5, "", false, false, "", variables, 1, null);
 
         validate(pedigree, variableSet);
     }

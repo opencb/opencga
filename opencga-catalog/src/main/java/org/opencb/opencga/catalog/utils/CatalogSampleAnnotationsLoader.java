@@ -97,8 +97,8 @@ public class CatalogSampleAnnotationsLoader {
         //Add VariableSet (if needed)
         if (variableSetId == null) {
             auxTime = System.currentTimeMillis();
-            variableSet = catalogManager.createVariableSet(studyId, pedFile.getName(), true,
-                    "Auto-generated VariableSet from File = {id: " + pedFile.getId() + ", name: \"" + pedFile.getName() + "\"}",
+            variableSet = catalogManager.getStudyManager().createVariableSet(studyId, pedFile.getName(), true, false,
+                    "Auto-generated  VariableSet from File = {id: " + pedFile.getId() + ", name: \"" + pedFile.getName() + "\"}",
                     null, variableSet.getVariables(), sessionId).getResult().get(0);
             variableSetId = variableSet.getId();
             logger.debug("Added VariableSet = {id: {}} in {}ms", variableSetId, System.currentTimeMillis() - auxTime);
@@ -294,7 +294,7 @@ public class CatalogSampleAnnotationsLoader {
                     variableList.size(), null, "", null, null));
         }
 
-        VariableSet variableSet = new VariableSet(-1, "", false, "", new HashSet(variableList), 1, null);
+        VariableSet variableSet = new VariableSet(-1, "", false, false, "", new HashSet(variableList), 1, null);
         return variableSet;
     }
 

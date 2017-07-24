@@ -27,6 +27,7 @@ public class VariableSet {
     private long id;
     private String name;
     private boolean unique;
+    private boolean confidential;
     private String description;
     private Set<Variable> variables;
 
@@ -36,11 +37,12 @@ public class VariableSet {
     public VariableSet() {
     }
 
-    public VariableSet(long id, String name, boolean unique, String description, Set<Variable> variables, int release,
+    public VariableSet(long id, String name, boolean unique, boolean confidential, String description, Set<Variable> variables, int release,
                        Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.unique = unique;
+        this.confidential = confidential;
         this.description = description;
         this.release = release;
         this.attributes = attributes;
@@ -53,6 +55,7 @@ public class VariableSet {
         sb.append("id=").append(id);
         sb.append(", name='").append(name).append('\'');
         sb.append(", unique=").append(unique);
+        sb.append(", confidential=").append(confidential);
         sb.append(", description='").append(description).append('\'');
         sb.append(", variables=").append(variables);
         sb.append(", release=").append(release);
@@ -85,6 +88,15 @@ public class VariableSet {
 
     public VariableSet setUnique(boolean unique) {
         this.unique = unique;
+        return this;
+    }
+
+    public boolean isConfidential() {
+        return confidential;
+    }
+
+    public VariableSet setConfidential(boolean confidential) {
+        this.confidential = confidential;
         return this;
     }
 

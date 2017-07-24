@@ -28,6 +28,7 @@ public class VariableSetSummary {
     private List<VariableSummary> samples;
     private List<VariableSummary> individuals;
     private List<VariableSummary> cohorts;
+    private List<VariableSummary> families;
 
     public VariableSetSummary() {
         this(0L, "", Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
@@ -88,6 +89,15 @@ public class VariableSetSummary {
 
     public VariableSetSummary setCohorts(List<VariableSummary> cohorts) {
         this.cohorts = cohorts;
+        return this;
+    }
+
+    public List<VariableSummary> getFamilies() {
+        return families;
+    }
+
+    public VariableSetSummary setFamilies(List<VariableSummary> families) {
+        this.families = families;
         return this;
     }
 }

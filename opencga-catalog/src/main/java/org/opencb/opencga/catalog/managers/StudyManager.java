@@ -402,13 +402,6 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         return new MyResourceId(userId, studyId, variableSetId);
     }
 
-
-//    private boolean memberExists(long studyId, String member) throws CatalogException {
-//        QueryResult<StudyAclEntry> acl = authorizationManager.getAcl(studyId, Arrays.asList(member),
-//                MongoDBAdaptorFactory.STUDY_COLLECTION);
-//        return acl.getNumResults() > 0;
-//    }
-
     @Override
     public QueryResult<Study> get(Long studyId, QueryOptions options, String sessionId) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -1043,10 +1036,8 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         MyResourceId resource = getVariableSetId(variableSetStr, studyStr, sessionId);
 
         String userId = resource.getUser();
-        long studyId = resource.getStudyId();
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET);
 
-        QueryResult<VariableSet> variableSet = studyDBAdaptor.getVariableSet(resource.getResourceId(), new QueryOptions());
+        QueryResult<VariableSet> variableSet = studyDBAdaptor.getVariableSet(resource.getResourceId(), new QueryOptions(), userId, null);
         if (variableSet.getNumResults() == 0) {
             logger.error("getVariableSetSummary: Could not find variable set id {}. {} results returned", variableSetStr,
                     variableSet.getNumResults());
@@ -1069,6 +1060,10 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         dbTime += annotationSummary.getDbTime();
         variableSetSummary.setIndividuals(annotationSummary.getResult());
 
+        annotationSummary = familyDBAdaptor.getAnnotationSummary(resource.getResourceId());
+        dbTime += annotationSummary.getDbTime();
+        variableSetSummary.setFamilies(annotationSummary.getResult());
+
         return new QueryResult<>("Variable set summary", dbTime, 1, 1, "", "", Arrays.asList(variableSetSummary));
     }
 
@@ -1077,7 +1072,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
      */
 
     @Override
-    public QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique, String description,
+    public QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique, Boolean confidential, String description,
                                                       Map<String, Object> attributes, List<Variable> variables, String sessionId)
             throws CatalogException {
 
@@ -1086,11 +1081,11 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         if (variables.size() != variablesSet.size()) {
             throw new CatalogException("Error. Repeated variables");
         }
-        return createVariableSet(studyId, name, unique, description, attributes, variablesSet, sessionId);
+        return createVariableSet(studyId, name, unique, confidential, description, attributes, variablesSet, sessionId);
     }
 
     @Override
-    public QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique, String description,
+    public QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique, Boolean confidential, String description,
                                                       Map<String, Object> attributes, Set<Variable> variables, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(name, "name");
@@ -1098,6 +1093,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         String userId = catalogManager.getUserManager().getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET);
         unique = ParamUtils.defaultObject(unique, true);
+        confidential = ParamUtils.defaultObject(confidential, false);
         description = ParamUtils.defaultString(description, "");
         attributes = ParamUtils.defaultObject(attributes, new HashMap<String, Object>());
 
@@ -1113,7 +1109,8 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 //            variable.setRank(defaultString(variable.getDescription(), ""));
         }
 
-        VariableSet variableSet = new VariableSet(-1, name, unique, description, variables, getCurrentRelease(studyId), attributes);
+        VariableSet variableSet = new VariableSet(-1, name, unique, confidential, description, variables, getCurrentRelease(studyId),
+                attributes);
         CatalogAnnotationsValidator.checkVariableSet(variableSet);
 
         QueryResult<VariableSet> queryResult = studyDBAdaptor.createVariableSet(studyId, variableSet);
@@ -1128,9 +1125,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         MyResourceId resourceId = getVariableSetId(variableSet, studyStr, sessionId);
-        authorizationManager.checkStudyPermission(resourceId.getStudyId(), resourceId.getUser(),
-                StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET);
-        return studyDBAdaptor.getVariableSet(resourceId.getResourceId(), options);
+        return studyDBAdaptor.getVariableSet(resourceId.getResourceId(), options, resourceId.getUser(), null);
     }
 
     @Override
@@ -1138,7 +1133,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             throws CatalogException {
         String userId = catalogManager.getUserManager().getId(sessionId);
         long studyId = getId(userId, studyStr);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET);
+//        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         query = ParamUtils.defaultObject(query, Query::new);
         if (query.containsKey(StudyDBAdaptor.VariableSetParams.ID.key())) {
@@ -1148,17 +1143,17 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             query.put(StudyDBAdaptor.VariableSetParams.ID.key(), resource.getResourceId());
         }
         query.put(StudyDBAdaptor.VariableSetParams.STUDY_ID.key(), studyId);
-        return studyDBAdaptor.getVariableSets(query, options);
+        return studyDBAdaptor.getVariableSets(query, options, userId);
     }
 
     @Override
     public QueryResult<VariableSet> deleteVariableSet(String studyStr, String variableSetStr, String sessionId) throws CatalogException {
         MyResourceId resource = getVariableSetId(variableSetStr, studyStr, sessionId);
-        long studyId = resource.getStudyId();
+//        long studyId = resource.getStudyId();
         String userId = resource.getUser();
 
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.DELETE_VARIABLE_SET);
-        QueryResult<VariableSet> queryResult = studyDBAdaptor.deleteVariableSet(resource.getResourceId(), QueryOptions.empty());
+//        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.DELETE_VARIABLE_SET);
+        QueryResult<VariableSet> queryResult = studyDBAdaptor.deleteVariableSet(resource.getResourceId(), QueryOptions.empty(), userId);
         auditManager.recordDeletion(AuditRecord.Resource.variableSet, resource.getResourceId(), userId, queryResult.first(), null, null);
         return queryResult;
     }
@@ -1168,10 +1163,10 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             throws CatalogException {
         MyResourceId resource = getVariableSetId(variableSetStr, studyStr, sessionId);
         String userId = resource.getUser();
-        long studyId = resource.getStudyId();
+//        long studyId = resource.getStudyId();
 
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET);
-        QueryResult<VariableSet> queryResult = studyDBAdaptor.addFieldToVariableSet(resource.getResourceId(), variable);
+//        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET);
+        QueryResult<VariableSet> queryResult = studyDBAdaptor.addFieldToVariableSet(resource.getResourceId(), variable, userId);
         auditManager.recordDeletion(AuditRecord.Resource.variableSet, resource.getResourceId(), userId, queryResult.first(), null, null);
         return queryResult;
     }
@@ -1181,10 +1176,10 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             throws CatalogException {
         MyResourceId resource = getVariableSetId(variableSetStr, studyStr, sessionId);
         String userId = resource.getUser();
-        long studyId = resource.getStudyId();
+//        long studyId = resource.getStudyId();
 
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET);
-        QueryResult<VariableSet> queryResult = studyDBAdaptor.removeFieldFromVariableSet(resource.getResourceId(), name);
+//        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET);
+        QueryResult<VariableSet> queryResult = studyDBAdaptor.removeFieldFromVariableSet(resource.getResourceId(), name, userId);
         auditManager.recordDeletion(AuditRecord.Resource.variableSet, resource.getResourceId(), userId, queryResult.first(), null, null);
         return queryResult;
     }
@@ -1194,10 +1189,10 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                                                                String sessionId) throws CatalogException {
         MyResourceId resource = getVariableSetId(variableSetStr, studyStr, sessionId);
         String userId = resource.getUser();
-        long studyId = resource.getStudyId();
+//        long studyId = resource.getStudyId();
 
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET);
-        QueryResult<VariableSet> queryResult = studyDBAdaptor.renameFieldVariableSet(resource.getResourceId(), oldName, newName);
+//        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET);
+        QueryResult<VariableSet> queryResult = studyDBAdaptor.renameFieldVariableSet(resource.getResourceId(), oldName, newName, userId);
         auditManager.recordDeletion(AuditRecord.Resource.variableSet, resource.getResourceId(), userId, queryResult.first(), null, null);
         return queryResult;
     }

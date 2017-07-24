@@ -72,6 +72,7 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         VIEW_VARIABLE_SET,
         WRITE_VARIABLE_SET,
         DELETE_VARIABLE_SET,
+        CONFIDENTIAL_VARIABLE_SET_ACCESS,
 
         // FILES
         WRITE_FILES(FileAclEntry.FilePermissions.WRITE.name(), FILE),
