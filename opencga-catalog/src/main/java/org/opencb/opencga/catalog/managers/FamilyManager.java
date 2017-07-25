@@ -548,9 +548,15 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         MyResourceId variableSetResource = catalogManager.getStudyManager().getVariableSetId(variableSetId,
                 Long.toString(resourceId.getStudyId()), sessionId);
 
-        VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null).first();
+        QueryResult<VariableSet> variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null,
+                resourceId.getUser(), null);
+        if (variableSet.getNumResults() == 0) {
+            // Variable set must be confidential and the user does not have those permissions
+            throw new CatalogAuthorizationException("Permission denied: User " + resourceId.getUser() + " cannot create annotations over "
+                    + "that variable set");
+        }
 
-        QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(resourceId.getResourceId(), variableSet,
+        QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(resourceId.getResourceId(), variableSet.first(),
                 annotationSetName, annotations, catalogManager.getStudyManager().getCurrentRelease(resourceId.getStudyId()), attributes,
                 familyDBAdaptor);
 
@@ -604,8 +610,7 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
 
         // Update the annotation
         QueryResult<AnnotationSet> queryResult =
-                AnnotationManager.updateAnnotationSet(resourceId.getResourceId(), annotationSetName, newAnnotations, familyDBAdaptor,
-                        studyDBAdaptor);
+                AnnotationManager.updateAnnotationSet(resourceId, annotationSetName, newAnnotations, familyDBAdaptor, studyDBAdaptor);
 
         if (queryResult == null || queryResult.getNumResults() == 0) {
             throw new CatalogException("There was an error with the update");
@@ -639,6 +644,8 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
             throw new CatalogException("Could not delete annotation set. The annotation set with name " + annotationSetName + " could not "
                     + "be found in the database.");
         }
+        // We make this query because it will check the proper permissions in case the variable set is confidential
+        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resourceId.getUser(), null);
 
         familyDBAdaptor.deleteAnnotationSet(resourceId.getResourceId(), annotationSetName);
 

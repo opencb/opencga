@@ -27,10 +27,7 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -787,14 +784,19 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         MyResourceId resourceId = catalogManager.getSampleManager().getId(id, studyStr, sessionId);
-//        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
-//                SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS);
+        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
+                SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS);
         MyResourceId variableSetResource = catalogManager.getStudyManager().getVariableSetId(variableSetId,
                 Long.toString(resourceId.getStudyId()), sessionId);
-        VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null, resourceId.getUser(), null)
-                .first();
+        QueryResult<VariableSet> variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null,
+                resourceId.getUser(), null);
+        if (variableSet.getNumResults() == 0) {
+            // Variable set must be confidential and the user does not have those permissions
+            throw new CatalogAuthorizationException("Permission denied: User " + resourceId.getUser() + " cannot create annotations over "
+                    + "that variable set");
+        }
 
-        QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(resourceId.getResourceId(), variableSet,
+        QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(resourceId.getResourceId(), variableSet.first(),
                 annotationSetName, annotations, catalogManager.getStudyManager().getCurrentRelease(resourceId.getStudyId()), attributes,
                 sampleDBAdaptor);
 
@@ -848,8 +850,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         // Update the annotation
         QueryResult<AnnotationSet> queryResult =
-                AnnotationManager.updateAnnotationSet(resourceId.getResourceId(), annotationSetName, newAnnotations, sampleDBAdaptor,
-                        studyDBAdaptor);
+                AnnotationManager.updateAnnotationSet(resourceId, annotationSetName, newAnnotations, sampleDBAdaptor, studyDBAdaptor);
 
         if (queryResult == null || queryResult.getNumResults() == 0) {
             throw new CatalogException("There was an error with the update");
@@ -883,6 +884,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             throw new CatalogException("Could not delete annotation set. The annotation set with name " + annotationSetName + " could not "
                     + "be found in the database.");
         }
+        // We make this query because it will check the proper permissions in case the variable set is confidential
+        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resourceId.getUser(), null);
 
         sampleDBAdaptor.deleteAnnotationSet(resourceId.getResourceId(), annotationSetName);
 

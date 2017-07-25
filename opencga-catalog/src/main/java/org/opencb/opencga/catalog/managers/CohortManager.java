@@ -561,10 +561,15 @@ public class CohortManager extends AbstractManager implements ICohortManager {
                 CohortAclEntry.CohortPermissions.WRITE_ANNOTATIONS);
         MyResourceId variableSetResource = catalogManager.getStudyManager().getVariableSetId(variableSetId,
                 Long.toString(resource.getStudyId()), sessionId);
+        QueryResult<VariableSet> variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null,
+                resource.getUser(), null);
+        if (variableSet.getNumResults() == 0) {
+            // Variable set must be confidential and the user does not have those permissions
+            throw new CatalogAuthorizationException("Permission denied: User " + resource.getUser() + " cannot create annotations over "
+                    + "that variable set");
+        }
 
-        VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null).first();
-
-        QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(resource.getResourceId(), variableSet,
+        QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(resource.getResourceId(), variableSet.first(),
                 annotationSetName, annotations, catalogManager.getStudyManager().getCurrentRelease(resource.getStudyId()), attributes,
                 cohortDBAdaptor);
 
@@ -637,7 +642,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
 
         // Update the annotation
         QueryResult<AnnotationSet> queryResult =
-                AnnotationManager.updateAnnotationSet(cohortId, annotationSetName, newAnnotations, cohortDBAdaptor, studyDBAdaptor);
+                AnnotationManager.updateAnnotationSet(resource, annotationSetName, newAnnotations, cohortDBAdaptor, studyDBAdaptor);
 
         if (queryResult == null || queryResult.getNumResults() == 0) {
             throw new CatalogException("There was an error with the update");
@@ -672,6 +677,8 @@ public class CohortManager extends AbstractManager implements ICohortManager {
             throw new CatalogException("Could not delete annotation set. The annotation set with name " + annotationSetName + " could not "
                     + "be found in the database.");
         }
+        // We make this query because it will check the proper permissions in case the variable set is confidential
+        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resource.getUser(), null);
 
         cohortDBAdaptor.deleteAnnotationSet(cohortId, annotationSetName);
 
