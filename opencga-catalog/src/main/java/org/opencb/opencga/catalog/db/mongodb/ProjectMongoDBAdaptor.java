@@ -332,11 +332,12 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             // we check if any study matches the query. If that's the case, the user does not have proper permissions. Otherwise, he might
             // be the owner...
             if (dbAdaptorFactory.getCatalogStudyDBAdaptor().count(studyQuery).first() == 0) {
-                if (StringUtils.isEmpty(query.getString(QueryParams.USER_ID.key()))
-                        || !user.equals(query.getString(QueryParams.USER_ID.key()))) {
+                if (!StringUtils.isEmpty(query.getString(QueryParams.USER_ID.key()))
+                        && !user.equals(query.getString(QueryParams.USER_ID.key()))) {
                     // User does not have proper permissions
                     return new QueryResult<>("Get project", -1, 0, -1, "", "", new ArrayList<>());
                 }
+                query.put(QueryParams.USER_ID.key(), user);
             } else {
                 // User does not have proper permissions
                 return new QueryResult<>("Get project", -1, 0, -1, "", "", new ArrayList<>());

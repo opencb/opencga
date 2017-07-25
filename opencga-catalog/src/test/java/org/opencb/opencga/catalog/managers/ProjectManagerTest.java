@@ -88,6 +88,12 @@ public class ProjectManagerTest extends GenericTest {
     }
 
     @Test
+    public void getOwnProjectNoStudies() throws CatalogException {
+        QueryResult<Project> projectQueryResult = catalogManager.getProjectManager().get(project3, null, sessionIdUser3);
+        assertEquals(1, projectQueryResult.getNumResults());
+    }
+
+    @Test
     public void getSharedProjects() throws CatalogException {
         QueryResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(0, queryResult.getNumResults());
