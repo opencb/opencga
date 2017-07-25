@@ -898,8 +898,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkParameter(id, "id");
 
         AbstractManager.MyResourceId resourceId = getId(id, studyStr, sessionId);
-        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
-                SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
+//        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
+//                SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
 
 
         long variableSetId = -1;
@@ -908,7 +908,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                     .getVariableSetId(variableSetStr, Long.toString(resourceId.getStudyId()), sessionId).getResourceId();
         }
 
-        return sampleDBAdaptor.searchAnnotationSetAsMap(resourceId.getResourceId(), variableSetId, annotation);
+        return sampleDBAdaptor.searchAnnotationSetAsMap(resourceId, variableSetId, annotation,
+                StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.toString());
     }
 
     @Override
@@ -917,8 +918,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkParameter(id, "id");
 
         AbstractManager.MyResourceId resourceId = getId(id, studyStr, sessionId);
-        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
-                SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
+//        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
+//                SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
 
 
         long variableSetId = -1;
@@ -927,6 +928,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                     .getVariableSetId(variableSetStr, Long.toString(resourceId.getStudyId()), sessionId).getResourceId();
         }
 
-        return sampleDBAdaptor.searchAnnotationSet(resourceId.getResourceId(), variableSetId, annotation);
+        return sampleDBAdaptor.searchAnnotationSet(resourceId, variableSetId, annotation,
+                StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.toString());
     }
 }

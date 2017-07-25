@@ -1174,14 +1174,15 @@ public class CatalogManagerTest extends GenericTest {
 
         HashMap<String, Object> annotations = new HashMap<>();
         annotations.put("NAME", "Luke");
-        QueryResult<AnnotationSet> annotationSetQueryResult = catalogManager.getIndividualManager().updateAnnotationSet(Long.toString
-                (individualId), null, "annotation1", annotations, sessionIdUser);
+        QueryResult<AnnotationSet> annotationSetQueryResult = catalogManager.getIndividualManager().createAnnotationSet(
+                Long.toString(individualId), null, Long.toString(vs1.getId()), "annotation1", annotations, null, sessionIdUser);
         assertEquals(1, annotationSetQueryResult.getNumResults());
 
         annotations.put("NAME", "Lucas");
         thrown.expect(CatalogException.class);
         thrown.expectMessage("unique");
-        catalogManager.getIndividualManager().updateAnnotationSet(Long.toString(individualId), null, "annotation2", annotations, sessionIdUser);
+        catalogManager.getIndividualManager().createAnnotationSet(Long.toString(individualId), null, Long.toString(vs1.getId()),
+                "annotation2", annotations, null, sessionIdUser);
     }
 
     @Test
@@ -1906,12 +1907,13 @@ public class CatalogManagerTest extends GenericTest {
         long individualId3 = catalogManager.createIndividual(studyId, "INDIVIDUAL_3", "", -1, -1, null, new QueryOptions(), sessionIdUser)
                 .first().getId();
 
-        catalogManager.getIndividualManager().updateAnnotationSet(Long.toString(individualId1), null, "annot1", new ObjectMap("NAME", "INDIVIDUAL_1").append
-                ("AGE", 5).append("PHEN", "CASE").append("ALIVE", true), sessionIdUser);
-        catalogManager.getIndividualManager().updateAnnotationSet(Long.toString(individualId2), null, "annot1", new ObjectMap("NAME", "INDIVIDUAL_2").append
-                ("AGE", 15).append("PHEN", "CONTROL").append("ALIVE", true), sessionIdUser);
-        catalogManager.getIndividualManager().updateAnnotationSet(Long.toString(individualId3), null, "annot1", new ObjectMap("NAME", "INDIVIDUAL_3").append
-                ("AGE", 25).append("PHEN", "CASE").append("ALIVE", true), sessionIdUser);
+        catalogManager.getIndividualManager().createAnnotationSet(Long.toString(individualId1), null, Long.toString(variableSet.getId()),
+                "annot1", new ObjectMap("NAME", "INDIVIDUAL_1").append("AGE", 5).append("PHEN", "CASE").append("ALIVE", true),
+                null, sessionIdUser);
+        catalogManager.getIndividualManager().createAnnotationSet(Long.toString(individualId2), null, Long.toString(variableSet.getId()), "annot1", new ObjectMap("NAME", "INDIVIDUAL_2").append
+                ("AGE", 15).append("PHEN", "CONTROL").append("ALIVE", true), null, sessionIdUser);
+        catalogManager.getIndividualManager().createAnnotationSet(Long.toString(individualId3), null, Long.toString(variableSet.getId()), "annot1", new ObjectMap("NAME", "INDIVIDUAL_3").append
+                ("AGE", 25).append("PHEN", "CASE").append("ALIVE", true), null, sessionIdUser);
 
         List<String> individuals;
         individuals = catalogManager.getAllIndividuals(studyId, new Query(IndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),

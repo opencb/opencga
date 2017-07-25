@@ -943,10 +943,9 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     public QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, String variableSetStr,
                                                            @Nullable String annotation, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
-
         MyResourceId resource = getId(id, studyStr, sessionId);
-        authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
-                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
+//        authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
+//                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
 
         long variableSetId = -1;
         if (StringUtils.isNotEmpty(variableSetStr)) {
@@ -954,7 +953,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                     sessionId).getResourceId();
         }
 
-        return individualDBAdaptor.searchAnnotationSetAsMap(resource.getResourceId(), variableSetId, annotation);
+        return individualDBAdaptor.searchAnnotationSetAsMap(resource, variableSetId, annotation,
+                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.toString());
     }
 
     @Override
@@ -963,8 +963,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         ParamUtils.checkParameter(id, "id");
 
         MyResourceId resource = getId(id, studyStr, sessionId);
-        authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
-                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
+//        authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
+//                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
 
         long variableSetId = -1;
         if (StringUtils.isNotEmpty(variableSetStr)) {
@@ -972,7 +972,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                     sessionId).getResourceId();
         }
 
-        return individualDBAdaptor.searchAnnotationSet(resource.getResourceId(), variableSetId, annotation);
+        return individualDBAdaptor.searchAnnotationSet(resource, variableSetId, annotation,
+                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.toString());
     }
 
 }

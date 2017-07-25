@@ -24,7 +24,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
@@ -43,6 +42,7 @@ import org.opencb.opencga.catalog.utils.AnnotationManager;
 import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -687,8 +687,8 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         ParamUtils.checkParameter(id, "id");
 
         MyResourceId resource = getId(id, studyStr, sessionId);
-        authorizationManager.checkCohortPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
-                CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS);
+//        authorizationManager.checkCohortPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
+//                CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS);
 
         long variableSetId = -1;
         if (StringUtils.isNotEmpty(variableSetStr)) {
@@ -696,7 +696,8 @@ public class CohortManager extends AbstractManager implements ICohortManager {
                     sessionId).getResourceId();
         }
 
-        return cohortDBAdaptor.searchAnnotationSetAsMap(resource.getResourceId(), variableSetId, annotation);
+        return cohortDBAdaptor.searchAnnotationSetAsMap(resource, variableSetId, annotation,
+                StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.toString());
     }
 
     @Override
@@ -705,8 +706,8 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         ParamUtils.checkParameter(id, "id");
 
         MyResourceId resource = getId(id, studyStr, sessionId);
-        authorizationManager.checkCohortPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
-                CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS);
+//        authorizationManager.checkCohortPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
+//                CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS);
 
         long variableSetId = -1;
         if (StringUtils.isNotEmpty(variableSetStr)) {
@@ -714,6 +715,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
                     sessionId).getResourceId();
         }
 
-        return cohortDBAdaptor.searchAnnotationSet(resource.getResourceId(), variableSetId, annotation);
+        return cohortDBAdaptor.searchAnnotationSet(resource, variableSetId, annotation,
+                StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.toString());
     }
 }

@@ -68,24 +68,30 @@ public interface AnnotationSetDBAdaptor<T> extends DBAdaptor<T> {
     /**
      * Obtains all the annotation sets matching the parameters provided.
      *
-     * @param id id of the entity where the annotations are stored.
+     * @param resource resource of the entity where the annotations are stored.
      * @param variableSetId Variable set id.
      * @param annotation Annotations that will be queried.
+     * @param studyPermission study permission.
      * @return a queryResult containing the mathching annotation sets.
      * @throws CatalogDBException when the annotation set could not be retrieved due to a database error.
+     * @throws CatalogAuthorizationException if the user does not have proper permissions.
      */
-    QueryResult<AnnotationSet> searchAnnotationSet(long id, long variableSetId, @Nullable String annotation) throws CatalogDBException;
+    QueryResult<AnnotationSet> searchAnnotationSet(AbstractManager.MyResourceId resource, long variableSetId, @Nullable String annotation,
+                                                   String studyPermission) throws CatalogDBException, CatalogAuthorizationException;
 
     /**
      * Obtains all the annotation sets matching the parameters provided.
      *
-     * @param id id of the entity where the annotations are stored.
+     * @param resource resource of the entity where the annotations are stored.
      * @param variableSetId Variable set id.
      * @param annotation Annotations that will be queried.
+     * @param studyPermission study permission.
      * @return a queryResult containing the mathching annotation sets.
      * @throws CatalogDBException when the annotation set could not be retrieved due to a database error.
+     * @throws CatalogAuthorizationException if the user does not have proper permissions.
      */
-    QueryResult<ObjectMap> searchAnnotationSetAsMap(long id, long variableSetId, @Nullable String annotation) throws CatalogDBException;
+    QueryResult<ObjectMap> searchAnnotationSetAsMap(AbstractManager.MyResourceId resource, long variableSetId, @Nullable String annotation,
+                                                    String studyPermission) throws CatalogDBException, CatalogAuthorizationException;
 
     /**
      * Obtains all the annotation sets from id or just the one matching with the annotationSetName if provided.

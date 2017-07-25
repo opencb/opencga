@@ -24,7 +24,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
@@ -42,6 +41,7 @@ import org.opencb.opencga.catalog.utils.AnnotationManager;
 import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -654,8 +654,8 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         ParamUtils.checkParameter(id, "id");
 
         AbstractManager.MyResourceId resourceId = getId(id, studyStr, sessionId);
-        authorizationManager.checkFamilyPermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
-                FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS);
+//        authorizationManager.checkFamilyPermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
+//                FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS);
 
         long variableSetId = -1;
         if (StringUtils.isNotEmpty(variableSetStr)) {
@@ -663,7 +663,8 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
                     sessionId).getResourceId();
         }
 
-        return familyDBAdaptor.searchAnnotationSetAsMap(resourceId.getResourceId(), variableSetId, annotation);
+        return familyDBAdaptor.searchAnnotationSetAsMap(resourceId, variableSetId, annotation,
+                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
     }
 
     @Override
@@ -672,8 +673,8 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         ParamUtils.checkParameter(id, "id");
 
         AbstractManager.MyResourceId resourceId = getId(id, studyStr, sessionId);
-        authorizationManager.checkFamilyPermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
-                FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS);
+//        authorizationManager.checkFamilyPermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
+//                FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS);
 
         long variableSetId = -1;
         if (StringUtils.isNotEmpty(variableSetStr)) {
@@ -681,7 +682,8 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
                     sessionId).getResourceId();
         }
 
-        return familyDBAdaptor.searchAnnotationSet(resourceId.getResourceId(), variableSetId, annotation);
+        return familyDBAdaptor.searchAnnotationSet(resourceId, variableSetId, annotation,
+                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
     }
 
     private MyResourceId commonGetAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {

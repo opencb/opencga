@@ -33,6 +33,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.models.summaries.FeatureCount;
 import org.opencb.opencga.catalog.models.summaries.VariableSummary;
 import org.slf4j.Logger;
@@ -50,6 +51,8 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.fixAnnotationQu
  * Created by pfurio on 07/07/16.
  */
 abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
+
+    private static final String VARIABLE_SETS = "variableSets";
 
     AnnotationMongoDBAdaptor(Logger logger) {
         super(logger);
@@ -145,11 +148,12 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         return endQuery("Create annotation set", startTime, getAnnotationSet(id, annotationSet.getName()));
     }
 
-    public QueryResult<AnnotationSet> searchAnnotationSet(long id, long variableSetId, @Nullable String annotation)
-            throws CatalogDBException {
+    public QueryResult<AnnotationSet> searchAnnotationSet(AbstractManager.MyResourceId resource, long variableSetId,
+                                                          @Nullable String annotation, String studyPermission)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
-        QueryResult<? extends Annotable> aggregate = baseSearchAnnotationSet(id, variableSetId, annotation);
+        QueryResult<? extends Annotable> aggregate = baseSearchAnnotationSet(resource, variableSetId, annotation, studyPermission);
         List<AnnotationSet> annotationSets = new ArrayList<>(aggregate.getNumResults());
         for (Annotable annotable : aggregate.getResult()) {
             annotationSets.add((AnnotationSet) annotable.getAnnotationSets().get(0));
@@ -158,11 +162,12 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         return endQuery("Search annotation set", startTime, annotationSets);
     }
 
-    public QueryResult<ObjectMap> searchAnnotationSetAsMap(long id, long variableSetId, @Nullable String annotation)
-            throws CatalogDBException {
+    public QueryResult<ObjectMap> searchAnnotationSetAsMap(AbstractManager.MyResourceId resource, long variableSetId,
+                                                           @Nullable String annotation, String studyPermission)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
-        QueryResult<? extends Annotable> aggregate = baseSearchAnnotationSet(id, variableSetId, annotation);
+        QueryResult<? extends Annotable> aggregate = baseSearchAnnotationSet(resource, variableSetId, annotation, studyPermission);
         List<ObjectMap> annotationSets = new ArrayList<>(aggregate.getNumResults());
         for (Annotable annotable : aggregate.getResult()) {
             annotationSets.add((ObjectMap) annotable.getAnnotationSetAsMap().get(0));
@@ -171,8 +176,9 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         return endQuery("Search annotation set", startTime, annotationSets);
     }
 
-    private QueryResult<? extends Annotable> baseSearchAnnotationSet(long id, long variableSetId, @Nullable String annotation)
-            throws CatalogDBException {
+    private QueryResult<? extends Annotable> baseSearchAnnotationSet(AbstractManager.MyResourceId resource, long variableSetId,
+                                                                     @Nullable String annotation, String studyPermission)
+            throws CatalogDBException, CatalogAuthorizationException {
         Map<String, Variable> variableMap = null;
         Document filter = new Document();
 
@@ -192,7 +198,7 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
             }
         }
 
-        return commonGetAnnotationSet(id, filter, null);
+        return commonGetAnnotationSet(resource, filter, null, studyPermission);
     }
 
     private Document createAnnotationQueryFilter(Query query, Map<String, Variable> variableMap) throws CatalogDBException {
@@ -372,19 +378,31 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         QueryResult<? extends Annotable> results = getCollection().aggregate(aggregation, getConverter(), null);
 
         if (results.getNumResults() > 0) {
-            // Now we get all the variable sets from the study. We will only get the ones the user has access to.
-            QueryResult<VariableSet> variableSets = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSets(
-                    new Query(StudyDBAdaptor.VariableSetParams.STUDY_ID.key(), resource.getStudyId()), new QueryOptions(),
-                    resource.getUser());
-            Set<Long> accessibleVariableSets = variableSets.getResult().stream().map(VariableSet::getId).collect(Collectors.toSet());
+            // Check if the user has the CONFIDENTIAL PERMISSION
+            boolean confidential = checkStudyPermission(queryResult.first(), resource.getUser(),
+                            StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString());
+            if (!confidential) {
+                // If the user does not have the confidential permission, we will have to remove those annotation sets coming from
+                // confidential variable sets
+                List<Document> variableSets = (List<Document>) queryResult.first().get(VARIABLE_SETS);
+                Set<Long> confidentialVariableSets = new HashSet<>();
+                for (Document variableSet : variableSets) {
+                    if (variableSet.getBoolean("confidential")) {
+                        confidentialVariableSets.add(variableSet.getLong("id"));
+                    }
+                }
 
-            // And filter out those annotations whose variable sets have not been returned (no access because they must be secret)
-            for (Annotable annotable : results.getResult()) {
-                Iterator<AnnotationSet> iterator = annotable.getAnnotationSets().iterator();
-                while (iterator.hasNext()) {
-                    AnnotationSet next = iterator.next();
-                    if (!accessibleVariableSets.contains(next.getVariableSetId())) {
-                        iterator.remove();
+                if (confidentialVariableSets.size() > 0) {
+                    // The study contains confidential variable sets so we do have to check if any of the annotations come from
+                    // confidential variable sets
+                    for (Annotable annotable : results.getResult()) {
+                        Iterator<AnnotationSet> iterator = annotable.getAnnotationSets().iterator();
+                        while (iterator.hasNext()) {
+                            AnnotationSet annotationSet = iterator.next();
+                            if (confidentialVariableSets.contains(annotationSet.getVariableSetId())) {
+                                iterator.remove();
+                            }
+                        }
                     }
                 }
             }
