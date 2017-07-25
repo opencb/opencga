@@ -952,17 +952,8 @@ public class CatalogManager implements AutoCloseable {
                                                      Map<String, Object> annotations,
                                                      Map<String, Object> attributes,
                                                      String sessionId) throws CatalogException {
-        return annotateSample(sampleId, id, variableSetId, annotations, attributes, true, sessionId);
-    }
-
-    @Deprecated
-    public QueryResult<AnnotationSet> annotateSample(long sampleId, String annotationSetName, long variableSetId,
-                                                     Map<String, Object> annotations,
-                                                     Map<String, Object> attributes,
-                                                     boolean checkAnnotationSet,
-                                                     String sessionId)
-            throws CatalogException {
-        return sampleManager.annotate(sampleId, annotationSetName, variableSetId, annotations, attributes, checkAnnotationSet, sessionId);
+        return getSampleManager().createAnnotationSet(Long.toString(sampleId), null, Long.toString(variableSetId), id, annotations,
+                attributes, sessionId);
     }
 
     @Deprecated

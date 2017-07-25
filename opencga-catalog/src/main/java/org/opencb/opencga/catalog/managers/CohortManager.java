@@ -576,47 +576,51 @@ public class CohortManager extends AbstractManager implements ICohortManager {
 
     @Override
     public QueryResult<AnnotationSet> getAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
-        long cohortId = commonGetAllAnnotationSets(id, studyStr, sessionId);
-        return cohortDBAdaptor.getAnnotationSet(cohortId, null);
+        MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
+        return cohortDBAdaptor.getAnnotationSet(resource, null,
+                StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.toString());
     }
 
     @Override
     public QueryResult<ObjectMap> getAllAnnotationSetsAsMap(String id, @Nullable String studyStr, String sessionId) throws
             CatalogException {
-        long cohortId = commonGetAllAnnotationSets(id, studyStr, sessionId);
-        return cohortDBAdaptor.getAnnotationSetAsMap(cohortId, null);
+        MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
+        return cohortDBAdaptor.getAnnotationSetAsMap(resource, null,
+                StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.toString());
     }
 
-    private long commonGetAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
+    private MyResourceId commonGetAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
-        MyResourceId resource = getId(id, studyStr, sessionId);
-        authorizationManager.checkCohortPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
-                CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS);
-        return resource.getResourceId();
+        return getId(id, studyStr, sessionId);
+//        authorizationManager.checkCohortPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
+//                CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS);
+//        return resource.getResourceId();
     }
 
     @Override
     public QueryResult<AnnotationSet> getAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        long cohortId = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
-        return cohortDBAdaptor.getAnnotationSet(cohortId, annotationSetName);
+        MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
+        return cohortDBAdaptor.getAnnotationSet(resource, annotationSetName,
+                StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.toString());
     }
 
     @Override
     public QueryResult<ObjectMap> getAnnotationSetAsMap(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        long cohortId = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
-        return cohortDBAdaptor.getAnnotationSetAsMap(cohortId, annotationSetName);
+        MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
+        return cohortDBAdaptor.getAnnotationSetAsMap(resource, annotationSetName,
+                StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.toString());
     }
 
-    private long commonGetAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
+    private MyResourceId commonGetAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkAlias(annotationSetName, "annotationSetName", configuration.getCatalog().getOffset());
-        MyResourceId resource = getId(id, studyStr, sessionId);
-        authorizationManager.checkCohortPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
-                CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS);
-        return resource.getResourceId();
+        return getId(id, studyStr, sessionId);
+//        authorizationManager.checkCohortPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
+//                CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS);
+//        return resource.getResourceId();
     }
 
     @Override

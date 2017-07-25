@@ -893,20 +893,21 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         return sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
     }
 
-    private long commonGetAllInvidualSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
-        MyResourceId resource = getId(id, studyStr, sessionId);
-        authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
-                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
-        return resource.getResourceId();
+    private MyResourceId commonGetAllInvidualSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(id, "id");
+        return getId(id, studyStr, sessionId);
+//        authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
+//                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
+//        return resource.getResourceId();
     }
 
-    private long commonGetAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
+    private MyResourceId commonGetAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
         ParamUtils.checkAlias(annotationSetName, "annotationSetName", configuration.getCatalog().getOffset());
-        MyResourceId resource = getId(id, studyStr, sessionId);
-        authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
-                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
-        return resource.getResourceId();
+        return getId(id, studyStr, sessionId);
+//        authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
+//                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
+//        return resource.getResourceId();
     }
 
     @Override
@@ -937,29 +938,33 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
     @Override
     public QueryResult<AnnotationSet> getAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
-        long individualId = commonGetAllInvidualSets(id, studyStr, sessionId);
-        return individualDBAdaptor.getAnnotationSet(individualId, null);
+        MyResourceId resource = commonGetAllInvidualSets(id, studyStr, sessionId);
+        return individualDBAdaptor.getAnnotationSet(resource, null,
+                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.toString());
     }
 
     @Override
     public QueryResult<ObjectMap> getAllAnnotationSetsAsMap(String id, @Nullable String studyStr, String sessionId)
             throws CatalogException {
-        long individualId = commonGetAllInvidualSets(id, studyStr, sessionId);
-        return individualDBAdaptor.getAnnotationSetAsMap(individualId, null);
+        MyResourceId resource = commonGetAllInvidualSets(id, studyStr, sessionId);
+        return individualDBAdaptor.getAnnotationSetAsMap(resource, null,
+                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.toString());
     }
 
     @Override
     public QueryResult<AnnotationSet> getAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        long individualId = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
-        return individualDBAdaptor.getAnnotationSet(individualId, annotationSetName);
+        MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
+        return individualDBAdaptor.getAnnotationSet(resource, annotationSetName,
+                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.toString());
     }
 
     @Override
     public QueryResult<ObjectMap> getAnnotationSetAsMap(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        long individualId = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
-        return individualDBAdaptor.getAnnotationSetAsMap(individualId, annotationSetName);
+        MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
+        return individualDBAdaptor.getAnnotationSetAsMap(resource, annotationSetName,
+                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.toString());
     }
 
     @Override

@@ -28,11 +28,11 @@ import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.Annotable;
-import org.opencb.opencga.catalog.models.Annotation;
-import org.opencb.opencga.catalog.models.AnnotationSet;
-import org.opencb.opencga.catalog.models.Variable;
+import org.opencb.opencga.catalog.managers.AbstractManager;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.summaries.FeatureCount;
 import org.opencb.opencga.catalog.models.summaries.VariableSummary;
 import org.slf4j.Logger;
@@ -129,6 +129,7 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         }
 
         Document document = MongoDBUtils.getMongoDBDocument(annotationSet, "AnnotationSet");
+        document.put("variableSetId", annotationSet.getVariableSetId());
 
         // Insert the annotation set in the database
         Bson query = Filters.and(
@@ -285,10 +286,25 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         return endQuery("Get annotation set", startTime, annotationSets);
     }
 
-    public QueryResult<ObjectMap> getAnnotationSetAsMap(long id, @Nullable String annotationSetName) throws CatalogDBException {
+    public QueryResult<AnnotationSet> getAnnotationSet(AbstractManager.MyResourceId resource, @Nullable String annotationSetName,
+                                                       String studyPermission) throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
-        QueryResult<? extends Annotable> aggregate = commonGetAnnotationSet(id, null, annotationSetName);
+        QueryResult<? extends Annotable> aggregate = commonGetAnnotationSet(resource, null, annotationSetName, studyPermission);
+
+        List<AnnotationSet> annotationSets = new ArrayList<>(aggregate.getNumResults());
+        for (Annotable annotable : aggregate.getResult()) {
+            annotationSets.add((AnnotationSet) annotable.getAnnotationSets().get(0));
+        }
+
+        return endQuery("Get annotation set", startTime, annotationSets);
+    }
+
+    public QueryResult<ObjectMap> getAnnotationSetAsMap(AbstractManager.MyResourceId resource, @Nullable String annotationSetName,
+                                                        String studyPermission) throws CatalogDBException, CatalogAuthorizationException {
+        long startTime = startQuery();
+
+        QueryResult<? extends Annotable> aggregate = commonGetAnnotationSet(resource, null, annotationSetName, studyPermission);
 
         List<ObjectMap> annotationSets = new ArrayList<>(aggregate.getNumResults());
         for (Annotable annotable : aggregate.getResult()) {
@@ -320,6 +336,61 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         }
 
         return getCollection().aggregate(aggregation, getConverter(), null);
+    }
+
+    private QueryResult<? extends Annotable> commonGetAnnotationSet(AbstractManager.MyResourceId resource, Bson queryAnnotation,
+                                                                    @Nullable String annotationSetName, String studyPermission)
+            throws CatalogDBException, CatalogAuthorizationException {
+        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(
+                new Query(StudyDBAdaptor.QueryParams.ID.key(), resource.getStudyId()), new QueryOptions());
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Internal error: Study " + resource.getStudyId() + " not found.");
+        }
+        Document matchPermissions = getQueryForAuthorisedEntries(queryResult.first(), resource.getUser(), studyPermission,
+                "VIEW_ANNOTATIONS");
+
+        List<Bson> aggregation = new ArrayList<>();
+        aggregation.add(Aggregates.match(matchPermissions.append(PRIVATE_ID, resource.getResourceId())));
+//        aggregation.add(Aggregates.project(Projections.include(AnnotationSetParams.ID.key(), AnnotationSetParams.ANNOTATION_SETS.key())));
+        aggregation.add(Aggregates.unwind("$" + AnnotationSetParams.ANNOTATION_SETS.key()));
+        if (queryAnnotation != null) {
+            aggregation.add(Aggregates.match(queryAnnotation));
+        }
+
+        if (annotationSetName != null && !annotationSetName.isEmpty()) {
+            aggregation.add(Aggregates.match(new Document(AnnotationSetParams.ANNOTATION_SETS_NAME.key(), annotationSetName)));
+        }
+
+        for (Bson bson : aggregation) {
+            try {
+                logger.debug("Get annotation: {}", bson.toBsonDocument(Document.class, com.mongodb.MongoClient.getDefaultCodecRegistry()));
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+            }
+        }
+
+        QueryResult<? extends Annotable> results = getCollection().aggregate(aggregation, getConverter(), null);
+
+        if (results.getNumResults() > 0) {
+            // Now we get all the variable sets from the study. We will only get the ones the user has access to.
+            QueryResult<VariableSet> variableSets = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSets(
+                    new Query(StudyDBAdaptor.VariableSetParams.STUDY_ID.key(), resource.getStudyId()), new QueryOptions(),
+                    resource.getUser());
+            Set<Long> accessibleVariableSets = variableSets.getResult().stream().map(VariableSet::getId).collect(Collectors.toSet());
+
+            // And filter out those annotations whose variable sets have not been returned (no access because they must be secret)
+            for (Annotable annotable : results.getResult()) {
+                Iterator<AnnotationSet> iterator = annotable.getAnnotationSets().iterator();
+                while (iterator.hasNext()) {
+                    AnnotationSet next = iterator.next();
+                    if (!accessibleVariableSets.contains(next.getVariableSetId())) {
+                        iterator.remove();
+                    }
+                }
+            }
+        }
+
+        return results;
     }
 
     public QueryResult<AnnotationSet> updateAnnotationSet(long id, AnnotationSet annotationSet) throws CatalogDBException {

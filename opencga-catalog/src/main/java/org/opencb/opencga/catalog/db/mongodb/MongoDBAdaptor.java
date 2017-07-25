@@ -33,9 +33,8 @@ import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.Family;
-import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.slf4j.Logger;
 
 import java.util.*;
@@ -62,6 +61,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String FILTER_ROUTE_PANELS = "projects.studies.panels.";
 
     private static final String PRIVATE_ACL = "_acl";
+    private static final String VARIABLE_SETS = "variableSets";
     private static final String ANNOTATION_SETS = "annotationSets";
     private static final String ANONYMOUS = "*";
     private static final Pattern MEMBERS_PATTERN = Pattern.compile("^@members");
@@ -194,6 +194,33 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         for (Document entryDocument : queryResult.getResult()) {
             if (!checkUserHasPermission(entryDocument, user, groups, entryPermission, hasStudyPermission)) {
                 entryDocument.remove(ANNOTATION_SETS);
+            } else {
+                // Check if the user has the CONFIDENTIAL PERMISSION
+                boolean confidential =
+                        checkStudyPermission(study, user, StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString());
+                if (!confidential) {
+                    // If the user does not have the confidential permission, we will have to remove those annotation sets coming from
+                    // confidential variable sets
+                    List<Document> variableSets = (List<Document>) study.get(VARIABLE_SETS);
+                    Set<Long> confidentialVariableSets = new HashSet<>();
+                    for (Document variableSet : variableSets) {
+                        if (variableSet.getBoolean("confidential")) {
+                            confidentialVariableSets.add(variableSet.getLong("id"));
+                        }
+                    }
+
+                    if (confidentialVariableSets.size() > 0) {
+                        // The study contains confidential variable sets so we do have to check if any of the annotations come from
+                        // confidential variable sets
+                        Iterator<Document> iterator = ((List<Document>) entryDocument.get(ANNOTATION_SETS)).iterator();
+                        while (iterator.hasNext()) {
+                            Document annotationSet = iterator.next();
+                            if (confidentialVariableSets.contains(annotationSet.getLong("variableSetId"))) {
+                                iterator.remove();
+                            }
+                        }
+                    }
+                }
             }
         }
     }

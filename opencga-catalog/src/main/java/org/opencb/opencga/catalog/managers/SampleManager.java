@@ -862,22 +862,22 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         }
     }
 
-    private long commonGetAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
+    private MyResourceId commonGetAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
-        MyResourceId resourceId = catalogManager.getSampleManager().getId(id, studyStr, sessionId);
-        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
-                SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
-        return resourceId.getResourceId();
+        return catalogManager.getSampleManager().getId(id, studyStr, sessionId);
+//        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
+//                SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
+//        return resourceId.getResourceId();
     }
 
-    private long commonGetAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
+    private MyResourceId commonGetAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkAlias(annotationSetName, "annotationSetName", configuration.getCatalog().getOffset());
-        MyResourceId resourceId = catalogManager.getSampleManager().getId(id, studyStr, sessionId);
-        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
-                SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
-        return resourceId.getResourceId();
+        return catalogManager.getSampleManager().getId(id, studyStr, sessionId);
+//        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
+//                SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
+//        return resourceId.getResourceId();
     }
 
     @Override
@@ -889,12 +889,12 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         MyResourceId resourceId = catalogManager.getSampleManager().getId(id, studyStr, sessionId);
-        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
-                SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS);
+//        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
+//                SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS);
         MyResourceId variableSetResource = catalogManager.getStudyManager().getVariableSetId(variableSetId,
                 Long.toString(resourceId.getStudyId()), sessionId);
-
-        VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null).first();
+        VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null, resourceId.getUser(), null)
+                .first();
 
         QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(resourceId.getResourceId(), variableSet,
                 annotationSetName, annotations, catalogManager.getStudyManager().getCurrentRelease(resourceId.getStudyId()), attributes,
@@ -908,29 +908,33 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
     @Override
     public QueryResult<AnnotationSet> getAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
-        long sampleId = commonGetAllAnnotationSets(id, studyStr, sessionId);
-        return sampleDBAdaptor.getAnnotationSet(sampleId, null);
+        MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
+        return sampleDBAdaptor.getAnnotationSet(resource, null,
+                StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.toString());
     }
 
     @Override
     public QueryResult<ObjectMap> getAllAnnotationSetsAsMap(String id, @Nullable String studyStr, String sessionId)
             throws CatalogException {
-        long sampleId = commonGetAllAnnotationSets(id, studyStr, sessionId);
-        return sampleDBAdaptor.getAnnotationSetAsMap(sampleId, null);
+        MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
+        return sampleDBAdaptor.getAnnotationSetAsMap(resource, null,
+                StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.toString());
     }
 
     @Override
     public QueryResult<AnnotationSet> getAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        long sampleId = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
-        return sampleDBAdaptor.getAnnotationSet(sampleId, annotationSetName);
+        MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
+        return sampleDBAdaptor.getAnnotationSet(resource, annotationSetName,
+                StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.toString());
     }
 
     @Override
     public QueryResult<ObjectMap> getAnnotationSetAsMap(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        long sampleId = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
-        return sampleDBAdaptor.getAnnotationSetAsMap(sampleId, annotationSetName);
+        MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
+        return sampleDBAdaptor.getAnnotationSetAsMap(resource, annotationSetName,
+                StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.toString());
     }
 
     @Override

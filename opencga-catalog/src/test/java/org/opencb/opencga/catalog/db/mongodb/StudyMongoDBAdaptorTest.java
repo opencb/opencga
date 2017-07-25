@@ -17,7 +17,10 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import org.junit.Test;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -56,7 +59,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertTrue("It is impossible creating an study with an existing alias on a different project.", ph1.getNumResults() == 1);
     }
 
-    private QueryResult<VariableSet> createExampleVariableSet(String name) throws CatalogDBException {
+    private QueryResult<VariableSet> createExampleVariableSet(String name, boolean confidential) throws CatalogDBException {
         Set<Variable> variables = new HashSet<>();
         variables.addAll(Arrays.asList(
                 new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null,
@@ -70,33 +73,33 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 new Variable("PHEN", "", Variable.VariableType.CATEGORICAL, "", true, false, Arrays.asList("CASE", "CONTROL"), 4, "", "",
                         null, Collections.<String, Object>emptyMap())
         ));
-        VariableSet variableSet = new VariableSet(-1, name, false, false, "My description", variables, 1, Collections.emptyMap());
+        VariableSet variableSet = new VariableSet(-1, name, false, confidential, "My description", variables, 1, Collections.emptyMap());
         return catalogStudyDBAdaptor.createVariableSet(5L, variableSet);
     }
 
     @Test
     public void createVariableSetTest() throws CatalogDBException {
-        QueryResult<VariableSet> queryResult = createExampleVariableSet("VARSET_1");
+        QueryResult<VariableSet> queryResult = createExampleVariableSet("VARSET_1", false);
         assertEquals("VARSET_1", queryResult.first().getName());
         assertTrue("The id of the variableSet is wrong.", queryResult.first().getId() > -1);
     }
 
     @Test
     public void testRemoveFieldFromVariableSet() throws CatalogDBException, CatalogAuthorizationException {
-        QueryResult<VariableSet> variableSetQueryResult = createExampleVariableSet("VARSET_1");
+        QueryResult<VariableSet> variableSetQueryResult = createExampleVariableSet("VARSET_1", false);
         catalogStudyDBAdaptor.removeFieldFromVariableSet(variableSetQueryResult.first().getId(), "NAME", user3.getId());
     }
 
     @Test
     public void testRenameFieldInVariableSet() throws CatalogDBException, CatalogAuthorizationException {
-        QueryResult<VariableSet> variableSetQueryResult = createExampleVariableSet("VARSET_1");
+        QueryResult<VariableSet> variableSetQueryResult = createExampleVariableSet("VARSET_1", false);
         catalogStudyDBAdaptor.renameFieldVariableSet(variableSetQueryResult.first().getId(), "NAME", "NEW_NAME",
                 user3.getId());
     }
 
     @Test
     public void testRenameFieldInVariableSetOldFieldNotExist() throws CatalogDBException, CatalogAuthorizationException {
-        QueryResult<VariableSet> variableSetQueryResult = createExampleVariableSet("VARSET_1");
+        QueryResult<VariableSet> variableSetQueryResult = createExampleVariableSet("VARSET_1", false);
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("NAM} does not exist.");
         catalogStudyDBAdaptor.renameFieldVariableSet(variableSetQueryResult.first().getId(), "NAM", "NEW_NAME",
@@ -105,7 +108,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void testRenameFieldInVariableSetNewFieldExist() throws CatalogDBException, CatalogAuthorizationException {
-        QueryResult<VariableSet> variableSetQueryResult = createExampleVariableSet("VARSET_1");
+        QueryResult<VariableSet> variableSetQueryResult = createExampleVariableSet("VARSET_1", false);
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("The variable {id: AGE} already exists.");
         catalogStudyDBAdaptor.renameFieldVariableSet(variableSetQueryResult.first().getId(), "NAME", "AGE", user3.getId());
@@ -113,7 +116,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void testRenameFieldInVariableSetVariableSetNotExist() throws CatalogDBException, CatalogAuthorizationException {
-        createExampleVariableSet("VARSET_1");
+        createExampleVariableSet("VARSET_1", false);
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("not found");
         catalogStudyDBAdaptor.renameFieldVariableSet(-1, "NAME", "NEW_NAME", user3.getId());
@@ -125,8 +128,8 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
      */
     @Test
     public void addFieldToVariableSetTest1() throws CatalogDBException, CatalogAuthorizationException {
-        createExampleVariableSet("VARSET_1");
-        createExampleVariableSet("VARSET_2");
+        createExampleVariableSet("VARSET_1", false);
+        createExampleVariableSet("VARSET_2", true);
         Variable variable = new Variable("NAM", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "", null,
                 Collections.emptyMap());
         QueryResult<VariableSet> queryResult = catalogStudyDBAdaptor.addFieldToVariableSet(18, variable, user3.getId());

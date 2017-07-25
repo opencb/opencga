@@ -485,6 +485,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         long variableSetId = getNewId();
         variableSet.setId(variableSetId);
         Document object = getMongoDBDocument(variableSet, "VariableSet");
+        object.put("id", variableSetId);
 
         Bson bsonQuery = Filters.eq(PRIVATE_ID, studyId);
         Bson update = Updates.push("variableSets", object);

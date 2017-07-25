@@ -562,29 +562,33 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
 
     @Override
     public QueryResult<AnnotationSet> getAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
-        long familyId = commonGetAllAnnotationSets(id, studyStr, sessionId);
-        return familyDBAdaptor.getAnnotationSet(familyId, null);
+        MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
+        return familyDBAdaptor.getAnnotationSet(resource, null,
+                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
     }
 
     @Override
     public QueryResult<ObjectMap> getAllAnnotationSetsAsMap(String id, @Nullable String studyStr, String sessionId) throws
             CatalogException {
-        long familyId = commonGetAllAnnotationSets(id, studyStr, sessionId);
-        return familyDBAdaptor.getAnnotationSetAsMap(familyId, null);
+        MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
+        return familyDBAdaptor.getAnnotationSetAsMap(resource, null,
+                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
     }
 
     @Override
     public QueryResult<AnnotationSet> getAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        long familyId = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
-        return familyDBAdaptor.getAnnotationSet(familyId, annotationSetName);
+        MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
+        return familyDBAdaptor.getAnnotationSet(resource, annotationSetName,
+                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
     }
 
     @Override
     public QueryResult<ObjectMap> getAnnotationSetAsMap(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        long familyId = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
-        return familyDBAdaptor.getAnnotationSetAsMap(familyId, annotationSetName);
+        MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
+        return familyDBAdaptor.getAnnotationSetAsMap(resource, annotationSetName,
+                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
     }
 
     @Override
@@ -680,22 +684,22 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         return familyDBAdaptor.searchAnnotationSet(resourceId.getResourceId(), variableSetId, annotation);
     }
 
-    private long commonGetAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
+    private MyResourceId commonGetAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
-        MyResourceId resourceId = getId(id, studyStr, sessionId);
-        authorizationManager.checkFamilyPermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
-                FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS);
-        return resourceId.getResourceId();
+        return getId(id, studyStr, sessionId);
+//        authorizationManager.checkFamilyPermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
+//                FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS);
+//        return resourceId.getResourceId();
     }
 
-    private long commonGetAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
+    private MyResourceId commonGetAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkAlias(annotationSetName, "annotationSetName", configuration.getCatalog().getOffset());
-        MyResourceId resourceId = getId(id, studyStr, sessionId);
-        authorizationManager.checkFamilyPermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
-                FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS);
-        return resourceId.getResourceId();
+        return getId(id, studyStr, sessionId);
+//        authorizationManager.checkFamilyPermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
+//                FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS);
+//        return resourceId.getResourceId();
     }
 
     public List<QueryResult<FamilyAclEntry>> updateAcl(String family, String studyStr, String memberIds, AclParams familyAclParams,
