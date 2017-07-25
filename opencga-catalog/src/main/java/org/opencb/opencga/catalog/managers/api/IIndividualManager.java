@@ -24,7 +24,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 
@@ -33,7 +32,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by hpccoll1 on 19/06/15.
@@ -132,14 +130,6 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
             throws CatalogException, IOException;
 
     QueryResult<Individual> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
-
-    @Deprecated
-    QueryResult<AnnotationSet> annotate(long individualId, String annotationSetName, long variableSetId, Map<String, Object> annotations,
-                                        Map<String, Object> attributes, String sessionId) throws CatalogException;
-
-    @Deprecated
-    QueryResult<AnnotationSet> updateAnnotation(long individualId, String annotationSetName, Map<String, Object> newAnnotations,
-                                                String sessionId) throws CatalogException;
 
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.

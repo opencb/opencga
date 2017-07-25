@@ -26,7 +26,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -34,7 +33,6 @@ import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.ISampleManager;
@@ -43,10 +41,10 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.AnnotationManager;
-import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
 import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -231,106 +229,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 //        auditManager.recordCreation(AuditRecord.Resource.sample, queryResult.first().getId(), userId, queryResult.first(), null, null);
         auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.Action.create, AuditRecord.Magnitude.low,
                 queryResult.first().getId(), userId, null, queryResult.first(), null, null);
-        return queryResult;
-    }
-
-    @Override
-    @Deprecated
-    public QueryResult<AnnotationSet> annotate(long sampleId, String annotationSetName, long variableSetId, Map<String, Object> annotations,
-                                               Map<String, Object> attributes, boolean checkAnnotationSet,
-                                               String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(annotationSetName, "annotationSetName");
-        ParamUtils.checkObj(annotations, "annotations");
-        attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
-
-        String userId = userManager.getId(sessionId);
-        long studyId = sampleDBAdaptor.getStudyId(sampleId);
-        authorizationManager.checkSamplePermission(studyId, sampleId, userId, SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS);
-
-        VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
-
-        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSetId, new HashSet<>(), TimeUtils.getTime(), 1,
-                attributes);
-
-        for (Map.Entry<String, Object> entry : annotations.entrySet()) {
-            annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
-        }
-        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(sampleId,
-                new QueryOptions("include", Collections.singletonList("projects.studies.samples.annotationSets")));
-
-        List<AnnotationSet> annotationSets = sampleQueryResult.first().getAnnotationSets();
-        if (checkAnnotationSet) {
-            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
-        }
-
-        QueryResult<AnnotationSet> queryResult = sampleDBAdaptor.annotate(sampleId, annotationSet, false);
-        auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId,
-                new ObjectMap("annotationSets", queryResult.first()), "annotate", null);
-        return queryResult;
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> updateAnnotation(long sampleId, String annotationSetName, Map<String, Object> newAnnotations, String
-            sessionId)
-            throws CatalogException {
-
-        ParamUtils.checkParameter(annotationSetName, "annotationSetName");
-        ParamUtils.checkObj(newAnnotations, "newAnnotations");
-
-        String userId = userManager.getId(sessionId);
-        long studyId = sampleDBAdaptor.getStudyId(sampleId);
-        authorizationManager.checkSamplePermission(studyId, sampleId, userId, SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS);
-
-        // Get sample
-        QueryOptions queryOptions = new QueryOptions("include", Collections.singletonList("projects.studies.samples.annotationSets"));
-        Sample sample = sampleDBAdaptor.get(sampleId, queryOptions).first();
-
-        List<AnnotationSet> annotationSets = sample.getAnnotationSets();
-
-        // Get annotation set
-        AnnotationSet annotationSet = null;
-        for (AnnotationSet annotationSetAux : sample.getAnnotationSets()) {
-            if (annotationSetAux.getName().equals(annotationSetName)) {
-                annotationSet = annotationSetAux;
-                sample.getAnnotationSets().remove(annotationSet);
-                break;
-            }
-        }
-
-        if (annotationSet == null) {
-            throw CatalogDBException.idNotFound("AnnotationSet", annotationSetName);
-        }
-
-        // Get variable set
-        VariableSet variableSet = studyDBAdaptor.getVariableSet(annotationSet.getVariableSetId(), null).first();
-
-        // Update and validate annotations
-        CatalogAnnotationsValidator.mergeNewAnnotations(annotationSet, newAnnotations);
-        CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
-
-        // Commit changes
-        QueryResult<AnnotationSet> queryResult = sampleDBAdaptor.annotate(sampleId, annotationSet, true);
-
-        AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
-                newAnnotations.entrySet().stream()
-                        .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
-                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), 1, null);
-        auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId, new ObjectMap("annotationSets",
-                Collections.singletonList(annotationSetUpdate)), "update annotation", null);
-        return queryResult;
-    }
-
-    @Override
-    @Deprecated
-    public QueryResult<AnnotationSet> deleteAnnotation(long sampleId, String annotationId, String sessionId) throws CatalogException {
-
-        String userId = userManager.getId(sessionId);
-        long studyId = sampleDBAdaptor.getStudyId(sampleId);
-        authorizationManager.checkSamplePermission(studyId, sampleId, userId, SampleAclEntry.SamplePermissions.DELETE_ANNOTATIONS);
-
-        QueryResult<AnnotationSet> queryResult = sampleDBAdaptor.deleteAnnotation(sampleId, annotationId);
-        auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId, new ObjectMap("annotationSets", queryResult.first()),
-                "deleteAnnotation", null);
         return queryResult;
     }
 

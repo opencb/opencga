@@ -139,18 +139,6 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
 
     QueryResult<Sample> count(String studyStr, Query query, String sessionId) throws CatalogException;
 
-    @Deprecated
-    QueryResult<AnnotationSet> annotate(long sampleId, String annotationSetName, long variableSetId, Map<String, Object> annotations,
-                                        Map<String, Object> attributes, boolean checkAnnotationSet,
-                                        String sessionId) throws CatalogException;
-
-    @Deprecated
-    QueryResult<AnnotationSet> updateAnnotation(long sampleId, String annotationSetName, Map<String, Object> newAnnotations,
-                                                String sessionId) throws CatalogException;
-
-    @Deprecated
-    QueryResult<AnnotationSet> deleteAnnotation(long sampleId, String annotationId, String sessionId) throws CatalogException;
-
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.
      *

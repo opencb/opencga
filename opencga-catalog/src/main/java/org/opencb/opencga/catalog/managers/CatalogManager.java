@@ -957,22 +957,6 @@ public class CatalogManager implements AutoCloseable {
     }
 
     @Deprecated
-    public QueryResult<AnnotationSet> updateSampleAnnotation(long sampleId, String annotationSetName,
-                                                             Map<String, Object> annotations,
-                                                             String sessionId)
-            throws CatalogException {
-        return sampleManager.updateAnnotation(sampleId, annotationSetName, annotations, sessionId);
-    }
-
-    public QueryResult<AnnotationSet> annotateIndividual(long individualId, String annotationSetName, long variableSetId,
-                                                         Map<String, Object> annotations,
-                                                         Map<String, Object> attributes,
-                                                         String sessionId)
-            throws CatalogException {
-        return individualManager.annotate(individualId, annotationSetName, variableSetId, annotations, attributes, sessionId);
-    }
-
-    @Deprecated
     public QueryResult<Sample> deleteSample(long sampleId, QueryOptions options, String sessionId) throws CatalogException {
         return null;
 //        return sampleManager.delete(sampleId, options, sessionId);

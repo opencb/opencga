@@ -25,7 +25,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
@@ -42,10 +41,10 @@ import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.AnnotationManager;
-import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
 import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -457,90 +456,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
         auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.create, AuditRecord.Magnitude.low,
                 queryResult.first().getId(), userId, null, queryResult.first(), null, null);
-        return queryResult;
-    }
-
-    @Override
-    @Deprecated
-    public QueryResult<AnnotationSet> annotate(long individualId, String annotationSetName, long variableSetId, Map<String, Object>
-            annotations, Map<String, Object> attributes, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(annotationSetName, "annotationSetName");
-        ParamUtils.checkObj(annotations, "annotations");
-        attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
-
-        String userId = userManager.getId(sessionId);
-        long studyId = individualDBAdaptor.getStudyId(individualId);
-        authorizationManager.checkIndividualPermission(studyId, individualId, userId,
-                IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS);
-
-        VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
-
-        AnnotationSet annotationSet =
-                new AnnotationSet(annotationSetName, variableSetId, new HashSet<>(), TimeUtils.getTime(), 1, attributes);
-
-        for (Map.Entry<String, Object> entry : annotations.entrySet()) {
-            annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
-        }
-        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(individualId,
-                new QueryOptions("include", Collections.singletonList("projects.studies.individuals.annotationSets")));
-
-        List<AnnotationSet> annotationSets = individualQueryResult.getResult().get(0).getAnnotationSets();
-        CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
-
-        QueryResult<AnnotationSet> queryResult = individualDBAdaptor.annotate(individualId, annotationSet, false);
-        auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, new ObjectMap("annotationSets", queryResult
-                .first()), "annotate", null);
-        return queryResult;
-    }
-
-    @Deprecated
-    public QueryResult<AnnotationSet> updateAnnotation(long individualId, String annotationSetName, Map<String, Object> newAnnotations,
-                                                       String sessionId) throws CatalogException {
-
-        ParamUtils.checkParameter(annotationSetName, "annotationSetName");
-        ParamUtils.checkObj(newAnnotations, "newAnnotations");
-
-        String userId = userManager.getId(sessionId);
-        long studyId = individualDBAdaptor.getStudyId(individualId);
-        authorizationManager.checkIndividualPermission(studyId, individualId, userId,
-                IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS);
-
-        QueryOptions queryOptions = new QueryOptions("include", "projects.studies.individuals.annotationSets");
-
-        // Get individual
-        Individual individual = individualDBAdaptor.get(individualId, queryOptions).first();
-
-        // Get annotation set
-        AnnotationSet annotationSet = null;
-        for (AnnotationSet annotationSetAux : individual.getAnnotationSets()) {
-            if (annotationSetAux.getName().equals(annotationSetName)) {
-                annotationSet = annotationSetAux;
-                individual.getAnnotationSets().remove(annotationSet);
-                break;
-            }
-        }
-
-        if (annotationSet == null) {
-            throw CatalogDBException.idNotFound("AnnotationSet", annotationSetName);
-        }
-
-        // Get variable set
-        VariableSet variableSet = studyDBAdaptor.getVariableSet(annotationSet.getVariableSetId(), null).first();
-
-        // Update and validate annotations
-        CatalogAnnotationsValidator.mergeNewAnnotations(annotationSet, newAnnotations);
-        CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, individual.getAnnotationSets());
-
-        // Commit changes
-        QueryResult<AnnotationSet> queryResult = individualDBAdaptor.annotate(individualId, annotationSet, true);
-
-        AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
-                newAnnotations.entrySet().stream().map(entry -> new Annotation(entry.getKey(), entry.getValue())).collect(Collectors
-                        .toSet()),
-                annotationSet.getCreationDate(), 1, null);
-        auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, new ObjectMap("annotationSets",
-                Collections.singletonList(annotationSetUpdate)), "update annotation", null);
-
         return queryResult;
     }
 
