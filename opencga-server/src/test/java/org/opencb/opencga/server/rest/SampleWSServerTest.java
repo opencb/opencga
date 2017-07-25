@@ -21,7 +21,6 @@ import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
@@ -30,7 +29,6 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -68,10 +66,14 @@ public class SampleWSServerTest {
         sessionId = OpenCGAWSServer.catalogManager.login("user", CatalogManagerTest.PASSWORD, "localhost").first().getId();
         studyId = OpenCGAWSServer.catalogManager.getStudyId("user@1000G:phase1");
         in1 = OpenCGAWSServer.catalogManager.createIndividual(studyId, "in1", "f1", -1, -1, null, null, sessionId).first().getId();
-        s1 = OpenCGAWSServer.catalogManager.createSample(studyId, "s1", "f1", "", null, null, sessionId).first().getId();
-        s2 = OpenCGAWSServer.catalogManager.createSample(studyId, "s2", "f1", "", null, null, sessionId).first().getId();
-        s3 = OpenCGAWSServer.catalogManager.createSample(studyId, "s3", "f1", "", null, null, sessionId).first().getId();
-        s4 = OpenCGAWSServer.catalogManager.createSample(studyId, "s4", "f1", "", null, null, sessionId).first().getId();
+        s1 = OpenCGAWSServer.catalogManager.getSampleManager().create(Long.toString(studyId), "s1", "f1", "", null, false, null, null,
+                null, sessionId).first().getId();
+        s2 = OpenCGAWSServer.catalogManager.getSampleManager().create(Long.toString(studyId), "s2", "f1", "", null, false, null, null,
+                null, sessionId).first().getId();
+        s3 = OpenCGAWSServer.catalogManager.getSampleManager().create(Long.toString(studyId), "s3", "f1", "", null, false, null, null,
+                null, sessionId).first().getId();
+        s4 = OpenCGAWSServer.catalogManager.getSampleManager().create(Long.toString(studyId), "s4", "f1", "", null, false, null, null,
+                null, sessionId).first().getId();
     }
 
     @Test

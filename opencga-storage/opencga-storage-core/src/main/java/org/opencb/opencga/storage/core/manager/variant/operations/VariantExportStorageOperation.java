@@ -224,8 +224,8 @@ public class VariantExportStorageOperation extends StorageOperation {
                 String source = inputUri.resolve(".").relativize(inputUri).getPath();
                 String description = "Sample data imported from " + source;
                 for (Map.Entry<String, Integer> entry : studyConfiguration.getSampleIds().entrySet()) {
-                    Sample sample = catalogManager.createSample(studyId, entry.getKey(), source, description,
-                            Collections.emptyMap(), QueryOptions.empty(), sessionId).first();
+                    Sample sample = catalogManager.getSampleManager().create(Long.toString(studyId), entry.getKey(), source, description,
+                            null, false, null, Collections.emptyMap(), QueryOptions.empty(), sessionId).first();
                     samplesMap.put(sample.getName(), (int) sample.getId());
                     samplesIdMap.put(entry.getValue(), (int) sample.getId());
                 }

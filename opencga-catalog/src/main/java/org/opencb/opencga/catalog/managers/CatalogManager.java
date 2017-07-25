@@ -271,14 +271,6 @@ public class CatalogManager implements AutoCloseable {
      * ***************************
      */
 
-    public URI getUserUri(String userId) throws CatalogIOException {
-        return catalogIOManagerFactory.getDefault().getUserUri(userId);
-    }
-
-    public URI getProjectUri(String userId, String projectId) throws CatalogIOException {
-        return catalogIOManagerFactory.getDefault().getProjectUri(userId, projectId);
-    }
-
     public URI getStudyUri(long studyId)
             throws CatalogException {
         return fileManager.getStudyUri(studyId);
@@ -316,10 +308,6 @@ public class CatalogManager implements AutoCloseable {
      * <user>@project:study:directories:filePath
      * ***************************
      */
-
-    public long getProjectId(String id) throws CatalogException {
-        return projectManager.getId(id);
-    }
 
     @Deprecated
     public long getStudyId(String id) throws CatalogException {
@@ -921,13 +909,6 @@ public class CatalogManager implements AutoCloseable {
      * ***************************
      */
 
-    @Deprecated
-    public QueryResult<Sample> createSample(long studyId, String name, String source, String description,
-                                            Map<String, Object> attributes, QueryOptions options, String sessionId)
-            throws CatalogException {
-        return sampleManager.create(Long.toString(studyId), name, source, description, null, false, null, attributes, options, sessionId);
-    }
-
     public List<Long> getSampleIds(String sampleIds, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         return sampleManager.getIds(userId, sampleIds);
@@ -940,26 +921,6 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<Sample> getAllSamples(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
         return sampleManager.get(studyId, query, options, sessionId);
-    }
-
-    @Deprecated
-    public QueryResult<Sample> modifySample(long sampleId, QueryOptions queryOptions, String sessionId) throws CatalogException {
-        return sampleManager.update(sampleId, queryOptions, queryOptions, sessionId);
-    }
-
-    @Deprecated
-    public QueryResult<AnnotationSet> annotateSample(long sampleId, String id, long variableSetId,
-                                                     Map<String, Object> annotations,
-                                                     Map<String, Object> attributes,
-                                                     String sessionId) throws CatalogException {
-        return getSampleManager().createAnnotationSet(Long.toString(sampleId), null, Long.toString(variableSetId), id, annotations,
-                attributes, sessionId);
-    }
-
-    @Deprecated
-    public QueryResult<Sample> deleteSample(long sampleId, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
-//        return sampleManager.delete(sampleId, options, sessionId);
     }
 
     /*

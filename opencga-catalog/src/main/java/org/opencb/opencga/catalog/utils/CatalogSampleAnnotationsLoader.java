@@ -118,9 +118,9 @@ public class CatalogSampleAnnotationsLoader {
                 sample = loadedSamples.get(individual.getId());
                 logger.info("Sample " + individual.getId() + " already loaded with id : " + sample.getId());
             } else {
-                QueryResult<Sample> sampleQueryResult = catalogManager.createSample(studyId, individual.getId(), pedFile.getName(),
-                        "Sample loaded from the pedigree File = {id: " + pedFile.getId() + ", name: \"" + pedFile.getName() + "\" }",
-                        Collections.emptyMap(), null, sessionId);
+                QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().create(Long.toString(studyId), individual.getId(),
+                        pedFile.getName(), "Sample loaded from the pedigree File = {id: " + pedFile.getId() + ", name: \""
+                                + pedFile.getName() + "\" }", null, false, null, Collections.emptyMap(), null, sessionId);
                 sample = sampleQueryResult.getResult().get(0);
             }
             sampleMap.put(individual.getId(), sample);
