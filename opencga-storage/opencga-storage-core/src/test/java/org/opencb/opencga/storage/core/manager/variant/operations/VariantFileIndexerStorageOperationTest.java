@@ -132,6 +132,18 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
     }
 
     @Test
+    public void testDeleteSampleFromIndexedFile() throws Exception {
+        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
+                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+
+        File inputFile = getFile(0);
+        indexFile(inputFile, queryOptions, outputId);
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("used in storage");
+        catalogManager.getSampleManager().delete("200", studyStr, null, sessionId);
+    }
+
+    @Test
     public void testIndexFromFolder() throws Exception {
         QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
@@ -172,6 +184,19 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
         File transformedFile = transformFile(getFile(0), queryOptions);
         loadFile(transformedFile, queryOptions, outputId);
+    }
+
+    @Test
+    public void testDeleteCohortWithStats() throws Exception {
+        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
+                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
+
+        File transformedFile = transformFile(getFile(0), queryOptions);
+        loadFile(transformedFile, queryOptions, outputId);
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("used in storage");
+        catalogManager.getCohortManager().delete("ALL", studyStr, null, sessionId);
     }
 
     @Test

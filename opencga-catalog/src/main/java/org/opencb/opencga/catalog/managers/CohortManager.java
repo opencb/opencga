@@ -352,26 +352,27 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         List<Long> cohortIds = resource.getResourceIds();
         String userId = resource.getUser();
 
+        // Check all the cohorts can be deleted
+        for (Long cohortId : cohortIds) {
+            authorizationManager.checkCohortPermission(resource.getStudyId(), cohortId, userId, CohortAclEntry.CohortPermissions.DELETE);
+
+            QueryResult<Cohort> myCohortQR = cohortDBAdaptor.get(cohortId, new QueryOptions());
+            if (myCohortQR.getNumResults() == 0) {
+                throw new CatalogException("Internal error: Cohort " + cohortId + "not found");
+            }
+            // Check if the cohort can be deleted
+            if (myCohortQR.first().getStatus() != null && myCohortQR.first().getStatus().getName() != null
+                    && !myCohortQR.first().getStatus().getName().equals(Cohort.CohortStatus.NONE)) {
+                throw new CatalogException("Cannot delete cohort " + cohortId + ". The cohort is used in storage.");
+            }
+        }
+
+        // Delete the cohorts
         List<QueryResult<Cohort>> queryResultList = new ArrayList<>(cohortIds.size());
         for (Long cohortId : cohortIds) {
-            QueryResult<Cohort> queryResult = null;
-            try {
-                authorizationManager.checkCohortPermission(resource.getStudyId(), cohortId, userId,
-                        CohortAclEntry.CohortPermissions.DELETE);
-                queryResult = cohortDBAdaptor.delete(cohortId, options);
-                auditManager.recordDeletion(AuditRecord.Resource.cohort, cohortId, userId, queryResult.first(), null, null);
-            } catch (CatalogAuthorizationException e) {
-                auditManager.recordAction(AuditRecord.Resource.cohort, AuditRecord.Action.delete, AuditRecord.Magnitude.high, cohortId,
-                        userId, null, null, e.getMessage(), null);
-                queryResult = new QueryResult<>("Delete cohort " + cohortId);
-                queryResult.setErrorMsg(e.getMessage());
-            } catch (CatalogException e) {
-                e.printStackTrace();
-                queryResult = new QueryResult<>("Delete cohort " + cohortId);
-                queryResult.setErrorMsg(e.getMessage());
-            } finally {
-                queryResultList.add(queryResult);
-            }
+            QueryResult<Cohort> queryResult = cohortDBAdaptor.delete(cohortId, options);
+            auditManager.recordDeletion(AuditRecord.Resource.cohort, cohortId, userId, queryResult.first(), null, null);
+            queryResultList.add(queryResult);
         }
 
         return queryResultList;
