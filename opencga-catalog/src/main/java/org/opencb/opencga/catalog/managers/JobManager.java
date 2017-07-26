@@ -298,6 +298,19 @@ public class JobManager extends AbstractManager implements IJobManager {
         }
         query.put(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
+        if (query.containsKey("inputFiles")) {
+            MyResourceIds inputFiles = catalogManager.getFileManager().getIds(query.getString("inputFiles"), Long.toString(studyId),
+                    sessionId);
+            query.put(JobDBAdaptor.QueryParams.INPUT_ID.key(), inputFiles.getResourceIds());
+            query.remove("inputFiles");
+        }
+        if (query.containsKey("outputFiles")) {
+            MyResourceIds inputFiles = catalogManager.getFileManager().getIds(query.getString("outputFiles"), Long.toString(studyId),
+                    sessionId);
+            query.put(JobDBAdaptor.QueryParams.OUTPUT_ID.key(), inputFiles.getResourceIds());
+            query.remove("outputFiles");
+        }
+
         String userId = userManager.getId(sessionId);
 
         QueryResult<Job> queryResult = jobDBAdaptor.get(query, options, userId);
@@ -310,6 +323,19 @@ public class JobManager extends AbstractManager implements IJobManager {
 
         String userId = userManager.getId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+        if (query.containsKey("inputFiles")) {
+            MyResourceIds inputFiles = catalogManager.getFileManager().getIds(query.getString("inputFiles"), Long.toString(studyId),
+                    sessionId);
+            query.put(JobDBAdaptor.QueryParams.INPUT_ID.key(), inputFiles.getResourceIds());
+            query.remove("inputFiles");
+        }
+        if (query.containsKey("outputFiles")) {
+            MyResourceIds inputFiles = catalogManager.getFileManager().getIds(query.getString("outputFiles"), Long.toString(studyId),
+                    sessionId);
+            query.put(JobDBAdaptor.QueryParams.OUTPUT_ID.key(), inputFiles.getResourceIds());
+            query.remove("outputFiles");
+        }
 
         query.append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Long> queryResultAux = jobDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
