@@ -18,13 +18,12 @@ package org.opencb.opencga.catalog.session;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
-import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogTokenException;
-
 import org.junit.Before;
 import org.junit.Test;
+import org.opencb.commons.test.GenericTest;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.config.Configuration;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -58,20 +57,20 @@ public class JwtSessionManagerTest extends GenericTest {
         assertEquals(claims.getBody().getSubject(), "testUser");
     }
 
-    @Test(expected = CatalogTokenException.class)
-    public void testExpiredToken() throws CatalogTokenException {
+    @Test(expected = CatalogAuthenticationException.class)
+    public void testExpiredToken() throws CatalogAuthenticationException {
         String expiredToken = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJPcGVuQ0dBIEF1dGhlbnRpY2F0aW9uIiwiZXhwIjoxNDk2NzQ3MjI2LCJ1c2VySWQiOiJ0ZXN0VXNlciIsInR5cGUiOiJVU0VSIiwiaXAiOiIxNzIuMjAuNTYuMSJ9.cZbGHh46tP88QDATv4pwWODRf49tG9N2H_O8lXyjjIc";
         jwtSessionManager.parseClaims(expiredToken);
     }
 
-    @Test(expected = CatalogTokenException.class)
-    public void testInvalidToken() throws CatalogTokenException {
+    @Test(expected = CatalogAuthenticationException.class)
+    public void testInvalidToken() throws CatalogAuthenticationException {
         String invalidToken = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJPcGVuQ0dBIEF1dGhlbnRpY2F0aW9uIiwiZXhwIjoxNDk2NzQ3MjI2LCJ1c2VySWQiOiJ0ZXN0VXNlciIsInR5cGUiOiJVU0VSIiwiaXAiOiIxNzIuMjAuNTYuMSJ9.cZbGHh46tP88QDATv4pwWODRf49tG9N2H_O8lXyjj";
         jwtSessionManager.parseClaims(invalidToken);
     }
 
-    @Test(expected = CatalogTokenException.class)
-    public void testInvalidSecretKey() throws CatalogTokenException {
+    @Test(expected = CatalogAuthenticationException.class)
+    public void testInvalidSecretKey() throws CatalogAuthenticationException {
         jwtSessionManager.setSecretKey("wrongKey");
         jwtSessionManager.parseClaims(jwtToken);
     }

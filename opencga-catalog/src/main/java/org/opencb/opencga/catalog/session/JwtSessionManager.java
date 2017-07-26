@@ -19,20 +19,19 @@
 package org.opencb.opencga.catalog.session;
 
 import io.jsonwebtoken.*;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Session;
+import org.opencb.opencga.catalog.models.Session.Type;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.Date;
-
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogTokenException;
-import org.opencb.opencga.catalog.models.Session;
-import org.opencb.opencga.catalog.models.Session.Type;
-import org.opencb.opencga.core.common.TimeUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class JwtSessionManager {
     protected static Logger logger = LoggerFactory.getLogger(JwtSessionManager.class);
@@ -68,20 +67,20 @@ public class JwtSessionManager {
         return jwt;
     }
 
-    Jws<Claims> parseClaims(String jwtKey) throws CatalogTokenException {
+    Jws<Claims> parseClaims(String jwtKey) throws CatalogAuthenticationException {
         try {
             Jws claims = Jwts.parser().setSigningKey(this.secretKey.getBytes("UTF-8")).parseClaimsJws(jwtKey);
             return claims;
         } catch (ExpiredJwtException e) {
-            throw new CatalogTokenException("authentication token is expired : " + jwtKey);
+            throw CatalogAuthenticationException.tokenExpired(jwtKey);
         } catch (MalformedJwtException | SignatureException e) {
-            throw new CatalogTokenException("invalid authentication token : " + jwtKey);
+            throw CatalogAuthenticationException.invalidAuthenticationToken(jwtKey);
         } catch (UnsupportedEncodingException e) {
-            throw new CatalogTokenException("invalid authentication token encoding : " + jwtKey);
+            throw CatalogAuthenticationException.invalidAuthenticationEncodingToken(jwtKey);
         }
     }
 
-    public String getUserId(String jwtKey) throws CatalogTokenException {
+    public String getUserId(String jwtKey) throws CatalogAuthenticationException {
         return parseClaims(jwtKey).getBody().getSubject();
     }
 

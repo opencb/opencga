@@ -35,14 +35,14 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogTokenException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.core.common.Config;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
@@ -169,7 +169,7 @@ public class OpenCGAWSServer {
 
         try {
             verifyHeaders(httpHeaders);
-        } catch (CatalogTokenException e) {
+        } catch (CatalogAuthenticationException e) {
             throw new IllegalStateException(e);
         }
 
@@ -459,6 +459,8 @@ public class OpenCGAWSServer {
         Response.Status errorStatus = Response.Status.INTERNAL_SERVER_ERROR;
         if (e instanceof CatalogAuthorizationException) {
             errorStatus = Response.Status.FORBIDDEN;
+        } else if (e instanceof CatalogAuthenticationException) {
+            errorStatus = Response.Status.UNAUTHORIZED;
         }
 
         return Response.fromResponse(createJsonResponse(queryResponse)).status(errorStatus).build();
@@ -534,14 +536,14 @@ public class OpenCGAWSServer {
                 .build();
     }
 
-    private void verifyHeaders(HttpHeaders httpHeaders) throws CatalogTokenException {
+    private void verifyHeaders(HttpHeaders httpHeaders) throws CatalogAuthenticationException {
 
         List<String> authorization = httpHeaders.getRequestHeader("Authorization");
 
         if (authorization != null && authorization.get(0).length() > 7) {
             String token = authorization.get(0);
             if (!token.startsWith("Bearer ")) {
-                throw new CatalogTokenException("Authorization Header must start with Bearer JWToken");
+                throw new CatalogAuthenticationException("Authorization header must start with Bearer JWToken");
             }
             this.sessionId = token.substring("Bearer".length()).trim();
         }
