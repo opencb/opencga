@@ -83,6 +83,10 @@ public class VariableCommandOptions {
         @Parameter(names = {"--unique"}, description = "Unique", arity = 0)
         public boolean unique;
 
+        @Parameter(names = {"--confidential"}, description = "Flag to indicate that the variable set and any annotation set created from"
+                + " the current variable set will be confidential and will require of an additional special permission", arity = 0)
+        public boolean confidential;
+
         @Parameter(names = {"--description"}, description = "Description of the variable set", arity = 1)
         public String description;
 

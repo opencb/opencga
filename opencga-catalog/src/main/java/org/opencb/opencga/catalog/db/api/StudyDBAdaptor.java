@@ -372,6 +372,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         ID("id", DOUBLE, ""),
         NAME("name", TEXT, ""),
         UNIQUE("unique", BOOLEAN, ""),
+        CONFIDENTIAL("confidential", BOOLEAN, ""),
         DESCRIPTION("description", TEXT, ""),
         VARIABLE("variables", TEXT_ARRAY, ""),
         VARIABLE_NAME("variables.name", TEXT, ""),
