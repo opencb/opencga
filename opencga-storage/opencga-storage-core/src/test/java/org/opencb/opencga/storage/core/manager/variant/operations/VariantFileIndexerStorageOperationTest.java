@@ -22,11 +22,13 @@ import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.FileIndex;
@@ -118,6 +120,18 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
     }
 
     @Test
+    public void testDeleteIndexedFile() throws Exception {
+        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
+                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+
+        File inputFile = getFile(0);
+        indexFile(inputFile, queryOptions, outputId);
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("used in storage");
+        catalogManager.getFileManager().delete(inputFile.getId() + "", null, null, sessionId);
+    }
+
+    @Test
     public void testIndexFromFolder() throws Exception {
         QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
@@ -133,6 +147,22 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
         File transformedFile = transformFile(getFile(0), queryOptions);
         loadFile(transformedFile, queryOptions, outputId);
+    }
+
+    @Test
+    public void testDeleteTransformedFile() throws Exception {
+        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
+                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+
+        File inputFile = getFile(0);
+        File transformedFile = transformFile(inputFile, queryOptions);
+
+        catalogManager.getFileManager().delete(transformedFile.getName(), studyStr,
+                new ObjectMap(FileManager.SKIP_TRASH, true), sessionId);
+        catalogManager.getFileManager().delete(VariantReaderUtils.getMetaFromTransformedFile(transformedFile.getName()), studyStr,
+                new ObjectMap(FileManager.SKIP_TRASH, true), sessionId);
+
+        indexFile(inputFile, queryOptions, outputId);
     }
 
     @Test

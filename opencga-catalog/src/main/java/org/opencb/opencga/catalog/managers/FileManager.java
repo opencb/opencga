@@ -28,12 +28,9 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.DatasetDBAdaptor;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -395,7 +392,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                         .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                         .append(FileDBAdaptor.QueryParams.NAME.key(), variantFileName)
                         .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
-            fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
+                fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
             }
 
             if (fileQueryResult.getNumResults() > 0) {
@@ -1261,17 +1258,8 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
 
             // Check 8
-            // We cannot delete a file or folder containing files that are indexed or being processed in storage
-            Query query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
-                    .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(),
-                            Arrays.asList(FileIndex.IndexStatus.TRANSFORMING, FileIndex.IndexStatus.LOADING,
-                                    FileIndex.IndexStatus.INDEXING, FileIndex.IndexStatus.READY));
-            long count = fileDBAdaptor.count(query).first();
-            if (count > 0) {
-                throw new CatalogException("Cannot delete. " + count + " files have been or are being used to store variants.");
-            }
+            // We cannot unlink a file or folder containing files that are indexed or being processed in storage
+            checkUsedInStorage(studyId, file);
 
             if (params.getBoolean(SKIP_TRASH, false) || params.getBoolean(DELETE_EXTERNAL_FILES, false)) {
                 deletedFileResult = deleteFromDisk(file, studyId, userId, params);
@@ -1281,7 +1269,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                     if (file.getType().equals(File.Type.FILE)) {
                         checkCanDelete(Arrays.asList(fileId));
                         fileDBAdaptor.update(fileId, updateParams);
-                        query = new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                        Query query = new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
                         jobDBAdaptor.extractFilesFromJobs(query, Arrays.asList(fileId));
                     } else {
                         if (studyId == -1) {
@@ -1289,7 +1277,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                         }
 
                         // Send to trash all the files and subfolders
-                        query = new Query()
+                        Query query = new Query()
                                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
                                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
@@ -1305,7 +1293,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                     }
 
-                    query = new Query()
+                    Query query = new Query()
                             .append(FileDBAdaptor.QueryParams.ID.key(), fileId)
                             .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
                     deletedFileResult = fileDBAdaptor.get(query, QueryOptions.empty());
@@ -2009,16 +1997,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         // Check 8
         // We cannot unlink a file or folder containing files that are indexed or being processed in storage
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
-                .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(),
-                        Arrays.asList(FileIndex.IndexStatus.TRANSFORMING, FileIndex.IndexStatus.LOADING,
-                                FileIndex.IndexStatus.INDEXING, FileIndex.IndexStatus.READY));
-        long count = fileDBAdaptor.count(query).first();
-        if (count > 0) {
-            throw new CatalogException("Cannot delete. " + count + " files have been or are being used to store variants.");
-        }
+        checkUsedInStorage(studyId, file);
 
         String suffixName = ".REMOVED_" + TimeUtils.getTime();
         String basePath = Paths.get(file.getPath()).toString();
@@ -2153,10 +2132,84 @@ public class FileManager extends AbstractManager implements IFileManager {
                 }
             });
 
-            query = new Query()
+            Query query = new Query()
                     .append(FileDBAdaptor.QueryParams.ID.key(), file.getId())
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED);
             return fileDBAdaptor.get(query, new QueryOptions());
+        }
+    }
+
+    /**
+     * Check if the file or files inside the folder can be deleted / unlinked if they are being used in storage.
+     *
+     * @param studyId study id.
+     * @param file File or folder to be deleted / unlinked.
+     */
+    private void checkUsedInStorage(long studyId, File file) throws CatalogException {
+        // We cannot delete/unlink a file or folder containing files that are indexed or being processed in storage
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
+                .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(),
+                        Arrays.asList(FileIndex.IndexStatus.TRANSFORMING, FileIndex.IndexStatus.LOADING,
+                                FileIndex.IndexStatus.INDEXING, FileIndex.IndexStatus.READY));
+        long count = fileDBAdaptor.count(query).first();
+        if (count > 0) {
+            throw new CatalogException("Cannot delete. " + count + " files have been or are being used in storage.");
+        }
+
+        // We check if any of the files to be removed are transformation files
+        query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
+                .append(FileDBAdaptor.QueryParams.RELATED_FILES_RELATION.key(), File.RelatedFile.Relation.PRODUCED_FROM);
+        QueryResult<File> fileQR = fileDBAdaptor.get(query, new QueryOptions(QueryOptions.INCLUDE,
+                FileDBAdaptor.QueryParams.RELATED_FILES.key()));
+        if (fileQR.getNumResults() > 0) {
+            // Among the files to be deleted / unlinked, there are transformed files. We need to check that these files are not being used
+            // anymore.
+            Set<Long> fileIds = new HashSet<>();
+            for (File transformedFile : fileQR.getResult()) {
+                fileIds.addAll(
+                        transformedFile.getRelatedFiles().stream()
+                                .filter(myFile -> myFile.getRelation() == File.RelatedFile.Relation.PRODUCED_FROM)
+                                .map(File.RelatedFile::getFileId)
+                                .collect(Collectors.toSet())
+                );
+            }
+
+            // Check the original files are not being indexed at the moment
+            query = new Query(FileDBAdaptor.QueryParams.ID.key(), new ArrayList<>(fileIds));
+            DBIterator<File> iterator = fileDBAdaptor.iterator(query, new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor
+                    .QueryParams.INDEX.key(), FileDBAdaptor.QueryParams.ID.key())));
+            Map<Long, FileIndex> filesToUpdate = new HashMap<>();
+            while (iterator.hasNext()) {
+                File next = iterator.next();
+                String status = next.getIndex().getStatus().getName();
+                switch (status) {
+                    case FileIndex.IndexStatus.READY:
+                        // If they are already ready, we only need to remove the reference to the transformed files as they will be removed
+                        next.getIndex().setTransformedFile(null);
+                        filesToUpdate.put(next.getId(), next.getIndex());
+                        break;
+                    case FileIndex.IndexStatus.TRANSFORMED:
+                        // We need to remove the reference to the transformed files and change their status from TRANSFORMED to NONE
+                        next.getIndex().setTransformedFile(null);
+                        next.getIndex().getStatus().setName(FileIndex.IndexStatus.NONE);
+                        filesToUpdate.put(next.getId(), next.getIndex());
+                        break;
+                    case FileIndex.IndexStatus.NONE:
+                    case FileIndex.IndexStatus.DELETED:
+                    case FileIndex.IndexStatus.TRASHED:
+                        break;
+                    default:
+                        throw new CatalogException("Cannot delete files that are in use in storage.");
+                }
+            }
+
+            for (Map.Entry<Long, FileIndex> indexEntry : filesToUpdate.entrySet()) {
+                fileDBAdaptor.update(indexEntry.getKey(), new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), indexEntry.getValue()));
+            }
         }
     }
 
