@@ -1,8 +1,9 @@
-import requests
 import json
+
+import requests
 import yaml
 
-from retry import retry
+from pyCGA.retry import retry
 
 
 class ConfigClient(object):
@@ -124,7 +125,7 @@ class ConfigClient(object):
     @host.setter
     def host(self, new_host):
         if not (new_host.startswith('http://') or
-                new_host.startswith('https://')):
+                    new_host.startswith('https://')):
             new_host = 'http://' + new_host
         self._config['host'] = new_host
 

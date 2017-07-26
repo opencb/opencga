@@ -1,11 +1,10 @@
 import json
-import unittest
-
 import re
+import unittest
 from urlparse import parse_qs
 
-from sure import expect
 import httpretty
+from sure import expect
 
 from pyCGA.opencgarestclients import OpenCGAClient
 
@@ -131,4 +130,3 @@ class OpenCGAClinetTest(unittest.TestCase):
 
     def tearDown(self):
         httpretty.disable()
-

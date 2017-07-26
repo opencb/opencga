@@ -1,8 +1,8 @@
+import itertools
+import threading
 from time import sleep
 
 import requests
-import threading
-import itertools
 
 try:
     from Queue import Queue
@@ -12,8 +12,8 @@ except ImportError:
 _CALL_BATCH_SIZE = 2000
 _NUM_THREADS_DEFAULT = 4
 
-class OpenCGAResponse(list):
 
+class OpenCGAResponse(list):
     def __init__(self, response):
         self.dbTime = response['dbTime']
         self.numResults = response['numResults']
@@ -40,19 +40,18 @@ class OpenCGAResponse(list):
     def as_key_values(self, key, values):
         return {r.get(key): {v: r.get(v) for v in values} for r in self}
 
-    # def get_as_data_frame(self):
-    #
-    #     for i, e in enumerate(self):
-    #         for key in self[i]:
-    #             if isinstance(self[i][key], list) and self[i][key] and isinstance(self[i][key][0], dict):
-    #                 print key
-    #                 print self[i][key]
-    #                 self[i][key] = pd.DataFrame(self[i][key])
-    #     return pd.DataFrame(self)
+        # def get_as_data_frame(self):
+        #
+        #     for i, e in enumerate(self):
+        #         for key in self[i]:
+        #             if isinstance(self[i][key], list) and self[i][key] and isinstance(self[i][key][0], dict):
+        #                 print key
+        #                 print self[i][key]
+        #                 self[i][key] = pd.DataFrame(self[i][key])
+        #     return pd.DataFrame(self)
 
 
 class OpenCGAResponseList(list):
-
     def __init__(self, response_list, query_ids):
         if not query_ids:
             query_ids = []
@@ -108,8 +107,6 @@ def _create_rest_url(host, version, sid, category, resource, subcategory=None, q
         if opts:
             url += '?' + '&'.join(opts)
 
-
-
     return url
 
 
@@ -151,7 +148,7 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
     while call:
         # Check 'limit' parameter if there is a maximum limit of results
         if max_limit is not None and max_limit <= call_limit:
-                opts['limit'] = max_limit
+            opts['limit'] = max_limit
 
         # Updating query_id and list of ids to query
         if query_id is not None:
@@ -204,7 +201,6 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
 
         if r.status_code != 200:
             raise Exception(r.content)
-
 
         try:
             response = r.json()['response']
@@ -259,7 +255,8 @@ def _worker(queue, results, host, version, sid, species, category, resource, met
     while True:
         # Fetching new element from the queue
         index, query_id = queue.get()
-        response = _fetch(host=host, version=version, sid=sid, species=species, category=category, subcategory=subcategory,
+        response = _fetch(host=host, version=version, sid=sid, species=species, category=category,
+                          subcategory=subcategory,
                           resource=resource, method=method, data=data,
                           query_id=query_id, second_query_id=second_query_id, **options)
         # Store data in results at correct index
@@ -293,7 +290,7 @@ def execute(host, version, sid, category, resource, method, subcategory=None, qu
 
         # Splitting query_id into batches depending on the call batch size
         id_list = query_id.split(',')
-        id_batches = [','.join(id_list[x:x+_CALL_BATCH_SIZE])
+        id_batches = [','.join(id_list[x:x + _CALL_BATCH_SIZE])
                       for x in range(0, len(id_list), _CALL_BATCH_SIZE)]
 
         # Setting up the queue to hold all the id batches

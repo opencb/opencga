@@ -1,12 +1,6 @@
-import time
-
-import sys
-
-from retry import retry
-from pyCGA.Utils.AvroSchema import AvroSchemaFile
-
 from pyCGA.commons import execute, OpenCGAResponseList
 from pyCGA.opencgaconfig import ConfigClient
+from pyCGA.retry import retry
 
 
 class _ParentRestClient(object):
@@ -753,7 +747,7 @@ class AnalysisVariant(_ParentRestClient):
         return self._get('variant', subcategory='index', file=file, study=study, **options)
 
     def query(self, pag_size, data, skip=0, **options):
-        max =None
+        max = None
         if 'limit' in options:
             max = options['limit']
             del options['limit']
@@ -886,6 +880,7 @@ class OpenCGAClient(object):
         not to do so. This way, the password stored in the closure is inaccessible
         to other code
         """
+
         def login_handler():
             self.user_id = user
             self.session_id = Users(self.configuration).login(user=user, pwd=pwd).get().sessionId
