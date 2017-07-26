@@ -1226,8 +1226,8 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
 
             // Check 6.
-            // We cannot delete a folder containing files or folders with status missing or staged
             if (file.getType().equals(File.Type.DIRECTORY)) {
+                // We cannot delete a folder containing files or folders with status missing or staged
                 Query query = new Query()
                         .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                         .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
@@ -1260,6 +1260,19 @@ public class FileManager extends AbstractManager implements IFileManager {
                 }
             }
 
+            // Check 8
+            // We cannot delete a file or folder containing files that are indexed or being processed in storage
+            Query query = new Query()
+                    .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
+                    .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(),
+                            Arrays.asList(FileIndex.IndexStatus.TRANSFORMING, FileIndex.IndexStatus.LOADING,
+                                    FileIndex.IndexStatus.INDEXING, FileIndex.IndexStatus.READY));
+            long count = fileDBAdaptor.count(query).first();
+            if (count > 0) {
+                throw new CatalogException("Cannot delete. " + count + " files have been or are being used to store variants.");
+            }
+
             if (params.getBoolean(SKIP_TRASH, false) || params.getBoolean(DELETE_EXTERNAL_FILES, false)) {
                 deletedFileResult = deleteFromDisk(file, studyId, userId, params);
             } else {
@@ -1268,7 +1281,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                     if (file.getType().equals(File.Type.FILE)) {
                         checkCanDelete(Arrays.asList(fileId));
                         fileDBAdaptor.update(fileId, updateParams);
-                        Query query = new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                        query = new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
                         jobDBAdaptor.extractFilesFromJobs(query, Arrays.asList(fileId));
                     } else {
                         if (studyId == -1) {
@@ -1276,7 +1289,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                         }
 
                         // Send to trash all the files and subfolders
-                        Query query = new Query()
+                        query = new Query()
                                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
                                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
@@ -1292,7 +1305,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                     }
 
-                    Query query = new Query()
+                    query = new Query()
                             .append(FileDBAdaptor.QueryParams.ID.key(), fileId)
                             .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
                     deletedFileResult = fileDBAdaptor.get(query, QueryOptions.empty());
@@ -1994,6 +2007,19 @@ public class FileManager extends AbstractManager implements IFileManager {
             throw new CatalogException("Only previously linked files can be unlinked. Please, use delete instead.");
         }
 
+        // Check 8
+        // We cannot unlink a file or folder containing files that are indexed or being processed in storage
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
+                .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(),
+                        Arrays.asList(FileIndex.IndexStatus.TRANSFORMING, FileIndex.IndexStatus.LOADING,
+                                FileIndex.IndexStatus.INDEXING, FileIndex.IndexStatus.READY));
+        long count = fileDBAdaptor.count(query).first();
+        if (count > 0) {
+            throw new CatalogException("Cannot delete. " + count + " files have been or are being used to store variants.");
+        }
+
         String suffixName = ".REMOVED_" + TimeUtils.getTime();
         String basePath = Paths.get(file.getPath()).toString();
         String suffixedPath = basePath + suffixName;
@@ -2127,7 +2153,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                 }
             });
 
-            Query query = new Query()
+            query = new Query()
                     .append(FileDBAdaptor.QueryParams.ID.key(), file.getId())
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED);
             return fileDBAdaptor.get(query, new QueryOptions());
