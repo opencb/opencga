@@ -35,6 +35,7 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogTokenException;
@@ -455,9 +456,12 @@ public class OpenCGAWSServer {
         result.setErrorMsg("DEPRECATED: " + e.toString());
         queryResponse.setResponse(Arrays.asList(result));
 
-        return Response.fromResponse(createJsonResponse(queryResponse))
-                .status(Response.Status.INTERNAL_SERVER_ERROR).build();
-//        return createOkResponse(result);
+        Response.Status errorStatus = Response.Status.INTERNAL_SERVER_ERROR;
+        if (e instanceof CatalogAuthorizationException) {
+            errorStatus = Response.Status.FORBIDDEN;
+        }
+
+        return Response.fromResponse(createJsonResponse(queryResponse)).status(errorStatus).build();
     }
 
 //    protected Response createErrorResponse(String o) {
