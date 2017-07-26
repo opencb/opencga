@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
@@ -55,7 +56,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             new InitialDirContext(env);
         } catch (NamingException e) {
             if (throwException) {
-                throw new CatalogException(e.getMessage());
+                throw CatalogAuthenticationException.incorrectUserOrPassword();
             }
             return false;
         }
