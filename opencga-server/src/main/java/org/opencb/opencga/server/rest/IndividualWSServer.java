@@ -488,7 +488,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("memberIds") String memberId,
-            @ApiParam(value="JSON containing the parameters to add ACLs", required = true) IndividualAcl params) {
+            @ApiParam(value="JSON containing the parameters to update the permissions. If propagate flag is set to true, it will "
+                    + "propagate the permissions defined to the samples that are associated to the matching individuals",
+                    required = true) IndividualAcl params) {
         try {
             Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(params.getPermissions(), params.getAction(),
                     params.sample, params.propagate);

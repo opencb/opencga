@@ -275,6 +275,10 @@ public class SampleCommandOptions {
 
             @Parameter(names = {"--cohort"}, description = "Comma separated list of cohort ids or names", arity = 1)
             public String cohort;
+
+            @Parameter(names = {"--propagate"}, description = "Flag parameter indicating whether to propagate the permissions to the " +
+                    "individuals related to the sample(s).", arity = 0)
+            public boolean propagate;
         }
 
         public AclsUpdateCommandOptions getAclsUpdateCommandOptions() {

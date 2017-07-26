@@ -265,6 +265,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap bodyParams = new ObjectMap();
         bodyParams.putIfNotNull("permissions", commandOptions.permissions);
+        bodyParams.putIfNotNull("propagate", commandOptions.propagate);
         bodyParams.putIfNotNull("action", commandOptions.action);
         bodyParams.putIfNotNull("sample", commandOptions.id);
         bodyParams.putIfNotNull("individual", commandOptions.individual);

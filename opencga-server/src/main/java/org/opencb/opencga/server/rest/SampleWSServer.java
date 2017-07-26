@@ -508,6 +508,8 @@ public class SampleWSServer extends OpenCGAWSServer {
         public String individual;
         public String file;
         public String cohort;
+
+        public boolean propagate;
     }
 
     @POST
@@ -517,10 +519,12 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("memberIds") String memberId,
-            @ApiParam(value="JSON containing the parameters to add ACLs", required = true) SampleAcl params) {
+            @ApiParam(value="JSON containing the parameters to update the permissions. If propagate flag is set to true, it will "
+                    + "propagate the permissions defined to the individuals that are associated to the matching samples", required = true)
+                    SampleAcl params) {
         try {
             Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(
-                    params.getPermissions(), params.getAction(), params.individual, params.file, params.cohort);
+                    params.getPermissions(), params.getAction(), params.individual, params.file, params.cohort, params.propagate);
             return createOkResponse(sampleManager.updateAcl(params.sample, studyStr, memberId, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);

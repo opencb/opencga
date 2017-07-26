@@ -27,7 +27,10 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -35,6 +38,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.ISampleManager;
 import org.opencb.opencga.catalog.managers.api.IUserManager;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.AnnotationManager;
@@ -741,20 +745,47 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         String collectionName = MongoDBAdaptorFactory.SAMPLE_COLLECTION;
 
+        List<QueryResult<SampleAclEntry>> queryResults;
         switch (sampleAclParams.getAction()) {
             case SET:
-                return authorizationManager.setAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
+                queryResults = authorizationManager.setAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
                         collectionName);
+                if (sampleAclParams.isPropagate()) {
+                    Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
+                            AclParams.Action.SET, StringUtils.join(resourceIds.getResourceIds(), ","), false);
+                    catalogManager.getIndividualManager().updateAcl(null, studyStr, memberIds, aclParams, sessionId);
+                }
+                break;
             case ADD:
-                return authorizationManager.addAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
+                queryResults = authorizationManager.addAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
                         collectionName);
+                if (sampleAclParams.isPropagate()) {
+                    Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
+                            AclParams.Action.ADD, StringUtils.join(resourceIds.getResourceIds(), ","), false);
+                    catalogManager.getIndividualManager().updateAcl(null, studyStr, memberIds, aclParams, sessionId);
+                }
+                break;
             case REMOVE:
-                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
+                queryResults = authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
+                if (sampleAclParams.isPropagate()) {
+                    Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
+                            AclParams.Action.REMOVE, StringUtils.join(resourceIds.getResourceIds(), ","), false);
+                    catalogManager.getIndividualManager().updateAcl(null, studyStr, memberIds, aclParams, sessionId);
+                }
+                break;
             case RESET:
-                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, collectionName);
+                queryResults = authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, collectionName);
+                if (sampleAclParams.isPropagate()) {
+                    Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
+                            AclParams.Action.RESET, StringUtils.join(resourceIds.getResourceIds(), ","), false);
+                    catalogManager.getIndividualManager().updateAcl(null, studyStr, memberIds, aclParams, sessionId);
+                }
+                break;
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }
+
+        return queryResults;
     }
 
     private MyResourceId commonGetAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {

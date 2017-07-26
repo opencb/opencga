@@ -347,7 +347,7 @@ public class IndividualCommandOptions {
             @Parameter(names = {"--sample"}, description = "Comma separated list of sample ids or names", arity = 1)
             public String sample;
 
-            @Parameter(names = {"--propagate"}, description = "Boolean parameter indicating whether to propagate the permissions to the " +
+            @Parameter(names = {"--propagate"}, description = "Flag parameter indicating whether to propagate the permissions to the " +
                     "samples related to the individual(s).", arity = 0)
             public boolean propagate;
         }
