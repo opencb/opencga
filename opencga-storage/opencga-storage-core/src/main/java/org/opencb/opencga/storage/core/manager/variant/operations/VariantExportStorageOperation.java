@@ -126,8 +126,7 @@ public class VariantExportStorageOperation extends StorageOperation {
 //                StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyInfo.getStudyId(), dataStore);
 //            }
 
-            VariantStorageEngine variantStorageEngine =
-                    storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+            VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
             variantStorageEngine.exportData(outputFile, outputFormat, query, new QueryOptions(options));
 
             if (catalogOutDirId != null && outdir != null) {
@@ -170,8 +169,7 @@ public class VariantExportStorageOperation extends StorageOperation {
 
         try {
             DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
-            VariantStorageEngine variantStorageEngine =
-                    storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+            VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
             ObjectMap options = variantStorageEngine.getOptions();
             ExportMetadata exportMetadata;
             try (StudyConfigurationManager scm = variantStorageEngine.getStudyConfigurationManager()) {
@@ -183,8 +181,9 @@ public class VariantExportStorageOperation extends StorageOperation {
 
             variantStorageEngine.importData(inputUri, exportMetadata, studiesOldNewMap, options);
 
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            throw new StorageEngineException("Error importing data", e);
+        } catch (Exception e) {
+            logger.error("Error importing data");
+            throw e;
         }
 
     }

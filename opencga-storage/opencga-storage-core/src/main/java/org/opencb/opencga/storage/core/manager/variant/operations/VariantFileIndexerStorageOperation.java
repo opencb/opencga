@@ -143,6 +143,11 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 //        DataStore dataStore = getDataStore(catalogManager, studyIdByInputFileId, File.Bioformat.VARIANT, sessionId);
         DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
 
+        // Create default cohort if needed.
+        if (step.equals(Type.INDEX) || step.equals(Type.LOAD)) {
+            createDefaultCohortIfNeeded(study, sessionId);
+        }
+
         // Update study configuration BEFORE executing the index and fetching files from Catalog
         updateStudyConfiguration(sessionId, studyIdByInputFileId, dataStore);
 
@@ -177,12 +182,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyIdByInputFileId);
 
-        VariantStorageEngine variantStorageEngine;
-        try {
-            variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            throw new StorageEngineException("Unable to create StorageEngine", e);
-        }
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
 
         // Add species and assembly
         String scientificName = studyInfo.getOrganism().getScientificName();
@@ -230,16 +230,11 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         }
 
         if (step.equals(Type.INDEX) || step.equals(Type.LOAD)) {
-            boolean modified = false;
             for (File file : filesToIndex) {
-                modified |= updateDefaultCohort(file, study, options, sessionId);
+                updateDefaultCohort(file, study, options, sessionId);
             }
             if (calculateStats) {
                 updateDefaultCohortStatus(study, Cohort.CohortStatus.CALCULATING, sessionId);
-            }
-            if (modified) {
-                // Update again the StudyConfiguration.
-                updateStudyConfiguration(sessionId, study.getId(), dataStore);
             }
         }
         // Only if we are not transforming or if a path has been passed, we will update catalog information
@@ -283,9 +278,10 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 copyResults(outdir, catalogOutDirId, sessionId);
             }
             updateFileInfo(study, filesToIndex, storagePipelineResults, outdir, saveIntermediateFiles, options, sessionId);
-            if (calculateStats) {
-                updateDefaultCohortStatus(sessionId, study, exception);
-            }
+//            if (calculateStats) {
+//                updateDefaultCohortStatus(sessionId, study, exception);
+//            }
+            updateStudyConfiguration(sessionId, study.getId(), dataStore);
         }
 
         if (exception == null) {
@@ -576,8 +572,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(study.getId(), query, new QueryOptions(), sessionId);
 
         if (cohorts.getResult().isEmpty()) {
-            defaultCohort = catalogManager.getCohortManager().create(study.getId(), StudyEntry.DEFAULT_COHORT, Study.Type.COLLECTION,
-                    "Default cohort with almost all indexed samples", Collections.emptyList(), null, null, sessionId).first();
+            defaultCohort = createDefaultCohort(study, sessionId);
             modified = true;
         } else {
             defaultCohort = cohorts.first();
@@ -596,6 +591,21 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             modified = true;
         }
         return modified;
+    }
+
+    private Cohort createDefaultCohortIfNeeded(Study study, String sessionId) throws CatalogException {
+        Query query = new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT);
+        Cohort cohort = catalogManager.getCohortManager().get(study.getId(), query, null, sessionId).first();
+        if (cohort == null) {
+            return createDefaultCohort(study, sessionId);
+        } else {
+            return cohort;
+        }
+    }
+
+    private Cohort createDefaultCohort(Study study, String sessionId) throws CatalogException {
+        return catalogManager.getCohortManager().create(study.getId(), StudyEntry.DEFAULT_COHORT, Study.Type.COLLECTION,
+                "Default cohort with almost all indexed samples", Collections.emptyList(), null, null, sessionId).first();
     }
 
     private void updateDefaultCohortStatus(String sessionId, Study study, StorageEngineException exception) throws CatalogException {
