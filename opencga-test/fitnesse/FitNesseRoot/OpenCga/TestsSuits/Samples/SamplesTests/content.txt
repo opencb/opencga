@@ -135,7 +135,7 @@
 
 !3 Get Sample 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sampleId2/info?sid=$userBSessionId|500|  Content-Type: application/json |jsonbody.error == 'User $userB does not have any permissions in study $study'|
+| GET | /v1/samples/$sampleId2/info?sid=$userBSessionId|403|  Content-Type: application/json |jsonbody.error == 'User $userB does not have any permissions in study $study'|
 
 !3 Update Sample ACL (add)
 !|Table: Rest Fixture | $baseURL |
@@ -156,6 +156,17 @@
 !3 Get Sample (Annotation Set MUST Present)
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/samples/$sampleId2/info?sid=$userBSessionId|200|  Content-Type: application/json ||
+
+!3 Update Variable Set - Confidential True
+!|Table: Rest Fixture  | $baseURL |
+| setBody |  {"description": "true"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/variableset/$gVariableSetId/update?sid=$sessionId&study=$studyId |200| Content-Type : application/json||
+
+!3 Get Sample (Annotation Set MUST NOT Present)
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/samples/$sampleId2/info?sid=$userBSessionId|200|  Content-Type: application/json ||
+
 
 !3 Update (SET) ACL Sample 2 And Connecting Individual
 !|Table: Rest Fixture | $baseURL |

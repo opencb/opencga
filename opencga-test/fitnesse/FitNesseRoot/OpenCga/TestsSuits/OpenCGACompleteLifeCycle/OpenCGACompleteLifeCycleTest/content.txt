@@ -44,7 +44,7 @@
 !|Table: Rest Fixture | $baseURL |
 | setBody | {  "action": "SET",  "study": "$studyAId",  "template": "view_only"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/acl/$ROU/update?sid=$analystSessionId|500|  Content-Type: application/json ||
+| POST | /v1/studies/acl/$ROU/update?sid=$analystSessionId|403|  Content-Type: application/json ||
 
 !3 Create ACL For ROU
 !|Table: Rest Fixture | $baseURL |
@@ -56,13 +56,13 @@
 !|Table: Rest Fixture | $baseURL |
 | setBody | {   "action" :"REMOVE" , "study" : "$studyAId" , "template":"analyst"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/acl/$ROU/update?sid=$analystSessionId|500|  Content-Type: application/json ||
+| POST | /v1/studies/acl/$ROU/update?sid=$analystSessionId|403|  Content-Type: application/json ||
 
 !3 (Negative) Remove ACL For Admin Using ROU
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "action" : "REMOVE", "study" : "$studyAId", "template": "admin"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/studies/acl/$admin/update?sid=$ROUSessionId|500|  Content-Type: application/json ||
+| POST | /v1/studies/acl/$admin/update?sid=$ROUSessionId|403|  Content-Type: application/json ||
 
 !3 Create Empty ACL For User A 
 !|Table: Rest Fixture | $baseURL |
@@ -84,11 +84,11 @@
 
 !3 (Negative) Get Study with userB 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyAId/info?sid=$userBSessionId |500|  Content-Type: application/json |jsonbody.error != ''|
+| GET | /v1/studies/$studyAId/info?sid=$userBSessionId |403|  Content-Type: application/json |jsonbody.error != ''|
 
 !3 (Negative) Get Study B with Analyst 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyBId/info?sid=$analystSessionId |500|  Content-Type: application/json |jsonbody.error != ''|
+| GET | /v1/studies/$studyBId/info?sid=$analystSessionId |403|  Content-Type: application/json |jsonbody.error != ''|
 
 !3 Create Individual A1 With Admin
 !|Table: Rest Fixture | $baseURL |
@@ -108,13 +108,13 @@
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "$iA3" }|
 | setHeader|Content-Type:application/json|
-| POST | /v1/individuals/create?sid=$ROUSessionId&study=$studyAId |500|  Content-Type: application/json ||
+| POST | /v1/individuals/create?sid=$ROUSessionId&study=$studyAId |403|  Content-Type: application/json ||
 
 !3 (Negative) Create Individual With User B
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "$iB1" }|
 | setHeader|Content-Type:application/json|
-| POST | /v1/individuals/create?sid=$userBSessionId&study=$studyAId |500|  Content-Type: application/json ||
+| POST | /v1/individuals/create?sid=$userBSessionId&study=$studyAId |403|  Content-Type: application/json ||
 
 !3 Create Sample A1 With Admin
 !|Table: Rest Fixture | $baseURL |
@@ -134,17 +134,17 @@
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "$sA3" }|
 | setHeader|Content-Type:application/json|
-| POST | /v1/samples/create?sid=$ROUSessionId&study=$studyAId |500|  Content-Type: application/json ||
+| POST | /v1/samples/create?sid=$ROUSessionId&study=$studyAId |403|  Content-Type: application/json ||
 
 !3 (Negative) Create Sample With User B
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "$sB1" }|
 | setHeader|Content-Type:application/json|
-| POST | /v1/samples/create?sid=$userBSessionId&study=$studyAId |500|  Content-Type: application/json ||
+| POST | /v1/samples/create?sid=$userBSessionId&study=$studyAId |403|  Content-Type: application/json ||
 
 !3 (Negative) Get Sample A1 with User A
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/samples/$sA1Id/info?sid=$userASessionId |500|  Content-Type: application/json || 
+| GET | /v1/samples/$sA1Id/info?sid=$userASessionId |403|  Content-Type: application/json || 
 
 !3 Create ACL For User A for Sample A1
 !|Table: Rest Fixture | $baseURL |
@@ -178,13 +178,13 @@
 !|Table: Rest Fixture | $baseURL |
 | setBody |{ "name": "$cA3"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/cohorts/create?sid=$ROUSessionId&study=$studyAId |500|  Content-Type: application/json ||
+| POST | /v1/cohorts/create?sid=$ROUSessionId&study=$studyAId |403|  Content-Type: application/json ||
 
 !3 (Negative) Create Cohort With User B
 !|Table: Rest Fixture | $baseURL |
 | setBody |{ "name": "$cB1"}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/cohorts/create?sid=$userBSessionId&study=$studyAId |500|  Content-Type: application/json ||
+| POST | /v1/cohorts/create?sid=$userBSessionId&study=$studyAId |403|  Content-Type: application/json ||
 
 !3 Restrict ACL For Admin for Cohort A1
 !|Table: Rest Fixture | $baseURL |
@@ -194,7 +194,7 @@
 
 !3 (Negative) Get Cohort A1 with Admin After Restriction
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/$cA1Id/info?sid=$adminSessionId |500|  Content-Type: application/json ||
+| GET | /v1/cohorts/$cA1Id/info?sid=$adminSessionId |403|  Content-Type: application/json ||
 
 !3 Remove Restricted ACL For Admin for Cohort A1
 !|Table: Rest Fixture | $baseURL |
@@ -220,13 +220,13 @@
 !|Table: Rest Fixture  | $baseURL |
 | setBody |  {  "unique": false,  "name": "$vsA3",  "description": "string",  "variables": [{"name": "variable1","category": "string","type": "BOOLEAN","defaultValue": {},"required": false,"multiValue":false}]}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/variableset/create?sid=$ROUSessionId&study=$studyAId |500| Content-Type : application/json||
+| POST | /v1/variableset/create?sid=$ROUSessionId&study=$studyAId |403| Content-Type : application/json||
 
 !3 (Negative) Create Variable Set With User B
 !|Table: Rest Fixture  | $baseURL |
 | setBody |  {  "unique": false,  "name": "$vsA3",  "description": "string",  "variables": [{"name": "variable1","category": "string","type": "BOOLEAN","defaultValue": {},"required": false,"multiValue":false},{"name": "variable2","category": "string","type": "INTEGER","defaultValue": {},"required": true,"multiValue":false}]}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/variableset/create?sid=$userBSessionId&study=$studyAId |500| Content-Type : application/json||
+| POST | /v1/variableset/create?sid=$userBSessionId&study=$studyAId |403| Content-Type : application/json||
 
 !3 Create Annotation Set Sample A1 With Analyst
 !|Table: Rest Fixture  | $baseURL |
@@ -261,18 +261,18 @@
 !|Table: Rest Fixture  | $baseURL |
 | setBody | {  "name": "$asA1",  "annotations": {"variable1": "TRUE"}}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/samples/$sA1Id/annotationsets/create?sid=$userBSessionId&variableSetId=$vsAId1&study=$studyAId |500| Content-Type : application/json||
+| POST | /v1/samples/$sA1Id/annotationsets/create?sid=$userBSessionId&variableSetId=$vsAId1&study=$studyAId |403| Content-Type : application/json||
 
 !3 (Negative) Create Annotation Set Individual A1 With ROU
 !|Table: Rest Fixture  | $baseURL |
 | setBody | {  "name": "$asA1",  "annotations": {"variable1": "TRUE"}}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/individuals/$iA1Id/annotationsets/create?sid=$ROUSessionId&variableSetId=$vsAId1&study=$studyAId |500| Content-Type : application/json||
+| POST | /v1/individuals/$iA1Id/annotationsets/create?sid=$ROUSessionId&variableSetId=$vsAId1&study=$studyAId |403| Content-Type : application/json||
 
 !3 (Negative) Create Annotation Set Cohort A1 With User B
 !|Table: Rest Fixture  | $baseURL |
 | setBody | {  "name": "$asA1",  "annotations": {"variable1": "FALSE"}}|
 | setHeader|Content-Type:application/json|
-| POST | /v1/cohorts/$cA1Id/annotationsets/create?sid=$userBSessionId&variableSetId=$vsAId1&study=$studyAId |500| Content-Type : application/json||
+| POST | /v1/cohorts/$cA1Id/annotationsets/create?sid=$userBSessionId&variableSetId=$vsAId1&study=$studyAId |403| Content-Type : application/json||
 
 
