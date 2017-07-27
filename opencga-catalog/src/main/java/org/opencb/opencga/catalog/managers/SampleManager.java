@@ -440,7 +440,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                 queryResult = new QueryResult<>("Delete sample " + sampleId);
                 queryResult.setErrorMsg(e.getMessage());
             } catch (CatalogException e) {
-                e.printStackTrace();
+                logger.error("{}", e.getMessage(), e);
                 queryResult = new QueryResult<>("Delete sample " + sampleId);
                 queryResult.setErrorMsg(e.getMessage());
             } finally {
