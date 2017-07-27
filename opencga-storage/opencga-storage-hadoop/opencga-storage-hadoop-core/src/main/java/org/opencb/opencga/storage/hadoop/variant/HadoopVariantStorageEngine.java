@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,7 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
-import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
@@ -27,28 +25,24 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
-import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.search.VariantSearchManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -495,82 +489,14 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         return hBaseManager;
     }
 
-
     @Override
-    public VariantQueryResult<Variant> get(Query query, QueryOptions options) throws StorageEngineException {
-        if (options == null) {
-            options = QueryOptions.empty();
-        }
-        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
-        // TODO: Use CacheManager ?
-        if (options.getBoolean(VariantSearchManager.SUMMARY)
-                || !query.containsKey(VariantQueryParam.GENOTYPE.key())
-                && !query.containsKey(VariantQueryParam.SAMPLES.key())
-//                && !query.containsKey(VariantQueryParam.FILES.key())
-//                && !query.containsKey(VariantQueryParam.FILTER.key())
-                && !returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)
-//                && !returnedFields.contains(VariantField.STUDIES_FILES)
-                && searchActiveAndAlive()) {
-            try {
-                return getVariantSearchManager().query(dbName, query, options);
-            } catch (IOException | VariantSearchException e) {
-                throw Throwables.propagate(e);
-            }
-        } else {
-            VariantDBAdaptor dbAdaptor = getDBAdaptor();
-            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
-            query = parseQuery(query, studyConfigurationManager);
-            setDefaultTimeout(options);
-            return dbAdaptor.get(query, options);
-        }
+    protected boolean doQuerySearchManager(Query query, QueryOptions options) throws StorageEngineException {
+        // TODO: Query using SearchManager even if FILES filter is used
+        return super.doQuerySearchManager(query, options);
     }
 
     @Override
-    public VariantDBIterator iterator(Query query, QueryOptions options) throws StorageEngineException {
-        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
-        if (options.getBoolean(VariantSearchManager.SUMMARY)
-                || !query.containsKey(VariantQueryParam.GENOTYPE.key())
-                && !query.containsKey(VariantQueryParam.SAMPLES.key())
-//                && !query.containsKey(VariantQueryParam.FILES.key())
-//                && !query.containsKey(VariantQueryParam.FILTER.key())
-                && !returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)
-//                && !returnedFields.contains(VariantField.STUDIES_FILES)
-                && searchActiveAndAlive()) {
-            try {
-                return getVariantSearchManager().iterator(dbName, query, options);
-            } catch (IOException | VariantSearchException e) {
-                throw Throwables.propagate(e);
-            }
-        } else {
-            VariantDBAdaptor dbAdaptor = getDBAdaptor();
-            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
-            query = parseQuery(query, studyConfigurationManager);
-            return dbAdaptor.iterator(query, options);
-        }
-    }
-
-    @Override
-    public QueryResult<Long> count(Query query) throws StorageEngineException {
-        if (query.containsKey(VariantQueryParam.GENOTYPE.key())
-                || query.containsKey(VariantQueryParam.SAMPLES.key())
-                || !searchActiveAndAlive()) {
-            VariantDBAdaptor dbAdaptor = getDBAdaptor();
-            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
-            query = parseQuery(query, studyConfigurationManager);
-            return dbAdaptor.count(query);
-        } else {
-            try {
-                StopWatch watch = StopWatch.createStarted();
-                long count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 1)).getNumTotalResults();
-                int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
-                return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
-            } catch (IOException | VariantSearchException e) {
-                throw Throwables.propagate(e);
-            }
-        }
-    }
-
-    public Query parseQuery(Query originalQuery, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
+    public Query preProcessQuery(Query originalQuery, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
         // Copy input query! Do not modify original query!
         Query query = originalQuery == null ? new Query() : new Query(originalQuery);
         List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());
@@ -580,47 +506,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             query.remove(VariantQueryParam.STUDIES.key());
         }
 
-        if (isValidParam(query, VariantQueryParam.ANNOT_GO)) {
-            String value = query.getString(VariantQueryParam.ANNOT_GO.key());
-            // Check if comma separated of semi colon separated (AND or OR)
-            VariantQueryUtils.QueryOperation queryOperation = checkOperator(value);
-            // Split by comma or semi colon
-            List<String> goValues = splitValue(value, queryOperation);
+        convertGoToGeneQuery(query, cellBaseUtils);
+        convertExpressionToGeneQuery(query, cellBaseUtils);
 
-            if (queryOperation == VariantQueryUtils.QueryOperation.AND) {
-                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_GO, value, "Unimplemented AND operator");
-            }
-            query.remove(VariantQueryParam.ANNOT_GO.key());
-            List<String> genes = new ArrayList<>(query.getAsStringList(VariantQueryParam.GENE.key()));
-            Set<String> genesByGo = cellBaseUtils.getGenesByGo(goValues);
-            if (genesByGo.isEmpty()) {
-                genes.add("none");
-            } else {
-                genes.addAll(genesByGo);
-            }
-            query.put(VariantQueryParam.GENE.key(), genes);
-        }
-
-        if (isValidParam(query, VariantQueryParam.ANNOT_EXPRESSION)) {
-            String value = query.getString(VariantQueryParam.ANNOT_EXPRESSION.key());
-            // Check if comma separated of semi colon separated (AND or OR)
-            VariantQueryUtils.QueryOperation queryOperation = checkOperator(value);
-            // Split by comma or semi colon
-            List<String> expressionValues = splitValue(value, queryOperation);
-
-            if (queryOperation == VariantQueryUtils.QueryOperation.AND) {
-                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_EXPRESSION, value, "Unimplemented AND operator");
-            }
-            query.remove(VariantQueryParam.ANNOT_EXPRESSION.key());
-            List<String> genes = new ArrayList<>(query.getAsStringList(VariantQueryParam.GENE.key()));
-            Set<String> genesByExpression = cellBaseUtils.getGenesByExpression(expressionValues);
-            if (genesByExpression.isEmpty()) {
-                genes.add("none");
-            } else {
-                genes.addAll(genesByExpression);
-            }
-            query.put(VariantQueryParam.GENE.key(), genes);
-        }
         return query;
     }
 

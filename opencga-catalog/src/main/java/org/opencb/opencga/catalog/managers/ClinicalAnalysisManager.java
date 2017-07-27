@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
@@ -6,15 +22,13 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.ClinicalAnalysis;
 import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.acls.permissions.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -185,20 +199,13 @@ public class ClinicalAnalysisManager extends AbstractManager {
             throws CatalogException {
         MyResourceIds resourceIds = getIds(clinicalAnalysis, studyStr, sessionId);
 
+        Query query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId());
         List<QueryResult<ClinicalAnalysis>> queryResults = new ArrayList<>(resourceIds.getResourceIds().size());
-        MyResourceId resourceId = new MyResourceId().setStudyId(resourceIds.getStudyId()).setUser(resourceIds.getUser());
         for (Long clinicalAnalysisId : resourceIds.getResourceIds()) {
-            resourceId.setResourceId(clinicalAnalysisId);
-            try {
-                authorizationManager.checkPermissions(resourceId, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW,
-                        MongoDBAdaptorFactory.CLINICAL_ANALYSIS_COLLECTION);
-                queryResults.add(clinicalDBAdaptor.get(clinicalAnalysisId, options));
-            } catch (CatalogException e) {
-                logger.error(e.getMessage(), e);
-                QueryResult<ClinicalAnalysis> errorResult = new QueryResult<>(Long.toString(clinicalAnalysisId));
-                errorResult.setErrorMsg(e.getMessage());
-                queryResults.add(errorResult);
-            }
+            query.append(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), clinicalAnalysisId);
+            QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = clinicalDBAdaptor.get(query, options, resourceIds.getUser());
+            clinicalAnalysisQueryResult.setId(Long.toString(clinicalAnalysisId));
+            queryResults.add(clinicalAnalysisQueryResult);
         }
 
         return queryResults;
@@ -207,48 +214,32 @@ public class ClinicalAnalysisManager extends AbstractManager {
     public QueryResult<ClinicalAnalysis> search(String studyStr, Query query, QueryOptions options, String sessionId)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getId(sessionId);
-        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
-        // Check any permission in studies
-        for (Long studyId : studyIds) {
-            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
-        }
-
-        // FIXME: Although the search method is multi-study, we can only use the smart resolutor for one study at the moment.
         if (query.containsKey("family")) {
             MyResourceId familyResource = catalogManager.getFamilyManager().getId(query.getString("family"),
-                    Long.toString(studyIds.get(0)), sessionId);
+                    Long.toString(studyId), sessionId);
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY_ID.key(), familyResource.getResourceId());
             query.remove("family");
         }
         if (query.containsKey("sample")) {
             MyResourceId sampleResource = catalogManager.getSampleManager().getId(query.getString("sample"),
-                    Long.toString(studyIds.get(0)), sessionId);
+                    Long.toString(studyId), sessionId);
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE_ID.key(), sampleResource.getResourceId());
             query.remove("sample");
         }
         if (query.containsKey("proband")) {
             MyResourceId probandResource = catalogManager.getIndividualManager().getId(query.getString("proband"),
-                    Long.toString(studyIds.get(0)), sessionId);
+                    Long.toString(studyId), sessionId);
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_ID.key(), probandResource.getResourceId());
             query.remove("proband");
         }
 
-        QueryResult<ClinicalAnalysis> queryResult = null;
-        for (Long studyId : studyIds) {
-            query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-            QueryResult<ClinicalAnalysis> queryResultAux = clinicalDBAdaptor.get(query, options);
-            authorizationManager.filterClinicalAnalysis(userId, studyId, queryResultAux.getResult());
 
-            if (queryResult == null) {
-                queryResult = queryResultAux;
-            } else {
-                queryResult.getResult().addAll(queryResultAux.getResult());
-                queryResult.setNumTotalResults(queryResult.getNumTotalResults() + queryResultAux.getNumTotalResults());
-                queryResult.setDbTime(queryResult.getDbTime() + queryResultAux.getDbTime());
-            }
-        }
-        queryResult.setNumResults(queryResult.getResult().size());
+
+        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(query, options, userId);
+//            authorizationManager.filterClinicalAnalysis(userId, studyId, queryResultAux.getResult());
 
         return queryResult;
     }
@@ -256,35 +247,29 @@ public class ClinicalAnalysisManager extends AbstractManager {
     public QueryResult<ClinicalAnalysis> count(String studyStr, Query query, String sessionId)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getId(sessionId);
-        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
-        // Check any permission in studies
-        for (Long studyId : studyIds) {
-            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
-        }
-
-        // FIXME: Although the search method is multi-study, we can only use the smart resolutor for one study at the moment.
         if (query.containsKey("family")) {
             MyResourceId familyResource = catalogManager.getFamilyManager().getId(query.getString("family"),
-                    Long.toString(studyIds.get(0)), sessionId);
+                    Long.toString(studyId), sessionId);
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY_ID.key(), familyResource.getResourceId());
             query.remove("family");
         }
         if (query.containsKey("sample")) {
             MyResourceId sampleResource = catalogManager.getSampleManager().getId(query.getString("sample"),
-                    Long.toString(studyIds.get(0)), sessionId);
+                    Long.toString(studyId), sessionId);
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE_ID.key(), sampleResource.getResourceId());
             query.remove("sample");
         }
         if (query.containsKey("proband")) {
             MyResourceId probandResource = catalogManager.getIndividualManager().getId(query.getString("proband"),
-                    Long.toString(studyIds.get(0)), sessionId);
+                    Long.toString(studyId), sessionId);
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_ID.key(), probandResource.getResourceId());
             query.remove("proband");
         }
 
-        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyIds);
-        QueryResult<Long> queryResultAux = clinicalDBAdaptor.count(query);
+        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Long> queryResultAux = clinicalDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_CLINICAL_ANALYSIS);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
     }

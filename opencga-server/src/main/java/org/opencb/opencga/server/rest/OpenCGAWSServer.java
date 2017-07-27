@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,13 +35,14 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogTokenException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.core.common.Config;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
@@ -168,7 +169,7 @@ public class OpenCGAWSServer {
 
         try {
             verifyHeaders(httpHeaders);
-        } catch (CatalogTokenException e) {
+        } catch (CatalogAuthenticationException e) {
             throw new IllegalStateException(e);
         }
 
@@ -455,9 +456,14 @@ public class OpenCGAWSServer {
         result.setErrorMsg("DEPRECATED: " + e.toString());
         queryResponse.setResponse(Arrays.asList(result));
 
-        return Response.fromResponse(createJsonResponse(queryResponse))
-                .status(Response.Status.INTERNAL_SERVER_ERROR).build();
-//        return createOkResponse(result);
+        Response.Status errorStatus = Response.Status.INTERNAL_SERVER_ERROR;
+        if (e instanceof CatalogAuthorizationException) {
+            errorStatus = Response.Status.FORBIDDEN;
+        } else if (e instanceof CatalogAuthenticationException) {
+            errorStatus = Response.Status.UNAUTHORIZED;
+        }
+
+        return Response.fromResponse(createJsonResponse(queryResponse)).status(errorStatus).build();
     }
 
 //    protected Response createErrorResponse(String o) {
@@ -524,20 +530,20 @@ public class OpenCGAWSServer {
     protected Response buildResponse(Response.ResponseBuilder responseBuilder) {
         return responseBuilder
                 .header("Access-Control-Allow-Origin", "*")
-                .header("Access-Control-Allow-Headers", "x-requested-with, content-type")
+                .header("Access-Control-Allow-Headers", "x-requested-with, content-type, authorization")
                 .header("Access-Control-Allow-Credentials", "true")
                 .header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
                 .build();
     }
 
-    private void verifyHeaders(HttpHeaders httpHeaders) throws CatalogTokenException {
+    private void verifyHeaders(HttpHeaders httpHeaders) throws CatalogAuthenticationException {
 
         List<String> authorization = httpHeaders.getRequestHeader("Authorization");
 
         if (authorization != null && authorization.get(0).length() > 7) {
             String token = authorization.get(0);
             if (!token.startsWith("Bearer ")) {
-                throw new CatalogTokenException("Authorization Header must start with Bearer JWToken");
+                throw new CatalogAuthenticationException("Authorization header must start with Bearer JWToken");
             }
             this.sessionId = token.substring("Bearer".length()).trim();
         }

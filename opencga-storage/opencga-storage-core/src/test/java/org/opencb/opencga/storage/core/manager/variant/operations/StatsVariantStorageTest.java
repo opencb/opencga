@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,10 +31,7 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.Cohort;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
@@ -242,8 +239,11 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         catalogManager.modifyCohort(coh[0], new ObjectMap("description", "NewDescription"), new QueryOptions(), sessionId);
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohort(coh[0], null, sessionId).first().getStatus().getName());
 
-        catalogManager.modifyCohort(coh[0], new ObjectMap("samples", catalogManager.getCohort(coh[0], null, sessionId).first()
-                .getSamples().subList(0, 100)), new QueryOptions(), sessionId);
+        List<Long> newCohort = catalogManager.getCohort(coh[0], null, sessionId).first().getSamples().stream()
+                .map(Sample::getId)
+                .limit(100)
+                .collect(Collectors.toList());
+        catalogManager.modifyCohort(coh[0], new ObjectMap("samples", newCohort), new QueryOptions(), sessionId);
         assertEquals(Cohort.CohortStatus.INVALID, catalogManager.getCohort(coh[0], null, sessionId).first().getStatus().getName());
 
         calculateStats(coh[0]);

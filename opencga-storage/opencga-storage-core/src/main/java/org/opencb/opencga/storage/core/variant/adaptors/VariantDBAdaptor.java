@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,11 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getSamplesMetadata;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -51,6 +54,20 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
     @Deprecated
     default QueryResult insert(List<Variant> variants, String studyName, QueryOptions options) {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+    /**
+     * Fetch all variants resulting of executing the query in the database. Returned fields are taken from
+     * the 'include' and 'exclude' fields at options.
+     *
+     * @param variants Iterator with variants to filter
+     * @param query    Query to be executed in the database to filter variants
+     * @param options  Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+     * @return A QueryResult with the result of the query
+     */
+    default VariantQueryResult<Variant> get(Iterator<?> variants, Query query, QueryOptions options) {
+        return iterator(variants, query, options).toQueryResult(getSamplesMetadata(query, options, getStudyConfigurationManager()));
     }
 
     /**

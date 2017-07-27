@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,8 @@ import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.auth.authentication.LDAPAuthenticationManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.config.AuthenticationOrigin;
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -46,7 +46,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
-import javax.naming.directory.DirContext;
 import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -59,6 +58,7 @@ public class UserManager extends AbstractManager implements IUserManager {
 
     private String INTERNAL_AUTHORIZATION = "internal";
     private Map<String, AuthenticationManager> authenticationManagerMap;
+    private final String ADMIN_TOKEN;
 
     protected static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
             + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
@@ -107,6 +107,9 @@ public class UserManager extends AbstractManager implements IUserManager {
                 configuration.getAuthentication().setAuthenticationOrigins(linkedList);
             }
         }
+
+        ADMIN_TOKEN =  authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken("admin", "", Session.Type.SYSTEM).first()
+                .getId();
     }
 
     static void checkEmail(String email) throws CatalogException {
@@ -126,7 +129,7 @@ public class UserManager extends AbstractManager implements IUserManager {
 //        checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(oldPassword, "oldPassword");
         ParamUtils.checkParameter(newPassword, "newPassword");
-        if (oldPassword == newPassword) {
+        if (oldPassword.equals(newPassword)) {
             throw new CatalogException("New password is the same as the old password.");
         }
 
@@ -191,12 +194,11 @@ public class UserManager extends AbstractManager implements IUserManager {
             user.setQuota(quota);
         }
 
-        String userId = id;
         try {
             catalogIOManagerFactory.getDefault().createUser(user.getId());
             QueryResult<User> queryResult = userDBAdaptor.insert(user, options);
 //            auditManager.recordCreation(AuditRecord.Resource.user, user.getId(), userId, queryResult.first(), null, null);
-            auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.create, AuditRecord.Magnitude.low, user.getId(), userId,
+            auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.create, AuditRecord.Magnitude.low, user.getId(), id,
                     null, queryResult.first(), null, null);
             authenticationManagerMap.get(INTERNAL_AUTHORIZATION).newPassword(user.getId(), password);
             return queryResult;
@@ -212,21 +214,28 @@ public class UserManager extends AbstractManager implements IUserManager {
     @Override
     public LdapImportResult importFromExternalAuthOrigin(String authOrigin, String accountType, ObjectMap params, String adminPassword)
             throws CatalogException {
-        LdapImportResult retResult = new LdapImportResult();
-        LdapImportResult.Input input = new LdapImportResult.Input(params.getAsStringList("users"), params.getString("group"),
-                params.getString("study-group"), authOrigin, accountType, params.getString("study"));
-        retResult.setInput(input);
-
         // Validate the admin password.
         QueryResult<Session> admin;
         try {
             admin = login("admin", adminPassword, "localhost");
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
+            LdapImportResult retResult = new LdapImportResult();
+            LdapImportResult.Input input = new LdapImportResult.Input(params.getAsStringList("users"), params.getString("group"),
+                    params.getString("study-group"), authOrigin, accountType, params.getString("study"));
+            retResult.setInput(input);
             retResult.setErrorMsg(e.getMessage());
             return retResult;
         }
-        String sessionId = admin.first().getId();
+
+        return importFromExternalAuthOrigin(authOrigin, accountType, params);
+    }
+
+    private LdapImportResult importFromExternalAuthOrigin(String authOrigin, String accountType, ObjectMap params) throws CatalogException {
+        LdapImportResult retResult = new LdapImportResult();
+        LdapImportResult.Input input = new LdapImportResult.Input(params.getAsStringList("users"), params.getString("group"),
+                params.getString("study-group"), authOrigin, accountType, params.getString("study"));
+        retResult.setInput(input);
 
         if (INTERNAL_AUTHORIZATION.equals(authOrigin)) {
             retResult.setErrorMsg("Cannot import users from catalog. Authentication origin should be external.");
@@ -249,20 +258,11 @@ public class UserManager extends AbstractManager implements IUserManager {
             }
         }
 
-        DirContext dirContext;
-        try {
-            dirContext = LDAPUtils.getDirContext(authenticationOrigin.getHost());
-        } catch (NamingException e) {
-            logger.error(e.getMessage(), e);
-            retResult.setErrorMsg(e.getMessage());
-            return retResult;
-        }
-
         String base = ((String) authenticationOrigin.getOptions().get(AuthenticationOrigin.GROUPS_SEARCH));
         Set<String> usersFromLDAP = new HashSet<>();
         usersFromLDAP.addAll(retResult.getInput().getUsers());
         try {
-            usersFromLDAP.addAll(LDAPUtils.getUsersFromLDAPGroup(dirContext, retResult.getInput().getGroup(), base));
+            usersFromLDAP.addAll(LDAPUtils.getUsersFromLDAPGroup(authenticationOrigin.getHost(), retResult.getInput().getGroup(), base));
         } catch (NamingException e) {
             logger.error(e.getMessage(), e);
             retResult.setErrorMsg(e.getMessage());
@@ -278,7 +278,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         try {
             List<String> userList = new ArrayList<>(usersFromLDAP.size());
             userList.addAll(usersFromLDAP);
-            userAttrList = LDAPUtils.getUserInfoFromLDAP(dirContext, userList, base);
+            userAttrList = LDAPUtils.getUserInfoFromLDAP(authenticationOrigin.getHost(), userList, base);
         } catch (NamingException e) {
             logger.error(e.getMessage(), e);
             retResult.setErrorMsg(e.getMessage());
@@ -308,10 +308,10 @@ public class UserManager extends AbstractManager implements IUserManager {
             String uid;
             String rdn;
             try {
-                displayname = (String) attrs.get("displayname").get(0);
-                mail = (String) attrs.get("mail").get(0);
-                uid = (String) attrs.get("uid").get(0);
-                rdn = (String) attrs.get("gecos").get(0);
+                displayname = LDAPUtils.getFullName(attrs);
+                mail = LDAPUtils.getMail(attrs);
+                uid = LDAPUtils.getUID(attrs);
+                rdn = LDAPUtils.getRDN(attrs);
             } catch (NamingException e) {
                 logger.error(e.getMessage(), e);
                 retResult.setErrorMsg(e.getMessage());
@@ -369,7 +369,7 @@ public class UserManager extends AbstractManager implements IUserManager {
 
         try {
             catalogManager.getStudyManager().createGroup(Long.toString(studyId), retResult.getInput().getStudyGroup(),
-                    StringUtils.join(userList, ","), sessionId);
+                    StringUtils.join(userList, ","), ADMIN_TOKEN);
         } catch (CatalogException e) {
             if (e.getMessage().contains("users already belong to")) {
                 // Cannot create a group with those users because they already belong to other group
@@ -377,8 +377,9 @@ public class UserManager extends AbstractManager implements IUserManager {
                 return retResult;
             }
             try {
-                catalogManager.getStudyManager().updateGroup(Long.toString(studyId), retResult.getInput().getStudyGroup(),
-                        StringUtils.join(userList, ","), null, null, sessionId);
+                GroupParams groupParams = new GroupParams(StringUtils.join(userList, ","), GroupParams.Action.ADD);
+                catalogManager.getStudyManager().updateGroup(Long.toString(studyId), retResult.getInput().getStudyGroup(), groupParams,
+                        ADMIN_TOKEN);
             } catch (CatalogException e1) {
                 retResult.setErrorMsg(e1.getMessage());
                 return retResult;
@@ -387,14 +388,23 @@ public class UserManager extends AbstractManager implements IUserManager {
 
         try {
             QueryResult<Group> group = catalogManager.getStudyManager().getGroup(Long.toString(studyId),
-                    retResult.getInput().getStudyGroup(), sessionId);
+                    retResult.getInput().getStudyGroup(), ADMIN_TOKEN);
 
             retResult.getResult().setUsersInGroup(group.first().getUserIds());
         } catch (CatalogException e) {
-//            logger.error(e.getMessage(), e);
             retResult.setErrorMsg(e.getMessage());
         }
         return retResult;
+    }
+
+    private List<String> fetchGroupsFromLdapUser(User user, AuthenticationOrigin authenticationOrigin) throws NamingException {
+        List<String> groups = new ArrayList<>();
+        if (user == null) {
+            return groups;
+        }
+        String userRdn = (String) user.getAttributes().get("LDAP_RDN");
+        String base = ((String) authenticationOrigin.getOptions().get(AuthenticationOrigin.USERS_SEARCH));
+        return LDAPUtils.getGroupsFromLdapUser(authenticationOrigin.getHost(), userRdn, base);
     }
 
     private void checkGroupsFromExternalUser(String userId, List<String> groupIds, List<String> studyIds) throws CatalogException {
@@ -589,13 +599,42 @@ public class UserManager extends AbstractManager implements IUserManager {
         String authId;
         QueryResult<User> user = null;
         if (!userId.equals("admin")) {
-            user = userDBAdaptor.get(userId, new QueryOptions(), null);
-            if (user.getNumResults() == 0) {
-                throw new CatalogException("The user id " + userId + " does not exist.");
+            try {
+                user = userDBAdaptor.get(userId, new QueryOptions(), null);
+            } catch (CatalogDBException e) {
+                String authOrigin = null;
+                if (authenticationManagerMap.size() == 2) {
+                    for (Map.Entry<String, AuthenticationManager> entry : authenticationManagerMap.entrySet()) {
+                        if (!entry.getKey().equals(INTERNAL_AUTHORIZATION)) {
+                            authOrigin = entry.getKey();
+                            AuthenticationOrigin authenticationOrigin = getAuthenticationOrigin(authOrigin);
+                            // We check if the user can be authenticated
+                            try {
+                                List<Attributes> userInfoFromLDAP = LDAPUtils.getUserInfoFromLDAP(authenticationOrigin.getHost(),
+                                        Arrays.asList(userId),
+                                        (String) authenticationOrigin.getOptions().get(AuthenticationOrigin.USERS_SEARCH));
+                                if (userInfoFromLDAP == null || userInfoFromLDAP.size() == 0) {
+                                    throw new CatalogException("The user id " + userId + " does not exist nor could be found in LDAP.");
+                                }
+                                entry.getValue().authenticate(LDAPUtils.getRDN(userInfoFromLDAP.get(0)), password, true);
+                            } catch (NamingException e1) {
+                                throw new CatalogException(e1);
+                            }
+                            break;
+                        }
+                    }
+                } else {
+                    throw new CatalogException("The user id " + userId + " does not exist.");
+                }
+                if (authOrigin == null) {
+                    throw new CatalogException("Unexpected error occurred. Count not detect authorization origin.");
+                }
+                importFromExternalAuthOrigin(authOrigin, Account.GUEST, new ObjectMap("users", userId));
+                user = userDBAdaptor.get(userId, new QueryOptions(), null);
             }
 
             // Check that the authentication id is valid
-            authId = getAuthenticationOriginId(userId);
+            authId = user.first().getAccount().getAuthOrigin();
         } else {
             authId = INTERNAL_AUTHORIZATION;
         }
@@ -610,23 +649,37 @@ public class UserManager extends AbstractManager implements IUserManager {
                 throw new CatalogException("Internal error: This error should never happen.");
             }
             authenticationManagerMap.get(authId).authenticate(((String) user.first().getAttributes().get("LDAP_RDN")), password, true);
+
+            // Fetch current LDAP groups for user
+            List<String> groups;
+            try {
+                groups = fetchGroupsFromLdapUser(user.first(), authenticationOrigin);
+            } catch (NamingException e) {
+                logger.error("{}", e.getMessage(), e);
+                groups = Collections.emptyList();
+            }
+
+            // Resync synced groups of user in OpenCGA
+            studyDBAdaptor.resyncUserWithSyncedGroups(userId, groups, authId);
         } else {
             authenticationManagerMap.get(authId).authenticate(userId, password, true);
         }
 
-        QueryResult<Session> sessionTokenQueryResult;
-        try {
-            sessionTokenQueryResult = authenticationManagerMap.get(authId).createToken(userId, sessionIp, Session.Type.USER);
-        } catch (CatalogException e) {
-            auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.login, AuditRecord.Magnitude.high, userId, userId,
-                    null, null, "Unsuccessfully login attempt", null);
-            throw e;
-        }
+        QueryResult<Session> sessionTokenQueryResult =
+                authenticationManagerMap.get(authId).createToken(userId, sessionIp, Session.Type.USER);
 
         auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.login, AuditRecord.Magnitude.low, userId, userId, null,
                 sessionTokenQueryResult.first(), "User successfully logged in", null);
 
         return sessionTokenQueryResult;
+    }
+
+    @Override
+    public QueryResult<Session> refreshToken(String userId, String token, String sessionIp) throws CatalogException {
+        if (!userId.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
+            throw new CatalogException("Cannot refresh token. The token received does not correspond to " + userId);
+        }
+        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(userId, sessionIp, Session.Type.USER);
     }
 
     @Override
@@ -869,7 +922,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     private void checkUserExists(String userId) throws CatalogException {
         if (userId.toLowerCase().equals("admin")) {
             throw new CatalogException("Permission denied: It is not allowed the creation of another admin user.");
-        } else if (userId.toLowerCase().equals("anonymous") || userId.toLowerCase().equals("daemon") || userId.equals("*")) {
+        } else if (userId.toLowerCase().equals(ANONYMOUS) || userId.toLowerCase().equals("daemon")) {
             throw new CatalogException("Permission denied: Cannot create users with special treatments in catalog.");
         }
 

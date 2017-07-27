@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
@@ -629,39 +629,36 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         List<File> filteredFiles = new ArrayList<>(fileList.size());
         for (File file : fileList) {
-            if (file.getStatus().getName().equals(File.FileStatus.READY)
-                    && file.getFormat().equals(File.Format.VCF)) {
+            if (file.getStatus().getName().equals(File.FileStatus.READY) && file.getFormat().equals(File.Format.VCF)) {
+                String indexStatus;
                 if (file.getIndex() != null && file.getIndex().getStatus() != null && file.getIndex().getStatus().getName() != null) {
-                    switch (file.getIndex().getStatus().getName()) {
-                        case FileIndex.IndexStatus.NONE:
-                            filteredFiles.add(file);
-                            break;
-                        case FileIndex.IndexStatus.INDEXING:
-                        case FileIndex.IndexStatus.TRANSFORMING:
-                            if (!resume) {
-                                logger.warn("File already being transformed. "
-                                                + "We can only transform VCF files not transformed, the status is {}. "
-                                                + "Do '" + VariantStorageEngine.Options.RESUME.key() + "' to continue.",
-                                        file.getIndex().getStatus().getName());
-                            } else {
-                                filteredFiles.add(file);
-                            }
-                            break;
-                        case FileIndex.IndexStatus.TRANSFORMED:
-                        case FileIndex.IndexStatus.LOADING:
-                        case FileIndex.IndexStatus.READY:
-                        default:
-                            logger.warn("We can only transform VCF files not transformed, the status is {}",
-                                    file.getIndex().getStatus().getName());
-                            break;
-                    }
+                    indexStatus = file.getIndex().getStatus().getName();
                 } else {
-                    // This block should not happen ever
-                    filteredFiles.add(file);
-                    logger.warn("This block should not happen ever");
+                    indexStatus = FileIndex.IndexStatus.NONE;
                 }
-            } else {
-                logger.warn("");
+                switch (indexStatus) {
+                    case FileIndex.IndexStatus.NONE:
+                        filteredFiles.add(file);
+                        break;
+                    case FileIndex.IndexStatus.INDEXING:
+                    case FileIndex.IndexStatus.TRANSFORMING:
+                        if (!resume) {
+                            logger.warn("File already being transformed. "
+                                            + "We can only transform VCF files not transformed, the status is {}. "
+                                            + "Do '" + VariantStorageEngine.Options.RESUME.key() + "' to continue.",
+                                    indexStatus);
+                        } else {
+                            filteredFiles.add(file);
+                        }
+                        break;
+                    case FileIndex.IndexStatus.TRANSFORMED:
+                    case FileIndex.IndexStatus.LOADING:
+                    case FileIndex.IndexStatus.READY:
+                    default:
+                        logger.warn("We can only transform VCF files not transformed, the status is {}",
+                                indexStatus);
+                        break;
+                }
             }
         }
         return filteredFiles;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,10 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Study;
@@ -42,33 +44,6 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     public ProjectWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
-    }
-
-    @GET
-    @Path("/create")
-    @ApiOperation(value = "Create a new project [DEPRECATED]", response = Project.class, hidden = true,
-            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
-            + "is not tested and this can be deprecated in a future version.")
-    public Response createProject(@ApiParam(value = "Project name", required = true) @QueryParam("name") String name,
-                                  @ApiParam(value = "Project alias. Unique name without spaces that will be used to identify the project",
-                                          required = true) @QueryParam("alias") String alias,
-                                  @ApiParam(value = "Project description") @QueryParam("description") String description,
-                                  @ApiParam(value = "Project organization") @QueryParam("organization") String organization,
-                                  @ApiParam(value = "Organism scientific name", required = true) @QueryParam("organism.scientificName")
-                                              String scientificName,
-                                  @ApiParam(value = "Organism common name") @QueryParam("organism.commonName") String commonName,
-                                  @ApiParam(value = "Organism taxonomy code") @QueryParam("organism.taxonomyCode") String taxonomyCode,
-                                  @ApiParam(value = "Organism assembly", required = true) @QueryParam("organism.assembly")
-                                              String assembly) {
-        try {
-            QueryResult queryResult = catalogManager.getProjectManager()
-                    .create(name, alias, description, organization, scientificName, commonName, taxonomyCode, assembly, queryOptions,
-                            sessionId);
-            return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            e.printStackTrace();
-            return createErrorResponse(e);
-        }
     }
 
     @POST
@@ -114,6 +89,40 @@ public class ProjectWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/search")
+    @ApiOperation(value = "Search projects", response = Project[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Set which fields are excluded in the response, e.g.: name,alias...",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Max number of results to be returned.", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to be skipped.", dataType = "integer", paramType = "query")
+    })
+    public Response searchProjects(
+            @ApiParam(value = "Owner of the project") @QueryParam("owner") String owner,
+            @ApiParam(value = "Project name") @QueryParam("name") String name,
+            @ApiParam(value = "Project alias") @QueryParam("alias") String alias,
+            @ApiParam(value = "Project organization") @QueryParam("organization") String organization,
+            @ApiParam(value = "Project description") @QueryParam("description") String description,
+            @ApiParam(value = "Study id or alias") @QueryParam("study") String study,
+            @ApiParam(value = "Creation date") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Status") @QueryParam("status") String status,
+            @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes) {
+        try {
+            if (StringUtils.isNotEmpty(owner)) {
+                query.remove("owner");
+                query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), owner);
+            }
+
+            QueryResult<Project> queryResult = catalogManager.getProjectManager().get(query, queryOptions, sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
     @Path("/{project}/increlease")
     @ApiOperation(value = "Increment current release number in the project", response = Integer.class)
     public Response incrementRelease(
@@ -152,36 +161,6 @@ public class ProjectWSServer extends OpenCGAWSServer {
                 results.add(allStudiesInProject);
             }
             return createOkResponse(results);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{project}/update")
-    @ApiOperation(value = "Update some project attributes [DEPRECATED]", position = 4, hidden = true,
-            notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
-            + "is not tested and this can be deprecated in a future version.")
-    public Response update(@ApiParam(value = "Project id or alias", required = true) @PathParam("project") String projectStr,
-                           @ApiParam(value = "Project name") @QueryParam("name") String name,
-                           @ApiParam(value = "Project description") @QueryParam("description") String description,
-                           @ApiParam(value = "Project organization") @QueryParam("organization") String organization,
-                           @ApiParam(value = "Project attributes") @QueryParam("attributes") String attributes,
-                           @ApiParam(value = "Organism common name") @QueryParam("organism.commonName") String commonName,
-                           @ApiParam(value = "Organism taxonomy code") @QueryParam("organism.taxonomyCode") String taxonomyCode) throws IOException {
-        try {
-            ObjectMap params = new ObjectMap();
-            params.putIfNotNull("name", name);
-            params.putIfNotNull("description", description);
-            params.putIfNotNull("organization", organization);
-            params.putIfNotNull("attributes", attributes);
-            params.putIfNotNull("organism.commonName", commonName);
-            params.putIfNotNull("organism.taxonomyCode", taxonomyCode);
-
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            long projectId = catalogManager.getProjectManager().getId(userId, projectStr);
-            QueryResult result = catalogManager.modifyProject(projectId, params, sessionId);
-            return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

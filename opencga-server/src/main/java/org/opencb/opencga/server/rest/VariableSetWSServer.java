@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,6 @@ import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.catalog.models.VariableSet;
 import org.opencb.opencga.catalog.models.summaries.VariableSetSummary;
@@ -49,6 +47,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
 
     private static class VariableSetParameters {
         public Boolean unique;
+        public Boolean confidential;
         public String name;
         public String description;
         public List<Variable> variables;
@@ -69,8 +68,8 @@ public class VariableSetWSServer extends OpenCGAWSServer {
             }
             logger.info("variables: {}", params.variables);
             long studyId = catalogManager.getStudyId(studyStr, sessionId);
-            QueryResult<VariableSet> queryResult = catalogManager.createVariableSet(studyId, params.name, params.unique, params.description,
-                    null, params.variables, sessionId);
+            QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().createVariableSet(studyId, params.name,
+                    params.unique, params.confidential, params.description, null, params.variables, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ package org.opencb.opencga.catalog.db.api;
  * Created by pfurio on 23/05/16.
  */
 
-import org.opencb.opencga.catalog.config.Admin;
+import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
 public interface MetaDBAdaptor {

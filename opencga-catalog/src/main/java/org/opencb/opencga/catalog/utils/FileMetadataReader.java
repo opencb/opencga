@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -359,8 +359,8 @@ public class FileMetadataReader {
                             sampleList.add(new Sample(-1, sampleName, file.getName(), new Individual(), null, 1));
                         } else {
                             try {
-                                sampleList.add(catalogManager.createSample(study.getId(), sampleName, file.getName(),
-                                        null, null, null, sessionId).first());
+                                sampleList.add(catalogManager.getSampleManager().create(Long.toString(study.getId()), sampleName, file
+                                        .getName(), null, null, false, null, null, null, sessionId).first());
                             } catch (CatalogException e) {
                                 Query query = new Query("name", sampleName);
                                 QueryOptions queryOptions = new QueryOptions("include", includeSampleNameId);

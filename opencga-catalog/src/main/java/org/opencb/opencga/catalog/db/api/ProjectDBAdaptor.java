@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,12 +57,9 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
+        STUDY("study", TEXT, ""), // For the project/search ws
         STUDY_ID("study.id", INTEGER_ARRAY, ""),
-        STUDY_NAME("study.name", TEXT_ARRAY, ""),
         STUDY_ALIAS("study.alias", TEXT_ARRAY, ""),
-        STUDY_CREATOR_ID("study.creatorId", TEXT_ARRAY, ""),
-        STUDY_STATUS("study.status", TEXT_ARRAY, ""),
-        STUDY_LAST_MODIFIED("study.lastModified", TEXT_ARRAY, ""),
 
         // TOCHECK: Pedro. Check parameter user_others_id.
         ACL_USER_ID("acl.userId", TEXT_ARRAY, "");

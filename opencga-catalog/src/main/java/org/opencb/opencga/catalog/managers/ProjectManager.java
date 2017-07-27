@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import org.apache.commons.collections.map.LinkedMap;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -26,7 +25,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
@@ -38,11 +37,13 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IProjectManager;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 /**
@@ -99,7 +100,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             }
         }
 
-        if (!userOwner.equals("anonymous") && StringUtils.isNotBlank(projectAlias)) {
+        if (!userOwner.equals(ANONYMOUS) && StringUtils.isNotBlank(projectAlias)) {
             return projectDBAdaptor.getId(userOwner, projectAlias);
         } else {
             // Anonymous user
@@ -107,11 +108,11 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             if (StringUtils.isNotBlank(projectAlias)) {
                 query.put(ProjectDBAdaptor.QueryParams.ALIAS.key(), projectAlias);
             }
-            if (!userOwner.equals("anonymous")) {
+            if (!userOwner.equals(ANONYMOUS)) {
                 query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), userOwner);
             }
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
-            QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options);
+            QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options, userId);
 
             if (projectQueryResult.getNumResults() != 1) {
                 if (projectQueryResult.getNumResults() == 0) {
@@ -145,7 +146,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             projectAlias = projectStr;
         }
 
-        if (!userOwner.equals("anonymous")) {
+        if (!userOwner.equals(ANONYMOUS)) {
             return Arrays.asList(projectDBAdaptor.getId(userOwner, projectAlias));
         } else {
             // Anonymous user
@@ -242,32 +243,44 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     public QueryResult<Project> get(Long projectId, QueryOptions options, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getId(sessionId);
 
-        authorizationManager.checkProjectPermission(projectId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
-        QueryResult<Project> projectResult = projectDBAdaptor.get(projectId, options);
-        if (!projectResult.getResult().isEmpty()) {
-            authorizationManager.filterStudies(userId, projectResult.getResult().get(0).getStudies());
+        Query query = new Query(ProjectDBAdaptor.QueryParams.ID.key(), projectId);
+        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options, userId);
+        if (projectQueryResult.getNumResults() <= 0) {
+            throw CatalogAuthorizationException.deny(userId, "view", "project", projectId, "");
         }
-        return projectResult;
+        return projectQueryResult;
     }
 
     @Override
     public QueryResult<Project> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
+        query = new Query(query);
         String userId = catalogManager.getUserManager().getId(sessionId);
 
-        String ownerId = query.getString("ownerId", query.getString("userId", userId));
+        // If study is provided, we need to check if it will be study alias or id
+        if (StringUtils.isNotEmpty(query.getString(ProjectDBAdaptor.QueryParams.STUDY.key()))) {
+            List<String> studyList = query.getAsStringList(ProjectDBAdaptor.QueryParams.STUDY.key());
+            List<Long> idList = new ArrayList<>();
+            List<String> aliasList = new ArrayList<>();
+            for (String studyStr : studyList) {
+                if (StringUtils.isNumeric(studyStr) && Long.parseLong(studyStr) > configuration.getCatalog().getOffset()) {
+                    idList.add(Long.parseLong(studyStr));
+                } else {
+                    aliasList.add(studyStr);
+                }
+            }
 
-        ParamUtils.checkParameter(ownerId, "ownerId");
+            query.remove(ProjectDBAdaptor.QueryParams.STUDY.key());
+            if (idList.size() > 0) {
+                query.put(ProjectDBAdaptor.QueryParams.STUDY_ID.key(), StringUtils.join(idList, ","));
+            }
+            if (aliasList.size() > 0) {
+                query.put(ProjectDBAdaptor.QueryParams.STUDY_ALIAS.key(), StringUtils.join(aliasList, ","));
+            }
+        }
 
-        QueryResult<Project> allProjects = projectDBAdaptor.get(ownerId, options);
-
-        List<Project> projects = allProjects.getResult();
-        authorizationManager.filterProjects(userId, projects);
-        allProjects.setResult(projects);
-        allProjects.setNumResults(projects.size());
-
-        return allProjects;
+        return projectDBAdaptor.get(query, options, userId);
     }
 
     @Override
@@ -536,73 +549,4 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
-    @Override
-    public QueryResult<Project> getSharedProjects(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException {
-        queryOptions = ParamUtils.defaultObject(queryOptions, QueryOptions::new);
-        long startTime = System.currentTimeMillis();
-
-        String userSessionId = catalogManager.getUserManager().getId(sessionId);
-        if (!userSessionId.equals(userId)) {
-            throw new CatalogException("Invalid session id: The user corresponding to the session provided is not " + userId);
-        }
-
-        // Search all studies shared with the user
-        // 1. Look for userId in a group in all the studies.
-        Query query = new Query(StudyDBAdaptor.QueryParams.GROUP_USER_IDS.key(), userId);
-        QueryResult<Study> studyGroupQR = catalogManager.getStudyManager().get(query, queryOptions, sessionId);
-        // The studies obtained are already filtered in studyManager, so if we get them is because those have been shared with the user
-
-        // 2. Look for userId in an ACL in all the studies.
-        query = new Query(StudyDBAdaptor.QueryParams.ACL_MEMBER.key(), userId);
-        QueryResult<Study> studyACLQR = catalogManager.getStudyManager().get(query, queryOptions, sessionId);
-
-        List<Study> studyList = new ArrayList<>();
-        studyList.addAll(studyGroupQR.getResult());
-        studyList.addAll(studyACLQR.getResult());
-
-        if (studyList.size() == 0) {
-            // No studies are shared with userId
-            return new QueryResult<>(userId, (int) (System.currentTimeMillis() - startTime), 0, 0, "", "", Collections.emptyList());
-        }
-
-        // Obtain the projects corresponding to each study
-        List<Long> projectIds = new LinkedList<>();
-        Map<Long, List<Study>> projectStudyMap = new LinkedMap();
-        for (Study study : studyList) {
-            Long projectId = catalogManager.getStudyManager().getProjectId(study.getId());
-            if (!projectStudyMap.containsKey(projectId)) {
-                projectStudyMap.put(projectId, new LinkedList<>());
-                projectIds.add(projectId);
-            }
-            projectStudyMap.get(projectId).add(study);
-        }
-
-        // Obtain the project info of all the project ids needed
-        query = new Query(ProjectDBAdaptor.QueryParams.ID.key(), projectIds);
-        QueryOptions options = new QueryOptions(queryOptions); // Copy of queryOptions
-        if (options.containsKey(QueryOptions.EXCLUDE)) {
-            List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
-            excludeList.add("projects.studies");
-            options.put(QueryOptions.EXCLUDE, excludeList);
-        } else {
-            options.add(QueryOptions.EXCLUDE, "projects.studies");
-        }
-
-        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options);
-        for (Project project : projectQueryResult.getResult()) {
-            // Update with the studies shared with the user
-            project.setStudies(projectStudyMap.get(project.getId()));
-
-            // Add user info to the alias
-            String ownerId = projectDBAdaptor.getOwnerId(project.getId());
-            project.setAlias(ownerId + "@" + project.getAlias());
-        }
-
-        authorizationManager.filterProjects(userSessionId, projectQueryResult.getResult());
-
-        projectQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
-        projectQueryResult.setId(userId);
-
-        return projectQueryResult;
-    }
 }

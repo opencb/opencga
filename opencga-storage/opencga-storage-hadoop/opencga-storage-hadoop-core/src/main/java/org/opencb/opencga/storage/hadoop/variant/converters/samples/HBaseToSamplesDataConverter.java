@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.storage.hadoop.variant.converters.samples;
 
 import org.apache.hadoop.hbase.client.Result;
@@ -8,6 +24,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
+import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
@@ -88,8 +105,8 @@ public class HBaseToSamplesDataConverter extends AbstractPhoenixConverter {
         return samplesData;
     }
 
-    public List<AlternateCoordinate> extractSecondaryAlternates(Variant variant, List<String> expectedFormat,
-                                                                Map<Integer, List<String>> samplesDataMap) {
+    public List<AlternateCoordinate> extractSecondaryAlternates(Variant variant, VariantStudyMetadata variantMetadata,
+                                                                List<String> expectedFormat, Map<Integer, List<String>> samplesDataMap) {
         Map<String, List<Integer>> alternateSampleIdMap = new HashMap<>();
 
         for (Map.Entry<Integer, List<String>> entry : samplesDataMap.entrySet()) {
@@ -115,6 +132,12 @@ public class HBaseToSamplesDataConverter extends AbstractPhoenixConverter {
             VariantMerger variantMerger = new VariantMerger(false);
             variantMerger.setExpectedFormats(expectedFormat);
             variantMerger.setStudyId("0");
+            for (VariantStudyMetadata.VariantMetadataRecord record : variantMetadata.getFormat().values()) {
+                variantMerger.configure(record.getId(), record.getNumberType(), record.getType());
+            }
+            for (VariantStudyMetadata.VariantMetadataRecord record : variantMetadata.getInfo().values()) {
+                variantMerger.configure(record.getId(), record.getNumberType(), record.getType());
+            }
 
             // Create one variant for each alternate with the samples data
             List<Variant> variants = new ArrayList<>(alternateSampleIdMap.size());

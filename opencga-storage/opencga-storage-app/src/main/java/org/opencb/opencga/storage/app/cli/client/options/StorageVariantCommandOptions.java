@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -316,6 +316,12 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--output-file"}, description = "A comma separated list of files from the SAME study to be returned")
         public String returnFile;
+
+        @Parameter(names = {"--include-format"}, description = VariantQueryParam.INCLUDE_FORMAT_DESCR)
+        public String includeFormat;
+
+        @Parameter(names = {"--include-genotype"}, description = VariantQueryParam.INCLUDE_GENOTYPE_DESCR)
+        public String includeGenotype;
 
         @Parameter(names = {"--output-sample"}, description = "A comma separated list of samples from the SAME study to be returned")
         public String returnSample;
@@ -642,8 +648,8 @@ public class StorageVariantCommandOptions {
 //        public String studyId;
 //
 
-        @Parameter(names = {"--mode"}, description = "Search mode. Valid values: core, collection.", arity = 1)
-        public String mode = "core";
+//        @Parameter(names = {"--mode"}, description = "Search mode. Valid values: core, collection.", arity = 1)
+//        public String mode = "core";
 
         @Parameter(names = {"--create"}, description = "Create a new core/collection.", arity = 0)
         public boolean create;
@@ -654,11 +660,11 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--solr-config"}, description = "Solr configuration name.", arity = 1)
         public String solrConfig;
 
-        @Parameter(names = {"--solr-num-shards"}, description = "Number of Solr collection shards (only for a Solr cluster mode).", arity = 1)
-        public int numShards = 2;
-
-        @Parameter(names = {"--solr-num-replicas"}, description = "Number of Solr collection replicas (only for a Solr cluster mode).", arity = 1)
-        public int numReplicas = 2;
+//        @Parameter(names = {"--solr-num-shards"}, description = "Number of Solr collection shards (only for a Solr cluster mode).", arity = 1)
+//        public int numShards = 2;
+//
+//        @Parameter(names = {"--solr-num-replicas"}, description = "Number of Solr collection replicas (only for a Solr cluster mode).", arity = 1)
+//        public int numReplicas = 2;
 
         @Parameter(names = {"-d", "--database"}, description = "Name of the target core ore collection.", arity = 1)
         public String dbName;

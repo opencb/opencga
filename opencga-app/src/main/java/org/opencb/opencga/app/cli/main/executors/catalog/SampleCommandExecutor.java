@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -265,6 +265,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap bodyParams = new ObjectMap();
         bodyParams.putIfNotNull("permissions", commandOptions.permissions);
+        bodyParams.putIfNotNull("propagate", commandOptions.propagate);
         bodyParams.putIfNotNull("action", commandOptions.action);
         bodyParams.putIfNotNull("sample", commandOptions.id);
         bodyParams.putIfNotNull("individual", commandOptions.individual);

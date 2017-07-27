@@ -198,7 +198,9 @@
 
 !3 Remove Restricted ACL For Admin for Cohort A1
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/$cA1Id/acl/$admin/delete?sid=$sessionId|200|  Content-Type: application/json ||
+| setBody |  {  "permissions": "", "action": "REMOVE",  "cohort": "$cA1Id"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/cohorts/acl/$admin/update?sid=$sessionId|200|  Content-Type: application/json ||
 
 !3 Create Variable Set A1 With Admin
 !|Table: Rest Fixture  | $baseURL |

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package org.opencb.opencga.catalog.monitor.executors;
 
 import org.apache.tools.ant.types.Commandline;
-import org.opencb.opencga.catalog.config.Execution;
+import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.SgeManager;
 import org.opencb.opencga.core.exec.Command;

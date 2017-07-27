@@ -1,22 +1,37 @@
 
 
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.session;
 
 import io.jsonwebtoken.*;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Session;
+import org.opencb.opencga.catalog.models.Session.Type;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.Date;
-
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.config.Configuration;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogTokenException;
-import org.opencb.opencga.catalog.models.Session;
-import org.opencb.opencga.catalog.models.Session.Type;
-import org.opencb.opencga.core.common.TimeUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class JwtSessionManager {
     protected static Logger logger = LoggerFactory.getLogger(JwtSessionManager.class);
@@ -30,7 +45,7 @@ public class JwtSessionManager {
         this.expiration = this.configuration.getAuthentication().getExpiration();
     }
 
-    String createJWTToken(String userId, long expiration) throws CatalogException {
+    String createJWTToken(String userId, long expiration) {
         String jwt = null;
 
         try {
@@ -52,24 +67,24 @@ public class JwtSessionManager {
         return jwt;
     }
 
-    Jws<Claims> parseClaims(String jwtKey) throws CatalogTokenException {
+    Jws<Claims> parseClaims(String jwtKey) throws CatalogAuthenticationException {
         try {
             Jws claims = Jwts.parser().setSigningKey(this.secretKey.getBytes("UTF-8")).parseClaimsJws(jwtKey);
             return claims;
         } catch (ExpiredJwtException e) {
-            throw new CatalogTokenException("authentication token is expired : " + jwtKey);
+            throw CatalogAuthenticationException.tokenExpired(jwtKey);
         } catch (MalformedJwtException | SignatureException e) {
-            throw new CatalogTokenException("invalid authentication token : " + jwtKey);
+            throw CatalogAuthenticationException.invalidAuthenticationToken(jwtKey);
         } catch (UnsupportedEncodingException e) {
-            throw new CatalogTokenException("invalid authentication token encoding : " + jwtKey);
+            throw CatalogAuthenticationException.invalidAuthenticationEncodingToken(jwtKey);
         }
     }
 
-    public String getUserId(String jwtKey) throws CatalogTokenException {
+    public String getUserId(String jwtKey) throws CatalogAuthenticationException {
         return parseClaims(jwtKey).getBody().getSubject();
     }
 
-    public QueryResult<Session> createToken(String userId, String ip, Type type) throws CatalogException {
+    public QueryResult<Session> createToken(String userId, String ip, Type type) {
         QueryResult result = new QueryResult();
         String jwtToken = null;
 

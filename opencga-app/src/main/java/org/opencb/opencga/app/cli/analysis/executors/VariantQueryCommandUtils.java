@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,6 +118,8 @@ public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli
                 query.put(RETURNED_SAMPLES.key(), queryVariantsOptions.genericVariantQueryOptions.returnSample);
             }
         }
+        addParam(query, INCLUDE_FORMAT, queryVariantsOptions.genericVariantQueryOptions.includeFormat);
+        addParam(query, INCLUDE_GENOTYPE, queryVariantsOptions.genericVariantQueryOptions.includeGenotype);
         addParam(query, UNKNOWN_GENOTYPE, queryVariantsOptions.genericVariantQueryOptions.unknownGenotype);
 
 
@@ -218,7 +220,7 @@ public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli
         }
 
         if (StringUtils.isNotEmpty(queryVariantsOptions.dataModelOptions.exclude)) {
-            queryOptions.add(QueryOptions.EXCLUDE, queryVariantsOptions.dataModelOptions.exclude + ",_id");
+            queryOptions.add(QueryOptions.EXCLUDE, queryVariantsOptions.dataModelOptions.exclude);
         }
 //        else {
 //            queryOptions.put("exclude", "_id");

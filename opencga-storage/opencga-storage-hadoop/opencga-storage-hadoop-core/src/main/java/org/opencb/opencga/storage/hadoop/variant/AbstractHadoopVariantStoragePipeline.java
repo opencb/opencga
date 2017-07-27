@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -156,18 +157,25 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                                             int batchSize, String extension, String compression,
                                             BiConsumer<String, RuntimeException> malformatedHandler, boolean failOnError)
             throws StorageEngineException {
+        VariantStudyMetadata variantMetadata = new VariantStudyMetadata().addVariantSource(source);
 
         //Writer
         DataWriter<VcfSliceProtos.VcfSlice> dataWriter = new ProtoFileWriter<>(outputVariantsFile, compression);
 
         // Normalizer
-        VariantNormalizer normalizer = new VariantNormalizer();
+        VariantNormalizer normalizer = new VariantNormalizer(true, true, false);
+        for (VariantStudyMetadata.VariantMetadataRecord record : variantMetadata.getFormat().values()) {
+            normalizer.configure(record.getId(), record.getNumberType(), record.getType());
+        }
+        for (VariantStudyMetadata.VariantMetadataRecord record : variantMetadata.getInfo().values()) {
+            normalizer.configure(record.getId(), record.getNumberType(), record.getType());
+        }
         normalizer.setGenerateReferenceBlocks(generateReferenceBlocks);
 
         // Stats calculator
         VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
 
-        VariantReader dataReader = null;
+        final VariantReader dataReader;
         try {
             if (VariantReaderUtils.isVcf(input.toString())) {
                 InputStream inputStream = FileUtils.newInputStream(input);

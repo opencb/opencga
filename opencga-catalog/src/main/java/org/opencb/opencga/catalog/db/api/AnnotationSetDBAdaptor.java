@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,9 @@ package org.opencb.opencga.catalog.db.api;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.catalog.models.summaries.VariableSummary;
@@ -51,37 +53,59 @@ public interface AnnotationSetDBAdaptor<T> extends DBAdaptor<T> {
     QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException;
 
     /**
-     * Obtains all the annotation sets matching the parameters provided.
+     * Obtains all the annotation sets from id or just the one matching with the annotationSetName if provided.
      *
-     * @param id id of the entity where the annotations are stored.
-     * @param variableSetId Variable set id.
-     * @param annotation Annotations that will be queried.
-     * @return a queryResult containing the mathching annotation sets.
+     * @param resource id of the entity where the annotations are stored.
+     * @param annotationSetName annotation set name of the annotation to be returned when provided.
+     * @param studyPermission study permission.
+     * @return a queryResult containing either all the annotation sets or just the one corresponding to the annotation set name if provided.
      * @throws CatalogDBException when the annotation set could not be retrieved due to a database error.
+     * @throws CatalogAuthorizationException if the user does not have proper permissions.
      */
-    QueryResult<AnnotationSet> searchAnnotationSet(long id, long variableSetId, @Nullable String annotation) throws CatalogDBException;
+    QueryResult<AnnotationSet> getAnnotationSet(AbstractManager.MyResourceId resource, @Nullable String annotationSetName,
+                                                String studyPermission) throws CatalogDBException, CatalogAuthorizationException;
 
     /**
      * Obtains all the annotation sets matching the parameters provided.
      *
-     * @param id id of the entity where the annotations are stored.
+     * @param resource resource of the entity where the annotations are stored.
      * @param variableSetId Variable set id.
      * @param annotation Annotations that will be queried.
+     * @param studyPermission study permission.
      * @return a queryResult containing the mathching annotation sets.
      * @throws CatalogDBException when the annotation set could not be retrieved due to a database error.
+     * @throws CatalogAuthorizationException if the user does not have proper permissions.
      */
-    QueryResult<ObjectMap> searchAnnotationSetAsMap(long id, long variableSetId, @Nullable String annotation) throws CatalogDBException;
+    QueryResult<AnnotationSet> searchAnnotationSet(AbstractManager.MyResourceId resource, long variableSetId, @Nullable String annotation,
+                                                   String studyPermission) throws CatalogDBException, CatalogAuthorizationException;
+
+    /**
+     * Obtains all the annotation sets matching the parameters provided.
+     *
+     * @param resource resource of the entity where the annotations are stored.
+     * @param variableSetId Variable set id.
+     * @param annotation Annotations that will be queried.
+     * @param studyPermission study permission.
+     * @return a queryResult containing the mathching annotation sets.
+     * @throws CatalogDBException when the annotation set could not be retrieved due to a database error.
+     * @throws CatalogAuthorizationException if the user does not have proper permissions.
+     */
+    QueryResult<ObjectMap> searchAnnotationSetAsMap(AbstractManager.MyResourceId resource, long variableSetId, @Nullable String annotation,
+                                                    String studyPermission) throws CatalogDBException, CatalogAuthorizationException;
 
     /**
      * Obtains all the annotation sets from id or just the one matching with the annotationSetName if provided.
      *
-     * @param id id of the entity where the annotations are stored.
+     * @param resource resource of the entity where the annotations are stored.
      * @param annotationSetName annotation set name of the annotation to be returned when provided.
+     * @param studyPermission Study permission to be checked.
      * @return a queryResult containing either all the annotation sets or just the one corresponding to the annotation set name if provided
      * as key:value pairs.
      * @throws CatalogDBException when the annotation set could not be retrieved due to a database error.
+     * @throws CatalogAuthorizationException if the user does not have proper permissions.
      */
-    QueryResult<ObjectMap> getAnnotationSetAsMap(long id, @Nullable String annotationSetName) throws CatalogDBException;
+    QueryResult<ObjectMap> getAnnotationSetAsMap(AbstractManager.MyResourceId resource, @Nullable String annotationSetName,
+                                                 String studyPermission) throws CatalogDBException, CatalogAuthorizationException;
 
     /**
      * Updates the annotationSet with the new annotationSet provided.

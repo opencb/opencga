@@ -1,6 +1,6 @@
 
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,8 +50,8 @@ public class CatalogStudyConfigurationFactory {
             FileDBAdaptor.QueryParams.ID.key(),
             FileDBAdaptor.QueryParams.NAME.key(),
             FileDBAdaptor.QueryParams.PATH.key(),
-            FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),
-            FileDBAdaptor.QueryParams.ATTRIBUTES.key() + ".variantSource.metadata.variantFileHeader"));
+            FileDBAdaptor.QueryParams.SAMPLE_IDS.key()));
+//            FileDBAdaptor.QueryParams.ATTRIBUTES.key() + ".variantSource.metadata.variantFileHeader"));
     public static final Query ALL_FILES_QUERY = new Query()
             .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), Arrays.asList(File.Bioformat.VARIANT, File.Bioformat.ALIGNMENT));
 
@@ -117,8 +117,13 @@ public class CatalogStudyConfigurationFactory {
         studyConfiguration.setStudyId((int) study.getId());
         long projectId = catalogManager.getProjectIdByStudyId(study.getId());
         String projectAlias = catalogManager.getProject(projectId, null, sessionId).first().getAlias();
-        String userId = catalogManager.getUserIdByProjectId(projectId);
-        studyConfiguration.setStudyName(userId + "@" + projectAlias + ":" + study.getAlias());
+        if (projectAlias.contains("@")) {
+            // Already contains user in projectAlias
+            studyConfiguration.setStudyName(projectAlias + ":" + study.getAlias());
+        } else {
+            String userId = catalogManager.getUserIdByProjectId(projectId);
+            studyConfiguration.setStudyName(userId + "@" + projectAlias + ":" + study.getAlias());
+        }
 
         fillNullMaps(studyConfiguration);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,6 +132,8 @@ public interface IUserManager extends ResourceManager<String, User> {
     void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException;
 
     QueryResult<Session> login(String userId, String password, String sessionIp) throws CatalogException, IOException;
+
+    QueryResult<Session> refreshToken(String userId, String token, String sessionIp) throws CatalogException, IOException;
 
     /**
      * This method will be only callable by the system. It generates a new session id for the user.

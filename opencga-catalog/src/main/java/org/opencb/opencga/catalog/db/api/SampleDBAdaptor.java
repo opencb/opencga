@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,10 +57,6 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
 
-        ACL("acl", TEXT_ARRAY, ""),
-        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
-        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
-
         ONTOLOGIES("ontologies", TEXT_ARRAY, ""), // Alias in the webservice to ONTOLOGY_TERMS
         ONTOLOGY_TERMS("ontologyTerms", TEXT_ARRAY, ""),
         ONTOLOGY_TERMS_ID("ontologyTerms.id", TEXT, ""),
@@ -74,11 +70,6 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         ANNOTATION_SET_NAME("annotationSetName", TEXT_ARRAY, ""),
         ANNOTATION("annotation", TEXT_ARRAY, "");
 
-        /*
-        ANNOTATIONS_SET_VARIABLE_SET_ID("annotationSets.variableSetId", DOUBLE, ""),
-        ANNOTATION_SET_NAME("annotationSets.id", TEXT, ""),
-        ANNOTATION_SET("annotationSets", TEXT_ARRAY, "");
-*/
         private static Map<String, QueryParams> map;
         static {
             map = new LinkedMap();

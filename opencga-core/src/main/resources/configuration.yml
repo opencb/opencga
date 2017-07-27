@@ -1,0 +1,77 @@
+---
+logLevel: "INFO"
+logFile: null
+
+openRegister: false
+userDefaultQuota: 200000
+
+databasePrefix: ${OPENCGA.DB.PREFIX}
+dataDir: ${OPENCGA.USER.WORKSPACE}
+tempJobsDir: ${OPENCGA.JOBS.DIR}
+toolDir: "tools"
+
+admin:
+  password: ""
+  email: ""
+
+audit:
+  maxDocuments: 20000000 # Maximum number of documents that will be created in the audit collection.
+  maxSize: 100000000000  # Maximum size that the audit collection will have in bytes.
+  javaClass: ""          # Java class of the audit implementation to be used to audit.
+  exclude: []            # Array of resource:action to select pairwise resource-actions to be excluded for audit purposes.
+
+monitor:
+  daysToRemove: 30
+  executionDaemonInterval: 4000 # number of milliseconds between checks
+  fileDaemonInterval: 8000      # number of milliseconds between checks
+  port: ${OPENCGA.MONITOR.PORT}
+
+execution:
+  mode: ${OPENCGA.EXECUTION.MODE}
+  defaultQueue: ""
+  availableQueues: ""
+  toolsPerQueue: {}
+
+email:
+  host: ${OPENCGA.MAIL.HOST}
+  port: ${OPENCGA.MAIL.PORT}
+  user: ${OPENCGA.MAIL.USER}
+  password: ${OPENCGA.MAIL.PASSWORD}
+  from: ""
+  ssl: false
+
+catalog:
+  # offset: Starting point for the catalog internal ids. Use a big offset number (1000000 for instance) if you plan to use numerical ids
+  #         for names or aliases of any entity.
+  offset: 0
+  database:
+    hosts:
+    - ${OPENCGA.CATALOG.DB.HOSTS}
+    user: ${OPENCGA.CATALOG.DB.USER}
+    password: ${OPENCGA.CATALOG.DB.PASSWORD}
+    options:
+      authenticationDatabase: ${OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE}
+      connectionsPerHost: ${OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST}
+
+authentication:
+  # Session expiration time in seconds
+  expiration: 1800
+# LDAP configuration example
+  #authenticationOrigins:
+  #- id: ldap            # Any id
+  #  type: LDAP          # At the moment, we only support LDAP
+  #  host: ldap://localhost:9000
+  #  options:
+  #    usersSearch: dc=ge,dc=co,dc=uk # Base search to look for the users
+  #    groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for the groups
+
+server:
+  rest:
+    port: ${OPENCGA.SERVER.REST.PORT}
+    logFile: null
+    defaultLimit: 2000
+    maxLimit: 5000
+
+  grpc:
+    port: ${OPENCGA.SERVER.GRPC.PORT}
+    logFile: null

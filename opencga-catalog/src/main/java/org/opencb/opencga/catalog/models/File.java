@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,8 @@ public class File extends AbstractAcl<FileAclEntry> {
     private long size;
     private Experiment experiment;
     private List<Sample> samples;
+    @Deprecated
+    private List<Long> sampleIds;
 
 
     /**
@@ -499,6 +501,15 @@ public class File extends AbstractAcl<FileAclEntry> {
 
     public File setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
+    }
+
+    public List<Long> getSampleIds() {
+        return sampleIds;
+    }
+
+    public File setSampleIds(List<Long> sampleIds) {
+        this.sampleIds = sampleIds;
         return this;
     }
 

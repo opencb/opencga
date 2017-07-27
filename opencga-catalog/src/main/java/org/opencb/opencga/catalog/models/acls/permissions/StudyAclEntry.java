@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,7 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         VIEW_VARIABLE_SET,
         WRITE_VARIABLE_SET,
         DELETE_VARIABLE_SET,
+        CONFIDENTIAL_VARIABLE_SET_ACCESS,
 
         // FILES
         WRITE_FILES(FileAclEntry.FilePermissions.WRITE.name(), FILE),

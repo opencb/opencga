@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,14 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.mongodb.MongoClient;
 import com.mongodb.WriteResult;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.*;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -31,8 +34,11 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +80,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<Study> insert(long projectId, Study study, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Study> insert(long projectId, Study study, String ownerId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         if (projectId < 0) {
             throw CatalogDBException.idNotFound("Project", projectId);
@@ -112,6 +118,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         //Set ProjectId
         studyObject.put(PRIVATE_PROJECT_ID, projectId);
+        studyObject.put(PRIVATE_OWNER_ID, ownerId);
 
         //Insert
         QueryResult<WriteResult> updateResult = studyCollection.insert(studyObject, null);
@@ -178,6 +185,17 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
+    public boolean hasStudyPermission(long studyId, String user, StudyAclEntry.StudyPermissions permission) throws CatalogDBException {
+        Query query = new Query(QueryParams.ID.key(), studyId);
+        QueryResult queryResult = nativeGet(query, QueryOptions.empty());
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Study " + studyId + " not found");
+        }
+
+        return checkStudyPermission((Document) queryResult.first(), user, permission.name());
+    }
+
+    @Override
     public void updateStudyLastModified(long studyId) throws CatalogDBException {
         update(studyId, new ObjectMap("lastModified", TimeUtils.getTime()));
     }
@@ -212,22 +230,27 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<Group> createGroup(long studyId, String groupId, List<String> userIds) throws CatalogDBException {
+    public QueryResult<Group> createGroup(long studyId, Group group) throws CatalogDBException {
         long startTime = startQuery();
 
-        Group group = new Group(groupId, userIds);
-        Document query = new Document(PRIVATE_ID, studyId);
+        Document query = new Document()
+                .append(PRIVATE_ID, studyId)
+                .append(QueryParams.GROUP_NAME.key(), new Document("$ne", group.getName()));
         Document update = new Document("$push", new Document(QueryParams.GROUPS.key(), getMongoDBDocument(group, "Group")));
 
         QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
 
         if (queryResult.first().getModifiedCount() != 1) {
-            throw new CatalogDBException("Unable to create the group " + groupId);
+            QueryResult<Group> group1 = getGroup(studyId, group.getName(), Collections.emptyList());
+            if (group1.getNumResults() > 0) {
+                throw new CatalogDBException("Unable to create the group " + group.getName() + ". Group already existed.");
+            } else {
+                throw new CatalogDBException("Unable to create the group " + group.getName() + ".");
+            }
         }
 
-        return endQuery("Create group", startTime, getGroup(studyId, groupId, Collections.emptyList()));
+        return endQuery("Create group", startTime, getGroup(studyId, group.getName(), Collections.emptyList()));
     }
-
 
     private long getDiskUsageByStudy(int studyId) {
 
@@ -251,38 +274,13 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
     }
 
-
-    @Override
-    public QueryResult<Group> getGroup(long studyId, String userId, String groupName, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-
-        Bson query = new Document(PRIVATE_ID, studyId);
-        Document groupQuery = new Document();
-        if (userId != null) {
-            groupQuery.put("userIds", userId);
-        }
-        if (groupName != null) {
-            groupQuery.put("name", groupName);
-        }
-        Bson projection = new Document(QueryParams.GROUPS.key(), new Document("$elemMatch", groupQuery));
-
-        QueryResult<Document> queryResult = studyCollection.find(query, projection,
-                filterOptions(options, FILTER_ROUTE_STUDIES + QueryParams.GROUPS.key() + "."));
-        List<Study> studies = MongoDBUtils.parseStudies(queryResult);
-        List<Group> groups = new ArrayList<>(1);
-        studies.stream().filter(study -> study.getGroups() != null).forEach(study -> groups.addAll(study.getGroups()));
-        return endQuery("getGroup", startTime, groups);
-    }
-
     @Override
     public QueryResult<Group> getGroup(long studyId, @Nullable String groupId, List<String> userIds) throws CatalogDBException {
         long startTime = startQuery();
         checkId(studyId);
-        for (String userId : userIds) {
-            dbAdaptorFactory.getCatalogUserDBAdaptor().checkId(userId);
-        }
-        if (groupId != null && groupId.length() > 0 && !groupExists(studyId, groupId)) {
-            throw new CatalogDBException("Group \"" + groupId + "\" does not exist in study " + studyId);
+
+        if (userIds == null) {
+            userIds = Collections.emptyList();
         }
 
         List<Bson> aggregation = new ArrayList<>();
@@ -306,113 +304,88 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<Group> setUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
-        long startTime = startQuery();
+    public void setUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
+        if (members == null) {
+            members = Collections.emptyList();
+        }
 
         // Check that the members exist.
-        for (String member : members) {
-            dbAdaptorFactory.getCatalogUserDBAdaptor().checkId(member);
+        if (members.size() > 0) {
+            dbAdaptorFactory.getCatalogUserDBAdaptor().checkIds(members);
         }
 
-        // Check that the members do not belong to other group.
-        List<Group> result = getGroup(studyId, null, members).getResult();
-        if (result.size() > 0) {
-            Set<String> usersSet = new HashSet<>(members.size());
-            usersSet.addAll(members.stream().collect(Collectors.toList()));
-
-            for (Group group : result) {
-                // Remove the members that already existed in other groups different than the one to be set.
-                if (!group.getName().equals(groupId)) {
-                    List<String> usersToRemove = new ArrayList<>();
-                    for (String userId : group.getUserIds()) {
-                        if (usersSet.contains(userId)) {
-                            usersToRemove.add(userId);
-                        }
-                    }
-                    if (usersToRemove.size() > 0) {
-                        removeUsersFromGroup(studyId, group.getName(), usersToRemove);
-                    }
-                }
-            }
-        }
-
-        Document query = new Document(PRIVATE_ID, studyId).append(QueryParams.GROUP_NAME.key(), groupId);
+        Document query = new Document()
+                .append(PRIVATE_ID, studyId)
+                .append(QueryParams.GROUP_NAME.key(), groupId)
+                .append("$isolated", 1);
         Document update = new Document("$set", new Document("groups.$.userIds", members));
         QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
 
-        if (queryResult.first().getModifiedCount() != 1) {
-            throw new CatalogDBException("Unable to set users to group " + groupId);
+        if (queryResult.first().getMatchedCount() != 1) {
+            throw new CatalogDBException("Unable to set users to group " + groupId + ". The group does not exist.");
         }
-
-        return endQuery("set users to group", startTime, getGroup(studyId, null, groupId, null));
-    }
-
-    boolean groupExists(long studyId, String groupId) throws CatalogDBException {
-        Query query = new Query(QueryParams.ID.key(), studyId).append(QueryParams.GROUP_NAME.key(), groupId);
-        return count(query).first() == 1;
     }
 
     @Override
-    public QueryResult<Group> addUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
-        long startTime = startQuery();
-
-        // Check that the members exist.
-        for (String member : members) {
-            dbAdaptorFactory.getCatalogUserDBAdaptor().checkId(member);
+    public void addUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
+        if (members == null) {
+            members = Collections.emptyList();
         }
 
-        // Check that the members do not belong to other group.
-        List<Group> result = getGroup(studyId, null, members).getResult();
-        if (result.size() > 0) {
-            Set<String> usersSet = new HashSet<>(members.size());
-            usersSet.addAll(members.stream().collect(Collectors.toList()));
-
-            for (Group group : result) {
-                // Remove the members that already existed in other groups different than the one to be set.
-                if (!group.getName().equals(groupId)) {
-                    List<String> usersToRemove = new ArrayList<>();
-                    for (String userId : group.getUserIds()) {
-                        if (usersSet.contains(userId)) {
-                            usersToRemove.add(userId);
-                        }
-                    }
-                    if (usersToRemove.size() > 0) {
-                        removeUsersFromGroup(studyId, group.getName(), usersToRemove);
-                    }
-                }
-            }
-        }
-
-        Document query = new Document(PRIVATE_ID, studyId).append(QueryParams.GROUP_NAME.key(), groupId);
+        Document query = new Document()
+                .append(PRIVATE_ID, studyId)
+                .append(QueryParams.GROUP_NAME.key(), groupId)
+                .append("$isolated", 1);
         Document update = new Document("$addToSet", new Document("groups.$.userIds", new Document("$each", members)));
         QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
 
-        if (queryResult.first().getModifiedCount() != 1) {
-            throw new CatalogDBException("Unable to add members to group " + groupId + ". Maybe the users already belong to the group?");
+        if (queryResult.first().getMatchedCount() != 1) {
+            throw new CatalogDBException("Unable to add members to group " + groupId + ". The group does not exist.");
         }
-
-        return endQuery("add users to group", startTime, getGroup(studyId, null, groupId, null));
     }
 
     @Override
     public void removeUsersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
-        for (String member : members) {
-            dbAdaptorFactory.getCatalogUserDBAdaptor().checkId(member);
+        if (members == null || members.size() == 0) {
+            throw new CatalogDBException("Unable to remove members from group. List of members is empty");
         }
 
-        Bson and = Filters.and(Filters.eq(PRIVATE_ID, studyId), Filters.eq("groups.name", groupId));
+        Document query = new Document()
+                .append(PRIVATE_ID, studyId)
+                .append(QueryParams.GROUP_NAME.key(), groupId)
+                .append("$isolated", 1);
         Bson pull = Updates.pullAll("groups.$.userIds", members);
-        QueryResult<UpdateResult> update = studyCollection.update(and, pull, null);
-        if (update.first().getModifiedCount() != 1) {
-            throw new CatalogDBException("Unable to remove members from group " + groupId);
+        QueryResult<UpdateResult> update = studyCollection.update(query, pull, null);
+        if (update.first().getMatchedCount() != 1) {
+            throw new CatalogDBException("Unable to remove members from group " + groupId + ". The group does not exist.");
         }
+    }
+
+    @Override
+    public void removeUsersFromAllGroups(long studyId, List<String> users) throws CatalogDBException {
+        if (users == null || users.size() == 0) {
+            throw new CatalogDBException("Unable to remove users from groups. List of users is empty");
+        }
+
+        Document query = new Document()
+                .append(PRIVATE_ID, studyId)
+                .append(QueryParams.GROUP_USER_IDS.key(), new Document("$in", users))
+                .append("$isolated", 1);
+        Bson pull = Updates.pullAll("groups.$.userIds", users);
+
+        // Pull those users while they are still there
+        QueryResult<UpdateResult> update;
+        do {
+            update = studyCollection.update(query, pull, null);
+        } while (update.first().getModifiedCount() > 0);
     }
 
     @Override
     public void deleteGroup(long studyId, String groupId) throws CatalogDBException {
         Bson queryBson = new Document()
                 .append(PRIVATE_ID, studyId)
-                .append(QueryParams.GROUP_NAME.key(), groupId);
+                .append(QueryParams.GROUP_NAME.key(), groupId)
+                .append("$isolated", 1);
         Document pull = new Document("$pull", new Document("groups", new Document("name", groupId)));
         QueryResult<UpdateResult> update = studyCollection.update(queryBson, pull, null);
 
@@ -422,15 +395,65 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public void updateSyncFromGroup(long studyId, String groupId, Group.Sync syncedFrom) throws CatalogDBException {
+    public void syncGroup(long studyId, String groupId, Group.Sync syncedFrom) throws CatalogDBException {
         Document mongoDBDocument = getMongoDBDocument(syncedFrom, "Group.Sync");
 
-        Query query = new Query()
-                .append(QueryParams.ID.key(), studyId)
-                .append(QueryParams.GROUP_NAME.key(), groupId);
-
+        Document query = new Document()
+                .append(PRIVATE_ID, studyId)
+                .append(QueryParams.GROUP_NAME.key(), groupId)
+                .append("$isolated", 1);
         Document updates = new Document("$set", new Document("groups.$.syncedFrom", mongoDBDocument));
-        studyCollection.update(parseQuery(query, true), updates, null);
+        studyCollection.update(query, updates, null);
+    }
+
+    @Override
+    public void resyncUserWithSyncedGroups(String user, List<String> groupList, String authOrigin) throws CatalogDBException {
+        if (StringUtils.isEmpty(user)) {
+            throw new CatalogDBException("Missing user field");
+        }
+
+        // 1. Take the user out from all synced groups
+        Document query = new Document()
+                .append(QueryParams.GROUPS.key(), new Document("$elemMatch", new Document()
+                                .append("userIds", user)
+                                .append("syncedFrom.authOrigin", authOrigin)
+                        ))
+                .append("$isolated", 1);
+        Bson pull = Updates.pull("groups.$.userIds", user);
+
+        // Pull the user while it still belongs to a synced group
+        QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+        QueryResult<UpdateResult> update;
+        do {
+            update = studyCollection.update(query, pull, multi);
+        } while (update.first().getModifiedCount() > 0);
+
+        // 2. Add user to all synced groups
+        if (groupList != null && groupList.size() > 0) {
+            // Add the user to all the synced groups matching
+            query = new Document()
+                    .append(QueryParams.GROUPS.key(), new Document("$elemMatch", new Document()
+                            .append("userIds", new Document("$ne", user))
+                            .append("syncedFrom.remoteGroup", new Document("$in", groupList))
+                            .append("syncedFrom.authOrigin", authOrigin)
+                    ))
+                    .append("$isolated", 1);
+            Document push = new Document("$addToSet", new Document("groups.$.userIds", user));
+            do {
+                update = studyCollection.update(query, push, multi);
+            } while (update.first().getModifiedCount() > 0);
+
+            // We need to be updated with the internal @members group, so we fetch all the studies where the user has been added
+            // and attempt to add it to the each @members group
+            query = new Document()
+                    .append(QueryParams.GROUP_USER_IDS.key(), user)
+                    .append(QueryParams.GROUP_SYNCED_FROM_AUTH_ORIGIN.key(), authOrigin);
+            QueryResult<Study> studyQueryResult = studyCollection.find(query, studyConverter, new QueryOptions(QueryOptions.INCLUDE,
+                    QueryParams.ID.key()));
+            for (Study study : studyQueryResult.getResult()) {
+                addUsersToGroup(study.getId(), "@members", Arrays.asList(user));
+            }
+        }
     }
 
     /*
@@ -462,6 +485,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         long variableSetId = getNewId();
         variableSet.setId(variableSetId);
         Document object = getMongoDBDocument(variableSet, "VariableSet");
+        object.put("id", variableSetId);
 
         Bson bsonQuery = Filters.eq(PRIVATE_ID, studyId);
         Bson update = Updates.push("variableSets", object);
@@ -475,11 +499,13 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable) throws CatalogDBException {
+    public QueryResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
-        checkVariableSetExists(variableSetId);
-        checkVariableNotInVariableSet(variableSetId, variable.getName());
+        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user,
+                StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET.toString());
+        checkVariableNotInVariableSet(variableSet.first(), variable.getName());
 
         Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
         Bson update = Updates.push(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
@@ -498,16 +524,21 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<VariableSet> renameFieldVariableSet(long variableSetId, String oldName, String newName) throws CatalogDBException {
+    public QueryResult<VariableSet> renameFieldVariableSet(long variableSetId, String oldName, String newName, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
-        checkVariableSetExists(variableSetId);
-        checkVariableInVariableSet(variableSetId, oldName);
-        checkVariableNotInVariableSet(variableSetId, newName);
+        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user,
+                StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET.toString());
+        checkVariableNotInVariableSet(variableSet.first(), newName);
 
         // The field can be changed if we arrive to this point.
         // 1. we obtain the variable
-        Variable variable = getVariable(variableSetId, oldName);
+        Variable variable = getVariable(variableSet.first(), oldName);
+        if (variable == null) {
+            throw new CatalogDBException("VariableSet {id: " + variableSet.getId() + "}. The variable {id: " + oldName + "} does not "
+                    + "exist.");
+        }
 
         // 2. we take it out from the array.
         Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
@@ -536,20 +567,21 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         // 4. Change the field id in the annotations
         dbAdaptorFactory.getCatalogSampleDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
         dbAdaptorFactory.getCatalogCohortDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
+        dbAdaptorFactory.getCatalogFamilyDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
+        dbAdaptorFactory.getCatalogIndividualDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
 
         return endQuery("Rename field in variableSet", startTime, getVariableSet(variableSetId, null));
     }
 
     @Override
-    public QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name) throws CatalogDBException {
+    public QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
-        try {
-            checkVariableInVariableSet(variableSetId, name);
-        } catch (CatalogDBException e) {
-            checkVariableSetExists(variableSetId);
-            throw e;
-        }
+        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user,
+                StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET.toString());
+        checkVariableInVariableSet(variableSet.first(), name);
+
         Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
         Bson update = Updates.pull(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
                 Filters.eq("name", name));
@@ -568,69 +600,38 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return endQuery("Remove field from Variable Set", startTime, getVariableSet(variableSetId, null));
     }
 
-    /**
-     * The method will return the variable object given variableSetId and the variableId.
-     * @param variableSetId Id of the variableSet.
-     * @param variableId Id of the variable inside the variableSet.
-     * @return the variable object.
-     */
-    private Variable getVariable(long variableSetId, String variableId) throws CatalogDBException {
-        List<Bson> aggregation = new ArrayList<>();
-        aggregation.add(Aggregates.match(Filters.elemMatch(QueryParams.VARIABLE_SET.key(),
-                Filters.eq(VariableSetParams.ID.key(), variableSetId))));
-        aggregation.add(Aggregates.project(Projections.include(QueryParams.VARIABLE_SET.key())));
-        aggregation.add(Aggregates.unwind("$" + QueryParams.VARIABLE_SET.key()));
-        aggregation.add(Aggregates.match(Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId)));
-        aggregation.add(Aggregates.unwind("$" + QueryParams.VARIABLE_SET.key() + "." + VariableSetParams.VARIABLE.key()));
-        aggregation.add(Aggregates.match(
-                Filters.eq(QueryParams.VARIABLE_SET.key() + "." + VariableSetParams.VARIABLE_NAME.key(), variableId)));
-
-        QueryResult<Document> queryResult = studyCollection.aggregate(aggregation, new QueryOptions());
-
-        Document variableSetDocument = (Document) queryResult.first().get(QueryParams.VARIABLE_SET.key());
-        VariableSet variableSet = variableSetConverter.convertToDataModelType(variableSetDocument);
-        Iterator<Variable> iterator = variableSet.getVariables().iterator();
-        if (iterator.hasNext()) {
-            return iterator.next();
-        } else {
-            // This error should never be raised.
-            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - Could not obtain variable object.");
+    private Variable getVariable(VariableSet variableSet, String variableId) throws CatalogDBException {
+        for (Variable variable : variableSet.getVariables()) {
+            if (variable.getName().equals(variableId)) {
+                return variable;
+            }
         }
+        return null;
     }
 
     /**
      * Checks if the variable given is present in the variableSet.
-     * @param variableSetId Identifier of the variableSet where it will be checked.
+     * @param variableSet Variable set.
      * @param variableId VariableId that will be checked.
      * @throws CatalogDBException when the variableId is not present in the variableSet.
      */
-    private void checkVariableInVariableSet(long variableSetId, String variableId) throws CatalogDBException {
-        List<Bson> aggregation = new ArrayList<>();
-        aggregation.add(Aggregates.match(Filters.elemMatch(QueryParams.VARIABLE_SET.key(), Filters.and(
-                Filters.eq(VariableSetParams.ID.key(), variableSetId),
-                Filters.eq(VariableSetParams.VARIABLE_NAME.key(), variableId))
-        )));
-
-        if (studyCollection.aggregate(aggregation, new QueryOptions()).getNumResults() == 0) {
-            throw new CatalogDBException("VariableSet {id: " + variableSetId + "}. The variable {id: " + variableId + "} does not exist.");
+    private void checkVariableInVariableSet(VariableSet variableSet, String variableId) throws CatalogDBException {
+        if (getVariable(variableSet, variableId) == null) {
+            throw new CatalogDBException("VariableSet {id: " + variableSet.getId() + "}. The variable {id: " + variableId + "} does not "
+                    + "exist.");
         }
     }
 
     /**
      * Checks if the variable given is not present in the variableSet.
-     * @param variableSetId Identifier of the variableSet where it will be checked.
+     * @param variableSet Variable set.
      * @param variableId VariableId that will be checked.
      * @throws CatalogDBException when the variableId is present in the variableSet.
      */
-    private void checkVariableNotInVariableSet(long variableSetId, String variableId) throws CatalogDBException {
-        List<Bson> aggregation = new ArrayList<>();
-        aggregation.add(Aggregates.match(Filters.elemMatch(QueryParams.VARIABLE_SET.key(), Filters.and(
-                Filters.eq(VariableSetParams.ID.key(), variableSetId),
-                Filters.ne(VariableSetParams.VARIABLE_NAME.key(), variableId))
-        )));
-
-        if (studyCollection.aggregate(aggregation, new QueryOptions()).getNumResults() == 0) {
-            throw new CatalogDBException("VariableSet {id: " + variableSetId + "}. The variable {id: " + variableId + "} already exists.");
+    private void checkVariableNotInVariableSet(VariableSet variableSet, String variableId) throws CatalogDBException {
+        if (getVariable(variableSet, variableId) != null) {
+            throw new CatalogDBException("VariableSet {id: " + variableSet.getId() + "}. The variable {id: " + variableId + "} already "
+                    + "exists.");
         }
     }
 
@@ -652,6 +653,51 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         return endQuery("", startTime, studyQueryResult.first().getVariableSets());
+    }
+
+    @Override
+    public QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options, String user, String additionalPermission)
+            throws CatalogDBException, CatalogAuthorizationException {
+        long startTime = startQuery();
+
+        Bson query = new Document("variableSets", new Document("$elemMatch", new Document("id", variableSetId)));
+        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "variableSets.$,_ownerId,groups,_acl");
+        QueryResult<Document> studyQueryResult = studyCollection.find(query, qOptions);
+//        Query query = new Query(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
+//        Bson projection = Projections.elemMatch("variableSets", Filters.eq("id", variableSetId));
+//        if (options == null) {
+//            options = new QueryOptions();
+//        }
+//        QueryOptions qOptions = new QueryOptions(options);
+//        qOptions.put(MongoDBCollection.ELEM_MATCH, projection);
+//        QueryResult<Document> studyQueryResult = nativeGet(query, qOptions);
+
+        if (studyQueryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Variable set not found.");
+        }
+        if (!checkStudyPermission(studyQueryResult.first(), user, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET.toString())) {
+            throw CatalogAuthorizationException.deny(user, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET.toString(), "VariableSet",
+                    variableSetId, "");
+        }
+        if (StringUtils.isNotEmpty(additionalPermission)) {
+            if (!checkStudyPermission(studyQueryResult.first(), user, additionalPermission)) {
+                throw CatalogAuthorizationException.deny(user, additionalPermission, "VariableSet", variableSetId, "");
+            }
+        }
+        Study study = studyConverter.convertToDataModelType(studyQueryResult.first());
+        if (study.getVariableSets() == null || study.getVariableSets().size() == 0) {
+            throw new CatalogDBException("Variable set not found.");
+        }
+        // Check if it is confidential
+        if (study.getVariableSets().get(0).isConfidential()) {
+            if (!checkStudyPermission(studyQueryResult.first(), user,
+                    StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString())) {
+                throw CatalogAuthorizationException.deny(user, StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString(),
+                        "VariableSet", variableSetId, "");
+            }
+        }
+
+        return endQuery("", startTime, study.getVariableSets());
     }
 
     @Override
@@ -711,13 +757,86 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions) throws CatalogDBException {
+    public QueryResult<VariableSet> getVariableSets(Query query, QueryOptions queryOptions, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
+        List<Document> mongoQueryList = new LinkedList<>();
+        long studyId = -1;
+
+        for (Map.Entry<String, Object> entry : query.entrySet()) {
+            String key = entry.getKey().split("\\.")[0];
+            try {
+                if (isDataStoreOption(key) || isOtherKnownOption(key)) {
+                    continue;   //Exclude DataStore options
+                }
+                StudyDBAdaptor.VariableSetParams option = StudyDBAdaptor.VariableSetParams.getParam(key) != null
+                        ? StudyDBAdaptor.VariableSetParams.getParam(key)
+                        : StudyDBAdaptor.VariableSetParams.getParam(entry.getKey());
+                if (option == null) {
+                    logger.warn("{} unknown", entry.getKey());
+                    continue;
+                }
+                switch (option) {
+                    case STUDY_ID:
+                        studyId = query.getLong(VariableSetParams.STUDY_ID.key());
+                        break;
+                    default:
+                        String optionsKey = "variableSets." + entry.getKey().replaceFirst(option.name(), option.key());
+                        addCompQueryFilter(option, entry.getKey(), optionsKey, query, mongoQueryList);
+                        break;
+                }
+            } catch (IllegalArgumentException e) {
+                throw new CatalogDBException(e);
+            }
+        }
+
+        if (studyId == -1) {
+            throw new CatalogDBException("Cannot look for variable sets if studyId is not passed");
+        }
+
+        List<Bson> aggregation = new ArrayList<>();
+        aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, studyId)));
+        aggregation.add(Aggregates.unwind("$variableSets"));
+        if (mongoQueryList.size() > 0) {
+            List<Bson> bsonList = new ArrayList<>(mongoQueryList.size());
+            bsonList.addAll(mongoQueryList);
+            aggregation.add(Aggregates.match(Filters.and(bsonList)));
+        }
+
+        QueryResult<Document> queryResult = studyCollection.aggregate(aggregation, filterOptions(queryOptions, FILTER_ROUTE_STUDIES));
+        if (queryResult.getNumResults() == 0) {
+            return endQuery("", startTime, Collections.emptyList());
+        }
+
+        if (!checkStudyPermission(queryResult.first(), user, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET.toString())) {
+            throw new CatalogAuthorizationException("Permission denied: " + user + " cannot see any variable set");
+        }
+
+        boolean hasConfidentialPermission = checkStudyPermission(queryResult.first(), user,
+                StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString());
+        List<VariableSet> variableSets = new ArrayList<>();
+        for (Document studyDocument : queryResult.getResult()) {
+            Study study = studyConverter.convertToDataModelType(studyDocument);
+            VariableSet vs = study.getVariableSets().get(0);
+            if (!vs.isConfidential() || hasConfidentialPermission) {
+                variableSets.add(vs);
+            }
+        }
+
+        return endQuery("", startTime, variableSets);
+    }
+
+    @Override
+    public QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        long startTime = startQuery();
+
+        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, queryOptions, user,
+                StudyAclEntry.StudyPermissions.DELETE_VARIABLE_SET.toString());
         checkVariableSetInUse(variableSetId);
-        long studyId = getStudyIdByVariableSetId(variableSetId);
-        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, queryOptions);
-        Bson query = Filters.eq(PRIVATE_ID, studyId);
+
+        Bson query = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
         Bson operation = Updates.pull("variableSets", Filters.eq("id", variableSetId));
         QueryResult<UpdateResult> update = studyCollection.update(query, operation, null);
 
@@ -752,9 +871,19 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         QueryResult<Cohort> cohorts = dbAdaptorFactory.getCatalogCohortDBAdaptor().get(
                 new Query(CohortDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId), new QueryOptions());
         if (cohorts.getNumResults() != 0) {
-            String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of samples : [";
+            String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of cohorts : [";
             for (Cohort cohort : cohorts.getResult()) {
                 msg += " { id: " + cohort.getId() + ", name: \"" + cohort.getName() + "\" },";
+            }
+            msg += "]";
+            throw new CatalogDBException(msg);
+        }
+        QueryResult<Family> families = dbAdaptorFactory.getCatalogFamilyDBAdaptor().get(
+                new Query(FamilyDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId), new QueryOptions());
+        if (cohorts.getNumResults() != 0) {
+            String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of families : [";
+            for (Family family : families.getResult()) {
+                msg += " { id: " + family.getId() + ", name: \"" + family.getName() + "\" },";
             }
             msg += "]";
             throw new CatalogDBException(msg);
@@ -849,11 +978,15 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
     }
 
-
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
         Bson bson = parseQuery(query, false);
         return studyCollection.count(bson);
+    }
+
+    @Override
+    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission) throws CatalogDBException {
+        throw new NotImplementedException("Count not implemented for study collection");
     }
 
     @Override
@@ -890,6 +1023,17 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
+    public QueryResult<Study> get(Query query, QueryOptions options, String user) throws CatalogDBException {
+        QueryResult queryResult = nativeGet(query, options, user);
+        List<Study> studyList = new ArrayList<>(queryResult.getNumResults());
+        for (Object studyDocument : queryResult.getResult()) {
+            studyList.add(studyConverter.convertToDataModelType((Document) studyDocument));
+        }
+        return new QueryResult<>("Get", queryResult.getDbTime(), queryResult.getNumResults(), queryResult.getNumTotalResults(),
+                queryResult.getWarningMsg(), queryResult.getErrorMsg(), studyList);
+    }
+
+    @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
             query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
@@ -902,8 +1046,35 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             qOptions = new QueryOptions();
         }
         qOptions = filterOptions(qOptions, FILTER_ROUTE_STUDIES);
+        logger.debug("Study native get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         // Fixme: If necessary, include in the results also the files, jobs, individuals...
         return studyCollection.find(bson, qOptions);
+    }
+
+    @Override
+    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException {
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        if (options.containsKey(QueryOptions.INCLUDE)) {
+            options = new QueryOptions(options);
+            List<String> includeList = new ArrayList<>(options.getAsStringList(QueryOptions.INCLUDE));
+            includeList.add("_ownerId");
+            includeList.add("_acl");
+            includeList.add(QueryParams.GROUPS.key());
+            options.put(QueryOptions.INCLUDE, includeList);
+        }
+
+        QueryResult queryResult = nativeGet(query, options);
+
+        Iterator iterator = queryResult.getResult().iterator();
+        while (iterator.hasNext()) {
+            if (!checkStudyPermission((Document) iterator.next(), user, StudyAclEntry.StudyPermissions.VIEW_STUDY.name())) {
+                iterator.remove();
+            }
+        }
+        queryResult.setNumResults(queryResult.getResult().size());
+        queryResult.setNumTotalResults(-1);
+
+        return queryResult;
     }
 
     @Override
@@ -1277,9 +1448,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     case DATASTORES:
                     case SIZE:
                     case URI:
-                    case ACL:
-                    case ACL_MEMBER:
-                    case ACL_PERMISSIONS:
                     case STATS:
                     case TYPE:
                     case GROUPS:
@@ -1304,6 +1472,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     case VARIABLE_SET_ID:
                     case VARIABLE_SET_NAME:
                     case VARIABLE_SET_DESCRIPTION:
+                    case OWNER:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     default:

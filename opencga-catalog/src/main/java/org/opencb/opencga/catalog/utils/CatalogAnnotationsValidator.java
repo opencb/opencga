@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -326,7 +326,7 @@ public class CatalogAnnotationsValidator {
 //                            checkAnnotation(variableMap, new Annotation(entry.getKey().toString(), entry.getValue()));
                             annotationSet.add(new Annotation(entry.getKey().toString(), entry.getValue()));
                         }
-                        checkAnnotationSet(new VariableSet(0, variable.getName(), false, variable.getDescription(),
+                        checkAnnotationSet(new VariableSet(0, variable.getName(), false, false, variable.getDescription(),
                                 variable.getVariableSet(), 1, null), new AnnotationSet("", 0, annotationSet, null, 1, null), null);
                     }
                 }

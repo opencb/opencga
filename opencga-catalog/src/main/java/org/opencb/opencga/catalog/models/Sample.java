@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -239,6 +239,7 @@ public class Sample extends Annotable<SampleAclEntry> {
         private String individual;
         private String file;
         private String cohort;
+        private boolean propagate;
 
         public SampleAclParams() {
         }
@@ -248,6 +249,15 @@ public class Sample extends Annotable<SampleAclEntry> {
             this.individual = individual;
             this.file = file;
             this.cohort = cohort;
+            this.propagate = false;
+        }
+
+        public SampleAclParams(String permissions, Action action, String individual, String file, String cohort, boolean propagate) {
+            super(permissions, action);
+            this.individual = individual;
+            this.file = file;
+            this.cohort = cohort;
+            this.propagate = propagate;
         }
 
         @Override
@@ -258,6 +268,7 @@ public class Sample extends Annotable<SampleAclEntry> {
             sb.append(", individual='").append(individual).append('\'');
             sb.append(", file='").append(file).append('\'');
             sb.append(", cohort='").append(cohort).append('\'');
+            sb.append(", propagate=").append(propagate);
             sb.append('}');
             return sb.toString();
         }
@@ -305,6 +316,15 @@ public class Sample extends Annotable<SampleAclEntry> {
 
         public SampleAclParams setCohort(String cohort) {
             this.cohort = cohort;
+            return this;
+        }
+
+        public boolean isPropagate() {
+            return propagate;
+        }
+
+        public SampleAclParams setPropagate(boolean propagate) {
+            this.propagate = propagate;
             return this;
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,8 @@ import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
+import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata.VariantMetadataRecord;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -70,6 +72,7 @@ import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -224,7 +227,12 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         String format = options.getString(Options.TRANSFORM_FORMAT.key(), Options.TRANSFORM_FORMAT.defaultValue());
         String parser = options.getString("transform.parser", HTSJDK_PARSER);
 
+        // Create empty VariantSource
         VariantSource source = buildVariantSource(input);
+        // Read VariantSource
+        source = VariantReaderUtils.readVariantSource(input, source);
+
+        VariantStudyMetadata variantMetadata = new VariantStudyMetadata().addVariantSource(source);
         String fileName = source.getFileName();
         boolean generateReferenceBlocks = options.getBoolean(Options.GVCF.key(), false);
 
@@ -302,8 +310,6 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 //
 //        } else
         if ("avro".equals(format)) {
-            //Read VariantSource
-            source = VariantReaderUtils.readVariantSource(input, source);
 
             //Reader
             StringDataReader dataReader = new StringDataReader(input);
@@ -334,7 +340,9 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
                 taskSupplier = () -> new VariantAvroTransformTask(header.getKey(), header.getValue(), finalSource, outputMetaFile,
                         statsCalculator, includeSrc, generateReferenceBlocks)
-                        .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
+                        .setFailOnError(failOnError)
+                        .addMalformedErrorHandler(malformedHandler)
+                        .configureNormalizer(variantMetadata);
             } else {
                 // TODO Create a utility to determine which extensions are variants files
                 final VariantVcfFactory factory = createVariantVcfFactory(source, fileName);
@@ -343,7 +351,9 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
                 taskSupplier = () -> new VariantAvroTransformTask(factory, finalSource, outputMetaFile, statsCalculator,
                         includeSrc, generateReferenceBlocks)
-                        .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
+                        .setFailOnError(failOnError)
+                        .addMalformedErrorHandler(malformedHandler)
+                        .configureNormalizer(variantMetadata);
             }
 
             logger.info("Generating output file {}", outputVariantsFile);
@@ -368,9 +378,6 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             }
             end = System.currentTimeMillis();
         } else if ("json".equals(format)) {
-            //Read VariantSource
-            source = VariantReaderUtils.readVariantSource(input, source);
-
             //Reader
             StringDataReader dataReader = new StringDataReader(input);
             long fileSize = 0;
@@ -395,7 +402,9 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(finalSource);
                 taskSupplier = () -> new VariantJsonTransformTask(header.getKey(), header.getValue(), finalSource,
                         outputMetaFile, statsCalculator, includeSrc, generateReferenceBlocks)
-                        .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
+                        .setFailOnError(failOnError)
+                        .addMalformedErrorHandler(malformedHandler)
+                        .configureNormalizer(variantMetadata);
             } else {
                 // TODO Create a utility to determine which extensions are variants files
                 final VariantVcfFactory factory = createVariantVcfFactory(source, fileName);
@@ -403,7 +412,9 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
                 taskSupplier = () -> new VariantJsonTransformTask(factory, finalSource, outputMetaFile, statsCalculator,
                         includeSrc, generateReferenceBlocks)
-                        .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
+                        .setFailOnError(failOnError)
+                        .addMalformedErrorHandler(malformedHandler)
+                        .configureNormalizer(variantMetadata);
             }
 
             logger.info("Generating output file {}", outputVariantsFile);
@@ -428,8 +439,6 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             }
             end = System.currentTimeMillis();
         } else if ("proto".equals(format)) {
-            //Read VariantSource
-            source = VariantReaderUtils.readVariantSource(input, source);
             Pair<Long, Long> times = processProto(input, fileName, output, source, outputVariantsFile, outputMetaFile,
                     includeSrc, parser, generateReferenceBlocks, batchSize, extension, compression, malformedHandler, failOnError);
             start = times.getKey();
@@ -570,6 +579,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
 
         // Check Extra genotype fields
+        VariantStudyMetadata variantMetadata = studyConfiguration.getVariantMetadata();
         if (options.containsKey(Options.EXTRA_GENOTYPE_FIELDS.key())
                 && StringUtils.isNotEmpty(options.getString(Options.EXTRA_GENOTYPE_FIELDS.key()))) {
             List<String> extraFields = options.getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
@@ -582,24 +592,30 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             }
             if (!studyConfiguration.getAttributes().containsKey(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key())) {
                 List<String> extraFieldsType = new ArrayList<>(extraFields.size());
+                List<Map<String, Object>> formats = (List) source.getHeader().getMeta().get("FORMAT");
+                Map<String, VariantMetadataRecord> map = formats.stream()
+                        .map(VariantMetadataRecord::new)
+                        .collect(Collectors.toMap(VariantMetadataRecord::getId, r -> r));
                 for (String extraField : extraFields) {
-                    List<Map<String, Object>> formats = (List) source.getHeader().getMeta().get("FORMAT");
-                    VCFHeaderLineType type = VCFHeaderLineType.String;
-                    for (Map<String, Object> format : formats) {
-                        if (format.get("ID").toString().equals(extraField)) {
-                            if ("1".equals(format.get("Number"))) {
-                                try {
-                                    type = VCFHeaderLineType.valueOf(Objects.toString(format.get("Type")));
-                                } catch (IllegalArgumentException ignore) {
-                                    type = VCFHeaderLineType.String;
-                                }
-                            } else {
-                                //Fields with arity != 1 are loaded as String
-                                type = VCFHeaderLineType.String;
-                            }
-                            break;
-                        }
+                    VCFHeaderLineType type;
+                    VariantMetadataRecord metadataRecord = map.get(extraField);
+                    if (metadataRecord == null) {
+                        throw new StorageEngineException("Unknown FORMAT field " + extraField);
                     }
+                    variantMetadata.getFormat().put(metadataRecord.getId(), metadataRecord);
+
+                    if (Objects.equals(metadataRecord.getNumber(), 1)) {
+                        try {
+                            type = metadataRecord.getType();
+                        } catch (IllegalArgumentException ignore) {
+                            type = VCFHeaderLineType.String;
+                        }
+                    } else {
+                        //Fields with arity != 1 are loaded as String
+                        type = VCFHeaderLineType.String;
+                    }
+
+
                     switch (type) {
                         case String:
                         case Float:
@@ -617,6 +633,9 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), extraFieldsType);
             }
         }
+        List<String> formats = studyConfiguration.getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key());
+
+        variantMetadata.addVariantSource(source, formats);
     }
 
     protected StudyConfiguration checkOrCreateStudyConfiguration(boolean forceFetch) throws StorageEngineException {

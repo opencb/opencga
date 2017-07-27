@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,6 +171,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = "Specify if the variant annotation must exists.") @QueryParam("annotationExists") boolean annotationExists,
                                 @ApiParam(value = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1") @QueryParam("genotype") String genotype,
                                 @ApiParam(value = SAMPLES_DESCR) @QueryParam("samples") String samples,
+                                @ApiParam(value = INCLUDE_FORMAT_DESCR) @QueryParam("include-format") String includeFormat,
+                                @ApiParam(value = INCLUDE_GENOTYPE_DESCR) @QueryParam("include-genotype") String includeGenotype,
                                 @ApiParam(value = VariantCatalogQueryUtils.SAMPLE_FILTER_DESC) @QueryParam("sampleFilter") String sampleFilter,
                                 @ApiParam(value = "Consequence type SO term list. e.g. missense_variant,stop_lost or SO:0001583,SO:0001578") @QueryParam("annot-ct") String annot_ct,
                                 @ApiParam(value = "XRef") @QueryParam("annot-xref") String annot_xref,

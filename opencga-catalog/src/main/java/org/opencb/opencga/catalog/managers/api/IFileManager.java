@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -260,8 +260,6 @@ public interface IFileManager extends ResourceManager<Long, File> {
 
     QueryResult<Dataset> createDataset(long studyId, String name, String description, List<Long> files, Map<String, Object> attributes,
                                        QueryOptions options, String sessionId) throws CatalogException;
-
-    QueryResult<Dataset> readDataset(long dataSetId, QueryOptions options, String sessionId) throws CatalogException;
 
     Long getStudyIdByDataset(long datasetId) throws CatalogException;
 

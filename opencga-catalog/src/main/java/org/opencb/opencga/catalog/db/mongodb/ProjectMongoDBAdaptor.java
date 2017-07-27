@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,15 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
-import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.Document;
@@ -36,11 +38,13 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
+import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -103,7 +107,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
         String errorMsg = "";
         for (Study study : studies) {
-            String studyErrorMsg = dbAdaptorFactory.getCatalogStudyDBAdaptor().insert(project.getId(), study, options).getErrorMsg();
+            String studyErrorMsg = dbAdaptorFactory.getCatalogStudyDBAdaptor().insert(project.getId(), study, userId, options)
+                    .getErrorMsg();
             if (studyErrorMsg != null && !studyErrorMsg.isEmpty()) {
                 errorMsg += ", " + study.getAlias() + ":" + studyErrorMsg;
             }
@@ -190,6 +195,9 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     @Override
     public long getId(String userId, String projectAlias) throws CatalogDBException {
+        if (projectAlias.contains("@")) {
+            projectAlias = projectAlias.split("@", 2)[1];
+        }
         QueryResult<Document> queryResult = userCollection.find(
                 new BsonDocument("projects.alias", new BsonString(projectAlias))
                         .append("id", new BsonString(userId)),
@@ -226,6 +234,11 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     public QueryResult<Long> count(Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
         return userCollection.count(bson);
+    }
+
+    @Override
+    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission) throws CatalogDBException {
+        throw new NotImplementedException("Count not implemented for projects");
     }
 
     @Override
@@ -287,6 +300,96 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         }
 
         return endQuery("Get project", startTime, projectQueryResult.getResult());
+    }
+
+    @Override
+    public QueryResult<Project> get(Query query, QueryOptions options, String user) throws CatalogDBException {
+        long startTime = startQuery();
+        // Fetch all the studies that the user can see
+        List<Long> projectIds = query.getAsLongList(QueryParams.ID.key());
+        Query studyQuery = new Query();
+        if (projectIds != null && projectIds.size() > 0) {
+            studyQuery.append(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectIds);
+        }
+        studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), query.getString(QueryParams.STUDY_ID.key()));
+        studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), query.getString(QueryParams.STUDY_ALIAS.key()));
+        studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.OWNER.key(), query.getString(QueryParams.USER_ID.key()));
+        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, new QueryOptions(), user);
+
+        // We build a map of projectId - list<studies>
+        Map<Long, List<Study>> studyMap = new HashMap<>();
+        StudyConverter studyConverter = new StudyConverter();
+        for (Document studyDocument : queryResult.getResult()) {
+            Long projectId = studyDocument.getLong("_projectId");
+            if (!studyMap.containsKey(projectId)) {
+                studyMap.put(projectId, new ArrayList<>());
+            }
+            studyMap.get(projectId).add(studyConverter.convertToDataModelType(studyDocument));
+        }
+
+        if (studyMap.size() == 0) {
+            // It might be that the owner of the study is asking for its own projects but no studies have been created yet. Just in case,
+            // we check if any study matches the query. If that's the case, the user does not have proper permissions. Otherwise, he might
+            // be the owner...
+            if (dbAdaptorFactory.getCatalogStudyDBAdaptor().count(studyQuery).first() == 0) {
+                if (!StringUtils.isEmpty(query.getString(QueryParams.USER_ID.key()))
+                        && !user.equals(query.getString(QueryParams.USER_ID.key()))) {
+                    // User does not have proper permissions
+                    return new QueryResult<>("Get project", -1, 0, -1, "", "", new ArrayList<>());
+                }
+                query.put(QueryParams.USER_ID.key(), user);
+            } else {
+                // User does not have proper permissions
+                return new QueryResult<>("Get project", -1, 0, -1, "", "", new ArrayList<>());
+            }
+        } else {
+            // We get all the projects the user can see
+            projectIds = new ArrayList<>(studyMap.keySet());
+        }
+        query.put(QueryParams.ID.key(), projectIds);
+
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        }
+        List<Bson> aggregates = new ArrayList<>();
+
+        aggregates.add(Aggregates.unwind("$projects"));
+        aggregates.add(Aggregates.match(parseQuery(query)));
+
+        // Check include
+        if (options != null && options.get(QueryOptions.INCLUDE) != null) {
+            List<String> includeList = new ArrayList<>();
+            List<String> optionsAsStringList = options.getAsStringList(QueryOptions.INCLUDE);
+            includeList.addAll(optionsAsStringList.stream().collect(Collectors.toList()));
+            if (!includeList.contains(QueryParams.ID.key())) {
+                includeList.add(QueryParams.ID.key());
+            }
+
+            // Check if they start with projects.
+            for (int i = 0; i < includeList.size(); i++) {
+                if (!includeList.get(i).startsWith("projects.")) {
+                    String param = "projects." + includeList.get(i);
+                    includeList.set(i, param);
+                }
+            }
+            if (includeList.size() > 0) {
+                aggregates.add(Aggregates.project(Projections.include(includeList)));
+            }
+        }
+
+        for (Bson aggregate : aggregates) {
+            logger.debug("Get project: Aggregate : {}", aggregate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        }
+        QueryResult<Project> aggregateResult = userCollection.aggregate(aggregates, projectConverter, options);
+        if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
+                || (!options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")
+                && !options.getAsStringList(QueryOptions.EXCLUDE).contains("studies"))) {
+            for (Project project : aggregateResult.getResult()) {
+                project.setStudies(studyMap.get(project.getId()));
+            }
+        }
+
+        return endQuery("Get project", startTime, aggregateResult);
     }
 
     @Override
@@ -402,7 +505,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     @Override
     public void delete(Query query) throws CatalogDBException {
-        throw new NotImplementedException();
+        throw new NotImplementedException("Delete not implemented for projects");
     }
 
     @Deprecated
@@ -550,7 +653,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                         addOrQuery("projects." + queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case USER_ID:
-                        addOrQuery(PRIVATE_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_ID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery("projects." + entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
@@ -579,12 +682,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                     case LAST_MODIFIED:
                     case SIZE:
                     case DATASTORES:
-                    case STUDY_ID:
-                    case STUDY_NAME:
-                    case STUDY_ALIAS:
-                    case STUDY_CREATOR_ID:
-                    case STUDY_STATUS:
-                    case STUDY_LAST_MODIFIED:
                     case ACL_USER_ID:
                         addAutoOrQuery("projects." + queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;

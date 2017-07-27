@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,7 +133,7 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
             System.out.println("correct exception: " + e);
         }
         try {
-            System.out.println(catalogProjectDBAdaptor.renameAlias(p1.getId(), p2.getAlias()));
+            System.out.println(catalogProjectDBAdaptor.renameAlias(p1.getId(), p2.getAlias().split("@")[1]));
             fail("renamed project with name collision");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);

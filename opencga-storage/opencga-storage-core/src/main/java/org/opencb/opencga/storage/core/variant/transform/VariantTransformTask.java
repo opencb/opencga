@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantC
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
+import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceJsonMixin;
 import org.slf4j.Logger;
@@ -83,7 +84,7 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
 
         this.vcfCodec = null;
         this.converter = null;
-        this.normalizer = new VariantNormalizer();
+        this.normalizer = new VariantNormalizer(true, true, false);
         normalizer.setGenerateReferenceBlocks(generateReferenceBlocks);
     }
 
@@ -99,7 +100,7 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
         this.vcfCodec = new FullVcfCodec();
         this.vcfCodec.setVCFHeader(header, version);
         this.converter = new VariantContextToVariantConverter(source.getStudyId(), source.getFileId(), source.getSamples());
-        this.normalizer = new VariantNormalizer();
+        this.normalizer = new VariantNormalizer(true, true, false);
         normalizer.setGenerateReferenceBlocks(generateReferenceBlocks);
     }
 
@@ -242,6 +243,16 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
 
     public VariantTransformTask setFailOnError(boolean failOnError) {
         this.failOnError = failOnError;
+        return this;
+    }
+
+    public VariantTransformTask<T> configureNormalizer(VariantStudyMetadata variantMetadata) {
+        for (VariantStudyMetadata.VariantMetadataRecord record : variantMetadata.getFormat().values()) {
+            normalizer.configure(record.getId(), record.getNumberType(), record.getType());
+        }
+        for (VariantStudyMetadata.VariantMetadataRecord record : variantMetadata.getInfo().values()) {
+            normalizer.configure(record.getId(), record.getNumberType(), record.getType());
+        }
         return this;
     }
 

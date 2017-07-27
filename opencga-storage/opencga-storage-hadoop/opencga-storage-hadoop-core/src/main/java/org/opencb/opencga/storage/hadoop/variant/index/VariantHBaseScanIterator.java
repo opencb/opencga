@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,8 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
     private long count = 0;
 
     public VariantHBaseScanIterator(ResultScanner resultScanner, GenomeHelper genomeHelper, StudyConfigurationManager scm,
-                                    QueryOptions options, List<String> returnedSamplesList, String unknownGenotype) throws IOException {
+                                    QueryOptions options, List<String> returnedSamplesList, String unknownGenotype, List<String> formats)
+            throws IOException {
         this.resultScanner = resultScanner;
         this.genomeHelper = genomeHelper;
         iterator = resultScanner.iterator();
@@ -58,7 +59,8 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
                 .setSimpleGenotypes(true)
                 .setReadFullSamplesData(true)
                 .setUnknownGenotype(unknownGenotype)
-                .setReturnedSamples(returnedSamplesList);
+                .setReturnedSamples(returnedSamplesList)
+                .setFormats(formats);
         setLimit(options.getLong(QueryOptions.LIMIT));
     }
 

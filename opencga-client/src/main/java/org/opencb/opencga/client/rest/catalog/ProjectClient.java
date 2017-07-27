@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,13 +49,5 @@ public class ProjectClient extends CatalogClient<Project, Project> {
     public QueryResponse<Study> getStudies(String projectId, QueryOptions options) throws CatalogException, IOException {
         return execute(PROJECTS_URL, projectId, "studies", options, GET, Study.class);
     }
-
-//    public QueryResponse<Project> update(String projectId, ObjectMap params) throws CatalogException, IOException {
-//        return execute(PROJECTS_URL, projectId, "update", params, Project.class);
-//    }
-//
-//    public QueryResponse<Project> delete(String projectId, ObjectMap params) throws CatalogException, IOException {
-//        return execute(PROJECTS_URL, projectId, "delete", params, Project.class);
-//    }
 
 }
