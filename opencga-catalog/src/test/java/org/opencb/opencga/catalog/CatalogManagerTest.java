@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -273,8 +274,8 @@ public class CatalogManagerTest extends GenericTest {
     public void testLogin() throws Exception {
         catalogManager.login("user", PASSWORD, "127.0.0.1");
 
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage(allOf(containsString("Bad"), containsString("password")));
+        thrown.expect(CatalogAuthenticationException.class);
+        thrown.expectMessage(allOf(containsString("Incorrect"), containsString("password")));
         catalogManager.login("user", "fakePassword", "127.0.0.1");
     }
 
