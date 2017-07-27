@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created on 10/07/17.
@@ -84,6 +85,17 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
         removeFile(files.get(0), new QueryOptions(), outputId);
     }
 
+    @Test
+    public void testLoadAndRemoveStudy() throws Exception {
+        File file77 = create("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
+        File file78 = create("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz");
+
+        indexFile(file77, new QueryOptions(), outputId);
+        indexFile(file78, new QueryOptions(), outputId);
+
+        removeStudy(studyId, new QueryOptions());
+    }
+
     private void removeFile(File file, QueryOptions options, long outputId) throws Exception {
         removeFile(Collections.singletonList(file), options, outputId);
     }
@@ -113,5 +125,16 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
         }
 
     }
+
+    private void removeStudy(Object study, QueryOptions options) throws Exception {
+        variantManager.removeStudy(study.toString(), sessionId);
+
+        Query query = new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
+        assertEquals(0, catalogManager.getFileManager().count(query, sessionId).first().intValue());
+
+        Cohort all = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), null, sessionId).first();
+        assertTrue(all.getSamples().isEmpty());
+    }
+
 
 }

@@ -275,13 +275,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
         Bson update = combine(updates);
-        logger.debug("deleteFile: query = " + query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        logger.debug("deleteFile: update = " + update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("removeFile: query = " + query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("removeFile: update = " + update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
         QueryResult<UpdateResult> result2 = getVariantsCollection().update(query, update, new QueryOptions(MULTI, true));
 
-        logger.debug("deleteFile: matched  = " + result2.first().getMatchedCount());
-        logger.debug("deleteFile: modified = " + result2.first().getModifiedCount());
+        logger.debug("removeFile: matched  = " + result2.first().getMatchedCount());
+        logger.debug("removeFile: modified = " + result2.first().getModifiedCount());
 
         return result2;
     }
@@ -306,8 +306,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         Bson eq = eq(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyId.toString());
         Bson combine = combine(pull(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyId.toString()), unset(studyId.toString()));
-        System.out.println("eq = " + eq.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        System.out.println("combine = " + combine.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("removeStudy: stage query = " + eq.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("removeStudy: stage update = " + combine.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         getStageCollection().update(eq, combine, new QueryOptions(MULTI, true));
 
         return result;
@@ -319,13 +319,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 pull(DocumentToVariantConverter.STUDIES_FIELD, eq(STUDYID_FIELD, studyId)),
                 pull(DocumentToVariantConverter.STATS_FIELD, eq(DocumentToVariantStatsConverter.STUDY_ID, studyId))
         );
-        logger.debug("deleteStudy: query = {}", query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        logger.debug("deleteStudy: update = {}", update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("removeStudy: query = {}", query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("removeStudy: update = {}", update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
         QueryResult<UpdateResult> result = variantsCollection.update(query, update, new QueryOptions(MULTI, true));
 
-        logger.debug("deleteStudy: matched  = {}", result.first().getMatchedCount());
-        logger.debug("deleteStudy: modified = {}", result.first().getModifiedCount());
+        logger.debug("removeStudy: matched  = {}", result.first().getMatchedCount());
+        logger.debug("removeStudy: modified = {}", result.first().getModifiedCount());
 
         if (purge) {
             removeEmptyVariants();

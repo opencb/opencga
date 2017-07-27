@@ -69,4 +69,23 @@ public class VariantRemoveStorageOperation extends StorageOperation {
                 .getResult();
     }
 
+    public void removeStudy(StudyInfo studyInfo, QueryOptions options, String sessionId)
+            throws CatalogException, StorageEngineException, IOException {
+
+        // We get the credentials of the Datastore to insert the variants
+        DataStore dataStore = studyInfo.getDataStores().get(org.opencb.opencga.catalog.models.File.Bioformat.VARIANT);
+
+        // Update study configuration BEFORE executing the operation and fetching files from Catalog
+        updateStudyConfiguration(sessionId, studyInfo.getStudyId(), dataStore);
+
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
+
+        variantStorageEngine.removeStudy(String.valueOf(studyInfo.getStudyId()));
+
+
+        // Update study configuration to synchronize
+        updateStudyConfiguration(sessionId, studyInfo.getStudyId(), dataStore);
+
+    }
+
 }

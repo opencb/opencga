@@ -20,6 +20,7 @@ import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.log4j.Level;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -31,6 +32,7 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
+import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
@@ -58,6 +60,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.DB_NAME;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RESUME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.FILES;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLES;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
@@ -194,8 +197,38 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public void removeStudy(String studyName) throws StorageEngineException {
-        ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
-        getDBAdaptor().removeStudy(studyName, new QueryOptions(options));
+        getStudyConfigurationManager().lockAndUpdate(studyName, studyConfiguration -> {
+            boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
+            StudyConfigurationManager
+                    .addBatchOperation(studyConfiguration, "remove", Collections.emptyList(), resume, BatchFileOperation.Type.REMOVE);
+            return studyConfiguration;
+        });
+
+        Exception exception = null;
+        try {
+            ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
+            getDBAdaptor().removeStudy(studyName, new QueryOptions(options));
+        } catch (Exception e) {
+            exception = e;
+            throw e;
+        } finally {
+            boolean error = exception != null;
+            getStudyConfigurationManager().lockAndUpdate(studyName, studyConfiguration -> {
+                if (error) {
+                    StudyConfigurationManager
+                            .setStatus(studyConfiguration, BatchFileOperation.Status.ERROR, "remove", Collections.emptyList());
+                } else {
+                    StudyConfigurationManager
+                            .setStatus(studyConfiguration, BatchFileOperation.Status.READY, "remove", Collections.emptyList());
+                    studyConfiguration.getIndexedFiles().clear();
+                    studyConfiguration.getCalculatedStats().clear();
+                    studyConfiguration.getInvalidStats().clear();
+                    Integer defaultCohortId = studyConfiguration.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
+                    studyConfiguration.getCohorts().put(defaultCohortId, Collections.emptySet());
+                }
+                return studyConfiguration;
+            });
+        }
     }
 
     @Override
