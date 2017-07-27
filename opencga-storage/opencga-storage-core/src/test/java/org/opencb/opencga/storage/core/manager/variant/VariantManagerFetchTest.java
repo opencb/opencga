@@ -114,10 +114,8 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
     @Test
     public void testQueryAnonymousWithoutPermissions() throws Exception {
         Query query = new Query(VariantQueryParam.STUDIES.key(), studyId);
-        CatalogAuthorizationException exception = CatalogAuthorizationException
-                .deny("*", StudyAclEntry.StudyPermissions.VIEW_STUDY.toString(), "Study", studyId, null);
-        thrown.expectMessage(exception.getMessage());
-        thrown.expect(exception.getClass());
+        thrown.expectMessage("cannot view study");
+        thrown.expect(CatalogAuthorizationException.class);
         variantManager.get(query, new QueryOptions(), null);
     }
 

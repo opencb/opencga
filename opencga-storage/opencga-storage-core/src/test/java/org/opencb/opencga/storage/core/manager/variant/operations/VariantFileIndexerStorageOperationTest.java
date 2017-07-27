@@ -25,6 +25,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -32,6 +33,7 @@ import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.FileIndex;
+import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -138,9 +140,9 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
         File inputFile = getFile(0);
         indexFile(inputFile, queryOptions, outputId);
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("used in storage");
-        catalogManager.getSampleManager().delete("200", studyStr, null, sessionId);
+        List<QueryResult<Sample>> delete = catalogManager.getSampleManager().delete("200", studyStr, null, sessionId);
+        assertEquals(1, delete.size());
+        assertTrue(delete.get(0).getErrorMsg().contains("delete the cohorts"));
     }
 
     @Test
