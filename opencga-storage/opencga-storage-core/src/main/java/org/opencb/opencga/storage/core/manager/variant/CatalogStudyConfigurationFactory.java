@@ -117,8 +117,13 @@ public class CatalogStudyConfigurationFactory {
         studyConfiguration.setStudyId((int) study.getId());
         long projectId = catalogManager.getProjectIdByStudyId(study.getId());
         String projectAlias = catalogManager.getProject(projectId, null, sessionId).first().getAlias();
-        String userId = catalogManager.getUserIdByProjectId(projectId);
-        studyConfiguration.setStudyName(userId + "@" + projectAlias + ":" + study.getAlias());
+        if (projectAlias.contains("@")) {
+            // Already contains user in projectAlias
+            studyConfiguration.setStudyName(projectAlias + ":" + study.getAlias());
+        } else {
+            String userId = catalogManager.getUserIdByProjectId(projectId);
+            studyConfiguration.setStudyName(userId + "@" + projectAlias + ":" + study.getAlias());
+        }
 
         fillNullMaps(studyConfiguration);
 
