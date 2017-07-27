@@ -77,6 +77,8 @@ public class DocumentToVariantAnnotationConverter
     public static final String CT_PROTEIN_UNIPROT_NAME = "uni_n";
     public static final String CT_PROTEIN_UNIPROT_VARIANT_ID = "uni_var";
 
+    public static final String DISPLAY_CONSEQUENCE_TYPE_FIELD = "d_ct";
+
     public static final String XREFS_FIELD = "xrefs";
     public static final String XREF_ID_FIELD = "id";
     public static final String XREF_SOURCE_FIELD = "src";
@@ -246,6 +248,10 @@ public class DocumentToVariantAnnotationConverter
 
         }
         va.setConsequenceTypes(consequenceTypes);
+        Integer displaySO = object.getInteger(DISPLAY_CONSEQUENCE_TYPE_FIELD);
+        if (displaySO != null) {
+            va.setDisplayConsequenceType(ConsequenceTypeMappings.accessionToTerm.get(displaySO));
+        }
 
         //Conserved Region Scores
         List<Score> conservedRegionScores = new LinkedList<>();
@@ -601,6 +607,11 @@ public class DocumentToVariantAnnotationConverter
             }
             putNotNull(document, GENE_SO_FIELD, gnSo);
             putNotNull(document, CONSEQUENCE_TYPE_FIELD, cts);
+        }
+
+        if (variantAnnotation.getDisplayConsequenceType() != null) {
+            Integer accession = ConsequenceTypeMappings.termToAccession.get(variantAnnotation.getDisplayConsequenceType());
+            document.put(DISPLAY_CONSEQUENCE_TYPE_FIELD, accession);
         }
 
         //Conserved region score
