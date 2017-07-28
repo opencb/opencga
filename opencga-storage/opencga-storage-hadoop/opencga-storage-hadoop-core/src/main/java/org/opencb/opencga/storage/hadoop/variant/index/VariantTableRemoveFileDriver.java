@@ -21,6 +21,7 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.mapreduce.MultiTableOutputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.mapreduce.Job;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +35,7 @@ import java.util.List;
  */
 public class VariantTableRemoveFileDriver extends AbstractAnalysisTableDriver {
 
-    public static final String JOB_OPERATION_NAME = "Delete";
+    public static final String JOB_OPERATION_NAME = VariantStorageEngine.REMOVE_OPERATION_NAME;
     protected final Logger logger = LoggerFactory.getLogger(VariantTableRemoveFileDriver.class);
 
     public VariantTableRemoveFileDriver() {

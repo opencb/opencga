@@ -80,6 +80,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
  */
 public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdaptor> {
 
+    public static final String REMOVE_OPERATION_NAME = BatchFileOperation.Type.REMOVE.name().toLowerCase();
     private final AtomicReference<VariantSearchManager> variantSearchManager = new AtomicReference<>();
     private Logger logger = LoggerFactory.getLogger(VariantStorageEngine.class);
     private CellBaseUtils cellBaseUtils;
@@ -486,7 +487,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             fileIds.addAll(getStudyConfigurationManager().getFileIds(files, false, studyConfiguration));
 
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
-            StudyConfigurationManager.addBatchOperation(studyConfiguration, "remove", fileIds, resume, BatchFileOperation.Type.REMOVE);
+            StudyConfigurationManager.addBatchOperation(studyConfiguration, REMOVE_OPERATION_NAME, fileIds, resume,
+                    BatchFileOperation.Type.REMOVE);
 
             if (!studyConfiguration.getIndexedFiles().containsAll(fileIds)) {
                 // Remove indexed files to get non indexed files
@@ -519,9 +521,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     protected void postRemoveFiles(String study, List<Integer> fileIds, boolean error) throws StorageEngineException {
         getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
             if (error) {
-                StudyConfigurationManager.setStatus(studyConfiguration, BatchFileOperation.Status.ERROR, "remove", fileIds);
+                StudyConfigurationManager.setStatus(studyConfiguration, BatchFileOperation.Status.ERROR, REMOVE_OPERATION_NAME, fileIds);
             } else {
-                StudyConfigurationManager.setStatus(studyConfiguration, BatchFileOperation.Status.READY, "remove", fileIds);
+                StudyConfigurationManager.setStatus(studyConfiguration, BatchFileOperation.Status.READY, REMOVE_OPERATION_NAME, fileIds);
                 studyConfiguration.getIndexedFiles().removeAll(fileIds);
                 Set<Integer> removedSamples = new HashSet<>();
                 for (Integer fileId : fileIds) {

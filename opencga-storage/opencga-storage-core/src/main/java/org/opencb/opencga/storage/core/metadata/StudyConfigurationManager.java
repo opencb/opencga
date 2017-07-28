@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.metadata;
 
+import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -168,6 +169,18 @@ public class StudyConfigurationManager implements AutoCloseable {
         }
         return result;
 
+    }
+
+    public Thread buildShutdownHook(String jobOperationName, int studyId, List<Integer> files) {
+        return new Thread(() -> {
+            try {
+                logger.error("Shutdown hook!");
+                atomicSetStatus(studyId, BatchFileOperation.Status.ERROR, jobOperationName, files);
+            } catch (Exception e) {
+                logger.error("Error terminating!", e);
+                throw Throwables.propagate(e);
+            }
+        });
     }
 
     public List<String> getStudyNames(QueryOptions options) {
@@ -647,8 +660,7 @@ public class StudyConfigurationManager implements AutoCloseable {
         return previousStatus[0];
     }
 
-    public static BatchFileOperation.Status setStatus(StudyConfiguration studyConfiguration, BatchFileOperation.Status status,
-                                               String operationName, List<Integer> files) {
+    public static BatchFileOperation getOperation(StudyConfiguration studyConfiguration, String operationName, List<Integer> files) {
         List<BatchFileOperation> batches = studyConfiguration.getBatches();
         BatchFileOperation operation = null;
         for (int i = batches.size() - 1; i >= 0; i--) {
@@ -658,6 +670,12 @@ public class StudyConfigurationManager implements AutoCloseable {
             }
             operation = null;
         }
+        return operation;
+    }
+
+    public static BatchFileOperation.Status setStatus(StudyConfiguration studyConfiguration, BatchFileOperation.Status status,
+                                               String operationName, List<Integer> files) {
+        BatchFileOperation operation = getOperation(studyConfiguration, operationName, files);
         if (operation == null) {
             throw new IllegalStateException("Batch operation " + operationName + " for files " + files + " not found!");
         }

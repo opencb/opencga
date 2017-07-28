@@ -378,35 +378,33 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     public void removeFiles(String study, List<String> files) throws StorageEngineException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void removeFile(String study, int fileId) throws StorageEngineException {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
-        // Use ETL as helper class
-        AbstractHadoopVariantStoragePipeline etl = newStoragePipeline(true);
-        VariantDBAdaptor dbAdaptor = etl.getDBAdaptor();
+
+        VariantDBAdaptor dbAdaptor = getDBAdaptor();
         StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
-        List<Integer> fileList = Collections.singletonList(fileId);
+        List<Integer> fileIds = preRemoveFiles(study, files);
         final int studyId = scm.getStudyId(study, null);
 
-        // Pre delete
-        scm.lockAndUpdate(studyId, sc -> {
-            if (!sc.getIndexedFiles().contains(fileId)) {
-                throw StorageEngineException.unableToExecute("File not indexed.", fileId, sc);
-            }
-            boolean resume = options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue())
-                    || options.getBoolean(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_RESUME, false);
-            BatchFileOperation operation =
-                    etl.addBatchOperation(sc, VariantTableRemoveFileDriver.JOB_OPERATION_NAME, fileList, resume,
-                            BatchFileOperation.Type.REMOVE);
-            options.put(AbstractAnalysisTableDriver.TIMESTAMP, operation.getTimestamp());
-            return sc;
-        });
+//        // Pre delete
+//        scm.lockAndUpdate(studyId, sc -> {
+//            if (!sc.getIndexedFiles().contains(fileId)) {
+//                throw StorageEngineException.unableToExecute("File not indexed.", fileId, sc);
+//            }
+//            boolean resume = options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue())
+//                    || options.getBoolean(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_RESUME, false);
+//            BatchFileOperation operation =
+//                    etl.addBatchOperation(sc, VariantTableRemoveFileDriver.JOB_OPERATION_NAME, fileList, resume,
+//                            BatchFileOperation.Type.REMOVE);
+//            options.put(AbstractAnalysisTableDriver.TIMESTAMP, operation.getTimestamp());
+//            return sc;
+//        });
+
+        StudyConfiguration sc = scm.getStudyConfiguration(studyId, null).first();
+        BatchFileOperation operation = StudyConfigurationManager.getOperation(sc, REMOVE_OPERATION_NAME, fileIds);
+        options.put(AbstractAnalysisTableDriver.TIMESTAMP, operation.getTimestamp());
 
         // Delete
-        Thread hook = etl.newShutdownHook(VariantTableRemoveFileDriver.JOB_OPERATION_NAME, fileList);
+        Thread hook = getStudyConfigurationManager().buildShutdownHook(REMOVE_OPERATION_NAME, studyId, fileIds);
         try {
             Runtime.getRuntime().addShutdownHook(hook);
 
@@ -417,12 +415,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
             Class execClass = VariantTableRemoveFileDriver.class;
             String args = VariantTableRemoveFileDriver.buildCommandLineArgs(variantsTable.toString(), archiveTable,
-                    variantsTable.getTable(), studyId, fileList, options);
+                    variantsTable.getTable(), studyId, fileIds, options);
             String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
 
             long startTime = System.currentTimeMillis();
             logger.info("------------------------------------------------------");
-            logger.info("Remove file ID {} in archive '{}' and analysis table '{}'", fileId, archiveTable, variantsTable.getTable());
+            logger.info("Remove files {} in archive '{}' and analysis table '{}'", fileIds, archiveTable, variantsTable.getTable());
             logger.debug(executable + " " + args);
             logger.info("------------------------------------------------------");
             int exitValue = getMRExecutor(options).run(executable, args);
@@ -430,21 +428,21 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             logger.info("Exit value: {}", exitValue);
             logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
             if (exitValue != 0) {
-                throw new StorageEngineException("Error removing fileId " + fileId + " from tables ");
+                throw new StorageEngineException("Error removing files " + fileIds + " from tables ");
             }
 
-            // Post Delete
-            // If everything went fine, remove file column from Archive table and from studyconfig
-            scm.lockAndUpdate(studyId, sc -> {
-                scm.setStatus(sc, BatchFileOperation.Status.READY,
-                        VariantTableRemoveFileDriver.JOB_OPERATION_NAME, fileList);
-                sc.getIndexedFiles().remove(fileId);
-                return sc;
-            });
+//            // Post Delete
+//            // If everything went fine, remove file column from Archive table and from studyconfig
+//            scm.lockAndUpdate(studyId, sc -> {
+//                scm.setStatus(sc, BatchFileOperation.Status.READY,
+//                        VariantTableRemoveFileDriver.JOB_OPERATION_NAME, fileIds);
+//                sc.getIndexedFiles().remove(fileId);
+//                return sc;
+//            });
 
+            postRemoveFiles(study, fileIds, false);
         } catch (Exception e) {
-            scm.atomicSetStatus(studyId, BatchFileOperation.Status.ERROR,
-                    VariantTableRemoveFileDriver.JOB_OPERATION_NAME, fileList);
+            postRemoveFiles(study, fileIds, true);
             throw e;
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
