@@ -5,6 +5,7 @@ import sys
 import time
 
 from pyCGA.commons import is_not_logged_in_exception, is_bad_login_exception
+from pyCGA.exceptions import OpenCgaAuthorisationError, OpenCgaInvalidToken
 
 
 def retry(func, max_attempts, initial_retry_seconds, max_retry_seconds,
@@ -32,22 +33,22 @@ def retry(func, max_attempts, initial_retry_seconds, max_retry_seconds,
     while True:
         try:
             return func()
-        except Exception as e:
-            if is_not_logged_in_exception(e):
-                if login_handler:
-                    login_handler()
-                else:
-                    raise  # there's no point in retrying if we can't log in
-            elif is_bad_login_exception(e):
-                raise  # no point in retrying login if we have the wrong credentials
-            else:
-                if attempt_number >= max_attempts:  # last attempt failed, propagate error:
-                    raise
-                if on_retry:
-                    # notify that we are retrying
-                    exc_type, exc_val, exc_tb = sys.exc_info()
-                    on_retry(exc_type, exc_val, exc_tb)
+        except OpenCgaInvalidToken as e:
 
-                time.sleep(retry_seconds)
-                attempt_number += 1
-                retry_seconds = min(retry_seconds * 2, max_retry_seconds)
+            if login_handler:
+                login_handler()
+            else:
+                raise e
+        except OpenCgaAuthorisationError as e:
+            raise e
+        except Exception:
+            if attempt_number >= max_attempts:  # last attempt failed, propagate error:
+                raise
+            if on_retry:
+                # notify that we are retrying
+                exc_type, exc_val, exc_tb = sys.exc_info()
+                on_retry(exc_type, exc_val, exc_tb)
+
+            time.sleep(retry_seconds)
+            attempt_number += 1
+            retry_seconds = min(retry_seconds * 2, max_retry_seconds)

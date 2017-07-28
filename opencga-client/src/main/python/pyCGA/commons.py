@@ -4,6 +4,8 @@ from time import sleep
 
 import requests
 
+from pyCGA.exceptions import OpenCgaInvalidToken, OpenCgaAuthorisationError
+
 try:
     from Queue import Queue
 except ImportError:
@@ -96,8 +98,9 @@ def _create_rest_url(host, version, sid, category, resource, subcategory=None, q
     if subcategory is not None:
         url += '/' + subcategory
 
+    header = {"Accept-Encoding": "gzip"}
     if sid is not None:
-        options['sid'] = sid
+        header['Authorization'] = 'Bearer {}'.format(sid)
 
     # Checking optional params
     if options is not None:
@@ -107,7 +110,7 @@ def _create_rest_url(host, version, sid, category, resource, subcategory=None, q
         if opts:
             url += '?' + '&'.join(opts)
 
-    return url
+    return url, header
 
 
 def _fetch(host, version, sid, category, resource, method, subcategory=None, query_id=None,
@@ -162,31 +165,31 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
                 current_id_indexes = next_id_indexes
 
         # Retrieving url
-        url = _create_rest_url(host=host,
-                               version=version,
-                               category=category,
-                               sid=sid,
-                               subcategory=subcategory,
-                               query_id=current_query_id,
-                               second_query_id=second_query_id,
-                               resource=resource,
-                               **opts)
+        url, header = _create_rest_url(host=host,
+                                       version=version,
+                                       category=category,
+                                       sid=sid,
+                                       subcategory=subcategory,
+                                       query_id=current_query_id,
+                                       second_query_id=second_query_id,
+                                       resource=resource,
+                                       **opts)
         # print(url)  # DEBUG
 
         # Getting REST response
         if method == 'get':
             try:
-                r = requests.get(url, headers={"Accept-Encoding": "gzip"})
+                r = requests.get(url, headers=header)
             except requests.exceptions.ConnectionError:
                 sleep(1)
-                r = requests.get(url, headers={"Accept-Encoding": "gzip"})
+                r = requests.get(url, headers=header)
 
         elif method == 'post':
             try:
-                r = requests.post(url, json=data, headers={"Accept-Encoding": "gzip"})
+                r = requests.post(url, json=data, headers=header)
             except requests.exceptions.ConnectionError:
                 sleep(1)
-                r = requests.post(url, json=data, headers={"Accept-Encoding": "gzip"})
+                r = requests.post(url, json=data, headers=header)
 
         else:
             raise NotImplementedError('method: ' + method + ' not implemented.')
@@ -199,7 +202,12 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
             continue
         time_out_counter = 0
 
-        if r.status_code != 200:
+        if r.status_code == 401:
+            raise OpenCgaInvalidToken(r.content)
+        elif r.status_code == 403:
+            raise OpenCgaAuthorisationError(r.content)
+
+        elif r.status_code != 200:
             raise Exception(r.content)
 
         try:
