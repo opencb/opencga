@@ -1,6 +1,7 @@
 import json
-import httpretty
 import re
+
+import httpretty
 
 
 class OpenCGAMock(object):
@@ -18,8 +19,8 @@ class OpenCGAMock(object):
         response = self.response_base
         number_of_results = len(raw_results)
         results = [{"numTotalResults": number_of_results, "numResults": number_of_results,
-                         "resultType": "org.opencb.commons.type",
-                         "result": raw_results, 'time': 0, 'id': 'id', 'dbTime': 0}]
+                    "resultType": "org.opencb.commons.type",
+                    "result": raw_results, 'time': 0, 'id': 'id', 'dbTime': 0}]
         response['response'] = results
         return response
 
@@ -31,7 +32,7 @@ class OpenCGAMock(object):
         results = []
         for f in fields:
             for i, value in enumerate(fields[f]):
-                if len(results) < i+1:
+                if len(results) < i + 1:
                     results.append({})
                 results[i][f] = value
         return results
