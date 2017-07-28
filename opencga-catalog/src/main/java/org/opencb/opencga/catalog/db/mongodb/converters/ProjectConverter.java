@@ -33,7 +33,7 @@ public class ProjectConverter extends GenericDocumentComplexConverter<Project> {
     public Project convertToDataModelType(Document object) {
         Document projects = (Document) object.get("projects");
         Project project = super.convertToDataModelType(projects);
-        project.setAlias(object.getString("id") + "@" + project.getAlias());
+        project.setAlias(object.getString("_id") + "@" + project.getAlias());
         return project;
     }
 
