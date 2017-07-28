@@ -238,6 +238,12 @@ public abstract class StorageOperation {
         } else {
             prefix = "opencga_";
         }
+        // Project alias contains the userId:
+        // userId@projectAlias
+        int idx = alias.indexOf('@');
+        if (idx >= 0) {
+            alias = alias.substring(idx + 1);
+        }
 
         return prefix + userId + '_' + alias;
     }
