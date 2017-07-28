@@ -4,7 +4,6 @@ This module defines a function to retry execution of a function.
 import sys
 import time
 
-from pyCGA.commons import is_not_logged_in_exception, is_bad_login_exception
 from pyCGA.exceptions import OpenCgaAuthorisationError, OpenCgaInvalidToken
 
 
