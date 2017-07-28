@@ -175,59 +175,58 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
         ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
 
-        Exception exception = null;
+        StudyConfigurationManager scm = getStudyConfigurationManager();
+        Integer studyId = scm.getStudyId(study, null);
+
+        Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, fileIds);
         try {
+            Runtime.getRuntime().addShutdownHook(hook);
             getDBAdaptor().removeFile(study, files, new QueryOptions(options));
+            postRemoveFiles(study, fileIds, false);
         } catch (Exception e) {
-            exception = e;
+            postRemoveFiles(study, fileIds, true);
             throw e;
         } finally {
-            try {
-                boolean error = exception != null;
-                postRemoveFiles(study, fileIds, error);
-            } catch (Exception e) {
-                if (exception == null) {
-                    throw e;
-                } else {
-                    logger.error("Error updating StudyConfiguration", e);
-                }
-            }
+            Runtime.getRuntime().removeShutdownHook(hook);
         }
     }
 
     @Override
     public void removeStudy(String studyName) throws StorageEngineException {
-        getStudyConfigurationManager().lockAndUpdate(studyName, studyConfiguration -> {
+        StudyConfigurationManager scm = getStudyConfigurationManager();
+        scm.lockAndUpdate(studyName, studyConfiguration -> {
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
-            StudyConfigurationManager
-                    .addBatchOperation(studyConfiguration, "remove", Collections.emptyList(), resume, BatchFileOperation.Type.REMOVE);
+            StudyConfigurationManager.addBatchOperation(studyConfiguration, REMOVE_OPERATION_NAME, Collections.emptyList(), resume,
+                    BatchFileOperation.Type.REMOVE);
             return studyConfiguration;
         });
 
-        Exception exception = null;
+        Integer studyId = scm.getStudyId(scm, null);
+        Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, Collections.emptyList());
         try {
+            Runtime.getRuntime().addShutdownHook(hook);
             ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
             getDBAdaptor().removeStudy(studyName, new QueryOptions(options));
-        } catch (Exception e) {
-            exception = e;
-            throw e;
-        } finally {
-            boolean error = exception != null;
-            getStudyConfigurationManager().lockAndUpdate(studyName, studyConfiguration -> {
-                if (error) {
-                    StudyConfigurationManager
-                            .setStatus(studyConfiguration, BatchFileOperation.Status.ERROR, "remove", Collections.emptyList());
-                } else {
-                    StudyConfigurationManager
-                            .setStatus(studyConfiguration, BatchFileOperation.Status.READY, "remove", Collections.emptyList());
-                    studyConfiguration.getIndexedFiles().clear();
-                    studyConfiguration.getCalculatedStats().clear();
-                    studyConfiguration.getInvalidStats().clear();
-                    Integer defaultCohortId = studyConfiguration.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
-                    studyConfiguration.getCohorts().put(defaultCohortId, Collections.emptySet());
-                }
+
+            scm.lockAndUpdate(studyName, studyConfiguration -> {
+                StudyConfigurationManager
+                        .setStatus(studyConfiguration, BatchFileOperation.Status.READY, REMOVE_OPERATION_NAME, Collections.emptyList());
+                studyConfiguration.getIndexedFiles().clear();
+                studyConfiguration.getCalculatedStats().clear();
+                studyConfiguration.getInvalidStats().clear();
+                Integer defaultCohortId = studyConfiguration.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
+                studyConfiguration.getCohorts().put(defaultCohortId, Collections.emptySet());
                 return studyConfiguration;
             });
+        } catch (Exception e) {
+            scm.lockAndUpdate(studyName, studyConfiguration -> {
+                StudyConfigurationManager
+                        .setStatus(studyConfiguration, BatchFileOperation.Status.ERROR, REMOVE_OPERATION_NAME, Collections.emptyList());
+                return studyConfiguration;
+            });
+            throw e;
+        } finally {
+            Runtime.getRuntime().removeShutdownHook(hook);
         }
     }
 
