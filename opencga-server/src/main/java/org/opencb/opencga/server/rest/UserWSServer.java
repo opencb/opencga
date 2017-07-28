@@ -154,7 +154,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @Deprecated
     @GET
     @Path("/{user}/logout")
-    @ApiOperation(value = "End user session")
+    @ApiOperation(value = "End user session [DEPRECATED]")
     public Response logout(@ApiParam(value = "userId", required = true) @PathParam("user") String userId) {
         try {
             QueryResult result = new QueryResult("OpenCGA does not support logging out anymore");
