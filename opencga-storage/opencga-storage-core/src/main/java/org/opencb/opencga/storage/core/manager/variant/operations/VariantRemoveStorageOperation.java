@@ -55,7 +55,7 @@ public class VariantRemoveStorageOperation extends StorageOperation {
         }
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
-
+        variantStorageEngine.getOptions().putAll(options);
 
         variantStorageEngine.removeFiles(String.valueOf(studyInfo.getStudyId()), files);
 
@@ -79,6 +79,7 @@ public class VariantRemoveStorageOperation extends StorageOperation {
         updateStudyConfiguration(sessionId, studyInfo.getStudyId(), dataStore);
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
+        variantStorageEngine.getOptions().putAll(options);
 
         variantStorageEngine.removeStudy(String.valueOf(studyInfo.getStudyId()));
 

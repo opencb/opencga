@@ -374,7 +374,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         BatchFileOperation operation = getBatchFileOperation(studyConfiguration.getBatches(),
                 op -> op.getOperationName().equals(STAGE.key())
-                        && op.getFileIds().equals(Collections.singletonList(fileId)));
+                        && op.getFileIds().equals(Collections.singletonList(fileId))
+                        && !op.currentStatus().equals(BatchFileOperation.Status.READY)
+        );
 
         if (iterator.hasNext()) {
             // Already indexed!
@@ -389,14 +391,6 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
             if (operation != null) {
                 switch (operation.currentStatus()) {
-                    case READY:
-                        // Already indexed!
-                        // TODO: Believe this ready? What if deleted?
-                        logger.info("File \"{}\" ({}) already staged!", fileName, fileId);
-                        stage = false;
-
-                        //dbAdaptor.getVariantSourceDBAdaptor().updateVariantSource(source);
-                        break;
                     case RUNNING:
                         if (!loadStageResume) {
                             throw MongoVariantStorageEngineException.fileBeingStagedException(fileId, fileName);
@@ -414,9 +408,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                         BatchFileOperation.Type.OTHER);
                 studyConfiguration.getBatches().add(operation);
             }
-            if (stage) {
-                operation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
-            }
+            operation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
         }
 
         if (stage) {

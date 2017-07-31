@@ -194,14 +194,13 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     public void removeStudy(String studyName) throws StorageEngineException {
         StudyConfigurationManager scm = getStudyConfigurationManager();
-        scm.lockAndUpdate(studyName, studyConfiguration -> {
+        int studyId = scm.lockAndUpdate(studyName, studyConfiguration -> {
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
             StudyConfigurationManager.addBatchOperation(studyConfiguration, REMOVE_OPERATION_NAME, Collections.emptyList(), resume,
                     BatchFileOperation.Type.REMOVE);
             return studyConfiguration;
-        });
+        }).getStudyId();
 
-        Integer studyId = scm.getStudyId(scm, null);
         Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, Collections.emptyList());
         try {
             Runtime.getRuntime().addShutdownHook(hook);
