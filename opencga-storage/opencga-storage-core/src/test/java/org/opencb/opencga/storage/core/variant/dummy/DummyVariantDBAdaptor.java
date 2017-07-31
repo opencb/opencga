@@ -228,6 +228,11 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
             }
 
             @Override
+            public void delete(int study, int file) {
+
+            }
+
+            @Override
             public void close() throws IOException {
 
             }

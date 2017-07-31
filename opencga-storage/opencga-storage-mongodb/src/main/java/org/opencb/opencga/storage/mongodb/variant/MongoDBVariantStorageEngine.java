@@ -209,6 +209,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             getDBAdaptor().removeStudy(studyName, new QueryOptions(options));
 
             scm.lockAndUpdate(studyName, studyConfiguration -> {
+                for (Integer fileId : studyConfiguration.getIndexedFiles()) {
+                    getDBAdaptor().getVariantSourceDBAdaptor().delete(studyId, fileId);
+                }
                 StudyConfigurationManager
                         .setStatus(studyConfiguration, BatchFileOperation.Status.READY, REMOVE_OPERATION_NAME, Collections.emptyList());
                 studyConfiguration.getIndexedFiles().clear();

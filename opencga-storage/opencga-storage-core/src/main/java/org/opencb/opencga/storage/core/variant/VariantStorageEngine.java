@@ -523,6 +523,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             if (error) {
                 StudyConfigurationManager.setStatus(studyConfiguration, BatchFileOperation.Status.ERROR, REMOVE_OPERATION_NAME, fileIds);
             } else {
+                for (Integer fileId : fileIds) {
+                    try {
+                        getDBAdaptor().getVariantSourceDBAdaptor().delete(studyConfiguration.getStudyId(), fileId);
+                    } catch (IOException e) {
+                        throw new StorageEngineException("Unable to remove VariantSource from file " + fileId, e);
+                    }
+                }
+
                 StudyConfigurationManager.setStatus(studyConfiguration, BatchFileOperation.Status.READY, REMOVE_OPERATION_NAME, fileIds);
                 studyConfiguration.getIndexedFiles().removeAll(fileIds);
                 Set<Integer> removedSamples = new HashSet<>();
