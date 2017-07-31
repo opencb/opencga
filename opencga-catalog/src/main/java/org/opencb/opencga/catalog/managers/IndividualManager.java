@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
@@ -175,6 +176,18 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 //        authorizationManager.filterIndividuals(userId, studyId, queryResult.getResult());
         addChildrenInformation(userId, studyId, queryResult);
         return queryResult;
+    }
+
+    @Override
+    public DBIterator<Individual> iterator(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(sessionId, "sessionId");
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        String userId = userManager.getId(sessionId);
+        query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
+        return individualDBAdaptor.iterator(query, options, userId);
     }
 
     private void addChildrenInformation(String userId, long studyId, QueryResult<Individual> queryResult) {

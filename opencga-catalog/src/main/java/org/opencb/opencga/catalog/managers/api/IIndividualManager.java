@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
@@ -130,6 +131,8 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
             throws CatalogException, IOException;
 
     QueryResult<Individual> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
+
+    DBIterator<Individual> iterator(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.

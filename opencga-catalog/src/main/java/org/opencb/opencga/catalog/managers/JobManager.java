@@ -25,8 +25,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
@@ -48,6 +48,7 @@ import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.ToolAclEntry;
 import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -315,6 +316,35 @@ public class JobManager extends AbstractManager implements IJobManager {
 
         QueryResult<Job> queryResult = jobDBAdaptor.get(query, options, userId);
         return queryResult;
+    }
+
+    @Override
+    public DBIterator<Job> iterator(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        // If studyId is null, check if there is any on the query
+        // Else, ensure that studyId is in the Query
+        if (studyId <= 0) {
+            throw new CatalogException("Missing study parameter");
+        }
+        query.put(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
+        if (query.containsKey("inputFiles")) {
+            MyResourceIds inputFiles = catalogManager.getFileManager().getIds(query.getString("inputFiles"), Long.toString(studyId),
+                    sessionId);
+            query.put(JobDBAdaptor.QueryParams.INPUT_ID.key(), inputFiles.getResourceIds());
+            query.remove("inputFiles");
+        }
+        if (query.containsKey("outputFiles")) {
+            MyResourceIds inputFiles = catalogManager.getFileManager().getIds(query.getString("outputFiles"), Long.toString(studyId),
+                    sessionId);
+            query.put(JobDBAdaptor.QueryParams.OUTPUT_ID.key(), inputFiles.getResourceIds());
+            query.remove("outputFiles");
+        }
+
+        String userId = userManager.getId(sessionId);
+
+        return jobDBAdaptor.iterator(query, options, userId);
     }
 
     @Override

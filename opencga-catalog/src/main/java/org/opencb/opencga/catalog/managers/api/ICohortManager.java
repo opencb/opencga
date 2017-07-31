@@ -26,12 +26,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.models.AnnotationSet;
-import org.opencb.opencga.catalog.models.Cohort;
-import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
 
@@ -62,6 +60,8 @@ public interface ICohortManager extends ResourceManager<Long, Cohort>, IAnnotati
     Long getId(String userId, String cohortStr) throws CatalogException;
 
     QueryResult<Cohort> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
+
+    DBIterator<Cohort> iterator(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
     /**     * Obtains the list of cohort ids corresponding to the comma separated list of cohort strings given in cohortStr.
      *

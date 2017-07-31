@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
@@ -120,6 +121,8 @@ public interface IJobManager extends ResourceManager<Long, Job> {
                             long startTime, long endTime, QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<Job> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
+
+    DBIterator<Job> iterator(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<Job> count(String studyStr, Query query, String sessionId) throws CatalogException;
 
