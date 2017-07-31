@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Study;
@@ -35,6 +36,7 @@ import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Created by pfurio on 28/11/16.
@@ -95,15 +97,19 @@ public class ProjectManagerTest extends GenericTest {
 
     @Test
     public void getSharedProjects() throws CatalogException {
-        QueryResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
-        assertEquals(0, queryResult.getNumResults());
+        try {
+            catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
+            fail("User should not have permissions oveer this project yet");
+        } catch (CatalogAuthorizationException e) {
+            // Correct
+        }
 
         // Create a new study in project2 with some dummy permissions for user
         long s2 = catalogManager.createStudy(project2, "Study 2", "s2", Study.Type.CONTROL_SET, "", sessionIdUser2).first().getId();
         catalogManager.createStudyAcls(Long.toString(s2), "user", StudyAclEntry.StudyPermissions.VIEW_STUDY.toString(), null,
                 sessionIdUser2);
 
-        queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
+        QueryResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(1, queryResult.getNumResults());
         assertEquals(1, queryResult.first().getStudies().size());
         assertEquals("s2", queryResult.first().getStudies().get(0).getAlias());

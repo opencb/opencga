@@ -147,6 +147,15 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException;
 
+    DBIterator<T> iterator(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
+
+    default DBIterator nativeIterator(String user) throws CatalogDBException, CatalogAuthorizationException {
+        return nativeIterator(new Query(), new QueryOptions(), user);
+    }
+
+    DBIterator nativeIterator(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
+
+//    QueryResult<T> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
 
     QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException;
 

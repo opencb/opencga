@@ -34,6 +34,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
+import org.opencb.opencga.catalog.db.mongodb.iterators.StudyMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
@@ -46,8 +47,10 @@ import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.checkStudyPermission;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 /**
@@ -167,13 +170,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         List<Study> studyList = result.getResult();
         return endQuery("Create Study", startTime, studyList, errorMsg, null);
 
-    }
-
-
-    @Override
-    public QueryResult<Study> get(long studyId, QueryOptions options) throws CatalogDBException {
-        checkId(studyId);
-        return get(new Query(QueryParams.ID.key(), studyId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED), options);
     }
 
     @Override
@@ -415,9 +411,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         // 1. Take the user out from all synced groups
         Document query = new Document()
                 .append(QueryParams.GROUPS.key(), new Document("$elemMatch", new Document()
-                                .append("userIds", user)
-                                .append("syncedFrom.authOrigin", authOrigin)
-                        ))
+                        .append("userIds", user)
+                        .append("syncedFrom.authOrigin", authOrigin)
+                ))
                 .append("$isolated", 1);
         Bson pull = Updates.pull("groups.$.userIds", user);
 
@@ -846,7 +842,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return endQuery("Delete VariableSet", startTime, variableSet);
     }
 
-
     public void checkVariableSetInUse(long variableSetId) throws CatalogDBException {
         QueryResult<Sample> samples = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(
                 new Query(SampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId), new QueryOptions());
@@ -908,6 +903,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
     }
 
+
     @Override
     public QueryResult<Study> getStudiesFromUser(String userId, QueryOptions queryOptions) throws CatalogDBException {
         QueryResult<Study> result = new QueryResult<>("Get studies from user");
@@ -931,10 +927,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return result;
     }
 
-
     /*
     * Helper methods
     ********************/
+
 
     //Join fields from other collections
     private void joinFields(User user, QueryOptions options) throws CatalogDBException {
@@ -958,23 +954,50 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     private void joinFields(Study study, QueryOptions options) throws CatalogDBException {
+        try {
+            joinFields(study, options, null);
+        } catch (CatalogAuthorizationException e) {
+            throw new CatalogDBException(e);
+        }
+    }
+
+    private void joinFields(Study study, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
         long studyId = study.getId();
         if (studyId <= 0 || options == null) {
             return;
         }
 
         if (options.getBoolean("includeFiles")) {
-            study.setFiles(dbAdaptorFactory.getCatalogFileDBAdaptor().getAllInStudy(studyId, options).getResult());
+            if (StringUtils.isEmpty(user)) {
+                study.setFiles(dbAdaptorFactory.getCatalogFileDBAdaptor().getAllInStudy(studyId, options).getResult());
+            } else {
+                Query query = new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                study.setFiles(dbAdaptorFactory.getCatalogFileDBAdaptor().get(query, options, user).getResult());
+            }
         }
         if (options.getBoolean("includeJobs")) {
-            study.setJobs(dbAdaptorFactory.getCatalogJobDBAdaptor().getAllInStudy(studyId, options).getResult());
+            if (StringUtils.isEmpty(user)) {
+                study.setJobs(dbAdaptorFactory.getCatalogJobDBAdaptor().getAllInStudy(studyId, options).getResult());
+            } else {
+                Query query = new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                study.setJobs(dbAdaptorFactory.getCatalogJobDBAdaptor().get(query, options, user).getResult());
+            }
         }
         if (options.getBoolean("includeSamples")) {
-            study.setSamples(dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllInStudy(studyId, options).getResult());
+            if (StringUtils.isEmpty(user)) {
+                study.setSamples(dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllInStudy(studyId, options).getResult());
+            } else {
+                Query query = new Query(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                study.setSamples(dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options, user).getResult());
+            }
         }
         if (options.getBoolean("includeIndividuals")) {
-            study.setIndividuals(dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(
-                    new Query(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId), options).getResult());
+            Query query = new Query(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+            if (StringUtils.isEmpty(user)) {
+                study.setIndividuals(dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(query, options).getResult());
+            } else {
+                study.setIndividuals(dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(query, options, user).getResult());
+            }
         }
     }
 
@@ -998,83 +1021,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     @Override
     public QueryResult stats(Query query) {
         return null;
-    }
-
-    @Override
-    public QueryResult<Study> get(Query query, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
-        Bson bson = parseQuery(query, false);
-        QueryOptions qOptions;
-        if (options != null) {
-            qOptions = new QueryOptions(options);
-        } else {
-            qOptions = new QueryOptions();
-        }
-
-        qOptions = filterOptions(qOptions, FILTER_ROUTE_STUDIES);
-        QueryResult<Study> result = studyCollection.find(bson, studyConverter, qOptions);
-        for (Study study : result.getResult()) {
-            joinFields(study, options);
-        }
-        return endQuery("Get study", startTime, result.getResult());
-    }
-
-    @Override
-    public QueryResult<Study> get(Query query, QueryOptions options, String user) throws CatalogDBException {
-        QueryResult queryResult = nativeGet(query, options, user);
-        List<Study> studyList = new ArrayList<>(queryResult.getNumResults());
-        for (Object studyDocument : queryResult.getResult()) {
-            studyList.add(studyConverter.convertToDataModelType((Document) studyDocument));
-        }
-        return new QueryResult<>("Get", queryResult.getDbTime(), queryResult.getNumResults(), queryResult.getNumTotalResults(),
-                queryResult.getWarningMsg(), queryResult.getErrorMsg(), studyList);
-    }
-
-    @Override
-    public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
-        Bson bson = parseQuery(query, false);
-        QueryOptions qOptions;
-        if (options != null) {
-            qOptions = options;
-        } else {
-            qOptions = new QueryOptions();
-        }
-        qOptions = filterOptions(qOptions, FILTER_ROUTE_STUDIES);
-        logger.debug("Study native get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        // Fixme: If necessary, include in the results also the files, jobs, individuals...
-        return studyCollection.find(bson, qOptions);
-    }
-
-    @Override
-    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException {
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-        if (options.containsKey(QueryOptions.INCLUDE)) {
-            options = new QueryOptions(options);
-            List<String> includeList = new ArrayList<>(options.getAsStringList(QueryOptions.INCLUDE));
-            includeList.add("_ownerId");
-            includeList.add("_acl");
-            includeList.add(QueryParams.GROUPS.key());
-            options.put(QueryOptions.INCLUDE, includeList);
-        }
-
-        QueryResult queryResult = nativeGet(query, options);
-
-        Iterator iterator = queryResult.getResult().iterator();
-        while (iterator.hasNext()) {
-            if (!checkStudyPermission((Document) iterator.next(), user, StudyAclEntry.StudyPermissions.VIEW_STUDY.name())) {
-                iterator.remove();
-            }
-        }
-        queryResult.setNumResults(queryResult.getResult().size());
-        queryResult.setNumTotalResults(-1);
-
-        return queryResult;
     }
 
     @Override
@@ -1208,7 +1154,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             dbAdaptorFactory.getCatalogIndividualDBAdaptor().setStatus(query, Status.TRASHED);
             dbAdaptorFactory.getCatalogCohortDBAdaptor().setStatus(query, Status.TRASHED);
             dbAdaptorFactory.getCatalogDatasetDBAdaptor().setStatus(query, Status.TRASHED);
-   }
+        }
 
         // Change the status of the project to deleted
         setStatus(id, Status.TRASHED);
@@ -1362,17 +1308,112 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
+    public QueryResult<Study> get(long studyId, QueryOptions options) throws CatalogDBException {
+        checkId(studyId);
+        Query query = new Query(QueryParams.ID.key(), studyId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+        return get(query, options);
+    }
+
+    @Override
+    public QueryResult<Study> get(Query query, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+        List<Study> documentList = new ArrayList<>();
+        DBIterator<Study> dbIterator = iterator(query, options);
+        while (dbIterator.hasNext()) {
+            documentList.add(dbIterator.next());
+        }
+        QueryResult<Study> studyQueryResult = endQuery("Get", startTime, documentList);
+        for (Study study : studyQueryResult.getResult()) {
+            joinFields(study, options);
+        }
+        return studyQueryResult;
+    }
+
+    @Override
+    public QueryResult<Study> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+        long startTime = startQuery();
+        List<Study> documentList = new ArrayList<>();
+        DBIterator<Study> dbIterator = iterator(query, options, user);
+        while (dbIterator.hasNext()) {
+            documentList.add(dbIterator.next());
+        }
+        QueryResult<Study> studyQueryResult = endQuery("Get", startTime, documentList);
+        for (Study study : studyQueryResult.getResult()) {
+            joinFields(study, options, user);
+        }
+        return studyQueryResult;
+    }
+
+    @Override
+    public QueryResult<Document> nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+        List<Document> documentList = new ArrayList<>();
+        DBIterator<Document> dbIterator = nativeIterator(query, options);
+        while (dbIterator.hasNext()) {
+            documentList.add(dbIterator.next());
+        }
+        return endQuery("Native get", startTime, documentList);
+    }
+
+    @Override
+    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+        long startTime = startQuery();
+        List<Document> documentList = new ArrayList<>();
+        DBIterator<Document> dbIterator = nativeIterator(query, options, user);
+        while (dbIterator.hasNext()) {
+            documentList.add(dbIterator.next());
+        }
+        return endQuery("Native get", startTime, documentList);
+    }
+
+    @Override
     public DBIterator<Study> iterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
-        MongoCursor<Document> iterator = studyCollection.nativeQuery().find(bson, options).iterator();
-        return new MongoDBIterator<>(iterator, studyConverter);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        return new StudyMongoDBIterator<>(mongoCursor, studyConverter);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        return new StudyMongoDBIterator<>(mongoCursor);
+    }
+
+    @Override
+    public DBIterator<Study> iterator(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        Function<Document, Boolean> iteratorFilter = (d) -> checkStudyPermission(d, user, StudyAclEntry.StudyPermissions.VIEW_STUDY.name());
+        return new StudyMongoDBIterator<>(mongoCursor, studyConverter, iteratorFilter);
+    }
+
+    @Override
+    public DBIterator nativeIterator(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        Function<Document, Boolean> iteratorFilter = (d) -> checkStudyPermission(d, user, StudyAclEntry.StudyPermissions.VIEW_STUDY.name());
+        return new StudyMongoDBIterator<Document>(mongoCursor, iteratorFilter);
+    }
+
+    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        if (options.containsKey(QueryOptions.INCLUDE)) {
+            options = new QueryOptions(options);
+            List<String> includeList = new ArrayList<>(options.getAsStringList(QueryOptions.INCLUDE));
+            includeList.add("_ownerId");
+            includeList.add("_acl");
+            includeList.add(QueryParams.GROUPS.key());
+            options.put(QueryOptions.INCLUDE, includeList);
+        }
+        options = filterOptions(options, FILTER_ROUTE_STUDIES);
+
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        }
         Bson bson = parseQuery(query, false);
-        MongoCursor<Document> iterator = studyCollection.nativeQuery().find(bson, options).iterator();
-        return new MongoDBIterator<>(iterator);
+
+        logger.debug("Study native get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        return studyCollection.nativeQuery().find(bson, options).iterator();
     }
 
     @Override
