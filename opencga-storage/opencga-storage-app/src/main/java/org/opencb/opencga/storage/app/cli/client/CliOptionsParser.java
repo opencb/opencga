@@ -17,7 +17,6 @@
 package org.opencb.opencga.storage.app.cli.client;
 
 import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameters;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
@@ -25,6 +24,8 @@ import org.opencb.opencga.storage.app.cli.client.options.StorageAlignmentCommand
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 
 import java.util.Map;
+
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VARIANT_REMOVE_COMMAND;
 
 /**
  * Created by imedina on 02/03/15.
@@ -54,6 +55,7 @@ public class CliOptionsParser extends GeneralCliOptions {
         jcommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jcommander.getCommands().get("variant");
         variantSubCommands.addCommand("index", variantCommandOptions.indexVariantsCommandOptions);
+        variantSubCommands.addCommand(VARIANT_REMOVE_COMMAND, variantCommandOptions.variantRemoveCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.variantQueryCommandOptions);
         variantSubCommands.addCommand("import", variantCommandOptions.importVariantsCommandOptions);
         variantSubCommands.addCommand("annotate", variantCommandOptions.annotateVariantsCommandOptions);

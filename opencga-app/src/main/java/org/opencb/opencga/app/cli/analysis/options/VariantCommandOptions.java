@@ -31,6 +31,8 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 
 import java.util.List;
 
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VARIANT_REMOVE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VARIANT_REMOVE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.SAMPLE_FILTER_DESC;
 
 /**
@@ -41,6 +43,7 @@ public class VariantCommandOptions {
 
     public VariantIndexCommandOptions indexVariantCommandOptions;
     public VariantIndexSearchCommandOptions variantIndexSearchCommandOptions;
+    public VariantRemoveCommandOptions variantRemoveCommandOptions;
 //    public QueryVariantCommandOptionsOld queryVariantCommandOptionsOld;
     public VariantQueryCommandOptions queryVariantCommandOptions;
     public VariantStatsCommandOptions statsVariantCommandOptions;
@@ -65,6 +68,7 @@ public class VariantCommandOptions {
 
         this.indexVariantCommandOptions = new VariantIndexCommandOptions();
         this.variantIndexSearchCommandOptions = new VariantIndexSearchCommandOptions();
+        this.variantRemoveCommandOptions = new VariantRemoveCommandOptions();
 //        this.queryVariantCommandOptionsOld = new QueryVariantCommandOptionsOld();
         this.queryVariantCommandOptions = new VariantQueryCommandOptions();
         this.statsVariantCommandOptions = new VariantStatsCommandOptions();
@@ -191,6 +195,16 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation", arity = 0)
         public boolean resume;
+    }
+
+    @Parameters(commandNames = {VARIANT_REMOVE_COMMAND}, commandDescription = VARIANT_REMOVE_COMMAND_DESCRIPTION)
+    public class VariantRemoveCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public StorageVariantCommandOptions.GenericVariantRemoveOptions genericVariantRemoveOptions = new StorageVariantCommandOptions.GenericVariantRemoveOptions();
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
     }
 
     @Deprecated

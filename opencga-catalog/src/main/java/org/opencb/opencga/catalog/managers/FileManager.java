@@ -2642,7 +2642,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             throw new CatalogException("Cannot send to index. No files could be found to be indexed.");
         }
 
-        String fileIds = fileIdList.stream().map(File::getId).map(l -> Long.toString(l)).collect(Collectors.joining(", "));
+        String fileIds = fileIdList.stream().map(File::getId).map(l -> Long.toString(l)).collect(Collectors.joining(","));
         params.put("file", fileIds);
         params.put("sid", sessionId);
         List<File> outputList = outDir.getId() > 0 ? Arrays.asList(outDir) : Collections.emptyList();
