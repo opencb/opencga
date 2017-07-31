@@ -31,6 +31,8 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.DatasetDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.DatasetConverter;
+import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Dataset;
 import org.opencb.opencga.catalog.models.Status;
@@ -353,6 +355,18 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
         Bson bson = parseQuery(query, false);
         MongoCursor<Document> iterator = datasetCollection.nativeQuery().find(bson, options).iterator();
         return new MongoDBIterator<>(iterator);
+    }
+
+    @Override
+    public DBIterator<Dataset> iterator(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        return null;
+    }
+
+    @Override
+    public DBIterator nativeIterator(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        return null;
     }
 
     @Override

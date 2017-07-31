@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.db.mongodb;
+package org.opencb.opencga.catalog.db.mongodb.iterators;
 
 import com.mongodb.client.MongoCursor;
 import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+
+import java.util.function.Function;
 
 /**
  * Created by imedina on 27/01/16.
@@ -28,14 +30,25 @@ public class MongoDBIterator<E> implements DBIterator<E> {
 
     private MongoCursor mongoCursor;
     private GenericDocumentComplexConverter<E> converter;
+    private Function<Document, Document> filter;
 
-    MongoDBIterator(MongoCursor mongoCursor) { //Package protected
-        this(mongoCursor, null);
+    public MongoDBIterator(MongoCursor mongoCursor) { //Package protected
+        this(mongoCursor, null, null);
     }
 
-    MongoDBIterator(MongoCursor mongoCursor, GenericDocumentComplexConverter<E> converter) { //Package protected
+    public MongoDBIterator(MongoCursor mongoCursor, GenericDocumentComplexConverter<E> converter) { //Package protected
+        this(mongoCursor, converter, null);
+    }
+
+    public MongoDBIterator(MongoCursor mongoCursor, Function<Document, Document> filter) { //Package protected
+        this(mongoCursor, null, filter);
+    }
+
+    public MongoDBIterator(MongoCursor mongoCursor, GenericDocumentComplexConverter<E> converter, Function<Document, Document> filter) {
+        //Package protected
         this.mongoCursor = mongoCursor;
         this.converter = converter;
+        this.filter = filter;
     }
 
     @Override
@@ -46,6 +59,11 @@ public class MongoDBIterator<E> implements DBIterator<E> {
     @Override
     public E next() {
         Document next = (Document) mongoCursor.next();
+
+        if (filter != null) {
+            next = filter.apply(next);
+        }
+
         if (converter != null) {
             return converter.convertToDataModelType(next);
         } else {
