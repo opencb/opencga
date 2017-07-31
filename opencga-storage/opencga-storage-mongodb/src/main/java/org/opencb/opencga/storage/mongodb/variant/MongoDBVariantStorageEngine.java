@@ -181,7 +181,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, fileIds);
         try {
             Runtime.getRuntime().addShutdownHook(hook);
-            getDBAdaptor().removeFile(study, files, new QueryOptions(options));
+            getDBAdaptor().removeFiles(study, files, new QueryOptions(options));
             postRemoveFiles(study, fileIds, false);
         } catch (Exception e) {
             postRemoveFiles(study, fileIds, true);
