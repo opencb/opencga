@@ -57,47 +57,6 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
     }
 
     /**
-     * Delete all the variants from the database resulting of executing the query.
-     *
-     * @param query   Query to be executed in the database
-     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
-     * @return A QueryResult with the number of deleted variants
-     */
-    @Deprecated
-    QueryResult delete(Query query, QueryOptions options);
-
-    /**
-     * Delete all the given samples belonging to the study from the database.
-     *
-     * @param studyName   The study name where samples belong to
-     * @param sampleNames Sample names to be deleted, these must belong to the study
-     * @param options     Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
-     * @return A QueryResult with a list with all the samples deleted
-     */
-    @Deprecated
-    QueryResult deleteSamples(String studyName, List<String> sampleNames, QueryOptions options);
-
-    /**
-     * Delete the given file from the database with all the samples it has.
-     *
-     * @param studyName The study where the file belong
-     * @param fileName  The file name to be deleted, it must belong to the study
-     * @param options   Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
-     * @return A QueryResult with the file deleted
-     */
-    @Deprecated
-    QueryResult deleteFile(String studyName, String fileName, QueryOptions options);
-
-    /**
-     * Delete the given study from the database.
-     *
-     * @param studyName The study name to delete
-     * @param options   Query modifiers, accepted values are: purge
-     * @return A QueryResult with the study deleted
-     */
-    @Deprecated
-    QueryResult deleteStudy(String studyName, QueryOptions options);
-
     /**
      * Fetch all variants resulting of executing the query in the database. Returned fields are taken from
      * the 'include' and 'exclude' fields at options.
@@ -209,8 +168,6 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
     QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions);
 
     QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, QueryOptions options);
-
-    QueryResult deleteStats(String studyName, String cohortName, QueryOptions options);
 
     QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
 

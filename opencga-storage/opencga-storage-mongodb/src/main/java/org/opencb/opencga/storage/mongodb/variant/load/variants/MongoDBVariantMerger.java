@@ -1021,7 +1021,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
     /**
      * Transform the set of genotypes and file objects into a set of mongodb operations.
-     *  @param emptyVar            Parsed empty variant of the document. Only chr, pos, ref, alt
+     *
+     * @param emptyVar            Parsed empty variant of the document. Only chr, pos, ref, alt
      * @param ids                 Variant identifiers seen for this variant
      * @param fileDocuments       List of files to be updated
      * @param alternatesFromStage Number of alternates from the stage collection.
@@ -1036,6 +1037,11 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                                            int alternatesFromStage, List<Document> secondaryAlternates, Document gts,
                                            boolean newStudy, boolean newVariant, MongoDBOperations mongoDBOps) {
         final String id;
+
+        if (!excludeGenotypes) {
+            mongoDBOps.getGenotypes().addAll(gts.keySet());
+        }
+
         if (newStudy) {
             // If there where no files and the study is new, do not add a new study.
             // It may happen if all the files in the variant where duplicated for this variant.

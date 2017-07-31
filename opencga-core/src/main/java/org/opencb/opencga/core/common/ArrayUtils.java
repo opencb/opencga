@@ -33,7 +33,7 @@ public class ArrayUtils {
 	 */
 
     public static int max(int[] values) {
-        return values[max(values, 0, values.length)];
+        return max(values, 0, values.length);
     }
 
     public static int max(int[] values, int begin, int end) {
@@ -752,7 +752,7 @@ public class ArrayUtils {
         if (values == null || values.length == 0) {
             return false;
         }
-        if (begin < 0 || end >= values.length) {
+        if (begin < 0 || end > values.length) {
             return false;
         }
         return true;

@@ -39,7 +39,7 @@ import static org.junit.Assert.*;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
-public class VariantTableDeleteTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
+public class VariantTableRemoveTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
@@ -61,12 +61,13 @@ public class VariantTableDeleteTest extends VariantStorageBaseTest implements Ha
     }
 
     @Test
-    public void dropFileTest() throws Exception {
+    public void removeFileTest() throws Exception {
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         System.out.println("studyConfiguration = " + studyConfiguration);
         String studyName = studyConfiguration.getStudyName();
 
-        loadFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
+        Map<String, Object> options = Collections.singletonMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true);
+        loadFile("s1.genome.vcf", studyConfiguration, options);
         Map<String, Variant> variants = buildVariantsIdx();
         assertFalse(variants.containsKey("1:10014:A:G"));
 
@@ -74,7 +75,7 @@ public class VariantTableDeleteTest extends VariantStorageBaseTest implements Ha
         assertEquals("0/1", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s1", "GT"));
         assertEquals(null, variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));
 
-        loadFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
+        loadFile("s2.genome.vcf", studyConfiguration, options);
         variants = buildVariantsIdx();
         assertThat(variants.keySet(), hasItem("1:10014:A:G"));
         assertEquals("0/2", variants.get("1:10014:A:G").getStudy(studyName).getSampleData("s1", "GT"));
@@ -102,12 +103,13 @@ public class VariantTableDeleteTest extends VariantStorageBaseTest implements Ha
     }
 
     @Test
-    public void dropSingleFileTest() throws Exception {
+    public void removeSingleFileTest() throws Exception {
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         System.out.println("studyConfiguration = " + studyConfiguration);
         String studyName = studyConfiguration.getStudyName();
 
-        loadFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
+        Map<String, Object> options = Collections.singletonMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true);
+        loadFile("s1.genome.vcf", studyConfiguration, options);
         Map<String, Variant> variants = buildVariantsIdx();
 
         assertFalse(variants.containsKey("1:10014:A:G"));
@@ -116,7 +118,7 @@ public class VariantTableDeleteTest extends VariantStorageBaseTest implements Ha
 
         VariantHbaseTestUtils.printVariantsFromVariantsTable(getVariantStorageEngine().getDBAdaptor());
         // delete
-        removeFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
+        removeFile("s1.genome.vcf", studyConfiguration, options);
 
         VariantHbaseTestUtils.printVariantsFromVariantsTable(getVariantStorageEngine().getDBAdaptor());
 
@@ -124,8 +126,8 @@ public class VariantTableDeleteTest extends VariantStorageBaseTest implements Ha
         System.out.println("studyConfiguration.getAttributes().toJson() = " + studyConfiguration.getAttributes().toJson());
 
         variants = buildVariantsIdx();
-        assertEquals(0, variants.size());
-        assertEquals(0, studyConfiguration.getIndexedFiles().size());
+        assertEquals("Expected none variants", 0, variants.size());
+        assertEquals("Expected none indexed files", 0, studyConfiguration.getIndexedFiles().size());
     }
 
     private Map<String, Variant> buildVariantsIdx() throws Exception {

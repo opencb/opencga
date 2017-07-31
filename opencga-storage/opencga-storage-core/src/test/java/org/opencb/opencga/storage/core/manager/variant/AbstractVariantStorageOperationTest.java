@@ -299,6 +299,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         checkEtlResults(studyId, etlResults, FileIndex.IndexStatus.READY);
 
         Cohort defaultCohort = getDefaultCohort(studyId);
+        assertNotNull(defaultCohort);
         for (File file : expectedLoadedFiles) {
             List<Long> samplesInCohort = defaultCohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
             List<Long> samplesInFiles = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());

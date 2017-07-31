@@ -84,7 +84,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableRemoveFileDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
@@ -446,9 +446,9 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                     }.privateMain(Commandline.translateCommandline(args), conf);
                     System.out.println("Finish execution VariantTableDriver");
                     return r;
-                } else if (executable.endsWith(VariantTableDeletionDriver.class.getName())) {
+                } else if (executable.endsWith(VariantTableRemoveFileDriver.class.getName())) {
                     System.out.println("Executing VariantTableDeletionDriver : " + executable + " " + args);
-                    int r = new VariantTableDeletionDriver().privateMain(Commandline.translateCommandline(args), conf);
+                    int r = new VariantTableRemoveFileDriver().privateMain(Commandline.translateCommandline(args), conf);
                     System.out.println("Finish execution VariantTableDeletionDriver");
                     return r;
                 }

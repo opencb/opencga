@@ -160,10 +160,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
             }
 
 //            StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyId, dataStore);
-
-            System.out.println("dataStore = " + dataStore);
-            VariantStorageEngine variantStorageEngine =
-                    storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+            VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
             variantStorageEngine.annotate(annotationQuery, annotationOptions);
 
             if (catalogOutDirId != null) {

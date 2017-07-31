@@ -21,6 +21,7 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.mapreduce.MultiTableOutputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.mapreduce.Job;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,16 +33,16 @@ import java.util.List;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
-public class VariantTableDeletionDriver extends AbstractAnalysisTableDriver {
+public class VariantTableRemoveFileDriver extends AbstractAnalysisTableDriver {
 
-    public static final String JOB_OPERATION_NAME = "Delete";
-    protected final Logger logger = LoggerFactory.getLogger(VariantTableDeletionDriver.class);
+    public static final String JOB_OPERATION_NAME = VariantStorageEngine.REMOVE_OPERATION_NAME;
+    protected final Logger logger = LoggerFactory.getLogger(VariantTableRemoveFileDriver.class);
 
-    public VariantTableDeletionDriver() {
+    public VariantTableRemoveFileDriver() {
         super();
     }
 
-    public VariantTableDeletionDriver(Configuration conf) {
+    public VariantTableRemoveFileDriver(Configuration conf) {
         super(conf);
     }
 
@@ -73,7 +74,7 @@ public class VariantTableDeletionDriver extends AbstractAnalysisTableDriver {
 
     public static void main(String[] args) throws Exception {
         try {
-            System.exit(new VariantTableDeletionDriver().privateMain(args));
+            System.exit(new VariantTableRemoveFileDriver().privateMain(args));
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
