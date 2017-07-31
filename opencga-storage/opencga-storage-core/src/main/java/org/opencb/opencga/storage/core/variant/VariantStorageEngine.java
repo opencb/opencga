@@ -40,10 +40,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.metadata.ExportMetadata;
-import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.*;
 import org.opencb.opencga.storage.core.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.search.solr.VariantSearchIterator;
 import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
@@ -83,6 +80,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
  */
 public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdaptor> {
 
+    public static final String REMOVE_OPERATION_NAME = BatchFileOperation.Type.REMOVE.name().toLowerCase();
     private final AtomicReference<VariantSearchManager> variantSearchManager = new AtomicReference<>();
     private Logger logger = LoggerFactory.getLogger(VariantStorageEngine.class);
     private CellBaseUtils cellBaseUtils;
@@ -456,15 +454,121 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     /**
-     * Drops a file from the Variant Storage.
+     * Removes a file from the Variant Storage.
      *
      * @param study  StudyName or StudyId
      * @param fileId FileId
-     * @throws StorageEngineException If the file can not be deleted or there was some problem deleting it.
+     * @throws StorageEngineException If the file can not be removed or there was some problem deleting it.
      */
-    public abstract void dropFile(String study, int fileId) throws StorageEngineException;
+    public void removeFile(String study, int fileId) throws StorageEngineException {
+        removeFiles(study, Collections.singletonList(String.valueOf(fileId)));
+    }
 
-    public abstract void dropStudy(String studyName) throws StorageEngineException;
+    /**
+     * Removes a file from the Variant Storage.
+     *
+     * @param study  StudyName or StudyId
+     * @param files Files to remove
+     * @throws StorageEngineException If the file can not be removed  or there was some problem deleting it.
+     */
+    public abstract void removeFiles(String study, List<String> files) throws StorageEngineException;
+
+    /**
+     * Atomically updates the studyConfiguration before removing samples.
+     *
+     * @param study    Study
+     * @param files    Files to remove
+     * @return FileIds to remove
+     * @throws StorageEngineException StorageEngineException
+     */
+    protected List<Integer> preRemoveFiles(String study, List<String> files) throws StorageEngineException {
+        List<Integer> fileIds = new ArrayList<>();
+        getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+            fileIds.addAll(getStudyConfigurationManager().getFileIds(files, false, studyConfiguration));
+
+            boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
+            StudyConfigurationManager.addBatchOperation(studyConfiguration, REMOVE_OPERATION_NAME, fileIds, resume,
+                    BatchFileOperation.Type.REMOVE);
+
+            if (!studyConfiguration.getIndexedFiles().containsAll(fileIds)) {
+                // Remove indexed files to get non indexed files
+                fileIds.removeAll(studyConfiguration.getIndexedFiles());
+                throw new StorageEngineException("Unable to remove non indexed files: " + fileIds);
+            }
+
+            return studyConfiguration;
+        });
+        return fileIds;
+    }
+
+    /**
+     * Atomically updates the StudyConfiguration after removing samples.
+     *
+     * If success:
+     *    Updates remove status with READY
+     *    Removes the files from indexed files list
+     *    Removes the samples removed from the default cohort {@link StudyEntry#DEFAULT_COHORT}
+     *      * Be aware that some samples can be in multiple files.
+     *    Invalidates the cohorts with removed samples
+     * If error:
+     *    Updates remove status with ERROR
+     *
+     * @param study    Study
+     * @param fileIds  Removed file ids
+     * @param error    If the remove operation succeeded
+     * @throws StorageEngineException StorageEngineException
+     */
+    protected void postRemoveFiles(String study, List<Integer> fileIds, boolean error) throws StorageEngineException {
+        getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+            if (error) {
+                StudyConfigurationManager.setStatus(studyConfiguration, BatchFileOperation.Status.ERROR, REMOVE_OPERATION_NAME, fileIds);
+            } else {
+                for (Integer fileId : fileIds) {
+                    try {
+                        getDBAdaptor().getVariantSourceDBAdaptor().delete(studyConfiguration.getStudyId(), fileId);
+                    } catch (IOException e) {
+                        throw new StorageEngineException("Unable to remove VariantSource from file " + fileId, e);
+                    }
+                }
+
+                StudyConfigurationManager.setStatus(studyConfiguration, BatchFileOperation.Status.READY, REMOVE_OPERATION_NAME, fileIds);
+                studyConfiguration.getIndexedFiles().removeAll(fileIds);
+                Set<Integer> removedSamples = new HashSet<>();
+                for (Integer fileId : fileIds) {
+                    removedSamples.addAll(studyConfiguration.getSamplesInFiles().get(fileId));
+                }
+                List<Integer> invalidCohorts = new ArrayList<>();
+                for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
+                    Set<Integer> cohort = studyConfiguration.getCohorts().get(cohortId);
+                    for (Integer removedSample : removedSamples) {
+                        if (cohort.contains(removedSample)) {
+                            logger.info("Invalidating statistics of cohort "
+                                    + studyConfiguration.getCohortIds().inverse().get(cohortId)
+                                    + " (" + cohortId + ')');
+                            invalidCohorts.add(cohortId);
+                            break;
+                        }
+                    }
+                }
+                studyConfiguration.getCalculatedStats().removeAll(invalidCohorts);
+                studyConfiguration.getInvalidStats().addAll(invalidCohorts);
+
+                // Restore default cohort with indexed samples
+                Integer defaultCohort = studyConfiguration.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
+                studyConfiguration.getCohorts()
+                        .put(defaultCohort, StudyConfiguration.getIndexedSamples(studyConfiguration).values());
+            }
+            return studyConfiguration;
+        });
+    }
+
+    /**
+     * Remove a whole study from the Variant Storage.
+     *
+     * @param study  StudyName or StudyId
+     * @throws StorageEngineException If the file can not be removed or there was some problem deleting it.
+     */
+    public abstract void removeStudy(String study) throws StorageEngineException;
 
     @Override
     public void testConnection() throws StorageEngineException {}

@@ -316,7 +316,7 @@ public class VariantHbaseTestUtils {
 
         variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions()
                 .putAll(params);
-        variantStorageManager.dropFile(studyConfiguration.getStudyName(), fileId);
+        variantStorageManager.removeFile(studyConfiguration.getStudyName(), fileId);
         studyConfiguration.copy(
                 variantStorageManager
                         .getDBAdaptor()

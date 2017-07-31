@@ -18,6 +18,7 @@
 package org.opencb.opencga.storage.core.manager.variant;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -39,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.lang.Math.toIntExact;
 /**
@@ -202,6 +204,13 @@ public class CatalogStudyConfigurationFactory {
         for (Cohort cohort : cohorts.getResult()) {
             int cohortId = (int) cohort.getId();
             studyConfiguration.getCohortIds().forcePut(cohort.getName(), cohortId);
+            if (cohort.getName().equals(StudyEntry.DEFAULT_COHORT)) {
+                // Skip default cohort
+                // Members of this cohort are managed by storage
+                // Only register cohortId
+                studyConfiguration.getCohorts().putIfAbsent(cohortId, Collections.emptySet());
+                continue;
+            }
             List<Integer> sampleIds = new ArrayList<>(cohort.getSamples().size());
             for (Sample sample : cohort.getSamples()) {
                 sampleIds.add(toIntExact(sample.getId()));
@@ -255,6 +264,26 @@ public class CatalogStudyConfigurationFactory {
             options = this.options;
         }
         logger.info("Updating StudyConfiguration " + studyConfiguration.getStudyId());
+
+        //Check if cohort ALL has been modified
+        Integer cohortId = studyConfiguration.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
+        if (cohortId != null && studyConfiguration.getCohorts().get(cohortId) != null) {
+            Set<Long> cohortFromStorage = studyConfiguration.getCohorts().get(cohortId)
+                    .stream()
+                    .map(i -> (long) i)
+                    .collect(Collectors.toSet());
+            List<Long> cohortFromCatalog = catalogManager.getCohort(cohortId.longValue(), null, sessionId).first()
+                    .getSamples()
+                    .stream()
+                    .map(Sample::getId)
+                    .collect(Collectors.toList());
+
+            if (cohortFromCatalog.size() != cohortFromStorage.size() || !cohortFromStorage.containsAll(cohortFromCatalog)) {
+                catalogManager.getCohortManager().update(cohortId.longValue(),
+                        new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), cohortFromStorage),
+                        null, sessionId);
+            }
+        }
 
         //Check if any cohort stat has been updated
         if (!studyConfiguration.getCalculatedStats().isEmpty()) {

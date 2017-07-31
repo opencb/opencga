@@ -53,7 +53,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.annotation.HadoopDefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.variant.executors.ExternalMRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableRemoveFileDriver;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.slf4j.Logger;
@@ -377,32 +377,34 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         return variantReaderUtils;
     }
 
-    @Override
-    public void dropFile(String study, int fileId) throws StorageEngineException {
+    public void removeFiles(String study, List<String> files) throws StorageEngineException {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
-        // Use ETL as helper class
-        AbstractHadoopVariantStoragePipeline etl = newStoragePipeline(true);
-        VariantDBAdaptor dbAdaptor = etl.getDBAdaptor();
+
+        VariantDBAdaptor dbAdaptor = getDBAdaptor();
         StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
-        List<Integer> fileList = Collections.singletonList(fileId);
+        List<Integer> fileIds = preRemoveFiles(study, files);
         final int studyId = scm.getStudyId(study, null);
 
-        // Pre delete
-        scm.lockAndUpdate(studyId, sc -> {
-            if (!sc.getIndexedFiles().contains(fileId)) {
-                throw StorageEngineException.unableToExecute("File not indexed.", fileId, sc);
-            }
-            boolean resume = options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue())
-                    || options.getBoolean(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_RESUME, false);
-            BatchFileOperation operation =
-                    etl.addBatchOperation(sc, VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList, resume,
-                            BatchFileOperation.Type.REMOVE);
-            options.put(AbstractAnalysisTableDriver.TIMESTAMP, operation.getTimestamp());
-            return sc;
-        });
+//        // Pre delete
+//        scm.lockAndUpdate(studyId, sc -> {
+//            if (!sc.getIndexedFiles().contains(fileId)) {
+//                throw StorageEngineException.unableToExecute("File not indexed.", fileId, sc);
+//            }
+//            boolean resume = options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue())
+//                    || options.getBoolean(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_RESUME, false);
+//            BatchFileOperation operation =
+//                    etl.addBatchOperation(sc, VariantTableRemoveFileDriver.JOB_OPERATION_NAME, fileList, resume,
+//                            BatchFileOperation.Type.REMOVE);
+//            options.put(AbstractAnalysisTableDriver.TIMESTAMP, operation.getTimestamp());
+//            return sc;
+//        });
+
+        StudyConfiguration sc = scm.getStudyConfiguration(studyId, null).first();
+        BatchFileOperation operation = StudyConfigurationManager.getOperation(sc, REMOVE_OPERATION_NAME, fileIds);
+        options.put(AbstractAnalysisTableDriver.TIMESTAMP, operation.getTimestamp());
 
         // Delete
-        Thread hook = etl.newShutdownHook(VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList);
+        Thread hook = getStudyConfigurationManager().buildShutdownHook(REMOVE_OPERATION_NAME, studyId, fileIds);
         try {
             Runtime.getRuntime().addShutdownHook(hook);
 
@@ -411,14 +413,14 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
             String jar = AbstractHadoopVariantStoragePipeline.getJarWithDependencies(options);
 
-            Class execClass = VariantTableDeletionDriver.class;
-            String args = VariantTableDeletionDriver.buildCommandLineArgs(variantsTable.toString(), archiveTable,
-                    variantsTable.getTable(), studyId, fileList, options);
+            Class execClass = VariantTableRemoveFileDriver.class;
+            String args = VariantTableRemoveFileDriver.buildCommandLineArgs(variantsTable.toString(), archiveTable,
+                    variantsTable.getTable(), studyId, fileIds, options);
             String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
 
             long startTime = System.currentTimeMillis();
             logger.info("------------------------------------------------------");
-            logger.info("Remove file ID {} in archive '{}' and analysis table '{}'", fileId, archiveTable, variantsTable.getTable());
+            logger.info("Remove files {} in archive '{}' and analysis table '{}'", fileIds, archiveTable, variantsTable.getTable());
             logger.debug(executable + " " + args);
             logger.info("------------------------------------------------------");
             int exitValue = getMRExecutor(options).run(executable, args);
@@ -426,21 +428,21 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             logger.info("Exit value: {}", exitValue);
             logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
             if (exitValue != 0) {
-                throw new StorageEngineException("Error removing fileId " + fileId + " from tables ");
+                throw new StorageEngineException("Error removing files " + fileIds + " from tables ");
             }
 
-            // Post Delete
-            // If everything went fine, remove file column from Archive table and from studyconfig
-            scm.lockAndUpdate(studyId, sc -> {
-                scm.setStatus(sc, BatchFileOperation.Status.READY,
-                        VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList);
-                sc.getIndexedFiles().remove(fileId);
-                return sc;
-            });
+//            // Post Delete
+//            // If everything went fine, remove file column from Archive table and from studyconfig
+//            scm.lockAndUpdate(studyId, sc -> {
+//                scm.setStatus(sc, BatchFileOperation.Status.READY,
+//                        VariantTableRemoveFileDriver.JOB_OPERATION_NAME, fileIds);
+//                sc.getIndexedFiles().remove(fileId);
+//                return sc;
+//            });
 
+            postRemoveFiles(study, fileIds, false);
         } catch (Exception e) {
-            scm.atomicSetStatus(studyId, BatchFileOperation.Status.ERROR,
-                    VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList);
+            postRemoveFiles(study, fileIds, true);
             throw e;
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
@@ -448,7 +450,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public void dropStudy(String studyName) throws StorageEngineException {
+    public void removeStudy(String studyName) throws StorageEngineException {
         throw new UnsupportedOperationException("Unimplemented");
     }
 

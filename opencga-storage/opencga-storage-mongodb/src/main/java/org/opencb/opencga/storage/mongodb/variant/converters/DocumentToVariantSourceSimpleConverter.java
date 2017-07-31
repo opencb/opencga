@@ -36,8 +36,16 @@ public class DocumentToVariantSourceSimpleConverter extends GenericDocumentCompl
     @Override
     public Document convertToStorageType(VariantSource object) {
         Document document = super.convertToStorageType(object);
-        document.append("_id", object.getStudyId() + "_" + object.getFileId());
+        document.append("_id", buildId(object.getStudyId(), object.getFileId()));
         return document;
+    }
+
+    public static String buildId(String studyId, String fileId) {
+        return studyId + '_' + fileId;
+    }
+
+    public static String buildId(int studyId, int fileId) {
+        return String.valueOf(studyId) + '_' + fileId;
     }
 
 }

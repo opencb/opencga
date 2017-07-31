@@ -45,7 +45,6 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
-import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
@@ -787,15 +786,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
 
     public Thread newShutdownHook(String jobOperationName, List<Integer> files) {
-        return new Thread(() -> {
-            try {
-                logger.error("Shutdown hook!");
-                getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileOperation.Status.ERROR, jobOperationName, files);
-            } catch (StorageEngineException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        });
+        return getStudyConfigurationManager().buildShutdownHook(jobOperationName, getStudyId(), files);
     }
 
     public VariantDBAdaptor getDBAdaptor() {

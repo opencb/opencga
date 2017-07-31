@@ -262,9 +262,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
                 sampleList.add(new Sample().setId(sampleId));
 
             }
-            if (sampleList.size() > 0) {
-                cohortParams.put(QueryParams.SAMPLES.key(), cohortConverter.convertSamplesToDocument(sampleList));
-            }
+            cohortParams.put(QueryParams.SAMPLES.key(), cohortConverter.convertSamplesToDocument(sampleList));
         }
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
         filterMapParams(parameters, cohortParams, acceptedMapParams);

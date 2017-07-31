@@ -20,6 +20,7 @@ import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.log4j.Level;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -31,6 +32,7 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
+import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
@@ -58,6 +60,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.DB_NAME;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RESUME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.FILES;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLES;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
@@ -87,6 +90,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         BULK_SIZE("bulkSize",  100),
         DEFAULT_GENOTYPE("defaultGenotype", Arrays.asList("0/0", "0|0")),
         ALREADY_LOADED_VARIANTS("alreadyLoadedVariants", 0),
+        LOADED_GENOTYPES("loadedGenotypes", 0),
         STAGE("stage", false),
         STAGE_RESUME("stage.resume", false),
         STAGE_PARALLEL_WRITE("stage.parallel.write", false),
@@ -165,15 +169,68 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public void dropFile(String study, int fileId) throws StorageEngineException {
+    public void removeFiles(String study, List<String> files) throws StorageEngineException {
+
+        List<Integer> fileIds = preRemoveFiles(study, files);
+
         ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
-        getDBAdaptor().deleteFile(study, Integer.toString(fileId), new QueryOptions(options));
+
+        StudyConfigurationManager scm = getStudyConfigurationManager();
+        Integer studyId = scm.getStudyId(study, null);
+
+        Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, fileIds);
+        try {
+            Runtime.getRuntime().addShutdownHook(hook);
+            getDBAdaptor().removeFile(study, files, new QueryOptions(options));
+            postRemoveFiles(study, fileIds, false);
+        } catch (Exception e) {
+            postRemoveFiles(study, fileIds, true);
+            throw e;
+        } finally {
+            Runtime.getRuntime().removeShutdownHook(hook);
+        }
     }
 
     @Override
-    public void dropStudy(String studyName) throws StorageEngineException {
-        ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
-        getDBAdaptor().deleteStudy(studyName, new QueryOptions(options));
+    public void removeStudy(String studyName) throws StorageEngineException {
+        StudyConfigurationManager scm = getStudyConfigurationManager();
+        scm.lockAndUpdate(studyName, studyConfiguration -> {
+            boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
+            StudyConfigurationManager.addBatchOperation(studyConfiguration, REMOVE_OPERATION_NAME, Collections.emptyList(), resume,
+                    BatchFileOperation.Type.REMOVE);
+            return studyConfiguration;
+        });
+
+        Integer studyId = scm.getStudyId(scm, null);
+        Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, Collections.emptyList());
+        try {
+            Runtime.getRuntime().addShutdownHook(hook);
+            ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
+            getDBAdaptor().removeStudy(studyName, new QueryOptions(options));
+
+            scm.lockAndUpdate(studyName, studyConfiguration -> {
+                for (Integer fileId : studyConfiguration.getIndexedFiles()) {
+                    getDBAdaptor().getVariantSourceDBAdaptor().delete(studyId, fileId);
+                }
+                StudyConfigurationManager
+                        .setStatus(studyConfiguration, BatchFileOperation.Status.READY, REMOVE_OPERATION_NAME, Collections.emptyList());
+                studyConfiguration.getIndexedFiles().clear();
+                studyConfiguration.getCalculatedStats().clear();
+                studyConfiguration.getInvalidStats().clear();
+                Integer defaultCohortId = studyConfiguration.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
+                studyConfiguration.getCohorts().put(defaultCohortId, Collections.emptySet());
+                return studyConfiguration;
+            });
+        } catch (Exception e) {
+            scm.lockAndUpdate(studyName, studyConfiguration -> {
+                StudyConfigurationManager
+                        .setStatus(studyConfiguration, BatchFileOperation.Status.ERROR, REMOVE_OPERATION_NAME, Collections.emptyList());
+                return studyConfiguration;
+            });
+            throw e;
+        } finally {
+            Runtime.getRuntime().removeShutdownHook(hook);
+        }
     }
 
     @Override

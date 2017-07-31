@@ -58,7 +58,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
     protected ArchiveResultToVariantConverter resultConverter;
     private ArchiveRowKeyFactory rowKeyFactory;
     private boolean specificPut;
-    private boolean loadSampleColumns;
+    protected boolean loadSampleColumns;
     private SamplesDataToHBaseConverter samplesDataToHBaseConverter;
     private HBaseToVariantConverter<VariantTableStudyRow> rowToVariantConverter;
 

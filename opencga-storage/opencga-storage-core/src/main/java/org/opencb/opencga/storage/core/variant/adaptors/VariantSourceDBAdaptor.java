@@ -93,6 +93,8 @@ public interface VariantSourceDBAdaptor extends AutoCloseable {
 
     QueryResult updateSourceStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions queryOptions);
 
+    void delete(int study, int file) throws IOException;
+
     void close() throws IOException;
 
 }

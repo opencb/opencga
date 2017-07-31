@@ -714,4 +714,52 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 //        variantSearchManager.load(variantStorageEngine.getConfiguration().getSearch().getCollection(), dbAdaptor.iterator());
     }
 
+
+    @Test
+    public void removeFileTest() throws Exception {
+        removeFileTest(new QueryOptions());
+    }
+
+    public void removeFileTest(QueryOptions params) throws Exception {
+        StudyConfiguration studyConfiguration1 = new StudyConfiguration(1, "Study1");
+        StudyConfiguration studyConfiguration2 = new StudyConfiguration(2, "Study2");
+
+        ObjectMap options = new ObjectMap(params)
+                .append(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.CONTROL)
+                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
+                .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
+        //Study1
+        runDefaultETL(getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
+                variantStorageEngine, studyConfiguration1, options.append(VariantStorageEngine.Options.FILE_ID.key(), 1));
+        runDefaultETL(getResourceUri("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
+                variantStorageEngine, studyConfiguration1, options.append(VariantStorageEngine.Options.FILE_ID.key(), 2));
+
+        //Study2
+        runDefaultETL(getResourceUri("1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
+                variantStorageEngine, studyConfiguration2, options.append(VariantStorageEngine.Options.FILE_ID.key(), 3));
+        runDefaultETL(getResourceUri("1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
+                variantStorageEngine, studyConfiguration2, options.append(VariantStorageEngine.Options.FILE_ID.key(), 4));
+        runDefaultETL(getResourceUri("1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
+                variantStorageEngine, studyConfiguration2, options.append(VariantStorageEngine.Options.FILE_ID.key(), 5));
+
+        variantStorageEngine.removeFile(studyConfiguration1.getStudyName(), 2);
+
+        for (Variant variant : variantStorageEngine.getDBAdaptor()) {
+            assertFalse(variant.getStudies().isEmpty());
+            StudyEntry study = variant.getStudy("1");
+            if (study != null) {
+                List<FileEntry> files = study.getFiles();
+                assertEquals(1, files.size());
+                assertEquals("1", files.get(0).getFileId());
+            }
+        }
+
+        variantStorageEngine.getDBAdaptor().getVariantSourceDBAdaptor().iterator(new Query(), new QueryOptions()).forEachRemaining(vs -> {
+            assertNotEquals("2", vs.getFileId());
+        });
+
+
+
+    }
+
 }

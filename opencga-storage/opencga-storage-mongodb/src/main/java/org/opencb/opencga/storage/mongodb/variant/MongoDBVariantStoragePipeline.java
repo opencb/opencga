@@ -65,6 +65,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
+import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.*;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 
@@ -88,6 +89,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     private final VariantMongoDBAdaptor dbAdaptor;
     private final ObjectMap loadStats = new ObjectMap();
     private final Logger logger = LoggerFactory.getLogger(MongoDBVariantStoragePipeline.class);
+    private MongoDBVariantWriteResult writeResult;
 
     public MongoDBVariantStoragePipeline(StorageConfiguration configuration, String storageEngineId,
                                          VariantMongoDBAdaptor dbAdaptor) {
@@ -534,7 +536,6 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             }
         }
 
-        final MongoDBVariantWriteResult writeResult;
         if (options.getBoolean(MERGE_SKIP.key())) {
             // It was already merged, but still some work is needed. Exit to do postLoad step
             writeResult = new MongoDBVariantWriteResult();
@@ -560,14 +561,14 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 }
 
                 if (chromosomesToLoad.isEmpty()) {
-                    writeResult = mergeByChromosome(fileIds, batchSize, loadThreads, stageCollection,
+                    writeResult = mergeByChromosome(fileIds, batchSize, loadThreads,
                             studyConfiguration, null, studyConfiguration.getIndexedFiles());
                 } else {
                     writeResult = new MongoDBVariantWriteResult();
                     for (String chromosome : chromosomesToLoad) {
                         List<Integer> filesToLoad = chromosomeInFilesToLoad.get(chromosome);
                         Set<Integer> indexedFiles = new HashSet<>(chromosomeInLoadedFiles.get(chromosome));
-                        MongoDBVariantWriteResult aux = mergeByChromosome(filesToLoad, batchSize, loadThreads, stageCollection,
+                        MongoDBVariantWriteResult aux = mergeByChromosome(filesToLoad, batchSize, loadThreads,
                                 studyConfiguration, chromosome, indexedFiles);
                         writeResult.merge(aux);
                     }
@@ -594,7 +595,6 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         logger.info("Write result: {}", writeResult.toString());
 //        logger.info("Write result: {}", writeResult.toTSV());
         logger.info("Write result: {}", writeResult.toJson());
-        options.put("writeResult", writeResult);
         loadStats.append(MERGE.key(), true);
         loadStats.append("mergeWriteResult", writeResult);
 
@@ -669,11 +669,10 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         });
     }
 
-    private MongoDBVariantWriteResult mergeByChromosome(
-            List<Integer> fileIds, int batchSize, int loadThreads, MongoDBCollection stageCollection,
+    private MongoDBVariantWriteResult mergeByChromosome(List<Integer> fileIds, int batchSize, int loadThreads,
             StudyConfiguration studyConfiguration, String chromosomeToLoad, Set<Integer> indexedFiles)
             throws StorageEngineException {
-
+        MongoDBCollection stageCollection = dbAdaptor.getStageCollection();
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stageCollection, studyConfiguration.getStudyId(),
                 chromosomeToLoad == null ? Collections.emptyList() : Collections.singletonList(chromosomeToLoad));
         MergeMode mergeMode = MergeMode.from(options);
@@ -690,8 +689,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 MERGE_IGNORE_OVERLAPPING_VARIANTS.defaultValue());
         MongoDBVariantMerger variantMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds, indexedFiles, resume,
                 ignoreOverlapping);
-        MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(dbAdaptor.getVariantsCollection(), stageCollection,
-                studyConfiguration.getStudyId(), fileIds, resume, cleanWhileLoading, progressLogger);
+        MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(
+                dbAdaptor.getVariantsCollection(), stageCollection, dbAdaptor.getStudiesCollection(),
+                studyConfiguration, fileIds, resume, cleanWhileLoading, progressLogger);
 
         ParallelTaskRunner<Document, MongoDBOperations> ptrMerge;
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
@@ -737,11 +737,13 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     @Override
     public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
         super.securePostLoad(fileIds, studyConfiguration);
-        BatchFileOperation.Status status = dbAdaptor.getStudyConfigurationManager()
-                .setStatus(studyConfiguration, BatchFileOperation.Status.READY, MERGE.key(), fileIds);
+        BatchFileOperation.Status status = setStatus(studyConfiguration, BatchFileOperation.Status.READY, MERGE.key(), fileIds);
         if (status != BatchFileOperation.Status.DONE) {
             logger.warn("Unexpected status " + status);
         }
+        Set<String> genotypes = new HashSet<>(studyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key()));
+        genotypes.addAll(writeResult.getGenotypes());
+        studyConfiguration.getAttributes().put(LOADED_GENOTYPES.key(), genotypes);
     }
 
     @Override
@@ -783,7 +785,6 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 variantsToLoad += entry.getValue();
             }
         }
-        MongoDBVariantWriteResult writeResult = options.get("writeResult", MongoDBVariantWriteResult.class);
         long expectedCount = variantsToLoad;
         if (alreadyLoadedVariants != 0) {
             writeResult.setNonInsertedVariants(writeResult.getNonInsertedVariants() - alreadyLoadedVariants);

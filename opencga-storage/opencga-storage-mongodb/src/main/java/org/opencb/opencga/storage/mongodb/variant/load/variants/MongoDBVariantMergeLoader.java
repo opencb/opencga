@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.slf4j.Logger;
@@ -38,6 +39,7 @@ import java.util.regex.Matcher;
 
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.LOADED_GENOTYPES;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.FILEID_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.FILES_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.STUDIES_FIELD;
@@ -71,6 +73,7 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
     private static final QueryOptions MULTI = new QueryOptions(MongoDBCollection.MULTI, true);
 
 
+    private final MongoDBCollection studiesCollection;
     private final ProgressLogger progressLogger;
     private final MongoDBCollection variantsCollection;
     private final MongoDBCollection stageCollection;
@@ -86,15 +89,17 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
     private final Bson cleanStage;
 
     public MongoDBVariantMergeLoader(MongoDBCollection variantsCollection, MongoDBCollection stageCollection,
-                                     Integer studyId, List<Integer> fileIds, boolean resume, boolean cleanWhileLoading,
-                                     ProgressLogger progressLogger) {
+                                     MongoDBCollection studiesCollection, StudyConfiguration studyConfiguration, List<Integer> fileIds,
+                                     boolean resume, boolean cleanWhileLoading, ProgressLogger progressLogger) {
         this.progressLogger = progressLogger;
         this.variantsCollection = variantsCollection;
         this.stageCollection = stageCollection;
+        this.studiesCollection = studiesCollection;
         this.resume = resume;
-        this.studyId = studyId;
+        this.studyId = studyConfiguration.getStudyId();
         this.fileIds = fileIds;
         this.result = new MongoDBVariantWriteResult();
+        result.getGenotypes().addAll(studyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key()));
         this.cleanWhileLoading = cleanWhileLoading;
 
         List<String> studyFileToPull = new ArrayList<>(fileIds.size());
@@ -160,9 +165,28 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult(newVariants,
                 updatesNewStudyExistingVariant + updatesWithDataExistingStudy, mongoDBOps.getMissingVariants(),
                 mongoDBOps.getOverlappedVariants(), mongoDBOps.getSkipped(), mongoDBOps.getNonInserted(), newVariantsTime,
-                existingVariants.getNanoTime(), fillGapsVariants.getNanoTime());
+                existingVariants.getNanoTime(), fillGapsVariants.getNanoTime(), mongoDBOps.getGenotypes());
+
+        boolean updateGenotypes;
         synchronized (result) {
+            updateGenotypes = !result.getGenotypes().containsAll(mongoDBOps.getGenotypes());
             result.merge(writeResult);
+        }
+        if (updateGenotypes) {
+            // Update the genotypes as soon as there is a new one detected.
+            // Avoid losing values in case of failure.
+            logger.debug("Update list of loaded genotypes");
+            studiesCollection.update(
+                    eq("_id", studyId),
+                    addEachToSet("attributes." + LOADED_GENOTYPES.key(), new ArrayList<>(result.getGenotypes())),
+                    null);
+        }
+
+        // Modifying the stage collection MUST be the latest operation.
+        // If there is any failure, we must ensure that we can resume the operation.
+        // Once the stage collection is clean, we can not resume the operation.
+        if (cleanWhileLoading) {
+            cleanStage(mongoDBOps);
         }
 
         long processedVariants = mongoDBOps.getNewStudy().getQueries().size()
