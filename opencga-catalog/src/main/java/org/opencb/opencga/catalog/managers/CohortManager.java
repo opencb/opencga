@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
@@ -168,6 +169,25 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         Query myQuery = new Query(query).append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Cohort> queryResult = cohortDBAdaptor.get(myQuery, options, userId);
         return queryResult;
+    }
+
+    @Override
+    public DBIterator<Cohort> iterator(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        String userId = userManager.getId(sessionId);
+
+        if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
+            // First look for the sample ids.
+            AbstractManager.MyResourceIds samples = catalogManager.getSampleManager()
+                    .getIds(query.getString(CohortDBAdaptor.QueryParams.SAMPLES.key()), Long.toString(studyId), sessionId);
+            query.remove(CohortDBAdaptor.QueryParams.SAMPLES.key());
+            query.append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), samples.getResourceIds());
+        }
+
+        Query myQuery = new Query(query).append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        return cohortDBAdaptor.iterator(myQuery, options, userId);
     }
 
     @Override

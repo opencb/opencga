@@ -1415,6 +1415,21 @@ public class CatalogManagerTest extends GenericTest {
 //    }
 
     @Test
+    public void testIteratorSamples() throws CatalogException {
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
+
+        Query query = new Query();
+
+        DBIterator<Sample> iterator = catalogManager.getSampleManager().iterator(studyId, query, null, sessionIdUser);
+        int count = 0;
+        while (iterator.hasNext()) {
+            iterator.next();
+            count++;
+        }
+        assertEquals(9, count);
+    }
+
+    @Test
     public void testQuerySamples() throws CatalogException {
         long studyId = catalogManager.getStudyId("user@1000G:phase1");
         Study study = catalogManager.getStudy(studyId, sessionIdUser).first();

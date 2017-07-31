@@ -21,10 +21,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.Annotation;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 
 import javax.annotation.Nullable;
@@ -124,6 +128,8 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
     QueryResult<Annotation> load(File file) throws CatalogException;
 
     QueryResult<Sample> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
+
+    DBIterator<Sample> iterator(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
     /**
      * Multi-study search of samples in catalog.

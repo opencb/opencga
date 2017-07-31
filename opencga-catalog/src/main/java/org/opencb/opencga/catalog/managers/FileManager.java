@@ -1006,6 +1006,28 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
+    public DBIterator<File> iterator(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        String userId = userManager.getId(sessionId);
+
+        if (studyId <= 0) {
+            throw new CatalogDBException("Permission denied. Only the files of one study can be seen at a time.");
+        } else {
+            query.put(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        }
+
+        if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
+            MyResourceIds resourceIds = catalogManager.getSampleManager().getIds(
+                    query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()), Long.toString(studyId), sessionId);
+            query.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), resourceIds.getResourceIds());
+            query.remove(FileDBAdaptor.QueryParams.SAMPLES.key());
+        }
+
+        return fileDBAdaptor.iterator(query, options, userId);
+    }
+
+    @Override
     public QueryResult<File> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         String userId = userManager.getId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
