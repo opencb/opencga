@@ -107,7 +107,7 @@ public class StringDataWriter implements DataWriter<String> {
     public boolean write(String elem) {
         try {
             if (++writtenLines % 1000 == 0) {
-                logger.info("written lines = " + writtenLines);
+                logger.debug("written lines = {}", writtenLines);
             }
             os.write(elem.getBytes());
             if (endLine) {
@@ -125,7 +125,7 @@ public class StringDataWriter implements DataWriter<String> {
             long start = System.currentTimeMillis();
             for (String b : batch) {
                 if (++writtenLines % 1000 == 0) {
-                    logger.info("written lines = " + writtenLines);
+                    logger.debug("written lines = {}", writtenLines);
                 }
                 os.write(b.getBytes());
                 if (endLine) {
