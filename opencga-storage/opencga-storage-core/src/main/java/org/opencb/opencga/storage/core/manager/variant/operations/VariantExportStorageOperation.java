@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.storage.core.manager.variant.operations;
 
 import org.opencb.biodata.models.core.Region;
@@ -7,7 +23,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -24,7 +39,7 @@ import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -111,8 +126,7 @@ public class VariantExportStorageOperation extends StorageOperation {
 //                StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyInfo.getStudyId(), dataStore);
 //            }
 
-            VariantStorageEngine variantStorageEngine =
-                    storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+            VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
             variantStorageEngine.exportData(outputFile, outputFormat, query, new QueryOptions(options));
 
             if (catalogOutDirId != null && outdir != null) {
@@ -155,8 +169,7 @@ public class VariantExportStorageOperation extends StorageOperation {
 
         try {
             DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
-            VariantStorageEngine variantStorageEngine =
-                    storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+            VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
             ObjectMap options = variantStorageEngine.getOptions();
             ExportMetadata exportMetadata;
             try (StudyConfigurationManager scm = variantStorageEngine.getStudyConfigurationManager()) {
@@ -168,8 +181,9 @@ public class VariantExportStorageOperation extends StorageOperation {
 
             variantStorageEngine.importData(inputUri, exportMetadata, studiesOldNewMap, options);
 
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            throw new StorageEngineException("Error importing data", e);
+        } catch (Exception e) {
+            logger.error("Error importing data");
+            throw e;
         }
 
     }
@@ -209,8 +223,8 @@ public class VariantExportStorageOperation extends StorageOperation {
                 String source = inputUri.resolve(".").relativize(inputUri).getPath();
                 String description = "Sample data imported from " + source;
                 for (Map.Entry<String, Integer> entry : studyConfiguration.getSampleIds().entrySet()) {
-                    Sample sample = catalogManager.createSample(studyId, entry.getKey(), source, description,
-                            Collections.emptyMap(), QueryOptions.empty(), sessionId).first();
+                    Sample sample = catalogManager.getSampleManager().create(Long.toString(studyId), entry.getKey(), source, description,
+                            null, false, null, Collections.emptyMap(), QueryOptions.empty(), sessionId).first();
                     samplesMap.put(sample.getName(), (int) sample.getId());
                     samplesIdMap.put(entry.getValue(), (int) sample.getId());
                 }
@@ -222,17 +236,17 @@ public class VariantExportStorageOperation extends StorageOperation {
                 for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
                     String cohortName = studyConfiguration.getCohortIds().inverse().get(cohortId);
                     Set<Integer> sampleIds = studyConfiguration.getCohorts().get(cohortId);
-                    Set<Integer> newSampleIds = new HashSet<>(sampleIds.size());
+                    List<Sample> newSampleList = new ArrayList<>();
                     for (Integer sampleId : sampleIds) {
                         if (samplesIdMap.containsKey(sampleId)) {
-                            newSampleIds.add(samplesIdMap.get(sampleId));
+                            newSampleList.add(new Sample().setId(samplesIdMap.get(sampleId)));
                         }
                     }
                     Cohort cohort = catalogManager.getCohortManager().create((long) studyConfiguration.getStudyId(), cohortName, Study
-                            .Type.COLLECTION, "", newSampleIds.stream().map(Long::valueOf).collect(Collectors.toList()), null,
-                            Collections.emptyMap(), sessionId).first();
+                            .Type.COLLECTION, "", newSampleList, null, Collections.emptyMap(), sessionId).first();
                     newCohortIds.put(cohortName, (int) cohort.getId());
-                    newCohorts.put((int) cohort.getId(), newSampleIds);
+                    newCohorts.put((int) cohort.getId(), newSampleList.stream().map(Sample::getId).map(Long::intValue)
+                            .collect(Collectors.toSet()));
                     catalogManager.getCohortManager().setStatus(String.valueOf(cohort.getId()), Cohort.CohortStatus.READY, "", sessionId);
                 }
                 studyConfiguration.setCohortIds(newCohortIds);

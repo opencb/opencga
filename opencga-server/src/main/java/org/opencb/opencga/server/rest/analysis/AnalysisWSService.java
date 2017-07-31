@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,11 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
@@ -38,14 +40,14 @@ public class AnalysisWSService extends OpenCGAWSServer {
 
     protected IJobManager jobManager;
 
-    public AnalysisWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+    public AnalysisWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        this(uriInfo.getPathParameters().getFirst("version"), uriInfo, httpServletRequest);
+        this(uriInfo.getPathParameters().getFirst("version"), uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public AnalysisWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+    public AnalysisWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+        super(version, uriInfo, httpServletRequest, httpHeaders);
 
         this.jobManager = catalogManager.getJobManager();
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.models.AnnotationSet;
-import org.opencb.opencga.catalog.models.Cohort;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
 
@@ -44,7 +43,7 @@ import java.util.Map;
 @Deprecated
 public interface ICohortManager extends ResourceManager<Long, Cohort>, IAnnotationSetManager {
 
-    QueryResult<Cohort> create(long studyId, String name, Study.Type type, String description, List<Long> sampleIds, List<AnnotationSet>
+    QueryResult<Cohort> create(long studyId, String name, Study.Type type, String description, List<Sample> samples, List<AnnotationSet>
             annotationSetList, Map<String, Object> attributes, String sessionId) throws CatalogException;
 
     Long getStudyId(long cohortId) throws CatalogException;
@@ -61,6 +60,8 @@ public interface ICohortManager extends ResourceManager<Long, Cohort>, IAnnotati
     Long getId(String userId, String cohortStr) throws CatalogException;
 
     QueryResult<Cohort> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
+
+    DBIterator<Cohort> iterator(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
     /**     * Obtains the list of cohort ids corresponding to the comma separated list of cohort strings given in cohortStr.
      *
@@ -110,6 +111,8 @@ public interface ICohortManager extends ResourceManager<Long, Cohort>, IAnnotati
      * @throws CatalogException catalogException.
      */
     QueryResult<Cohort> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException;
+
+    QueryResult<Cohort> count(String studyStr, Query query, String sessionId) throws CatalogException;
 
     /**
      * Delete entries from Catalog.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantNormalizer;
+import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;

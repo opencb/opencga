@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,27 +20,25 @@ import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.log4j.Level;
-import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.core.common.MemoryUsageMonitor;
-import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
-import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
+import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.search.VariantSearchManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
@@ -62,6 +60,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.DB_NAME;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RESUME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.FILES;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLES;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
@@ -91,6 +90,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         BULK_SIZE("bulkSize",  100),
         DEFAULT_GENOTYPE("defaultGenotype", Arrays.asList("0/0", "0|0")),
         ALREADY_LOADED_VARIANTS("alreadyLoadedVariants", 0),
+        LOADED_GENOTYPES("loadedGenotypes", 0),
         STAGE("stage", false),
         STAGE_RESUME("stage.resume", false),
         STAGE_PARALLEL_WRITE("stage.parallel.write", false),
@@ -169,15 +169,67 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public void dropFile(String study, int fileId) throws StorageEngineException {
+    public void removeFiles(String study, List<String> files) throws StorageEngineException {
+
+        List<Integer> fileIds = preRemoveFiles(study, files);
+
         ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
-        getDBAdaptor().deleteFile(study, Integer.toString(fileId), new QueryOptions(options));
+
+        StudyConfigurationManager scm = getStudyConfigurationManager();
+        Integer studyId = scm.getStudyId(study, null);
+
+        Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, fileIds);
+        try {
+            Runtime.getRuntime().addShutdownHook(hook);
+            getDBAdaptor().removeFiles(study, files, new QueryOptions(options));
+            postRemoveFiles(study, fileIds, false);
+        } catch (Exception e) {
+            postRemoveFiles(study, fileIds, true);
+            throw e;
+        } finally {
+            Runtime.getRuntime().removeShutdownHook(hook);
+        }
     }
 
     @Override
-    public void dropStudy(String studyName) throws StorageEngineException {
-        ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
-        getDBAdaptor().deleteStudy(studyName, new QueryOptions(options));
+    public void removeStudy(String studyName) throws StorageEngineException {
+        StudyConfigurationManager scm = getStudyConfigurationManager();
+        int studyId = scm.lockAndUpdate(studyName, studyConfiguration -> {
+            boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
+            StudyConfigurationManager.addBatchOperation(studyConfiguration, REMOVE_OPERATION_NAME, Collections.emptyList(), resume,
+                    BatchFileOperation.Type.REMOVE);
+            return studyConfiguration;
+        }).getStudyId();
+
+        Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, Collections.emptyList());
+        try {
+            Runtime.getRuntime().addShutdownHook(hook);
+            ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
+            getDBAdaptor().removeStudy(studyName, new QueryOptions(options));
+
+            scm.lockAndUpdate(studyName, studyConfiguration -> {
+                for (Integer fileId : studyConfiguration.getIndexedFiles()) {
+                    getDBAdaptor().getVariantSourceDBAdaptor().delete(studyId, fileId);
+                }
+                StudyConfigurationManager
+                        .setStatus(studyConfiguration, BatchFileOperation.Status.READY, REMOVE_OPERATION_NAME, Collections.emptyList());
+                studyConfiguration.getIndexedFiles().clear();
+                studyConfiguration.getCalculatedStats().clear();
+                studyConfiguration.getInvalidStats().clear();
+                Integer defaultCohortId = studyConfiguration.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
+                studyConfiguration.getCohorts().put(defaultCohortId, Collections.emptySet());
+                return studyConfiguration;
+            });
+        } catch (Exception e) {
+            scm.lockAndUpdate(studyName, studyConfiguration -> {
+                StudyConfigurationManager
+                        .setStatus(studyConfiguration, BatchFileOperation.Status.ERROR, REMOVE_OPERATION_NAME, Collections.emptyList());
+                return studyConfiguration;
+            });
+            throw e;
+        } finally {
+            Runtime.getRuntime().removeShutdownHook(hook);
+        }
     }
 
     @Override
@@ -398,83 +450,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public VariantQueryResult<Variant> get(Query query, QueryOptions options) throws StorageEngineException {
-        if (options == null) {
-            options = QueryOptions.empty();
-        }
-        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
-        // TODO: Use CacheManager ?
-        if (options.getBoolean(VariantSearchManager.SUMMARY)
-                || !query.containsKey(VariantQueryParam.FILES.key())
-                && !query.containsKey(VariantQueryParam.FILTER.key())
-                && !query.containsKey(VariantQueryParam.GENOTYPE.key())
-                && !query.containsKey(VariantQueryParam.SAMPLES.key())
-                && !returnedFields.contains(VariantField.STUDIES_FILES)
-                && !returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)
-                && searchActiveAndAlive()) {
-            try {
-                return getVariantSearchManager().query(dbName, query, options);
-            } catch (IOException | VariantSearchException e) {
-                throw Throwables.propagate(e);
-            }
-        } else {
-            VariantMongoDBAdaptor dbAdaptor = getDBAdaptor();
-            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
-            query = parseQuery(query, studyConfigurationManager);
-            setDefaultTimeout(options);
-            return dbAdaptor.get(query, options);
-        }
-    }
-
-    @Override
-    public VariantDBIterator iterator(Query query, QueryOptions options) throws StorageEngineException {
-        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
-        if (options.getBoolean(VariantSearchManager.SUMMARY)
-                || !query.containsKey(VariantQueryParam.FILES.key())
-                && !query.containsKey(VariantQueryParam.FILTER.key())
-                && !query.containsKey(VariantQueryParam.GENOTYPE.key())
-                && !query.containsKey(VariantQueryParam.SAMPLES.key())
-                && !returnedFields.contains(VariantField.STUDIES_FILES)
-                && !returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)
-                && searchActiveAndAlive()) {
-            try {
-                return getVariantSearchManager().iterator(dbName, query, options);
-            } catch (IOException | VariantSearchException e) {
-                throw Throwables.propagate(e);
-            }
-        } else {
-            VariantMongoDBAdaptor dbAdaptor = getDBAdaptor();
-            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
-            query = parseQuery(query, studyConfigurationManager);
-//            setDefaultTimeout(options);
-            return dbAdaptor.iterator(query, options);
-        }
-    }
-
-    @Override
-    public QueryResult<Long> count(Query query) throws StorageEngineException {
-        if (query.containsKey(VariantQueryParam.FILES.key())
-                || query.containsKey(VariantQueryParam.FILTER.key())
-                || query.containsKey(VariantQueryParam.GENOTYPE.key())
-                || query.containsKey(VariantQueryParam.SAMPLES.key())
-                || !searchActiveAndAlive()) {
-            VariantMongoDBAdaptor dbAdaptor = getDBAdaptor();
-            StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
-            query = parseQuery(query, studyConfigurationManager);
-            return dbAdaptor.count(query);
-        } else {
-            try {
-                StopWatch watch = StopWatch.createStarted();
-                long count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 1)).getNumTotalResults();
-                int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
-                return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
-            } catch (IOException | VariantSearchException e) {
-                throw Throwables.propagate(e);
-            }
-        }
-    }
-
-    public Query parseQuery(Query originalQuery, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
+    public Query preProcessQuery(Query originalQuery, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
         // Copy input query! Do not modify original query!
         Query query = originalQuery == null ? new Query() : new Query(originalQuery);
         List<String> studyNames = studyConfigurationManager.getStudyNames(QueryOptions.empty());
@@ -487,46 +463,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             query.remove(VariantQueryParam.STUDIES.key());
         }
 
-        if (isValidParam(query, VariantQueryParam.ANNOT_GO)) {
-            String value = query.getString(VariantQueryParam.ANNOT_GO.key());
-            // Check if comma separated of semi colon separated (AND or OR)
-            VariantQueryUtils.QueryOperation queryOperation = checkOperator(value);
-            // Split by comma or semi colon
-            List<String> goValues = splitValue(value, queryOperation);
+        convertGoToGeneQuery(query, cellBaseUtils);
+        convertExpressionToGeneQuery(query, cellBaseUtils);
 
-            if (queryOperation == VariantQueryUtils.QueryOperation.AND) {
-                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_GO, value, "Unimplemented AND operator");
-            }
-            query.remove(VariantQueryParam.ANNOT_GO.key());
-            List<String> genes = new ArrayList<>(query.getAsStringList(VariantQueryParam.GENE.key()));
-            Set<String> genesByGo = cellBaseUtils.getGenesByGo(goValues);
-            if (genesByGo.isEmpty()) {
-                genes.add("none");
-            } else {
-                genes.addAll(genesByGo);
-            }
-            query.put(VariantQueryParam.GENE.key(), genes);
-        }
-        if (isValidParam(query, VariantQueryParam.ANNOT_EXPRESSION)) {
-            String value = query.getString(VariantQueryParam.ANNOT_EXPRESSION.key());
-            // Check if comma separated of semi colon separated (AND or OR)
-            VariantQueryUtils.QueryOperation queryOperation = checkOperator(value);
-            // Split by comma or semi colon
-            List<String> expressionValues = splitValue(value, queryOperation);
-
-            if (queryOperation == VariantQueryUtils.QueryOperation.AND) {
-                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_EXPRESSION, value, "Unimplemented AND operator");
-            }
-            query.remove(VariantQueryParam.ANNOT_EXPRESSION.key());
-            List<String> genes = new ArrayList<>(query.getAsStringList(VariantQueryParam.GENE.key()));
-            Set<String> genesByExpression = cellBaseUtils.getGenesByExpression(expressionValues);
-            if (genesByExpression.isEmpty()) {
-                genes.add("none");
-            } else {
-                genes.addAll(genesByExpression);
-            }
-            query.put(VariantQueryParam.GENE.key(), genes);
-        }
         return query;
     }
 

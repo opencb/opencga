@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Map;
 import java.util.Set;
-
-import static java.lang.Math.toIntExact;
 
 /**
  * Created by imedina on 25/11/14.
@@ -33,6 +33,7 @@ public class AnnotationSet {
     private Set<Annotation> annotations;
     private String creationDate;
 
+    private int release;
     private Map<String, Object> attributes;
 
 
@@ -40,25 +41,27 @@ public class AnnotationSet {
     }
 
     public AnnotationSet(String name, long variableSetId, Set<Annotation> annotations, Map<String, Object> attributes) {
-        this(name, variableSetId, annotations, TimeUtils.getTime(), attributes);
+        this(name, variableSetId, annotations, TimeUtils.getTime(), 1, attributes);
     }
 
-    public AnnotationSet(String name, long variableSetId, Set<Annotation> annotations, String creationDate,
+    public AnnotationSet(String name, long variableSetId, Set<Annotation> annotations, String creationDate, int release,
                          Map<String, Object> attributes) {
         this.name = name;
         this.variableSetId = variableSetId;
         this.annotations = annotations;
         this.creationDate = creationDate;
+        this.release = release;
         this.attributes = attributes;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("AnnotationSet{");
-        sb.append("id='").append(name).append('\'');
+        sb.append("name='").append(name).append('\'');
         sb.append(", variableSetId=").append(variableSetId);
         sb.append(", annotations=").append(annotations);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -69,75 +72,74 @@ public class AnnotationSet {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof AnnotationSet)) {
+
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         AnnotationSet that = (AnnotationSet) o;
-
-        if (variableSetId != that.variableSetId) {
-            return false;
-        }
-        if (name != null ? !name.equals(that.name) : that.name != null) {
-            return false;
-        }
-        if (annotations != null ? !annotations.equals(that.annotations) : that.annotations != null) {
-            return false;
-        }
-        if (creationDate != null ? !creationDate.equals(that.creationDate) : that.creationDate != null) {
-            return false;
-        }
-        return !(attributes != null ? !attributes.equals(that.attributes) : that.attributes != null);
-
+        return new EqualsBuilder().append(variableSetId, that.variableSetId).append(release, that.release).append(name, that.name)
+                .append(annotations, that.annotations).append(creationDate, that.creationDate).append(attributes, that.attributes)
+                .isEquals();
     }
 
     @Override
     public int hashCode() {
-        int result = name != null ? name.hashCode() : 0;
-        result = 31 * result + toIntExact(variableSetId);
-        result = 31 * result + (annotations != null ? annotations.hashCode() : 0);
-        result = 31 * result + (creationDate != null ? creationDate.hashCode() : 0);
-        result = 31 * result + (attributes != null ? attributes.hashCode() : 0);
-        return result;
+        return new HashCodeBuilder(17, 37).append(name).append(variableSetId).append(annotations).append(creationDate).append(release)
+                .append(attributes).toHashCode();
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public AnnotationSet setName(String name) {
         this.name = name;
+        return this;
     }
 
     public long getVariableSetId() {
         return variableSetId;
     }
 
-    public void setVariableSetId(long variableSetId) {
+    public AnnotationSet setVariableSetId(long variableSetId) {
         this.variableSetId = variableSetId;
+        return this;
     }
 
     public Set<Annotation> getAnnotations() {
         return annotations;
     }
 
-    public void setAnnotations(Set<Annotation> annotations) {
+    public AnnotationSet setAnnotations(Set<Annotation> annotations) {
         this.annotations = annotations;
+        return this;
     }
 
     public String getCreationDate() {
         return creationDate;
     }
 
-    public void setCreationDate(String creationDate) {
+    public AnnotationSet setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public AnnotationSet setRelease(int release) {
+        this.release = release;
+        return this;
     }
 
     public Map<String, Object> getAttributes() {
         return attributes;
     }
 
-    public void setAttributes(Map<String, Object> attributes) {
+    public AnnotationSet setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
     }
 }

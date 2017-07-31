@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,13 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.catalog.models.VariableSet;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -61,7 +63,9 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         }
     }
 
-    QueryResult<Study> insert(long projectId, Study study, QueryOptions options) throws CatalogDBException;
+    QueryResult<Study> insert(long projectId, Study study, String owner, QueryOptions options) throws CatalogDBException;
+
+    boolean hasStudyPermission(long studyId, String user, StudyAclEntry.StudyPermissions permission) throws CatalogDBException;
 
     //@Deprecated
     //QueryResult<Study> getAllStudies(QueryOptions options) throws CatalogDBException;
@@ -69,6 +73,8 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
     QueryResult<Study> getAllStudiesInProject(long projectId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Study> get(long studyId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
 
     void updateStudyLastModified(long studyId) throws CatalogDBException;
 
@@ -89,10 +95,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
     String getOwnerId(long studyId) throws CatalogDBException;
 
-    QueryResult<Group> createGroup(long studyId, String groupId, List<String> userIds) throws CatalogDBException;
-
-    @Deprecated
-    QueryResult<Group> getGroup(long studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Group> createGroup(long studyId, Group group) throws CatalogDBException;
 
     /**
      * Obtains the groups that satisfies the query.
@@ -111,10 +114,9 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      * @param studyId study id.
      * @param groupId group id.
      * @param members new list of users that will compose the group.
-     * @return The group after being updated.
      * @throws CatalogDBException when any of the members do not exist.
      */
-    QueryResult<Group> setUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+    void setUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
 
     /**
      * Adds the list of members to the groupId. If the groupId did not already existed, it creates it.
@@ -122,10 +124,9 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      * @param studyId studyId
      * @param groupId Group id.
      * @param members List of members that will be added to the group.
-     * @return The group that has been updated/created.
      * @throws CatalogDBException when any of the studyId or the members do not exist.
      */
-    QueryResult<Group> addUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+    void addUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
 
     /**
      * Removes the list of members from the group.
@@ -137,6 +138,8 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      */
     void removeUsersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
 
+    void removeUsersFromAllGroups(long studyId, List<String> users) throws CatalogDBException;
+
     /**
      * Delete a group.
      *
@@ -146,7 +149,19 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      */
     void deleteGroup(long studyId, String groupId) throws CatalogDBException;
 
-    void updateSyncFromGroup(long studyId, String groupId, Group.Sync syncedFrom) throws CatalogDBException;
+    void syncGroup(long studyId, String groupId, Group.Sync syncedFrom) throws CatalogDBException;
+
+    /**
+     * Resync the user groups from an authentication origin.
+     * 1. Take the user out of all the synced groups.
+     * 2. Add the user to any group from the groupList that matches the name in the database and is synced with the authOrigin given.
+     *
+     * @param user User to be resynced in groups.
+     * @param groupList List containing possible groups that are synced and where the user should be added to.
+     * @param authOrigin Authentication origin of the synced groups.
+     * @throws CatalogDBException CatalogDBException.
+     */
+    void resyncUserWithSyncedGroups(String user, List<String> groupList, String authOrigin) throws CatalogDBException;
 
     /*
      * VariableSet Methods
@@ -189,17 +204,38 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
     QueryResult<VariableSet> createVariableSet(long studyId, VariableSet variableSet) throws CatalogDBException;
 
-    QueryResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable) throws CatalogDBException;
+    QueryResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable, String user)
+            throws CatalogDBException, CatalogAuthorizationException;
 
-    QueryResult<VariableSet> renameFieldVariableSet(long variableSetId, String oldName, String newName) throws CatalogDBException;
+    QueryResult<VariableSet> renameFieldVariableSet(long variableSetId, String oldName, String newName, String user)
+            throws CatalogDBException, CatalogAuthorizationException;
 
-    QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name) throws CatalogDBException;
+    QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name, String user)
+            throws CatalogDBException, CatalogAuthorizationException;
 
     QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options) throws CatalogDBException;
 
+    /**
+     * Get variable set.
+     *
+     * @param variableSetId variable set id.
+     * @param options Query options.
+     * @param user User asking for the variable set.
+     * @param additionalPermission Additional permission to be checked apart from VIEW_VARIABLE_SET
+     * @return variableSet
+     * @throws CatalogDBException catalogDBException.
+     * @throws CatalogAuthorizationException if there is any permission error.
+     */
+    QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options, String user, String additionalPermission)
+            throws CatalogDBException, CatalogAuthorizationException;
+
     QueryResult<VariableSet> getVariableSets(Query query, QueryOptions queryOptions) throws CatalogDBException;
 
-    QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions) throws CatalogDBException;
+    QueryResult<VariableSet> getVariableSets(Query query, QueryOptions queryOptions, String user)
+            throws CatalogDBException, CatalogAuthorizationException;
+
+    QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions, String user)
+            throws CatalogDBException, CatalogAuthorizationException;
 
     long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException;
 
@@ -219,20 +255,20 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         DATASTORES("dataStores", TEXT_ARRAY, ""),
         SIZE("size", INTEGER_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),
-        ACL("acl", TEXT_ARRAY, ""),
-        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
-        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
         PROJECT_ID("projectId", INTEGER_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]",
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         STATS("stats", TEXT, ""),
         TYPE("type", TEXT, ""),
+        RELEASE("release", INTEGER, ""),
 
         GROUPS("groups", TEXT_ARRAY, ""),
         GROUP_NAME("groups.name", TEXT_ARRAY, ""),
         GROUP_USER_IDS("groups.userIds", TEXT_ARRAY, ""),
         GROUP_SYNCED_FROM("groups.syncedFrom", TEXT_ARRAY, ""),
+        GROUP_SYNCED_FROM_AUTH_ORIGIN("groups.syncedFrom.authOrigin", TEXT, ""),
+        GROUP_SYNCED_FROM_REMOTE_GROUP("groups.syncedFrom.remoteGroup", TEXT, ""),
 
         ROLES("roles", TEXT_ARRAY, ""),
         ROLES_ID("roles.id", TEXT, ""),
@@ -249,6 +285,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         EXPERIMENT_CENTER("experiments.center", TEXT_ARRAY, ""),
         EXPERIMENT_RESPONSIBLE("experiments.responsible", TEXT_ARRAY, ""),
 
+        OWNER("_ownerId", TEXT, ""),
 //        FILE_ID("files.id", INTEGER_ARRAY, ""),
 //        FILE_NAME("files.name", TEXT_ARRAY, ""),
 //        FILE_TYPE("files.type", TEXT_ARRAY, ""),
@@ -335,12 +372,14 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         ID("id", DOUBLE, ""),
         NAME("name", TEXT, ""),
         UNIQUE("unique", BOOLEAN, ""),
+        CONFIDENTIAL("confidential", BOOLEAN, ""),
         DESCRIPTION("description", TEXT, ""),
         VARIABLE("variables", TEXT_ARRAY, ""),
         VARIABLE_NAME("variables.name", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         NATTRIBUTES("nattributes", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         BATTRIBUTES("battributes", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
+        RELEASE("release", INTEGER, ""),
         STUDY_ID("studyId", DECIMAL, "");
 
         private static Map<String, VariableSetParams> map;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
 
 import java.util.Collections;

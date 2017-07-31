@@ -1,11 +1,10 @@
 import json
-import unittest
-
 import re
+import unittest
 from urlparse import parse_qs
 
-from sure import expect
 import httpretty
+from sure import expect
 
 from pyCGA.opencgarestclients import OpenCGAClient
 
@@ -110,7 +109,13 @@ class OpenCGAClinetTest(unittest.TestCase):
         expect(open_cga_client.session_id).to.equal('XOkCfKX09FV0YyPJCBvd')
         open_cga_client.projects.info('pt')
         expect(httpretty.last_request()).to.have.property(
-            "querystring").which.should.have.key('sid').which.should.equal(['XOkCfKX09FV0YyPJCBvd'])
+            "headers").which.have.property('headers').which.should.equal(['Host: mock-opencga\r\n',
+                                                                          'Connection: keep-alive\r\n',
+                                                                          'Accept-Encoding: gzip\r\n',
+                                                                          'Accept: */*\r\n',
+                                                                          'User-Agent: python-requests/2.17.3\r\n',
+                                                                          'Authorization: Bearer XOkCfKX09FV0YyPJCBvd\r\n']
+                                                                         )
 
     def test_extra_parameters(self):
         open_cga_client = OpenCGAClient(self.configuration, session_id='XOkCfKX09FV0YyPJCBvd')
@@ -126,9 +131,8 @@ class OpenCGAClinetTest(unittest.TestCase):
         expect(len(r.get())).equal_to(10000)
         r = open_cga_client.files.search(study='st', limit=500)
         expect(len(r.get())).equal_to(500)
-        for batch in open_cga_client.analysis_variant.query(5001):
+        for batch in open_cga_client.analysis_variant.query(5001, data={}):
             expect(len(batch.get())).lower_than_or_equal_to(5001)
 
     def tearDown(self):
         httpretty.disable()
-

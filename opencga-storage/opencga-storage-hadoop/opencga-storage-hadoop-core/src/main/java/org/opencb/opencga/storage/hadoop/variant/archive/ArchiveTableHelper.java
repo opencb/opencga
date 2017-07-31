@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ public class ArchiveTableHelper extends GenomeHelper {
         keyFactory = new ArchiveRowKeyFactory(getChunkSize(), getSeparator());
     }
 
-    public ArchiveTableHelper(GenomeHelper helper, VariantSource source) throws IOException {
+    public ArchiveTableHelper(GenomeHelper helper, VariantSource source) {
         super(helper);
         this.meta.set(new VcfMeta(source));
         column = Bytes.toBytes(getColumnName(source));

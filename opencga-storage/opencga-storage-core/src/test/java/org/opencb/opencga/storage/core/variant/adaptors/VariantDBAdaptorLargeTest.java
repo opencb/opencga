@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,17 +23,17 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantNormalizer;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -41,9 +41,8 @@ import java.util.stream.Stream;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.withSampleData;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
  * Tests that all the VariantDBAdaptor filters and methods work correctly with more than one study loaded.
@@ -593,17 +592,29 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         QueryResult<Long> queryResultFile = dbAdaptor.count(query);
 
         int expectedCount = 0;
+        Set<String> expectedVariants = new HashSet<>();
         for (Variant variant : allVariants.getResult()) {
-            Set<Integer> returnedFileIds = variant.getStudies()
+            if (variant.getStudies()
                     .stream()
                     .map(StudyEntry::getFiles)
                     .flatMap(Collection::stream)
                     .filter(fileEntry -> sameVariant(variant, fileEntry.getCall()))
                     .map(FileEntry::getFileId)
                     .map(Integer::valueOf)
-                    .collect(Collectors.toSet());
-            if (returnedFileIds.containsAll(Collections.singletonList(file1))) {
+                    .anyMatch(file1::equals)) {
                 expectedCount++;
+                expectedVariants.add(variant.toString());
+            }
+        }
+        Set<String> readVariants = queryResult.getResult().stream().map(Variant::toString).collect(Collectors.toSet());
+        for (String expectedVariant : expectedVariants) {
+            if (!readVariants.contains(expectedVariant)) {
+                System.out.println("missing expected variant : " + expectedVariant);
+            }
+        }
+        for (String readVariant : readVariants) {
+            if (!expectedVariants.contains(readVariant)) {
+                System.out.println("extra variant : " + readVariant);
             }
         }
         assertTrue(expectedCount > 0);
@@ -689,8 +700,14 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
             return true;
         }
         String[] split = call.split(":", -1);
-        List<VariantNormalizer.VariantKeyFields> normalized = new VariantNormalizer()
-                .normalize(variant.getChromosome(), Integer.parseInt(split[0]), split[1], Arrays.asList(split[2].split(",")));
+        List<VariantNormalizer.VariantKeyFields> normalized;
+        if (variant.isSymbolic()) {
+            normalized = new VariantNormalizer()
+                    .normalizeSymbolic(Integer.parseInt(split[0]), variant.getEnd(), split[1], Arrays.asList(split[2].split(",")));
+        } else {
+            normalized = new VariantNormalizer()
+                    .normalize(variant.getChromosome(), Integer.parseInt(split[0]), split[1], Arrays.asList(split[2].split(",")));
+        }
         for (VariantNormalizer.VariantKeyFields variantKeyFields : normalized) {
             if (variantKeyFields.getStart() == variant.getStart()
                     && variantKeyFields.getReference().equals(variant.getReference())

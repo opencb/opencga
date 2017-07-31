@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
-import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -27,13 +26,12 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
-import org.opencb.opencga.catalog.config.Admin;
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.core.config.Admin;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Metadata;
-import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.slf4j.LoggerFactory;
 
@@ -127,7 +125,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
                 Document keys = new Document();
                 Iterator fieldsIterator = userIndex.get("fields").entrySet().iterator();
                 while (fieldsIterator.hasNext()) {
-                    Map.Entry pair = (Map.Entry)fieldsIterator.next();
+                    Map.Entry pair = (Map.Entry) fieldsIterator.next();
                     keys.append((String) pair.getKey(), pair.getValue());
 
                     if (!indexName.isEmpty()) {
@@ -162,44 +160,9 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         Document metadataObject = getMongoDBDocument(metadata, "Metadata");
         metadataObject.put(PRIVATE_ID, "METADATA");
         Document adminDocument = getMongoDBDocument(admin, "Admin");
-        adminDocument.put("sessions", new ArrayList<>());
         metadataObject.put("admin", adminDocument);
 
         metaCollection.insert(metadataObject, null);
-    }
-
-    public void checkAdmin(String password) throws CatalogException {
-        Bson query = Filters.eq("admin.password", CatalogAuthenticationManager.cypherPassword(password));
-        if (metaCollection.count(query).getResult().get(0) == 0) {
-            throw new CatalogDBException("The admin password is incorrect.");
-        }
-    }
-
-    @Override
-    public QueryResult<Session> addAdminSession(Session session) throws CatalogDBException {
-        long startTime = startQuery();
-
-        Bson query = new Document(PRIVATE_ID, "METADATA");
-        Bson updates = Updates.push("admin.sessions",
-                new Document("$each", Arrays.asList(getMongoDBDocument(session, "Session")))
-                        .append("$slice", -5));
-        QueryResult<UpdateResult> update = metaCollection.update(query, updates, null);
-
-        if (update.first().getModifiedCount() == 0) {
-            throw new CatalogDBException("An internal error occurred when logging the admin");
-        }
-
-        return endQuery("Login", startTime, Collections.singletonList(session));
-    }
-
-    @Override
-    public void logout(String sessionId) throws CatalogDBException {
-        Bson query = new Document("_id", "METADATA");
-        Bson update = new Document("$pull", new Document("admin.sessions", new Document("id", sessionId)));
-        QueryResult<UpdateResult> updateQueryResult = metaCollection.update(query, update, null);
-        if (updateQueryResult.first().getModifiedCount() == 0) {
-            throw new CatalogDBException("Internal error: Could not remove closed session for admin");
-        }
     }
 
     @Override
@@ -210,9 +173,35 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     }
 
     @Override
-    public boolean checkValidAdminSession(String id) {
-        Document query = new Document(PRIVATE_ID, "METADATA").append("admin.sessions.id", id);
-        return metaCollection.count(query).first() == 1;
+    public String readSecretKey() throws CatalogDBException {
+        Bson query = Filters.eq("_id", "METADATA");
+        QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
+        return (MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getSecretKey();
     }
 
+    @Override
+    public String readAlgorithm() throws CatalogDBException {
+        Bson query = Filters.eq("_id", "METADATA");
+        QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
+        return (MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getAlgorithm();
+    }
+
+    @Override
+    public void updateAdmin(Admin admin) throws CatalogDBException {
+        Bson query = Filters.eq("_id", "METADATA");
+
+        Document adminDocument = new Document();
+        if (admin.getSecretKey() != null) {
+            adminDocument.append("admin.secretKey", admin.getSecretKey());
+        }
+
+        if (admin.getAlgorithm() != null) {
+            adminDocument.append("admin.algorithm", admin.getAlgorithm());
+        }
+
+        if (adminDocument.size() > 0) {
+            Bson update = new Document("$set", adminDocument);
+            this.metaCollection.update(query, update, QueryOptions.empty());
+        }
+    }
 }

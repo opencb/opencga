@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,12 +83,13 @@ public class Job extends AbstractAcl<JobAclEntry> {
     private long visits;
     private JobStatus status;
     private long size;
-    private long outDirId;
-    private List<Long> input;    // input files to this job
-    private List<Long> output;   // output files of this job
+    private File outDir;
+    private List<File> input;    // input files to this job
+    private List<File> output;   // output files of this job
     private List<String> tags;
 
     private Map<String, String> params;
+    private int release;
     private Map<String, Object> attributes;
     private Map<String, Object> resourceManagerAttributes;
     private String error;
@@ -98,140 +99,23 @@ public class Job extends AbstractAcl<JobAclEntry> {
     public Job() {
     }
 
-    public Job(String name, String userId, String executable, Type type, List<Long> input, List<Long> output, long outDirId,
-               Map<String, String> params) {
+    public Job(String name, String userId, String executable, Type type, List<File> input, List<File> output, File outDir,
+               Map<String, String> params, int release) {
         this(-1, name, userId, "", type, TimeUtils.getTime(), "", -1, -1, "", "", executable, "", 0, new JobStatus(JobStatus.PREPARED),
-                -1, outDirId, input, output, new ArrayList<>(), params, new HashMap<>(), new HashMap<>(), "", "");
+                -1, outDir, input, output, new ArrayList<>(), params, release, new HashMap<>(), new HashMap<>(), "", "");
     }
 
-    public Job(String name, String userId, String toolName, String description, String commandLine, long outDirId, List<Long> input) {
+    public Job(String name, String userId, String toolName, String description, String commandLine, File outDir, List<File> input,
+               int release) {
         // FIXME: Modify this to take into account both toolName and executable for RC2
-        this(-1, name, userId, toolName, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", null, commandLine,
-                -1, new JobStatus(JobStatus.PREPARED), 0, outDirId, input, Collections.emptyList(),
-                Collections.emptyList(), Collections.emptyList(), new HashMap<>(), new HashMap<>(), new HashMap<>(), null);
-    }
-
-    @Deprecated
-    public Job(long id, String name, String userId, String executable, String creationDate, String description, long startTime,
-               long endTime, String outputError, String commandLine, long visits, JobStatus jobStatus, long size, long outDirId,
-               List<Long> input, List<Long> output, List<String> tags, Map<String, Object> attributes,
-               Map<String, Object> resourceManagerAttributes) {
-        this.id = id;
-        this.name = name;
-        this.userId = userId;
-        this.executable = executable;
-        this.creationDate = creationDate;
-        this.description = description;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.outputError = outputError;
-        this.commandLine = commandLine;
-        this.visits = visits;
-        this.status = jobStatus;
-        this.size = size;
-        this.outDirId = outDirId;
-        this.input = input;
-        this.output = output;
-        this.acl = Collections.emptyList();
-        this.tags = tags;
-        this.attributes = attributes;
-        this.resourceManagerAttributes = resourceManagerAttributes;
-        if (this.resourceManagerAttributes == null) {
-            this.resourceManagerAttributes = new HashMap<>();
-        }
-        //Initializing attributes maps.
-        if (!this.resourceManagerAttributes.containsKey(Job.JOB_SCHEDULER_NAME)) {
-            this.resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, "");
-        }
-        if (!this.attributes.containsKey(Job.TYPE)) {
-            this.attributes.put(Job.TYPE, Type.ANALYSIS);
-        }
-        error = ERRNO_NONE;
-        errorDescription = null;
-    }
-
-    public Job(long id, String name, String userId, String toolName, String executable, String creationDate, String description,
-               long startTime, long endTime, String outputError, String execution, String commandLine, long visits, JobStatus status,
-               long size, long outDirId, List<Long> input, List<Long> output, List<String> tags, List<JobAclEntry> acl,
-               Map<String, String> params, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error) {
-        this.id = id;
-        this.name = name;
-        this.userId = userId;
-        this.toolName = toolName;
-        this.executable = executable;
-        this.creationDate = creationDate;
-        this.description = description;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.outputError = outputError;
-        this.execution = execution;
-        this.commandLine = commandLine;
-        this.visits = visits;
-        this.status = status;
-        this.size = size;
-        this.outDirId = outDirId;
-        this.input = input;
-        this.output = output;
-        this.tags = tags;
-        this.acl = acl;
-        this.params = params;
-        this.attributes = attributes;
-        this.resourceManagerAttributes = resourceManagerAttributes;
-        if (this.resourceManagerAttributes == null) {
-            this.resourceManagerAttributes = new HashMap<>();
-        }
-        if (!this.resourceManagerAttributes.containsKey(Job.JOB_SCHEDULER_NAME)) {
-            this.resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, "");
-        }
-        if (!this.attributes.containsKey(Job.TYPE)) {
-            this.attributes.put(Job.TYPE, Type.ANALYSIS);
-        }
-        this.error = error;
-        this.errorDescription = null;
-    }
-
-    public Job(long id, String name, String userId, String executable, String creationDate, String description, long startTime,
-               long endTime, String outputError, String execution, String commandLine, long visits, JobStatus status, long size,
-               long outDirId, List<Long> input, List<Long> output, List<String> tags, List<JobAclEntry> acl, Map<String, String> params,
-               Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error, String errorDescription) {
-        this.id = id;
-        this.name = name;
-        this.userId = userId;
-        this.executable = executable;
-        this.creationDate = creationDate;
-        this.description = description;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.outputError = outputError;
-        this.execution = execution;
-        this.commandLine = commandLine;
-        this.visits = visits;
-        this.status = status;
-        this.size = size;
-        this.outDirId = outDirId;
-        this.input = input;
-        this.output = output;
-        this.tags = tags;
-        this.acl = acl;
-        this.params = params;
-        this.attributes = attributes;
-        this.resourceManagerAttributes = resourceManagerAttributes;
-        if (this.resourceManagerAttributes == null) {
-            this.resourceManagerAttributes = new HashMap<>();
-        }
-        if (!this.resourceManagerAttributes.containsKey(Job.JOB_SCHEDULER_NAME)) {
-            this.resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, "");
-        }
-        if (!this.attributes.containsKey(Job.TYPE)) {
-            this.attributes.put(Job.TYPE, Type.ANALYSIS);
-        }
-        this.error = error;
-        this.errorDescription = errorDescription;
+        this(-1, name, userId, toolName, Type.ANALYSIS, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", null,
+                null, commandLine, -1, new JobStatus(JobStatus.PREPARED), 0, outDir, input, Collections.emptyList(),
+                Collections.emptyList(), new HashMap<>(), release, new HashMap<>(), new HashMap<>(), ERRNO_NONE, null);
     }
 
     public Job(long id, String name, String userId, String toolName, Type type, String creationDate, String description, long startTime,
                long endTime, String outputError, String execution, String executable, String commandLine, long visits, JobStatus status,
-               long size, long outDirId, List<Long> input, List<Long> output, List<String> tags, Map<String, String> params,
+               long size, File outDir, List<File> input, List<File> output, List<String> tags, Map<String, String> params, int release,
                Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error, String errorDescription) {
         this.id = id;
         this.name = name;
@@ -243,25 +127,31 @@ public class Job extends AbstractAcl<JobAclEntry> {
         this.startTime = startTime;
         this.endTime = endTime;
         this.outputError = outputError;
-        this.execution = execution;
-        this.executable = executable;
+        this.execution = execution != null ? execution : "";
+        this.executable = executable != null ? executable : "";
         this.commandLine = commandLine;
         this.visits = visits;
         this.status = status;
         this.size = size;
-        this.outDirId = outDirId;
+        this.outDir = outDir;
         this.input = input;
         this.output = output;
         this.tags = tags;
         this.params = params;
+        this.release = release;
         this.attributes = attributes;
+        this.params = params != null ? params : new HashMap<>();
+        this.release = release;
+        this.attributes = attributes != null ? attributes : new HashMap<>();
         this.resourceManagerAttributes = resourceManagerAttributes;
         if (this.resourceManagerAttributes == null) {
             this.resourceManagerAttributes = new HashMap<>();
         }
         this.resourceManagerAttributes.putIfAbsent(Job.JOB_SCHEDULER_NAME, "");
-        this.error = error;
-        this.errorDescription = errorDescription;
+        this.attributes.putIfAbsent(Job.TYPE, Type.ANALYSIS);
+        this.error = error != null ? error : "";
+        this.errorDescription = errorDescription != null ? errorDescription : "";
+        this.acl = Collections.emptyList();
     }
 
     public static class JobStatus extends Status {
@@ -346,11 +236,12 @@ public class Job extends AbstractAcl<JobAclEntry> {
         sb.append(", visits=").append(visits);
         sb.append(", status=").append(status);
         sb.append(", size=").append(size);
-        sb.append(", outDirId=").append(outDirId);
+        sb.append(", outDir=").append(outDir);
         sb.append(", input=").append(input);
         sb.append(", output=").append(output);
         sb.append(", tags=").append(tags);
         sb.append(", params=").append(params);
+        sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
         sb.append(", resourceManagerAttributes=").append(resourceManagerAttributes);
         sb.append(", error='").append(error).append('\'');
@@ -494,29 +385,29 @@ public class Job extends AbstractAcl<JobAclEntry> {
         return this;
     }
 
-    public long getOutDirId() {
-        return outDirId;
+    public File getOutDir() {
+        return outDir;
     }
 
-    public Job setOutDirId(long outDirId) {
-        this.outDirId = outDirId;
+    public Job setOutDir(File outDir) {
+        this.outDir = outDir;
         return this;
     }
 
-    public List<Long> getInput() {
+    public List<File> getInput() {
         return input;
     }
 
-    public Job setInput(List<Long> input) {
+    public Job setInput(List<File> input) {
         this.input = input;
         return this;
     }
 
-    public List<Long> getOutput() {
+    public List<File> getOutput() {
         return output;
     }
 
-    public Job setOutput(List<Long> output) {
+    public Job setOutput(List<File> output) {
         this.output = output;
         return this;
     }
@@ -541,6 +432,15 @@ public class Job extends AbstractAcl<JobAclEntry> {
 
     public Job setParams(Map<String, String> params) {
         this.params = params;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public Job setRelease(int release) {
+        this.release = release;
         return this;
     }
 

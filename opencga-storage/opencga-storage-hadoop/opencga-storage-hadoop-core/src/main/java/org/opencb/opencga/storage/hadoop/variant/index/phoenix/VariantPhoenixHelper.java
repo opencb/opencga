@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_CONSERVATION;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_FUNCTIONAL_SCORE;
@@ -54,9 +55,13 @@ public class VariantPhoenixHelper {
     public static final String POPULATION_FREQUENCY_PREFIX = ANNOTATION_PREFIX + "PF_";
     public static final String FUNCTIONAL_SCORE_PREFIX = ANNOTATION_PREFIX + "FS_";
     public static final String STATS_PROTOBUF_SUFIX = "_PB";
+    public static final String SAMPLE_DATA_SUFIX = "_S";
+    public static final byte[] SAMPLE_DATA_SUFIX_BYTES = Bytes.toBytes(SAMPLE_DATA_SUFIX);
     public static final byte[] STATS_PROTOBUF_SUFIX_BYTES = Bytes.toBytes(STATS_PROTOBUF_SUFIX);
     public static final String MAF_SUFIX = "_MAF";
     public static final String MGF_SUFIX = "_MGF";
+    public static final char COLUMN_KEY_SEPARATOR = '_';
+    public static final String COLUMN_KEY_SEPARATOR_STR = String.valueOf(COLUMN_KEY_SEPARATOR);
     private static final String STUDY_POP_FREQ_SEPARATOR = "_";
     private final PhoenixHelper phoenixHelper;
     private final GenomeHelper genomeHelper;
@@ -267,6 +272,14 @@ public class VariantPhoenixHelper {
         addColumns(con, table, studyId, PUnsignedIntArray.INSTANCE, VariantTableStudyRow.HET_REF, VariantTableStudyRow.HOM_VAR,
                 VariantTableStudyRow.OTHER, VariantTableStudyRow.NOCALL);
         addColumns(con, table, studyId, PVarbinary.INSTANCE, VariantTableStudyRow.COMPLEX, VariantTableStudyRow.FILTER_OTHER);
+        con.commit();
+    }
+
+    public void registerNewSamples(Connection con, String table, Integer studyId, Collection<Integer> sampleIds) throws SQLException {
+        createTableIfNeeded(con, table);
+        List<Column> columns = sampleIds.stream().map(sampleId -> getSampleColumn(studyId, sampleId)).collect(Collectors.toList());
+        columns.add(getStudyColumn(studyId));
+        phoenixHelper.addMissingColumns(con, table, columns, true);
         con.commit();
     }
 
@@ -487,6 +500,18 @@ public class VariantPhoenixHelper {
 
     public static Column getMgfColumn(int studyId, int cohortId) {
         return Column.build(STATS_PREFIX + studyId + "_" + cohortId + MGF_SUFIX, PFloat.INSTANCE);
+    }
+
+    public static byte[] buildSampleColumnKey(int studyId, int sampleId) {
+        return Bytes.toBytes(buildSampleColumnKey(studyId, sampleId, new StringBuilder()).toString());
+    }
+
+    public static StringBuilder buildSampleColumnKey(int studyId, int sampleId, StringBuilder stringBuilder) {
+        return stringBuilder.append(studyId).append(COLUMN_KEY_SEPARATOR).append(sampleId).append(SAMPLE_DATA_SUFIX);
+    }
+
+    public static Column getSampleColumn(int studyId, int sampleId) {
+        return Column.build(buildSampleColumnKey(studyId, sampleId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
     }
 
 }

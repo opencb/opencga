@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.managers;
 
 import org.junit.After;
@@ -58,9 +74,6 @@ public class FamilyManagerTest extends GenericTest {
 
     @After
     public void tearDown() throws Exception {
-        if (sessionIdUser != null) {
-            catalogManager.logout("user", sessionIdUser);
-        }
     }
 
     @Test
@@ -70,7 +83,7 @@ public class FamilyManagerTest extends GenericTest {
         List<Individual> children = Arrays.asList(
                 new Individual().setName("son"), new Individual().setName("daughter")
         );
-        Family family = new Family("family", father, mother, children, false, "");
+        Family family = new Family("family", father, mother, children, false, "", 1);
 
         QueryResult<Family> familyQueryResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, familyQueryResult.getNumResults());

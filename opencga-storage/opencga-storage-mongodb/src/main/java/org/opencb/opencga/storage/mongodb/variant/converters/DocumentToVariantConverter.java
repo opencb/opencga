@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,7 +110,7 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
         map.put(VariantField.ANNOTATION_ID, emptyList());
         map.put(VariantField.ANNOTATION_XREFS, singletonList(ANNOTATION_FIELD + '.' + XREFS_FIELD));
         map.put(VariantField.ANNOTATION_HGVS, emptyList());
-        map.put(VariantField.ANNOTATION_DISPLAY_CONSEQUENCE_TYPE, emptyList());
+        map.put(VariantField.ANNOTATION_DISPLAY_CONSEQUENCE_TYPE, singletonList(ANNOTATION_FIELD + '.' + DISPLAY_CONSEQUENCE_TYPE_FIELD));
         map.put(VariantField.ANNOTATION_CONSEQUENCE_TYPES, singletonList(ANNOTATION_FIELD + '.' + CONSEQUENCE_TYPE_FIELD));
         map.put(VariantField.ANNOTATION_POPULATION_FREQUENCIES, singletonList(ANNOTATION_FIELD + '.' + POPULATION_FREQUENCIES_FIELD));
         map.put(VariantField.ANNOTATION_MINOR_ALLELE, emptyList());

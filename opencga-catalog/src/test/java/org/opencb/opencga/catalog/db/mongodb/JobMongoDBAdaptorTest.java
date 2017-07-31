@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,12 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -59,8 +61,8 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void deleteJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
 
-        Job job = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", 4, Collections.<Long>emptyList
-                ()), studyId, null).first();
+        Job job = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", new File().setId(4), Collections.emptyList(), 1),
+                studyId, null).first();
         long jobId = job.getId();
         assertEquals(Job.JobStatus.PREPARED, job.getStatus().getName());
         catalogJobDBAdaptor.delete(jobId);
@@ -82,8 +84,8 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void getJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
 
-        Job job = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", 4, Collections.<Long>emptyList
-                ()), studyId, null).first();
+        Job job = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", new File().setId(4), Collections.emptyList(), 1),
+                studyId, null).first();
         long jobId = job.getId();
 
         job = catalogJobDBAdaptor.get(jobId, null).first();
@@ -101,8 +103,8 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void incJobVisits() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        Job jobBefore = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", 4, Collections
-                .<Long>emptyList()), studyId, null).first();
+        Job jobBefore = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", new File().setId(4),
+                        Collections.emptyList(), 1), studyId, null).first();
         long jobId = jobBefore.getId();
 
         Long visits = (Long) catalogJobDBAdaptor.incJobVisits(jobBefore.getId()).first().get("visits");
@@ -160,9 +162,9 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void extractFilesFromJobs() throws Exception {
         Job job = new Job();
-        job.setOutDirId(5);
-        job.setInput(Arrays.asList(1L, 2L, 3L, 4L));
-        job.setOutput(Arrays.asList(6L, 7L, 8L, 9L));
+        job.setOutDir(new File().setId(5));
+        job.setInput(Arrays.asList(new File().setId(1), new File().setId(2), new File().setId(3), new File().setId(4)));
+        job.setOutput(Arrays.asList(new File().setId(6), new File().setId(7), new File().setId(8), new File().setId(9)));
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         job.setName("jobName1");
         QueryResult<Job> insert = catalogJobDBAdaptor.insert(job, studyId, null);
@@ -171,12 +173,12 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         catalogJobDBAdaptor.extractFilesFromJobs(new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId), longList);
 
         QueryResult<Job> jobQueryResult = catalogJobDBAdaptor.get(insert.first().getId(), QueryOptions.empty());
-        assertEquals(-1L, jobQueryResult.first().getOutDirId());
+        assertEquals(-1L, jobQueryResult.first().getOutDir().getId());
 
-        assertTrue(jobQueryResult.first().getInput().containsAll(Arrays.asList(2L, 4L)));
+        assertTrue(jobQueryResult.first().getInput().stream().map(File::getId).collect(Collectors.toList()).containsAll(Arrays.asList(2L, 4L)));
         assertEquals(2, jobQueryResult.first().getInput().size());
 
-        assertTrue(jobQueryResult.first().getOutput().containsAll(Arrays.asList(7L, 9L)));
+        assertTrue(jobQueryResult.first().getOutput().stream().map(File::getId).collect(Collectors.toList()).containsAll(Arrays.asList(7L, 9L)));
         assertEquals(2, jobQueryResult.first().getOutput().size());
     }
 

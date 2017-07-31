@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,23 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Session;
+import org.opencb.opencga.catalog.session.JwtSessionManager;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface AuthenticationManager {
+public abstract class AuthenticationManager {
+
+    protected Configuration configuration;
+    protected JwtSessionManager jwtSessionManager;
+
+    AuthenticationManager(Configuration configuration) {
+        this.configuration = configuration;
+        this.jwtSessionManager = new JwtSessionManager(configuration);
+    }
 
     /**
      * Authenticate the user against the Authentication server.
@@ -33,7 +44,7 @@ public interface AuthenticationManager {
      * @return User's authentication
      * @throws CatalogException CatalogException
      */
-    boolean authenticate(String userId, String password, boolean throwException) throws CatalogException;
+    public abstract boolean authenticate(String userId, String password, boolean throwException) throws CatalogException;
 
     /**
      * Obtains the userId corresponding to the token.
@@ -42,7 +53,13 @@ public interface AuthenticationManager {
      * @return the user id corresponding to the token given.
      * @throws CatalogException when the token does not correspond to any user or the token has expired.
      */
-    String getUserId(String token) throws CatalogException;
+    public String getUserId(String token) throws CatalogException {
+        if (token == null || token.isEmpty() || token.equalsIgnoreCase("null")) {
+            return "*";
+        }
+
+        return jwtSessionManager.getUserId(token);
+    }
 
     /**
      * Change users password. Could throw "UnsupportedOperationException" depending if the implementation supports password changes.
@@ -52,7 +69,7 @@ public interface AuthenticationManager {
      * @param newPassword New password
      * @throws CatalogException CatalogException
      */
-    void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException;
+    public abstract void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException;
 
     /**
      * Reset the user password. Sets an automatically generated password and sends an email to the user.
@@ -62,7 +79,7 @@ public interface AuthenticationManager {
      * @return QueryResult QueryResult
      * @throws CatalogException CatalogException
      */
-    QueryResult resetPassword(String userId) throws CatalogException;
+    public abstract QueryResult resetPassword(String userId) throws CatalogException;
 
     /**
      * Set a password to a user without a password.
@@ -72,5 +89,9 @@ public interface AuthenticationManager {
      * @param newPassword New password
      * @throws CatalogException CatalogException
      */
-    void newPassword(String userId, String newPassword) throws CatalogException;
+    public abstract void newPassword(String userId, String newPassword) throws CatalogException;
+
+    public QueryResult<Session> createToken(String userId, String ip, Session.Type type) {
+        return jwtSessionManager.createToken(userId, ip, type);
+    }
 }

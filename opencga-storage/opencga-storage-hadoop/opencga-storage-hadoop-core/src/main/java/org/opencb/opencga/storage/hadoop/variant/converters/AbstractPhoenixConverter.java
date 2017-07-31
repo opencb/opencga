@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,4 +80,27 @@ public abstract class AbstractPhoenixConverter {
         put.addColumn(columnFamily, column, bytes);
     }
 
+    public static boolean startsWith(byte[] bytes, byte[] startsWith) {
+        if (bytes.length < startsWith.length) {
+            return false;
+        }
+        for (int i = 0; i < startsWith.length; i++) {
+            if (startsWith[i] != bytes[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean endsWith(byte[] bytes, byte[] endsWith) {
+        if (bytes.length < endsWith.length) {
+            return false;
+        }
+        for (int i = endsWith.length - 1, f = bytes.length - 1; i >= 0; i--, f--) {
+            if (endsWith[i] != bytes[f]) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

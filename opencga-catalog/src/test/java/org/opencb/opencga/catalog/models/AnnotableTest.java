@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,8 +46,8 @@ public class AnnotableTest {
         annotationList.add(new Annotation("name4", copy));
 
         List<AnnotationSet> annotationSetList = new ArrayList<>(2);
-        annotationSetList.add(new AnnotationSet("annot1", 1, annotationList, TimeUtils.getTime(), Collections.emptyMap()));
-        annotationSetList.add(new AnnotationSet("annot2", 1, copy, TimeUtils.getTime(), Collections.emptyMap()));
+        annotationSetList.add(new AnnotationSet("annot1", 1, annotationList, TimeUtils.getTime(), 1, Collections.emptyMap()));
+        annotationSetList.add(new AnnotationSet("annot2", 1, copy, TimeUtils.getTime(), 1, Collections.emptyMap()));
 
         annotable.setAnnotationSets(annotationSetList);
 

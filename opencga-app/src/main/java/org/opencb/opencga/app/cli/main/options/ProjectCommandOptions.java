@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ public class ProjectCommandOptions {
 
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
+    public SearchCommandOptions searchCommandOptions;
     public StudiesCommandOptions studiesCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
@@ -50,6 +51,7 @@ public class ProjectCommandOptions {
 
         this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
+        this.searchCommandOptions = new SearchCommandOptions();
         this.studiesCommandOptions = new StudiesCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
@@ -103,6 +105,43 @@ public class ProjectCommandOptions {
         @ParametersDelegate
         public DataModelOptions dataModelOptions = commonDataModelOptions;
 
+    }
+
+    @Parameters(commandNames = {"search"}, commandDescription = "Search projects")
+    public class SearchCommandOptions {
+
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
+
+        @Parameter(names = {"--owner"}, description = "Owner of the project", arity = 1)
+        public String owner;
+
+        @Parameter(names = {"-n", "--name"}, description = "Project name.", arity = 1)
+        public String name;
+
+        @Parameter(names = {"-a", "--alias"}, description = "Project alias.", arity = 1)
+        public String alias;
+
+        @Parameter(names = {"--organization"}, description = "Organization", arity = 1)
+        public String organization;
+
+        @Parameter(names = {"--description"}, description = "Project description", arity = 1)
+        public String description;
+
+        @Parameter(names = {"-s", "--study"}, description = "Study id or alias", arity = 1)
+        public String study;
+
+        @Parameter(names = {"--creation-date"}, description = "Creation date.", arity = 1)
+        public String creationDate;
+
+        @Parameter(names = {"--status"}, description = "Status", arity = 1)
+        public String status;
+
+        @Parameter(names = {"--attributes"}, description = "Attributes.", arity = 1)
+        public String attributes;
     }
 
     @Parameters(commandNames = {"studies"}, commandDescription = "Get all studies from a project")

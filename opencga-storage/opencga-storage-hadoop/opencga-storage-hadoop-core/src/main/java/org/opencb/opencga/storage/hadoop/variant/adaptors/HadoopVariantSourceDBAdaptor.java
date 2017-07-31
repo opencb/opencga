@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created on 16/11/15.
@@ -192,6 +193,27 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
                 Bytes.toBytes(sb.toString()));
         hBaseManager.act(tableName, table -> {
             table.append(append);
+        });
+    }
+
+    @Override
+    public void delete(int study, int file) throws IOException {
+        String tableName = HadoopVariantStorageEngine.getArchiveTableName(study, genomeHelper.getConf());
+
+        Set<Integer> loadedFiles = getLoadedFiles(study);
+        loadedFiles.remove(file);
+        String loadedFilesStr = loadedFiles.stream().map(Object::toString).collect(Collectors.joining(","));
+
+        // Remove from loaded files
+        Put putLoadedFiles = new Put(genomeHelper.getMetaRowKey());
+        putLoadedFiles.addColumn(genomeHelper.getColumnFamily(), genomeHelper.getMetaRowKey(),
+                Bytes.toBytes(loadedFilesStr));
+
+        Delete delete = new Delete(genomeHelper.getMetaRowKey())
+                .addColumn(genomeHelper.getColumnFamily(), Bytes.toBytes(String.valueOf(file)));
+        hBaseManager.act(tableName, table -> {
+            table.delete(delete);
+            table.put(putLoadedFiles);
         });
     }
 

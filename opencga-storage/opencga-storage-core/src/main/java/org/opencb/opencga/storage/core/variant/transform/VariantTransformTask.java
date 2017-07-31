@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,14 +24,20 @@ import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import org.apache.avro.generic.GenericRecord;
+import org.opencb.biodata.formats.variant.VariantFactory;
 import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
-import org.opencb.biodata.models.variant.*;
+import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
+import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.exceptions.NotAVariantException;
+import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
+import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceJsonMixin;
 import org.slf4j.Logger;
@@ -69,7 +75,7 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
 
     public VariantTransformTask(VariantFactory factory,
                                 VariantSource source, Path outputFileJsonFile, VariantGlobalStatsCalculator variantStatsTask,
-                                boolean includesrc) {
+                                boolean includesrc, boolean generateReferenceBlocks) {
         this.factory = factory;
         this.source = source;
         this.outputFileJsonFile = outputFileJsonFile;
@@ -78,7 +84,8 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
 
         this.vcfCodec = null;
         this.converter = null;
-        this.normalizer = null;
+        this.normalizer = new VariantNormalizer(true, true, false);
+        normalizer.setGenerateReferenceBlocks(generateReferenceBlocks);
     }
 
     public VariantTransformTask(VCFHeader header, VCFHeaderVersion version,
@@ -93,7 +100,7 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
         this.vcfCodec = new FullVcfCodec();
         this.vcfCodec.setVCFHeader(header, version);
         this.converter = new VariantContextToVariantConverter(source.getStudyId(), source.getFileId(), source.getSamples());
-        this.normalizer = new VariantNormalizer();
+        this.normalizer = new VariantNormalizer(true, true, false);
         normalizer.setGenerateReferenceBlocks(generateReferenceBlocks);
     }
 
@@ -130,10 +137,13 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
                                 }
                             }
                         }
-                        transformedVariants.add(variant);
                     }
 
-                    variantStatsTask.apply(variants);
+                    List<Variant> normalizedVariants = normalize(variants);
+
+                    variantStatsTask.apply(normalizedVariants);
+
+                    transformedVariants.addAll(normalizedVariants);
 
                 } catch (NotAVariantException ignore) {
                     variants = Collections.emptyList();
@@ -160,17 +170,7 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
             List<Variant> variants = converter.apply(variantContexts);
             this.biodataConvertTime.addAndGet(System.currentTimeMillis() - curr);
 
-            curr = System.currentTimeMillis();
-            List<Variant> normalizedVariants = new ArrayList<>((int) (variants.size() * 1.1));
-            for (Variant variant : variants) {
-                try {
-                    normalizedVariants.addAll(normalizer.normalize(Collections.singletonList(variant), true));
-                } catch (Exception e) {
-                    logger.error("Error parsing variant " + variant);
-                    throw new IllegalStateException(e);
-                }
-            }
-            this.normTime.addAndGet(System.currentTimeMillis() - curr);
+            List<Variant> normalizedVariants = normalize(variants);
 
             variantStatsTask.apply(normalizedVariants);
 
@@ -178,6 +178,22 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
         }
 
         return encodeVariants(transformedVariants);
+    }
+
+    public List<Variant> normalize(List<Variant> variants) {
+        long curr;
+        curr = System.currentTimeMillis();
+        List<Variant> normalizedVariants = new ArrayList<>((int) (variants.size() * 1.1));
+        for (Variant variant : variants) {
+            try {
+                normalizedVariants.addAll(normalizer.normalize(Collections.singletonList(variant), true));
+            } catch (Exception e) {
+                logger.error("Error parsing variant " + variant);
+                throw new IllegalStateException(e);
+            }
+        }
+        this.normTime.addAndGet(System.currentTimeMillis() - curr);
+        return normalizedVariants;
     }
 
     private void onError(RuntimeException e, String line) {
@@ -227,6 +243,16 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
 
     public VariantTransformTask setFailOnError(boolean failOnError) {
         this.failOnError = failOnError;
+        return this;
+    }
+
+    public VariantTransformTask<T> configureNormalizer(VariantStudyMetadata variantMetadata) {
+        for (VariantStudyMetadata.VariantMetadataRecord record : variantMetadata.getFormat().values()) {
+            normalizer.configure(record.getId(), record.getNumberType(), record.getType());
+        }
+        for (VariantStudyMetadata.VariantMetadataRecord record : variantMetadata.getInfo().values()) {
+            normalizer.configure(record.getId(), record.getNumberType(), record.getType());
+        }
         return this;
     }
 

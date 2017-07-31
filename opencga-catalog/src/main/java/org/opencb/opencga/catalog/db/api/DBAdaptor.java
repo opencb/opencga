@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,9 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +52,8 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     QueryResult<Long> count(Query query) throws CatalogDBException;
 
+    QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+            throws CatalogDBException, CatalogAuthorizationException;
 
     default QueryResult distinct(String field) throws CatalogDBException {
         return distinct(new Query(), field);
@@ -66,6 +70,8 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
 
     QueryResult<T> get(Query query, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<T> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
 
     default List<QueryResult<T>> get(List<Query> queries, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(queries);
@@ -141,6 +147,15 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException;
 
+    DBIterator<T> iterator(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
+
+    default DBIterator nativeIterator(String user) throws CatalogDBException, CatalogAuthorizationException {
+        return nativeIterator(new Query(), new QueryOptions(), user);
+    }
+
+    DBIterator nativeIterator(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
+
+//    QueryResult<T> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
 
     QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException;
 

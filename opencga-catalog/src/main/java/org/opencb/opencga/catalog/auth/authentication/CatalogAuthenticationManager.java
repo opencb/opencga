@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,32 +19,31 @@ package org.opencb.opencga.catalog.auth.authentication;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.StringUtils;
-import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
+import org.opencb.opencga.core.config.Configuration;
 
 import java.security.NoSuchAlgorithmException;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CatalogAuthenticationManager implements AuthenticationManager {
+public class CatalogAuthenticationManager extends AuthenticationManager {
 
-    protected final UserDBAdaptor userDBAdaptor;
-    protected final MetaDBAdaptor metaDBAdaptor;
-    protected final Configuration configuration;
+    private final UserDBAdaptor userDBAdaptor;
+    private final MetaDBAdaptor metaDBAdaptor;
 
     public CatalogAuthenticationManager(DBAdaptorFactory dbAdaptorFactory, Configuration configuration) {
+        super(configuration);
         this.userDBAdaptor = dbAdaptorFactory.getCatalogUserDBAdaptor();
         this.metaDBAdaptor = dbAdaptorFactory.getCatalogMetaDBAdaptor();
-        this.configuration = configuration;
     }
 
     public static String cypherPassword(String password) throws CatalogException {
@@ -62,51 +61,24 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
         boolean validSessionId = false;
         if (userId.equals("admin")) {
             storedPassword = metaDBAdaptor.getAdminPassword();
-            validSessionId = metaDBAdaptor.checkValidAdminSession(password);
-        } else {
-            storedPassword = userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, "password"), null).first().getPassword();
-            QueryResult<Session> session = userDBAdaptor.getSession(userId, password);
-            if (session.getNumResults() > 0) {
-                validSessionId = true;
+            try {
+                validSessionId = jwtSessionManager.getUserId(password).equals(userId);
+            } catch (CatalogAuthenticationException e) {
+                validSessionId = false;
             }
+        } else {
+            storedPassword = userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, "password"), null).first()
+                    .getPassword();
         }
         if (storedPassword.equals(cypherPassword) || validSessionId) {
             return true;
         } else {
             if (throwException) {
-                throw new CatalogException("Bad user or password");
+                throw CatalogAuthenticationException.incorrectUserOrPassword();
             } else {
                 return false;
             }
         }
-    }
-
-    @Override
-    public String getUserId(String token) throws CatalogException {
-        if (token == null || token.isEmpty() || token.equalsIgnoreCase("null")) {
-            return "anonymous";
-        }
-
-        // Check admin
-        if (token.length() == 40) {
-            // TODO: Replace the dbAdaptor method to return the whole session structure to check if it has expired.
-            if (metaDBAdaptor.checkValidAdminSession(token)) {
-                return "admin";
-            }
-            throw new CatalogException("The session id does not correspond to any user.");
-        }
-
-        // Check user
-        if (token.length() == 20) {
-            // TODO: Replace the dbAdaptor method to return the whole session structure to check if it has expired.
-            String userId = userDBAdaptor.getUserIdBySessionId(token);
-            if (userId.isEmpty()) {
-                throw new CatalogException("The session id does not correspond to any user.");
-            }
-            return userId;
-        }
-
-        throw new CatalogException("The session id introduced is not correct.");
     }
 
     @Override
@@ -140,22 +112,15 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
 
         String email = user.first().getEmail();
 
-        QueryResult qr = userDBAdaptor.resetPassword(userId, email, newCryptPass);
+        QueryResult queryResult = userDBAdaptor.resetPassword(userId, email, newCryptPass);
 
-        /*
-        String mailUser = catalogProperties.getProperty(CatalogManager.CATALOG_MAIL_USER);
-        String mailPassword = catalogProperties.getProperty(CatalogManager.CATALOG_MAIL_PASSWORD);
-        String mailHost = catalogProperties.getProperty(CatalogManager.CATALOG_MAIL_HOST);
-        String mailPort = catalogProperties.getProperty(CatalogManager.CATALOG_MAIL_PORT);
-*/
-        String mailUser = configuration.getEmail().getFrom();
-        String mailPassword = configuration.getEmail().getPassword();
-        String mailHost = configuration.getEmail().getHost();
-        String mailPort = configuration.getEmail().getPort();
+        String mailUser = this.configuration.getEmail().getFrom();
+        String mailPassword = this.configuration.getEmail().getPassword();
+        String mailHost = this.configuration.getEmail().getHost();
+        String mailPort = this.configuration.getEmail().getPort();
 
         MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
 
-        return qr;
+        return queryResult;
     }
-
 }

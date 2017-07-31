@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -203,7 +203,6 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         } else {
             queryOptions.putIfNotEmpty("userId", cliSession.getUserId());
         }
-        queryOptions.put("shared", usersCommandOptions.projectsCommandOptions.shared);
 
         return openCGAClient.getUserClient().getProjects(queryOptions);
     }

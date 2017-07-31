@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
@@ -42,29 +43,25 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
     private final ResultScanner resultScanner;
     private final GenomeHelper genomeHelper;
     private final Iterator<Result> iterator;
-    private final HBaseToVariantConverter converter;
+    private final HBaseToVariantConverter<Result> converter;
     private long limit = Long.MAX_VALUE;
     private long count = 0;
 
-    public VariantHBaseScanIterator(ResultScanner resultScanner, VariantTableHelper variantTableHelper, QueryOptions options)
-            throws IOException {
-        this.resultScanner = resultScanner;
-        this.genomeHelper = variantTableHelper;
-        iterator = resultScanner.iterator();
-        converter = new HBaseToVariantConverter(variantTableHelper);
-        setLimit(options.getLong("limit"));
-    }
-
     public VariantHBaseScanIterator(ResultScanner resultScanner, GenomeHelper genomeHelper, StudyConfigurationManager scm,
-                                    QueryOptions options) throws IOException {
+                                    QueryOptions options, List<String> returnedSamplesList, String unknownGenotype, List<String> formats)
+            throws IOException {
         this.resultScanner = resultScanner;
         this.genomeHelper = genomeHelper;
         iterator = resultScanner.iterator();
-        converter = new HBaseToVariantConverter(genomeHelper, scm)
+        converter = HBaseToVariantConverter.fromResult(genomeHelper, scm)
                 .setMutableSamplesPosition(false)
                 .setStudyNameAsStudyId(true)
-                .setSimpleGenotypes(true);
-        setLimit(options.getLong("limit"));
+                .setSimpleGenotypes(true)
+                .setReadFullSamplesData(true)
+                .setUnknownGenotype(unknownGenotype)
+                .setReturnedSamples(returnedSamplesList)
+                .setFormats(formats);
+        setLimit(options.getLong(QueryOptions.LIMIT));
     }
 
     @Override

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2015-2016 OpenCB
+  ~ Copyright 2015-2017 OpenCB
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage</artifactId>
-        <version>1.1.2</version>
+        <version>1.2.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -116,7 +116,11 @@
         <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
-            <version>6.4.1</version>
+            <version>${solr.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr-test-framework</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -147,7 +151,7 @@
         <dependency>
             <groupId>org.opencb.commons</groupId>
             <artifactId>commons-datastore-core</artifactId>
-            <version>3.4.2</version>
+            <version>${java-common-libs.version}</version>
         </dependency>
     </dependencies>
 

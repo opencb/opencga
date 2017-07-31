@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,19 +27,24 @@ public class VariableSet {
     private long id;
     private String name;
     private boolean unique;
+    private boolean confidential;
     private String description;
     private Set<Variable> variables;
 
+    private int release;
     private Map<String, Object> attributes;
 
     public VariableSet() {
     }
 
-    public VariableSet(long id, String name, boolean unique, String description, Set<Variable> variables, Map<String, Object> attributes) {
+    public VariableSet(long id, String name, boolean unique, boolean confidential, String description, Set<Variable> variables, int release,
+                       Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.unique = unique;
+        this.confidential = confidential;
         this.description = description;
+        this.release = release;
         this.attributes = attributes;
         this.variables = variables;
     }
@@ -50,8 +55,10 @@ public class VariableSet {
         sb.append("id=").append(id);
         sb.append(", name='").append(name).append('\'');
         sb.append(", unique=").append(unique);
+        sb.append(", confidential=").append(confidential);
         sb.append(", description='").append(description).append('\'');
         sb.append(", variables=").append(variables);
+        sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -84,6 +91,15 @@ public class VariableSet {
         return this;
     }
 
+    public boolean isConfidential() {
+        return confidential;
+    }
+
+    public VariableSet setConfidential(boolean confidential) {
+        this.confidential = confidential;
+        return this;
+    }
+
     public String getDescription() {
         return description;
     }
@@ -99,6 +115,15 @@ public class VariableSet {
 
     public VariableSet setVariables(Set<Variable> variables) {
         this.variables = variables;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public VariableSet setRelease(int release) {
+        this.release = release;
         return this;
     }
 

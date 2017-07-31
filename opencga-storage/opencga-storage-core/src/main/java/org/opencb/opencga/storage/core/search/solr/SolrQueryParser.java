@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,8 @@ public class SolrQueryParser {
         // QueryOptions processing
         //-------------------------------------
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
-            solrQuery.setFields(queryOptions.getAsStringList(QueryOptions.INCLUDE).toString());
+            List<String> includes = queryOptions.getAsStringList(QueryOptions.INCLUDE);
+            solrQuery.setFields(includes.toArray(new String[includes.size()]));
         }
 
         if (queryOptions.containsKey(QueryOptions.LIMIT)) {
@@ -312,7 +313,7 @@ public class SolrQueryParser {
     private void classifyIds(String key, Query query, List<String> xrefs, List<String> genes) {
         String value;
         if (query.containsKey(key)) {
-            value = (String) query.get(key);
+            value = query.getString(key);
             if (StringUtils.isNotEmpty(value)) {
                 List<String> items = Arrays.asList(value.split("[,;]"));
                 for (String item: items) {

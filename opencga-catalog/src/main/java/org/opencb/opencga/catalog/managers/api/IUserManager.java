@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,27 +133,22 @@ public interface IUserManager extends ResourceManager<String, User> {
 
     QueryResult<Session> login(String userId, String password, String sessionIp) throws CatalogException, IOException;
 
+    QueryResult<Session> refreshToken(String userId, String token, String sessionIp) throws CatalogException, IOException;
+
     /**
      * This method will be only callable by the system. It generates a new session id for the user.
      *
-     * @param sessionId Admin session id.
      * @param userId user id for which a session will be generated.
+     * @param adminCredentials Password or active session of the OpenCGA admin.
      * @return an objectMap containing the new sessionId
      * @throws CatalogException if the password is not correct or the userId does not exist.
      */
-    QueryResult<Session> getNewUserSession(String sessionId, String userId) throws CatalogException;
+    QueryResult<Session> getSystemTokenForUser(String userId, String adminCredentials) throws CatalogException;
 
     QueryResult resetPassword(String userId, String sessionId) throws CatalogException;
 
     void validatePassword(String userId, String password, boolean throwException) throws CatalogException;
 
-    @Deprecated
-    QueryResult<ObjectMap> loginAsAnonymous(String sessionIp) throws CatalogException, IOException;
-
-    QueryResult logout(String userId, String sessionId) throws CatalogException;
-
-    @Deprecated
-    QueryResult logoutAnonymous(String sessionId) throws CatalogException;
 
     /*          Filter operations     */
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,21 +42,13 @@ public class AnnotationCommandExecutor<T,U> {
                 createCommandOptions.annotationSetName, obj);
     }
 
-    public QueryResponse<AnnotationSet> getAllAnnotationSets(
-            AnnotationCommandOptions.AnnotationSetsAllInfoCommandOptions infoCommandOptions, AnnotationClient<T,U> client)
-            throws IOException {
-
-        ObjectMap params = new ObjectMap();
-        params.putIfNotNull("study", infoCommandOptions.study);
-        return client.getAllAnnotationSets(infoCommandOptions.id, params);
-    }
-
     public QueryResponse<AnnotationSet> getAnnotationSet(AnnotationCommandOptions.AnnotationSetsInfoCommandOptions infoCommandOptions,
                                      AnnotationClient<T,U> client) throws IOException {
 
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("study", infoCommandOptions.study);
-        return client.getAnnotationSet(infoCommandOptions.id, infoCommandOptions.annotationSetName, params);
+        params.putIfNotNull("name", infoCommandOptions.annotationSetName);
+        return client.getAnnotationSets(infoCommandOptions.id, params);
     }
 
     public QueryResponse<AnnotationSet> searchAnnotationSets(

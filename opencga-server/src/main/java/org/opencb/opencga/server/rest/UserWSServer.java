@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Project;
@@ -32,10 +33,7 @@ import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -48,32 +46,8 @@ import java.util.Map;
 public class UserWSServer extends OpenCGAWSServer {
 
 
-    public UserWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(uriInfo, httpServletRequest);
-    }
-
-    @GET
-    @Path("/create")
-    @ApiOperation(value = "Create a new user [DEPRECATED]", response = User.class,
-    notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
-            + "is not tested and this can be deprecated in a future version.")
-    public Response createUser(
-            @ApiParam(value = "User id", hidden = true) @QueryParam("userId") String userId,
-            @ApiParam(value = "User id", required = true) @QueryParam("id") String id,
-            @ApiParam(value = "User name", required = true) @QueryParam("name") String name,
-            @ApiParam(value = "User's email", required = true) @QueryParam("email") String email,
-            @ApiParam(value = "User's password", required = true) @QueryParam("password") String password,
-            @ApiParam(value = "User's organization") @QueryParam("organization") String organization) {
-        try {
-            queryOptions.remove("password");
-            if (StringUtils.isNotEmpty(userId)) {
-                id = userId;
-            }
-            QueryResult queryResult = catalogManager.createUser(id, name, email, password, organization, null, queryOptions);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+    public UserWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest, httpHeaders);
     }
 
     @POST
@@ -145,17 +119,22 @@ public class UserWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{user}/login")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Get identified and gain access to the systemn")
+    @ApiOperation(value = "Get identified and gain access to the system",
+            notes = "If password is provided it will attempt to login the user. If no password is provided and a valid token is given, "
+                    + "a new token will be provided extending the expiration time.")
     public Response loginPost(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                              @ApiParam(value = "JSON containing the parameter 'password'", required = true) Map<String, String> map) {
+                              @ApiParam(value = "JSON containing the parameter 'password'") Map<String, String> map) {
         sessionIp = httpServletRequest.getRemoteAddr();
         QueryResult<Session> queryResult;
         try {
-            if (!map.containsKey("password")) {
-                throw new Exception("The json does not contain the key password.");
+            if (map.containsKey("password")) {
+                String password = map.get("password");
+                queryResult = catalogManager.login(userId, password, sessionIp);
+            } else if (StringUtils.isNotEmpty(sessionId)) {
+                queryResult = catalogManager.getUserManager().refreshToken(userId, sessionId, sessionIp);
+            } else {
+                throw new Exception("Neither a password nor a token was provided.");
             }
-            String password = map.get("password");
-            queryResult = catalogManager.login(userId, password, sessionIp);
 
             ObjectMap sessionMap = new ObjectMap();
             sessionMap.append("sessionId", queryResult.first().getId())
@@ -172,13 +151,13 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
+    @Deprecated
     @GET
     @Path("/{user}/logout")
-    @ApiOperation(value = "End user session")
+    @ApiOperation(value = "End user session [DEPRECATED]")
     public Response logout(@ApiParam(value = "userId", required = true) @PathParam("user") String userId) {
         try {
-            QueryResult result = catalogManager.logout(userId, sessionId);
-            result.setId("You successfully logged out");
+            QueryResult result = new QueryResult("OpenCGA does not support logging out anymore");
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -220,8 +199,8 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{user}/projects")
-    @ApiOperation(value = "Retrieve the projects of the user", notes = "Retrieve the list of projects and studies belonging or shared with "
-            + "the user", response = Project[].class)
+    @ApiOperation(value = "Retrieve the projects of the user", notes = "Retrieve the list of projects and studies belonging to the user",
+            response = Project[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
                     dataType = "string", paramType = "query"),
@@ -230,45 +209,11 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "limit", value = "Max number of results to be returned.", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to be skipped.", dataType = "integer", paramType = "query")
     })
-    public Response getAllProjects(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                                   @ApiParam(value = "When false, it will return only the projects and studies belonging to the user. "
-                                           + "However, if this parameter is set to true, it will also show the projects and studies " +
-                                           "shared with the user.", defaultValue = "false") @QueryParam ("shared") boolean shared) {
+    public Response getAllProjects(@ApiParam(value = "User id", required = true) @PathParam("user") String userId) {
         try {
-            QueryResult<Project> queryResult = catalogManager.getAllProjects(userId, queryOptions, sessionId);
-            if (shared) {
-                QueryResult<Project> sharedResults = catalogManager.getProjectManager().getSharedProjects(userId, queryOptions, sessionId);
-                queryResult.getResult().addAll(sharedResults.getResult());
-                queryResult.setNumTotalResults(queryResult.getNumTotalResults() + sharedResults.getNumTotalResults());
-                queryResult.setNumResults(queryResult.getNumResults() + sharedResults.getNumResults());
-                queryResult.setDbTime(queryResult.getDbTime() + sharedResults.getDbTime());
-            }
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{user}/update")
-    @ApiOperation(value = "Update some user attributes [DEPRECATED]", response = User.class,
-    notes = "DEPRECATED: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
-            + "is not tested and this can be deprecated in a future version.")
-    public Response update(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                           @ApiParam(value = "User name") @QueryParam("name") String name,
-                           @ApiParam(value = "User's email") @QueryParam("email") String email,
-                           @ApiParam(value = "User's organization") @QueryParam("organization") String organization,
-                           @ApiParam(value = "JSON string containing additional information to be stored") @QueryParam("attributes")
-                                       String attributes) {
-        try {
-            ObjectMap objectMap = new ObjectMap();
-            objectMap.putIfNotNull("name", name);
-            objectMap.putIfNotNull("email", email);
-            objectMap.putIfNotNull("organization", organization);
-            objectMap.putIfNotNull("attributes", attributes);
-
-            QueryResult result = catalogManager.modifyUser(userId, objectMap, sessionId);
-            return createOkResponse(result);
+            query.remove("user");
+            query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId);
+            return createOkResponse(catalogManager.getProjectManager().get(query, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

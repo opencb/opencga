@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,6 +76,9 @@ public class AdminMain {
                             break;
                         case "server":
                             commandExecutor = new ServerCommandExecutor(cliOptionsParser.getServerCommandOptions());
+                            break;
+                        case "meta":
+                            commandExecutor = new MetaCommandExecutor(cliOptionsParser.getMetaCommandOptions());
                             break;
                         default:
                             System.out.printf(String.format("ERROR: not valid command passed: '%s'", parsedCommand));

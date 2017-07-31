@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.monitor.daemons.ExecutionDaemon;
@@ -71,8 +71,7 @@ public class MonitorService {
 
         try {
             this.catalogManager = new CatalogManager(this.configuration);
-            String sessionId = this.catalogManager.login("admin", password,
-                    this.configuration.getCatalog().getDatabase().getHosts().get(0)).first().getId();
+            String sessionId = this.catalogManager.getUserManager().getSystemTokenForUser("admin", password).first().getId();
 
             executionDaemon = new ExecutionDaemon(configuration.getMonitor().getExecutionDaemonInterval(), sessionId,
                     catalogManager, appHome);

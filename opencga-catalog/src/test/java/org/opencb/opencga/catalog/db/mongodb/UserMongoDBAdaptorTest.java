@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.User;
 
@@ -100,61 +99,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void loginTest() throws CatalogException, IOException {
-        String userId = user1.getId();
-        Session sessionJCOLL = new Session("127.0.0.1", 20);
-        catalogUserDBAdaptor.addSession(userId, sessionJCOLL);
-
-        // Check password is correct in the database
-        String storedPassword = catalogUserDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, "password"), null).first()
-                .getPassword();
-        assertEquals("1234", storedPassword);
-    }
-
-    @Test
-    public void logoutTest() throws CatalogDBException, IOException {
-        String userId = user1.getId();
-
-        Session sessionJCOLL = new Session("127.0.0.1", 20);
-        catalogUserDBAdaptor.addSession(userId, sessionJCOLL);
-
-        QueryResult<Session> logout = catalogUserDBAdaptor.logout(userId, sessionJCOLL.getId());
-        assertEquals(1, logout.getResult().size());
-
-        //thrown.expect(CatalogDBException.class);
-        QueryResult<Session> falseSession = catalogUserDBAdaptor.logout(userId, "FalseSession");
-        assertTrue(falseSession.getWarningMsg() != null && !falseSession.getWarningMsg().isEmpty());
-        assertEquals("Session not found", falseSession.getWarningMsg());
-    }
-
-    @Test
-    public void getUserIdBySessionId() throws CatalogDBException {
-        String userId = user1.getId();
-
-        catalogUserDBAdaptor.addSession(userId, new Session("127.0.0.1", 20)); //Having multiple conections
-        catalogUserDBAdaptor.addSession(userId, new Session("127.0.0.1", 20));
-        catalogUserDBAdaptor.addSession(userId, new Session("127.0.0.1", 20));
-
-        Session sessionJCOLL = new Session("127.0.0.1", 20);
-        catalogUserDBAdaptor.addSession(userId, sessionJCOLL);
-
-        assertEquals(user1.getId(), catalogUserDBAdaptor.getUserIdBySessionId(sessionJCOLL.getId()));
-        QueryResult logout = catalogUserDBAdaptor.logout(userId, sessionJCOLL.getId());
-        assertEquals(1, logout.getResult().size());
-
-        assertEquals("", catalogUserDBAdaptor.getUserIdBySessionId(sessionJCOLL.getId()));
-    }
-
-    @Test
     public void changePasswordTest() throws CatalogDBException {
-//        System.out.println(catalogUserDBAdaptor.changePassword("jmmut", "1111", "1234"));
-//        System.out.println(catalogUserDBAdaptor.changePassword("jmmut", "1234", "1111"));
-//        try {
-//            System.out.println(catalogUserDBAdaptor.changePassword("jmmut", "BAD_PASSWORD", "asdf"));
-//            fail("Expected \"bad password\" exception");
-//        } catch (CatalogDBException e) {
-//            System.out.println(e);
-//        }
         QueryResult queryResult = catalogUserDBAdaptor.changePassword(user2.getId(), user2.getPassword(), "1234");
         assertNotSame(0, queryResult.getResult().size());
 

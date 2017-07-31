@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.app.cli.main.io;
 
 import org.apache.commons.lang3.StringUtils;
@@ -5,7 +21,6 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.AbstractAclEntry;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Iterator;
@@ -32,7 +47,12 @@ public class TextOutputWriter extends AbstractOutputWriter {
         }
 
         if (queryResponse.getResponse().size() == 0 || ((QueryResult) queryResponse.getResponse().get(0)).getNumResults() == 0) {
-            ps.println("No results found for the query.");
+            if (queryResponse.first().getNumTotalResults() > 0) {
+                // count
+                ps.println(queryResponse.first().getNumTotalResults());
+            } else {
+                ps.println("No results found for the query.");
+            }
             return;
         }
 
@@ -148,14 +168,6 @@ public class TextOutputWriter extends AbstractOutputWriter {
                                         printGroup(group, sb, "        + ");
                                     }
                                 }
-
-                                if (study.getAcl().size() > 0) {
-                                    sb.append("       Acl:\n");
-                                    for (StudyAclEntry studyAclEntry : study.getAcl()) {
-                                        printACL(studyAclEntry, sb, "        + ");
-                                    }
-                                }
-
                             }
                         }
                     }
@@ -244,7 +256,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                     file.getFormat(), file.getBioformat(), file.getDescription(), file.getPath(), file.getUri(), file.getId(),
                     file.getStatus().getName(), file.getSize(), indexStatus,
                     StringUtils.join(file.getRelatedFiles().stream().map(File.RelatedFile::getFileId).collect(Collectors.toList()), ", "),
-                    StringUtils.join(file.getSampleIds().stream().collect(Collectors.toList()), ", ")));
+                    StringUtils.join(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()), ", ")));
         }
     }
 
@@ -376,7 +388,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%s\t%s\t%d\n",
                         job.getName(), job.getId(), job.getType(), job.getToolName(), job.getCreationDate(), job.getExecutable(),
                         job.getExecution(), job.getVisits(), job.getStatus().getName(), StringUtils.join(job.getInput(), ", "),
-                        StringUtils.join(job.getOutput(), ", "), job.getOutDirId()));
+                        StringUtils.join(job.getOutput(), ", "), job.getOutDir().getId()));
             }
         }
 

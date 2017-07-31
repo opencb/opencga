@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,13 +45,11 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.search.VariantSearchManager;
-import org.opencb.opencga.storage.core.search.solr.SolrVariantIterator;
+import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
+import org.opencb.opencga.storage.core.search.solr.VariantIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -68,6 +66,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VARIANT_REMOVE_COMMAND;
 
 /**
  * Created by imedina on 02/03/15.
@@ -121,6 +121,11 @@ public class VariantCommandExecutor extends CommandExecutor {
                 configure(variantCommandOptions.indexVariantsCommandOptions.commonOptions,
                         variantCommandOptions.indexVariantsCommandOptions.commonIndexOptions.dbName);
                 index();
+                break;
+            case VARIANT_REMOVE_COMMAND:
+                configure(variantCommandOptions.variantRemoveCommandOptions.commonOptions,
+                        variantCommandOptions.variantRemoveCommandOptions.dbName);
+                remove();
                 break;
             case "query":
                 configure(variantCommandOptions.variantQueryCommandOptions.commonOptions,
@@ -267,6 +272,19 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
     }
 
+    private void remove() throws Exception {
+        StorageVariantCommandOptions.VariantRemoveCommandOptions cliOptions = variantCommandOptions.variantRemoveCommandOptions;
+
+        variantStorageEngine.getOptions().put(VariantStorageEngine.Options.RESUME.key(), cliOptions.resume);
+        variantStorageEngine.getOptions().putAll(cliOptions.commonOptions.params);
+
+        if (cliOptions.files.size() == 1 && cliOptions.files.get(0).equalsIgnoreCase(VariantQueryUtils.ALL)) {
+            variantStorageEngine.removeStudy(cliOptions.study);
+        } else {
+            variantStorageEngine.removeFiles(cliOptions.study, cliOptions.files);
+        }
+    }
+
     private void query() throws Exception {
         StorageVariantCommandOptions.VariantQueryCommandOptions variantQueryCommandOptions = variantCommandOptions.variantQueryCommandOptions;
 
@@ -283,7 +301,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
         Query query = VariantQueryCommandUtils.parseQuery(variantQueryCommandOptions, studyNames);
         QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(variantQueryCommandOptions);
-        options.put("summary", variantQueryCommandOptions.summary);
+        options.put(VariantField.SUMMARY, variantQueryCommandOptions.summary);
 
         if (variantQueryCommandOptions.commonQueryOptions.count) {
             QueryResult<Long> result = variantStorageEngine.count(query);
@@ -617,54 +635,28 @@ public class VariantCommandExecutor extends CommandExecutor {
         VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getStudyConfigurationManager(),
                 null, variantStorageEngine.getConfiguration());
         boolean querying = true;
-        String mode = searchOptions.mode;
 
-        // create the core or collection
+        // create the database, this method checks if it exists and the solrConfig name
         if (searchOptions.create) {
+            variantSearchManager.create(dbName, searchOptions.solrConfig);
             querying = false;
-            switch (mode.toLowerCase()) {
-                case "core": {
-                    if (variantSearchManager.existCore(dbName)) {
-                        throw new IllegalArgumentException("Core '" + dbName + "' already exists");
-                    }
-                    variantSearchManager.createCore(searchOptions.dbName, searchOptions.solrConfig);
-                    break;
-                }
-                case "collection": {
-                    if (variantSearchManager.existCollection(dbName)) {
-                        throw new IllegalArgumentException("Collection '" + dbName + "' already exists");
-                    }
-                    variantSearchManager.createCollection(searchOptions.dbName, searchOptions.solrConfig,
-                            searchOptions.numShards, searchOptions.numReplicas);
-                    break;
-                }
-                default: {
-                    throw new IllegalArgumentException("Invalid value '" + searchOptions.create
-                            + "' for the --create parameter. Valid values are 'core' or 'collection'");
-                }
-            }
         }
 
         // index
         if (searchOptions.index) {
-//            if (!variantSearchManager.existCore(dbName)) {
-//                throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
-//            }
-//            querying = false;
-//            Path path = Paths.get(searchOptions.inputFilename);
-//            variantSearchManager.load(dbName, path);
+            querying = false;
             VariantStorageEngine variantStorageEngine = StorageEngineFactory.get(configuration).getVariantStorageEngine(null, dbName);
             variantStorageEngine.searchIndex();
         }
 
-        // query
+        String mode = variantStorageEngine.getConfiguration().getSearch().getMode();
         if (querying) {
-            if ("collection".equals(mode)) {
-                if (!variantSearchManager.existCollection(dbName)) {
+            if ("cloud".equals(mode)) {
+                if (!variantSearchManager.existsCollection(dbName)) {
                     throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
                 }
             } else {
-                if (!variantSearchManager.existCore(dbName)) {
+                if (!variantSearchManager.existsCore(dbName)) {
                     throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
                 }
             }
@@ -700,7 +692,10 @@ public class VariantCommandExecutor extends CommandExecutor {
                         facetedQueryResult.getResult().getIntersections().forEach(f -> System.out.println(f.toString()));
                     }
                 } else {
-                    SolrVariantIterator iterator = variantSearchManager.iterator(dbName, query, queryOptions);
+                    queryOptions.put(QueryOptions.LIMIT, Integer.MAX_VALUE);
+                    queryOptions.put(QueryOptions.SKIP, 0);
+
+                    VariantIterator iterator = variantSearchManager.iterator(dbName, query, queryOptions);
                     while (iterator.hasNext()) {
                         Variant variant = iterator.next();
                         System.out.println("Variant #" + count);

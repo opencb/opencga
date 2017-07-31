@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,9 @@ public class ProjectConverter extends GenericDocumentComplexConverter<Project> {
     @Override
     public Project convertToDataModelType(Document object) {
         Document projects = (Document) object.get("projects");
-        return super.convertToDataModelType(projects);
+        Project project = super.convertToDataModelType(projects);
+        project.setAlias(object.getString("_id") + "@" + project.getAlias());
+        return project;
     }
 
     @Override

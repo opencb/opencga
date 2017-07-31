@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,6 @@ public class VariantMergerTableMapperTest extends VariantStorageBaseTest impleme
         VariantSource source1 = loadFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
         System.out.println("Query from HBase : " + DB_NAME);
         Configuration conf = configuration.get();
-        HBaseToVariantConverter conv = new HBaseToVariantConverter(dbAdaptor.getGenomeHelper(), buildStudyManager());
         HBaseManager hm = new HBaseManager(conf);
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
         Set<Integer> passPos = new HashSet<>(Arrays.asList(10032,13488));
@@ -101,7 +100,6 @@ public class VariantMergerTableMapperTest extends VariantStorageBaseTest impleme
         VariantSource source2 = loadFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
         System.out.println("Query from HBase : " + DB_NAME);
         Configuration conf = configuration.get();
-        HBaseToVariantConverter conv = new HBaseToVariantConverter(dbAdaptor.getGenomeHelper(), buildStudyManager());
         HBaseManager hm = new HBaseManager(conf);
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
         Set<Integer> passPos = new HashSet<>(Arrays.asList(10032,13488));

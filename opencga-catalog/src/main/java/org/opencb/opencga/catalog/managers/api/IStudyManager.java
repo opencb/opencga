@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,7 +111,7 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
     @Deprecated
     QueryResult<Study> share(long studyId, AclEntry acl) throws CatalogException;
 
-    void membersHavePermissionsInStudy(long studyId, List<String> members) throws CatalogException;
+//    void membersHavePermissionsInStudy(long studyId, List<String> members) throws CatalogException;
 
     /*---------------------*/
     /* VariableSet METHODS */
@@ -128,11 +128,11 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      */
     AbstractManager.MyResourceId getVariableSetId(String variableStr, @Nullable String studyStr, String sessionId) throws CatalogException;
 
-    QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique, String description,
+    QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique, Boolean confidential, String description,
                                                Map<String, Object> attributes, List<Variable> variables, String sessionId)
             throws CatalogException;
 
-    QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique, String description,
+    QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique, Boolean confidential, String description,
                                                Map<String, Object> attributes, Set<Variable> variables, String sessionId)
             throws CatalogException;
 
@@ -246,16 +246,6 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
     QueryResult<Group> createGroup(String studyStr, String groupId, String userList, String sessionId) throws CatalogException;
 
     /**
-     * Obtain all the groups that are present in the study.
-     *
-     * @param studyStr study.
-     * @param sessionId session id of the user that wants to perform this action.
-     * @return all the groups present in the study.
-     * @throws CatalogException catalogException.
-     */
-    QueryResult<Group> getAllGroups(String studyStr, String sessionId) throws CatalogException;
-
-    /**
      * Obtain the group asked.
      *
      * @param studyStr study.
@@ -266,20 +256,7 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      */
     QueryResult<Group> getGroup(String studyStr, String groupId, String sessionId) throws CatalogException;
 
-    /**
-     * Update the members of a group.
-     *
-     * @param studyStr study.
-     * @param groupId group id.
-     * @param addUsers Comma separated list of users that will be added to the group.
-     * @param removeUsers Comma separated list of users that will be removed from the group.
-     * @param setUsers Comma separated list of users that will be set to the group. Previous users will be removed.
-     * @param sessionId session id of the user that wants to perform this action.
-     * @return the group after the update action.
-     * @throws CatalogException catalogException.
-     */
-    QueryResult<Group> updateGroup(String studyStr, String groupId, @Nullable String addUsers, @Nullable String removeUsers,
-                                   @Nullable String setUsers, String sessionId) throws CatalogException;
+    QueryResult<Group> updateGroup(String studyStr, String groupId, GroupParams groupParams, String sessionId) throws CatalogException;
 
     /**
      * Update the parameters of a group.
@@ -341,4 +318,6 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
     QueryResult<DiseasePanel> updateDiseasePanel(String panelStr, ObjectMap parameters, String sessionId) throws CatalogException;
 
     QueryResult<VariableSetSummary> getVariableSetSummary(String studyStr, String variableSetId, String sessionId) throws CatalogException;
+
+    int getCurrentRelease(long studyId) throws CatalogException;
 }

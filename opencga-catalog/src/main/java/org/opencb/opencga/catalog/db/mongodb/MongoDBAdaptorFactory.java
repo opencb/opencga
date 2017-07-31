@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,9 +29,10 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.catalog.config.Admin;
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.core.config.Admin;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -62,6 +63,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             "dataset",
             "panel",
             "family",
+            "clinical",
             "metadata",
             "audit"
     );
@@ -76,6 +78,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String FAMILY_COLLECTION = "family";
     public static final String DATASET_COLLECTION = "dataset";
     public static final String PANEL_COLLECTION = "panel";
+    public static final String CLINICAL_ANALYSIS_COLLECTION = "clinical";
     public static final String METADATA_COLLECTION = "metadata";
     public static final String AUDIT_COLLECTION = "audit";
     static final String METADATA_OBJECT_ID = "METADATA";
@@ -96,6 +99,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private MongoDBCollection familyCollection;
     private MongoDBCollection datasetCollection;
     private MongoDBCollection panelCollection;
+    private MongoDBCollection clinicalCollection;
     private MongoDBCollection auditCollection;
     private Map<String, MongoDBCollection> collections;
     private UserMongoDBAdaptor userDBAdaptor;
@@ -109,6 +113,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private FamilyMongoDBAdaptor familyDBAdaptor;
     private DatasetMongoDBAdaptor datasetDBAdaptor;
     private PanelMongoDBAdaptor panelDBAdaptor;
+    private ClinicalAnalysisDBAdaptor clinicalDBAdaptor;
     private AuditMongoDBAdaptor auditDBAdaptor;
     private MetaMongoDBAdaptor metaDBAdaptor;
 
@@ -149,11 +154,6 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             } catch (DuplicateKeyException e) {
                 logger.warn("Trying to replace MetadataObject. DuplicateKey");
             }
-            //Set indexes
-//            BasicDBObject unique = new BasicDBObject("unique", true);
-//            nativeUserCollection.createIndexes(new BasicDBObject("id", 1), unique);
-//            nativeFileCollection.createIndexes(BasicDBObjectBuilder.start("studyId", 1).append("path", 1).get(), unique);
-//            nativeJobCollection.createIndexes(new BasicDBObject("id", 1), unique);
         } else {
             throw new CatalogDBException("Catalog already initialized");
         }
@@ -269,6 +269,11 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
+    public ClinicalAnalysisDBAdaptor getClinicalAnalysisDBAdaptor() {
+        return clinicalDBAdaptor;
+    }
+
+    @Override
     public Map<String, MongoDBCollection> getMongoDBCollectionMap() {
         return collections;
     }
@@ -296,6 +301,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         auditCollection = db.getCollection(AUDIT_COLLECTION);
         panelCollection = db.getCollection(PANEL_COLLECTION);
         familyCollection = db.getCollection(FAMILY_COLLECTION);
+        clinicalCollection = db.getCollection(CLINICAL_ANALYSIS_COLLECTION);
 
         collections = new HashMap<>();
         collections.put(METADATA_COLLECTION, metaCollection);
@@ -310,6 +316,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         collections.put(AUDIT_COLLECTION, auditCollection);
         collections.put(PANEL_COLLECTION, panelCollection);
         collections.put(FAMILY_COLLECTION, familyCollection);
+        collections.put(CLINICAL_ANALYSIS_COLLECTION, clinicalCollection);
 
         fileDBAdaptor = new FileMongoDBAdaptor(fileCollection, this);
         individualDBAdaptor = new IndividualMongoDBAdaptor(individualCollection, this);
@@ -322,6 +329,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         datasetDBAdaptor = new DatasetMongoDBAdaptor(datasetCollection, this);
         panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, this);
         familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, this);
+        clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, this);
         metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, this);
         auditDBAdaptor = new AuditMongoDBAdaptor(auditCollection);
 

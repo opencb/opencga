@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,7 +107,7 @@ public class StringDataWriter implements DataWriter<String> {
     public boolean write(String elem) {
         try {
             if (++writtenLines % 1000 == 0) {
-                logger.info("written lines = " + writtenLines);
+                logger.debug("written lines = {}", writtenLines);
             }
             os.write(elem.getBytes());
             if (endLine) {
@@ -125,7 +125,7 @@ public class StringDataWriter implements DataWriter<String> {
             long start = System.currentTimeMillis();
             for (String b : batch) {
                 if (++writtenLines % 1000 == 0) {
-                    logger.info("written lines = " + writtenLines);
+                    logger.debug("written lines = {}", writtenLines);
                 }
                 os.write(b.getBytes());
                 if (endLine) {

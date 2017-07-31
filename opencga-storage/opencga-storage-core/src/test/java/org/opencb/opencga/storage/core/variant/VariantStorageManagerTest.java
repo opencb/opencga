@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.formats.variant.io.VariantReader;
+import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
 import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
@@ -34,7 +35,7 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.search.VariantSearchManager;
+import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -170,7 +171,19 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
             assertTrue(variant.toString(), map.containsKey(studyConfigurationSingleFile.getStudyName()));
             String expected = map.get(studyConfigurationSingleFile.getStudyName()).getSamplesData().toString();
             String actual = map.get(studyConfigurationMultiFile.getStudyName()).getSamplesData().toString();
-            assertWithConflicts(variant, () -> assertEquals(variant.toString(), expected, actual));
+            if (!assertWithConflicts(variant, () -> assertEquals(variant.toString(), expected, actual))) {
+                List<List<String>> samplesDataSingle = map.get(studyConfigurationSingleFile.getStudyName()).getSamplesData();
+                List<List<String>> samplesDataMulti = map.get(studyConfigurationMultiFile.getStudyName()).getSamplesData();
+                for (int i = 0; i < samplesDataSingle.size(); i++) {
+                    String sampleName = map.get(studyConfigurationMultiFile.getStudyName()).getOrderedSamplesName().get(i);
+                    String message = variant.toString()
+                            + " sample: " + sampleName
+                            + " id " + studyConfigurationMultiFile.getSampleIds().get(sampleName);
+                    String expectedGt = samplesDataSingle.get(i).toString();
+                    String actualGt = samplesDataMulti.get(i).toString();
+                    assertWithConflicts(variant, () -> assertEquals(message, expectedGt, actualGt));
+                }
+            }
         }
         assertEquals(expectedNumVariants, numVariants);
 
@@ -697,7 +710,56 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 
 
         VariantSearchManager variantSearchManager = new VariantSearchManager(null, null, variantStorageEngine.getConfiguration());
-        variantSearchManager.load(variantStorageEngine.getConfiguration().getSearch().getCollection(), dbAdaptor.iterator());
+        // FIXME Collection is not in the configuration any more
+//        variantSearchManager.load(variantStorageEngine.getConfiguration().getSearch().getCollection(), dbAdaptor.iterator());
+    }
+
+
+    @Test
+    public void removeFileTest() throws Exception {
+        removeFileTest(new QueryOptions());
+    }
+
+    public void removeFileTest(QueryOptions params) throws Exception {
+        StudyConfiguration studyConfiguration1 = new StudyConfiguration(1, "Study1");
+        StudyConfiguration studyConfiguration2 = new StudyConfiguration(2, "Study2");
+
+        ObjectMap options = new ObjectMap(params)
+                .append(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.CONTROL)
+                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
+                .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
+        //Study1
+        runDefaultETL(getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
+                variantStorageEngine, studyConfiguration1, options.append(VariantStorageEngine.Options.FILE_ID.key(), 1));
+        runDefaultETL(getResourceUri("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
+                variantStorageEngine, studyConfiguration1, options.append(VariantStorageEngine.Options.FILE_ID.key(), 2));
+
+        //Study2
+        runDefaultETL(getResourceUri("1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
+                variantStorageEngine, studyConfiguration2, options.append(VariantStorageEngine.Options.FILE_ID.key(), 3));
+        runDefaultETL(getResourceUri("1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
+                variantStorageEngine, studyConfiguration2, options.append(VariantStorageEngine.Options.FILE_ID.key(), 4));
+        runDefaultETL(getResourceUri("1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
+                variantStorageEngine, studyConfiguration2, options.append(VariantStorageEngine.Options.FILE_ID.key(), 5));
+
+        variantStorageEngine.removeFile(studyConfiguration1.getStudyName(), 2);
+
+        for (Variant variant : variantStorageEngine.getDBAdaptor()) {
+            assertFalse(variant.getStudies().isEmpty());
+            StudyEntry study = variant.getStudy("1");
+            if (study != null) {
+                List<FileEntry> files = study.getFiles();
+                assertEquals(1, files.size());
+                assertEquals("1", files.get(0).getFileId());
+            }
+        }
+
+        variantStorageEngine.getDBAdaptor().getVariantSourceDBAdaptor().iterator(new Query(), new QueryOptions()).forEachRemaining(vs -> {
+            assertNotEquals("2", vs.getFileId());
+        });
+
+
+
     }
 
 }

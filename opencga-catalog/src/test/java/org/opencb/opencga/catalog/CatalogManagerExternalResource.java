@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -64,6 +64,8 @@ public class CatalogManagerExternalResource extends ExternalResource {
         } while (opencgaHome.toFile().exists());
         Files.createDirectories(opencgaHome);
         configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
+        configuration.getAdmin().setSecretKey("dummy");
+        configuration.getAdmin().setAlgorithm("HS256");
         configuration.setDataDir(opencgaHome.resolve("sessions").toUri().toString());
         configuration.setTempJobsDir(opencgaHome.resolve("jobs").toUri().toString());
 

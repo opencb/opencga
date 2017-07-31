@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.opencb.opencga.storage.mongodb.variant.exceptions;
 
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
 import java.util.List;
@@ -35,13 +34,6 @@ public class MongoVariantStorageEngineException extends StorageEngineException {
 
     public MongoVariantStorageEngineException(String message) {
         super(message);
-    }
-
-    public static MongoVariantStorageEngineException operationInProgressException(BatchFileOperation opInProgress) {
-        return new MongoVariantStorageEngineException("Can not load any file while there is "
-                + "an operation \"" + opInProgress.getOperationName() + "\" "
-                + "in status \"" + opInProgress.currentStatus() + "\" for files " + opInProgress.getFileIds() + ". "
-                + "Finish operations to continue.");
     }
 
     public static MongoVariantStorageEngineException filesBeingMergedException(List<Integer> fileIds) {

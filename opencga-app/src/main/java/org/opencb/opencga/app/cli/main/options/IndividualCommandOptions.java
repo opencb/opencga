@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,6 @@ public class IndividualCommandOptions {
     public IndividualAclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
     public AnnotationCommandOptions.AnnotationSetsCreateCommandOptions annotationCreateCommandOptions;
-    public AnnotationCommandOptions.AnnotationSetsAllInfoCommandOptions annotationAllInfoCommandOptions;
     public AnnotationCommandOptions.AnnotationSetsSearchCommandOptions annotationSearchCommandOptions;
     public AnnotationCommandOptions.AnnotationSetsDeleteCommandOptions annotationDeleteCommandOptions;
     public AnnotationCommandOptions.AnnotationSetsInfoCommandOptions annotationInfoCommandOptions;
@@ -73,7 +72,6 @@ public class IndividualCommandOptions {
 
         AnnotationCommandOptions annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
         this.annotationCreateCommandOptions = annotationCommandOptions.getCreateCommandOptions();
-        this.annotationAllInfoCommandOptions = annotationCommandOptions.getAllInfoCommandOptions();
         this.annotationSearchCommandOptions = annotationCommandOptions.getSearchCommandOptions();
         this.annotationDeleteCommandOptions = annotationCommandOptions.getDeleteCommandOptions();
         this.annotationInfoCommandOptions = annotationCommandOptions.getInfoCommandOptions();
@@ -349,7 +347,7 @@ public class IndividualCommandOptions {
             @Parameter(names = {"--sample"}, description = "Comma separated list of sample ids or names", arity = 1)
             public String sample;
 
-            @Parameter(names = {"--propagate"}, description = "Boolean parameter indicating whether to propagate the permissions to the " +
+            @Parameter(names = {"--propagate"}, description = "Flag parameter indicating whether to propagate the permissions to the " +
                     "samples related to the individual(s).", arity = 0)
             public boolean propagate;
         }

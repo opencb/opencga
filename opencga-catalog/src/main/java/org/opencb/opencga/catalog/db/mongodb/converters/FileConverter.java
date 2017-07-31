@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,10 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Sample;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -60,6 +63,22 @@ public class FileConverter extends GenericDocumentComplexConverter<File> {
                 : -1L;
         document.put("experiment", new Document("id", experimentId));
 
+        document.put("samples", convertSamples(file.getSamples()));
+
         return document;
+    }
+
+    public List<Document> convertSamples(List<Sample> sampleList) {
+        if (sampleList == null || sampleList.size() == 0) {
+            return Collections.emptyList();
+        }
+        List<Document> samples = new ArrayList(sampleList.size());
+        for (Sample sample : sampleList) {
+            long sampleId = sample != null ? (sample.getId() == 0 ? -1L : sample.getId()) : -1L;
+            if (sampleId > 0) {
+                samples.add(new Document("id", sampleId));
+            }
+        }
+        return samples;
     }
 }

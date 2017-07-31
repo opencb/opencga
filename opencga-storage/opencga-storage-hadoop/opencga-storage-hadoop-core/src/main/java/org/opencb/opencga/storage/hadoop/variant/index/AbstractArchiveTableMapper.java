@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,9 +31,11 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.AbstractHBaseVariantMapper;
 import org.opencb.opencga.storage.hadoop.variant.AnalysisTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.samples.SamplesDataToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 import org.slf4j.Logger;
@@ -50,19 +52,24 @@ import java.util.stream.Stream;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  */
 public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMapper<ImmutableBytesWritable, Mutation> {
-    public static final String SPECIFIC_PUT = "opencga.storage.hadoop.hbase.merge.use_specific_put";
 
     private Logger logger = LoggerFactory.getLogger(AbstractArchiveTableMapper.class);
 
     protected ArchiveResultToVariantConverter resultConverter;
     private ArchiveRowKeyFactory rowKeyFactory;
     private boolean specificPut;
+    protected boolean loadSampleColumns;
+    private SamplesDataToHBaseConverter samplesDataToHBaseConverter;
+    private HBaseToVariantConverter<VariantTableStudyRow> rowToVariantConverter;
 
 
     protected ArchiveResultToVariantConverter getResultConverter() {
         return resultConverter;
     }
 
+    public HBaseToVariantConverter<VariantTableStudyRow> getRowToVariantConverter() {
+        return rowToVariantConverter;
+    }
 
 
     /**
@@ -82,7 +89,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         String chromosome = ctx.getChromosome();
         List<Cell> variantCells = GenomeHelper.getVariantColumns(ctx.getValue().rawCells());
         List<VariantTableStudyRow> tableStudyRows = parseVariantStudyRowsFromArchive(variantCells, chromosome);
-        HBaseToVariantConverter converter = getHbaseToVariantConverter();
+        HBaseToVariantConverter<VariantTableStudyRow> converter = getRowToVariantConverter();
         List<Variant> variants = new ArrayList<>(tableStudyRows.size());
         for (VariantTableStudyRow tableStudyRow : tableStudyRows) {
             variants.add(converter.convert(tableStudyRow));
@@ -132,6 +139,13 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
             rows.add(row);
             Put put = createPut(variant, newSampleIds, row);
             if (put != null) {
+                if (loadSampleColumns) {
+                    if (specificPut) {
+                        samplesDataToHBaseConverter.convert(variant, put, newSampleIds);
+                    } else {
+                        samplesDataToHBaseConverter.convert(variant, put);
+                    }
+                }
                 puts.add(put);
             }
         }
@@ -189,7 +203,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         Put put = new Put(rowKey);
         for (VariantTableStudyRow row : tableStudyRows) {
             byte[] value = VariantTableStudyRow.toProto(Collections.singletonList(row), getTimestamp()).toByteArray();
-            String column = GenomeHelper.getVariantcolumn(row);
+            String column = GenomeHelper.getVariantColumn(row);
             put.addColumn(getHelper().getColumnFamily(), Bytes.toBytes(column), value);
         }
         try {
@@ -205,8 +219,12 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
     protected void setup(Context context) throws IOException,
             InterruptedException {
         super.setup(context);
-        this.specificPut = context.getConfiguration().getBoolean(SPECIFIC_PUT, true);
-
+        this.specificPut = context.getConfiguration().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SPECIFIC_PUT, true);
+        this.loadSampleColumns = context.getConfiguration().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SAMPLE_COLUMNS, true);
+        samplesDataToHBaseConverter = new SamplesDataToHBaseConverter(getHelper().getColumnFamily(), getStudyConfiguration());
+        rowToVariantConverter = HBaseToVariantConverter.fromRow(getHelper())
+                .setFailOnEmptyVariants(true)
+                .setSimpleGenotypes(false);
         // Load VCF meta data for columns
         int studyId = getStudyConfiguration().getStudyId();
         resultConverter = new ArchiveResultToVariantConverter(studyId, getHelper().getColumnFamily(), this.getStudyConfiguration());
@@ -221,7 +239,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
     }
 
     @Override
-    protected final void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
+    public final void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
         logger.info("Start mapping key: " + Bytes.toString(key.get()));
         startStep();
         if (value.isEmpty()) {

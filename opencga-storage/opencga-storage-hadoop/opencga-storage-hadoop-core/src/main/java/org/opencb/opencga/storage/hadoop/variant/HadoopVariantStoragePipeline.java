@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,11 +43,11 @@ public class HadoopVariantStoragePipeline extends AbstractHadoopVariantStoragePi
     private final Logger logger = LoggerFactory.getLogger(HadoopVariantStoragePipeline.class);
 
     public HadoopVariantStoragePipeline(
-            StorageConfiguration configuration, String storageEngineId,
+            StorageConfiguration configuration,
             VariantHadoopDBAdaptor dbAdaptor, MRExecutor mrExecutor,
             Configuration conf, HBaseCredentials archiveCredentials,
             VariantReaderUtils variantReaderUtils, ObjectMap options) {
-        super(configuration, storageEngineId, LoggerFactory.getLogger(HadoopVariantStoragePipeline.class), dbAdaptor, variantReaderUtils,
+        super(configuration, dbAdaptor, variantReaderUtils,
                 options, archiveCredentials, mrExecutor, conf);
     }
 

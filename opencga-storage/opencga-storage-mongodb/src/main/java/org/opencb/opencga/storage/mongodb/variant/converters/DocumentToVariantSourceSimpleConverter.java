@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,16 @@ public class DocumentToVariantSourceSimpleConverter extends GenericDocumentCompl
     @Override
     public Document convertToStorageType(VariantSource object) {
         Document document = super.convertToStorageType(object);
-        document.append("_id", object.getStudyId() + "_" + object.getFileId());
+        document.append("_id", buildId(object.getStudyId(), object.getFileId()));
         return document;
+    }
+
+    public static String buildId(String studyId, String fileId) {
+        return studyId + '_' + fileId;
+    }
+
+    public static String buildId(int studyId, int fileId) {
+        return String.valueOf(studyId) + '_' + fileId;
     }
 
 }

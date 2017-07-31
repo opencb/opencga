@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,31 +19,36 @@ package org.opencb.opencga.storage.core.variant.io;
 
 import org.junit.*;
 import org.opencb.biodata.formats.variant.io.VariantReader;
-import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantNormalizer;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -67,6 +72,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
     };
 
     public static final String EXPORTED_FILE_NAME = "exported-variant-test-file.vcf.gz";
+    private static final VariantNormalizer VARIANT_NORMALIZER = new VariantNormalizer();
     private static URI[] inputUri;
     private static StoragePipelineResult[] etlResult;
     private VariantDBAdaptor dbAdaptor;
@@ -139,19 +145,21 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
         // compare VCF_TEST_FILE_NAME and EXPORTED_FILE_NAME
         Path originalVcf = Paths.get(getResourceUri("filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
 
-        VariantVcfReader variantVcfReader = new VariantVcfReader(new VariantSource(originalVcf.getFileName().toString(), "f", "s", ""),
-                originalVcf.toString());
-        variantVcfReader.open();
-        variantVcfReader.pre();
+        VariantReader variantReader = new VariantVcfHtsjdkReader(
+                FileUtils.newInputStream(originalVcf),
+                new VariantSource(originalVcf.getFileName().toString(), "f", "s", ""),
+                VARIANT_NORMALIZER);
+        variantReader.open();
+        variantReader.pre();
 
         Region region = new Region("22", 16000000);
-        int batchSize = 1000;
-        while (checkExportedVCF(originalVcf, variantVcfReader, outputVcf, region, batchSize) != batchSize) {
+        int batchSize = 2000;
+        while (checkExportedVCF(originalVcf, variantReader, outputVcf, region, batchSize) != batchSize) {
             region = new Region("22", region.getEnd());
         }
 
-        variantVcfReader.post();
-        variantVcfReader.close();
+        variantReader.post();
+        variantReader.close();
     }
 
     @Ignore
@@ -173,7 +181,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
     /**
      * @return number of read variants
      */
-    public int checkExportedVCF(Path originalVcf, VariantVcfReader originalVcfReader, Path exportedVcf, Region region, Integer lim)
+    public int checkExportedVCF(Path originalVcf, VariantReader originalVcfReader, Path exportedVcf, Region region, Integer lim)
             throws IOException {
         Map<String, Variant> originalVariants;
         if (originalVcfReader == null) {
@@ -182,6 +190,19 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
             originalVariants = readVCF(originalVcf, lim, region, originalVcfReader);
         }
         Map<String, Variant> exportedVariants = readVCF(exportedVcf, region);
+
+//        if (originalVariants.size() != exportedVariants.size()) {
+            for (String original : originalVariants.keySet()) {
+                if (!exportedVariants.containsKey(original)) {
+                    System.out.println("original = " + original);
+                }
+            }
+            for (String exported : exportedVariants.keySet()) {
+                if (!originalVariants.containsKey(exported)) {
+                    System.out.println("exported = " + exported);
+                }
+            }
+//        }
 
 //        assertEquals(originalVariants.size(), exportedVariants.size());
         for (Map.Entry<String, Variant> entry : originalVariants.entrySet()) {
@@ -227,7 +248,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
         if (vcfPath.toString().endsWith(".gz")) {
             is = new GZIPInputStream(is);
         }
-        VariantReader variantVcfReader = new VariantVcfHtsjdkReader(is, new VariantSource(vcfPath.getFileName().toString(), "f", "s", ""), new VariantNormalizer());
+        VariantReader variantVcfReader = new VariantVcfHtsjdkReader(is, new VariantSource(vcfPath.getFileName().toString(), "f", "s", ""), VARIANT_NORMALIZER);
         variantVcfReader.open();
         variantVcfReader.pre();
 

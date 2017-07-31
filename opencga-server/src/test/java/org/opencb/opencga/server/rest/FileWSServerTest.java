@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,33 +107,6 @@ public class FileWSServerTest {
     }
 
     @Test
-    public void testPathConverter() throws CatalogException {
-        // It will test how the conversion from : to / are done
-        CatalogManager catalogManager = OpenCGAWSServer.catalogManager;
-
-        String result = FileWSServer.convertPath("user@1000G:phase1:data:", sessionId, catalogManager);
-        assertEquals("user@1000G:phase1:data/", result);
-
-        result = FileWSServer.convertPath("user@phase1:data:", sessionId, catalogManager);
-        assertEquals("user@phase1:data/", result);
-
-        result = FileWSServer.convertPath("user@data:", sessionId, catalogManager);
-        assertEquals("user@data/", result);
-
-        result = FileWSServer.convertPath("1000G:phase1:data:", sessionId, catalogManager);
-        assertEquals("1000G:phase1:data/", result);
-
-        result = FileWSServer.convertPath("phase1:data:", sessionId, catalogManager);
-        assertEquals("phase1:data/", result);
-
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("not supported.");
-        FileWSServer.convertPath("1000G:data:", sessionId, catalogManager);
-    }
-
-
-
-    @Test
     public void linkFolderTest() throws IOException {
 
         String path = "data/newFolder"; //Accepts ending or not ending with "/"
@@ -197,14 +170,13 @@ public class FileWSServerTest {
         File file = OpenCGAWSServer.catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"),
                 new QueryOptions(), sessionId).first();
 
-        FileWSServer.UpdateFile updateFile = new FileWSServer.UpdateFile();
-        updateFile.description = "Change description";
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.DESCRIPTION.key(), "Change description");
         String json = webTarget.path("files").path(Long.toString(file.getId())).path("update")
-                .queryParam("sid", sessionId).request().post(Entity.json(updateFile), String.class);
+                .queryParam("sid", sessionId).request().post(Entity.json(params), String.class);
 
         QueryResponse<Object> response = WSServerTestUtils.parseResult(json, Object.class);
         file = OpenCGAWSServer.catalogManager.getFile(file.getId(), sessionId).first();
-        assertEquals(updateFile.description, file.getDescription());
+        assertEquals(params.getString(FileDBAdaptor.QueryParams.DESCRIPTION.key()), file.getDescription());
     }
 
     @Test

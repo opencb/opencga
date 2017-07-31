@@ -1,8 +1,27 @@
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.jdbc.PhoenixDatabaseMetaData;
+import org.apache.phoenix.schema.ConcurrentTableMutationException;
 import org.apache.phoenix.schema.PTable;
 import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.schema.TableNotFoundException;
@@ -16,7 +35,10 @@ import org.apache.phoenix.util.SchemaUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -42,9 +64,26 @@ public class PhoenixHelper {
     }
 
     public boolean execute(Connection con, String sql) throws SQLException {
+        return execute(con, sql, 5);
+    }
+
+    private boolean execute(Connection con, String sql, int retry) throws SQLException {
         logger.debug(sql);
         try (Statement statement = con.createStatement()) {
             return statement.execute(sql);
+        } catch (ConcurrentTableMutationException e) {
+            if (retry == 0) {
+                throw e;
+            }
+            logger.debug("Catch " + e.getClass().getSimpleName());
+            try {
+                int millis = RandomUtils.nextInt(100, 1000);
+                logger.debug("Sleeping " + millis + "ms");
+                Thread.sleep(millis);
+            } catch (InterruptedException interruption) {
+                Thread.interrupted();
+            }
+            return execute(con, sql, retry - 1);
         } catch (SQLException | RuntimeException e) {
             logger.error("Error executing '{}'", sql);
             throw e;
@@ -121,10 +160,10 @@ public class PhoenixHelper {
         execute(con, buildDropTable(tableName, ifExists, cascade));
     }
 
-    public void addMissingColumns(Connection con, String tableName, Collection<Column> annotColumns, boolean oneCall)
+    public void addMissingColumns(Connection con, String tableName, Collection<Column> newColumns, boolean oneCall)
             throws SQLException {
         Set<String> columns = getColumns(con, tableName).stream().map(Column::column).collect(Collectors.toSet());
-        List<Column> missingColumns = annotColumns.stream()
+        List<Column> missingColumns = newColumns.stream()
                 .filter(column -> !columns.contains(column.column()))
                 .collect(Collectors.toList());
         if (!missingColumns.isEmpty()) {
@@ -236,17 +275,16 @@ public class PhoenixHelper {
         }
     }
 
-    public List<Column> getColumns(Connection con, String tableName) throws SQLException {
-        String sql = "SELECT * FROM " + SchemaUtil.getEscapedFullTableName(tableName) + " LIMIT 0";
-        logger.debug(sql);
+    public List<Column> getColumns(Connection con, String fullTableName) throws SQLException {
+        String schema = SchemaUtil.getSchemaNameFromFullName(fullTableName);
+        String table = SchemaUtil.getTableNameFromFullName(fullTableName);
 
-        try (Statement statement = con.createStatement(); // Clean up Statement and RS
-             ResultSet resultSet = statement.executeQuery(sql)) {
-            ResultSetMetaData metaData = resultSet.getMetaData();
-            List<Column> columns = new ArrayList<>(metaData.getColumnCount());
-            // 1-based
-            for (int i = 1; i <= metaData.getColumnCount(); i++) {
-                columns.add(Column.build(metaData.getColumnName(i), PDataType.fromSqlTypeName(metaData.getColumnTypeName(i))));
+        try (ResultSet resultSet = con.getMetaData().getColumns(null, schema, table, null)) {
+            List<Column> columns = new ArrayList<>();
+            while (resultSet.next()) {
+                String columnName = resultSet.getString(PhoenixDatabaseMetaData.COLUMN_NAME);
+                String typeName = resultSet.getString(PhoenixDatabaseMetaData.TYPE_NAME);
+                columns.add(Column.build(columnName, PDataType.fromSqlTypeName(typeName)));
             }
             return columns;
         }
@@ -268,6 +306,10 @@ public class PhoenixHelper {
             return new ColumnImpl(column, pDataType, false);
         }
 
+        static Column build(byte[] column, PDataType pDataType) {
+            return new ColumnImpl(column, pDataType, false);
+        }
+
         static Column build(String column, PDataType pDataType, boolean nullable) {
             return new ColumnImpl(column, pDataType, nullable);
         }
@@ -284,7 +326,15 @@ public class PhoenixHelper {
         private boolean nullable;
 
         ColumnImpl(String column, PDataType pDataType, boolean nullable) {
-            this.bytes = Bytes.toBytes(column);
+            this(column, Bytes.toBytes(column), pDataType, nullable);
+        }
+
+        ColumnImpl(byte[] bytes, PDataType pDataType, boolean nullable) {
+            this(Bytes.toString(bytes), bytes, pDataType, nullable);
+        }
+
+        ColumnImpl(String column, byte[] bytes, PDataType pDataType, boolean nullable) {
+            this.bytes = bytes;
             this.column = column;
             this.pDataType = pDataType;
             this.nullable = nullable;

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.storage.mongodb.variant.load.variants;
 
 import com.mongodb.ErrorCategory;
@@ -12,6 +28,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.slf4j.Logger;
@@ -22,6 +39,7 @@ import java.util.regex.Matcher;
 
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.LOADED_GENOTYPES;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.FILEID_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.FILES_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.STUDIES_FIELD;
@@ -52,8 +70,10 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
     private static final QueryOptions UPSERT_AND_RELPACE = new QueryOptions(MongoDBCollection.UPSERT, true)
             .append(MongoDBCollection.REPLACE, true);
     private static final QueryOptions UPSERT = new QueryOptions(MongoDBCollection.UPSERT, true);
+    private static final QueryOptions MULTI = new QueryOptions(MongoDBCollection.MULTI, true);
 
 
+    private final MongoDBCollection studiesCollection;
     private final ProgressLogger progressLogger;
     private final MongoDBCollection variantsCollection;
     private final MongoDBCollection stageCollection;
@@ -69,15 +89,17 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
     private final Bson cleanStage;
 
     public MongoDBVariantMergeLoader(MongoDBCollection variantsCollection, MongoDBCollection stageCollection,
-                                     Integer studyId, List<Integer> fileIds, boolean resume, boolean cleanWhileLoading,
-                                     ProgressLogger progressLogger) {
+                                     MongoDBCollection studiesCollection, StudyConfiguration studyConfiguration, List<Integer> fileIds,
+                                     boolean resume, boolean cleanWhileLoading, ProgressLogger progressLogger) {
         this.progressLogger = progressLogger;
         this.variantsCollection = variantsCollection;
         this.stageCollection = stageCollection;
+        this.studiesCollection = studiesCollection;
         this.resume = resume;
-        this.studyId = studyId;
+        this.studyId = studyConfiguration.getStudyId();
         this.fileIds = fileIds;
         this.result = new MongoDBVariantWriteResult();
+        result.getGenotypes().addAll(studyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key()));
         this.cleanWhileLoading = cleanWhileLoading;
 
         List<String> studyFileToPull = new ArrayList<>(fileIds.size());
@@ -136,18 +158,35 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         }
         fillGapsVariants.stop();
 
-        if (cleanWhileLoading) {
-            cleanStage(mongoDBOps);
-        }
+        updateStage(mongoDBOps);
 
         long updatesNewStudyExistingVariant = mongoDBOps.getNewStudy().getUpdates().size() - newVariants;
         long updatesWithDataExistingStudy = mongoDBOps.getExistingStudy().getUpdates().size() - mongoDBOps.getMissingVariants();
         MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult(newVariants,
                 updatesNewStudyExistingVariant + updatesWithDataExistingStudy, mongoDBOps.getMissingVariants(),
                 mongoDBOps.getOverlappedVariants(), mongoDBOps.getSkipped(), mongoDBOps.getNonInserted(), newVariantsTime,
-                existingVariants.getNanoTime(), fillGapsVariants.getNanoTime());
+                existingVariants.getNanoTime(), fillGapsVariants.getNanoTime(), mongoDBOps.getGenotypes());
+
+        boolean updateGenotypes;
         synchronized (result) {
+            updateGenotypes = !result.getGenotypes().containsAll(mongoDBOps.getGenotypes());
             result.merge(writeResult);
+        }
+        if (updateGenotypes) {
+            // Update the genotypes as soon as there is a new one detected.
+            // Avoid losing values in case of failure.
+            logger.debug("Update list of loaded genotypes");
+            studiesCollection.update(
+                    eq("_id", studyId),
+                    addEachToSet("attributes." + LOADED_GENOTYPES.key(), new ArrayList<>(result.getGenotypes())),
+                    null);
+        }
+
+        // Modifying the stage collection MUST be the latest operation.
+        // If there is any failure, we must ensure that we can resume the operation.
+        // Once the stage collection is clean, we can not resume the operation.
+        if (cleanWhileLoading) {
+            cleanStage(mongoDBOps);
         }
 
         long processedVariants = mongoDBOps.getNewStudy().getQueries().size()
@@ -157,19 +196,35 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         return writeResult;
     }
 
+    private void updateStage(MongoDBOperations mongoDBOps) {
+
+        MongoDBOperations.StageSecondaryAlternates alternates = mongoDBOps.getSecondaryAlternates();
+        if (!alternates.getQueries().isEmpty()) {
+            QueryResult<BulkWriteResult> update = stageCollection.update(alternates.getQueries(), alternates.getUpdates(), null);
+            if (update.first().getMatchedCount() != alternates.getQueries().size()) {
+                onUpdateError("populate secondary alternates", update, alternates.getQueries(), alternates.getIds(), stageCollection);
+            }
+        }
+
+        long cleanDocuments = 0;
+        if (cleanWhileLoading) {
+            cleanDocuments = cleanStage(mongoDBOps);
+        }
+
+    }
+
     private long cleanStage(MongoDBOperations mongoDBOps) {
         long modifiedCount = 0;
         if (!mongoDBOps.getDocumentsToCleanStudies().isEmpty()) {
             logger.debug("Clean study {} from stage where all the files {} where duplicated : {}", studyId, fileIds,
                     mongoDBOps.getDocumentsToCleanStudies());
             modifiedCount += stageCollection.update(
-                    in(ID_FIELD, mongoDBOps.getDocumentsToCleanStudies()), cleanStageDuplicated,
-                    new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
+                    in(ID_FIELD, mongoDBOps.getDocumentsToCleanStudies()), cleanStageDuplicated, MULTI).first().getModifiedCount();
         }
         if (!mongoDBOps.getDocumentsToCleanFiles().isEmpty()) {
             logger.debug("Cleaning files {} from stage collection", fileIds);
-            modifiedCount += stageCollection.update(in(ID_FIELD, mongoDBOps.getDocumentsToCleanFiles()), cleanStage,
-                    new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
+            modifiedCount += stageCollection.update(
+                    in(ID_FIELD, mongoDBOps.getDocumentsToCleanFiles()), cleanStage, MULTI).first().getModifiedCount();
         }
 
         return modifiedCount;
@@ -265,10 +320,15 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
     }
 
     protected void onUpdateError(String updateName, QueryResult<BulkWriteResult> update, List<Bson> queries, List<String> queryIds) {
+        onUpdateError(updateName, update, queries, queryIds, variantsCollection);
+    }
+
+    protected void onUpdateError(String updateName, QueryResult<BulkWriteResult> update, List<Bson> queries, List<String> queryIds,
+                                 MongoDBCollection collection) {
         logger.error("(Updated " + updateName + " variants = " + queries.size() + " ) != "
                 + "(ModifiedCount = " + update.first().getModifiedCount() + "). MatchedCount:" + update.first().getMatchedCount());
         logger.info("QueryIDs: {}", queryIds);
-        List<QueryResult<Document>> queryResults = variantsCollection.find(queries, null);
+        List<QueryResult<Document>> queryResults = collection.find(queries, null);
         logger.info("Results: ", queryResults.size());
 
         for (QueryResult<Document> r : queryResults) {

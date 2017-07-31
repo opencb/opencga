@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,10 +31,7 @@ import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -49,14 +46,14 @@ import java.util.Map;
 @Api(value = "Analysis - Alignment", position = 4, description = "Methods for working with 'files' endpoint")
 public class AlignmentAnalysisWSService extends AnalysisWSService {
 
-    public AlignmentAnalysisWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+    public AlignmentAnalysisWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        super(uriInfo, httpServletRequest);
+        super(uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public AlignmentAnalysisWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+    public AlignmentAnalysisWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+        super(version, uriInfo, httpServletRequest, httpHeaders);
     }
 
     @GET

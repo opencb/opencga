@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.mongodb.variant.adaptors;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.DeleteResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -162,6 +163,19 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 //    }
 
     @Override
+    public void delete(int study, int file) {
+        String id = DocumentToVariantSourceSimpleConverter.buildId(study, file);
+        MongoDBCollection coll = db.getCollection(collectionName);
+
+        DeleteResult deleteResult = coll.remove(Filters.eq("_id", id), null).first();
+
+        if (deleteResult.getDeletedCount() != 1) {
+            throw new IllegalArgumentException("Unable to delete VariantSource " + id);
+        }
+
+    }
+
+    @Override
     public void close() {
         if (mongoManager != null) {
             mongoManager.close();
@@ -178,8 +192,11 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
             List<String> studyIds = query.getAsStringList(VariantSourceQueryParam.FILE_ID.key());
             filters.add(Filters.in(VariantSourceQueryParam.FILE_ID.key(), studyIds));
         }
-
-        return Filters.and(filters);
+        if (filters.isEmpty()) {
+            return new Document();
+        } else {
+            return Filters.and(filters);
+        }
     }
 
 //    private void parseQueryOptions(QueryOptions options, QueryBuilder builder) {

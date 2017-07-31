@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,9 +35,14 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.IndividualConverter;
+import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +51,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
+import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 /**
@@ -104,12 +111,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         QueryResult<WriteResult> insert = individualCollection.insert(individualDocument, null);
 
         return endQuery("createIndividual", startQuery, Collections.singletonList(individual));
-    }
-
-    @Override
-    public QueryResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException {
-        checkId(individualId);
-        return get(new Query(QueryParams.ID.key(), individualId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED), options);
     }
 
     @Override
@@ -177,13 +178,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
         }
 
-//        DBObject query = new BasicDBObject(PRIVATE_ID, individualId);
-//        DBObject update = new BasicDBObject("$pull", new BasicDBObject("annotationSets", new BasicDBObject("id", annotationId)));
-//        QueryResult<WriteResult> resultQueryResult = individualCollection.update(query, update, null);
-//        if (resultQueryResult.first().getN() < 1) {
-//            throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
-//        }
-
         Bson eq = Filters.eq(PRIVATE_ID, individualId);
         Bson pull = Updates.pull("annotationSets", new Document("name", annotationId));
         QueryResult<UpdateResult> update = individualCollection.update(eq, pull, null);
@@ -248,6 +242,32 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     }
 
     @Override
+    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+            throws CatalogDBException, CatalogAuthorizationException {
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        }
+        if (studyPermission == null) {
+            studyPermission = StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS;
+        }
+
+        // Get the study document
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
+        }
+
+        // Get the document query needed to check the permissions as well
+        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
+                studyPermission.name(), studyPermission.getIndividualPermission().name());
+        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        logger.debug("Individual count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class,
+                MongoClient.getDefaultCodecRegistry()));
+        return individualCollection.count(bson);
+    }
+
+    @Override
     public QueryResult distinct(Query query, String field) throws CatalogDBException {
         Bson bson = parseQuery(query, false);
         return individualCollection.distinct(field, bson);
@@ -256,40 +276,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     @Override
     public QueryResult stats(Query query) {
         return null;
-    }
-
-    @Override
-    public QueryResult<Individual> get(Query query, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
-        Bson bson = parseQuery(query, false);
-        QueryOptions qOptions;
-        if (options != null) {
-            qOptions = options;
-        } else {
-            qOptions = new QueryOptions();
-        }
-        qOptions = filterOptions(qOptions, FILTER_ROUTE_INDIVIDUALS);
-        QueryResult<Individual> individualQueryResult = individualCollection.find(bson, individualConverter, qOptions);
-        return endQuery("Get Individual", startTime, individualQueryResult.getResult());
-    }
-
-    @Override
-    public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
-        Bson bson = parseQuery(query, false);
-        QueryOptions qOptions;
-        if (options != null) {
-            qOptions = options;
-        } else {
-            qOptions = new QueryOptions();
-        }
-        qOptions = filterOptions(qOptions, FILTER_ROUTE_INDIVIDUALS);
-        return individualCollection.find(bson, qOptions);
     }
 
     @Override
@@ -348,25 +334,13 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, individualParameters, acceptedMapParams);
 
+        final String[] acceptedObjectParams = {QueryParams.ONTOLOGY_TERMS.key()};
+        filterObjectParams(parameters, individualParameters, acceptedObjectParams);
+
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
             individualParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             individualParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
-
-//        // Obtain all the possible individual Ids that satisfies the query
-//        QueryResult<Individual> myResults= get(query, new QueryOptions("include", "id"));
-//
-//        for (Individual individual : myResults.getResult()) {
-//            //Check existing name
-//            if (individualParameters.containsKey("name")) {
-//                String name = individualParameters.get("name").toString();
-//                Query subquery = new Query(QueryParams.NAME.key(), name)
-//                        .append(QueryParams.STUDY_ID.key(), getStudyId(individual.getId()));
-//                if (!get(subquery, new QueryOptions()).getResult().isEmpty()) {
-//                    throw CatalogDBException.alreadyExists("Individual", "name", name);
-//                }
-//            }
-//        }
 
         //Check individualIds exists
         String[] individualIdParams = {"fatherId", "motherId"};
@@ -581,18 +555,168 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     }
 
     @Override
+    public QueryResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException {
+        checkId(individualId);
+        Query query = new Query(QueryParams.ID.key(), individualId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+        return get(query, options);
+    }
+
+    @Override
+    public QueryResult<Individual> get(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        long startTime = startQuery();
+        List<Individual> documentList = new ArrayList<>();
+        DBIterator<Individual> dbIterator = iterator(query, options, user);
+        while (dbIterator.hasNext()) {
+            documentList.add(dbIterator.next());
+        }
+        QueryResult<Individual> queryResult = endQuery("Get", startTime, documentList);
+        addSamples(queryResult, user);
+
+        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
+            QueryResult<Long> count = count(query, user, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
+            queryResult.setNumTotalResults(count.first());
+        }
+        return queryResult;
+    }
+
+    @Override
+    public QueryResult<Individual> get(Query query, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+        List<Individual> documentList = new ArrayList<>();
+        DBIterator<Individual> dbIterator = iterator(query, options);
+        while (dbIterator.hasNext()) {
+            documentList.add(dbIterator.next());
+        }
+        QueryResult<Individual> queryResult = endQuery("Get", startTime, documentList);
+
+        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
+            QueryResult<Long> count = count(query);
+            queryResult.setNumTotalResults(count.first());
+        }
+        return queryResult;
+    }
+
+    private void addSamples(QueryResult<Individual> queryResult, String user) throws CatalogAuthorizationException {
+        if (queryResult.getNumResults() == 0) {
+            return;
+        }
+
+        QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
+        for (Individual individual : queryResult.getResult()) {
+            if (individual == null || individual.getId() <= 0) {
+                continue;
+            }
+            Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individual.getId());
+            try {
+                QueryResult<Sample> sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options, user);
+                individual.setSamples(sampleQueryResult.getResult());
+            } catch (CatalogDBException e) {
+                logger.warn("Could not retrieve samples for individual {}", individual.getId(), e);
+            }
+        }
+    }
+
+    @Override
+    public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+        List<Document> documentList = new ArrayList<>();
+        DBIterator<Document> dbIterator = nativeIterator(query, options);
+        while (dbIterator.hasNext()) {
+            documentList.add(dbIterator.next());
+        }
+        QueryResult<Document> queryResult = endQuery("Native get", startTime, documentList);
+
+        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
+            QueryResult<Long> count = count(query);
+            queryResult.setNumTotalResults(count.first());
+        }
+        return queryResult;
+    }
+
+    @Override
     public DBIterator<Individual> iterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
-        MongoCursor<Document> iterator = individualCollection.nativeQuery().find(bson, options).iterator();
-        return new MongoDBIterator<>(iterator, individualConverter);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        return new MongoDBIterator<>(mongoCursor, individualConverter);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
-        MongoCursor<Document> iterator = individualCollection.nativeQuery().find(bson, options).iterator();
-        return new MongoDBIterator<>(iterator);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        return new MongoDBIterator<>(mongoCursor);
     }
+
+    @Override
+    public DBIterator<Individual> iterator(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document studyDocument = getStudyDocument(query);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
+        Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
+                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
+                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
+
+        return new MongoDBIterator<>(mongoCursor, individualConverter, iteratorFilter);
+    }
+
+    @Override
+    public DBIterator nativeIterator(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document studyDocument = getStudyDocument(query);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
+        Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
+                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
+                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
+
+        return new MongoDBIterator<>(mongoCursor, iteratorFilter);
+    }
+
+    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
+        MongoCursor<Document> documentMongoCursor;
+        try {
+            documentMongoCursor = getMongoCursor(query, options, null, null);
+        } catch (CatalogAuthorizationException e) {
+            throw new CatalogDBException(e);
+        }
+        return documentMongoCursor;
+    }
+
+    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options, Document studyDocument, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document queryForAuthorisedEntries = null;
+        if (studyDocument != null && user != null) {
+            // Get the document query needed to check the permissions as well
+            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                    StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS.name(), IndividualAclEntry.IndividualPermissions.VIEW.name());
+        }
+
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        }
+        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        QueryOptions qOptions;
+        if (options != null) {
+            qOptions = options;
+        } else {
+            qOptions = new QueryOptions();
+        }
+        qOptions = filterOptions(qOptions, FILTER_ROUTE_INDIVIDUALS);
+
+        return individualCollection.nativeQuery().find(bson, qOptions).iterator();
+    }
+
+    private Document getStudyDocument(Query query) throws CatalogDBException {
+        // Get the study document
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
+        }
+        return queryResult.first();
+    }
+
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
@@ -623,6 +747,10 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     }
 
     private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
+        return parseQuery(query, isolated, null);
+    }
+
+    private Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
         List<Bson> annotationList = new ArrayList<>();
         // We declare variableMap here just in case we have different annotation queries
@@ -696,9 +824,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
                     case KARYOTYPIC_SEX:
                     case LIFE_STATUS:
                     case AFFECTATION_STATUS:
-                    case ACL:
-                    case ACL_MEMBER:
-                    case ACL_PERMISSIONS:
+                    case CREATION_DATE:
+                    case RELEASE:
                     case ANNOTATION_SETS:
                     case ONTOLOGY_TERMS_ID:
                     case ONTOLOGY_TERMS_NAME:
@@ -718,6 +845,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         if (annotationList.size() > 0) {
             Bson projection = Projections.elemMatch(QueryParams.ANNOTATION_SETS.key(), Filters.and(annotationList));
             andBsonList.add(projection);
+        }
+        if (authorisation != null && authorisation.size() > 0) {
+            andBsonList.add(authorisation);
         }
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

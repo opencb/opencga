@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang3.NotImplementedException;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -30,9 +31,12 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.DatasetDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.DatasetConverter;
+import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Dataset;
 import org.opencb.opencga.catalog.models.Status;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -134,6 +138,11 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
         logger.debug("Dataset get: query : {}, project: {}, dbTime: {}", bson, qOptions == null ? "" : qOptions.toJson(),
                 datasetQueryResult.getDbTime());
         return endQuery("Get Dataset", startTime, datasetQueryResult);
+    }
+
+    @Override
+    public QueryResult<Dataset> get(Query query, QueryOptions options, String user) throws CatalogDBException {
+        throw new NotImplementedException("Get not implemented for dataset");
     }
 
     @Override
@@ -312,123 +321,15 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
         return endQuery("Extract files from datasets", startTime, Collections.singletonList(updateQueryResult.first().getModifiedCount()));
     }
 
-//    @Override
-//    public QueryResult<DatasetAclEntry> getDatasetAcl(long datasetId, List<String> members) throws CatalogDBException {
-//        long startTime = startQuery();
-//
-//        checkId(datasetId);
-//
-//        Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, datasetId));
-//        Bson unwind = Aggregates.unwind("$" + QueryParams.ACL.key());
-//        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACL_MEMBER.key(), members));
-//        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACL.key()));
-//
-//        List<DatasetAclEntry> datasetAcl = null;
-//        QueryResult<Document> aggregate = datasetCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
-//        Dataset dataset = datasetConverter.convertToDataModelType(aggregate.first());
-//
-//        if (dataset != null) {
-//            datasetAcl = dataset.getAcl();
-//        }
-//
-//        return endQuery("get dataset Acl", startTime, datasetAcl);
-//    }
-
-//    @Override
-//    public QueryResult<DatasetAclEntry> setDatasetAcl(long datasetId, DatasetAclEntry acl, boolean override) throws CatalogDBException {
-//        long startTime = startQuery();
-//        long studyId = getStudyIdByDatasetId(datasetId);
-//
-//        String member = acl.getMember();
-//
-//        // If there is a group in acl.getMember(), we will obtain all the users belonging to the groups and will check if any of them
-//        // already have permissions on its own.
-//        if (member.startsWith("@")) {
-//            Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
-//
-//            // Check if any user already have permissions set on their own.
-//            QueryResult<DatasetAclEntry> datasetAcl = getDatasetAcl(datasetId, group.getUserIds());
-//            if (datasetAcl.getNumResults() > 0) {
-//                throw new CatalogDBException("Error when adding permissions in dataset. At least one user in " + group.getName()
-//                        + " has already defined permissions for dataset " + datasetId);
-//            }
-//        } else {
-//            // Check if the members of the new acl already have some permissions set
-//            QueryResult<DatasetAclEntry> datasetAcls = getDatasetAcl(datasetId, acl.getMember());
-//
-//            if (datasetAcls.getNumResults() > 0 && override) {
-//                unsetDatasetAcl(datasetId, Arrays.asList(member), Collections.emptyList());
-//            } else if (datasetAcls.getNumResults() > 0 && !override) {
-//                throw new CatalogDBException("setDatasetAcl: " + member + " already had an Acl set. If you "
-//                        + "still want to set a new Acl and remove the old one, please use the override parameter.");
-//            }
-//        }
-//
-//        // Push the new acl to the list of acls.
-//        Document queryDocument = new Document(PRIVATE_ID, datasetId);
-//        Document update = new Document("$push", new Document(QueryParams.ACL.key(), getMongoDBDocument(acl, "DatasetAcl")));
-//        QueryResult<UpdateResult> updateResult = datasetCollection.update(queryDocument, update, null);
-//
-//        if (updateResult.first().getModifiedCount() == 0) {
-//            throw new CatalogDBException("setDatasetAcl: An error occurred when trying to share file " + datasetId + " with " + member);
-//        }
-//
-//        return endQuery("setDatasetAcl", startTime, Arrays.asList(acl));
-//    }
-
-//    @Override
-//    public void unsetDatasetAcl(long datasetId, List<String> members, List<String> permissions) throws CatalogDBException {
-//        // Check that all the members (users) are correct and exist.
-//        checkMembers(dbAdaptorFactory, getStudyIdByDatasetId(datasetId), members);
-//
-//        // Remove the permissions the members might have had
-//        for (String member : members) {
-//            Document query = new Document(PRIVATE_ID, datasetId).append(QueryParams.ACL_MEMBER.key(), member);
-//            Bson update;
-//            if (permissions.size() == 0) {
-//                update = new Document("$pull", new Document("acl", new Document("member", member)));
-//            } else {
-//                update = new Document("$pull", new Document("acl.$.permissions", new Document("$in", permissions)));
-//            }
-//            QueryResult<UpdateResult> updateResult = datasetCollection.update(query, update, null);
-//            if (updateResult.first().getModifiedCount() == 0) {
-//                throw new CatalogDBException("unsetDatasetAcl: An error occurred when trying to stop sharing dataset " + datasetId
-//                        + " with other " + member + ".");
-//            }
-//        }
-//
-//        // Remove possible datasetAcls that might have permissions defined but no users
-////        Bson queryBson = new Document(QueryParams.ID.key(), datasetId)
-////                .append(QueryParams.ACL_MEMBER.key(),
-////                        new Document("$exists", true).append("$eq", Collections.emptyList()));
-////        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
-////        datasetCollection.update(queryBson, update, null);
-//    }
-
-//    @Override
-//    public void unsetDatasetAclsInStudy(long studyId, List<String> members) throws CatalogDBException {
-//        // Check that all the members (users) are correct and exist.
-//        checkMembers(dbAdaptorFactory, studyId, members);
-//
-//        // Remove the permissions the members might have had
-//        for (String member : members) {
-//            Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.ACL_MEMBER.key(), member);
-//            Bson update = new Document("$pull", new Document("acl", new Document("member", member)));
-//            datasetCollection.update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
-//        }
-//
-////        // Remove possible DatasetAcls that might have permissions defined but no users
-////        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
-////                .append(CatalogSampleDBAdaptor.QueryParams.ACL_MEMBER.key(),
-////                        new Document("$exists", true).append("$eq", Collections.emptyList()));
-////        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
-////        datasetCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
-//    }
-
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
         Bson bson = parseQuery(query, false);
         return datasetCollection.count(bson);
+    }
+
+    @Override
+    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission) throws CatalogDBException {
+        throw new NotImplementedException("Count not implemented for datasets");
     }
 
     @Override
@@ -454,6 +355,18 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
         Bson bson = parseQuery(query, false);
         MongoCursor<Document> iterator = datasetCollection.nativeQuery().find(bson, options).iterator();
         return new MongoDBIterator<>(iterator);
+    }
+
+    @Override
+    public DBIterator<Dataset> iterator(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        return null;
+    }
+
+    @Override
+    public DBIterator nativeIterator(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        return null;
     }
 
     @Override

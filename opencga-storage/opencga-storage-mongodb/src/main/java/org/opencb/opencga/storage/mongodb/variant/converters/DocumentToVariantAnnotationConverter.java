@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,9 @@ public class DocumentToVariantAnnotationConverter
     public static final String CT_CODON_FIELD = "codon";
     public static final String CT_STRAND_FIELD = "strand";
     public static final String CT_BIOTYPE_FIELD = "bt";
-    public static final String CT_EXON_NUMBER_FIELD = "exn";
+    public static final String CT_EXON_OVERLAP_FIELD = "exn";
+    public static final String CT_EXON_OVERLAP_NUMBER_FIELD = "n";
+    public static final String CT_EXON_OVERLAP_PERCENTAGE_FIELD = "p";
     public static final String CT_TRANSCRIPT_ANNOT_FLAGS = "flags";
     public static final String CT_C_DNA_POSITION_FIELD = "cDnaPos";
     public static final String CT_CDS_POSITION_FIELD = "cdsPos";
@@ -74,6 +76,8 @@ public class DocumentToVariantAnnotationConverter
     public static final String CT_PROTEIN_UNIPROT_ACCESSION = "uni_a";
     public static final String CT_PROTEIN_UNIPROT_NAME = "uni_n";
     public static final String CT_PROTEIN_UNIPROT_VARIANT_ID = "uni_var";
+
+    public static final String DISPLAY_CONSEQUENCE_TYPE_FIELD = "d_ct";
 
     public static final String XREFS_FIELD = "xrefs";
     public static final String XREF_ID_FIELD = "id";
@@ -232,7 +236,7 @@ public class DocumentToVariantAnnotationConverter
                             getDefault(ct, CT_ENSEMBL_TRANSCRIPT_ID_FIELD, ""),
                             getDefault(ct, CT_STRAND_FIELD, "+"),
                             getDefault(ct, CT_BIOTYPE_FIELD, ""),
-                            getDefault(ct, CT_EXON_NUMBER_FIELD, 0),
+                            getDefault(ct, CT_EXON_OVERLAP_FIELD, Collections.emptyList()),
                             getDefault(ct, CT_TRANSCRIPT_ANNOT_FLAGS, Collections.emptyList()),
                             getDefault(ct, CT_C_DNA_POSITION_FIELD, 0),
                             getDefault(ct, CT_CDS_POSITION_FIELD, 0),
@@ -244,6 +248,10 @@ public class DocumentToVariantAnnotationConverter
 
         }
         va.setConsequenceTypes(consequenceTypes);
+        Integer displaySO = object.getInteger(DISPLAY_CONSEQUENCE_TYPE_FIELD);
+        if (displaySO != null) {
+            va.setDisplayConsequenceType(ConsequenceTypeMappings.accessionToTerm.get(displaySO));
+        }
 
         //Conserved Region Scores
         List<Score> conservedRegionScores = new LinkedList<>();
@@ -268,8 +276,8 @@ public class DocumentToVariantAnnotationConverter
                         getDefault(dbObject, POPULATION_FREQUENCY_POP_FIELD, ""),
                         getDefault(dbObject, POPULATION_FREQUENCY_REFERENCE_ALLELE_FIELD, ""),
                         getDefault(dbObject, POPULATION_FREQUENCY_ALTERNATE_ALLELE_FIELD, ""),
-                        (float) getDefault(dbObject, POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, -1.0),
-                        (float) getDefault(dbObject, POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, -1.0),
+                        getDefault(dbObject, POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, -1.0F),
+                        getDefault(dbObject, POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, -1.0F),
                         -1.0f,
                         -1.0f,
                         -1.0f
@@ -287,7 +295,7 @@ public class DocumentToVariantAnnotationConverter
                         getDefault(document, GENE_TRAIT_ID_FIELD, ""),
                         getDefault(document, GENE_TRAIT_NAME_FIELD, ""),
                         getDefault(document, GENE_TRAIT_HPO_FIELD, ""),
-                        (float) getDefault(document, GENE_TRAIT_SCORE_FIELD, 0F),
+                        getDefault(document, GENE_TRAIT_SCORE_FIELD, 0F),
                         0, //getDefault(document, GENE_TRAIT_PUBMEDS_FIELD, 0),
                         getDefault(document, GENE_TRAIT_TYPES_FIELD, Collections.emptyList()),
                         Collections.emptyList(),
@@ -378,15 +386,23 @@ public class DocumentToVariantAnnotationConverter
     }
 
     private ConsequenceType buildConsequenceType(String geneName, String ensemblGeneId, String ensemblTranscriptId, String strand,
-                                                 String biotype, Integer exonNumber, List<String> transcriptAnnotationFlags,
+                                                 String biotype, List<Document> exonOverlap, List<String> transcriptAnnotationFlags,
                                                  Integer cDnaPosition, Integer cdsPosition, String codon,
                                                  List<String> soNameList, ProteinVariantAnnotation proteinVariantAnnotation) {
         List<SequenceOntologyTerm> soTerms = new ArrayList<>(soNameList.size());
         for (String soName : soNameList) {
             soTerms.add(new SequenceOntologyTerm(ConsequenceTypeMappings.getSoAccessionString(soName), soName));
         }
-        return new ConsequenceType(geneName, ensemblGeneId, ensemblTranscriptId, strand, biotype, exonNumber, transcriptAnnotationFlags,
-                cDnaPosition, cdsPosition, codon, proteinVariantAnnotation, soTerms);
+        List<ExonOverlap> exonOverlapList = new ArrayList<>(exonOverlap.size());
+        for (Document document : exonOverlap) {
+            ExonOverlap e = new ExonOverlap(
+                    document.getString(CT_EXON_OVERLAP_NUMBER_FIELD),
+                    getDefault(document, CT_EXON_OVERLAP_PERCENTAGE_FIELD, 0F));
+            exonOverlapList.add(e);
+        }
+
+        return new ConsequenceType(geneName, ensemblGeneId, ensemblTranscriptId, strand, biotype, exonOverlapList,
+                transcriptAnnotationFlags, cDnaPosition, cdsPosition, codon, proteinVariantAnnotation, soTerms);
     }
 
     private ProteinVariantAnnotation buildProteinVariantAnnotation(String uniprotAccession, String uniprotName, int aaPosition,
@@ -484,7 +500,15 @@ public class DocumentToVariantAnnotationConverter
                 putNotNull(ct, CT_CODON_FIELD, consequenceType.getCodon());
                 putNotDefault(ct, CT_STRAND_FIELD, consequenceType.getStrand(), DEFAULT_STRAND_VALUE);
                 putNotNull(ct, CT_BIOTYPE_FIELD, consequenceType.getBiotype());
-                putNotNull(ct, CT_EXON_NUMBER_FIELD, consequenceType.getExonNumber());
+                if (consequenceType.getExonOverlap() != null && !consequenceType.getExonOverlap().isEmpty()) {
+                    List<Document> exonOverlapDocuments = new ArrayList<>(consequenceType.getExonOverlap().size());
+                    for (ExonOverlap exonOverlap : consequenceType.getExonOverlap()) {
+                        exonOverlapDocuments.add(new Document(CT_EXON_OVERLAP_NUMBER_FIELD, exonOverlap.getNumber())
+                                        .append(CT_EXON_OVERLAP_PERCENTAGE_FIELD, exonOverlap.getPercentage()));
+                    }
+                    System.out.println("exonOverlapDocuments = " + exonOverlapDocuments);
+                    ct.put(CT_EXON_OVERLAP_FIELD, exonOverlapDocuments);
+                }
                 putNotNull(ct, CT_TRANSCRIPT_ANNOT_FLAGS, consequenceType.getTranscriptAnnotationFlags());
                 putNotNull(ct, CT_C_DNA_POSITION_FIELD, consequenceType.getCdnaPosition());
                 putNotNull(ct, CT_CDS_POSITION_FIELD, consequenceType.getCdsPosition());
@@ -583,6 +607,11 @@ public class DocumentToVariantAnnotationConverter
             }
             putNotNull(document, GENE_SO_FIELD, gnSo);
             putNotNull(document, CONSEQUENCE_TYPE_FIELD, cts);
+        }
+
+        if (variantAnnotation.getDisplayConsequenceType() != null) {
+            Integer accession = ConsequenceTypeMappings.termToAccession.get(variantAnnotation.getDisplayConsequenceType());
+            document.put(DISPLAY_CONSEQUENCE_TYPE_FIELD, accession);
         }
 
         //Conserved region score

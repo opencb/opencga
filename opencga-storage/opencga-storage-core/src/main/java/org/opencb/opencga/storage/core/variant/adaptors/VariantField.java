@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -47,6 +63,13 @@ public enum VariantField {
     ANNOTATION_VARIANT_TRAIT_ASSOCIATION(ANNOTATION, "annotation.variantTraitAssociation"),
     ANNOTATION_FUNCTIONAL_SCORE(ANNOTATION, "annotation.functionalScore"),
     ANNOTATION_ADDITIONAL_ATTRIBUTES(ANNOTATION, "annotation.additionalAttributes");
+
+    private static final List<VariantField> SUMMARY_EXCLUDED_FIELDS = Arrays.asList(
+            STUDIES_FILES,
+            STUDIES_SAMPLES_DATA,
+            STUDIES_SECONDARY_ALTERNATES);
+
+    public static final String SUMMARY = "summary";
 
     private final List<String> names;
     private final VariantField parent;
@@ -103,9 +126,12 @@ public enum VariantField {
     }
 
     /**
-     * Given a QueryOptions, reads the {@link QueryOptions#INCLUDE} and {@link QueryOptions#EXCLUDE} to determine
-     * which fields from Variant will be returned.
-     * In case of both fields present, {@link QueryOptions#INCLUDE} will take advantage over {@link QueryOptions#EXCLUDE}
+     * Given a QueryOptions, reads the {@link QueryOptions#INCLUDE}, {@link QueryOptions#EXCLUDE} and  {@link VariantField#SUMMARY}
+     * to determine which fields from Variant will be returned.
+     * In case of more than one fields present, will use the first valid field in this order:
+     *   1. {@link QueryOptions#INCLUDE}
+     *   2. {@link QueryOptions#EXCLUDE}
+     *   3. {@link VariantField#SUMMARY}
      *
      * @param options   Non null options
      * @param prune     Remove intermediate nodes some child is missing, or all children from a node if all are present
@@ -114,7 +140,11 @@ public enum VariantField {
     public static Set<VariantField> getReturnedFields(QueryOptions options, boolean prune) {
         Set<VariantField> returnedFields;
 
-        List<String> includeList = options == null ? Collections.emptyList() : options.getAsStringList(QueryOptions.INCLUDE);
+        if (options == null) {
+            options = QueryOptions.empty();
+        }
+
+        List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
         if (includeList != null && !includeList.isEmpty()) {
             returnedFields = new HashSet<>();
             for (String include : includeList) {
@@ -131,7 +161,7 @@ public enum VariantField {
             }
 
         } else {
-            List<String> excludeList = options == null ? Collections.emptyList() : options.getAsStringList(QueryOptions.EXCLUDE);
+            List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
             returnedFields = new HashSet<>(Arrays.asList(values()));
             if (excludeList != null && !excludeList.isEmpty()) {
                 for (String exclude : excludeList) {
@@ -143,6 +173,8 @@ public enum VariantField {
                     returnedFields.remove(field);
                     returnedFields.removeAll(field.getChildren());
                 }
+            } else if (options.getBoolean(SUMMARY, false)) {
+                returnedFields.removeAll(SUMMARY_EXCLUDED_FIELDS);
             }
         }
 

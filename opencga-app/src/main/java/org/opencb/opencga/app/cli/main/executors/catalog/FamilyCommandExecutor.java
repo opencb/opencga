@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import org.apache.commons.lang3.StringUtils;
@@ -66,10 +82,6 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = annotationCommandExecutor.createAnnotationSet(familyCommandOptions.annotationCreateCommandOptions,
                         openCGAClient.getFamilyClient());
                 break;
-            case "annotation-sets-all-info":
-                queryResponse = annotationCommandExecutor.getAllAnnotationSets(familyCommandOptions.annotationAllInfoCommandOptions,
-                        openCGAClient.getFamilyClient());
-                break;
             case "annotation-sets-search":
                 queryResponse = annotationCommandExecutor.searchAnnotationSets(familyCommandOptions.annotationSearchCommandOptions,
                         openCGAClient.getFamilyClient());
@@ -78,7 +90,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = annotationCommandExecutor.deleteAnnotationSet(familyCommandOptions.annotationDeleteCommandOptions,
                         openCGAClient.getFamilyClient());
                 break;
-            case "annotation-sets-info":
+            case "annotation-sets":
                 queryResponse = annotationCommandExecutor.getAnnotationSet(familyCommandOptions.annotationInfoCommandOptions,
                         openCGAClient.getFamilyClient());
                 break;
@@ -151,14 +163,17 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotNull(FamilyDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),
                 familyCommandOptions.searchCommandOptions.parentalConsanguinity);
 
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, familyCommandOptions.searchCommandOptions.dataModelOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, familyCommandOptions.searchCommandOptions.dataModelOptions.exclude);
-        queryOptions.put(QueryOptions.SKIP, familyCommandOptions.searchCommandOptions.numericOptions.skip);
-        queryOptions.put(QueryOptions.LIMIT, familyCommandOptions.searchCommandOptions.numericOptions.limit);
-        queryOptions.put("count", familyCommandOptions.searchCommandOptions.numericOptions.count);
+        if (familyCommandOptions.searchCommandOptions.numericOptions.count) {
+            return openCGAClient.getFamilyClient().count(query);
+        } else {
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, familyCommandOptions.searchCommandOptions.dataModelOptions.include);
+            queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, familyCommandOptions.searchCommandOptions.dataModelOptions.exclude);
+            queryOptions.put(QueryOptions.SKIP, familyCommandOptions.searchCommandOptions.numericOptions.skip);
+            queryOptions.put(QueryOptions.LIMIT, familyCommandOptions.searchCommandOptions.numericOptions.limit);
 
-        return openCGAClient.getFamilyClient().search(query, queryOptions);
+            return openCGAClient.getFamilyClient().search(query, queryOptions);
+        }
     }
 
 

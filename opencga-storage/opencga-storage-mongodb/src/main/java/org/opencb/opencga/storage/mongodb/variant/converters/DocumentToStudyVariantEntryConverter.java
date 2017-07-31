@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -176,19 +176,7 @@ public class DocumentToStudyVariantEntryConverter {
             List<Document> list = (List<Document>) document.get(ALTERNATES_FIELD);
             if (list != null && !list.isEmpty()) {
                 for (Document alternateDocument : list) {
-                    VariantType variantType = null;
-                    String type = (String) alternateDocument.get(ALTERNATES_TYPE);
-                    if (type != null && !type.isEmpty()) {
-                        variantType = VariantType.valueOf(type);
-
-                    }
-                    AlternateCoordinate alternateCoordinate = new AlternateCoordinate(
-                            (String) alternateDocument.get(ALTERNATES_CHR),
-                            (Integer) alternateDocument.get(ALTERNATES_START),
-                            (Integer) alternateDocument.get(ALTERNATES_END),
-                            (String) alternateDocument.get(ALTERNATES_REF),
-                            (String) alternateDocument.get(ALTERNATES_ALT),
-                            variantType);
+                    AlternateCoordinate alternateCoordinate = convertToAlternateCoordinate(alternateDocument);
                     if (study.getSecondaryAlternates() == null) {
                         study.setSecondaryAlternates(new ArrayList<>(list.size()));
                     }
@@ -217,6 +205,23 @@ public class DocumentToStudyVariantEntryConverter {
         }
 
         return study;
+    }
+
+    public static AlternateCoordinate convertToAlternateCoordinate(Document alternateDocument) {
+        VariantType variantType = null;
+        String type = (String) alternateDocument.get(ALTERNATES_TYPE);
+
+        if (type != null && !type.isEmpty()) {
+            variantType = VariantType.valueOf(type);
+        }
+
+        return new AlternateCoordinate(
+                (String) alternateDocument.get(ALTERNATES_CHR),
+                (Integer) alternateDocument.get(ALTERNATES_START),
+                (Integer) alternateDocument.get(ALTERNATES_END),
+                (String) alternateDocument.get(ALTERNATES_REF),
+                (String) alternateDocument.get(ALTERNATES_ALT),
+                variantType);
     }
 
     public String getStudyName(int studyId) {

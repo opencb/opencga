@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -38,7 +39,7 @@ public class FileDaemon extends MonitorParentDaemon {
 
     private CatalogFileUtils catalogFileUtils;
 
-    public FileDaemon(int period, int deleteDelay, String sessionId, CatalogManager catalogManager) {
+    public FileDaemon(int period, int deleteDelay, String sessionId, CatalogManager catalogManager) throws CatalogDBException {
         super(period, sessionId, catalogManager);
         this.deleteDelay = deleteDelay;
         this.deleteDelayMillis = (long) (deleteDelay * 24 * 60 * 60 * 1000);

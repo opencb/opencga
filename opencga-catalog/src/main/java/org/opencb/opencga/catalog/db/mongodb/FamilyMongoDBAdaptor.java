@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
@@ -14,11 +30,17 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.FamilyConverter;
+import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.permissions.FamilyAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +49,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
+import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 /**
@@ -59,6 +83,31 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
     }
 
     @Override
+    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+            throws CatalogDBException, CatalogAuthorizationException {
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        }
+        if (studyPermission == null) {
+            studyPermission = StudyAclEntry.StudyPermissions.VIEW_FAMILIES;
+        }
+
+        // Get the study document
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
+        }
+
+        // Get the document query needed to check the permissions as well
+        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
+                studyPermission.name(), studyPermission.getFamilyPermission().name());
+        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        logger.debug("Family count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        return familyCollection.count(bson);
+    }
+
+    @Override
     public QueryResult distinct(Query query, String field) throws CatalogDBException {
         Bson bson = parseQuery(query, false);
         return familyCollection.distinct(field, bson);
@@ -67,45 +116,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
     @Override
     public QueryResult stats(Query query) {
         return null;
-    }
-
-    @Override
-    public QueryResult<Family> get(Query query, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
-        Bson bson = parseQuery(query, false);
-        QueryOptions qOptions;
-        if (options != null) {
-            qOptions = options;
-        } else {
-            qOptions = new QueryOptions();
-        }
-
-        QueryResult<Family> familyQueryResult;
-
-//        Bson match = Aggregates.match(bson);
-//        Bson lookupMother = Aggregates.lookup("individual", "mother.id", IndividualDBAdaptor.QueryParams.ID.key(), "mother");
-//        Bson lookupFather = Aggregates.lookup("individual", "father.id", IndividualDBAdaptor.QueryParams.ID.key(), "father");
-//        Bson unwindMother = Aggregates.unwind("$mother");
-//        Bson unwindFather = Aggregates.unwind("$father");
-
-        // To be able to lookup by children, we need first to de-normalise the content
-//        Bson unwind = Aggregates.unwind("$children");
-//        Bson lookupChildren = Aggregates.lookup("individual", "children.id", IndividualDBAdaptor.QueryParams.ID.key(), "child");
-//        Bson unwindResult = Aggregates.unwind("$child");
-//        Bson group = Aggregates.group("$" + PRIVATE_ID, Accumulators.push("children", "$child"));
-
-//        familyQueryResult = familyCollection.aggregate(
-//                Arrays.asList(match, lookupMother, lookupFather, unwindMother, unwindFather),
-//                familyConverter, options);
-        familyQueryResult = familyCollection.find(bson, familyConverter, qOptions);
-        addMemberInfoToFamily(familyQueryResult);
-
-        logger.debug("Family get: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                qOptions == null ? "" : qOptions.toJson(), familyQueryResult.getDbTime());
-        return endQuery("Get family", startTime, familyQueryResult);
     }
 
     public void addMemberInfoToFamily(QueryResult<Family> familyQueryResult) {
@@ -119,39 +129,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                 family.setChildren(family.getChildren().stream().map(this::getIndividual).collect(Collectors.toList()));
             }
         }
-    }
-
-    private Individual getIndividual(Individual individual) {
-        Individual retIndividual = individual;
-        if (individual != null && individual.getId() > 0) {
-            QueryResult<Individual> individualQueryResult = null;
-            try {
-                individualQueryResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(individual.getId(),
-                        QueryOptions.empty());
-            } catch (CatalogDBException e) {
-                logger.error(e.getMessage(), e);
-            }
-            if (individualQueryResult.getNumResults() == 1) {
-                retIndividual = individualQueryResult.first();
-            }
-        }
-        return retIndividual;
-    }
-
-    @Override
-    public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
-        Bson bson = parseQuery(query, false);
-        QueryOptions qOptions;
-        if (options != null) {
-            qOptions = options;
-        } else {
-            qOptions = new QueryOptions();
-        }
-
-        return familyCollection.find(bson, qOptions);
     }
 
     @Override
@@ -289,17 +266,146 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
     }
 
     @Override
+    public QueryResult<Family> get(Query query, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+        List<Family> documentList = new ArrayList<>();
+        DBIterator<Family> dbIterator = iterator(query, options);
+        while (dbIterator.hasNext()) {
+            documentList.add(dbIterator.next());
+        }
+        QueryResult<Family> queryResult = endQuery("Get", startTime, documentList);
+        addMemberInfoToFamily(queryResult);
+
+        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
+            QueryResult<Long> count = count(query);
+            queryResult.setNumTotalResults(count.first());
+        }
+        return queryResult;
+    }
+
+    @Override
+    public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+        List<Document> documentList = new ArrayList<>();
+        DBIterator<Document> dbIterator = nativeIterator(query, options);
+        while (dbIterator.hasNext()) {
+            documentList.add(dbIterator.next());
+        }
+        QueryResult<Document> queryResult = endQuery("Native get", startTime, documentList);
+
+        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
+            QueryResult<Long> count = count(query);
+            queryResult.setNumTotalResults(count.first());
+        }
+        return queryResult;
+    }
+
+    @Override
+    public QueryResult<Family> get(long familyId, QueryOptions options) throws CatalogDBException {
+        checkId(familyId);
+        Query query = new Query(QueryParams.ID.key(), familyId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+        return get(query, options);
+    }
+
+    @Override
+    public QueryResult<Family> get(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        long startTime = startQuery();
+        List<Family> documentList = new ArrayList<>();
+        DBIterator<Family> dbIterator = iterator(query, options, user);
+        while (dbIterator.hasNext()) {
+            documentList.add(dbIterator.next());
+        }
+        QueryResult<Family> queryResult = endQuery("Get", startTime, documentList);
+        addMemberInfoToFamily(queryResult);
+
+        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
+            QueryResult<Long> count = count(query, user, StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
+            queryResult.setNumTotalResults(count.first());
+        }
+        return queryResult;
+    }
+
+    @Override
     public DBIterator<Family> iterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
-        MongoCursor<Document> iterator = familyCollection.nativeQuery().find(bson, options).iterator();
-        return new MongoDBIterator<>(iterator, familyConverter);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        return new MongoDBIterator<>(mongoCursor, familyConverter);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
-        MongoCursor<Document> iterator = familyCollection.nativeQuery().find(bson, options).iterator();
-        return new MongoDBIterator<>(iterator);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        return new MongoDBIterator<>(mongoCursor);
+    }
+
+    @Override
+    public DBIterator<Family> iterator(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document studyDocument = getStudyDocument(query);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
+        Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
+                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
+
+        return new MongoDBIterator<>(mongoCursor, familyConverter, iteratorFilter);
+    }
+
+    @Override
+    public DBIterator nativeIterator(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+
+        Document studyDocument = getStudyDocument(query);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
+        Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
+                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
+
+        return new MongoDBIterator<>(mongoCursor, iteratorFilter);
+    }
+
+    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
+        MongoCursor<Document> documentMongoCursor;
+        try {
+            documentMongoCursor = getMongoCursor(query, options, null, null);
+        } catch (CatalogAuthorizationException e) {
+            throw new CatalogDBException(e);
+        }
+        return documentMongoCursor;
+    }
+
+    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options, Document studyDocument, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document queryForAuthorisedEntries = null;
+        if (studyDocument != null && user != null) {
+            // Get the document query needed to check the permissions as well
+            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                    StudyAclEntry.StudyPermissions.VIEW_FAMILIES.name(), FamilyAclEntry.FamilyPermissions.VIEW.name());
+        }
+
+        if (!query.containsKey(CohortDBAdaptor.QueryParams.STATUS_NAME.key())) {
+            query.append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        }
+        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        QueryOptions qOptions;
+        if (options != null) {
+            qOptions = options;
+        } else {
+            qOptions = new QueryOptions();
+        }
+
+        return familyCollection.nativeQuery().find(bson, qOptions).iterator();
+    }
+
+    private Document getStudyDocument(Query query) throws CatalogDBException {
+        // Get the study document
+        Query studyQuery = new Query()
+                .append(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(FamilyDBAdaptor.QueryParams.STUDY_ID.key()));
+        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Study " + query.getLong(FamilyDBAdaptor.QueryParams.STUDY_ID.key()) + " not found");
+        }
+        return queryResult.first();
     }
 
     @Override
@@ -368,12 +474,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
     }
 
     @Override
-    public QueryResult<Family> get(long familyId, QueryOptions options) throws CatalogDBException {
-        checkId(familyId);
-        return get(new Query(QueryParams.ID.key(), familyId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED), options);
-    }
-
-    @Override
     public long getStudyId(long familyId) throws CatalogDBException {
         Bson query = new Document(PRIVATE_ID, familyId);
         Bson projection = Projections.include(PRIVATE_STUDY_ID);
@@ -396,6 +496,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
     }
 
     private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
+        return parseQuery(query, isolated, null);
+    }
+
+    private Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
         List<Bson> annotationList = new ArrayList<>();
         // We declare variableMap here just in case we have different annotation queries
@@ -466,12 +570,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                         break;
                     case NAME:
                     case DESCRIPTION:
+                    case RELEASE:
                     case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
-                    case ACL:
-                    case ACL_MEMBER:
-                    case ACL_PERMISSIONS:
                     case ONTOLOGY_TERMS_ID:
                     case ONTOLOGY_TERMS_NAME:
                     case ONTOLOGY_TERMS_SOURCE:
@@ -495,6 +597,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         if (annotationList.size() > 0) {
             Bson projection = Projections.elemMatch(QueryParams.ANNOTATION_SETS.key(), Filters.and(annotationList));
             andBsonList.add(projection);
+        }
+        if (authorisation != null && authorisation.size() > 0) {
+            andBsonList.add(authorisation);
         }
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

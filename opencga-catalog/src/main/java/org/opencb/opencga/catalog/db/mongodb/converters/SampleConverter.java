@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,8 +41,6 @@ public class SampleConverter extends GenericDocumentComplexConverter<Sample> {
                     object.put("individual", new Document("id", -1));
                 }
             }
-        } else {
-            object.put("individual", new Document("id", -1));
         }
         return super.convertToDataModelType(object);
     }

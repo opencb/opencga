@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ public class GenomeHelper {
 
     public static final String VARIANT_COLUMN_PREFIX = "_V";
     public static final byte[] VARIANT_COLUMN_B_PREFIX = Bytes.toBytes(VARIANT_COLUMN_PREFIX);
+    public static final byte[] PHOENIX_LOCK_COLUMN = Bytes.toBytes("PHOENIX_LOCK");
 
     private final int chunkSize;
     private final char separator;
@@ -173,7 +174,12 @@ public class GenomeHelper {
                 .collect(Collectors.toList());
     }
 
-    public static String getVariantcolumn(VariantTableStudyRow row) {
-        return VARIANT_COLUMN_PREFIX + "_" + row.getPos() + "_" + row.getRef() + "_" + row.getAlt();
+    public static String getVariantColumn(VariantTableStudyRow row) {
+        return getVariantColumn(row.getPos(), row.getRef(), row.getAlt());
     }
+
+    public static String getVariantColumn(Integer pos, String reference, String alternate) {
+        return VARIANT_COLUMN_PREFIX + '_' + pos + '_' + reference + '_' + alternate;
+    }
+
 }

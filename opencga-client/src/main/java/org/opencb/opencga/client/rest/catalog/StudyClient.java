@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,22 +40,6 @@ import java.io.IOException;
 public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
 
     private static final String STUDY_URL = "studies";
-
-    public enum GroupUpdateParams {
-        ADD_USERS("addUsers"),
-        SET_USERS("setUsers"),
-        REMOVE_USERS("removeUsers");
-
-        private String key;
-
-        GroupUpdateParams(String value) {
-            this.key = value;
-        }
-
-        public String key() {
-            return this.key;
-        }
-    }
 
     public StudyClient(String userId, String sessionId, ClientConfiguration configuration) {
         super(userId, sessionId, configuration);
@@ -153,7 +137,7 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
 
     public QueryResponse<ObjectMap> createGroup(String studyId, String groupId, String users) throws CatalogException, IOException {
         ObjectMap bodyParams = new ObjectMap();
-        bodyParams.putIfNotEmpty("groupId", groupId);
+        bodyParams.putIfNotEmpty("name", groupId);
         bodyParams.putIfNotEmpty("users", users);
         return execute(STUDY_URL, studyId, "groups", null, "create", new ObjectMap("body", bodyParams), POST, ObjectMap.class);
     }
@@ -168,13 +152,14 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
         return execute(STUDY_URL, studyId, "groups", groupId, "update", bodyParams, POST, ObjectMap.class);
     }
 
+    public QueryResponse<ObjectMap> updateGroupMember(String studyId, ObjectMap objectMap) throws CatalogException, IOException {
+        ObjectMap bodyParams = new ObjectMap("body", objectMap);
+        return execute(STUDY_URL, studyId, "groups", "members", "update", bodyParams, POST, ObjectMap.class);
+    }
+
     public QueryResponse<ObjectMap> groups(String studyId, ObjectMap objectMap) throws CatalogException, IOException {
         ObjectMap params = new ObjectMap(objectMap);
         return execute(STUDY_URL, studyId, "groups", params, GET, ObjectMap.class);
-    }
-
-    public QueryResponse<ObjectMap> infoGroup(String studyId,  String groupId, ObjectMap objectMap) throws CatalogException, IOException {
-        return execute(STUDY_URL, studyId, "groups", groupId, "info", objectMap, GET, ObjectMap.class);
     }
 
     public QueryResponse<Study> update(String studyId, String study, ObjectMap params) throws CatalogException, IOException {

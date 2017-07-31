@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 
 package org.opencb.opencga.catalog.audit;
 
-//import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor.FilterOption;
-//
-//import static org.opencb.opencga.catalog.db.api.CatalogDBAdaptor.FilterOption.Type.TEXT;
 
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 

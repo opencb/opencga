@@ -1,0 +1,22 @@
+!define TEST_SYSTEM {slim}
+
+
+!3 Generate Random Variables 
+!|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/|
+|let|expiredSessionId|const|eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzdHJpbmciLCJleHAiOjE0OTc0MzEwMTksImF1ZCI6Ik9wZW5DR0EgdXNlcnMiLCJpYXQiOjE0OTc0MzA0MTl9.HzxPg0zk8P5rW5zTTrfk7YSfRwDw2W6x4xkrU5oNuRU|eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzdHJpbmciLCJleHAiOjE0OTc0MzEwMTksImF1ZCI6Ik9wZW5DR0EgdXNlcnMiLCJpYXQiOjE0OTc0MzA0MTl9.HzxPg0zk8P5rW5zTTrfk7YSfRwDw2W6x4xkrU5oNuRU|
+|let|invalidSessionId|const|eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzdHJpbmciLCJleHAiOjE0OTc0MzEwMTksImF1ZCI6Ik9wZW5DR0EgdXNlcnMiLCJpYXQiOjE0OTc0MzA0MTl9.HzxPg0zk8P5rW5zTTrfk7YSfRwDw2W6x4xkrU5oNu33|eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzdHJpbmciLCJleHAiOjE0OTc0MzEwMTksImF1ZCI6Ik9wZW5DR0EgdXNlcnMiLCJpYXQiOjE0OTc0MzA0MTl9.HzxPg0zk8P5rW5zTTrfk7YSfRwDw2W6x4xkrU5oNu33|
+
+
+!3 Get User With A Valid JWT Token
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/users/$user/info?sid=$sessionId&exclude=projects |  |  Content-Type: application/json | jsonbody.response[0].result[0].id == '$user'|
+
+
+!3 (Negative) Get User With An Invalid JWT Token
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/users/$user/info?sid=$invalidSessionId |401|  Content-Type: application/json |jsonbody.error == 'Invalid authentication token : $invalidSessionId' |
+
+!3 (Negative) Get User With A Different User JWT 
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/users/$userA/info?sid=$sessionId |500|  Content-Type: application/json |jsonbody.error == 'Invalid sessionId for user: $userA' |
+

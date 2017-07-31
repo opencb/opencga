@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,9 @@ import java.util.Map;
 import org.apache.commons.lang3.ArrayUtils;
 import org.opencb.biodata.formats.variant.vcf4.VcfRecord;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantAggregatedVcfFactory;
+import org.opencb.biodata.formats.variant.vcf4.VariantAggregatedVcfFactory;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantVcfFactory;
+import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
 import org.opencb.commons.run.Task;
 
 /**

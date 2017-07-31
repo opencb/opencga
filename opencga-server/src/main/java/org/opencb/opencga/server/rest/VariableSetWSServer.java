@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,6 @@ import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.catalog.models.VariableSet;
 import org.opencb.opencga.catalog.models.summaries.VariableSetSummary;
@@ -29,10 +27,7 @@ import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.List;
 
@@ -45,13 +40,14 @@ import java.util.List;
 public class VariableSetWSServer extends OpenCGAWSServer {
 
 
-    public VariableSetWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+    public VariableSetWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
-        super(uriInfo, httpServletRequest);
+        super(uriInfo, httpServletRequest, httpHeaders);
     }
 
     private static class VariableSetParameters {
         public Boolean unique;
+        public Boolean confidential;
         public String name;
         public String description;
         public List<Variable> variables;
@@ -72,8 +68,8 @@ public class VariableSetWSServer extends OpenCGAWSServer {
             }
             logger.info("variables: {}", params.variables);
             long studyId = catalogManager.getStudyId(studyStr, sessionId);
-            QueryResult<VariableSet> queryResult = catalogManager.createVariableSet(studyId, params.name, params.unique, params.description,
-                    null, params.variables, sessionId);
+            QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().createVariableSet(studyId, params.name,
+                    params.unique, params.confidential, params.description, null, params.variables, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -139,6 +135,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "CSV list of variable set ids or names", required = false) @QueryParam("id") String id,
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
+                           @ApiParam(value = "Release value") @QueryParam("release") String release,
                            @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes,
                            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {

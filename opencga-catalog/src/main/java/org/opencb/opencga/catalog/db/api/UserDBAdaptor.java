@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,9 @@ import org.apache.commons.collections.map.LinkedMap;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -50,6 +49,17 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         }
     }
 
+    default void checkIds(List<String> userIds) throws CatalogDBException {
+        if (userIds == null || userIds.size() == 0) {
+            throw CatalogDBException.newInstance("No users to be checked.");
+        }
+
+        Query query = new Query(QueryParams.ID.key(), userIds);
+        if (count(query).first() < userIds.size()) {
+            throw CatalogDBException.newInstance("Some users do not exist.");
+        }
+    }
+
     QueryResult<User> insert(User user, QueryOptions options) throws CatalogDBException;
 
     QueryResult<User> get(String userId, QueryOptions options, String lastModified) throws CatalogDBException;
@@ -68,23 +78,11 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
 
     QueryResult<User> delete(String userId, QueryOptions queryOptions) throws CatalogDBException;
 
-    QueryResult<Session> addSession(String userId, Session session) throws CatalogDBException;
-
-    QueryResult<Session> logout(String userId, String sessionId) throws CatalogDBException;
-
-    QueryResult<ObjectMap> loginAsAnonymous(Session session) throws CatalogException;
-
-    QueryResult logoutAnonymous(String sessionId) throws CatalogDBException;
-
     QueryResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogDBException;
 
     void updateUserLastModified(String userId) throws CatalogDBException;
 
     QueryResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException;
-
-    QueryResult<Session> getSession(String userId, String sessionId) throws CatalogDBException;
-
-    String getUserIdBySessionId(String sessionId);
 
     // Config operations
     QueryResult setConfig(String userId, String name, ObjectMap config) throws CatalogDBException;

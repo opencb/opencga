@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,8 @@ public class StudyConfiguration {
 
     private Long timeStamp;
 
+    private VariantStudyMetadata variantMetadata;
+
     private ObjectMap attributes;
 
     protected StudyConfiguration() {
@@ -87,6 +89,11 @@ public class StudyConfiguration {
         }
         this.aggregation = other.aggregation;
         this.timeStamp = other.timeStamp;
+        if (other.variantMetadata == null) {
+            this.variantMetadata = new VariantStudyMetadata();
+        } else {
+            this.variantMetadata = new VariantStudyMetadata(other.variantMetadata);
+        }
         this.attributes = new ObjectMap(other.attributes);
     }
 
@@ -120,6 +127,7 @@ public class StudyConfiguration {
         this.batches = new ArrayList<>();
         this.aggregation = VariantSource.Aggregation.NONE;
         this.timeStamp = 0L;
+        this.variantMetadata = new VariantStudyMetadata();
         this.attributes = new ObjectMap();
     }
 
@@ -281,6 +289,15 @@ public class StudyConfiguration {
 
     public void setTimeStamp(Long timeStamp) {
         this.timeStamp = timeStamp;
+    }
+
+    public VariantStudyMetadata getVariantMetadata() {
+        return variantMetadata;
+    }
+
+    public StudyConfiguration setVariantMetadata(VariantStudyMetadata variantMetadata) {
+        this.variantMetadata = variantMetadata;
+        return this;
     }
 
     public ObjectMap getAttributes() {

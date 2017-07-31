@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,7 +86,11 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             configuration.setDatabasePrefix("demo");
         }
         configuration.setOpenRegister(true);
+
         configuration.getAdmin().setPassword("demo");
+        configuration.getAdmin().setSecretKey("demo");
+        configuration.getAdmin().setAlgorithm("HS256");
+
         CatalogDemo.createDemoDatabase(configuration, catalogCommandOptions.demoCatalogCommandOptions.force);
         CatalogManager catalogManager = new CatalogManager(configuration);
         sessionId = catalogManager.login("user1", "user1_pass", "localhost").first().getId();
@@ -110,6 +114,9 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         if (catalogCommandOptions.commonOptions.adminPassword != null) {
             configuration.getAdmin().setPassword(catalogCommandOptions.commonOptions.adminPassword);
         }
+
+        this.configuration.getAdmin().setSecretKey(this.catalogCommandOptions.installCatalogCommandOptions.secretKey);
+        this.configuration.getAdmin().setAlgorithm(this.catalogCommandOptions.installCatalogCommandOptions.algorithm);
 
         if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
             throw new CatalogException("No admin password found. Please, insert your password.");
@@ -138,8 +145,6 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             }
         }
         MongoDataStoreManager mongoDataStoreManager = new MongoDataStoreManager(dataStoreServerAddresses);
-//        return mongoDataStoreManager.exists(catalogConfiguration.getDatabase().getDatabase());
-//        return mongoDataStoreManager.exists(catalogConfiguration.getDatabase().getDatabase());
         return mongoDataStoreManager.exists(database);
     }
 
@@ -154,8 +159,6 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         if (!checkDatabaseExists(catalogManager.getCatalogDatabase())) {
             throw new CatalogException("The database " + catalogManager.getCatalogDatabase() + " does not exist.");
         }
-//        System.out.println("\nDeleting " + catalogConfiguration.getDatabase().getDatabase() + " from "
-//                + catalogConfiguration.getDatabase().getHosts() + "\n");
         logger.info("\nDeleting database {} from {}\n", catalogManager.getCatalogDatabase(), configuration.getCatalog().getDatabase()
                 .getHosts());
         catalogManager.deleteCatalogDB(false);
@@ -172,8 +175,6 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             throw new CatalogException("The database " + catalogManager.getCatalogDatabase() + " does not exist.");
         }
 
-//        System.out.println("\nChecking and installing non-existent indexes in" + catalogConfiguration.getDatabase().getDatabase() + " in "
-//                + catalogConfiguration.getDatabase().getHosts() + "\n");
         logger.info("\nChecking and installing non-existent indexes in {} in {}\n",
                 catalogManager.getCatalogDatabase(), configuration.getCatalog().getDatabase().getHosts());
         catalogManager.getUserManager().validatePassword("admin", configuration.getAdmin().getPassword(), true);

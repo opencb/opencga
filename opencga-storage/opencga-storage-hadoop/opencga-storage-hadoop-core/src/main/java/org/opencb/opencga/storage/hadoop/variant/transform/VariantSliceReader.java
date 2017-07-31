@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.hadoop.variant.transform;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.io.DataReader;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbaseTransformTask;
 import org.slf4j.Logger;
@@ -44,10 +45,16 @@ public class VariantSliceReader implements DataReader<ImmutablePair<Long, List<V
     // LinkedHashMap will preserve the reading order for the chromosomes
     private final LinkedHashMap<String, TreeMap<Long, List<Variant>>> bufferTree;
     private String currentChromosome = null;
+    private final ProgressLogger progressLogger;
 
     public VariantSliceReader(int chunkSize, VariantReader reader) {
+        this(chunkSize, reader, null);
+    }
+
+    public VariantSliceReader(int chunkSize, VariantReader reader, ProgressLogger progressLogger) {
         this.chunkSize = chunkSize;
         this.reader = reader;
+        this.progressLogger = progressLogger;
         bufferTree = new LinkedHashMap<>();
     }
 
@@ -87,6 +94,9 @@ public class VariantSliceReader implements DataReader<ImmutablePair<Long, List<V
             List<Variant> read;
             do {
                 read = reader.read(10);
+                if (progressLogger != null) {
+                    progressLogger.increment(read.size());
+                }
                 for (Variant variant : read) {
                     addVariant(variant);
                 }

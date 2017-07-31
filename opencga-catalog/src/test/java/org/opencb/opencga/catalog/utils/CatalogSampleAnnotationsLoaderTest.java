@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,17 @@
 
 package org.opencb.opencga.catalog.utils;
 
-import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.biodata.models.pedigree.Individual;
 import org.opencb.biodata.models.pedigree.Pedigree;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -55,6 +53,8 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
     public static void beforeClass() throws IOException, CatalogException, URISyntaxException {
         Configuration configuration = Configuration.load(CatalogSampleAnnotationsLoaderTest.class.getClassLoader()
                 .getClass().getResource("/configuration-test.yml").openStream());
+        configuration.getAdmin().setSecretKey("dummy");
+        configuration.getAdmin().setAlgorithm("HS256");
         catalogManager = new CatalogManager(configuration);
         catalogManager.deleteCatalogDB(true);
         catalogManager.installCatalogDB();
@@ -64,9 +64,10 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         URL pedFileURL = CatalogSampleAnnotationsLoader.class.getClassLoader().getResource(pedFileName);
         pedigree = loader.readPedigree(pedFileURL.getPath());
 
-        ObjectMap session = catalogManager.loginAsAnonymous("localHost").getResult().get(0);
-        sessionId = session.getString("sessionId");
-        userId = session.getString("userId");
+        userId = "user1";
+        catalogManager.getUserManager().create(userId, userId, "asdasd@asd.asd", userId, "", -1L, Account.FULL, QueryOptions.empty());
+        QueryResult<Session> login = catalogManager.getUserManager().login(userId, userId, "localhost");
+        sessionId = login.first().getId();
         Project project = catalogManager.getProjectManager().create("default", "def", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).getResult().get(0);
         Study study = catalogManager.createStudy(project.getId(), "default", "def", Study.Type.FAMILY, "", sessionId).getResult().get(0);
@@ -89,7 +90,6 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         Pedigree pedigree = loader.readPedigree(pedFile.getPath());
         VariableSet variableSet = loader.getVariableSetFromPedFile(pedigree);
 
-        System.out.println(new ObjectMapper().defaultPrettyPrintingWriter().writeValueAsString(variableSet));
         validate(pedigree, variableSet);
     }
 
@@ -107,7 +107,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         variables.add(new Variable("NonExistingField", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, null, "",
                 null, null));
 
-        VariableSet variableSet = new VariableSet(5, "", false, "", variables, null);
+        VariableSet variableSet = new VariableSet(5, "", false, false, "", variables, 1, null);
 
         validate(pedigree, variableSet);
     }
@@ -117,36 +117,27 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         QueryResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedFile, null, sessionId);
         long variableSetId = sampleQueryResult.getResult().get(0).getAnnotationSets().get(0).getVariableSetId();
 
-//        int variableSetId ;//= sampleQueryResult.getResult().get(0).getAnnotationSets().get(0).getVariableSetId();
-//        sessionId = "nIXANk1L8EmLCRhOwiZQ";
-//        studyId = 2;
-//        variableSetId = 7;
-
 //        Query query = new Query("variableSetId", variableSetId).append("annotation", "family:GB84");
         Query query = new Query("variableSetId", variableSetId)
                 .append("annotation.family", "GB84");
         QueryOptions options = new QueryOptions("limit", 2);
 
         QueryResult<Sample> allSamples = catalogManager.getAllSamples(studyId, query, options, sessionId);
-        System.out.println(allSamples);
         Assert.assertNotEquals(0, allSamples.getNumResults());
         query.remove("annotation.family");
 
         query.put("annotation.sex", "2");
         query.put("annotation.Population","ITU");
         QueryResult<Sample> femaleIta = catalogManager.getAllSamples(studyId, query, options, sessionId);
-        System.out.println(femaleIta);
         Assert.assertNotEquals(0, femaleIta.getNumResults());
 
         query.put("annotation.sex", "1");
         query.put("annotation.Population", "ITU");
         QueryResult<Sample> maleIta = catalogManager.getAllSamples(studyId, query, options, sessionId);
-        System.out.println(maleIta);
         Assert.assertNotEquals(0, maleIta.getNumResults());
 
         query.remove("annotation.sex");
         QueryResult<Sample> ita = catalogManager.getAllSamples(studyId, query, options, sessionId);
-        System.out.println(ita);
         Assert.assertNotEquals(0, ita.getNumResults());
 
         Assert.assertEquals("Fail sample query", ita.getNumTotalResults(), maleIta.getNumTotalResults() + femaleIta.getNumTotalResults());
@@ -160,7 +151,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
             for (Map.Entry<String, Object> annotationEntry : annotation.entrySet()) {
                 annotationSet.add(new Annotation(annotationEntry.getKey(), annotationEntry.getValue()));
             }
-            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "",
+            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "", 1,
                     null), null);
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ public class Project {
     private String description;
     private String organization;
     private Organism organism;
+    private int currentRelease;
     private Status status;
     private String lastModified;
     private long size;
@@ -45,20 +46,21 @@ public class Project {
     public Project() {
     }
 
-    public Project(String name, String alias, String description, Status status, String organization, Organism organism) {
+    public Project(String name, String alias, String description, Status status, String organization, Organism organism,
+                   int currentRelease) {
         this(-1, name, alias, TimeUtils.getTime(), description, organization, organism, status, null, 0, new LinkedList<>(),
-                new HashMap<>(), new HashMap<>());
+                new HashMap<>(), new HashMap<>(), currentRelease);
     }
 
     public Project(String name, String alias, String creationDate, String description, Status status, String lastModified, long size,
-                   String organization, Organism organism) {
+                   String organization, Organism organism, int currentRelease) {
         this(-1, name, alias, creationDate, description, organization, organism, status, lastModified, size, new LinkedList<>(),
-                new HashMap<>(), new HashMap<>());
+                new HashMap<>(), new HashMap<>(), currentRelease);
     }
 
     public Project(long id, String name, String alias, String creationDate, String description, String organization, Organism organism,
                    Status status, String lastModified, long size, List<Study> studies, Map<File.Bioformat, DataStore> dataStores,
-                   Map<String, Object> attributes) {
+                   Map<String, Object> attributes, int currentRelease) {
         this.id = id;
         this.name = name;
         this.alias = alias;
@@ -72,6 +74,7 @@ public class Project {
         this.studies = studies;
         this.dataStores = dataStores;
         this.attributes = attributes;
+        this.currentRelease = currentRelease;
     }
 
     public static class Organism {
@@ -170,6 +173,8 @@ public class Project {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", organization='").append(organization).append('\'');
+        sb.append(", organism=").append(organism);
+        sb.append(", currentRelease=").append(currentRelease);
         sb.append(", status=").append(status);
         sb.append(", lastModified='").append(lastModified).append('\'');
         sb.append(", size=").append(size);
@@ -213,6 +218,15 @@ public class Project {
 
     public Project setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public int getCurrentRelease() {
+        return currentRelease;
+    }
+
+    public Project setCurrentRelease(int currentRelease) {
+        this.currentRelease = currentRelease;
         return this;
     }
 

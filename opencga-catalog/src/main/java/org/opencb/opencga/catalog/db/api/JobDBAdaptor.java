@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,14 +130,15 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         SIZE("size", DECIMAL, ""),
-        OUT_DIR_ID("outDirId", INTEGER_ARRAY, ""),
+        RELEASE("release", INTEGER, ""),
+        OUT_DIR("outDir", TEXT_ARRAY, ""),
+        OUT_DIR_ID("outDir.id", INTEGER, ""),
         TMP_OUT_DIR_URI("tmpOutDirUri", TEXT_ARRAY, ""),
-        INPUT("input", INTEGER_ARRAY, ""),
-        OUTPUT("output", INTEGER_ARRAY, ""),
+        INPUT("input", TEXT_ARRAY, ""),
+        OUTPUT("output", TEXT_ARRAY, ""),
+        INPUT_ID("input.id", INTEGER_ARRAY, ""),
+        OUTPUT_ID("output.id", INTEGER_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
-        ACL("acl", TEXT_ARRAY, ""),
-        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
-        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,6 +90,8 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
      */
     List<QueryResult<Project>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException, IOException;
 
+    QueryResult<Integer> incrementRelease(String projectStr, String sessionId) throws CatalogException;
+
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.
      *
@@ -163,5 +165,7 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
      * @return A QueryResult object containing the list of projects and studies that are shared with the user.
      * @throws CatalogException CatalogException
      */
-    QueryResult<Project> getSharedProjects(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException;
+    default QueryResult<Project> getSharedProjects(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException {
+        return get(new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + userId), queryOptions, sessionId);
+    }
 }

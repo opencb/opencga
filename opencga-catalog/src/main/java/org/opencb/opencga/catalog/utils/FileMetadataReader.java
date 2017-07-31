@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -264,7 +264,7 @@ public class FileMetadataReader {
         }
 
         List<String> includeSampleNameId = Arrays.asList("projects.studies.samples.id", "projects.studies.samples.name");
-        if (file.getSampleIds() == null || file.getSampleIds().isEmpty()) {
+        if (file.getSamples() == null || file.getSamples().isEmpty()) {
             //Read samples from file
             List<String> sortedSampleNames = null;
             switch (fileModifyParams.containsKey("bioformat") ? (File.Bioformat) fileModifyParams.get("bioformat") : file.getBioformat()) {
@@ -356,11 +356,11 @@ public class FileMetadataReader {
                 if (createMissingSamples) {
                     for (String sampleName : set) {
                         if (simulate) {
-                            sampleList.add(new Sample(-1, sampleName, file.getName(), new Individual(), null));
+                            sampleList.add(new Sample(-1, sampleName, file.getName(), new Individual(), null, 1));
                         } else {
                             try {
-                                sampleList.add(catalogManager.createSample(study.getId(), sampleName, file.getName(),
-                                        null, null, null, sessionId).first());
+                                sampleList.add(catalogManager.getSampleManager().create(Long.toString(study.getId()), sampleName, file
+                                        .getName(), null, null, false, null, null, null, sessionId).first());
                             } catch (CatalogException e) {
                                 Query query = new Query("name", sampleName);
                                 QueryOptions queryOptions = new QueryOptions("include", includeSampleNameId);
@@ -387,14 +387,14 @@ public class FileMetadataReader {
 
         } else {
             //Get samples from file.sampleIds
-            Query query = new Query("id", file.getSampleIds());
+            Query query = new Query("id", file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
             sampleList = catalogManager.getAllSamples(study.getId(), query, new QueryOptions(), sessionId).getResult();
         }
 
         List<Long> sampleIdsList = sampleList.stream().map(Sample::getId).collect(Collectors.toList());
-        fileModifyParams.put("sampleIds", sampleIdsList);
+        fileModifyParams.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleIdsList);
         if (!attributes.isEmpty()) {
-            fileModifyParams.put("attributes", attributes);
+            fileModifyParams.put(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
         }
 
         return sampleList;

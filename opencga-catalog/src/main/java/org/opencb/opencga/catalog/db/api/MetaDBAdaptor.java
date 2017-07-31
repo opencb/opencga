@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,18 +20,17 @@ package org.opencb.opencga.catalog.db.api;
  * Created by pfurio on 23/05/16.
  */
 
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.Session;
 
 public interface MetaDBAdaptor {
 
-    QueryResult<Session> addAdminSession(Session session) throws CatalogDBException;
-
-    void logout(String sessionId) throws CatalogDBException;
-
     String getAdminPassword() throws CatalogDBException;
 
-    boolean checkValidAdminSession(String id);
+    String readSecretKey() throws CatalogDBException;
+
+    String readAlgorithm() throws CatalogDBException;
+
+    void updateAdmin(Admin admin) throws  CatalogDBException;
 
 }

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.storage.mongodb.variant.load.stage;
 
 import com.google.common.collect.LinkedListMultimap;
@@ -5,9 +21,9 @@ import com.google.common.collect.ListMultimap;
 import org.bson.Document;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStoragePipeline;
 
 import java.util.Collections;
 import java.util.List;
@@ -44,7 +60,7 @@ public class MongoDBVariantStageConverterTask implements ParallelTaskRunner.Task
         ListMultimap<Document, Binary> ids = LinkedListMultimap.create();
 
         for (Variant variant : variants) {
-            if (variant.getType().equals(VariantType.NO_VARIATION) || variant.getType().equals(VariantType.SYMBOLIC)) {
+            if (MongoDBVariantStoragePipeline.SKIPPED_VARIANTS.contains(variant.getType())) {
                 localSkippedVariants++;
                 continue;
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.mongodb.variant.converters;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.protobuf.InvalidProtocolBufferException;
+import org.apache.commons.lang.StringUtils;
 import org.bson.Document;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -28,6 +29,7 @@ import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
 import org.slf4j.LoggerFactory;
 
@@ -99,6 +101,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             }
         }
     };
+    private List<String> format;
 
 
     /**
@@ -292,10 +295,15 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
 
         if (!extraFields.isEmpty()) {
             for (Integer fid : filesWithSamplesData) {
+                Document samplesDataDocument = null;
                 if (files.containsKey(fid) && files.get(fid).containsKey(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD)) {
-                    Document samplesDataDocument = files.get(fid)
+                    samplesDataDocument = files.get(fid)
                             .get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD, Document.class);
-
+                } else if (files.containsKey(-fid) && files.get(-fid).containsKey(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD)) {
+                    samplesDataDocument = files.get(-fid)
+                            .get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD, Document.class);
+                }
+                if (samplesDataDocument != null) {
                     int extraFieldPosition;
                     if (excludeGenotypes) {
                         extraFieldPosition = 0; //There are no GT
@@ -397,12 +405,16 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
 
     public List<String> getExtraFormatFields(Set<Integer> filesWithSamplesData, Map<Integer, Document> files) {
         final List<String> extraFields;
-        if (!files.isEmpty()) {
+        if (format != null) {
+            extraFields = format;
+        } else if (!files.isEmpty()) {
             Set<String> extraFieldsSet = new HashSet<>();
             for (Integer fid : filesWithSamplesData) {
                 if (files.containsKey(fid)) {
-                    Document sampleDatas = (Document) files.get(fid).get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD);
-                    extraFieldsSet.addAll(sampleDatas.keySet());
+                    Document sampleData = (Document) files.get(fid).get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD);
+                    if (sampleData != null) {
+                        extraFieldsSet.addAll(sampleData.keySet());
+                    }
                 }
             }
             extraFields = new ArrayList<>(extraFieldsSet.size());
@@ -647,6 +659,15 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         this.returnedUnknownGenotype = returnedUnknownGenotype;
     }
 
+    public void setFormat(List<String> format) {
+        if (format != null && format.contains(VariantQueryUtils.GT)) {
+            this.format = new ArrayList<>(format);
+            this.format.remove(VariantQueryUtils.GT);
+        } else {
+            this.format = format;
+        }
+    }
+
     /**
      * Lazy usage of loaded samplesIdMap.
      **/
@@ -681,18 +702,12 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         return __returnedSamplesPosition.get(studyConfiguration.getStudyId());
     }
 
-    public static LinkedHashMap<String, Integer> getReturnedSamplesPosition(
-            StudyConfiguration studyConfiguration,
-            LinkedHashSet<String> returnedSamples) {
-        return StudyConfiguration.getReturnedSamplesPosition(studyConfiguration, returnedSamples, StudyConfiguration::getIndexedSamples);
-    }
-
     public static String genotypeToDataModelType(String genotype) {
-        return genotype.replace("-1", ".");
+        return StringUtils.replace(genotype, "-1", ".");
     }
 
     public static String genotypeToStorageType(String genotype) {
-        return genotype.replace(".", "-1");
+        return StringUtils.replace(genotype, ".", "-1");
     }
 
 }

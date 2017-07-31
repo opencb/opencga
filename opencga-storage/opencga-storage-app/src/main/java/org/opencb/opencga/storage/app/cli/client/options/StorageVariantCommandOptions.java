@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,11 @@ import java.util.Map;
 @Parameters(commandNames = {"variant"}, commandDescription = "Variant management.")
 public class StorageVariantCommandOptions {
 
+    public static final String VARIANT_REMOVE_COMMAND = "remove";
+    public static final String VARIANT_REMOVE_COMMAND_DESCRIPTION = "Remove variants from storage";
+
     public VariantIndexCommandOptions indexVariantsCommandOptions;
+    public VariantRemoveCommandOptions variantRemoveCommandOptions;
     public VariantQueryCommandOptions variantQueryCommandOptions;
     public ImportVariantsCommandOptions importVariantsCommandOptions;
     public VariantAnnotateCommandOptions annotateVariantsCommandOptions;
@@ -56,6 +60,7 @@ public class StorageVariantCommandOptions {
         this.jCommander = jCommander;
 
         this.indexVariantsCommandOptions = new VariantIndexCommandOptions();
+        this.variantRemoveCommandOptions = new VariantRemoveCommandOptions();
         this.variantQueryCommandOptions = new VariantQueryCommandOptions();
         this.importVariantsCommandOptions = new ImportVariantsCommandOptions();
         this.annotateVariantsCommandOptions = new VariantAnnotateCommandOptions();
@@ -162,6 +167,30 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage" +
                 ".core.StudyConfiguration", arity = 1)
         public String studyConfigurationFile;
+
+    }
+
+    public static class GenericVariantRemoveOptions {
+
+        @Parameter(names = {"--file"}, description = "CSV of files to be removed from storage. Type 'all' to remove the whole study",
+                splitter = CommaParameterSplitter.class, required = true)
+        public List<String> files = null;
+
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation")
+        public boolean resume;
+    }
+
+    @Parameters(commandNames = {VARIANT_REMOVE_COMMAND}, commandDescription = VARIANT_REMOVE_COMMAND_DESCRIPTION)
+    public class VariantRemoveCommandOptions extends GenericVariantRemoveOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", arity = 1, required = true)
+        public String study;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data", required = false, arity = 1)
+        public String dbName;
 
     }
 
@@ -316,6 +345,12 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--output-file"}, description = "A comma separated list of files from the SAME study to be returned")
         public String returnFile;
+
+        @Parameter(names = {"--include-format"}, description = VariantQueryParam.INCLUDE_FORMAT_DESCR)
+        public String includeFormat;
+
+        @Parameter(names = {"--include-genotype"}, description = VariantQueryParam.INCLUDE_GENOTYPE_DESCR)
+        public String includeGenotype;
 
         @Parameter(names = {"--output-sample"}, description = "A comma separated list of samples from the SAME study to be returned")
         public String returnSample;
@@ -642,8 +677,8 @@ public class StorageVariantCommandOptions {
 //        public String studyId;
 //
 
-        @Parameter(names = {"--mode"}, description = "Search mode. Valid values: core, collection.", arity = 1)
-        public String mode = "core";
+//        @Parameter(names = {"--mode"}, description = "Search mode. Valid values: core, collection.", arity = 1)
+//        public String mode = "core";
 
         @Parameter(names = {"--create"}, description = "Create a new core/collection.", arity = 0)
         public boolean create;
@@ -654,11 +689,11 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--solr-config"}, description = "Solr configuration name.", arity = 1)
         public String solrConfig;
 
-        @Parameter(names = {"--solr-num-shards"}, description = "Number of Solr collection shards (only for a Solr cluster mode).", arity = 1)
-        public int numShards = 2;
-
-        @Parameter(names = {"--solr-num-replicas"}, description = "Number of Solr collection replicas (only for a Solr cluster mode).", arity = 1)
-        public int numReplicas = 2;
+//        @Parameter(names = {"--solr-num-shards"}, description = "Number of Solr collection shards (only for a Solr cluster mode).", arity = 1)
+//        public int numShards = 2;
+//
+//        @Parameter(names = {"--solr-num-replicas"}, description = "Number of Solr collection replicas (only for a Solr cluster mode).", arity = 1)
+//        public int numReplicas = 2;
 
         @Parameter(names = {"-d", "--database"}, description = "Name of the target core ore collection.", arity = 1)
         public String dbName;

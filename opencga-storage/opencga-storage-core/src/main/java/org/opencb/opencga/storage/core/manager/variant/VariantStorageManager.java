@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -186,14 +186,20 @@ public class VariantStorageManager extends StorageManager {
         variantStorageEngine.searchIndex(query, queryOptions);
     }
 
+    public void removeStudy(String study, String sessionId, QueryOptions options)
+            throws CatalogException, IOException, StorageEngineException {
+        VariantRemoveStorageOperation removeOperation = new VariantRemoveStorageOperation(catalogManager, storageEngineFactory);
 
-
-    public void deleteStudy(String studyId, String sessionId) {
-        throw new UnsupportedOperationException();
+        StudyInfo studyInfo = getStudyInfo(study, Collections.emptyList(), sessionId);
+        removeOperation.removeStudy(studyInfo, options, sessionId);
     }
 
-    public void deleteFile(String fileId, String studyId, String sessionId) {
-        throw new UnsupportedOperationException();
+    public List<File> removeFile(List<String> files, String study, String sessionId, QueryOptions options)
+            throws CatalogException, IOException, StorageEngineException {
+        VariantRemoveStorageOperation removeOperation = new VariantRemoveStorageOperation(catalogManager, storageEngineFactory);
+
+        StudyInfo studyInfo = getStudyInfo(study, files, sessionId);
+        return removeOperation.removeFiles(studyInfo, options, sessionId);
     }
 
     public List<File> annotate(String study, Query query, String outDir, ObjectMap config, String sessionId)

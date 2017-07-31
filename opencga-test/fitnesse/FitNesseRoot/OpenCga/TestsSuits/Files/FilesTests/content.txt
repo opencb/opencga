@@ -3,13 +3,14 @@
 
 !3 Create Folder
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/files/create-folder?sid=$sessionId&folders=folder&path=${path}&parents=true&study=$study |  |  Content-Type: application/json | jsonbody.error === '' && jsonbody.response[0].result[0].path =='${path}/' |
+| setBody | {  "directory": "true", "path" : "${path}", "parents" : "true"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/files/create?sid=$sessionId&study=$study |  |  Content-Type: application/json | jsonbody.error === '' && jsonbody.response[0].result[0].path =='${path}/' |
 |let|fileId|js|response.jsonbody.response[0].result[0].id||
 
 !3 Get File(Directory) Info
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/files/$fileId/info?sid=$sessionId |  |  Content-Type: application/json | jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$fileId'|
-
 
 !3 Get ACL For File
 !|Table: Rest Fixture | $baseURL |

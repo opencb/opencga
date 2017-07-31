@@ -1,17 +1,33 @@
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.storage.core.variant.io;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.commons.ProgressLogger;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.metadata.ExportMetadata;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
@@ -41,14 +57,14 @@ import java.util.zip.GZIPOutputStream;
 public class VariantExporter {
 
     public static final String METADATA_FILE_EXTENSION = ".meta.json.gz";
-    private final VariantDBAdaptor dbAdaptor;
+    private final VariantStorageEngine engine;
     private final VariantWriterFactory variantWriterFactory;
 
     private final Logger logger = LoggerFactory.getLogger(VariantExporter.class);
 
-    public VariantExporter(VariantDBAdaptor dbAdaptor) {
-        this.dbAdaptor = dbAdaptor;
-        variantWriterFactory = new VariantWriterFactory(dbAdaptor);
+    public VariantExporter(VariantStorageEngine engine) throws StorageEngineException {
+        this.engine = engine;
+        variantWriterFactory = new VariantWriterFactory(engine.getDBAdaptor());
     }
 
     /**
@@ -68,7 +84,7 @@ public class VariantExporter {
             outputFile = outputFileUri.getPath();
         }
         outputFile = VariantWriterFactory.checkOutput(outputFile, outputFormat);
-        List<Integer> studyIds = dbAdaptor.getReturnedStudies(query, QueryOptions.empty());
+        List<Integer> studyIds = engine.getDBAdaptor().getReturnedStudies(query, QueryOptions.empty());
 
         try (OutputStream os = VariantWriterFactory.getOutputStream(outputFile, outputFormat)) {
             boolean logProgress = !VariantWriterFactory.isStandardOutput(outputFile);
@@ -90,7 +106,7 @@ public class VariantExporter {
         }
 
         // DataReader
-        VariantDBReader variantDBReader = new VariantDBReader(dbAdaptor, query, queryOptions);
+        VariantDBReader variantDBReader = new VariantDBReader(engine.iterator(query, queryOptions));
 
         // Task<Variant, Variant>
         ParallelTaskRunner.TaskWithException<Variant, Variant, Exception> progressTask;
@@ -100,7 +116,7 @@ public class VariantExporter {
             final Query finalQuery = query;
             final QueryOptions finalQueryOptions = queryOptions;
             ProgressLogger progressLogger = new ProgressLogger("Export variants", () -> {
-                Long count = dbAdaptor.count(finalQuery).first();
+                Long count = engine.count(finalQuery).first();
                 long limit = finalQueryOptions.getLong(QueryOptions.LIMIT, Long.MAX_VALUE);
                 long skip = finalQueryOptions.getLong(QueryOptions.SKIP, 0);
                 count = Math.min(limit, count - skip);
@@ -129,11 +145,11 @@ public class VariantExporter {
 
     }
 
-    protected void exportMetaData(Query query, QueryOptions queryOptions, List studies, String output) throws IOException {
-        StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
+    protected void exportMetaData(Query query, QueryOptions queryOptions, List studies, String output)
+            throws IOException, StorageEngineException {
+        StudyConfigurationManager scm = engine.getStudyConfigurationManager();
 
-        Map<Integer, List<Integer>> returnedSamples = VariantQueryUtils.getReturnedSamples(query, queryOptions,
-                dbAdaptor.getStudyConfigurationManager());
+        Map<Integer, List<Integer>> returnedSamples = VariantQueryUtils.getReturnedSamples(query, queryOptions, scm);
         List<StudyConfiguration> studyConfigurations = new ArrayList<>(returnedSamples.size());
         returnedSamples.forEach((studyId, samplesList) -> {
             StudyConfiguration sc = scm.getStudyConfiguration(studyId, QueryOptions.empty()).first();

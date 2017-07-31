@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.Annotation;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 
 import javax.annotation.Nullable;
@@ -125,6 +129,8 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
 
     QueryResult<Sample> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
+    DBIterator<Sample> iterator(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
+
     /**
      * Multi-study search of samples in catalog.
      *
@@ -137,17 +143,7 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
      */
     QueryResult<Sample> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
-    @Deprecated
-    QueryResult<AnnotationSet> annotate(long sampleId, String annotationSetName, long variableSetId, Map<String, Object> annotations,
-                                        Map<String, Object> attributes, boolean checkAnnotationSet,
-                                        String sessionId) throws CatalogException;
-
-    @Deprecated
-    QueryResult<AnnotationSet> updateAnnotation(long sampleId, String annotationSetName, Map<String, Object> newAnnotations,
-                                                String sessionId) throws CatalogException;
-
-    @Deprecated
-    QueryResult<AnnotationSet> deleteAnnotation(long sampleId, String annotationId, String sessionId) throws CatalogException;
+    QueryResult<Sample> count(String studyStr, Query query, String sessionId) throws CatalogException;
 
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.

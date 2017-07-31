@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ public class VariableSetSummary {
     private List<VariableSummary> samples;
     private List<VariableSummary> individuals;
     private List<VariableSummary> cohorts;
+    private List<VariableSummary> families;
 
     public VariableSetSummary() {
         this(0L, "", Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
@@ -88,6 +89,15 @@ public class VariableSetSummary {
 
     public VariableSetSummary setCohorts(List<VariableSummary> cohorts) {
         this.cohorts = cohorts;
+        return this;
+    }
+
+    public List<VariableSummary> getFamilies() {
+        return families;
+    }
+
+    public VariableSetSummary setFamilies(List<VariableSummary> families) {
+        this.families = families;
         return this;
     }
 }

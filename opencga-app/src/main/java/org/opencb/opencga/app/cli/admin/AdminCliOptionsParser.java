@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ public class AdminCliOptionsParser {
     private AuditCommandOptions auditCommandOptions;
     private ToolsCommandOptions toolsCommandOptions;
     private ServerCommandOptions serverCommandOptions;
+    private AdminCliOptionsParser.MetaCommandOptions metaCommandOptions;
 
 
     public AdminCliOptionsParser() {
@@ -94,6 +95,11 @@ public class AdminCliOptionsParser {
         JCommander serverSubCommands = jCommander.getCommands().get("server");
         serverSubCommands.addCommand("rest", serverCommandOptions.restServerCommandOptions);
         serverSubCommands.addCommand("grpc", serverCommandOptions.grpcServerCommandOptions);
+
+        this.metaCommandOptions = new AdminCliOptionsParser.MetaCommandOptions();
+        this.jCommander.addCommand("meta", this.metaCommandOptions);
+        JCommander metaSubCommands = this.jCommander.getCommands().get("meta");
+        metaSubCommands.addCommand("update", this.metaCommandOptions.metaKeyCommandOptions);
     }
 
     public void parse(String[] args) throws ParameterException {
@@ -108,7 +114,7 @@ public class AdminCliOptionsParser {
         String parsedCommand = jCommander.getParsedCommand();
         if (jCommander.getCommands().containsKey(parsedCommand)) {
             String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
-            return subCommand != null ? subCommand: "";
+            return subCommand != null ? subCommand : "";
         } else {
             return null;
         }
@@ -132,7 +138,7 @@ public class AdminCliOptionsParser {
      */
     public class CommandOptions {
 
-        @Parameter(names = {"-h", "--help"},  description = "This parameter prints this help", help = true)
+        @Parameter(names = {"-h", "--help"}, description = "This parameter prints this help", help = true)
         public boolean help;
 
         public JCommander getSubCommand() {
@@ -143,7 +149,7 @@ public class AdminCliOptionsParser {
             String parsedCommand = jCommander.getParsedCommand();
             if (jCommander.getCommands().containsKey(parsedCommand)) {
                 String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
-                return subCommand != null ? subCommand: "";
+                return subCommand != null ? subCommand : "";
             } else {
                 return "";
             }
@@ -229,8 +235,8 @@ public class AdminCliOptionsParser {
         AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         public AuditCommandOptions() {
-            this.queryAuditCommandOptions= new QueryAuditCommandOptions();
-            this.statsAuditCommandOptions= new StatsAuditCommandOptions();
+            this.queryAuditCommandOptions = new QueryAuditCommandOptions();
+            this.statsAuditCommandOptions = new StatsAuditCommandOptions();
         }
     }
 
@@ -271,7 +277,16 @@ public class AdminCliOptionsParser {
         }
     }
 
+    @Parameters( commandNames = {"meta"}, commandDescription = "Manage Meta data")
+    public class MetaCommandOptions extends AdminCliOptionsParser.CommandOptions {
 
+        MetaKeyCommandOptions metaKeyCommandOptions;
+        AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+
+        public MetaCommandOptions() {
+            this.metaKeyCommandOptions = new MetaKeyCommandOptions();
+        }
+    }
 
     /**
      * Auxiliary class for Database connection.
@@ -318,10 +333,26 @@ public class AdminCliOptionsParser {
 
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+        @Parameter(
+                names = {"--secret-key"},
+                description = "Secret key needed to authenticate through OpenCGA (JWT).",
+                required = true
+        )
 
-//        @Parameter(names = {"--overwrite"}, description = "Reset the database if exists before installing")
-//        public boolean overwrite;
+        public String secretKey;
 
+        @Parameter(
+                names = {"--algorithm"},
+                description = "Algorithm to encrypt JWT session token (HS256)",
+                required = true
+        )
+
+        public String algorithm;
+
+        public InstallCatalogCommandOptions() {
+            super();
+            this.commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+        }
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete the Catalog database")
@@ -395,7 +426,6 @@ public class AdminCliOptionsParser {
         @Parameter(names = {"--stop"}, description = "File with the new tool to be installed", arity = 0)
         public boolean stop;
     }
-
 
 
     /*
@@ -634,6 +664,18 @@ public class AdminCliOptionsParser {
         public boolean background;
     }
 
+    @Parameters( commandNames = {"update"}, commandDescription = "Update secret key|algorithm" )
+    public class MetaKeyCommandOptions extends CatalogDatabaseCommandOptions {
+        @ParametersDelegate
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+
+        @Parameter( names = {"--key"}, description = "Update secret key in OpenCGA", arity = 1)
+        public String updateSecretKey;
+
+        @Parameter( names = {"--algorithm"}, description = "Update JWT algorithm in OpenCGA", arity = 1 )
+        public String algorithm;
+    }
+
 
     public void printUsage() {
         String parsedCommand = getCommand();
@@ -709,4 +751,9 @@ public class AdminCliOptionsParser {
     public ServerCommandOptions getServerCommandOptions() {
         return serverCommandOptions;
     }
+
+    public AdminCliOptionsParser.MetaCommandOptions getMetaCommandOptions() {
+        return this.metaCommandOptions;
+    }
+
 }

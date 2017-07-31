@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
@@ -157,13 +158,15 @@ public interface IFileManager extends ResourceManager<Long, File> {
     /*--------------*/
     QueryResult<File> create(String studyStr, File.Type type, File.Format format, File.Bioformat bioformat, String path,
                              String creationDate, String description, File.FileStatus status, long size, long experimentId,
-                             List<Long> sampleIds, long jobId, Map<String, Object> stats, Map<String, Object> attributes,
-                             boolean parents, String content, QueryOptions options, String sessionId) throws CatalogException;
+                             List<Sample> samples, long jobId, Map<String, Object> stats, Map<String, Object> attributes, boolean parents,
+                             String content, QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<File> createFolder(String studyStr, String path, File.FileStatus status, boolean parents, String description,
                                    QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<File> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
+
+    DBIterator<File> iterator(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
     /**
      * Multi-study search of files in catalog.
@@ -176,6 +179,8 @@ public interface IFileManager extends ResourceManager<Long, File> {
      * @throws CatalogException catalogException.
      */
     QueryResult<File> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException;
+
+    QueryResult<File> count(String studyStr, Query query, String sessionId) throws CatalogException;
 
     QueryResult<Long> count(Query query, String sessionId) throws CatalogException;
 
@@ -258,8 +263,6 @@ public interface IFileManager extends ResourceManager<Long, File> {
 
     QueryResult<Dataset> createDataset(long studyId, String name, String description, List<Long> files, Map<String, Object> attributes,
                                        QueryOptions options, String sessionId) throws CatalogException;
-
-    QueryResult<Dataset> readDataset(long dataSetId, QueryOptions options, String sessionId) throws CatalogException;
 
     Long getStudyIdByDataset(long datasetId) throws CatalogException;
 

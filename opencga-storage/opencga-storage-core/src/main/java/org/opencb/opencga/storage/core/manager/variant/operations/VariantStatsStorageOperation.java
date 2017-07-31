@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,8 +115,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
             updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.CALCULATING, "Start calculating stats");
 
             calculateStatsOptions.put(DefaultVariantStatisticsManager.OUTPUT, outdirUri.resolve(outputFileName));
-            VariantStorageEngine variantStorageEngine
-                    = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+            VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
             List<String> cohortsName = cohortsMap.values().stream().map(Cohort::getName).collect(Collectors.toList());
             variantStorageEngine.calculateStats(studyConfiguration.getStudyName(), cohortsName,
                     calculateStatsOptions);

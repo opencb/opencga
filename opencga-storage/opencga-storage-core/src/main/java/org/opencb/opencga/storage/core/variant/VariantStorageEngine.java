@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,9 @@
 package org.opencb.opencga.storage.core.variant;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -38,16 +40,12 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.metadata.ExportMetadata;
-import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.search.VariantSearchManager;
+import org.opencb.opencga.storage.core.metadata.*;
+import org.opencb.opencga.storage.core.search.VariantSearchModel;
+import org.opencb.opencga.storage.core.search.solr.VariantSearchIterator;
+import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -66,16 +64,23 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.DEFAULT_TIMEOUT;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MAX_TIMEOUT;
+import static org.opencb.opencga.storage.core.search.solr.VariantSearchManager.QUERY_INTERSECT;
+import static org.opencb.opencga.storage.core.search.solr.VariantSearchManager.SKIP_SEARCH;
+import static org.opencb.opencga.storage.core.search.solr.VariantSearchUtils.*;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ID;
 
 /**
  * Created by imedina on 13/08/14.
  */
 public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdaptor> {
 
+    public static final String REMOVE_OPERATION_NAME = BatchFileOperation.Type.REMOVE.name().toLowerCase();
     private final AtomicReference<VariantSearchManager> variantSearchManager = new AtomicReference<>();
     private Logger logger = LoggerFactory.getLogger(VariantStorageEngine.class);
     private CellBaseUtils cellBaseUtils;
@@ -136,7 +141,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         RESUME("resume", false),
 
         DEFAULT_TIMEOUT("dbadaptor.default_timeout", 10000), // Default timeout for DBAdaptor operations. Only used if none is provided.
-        MAX_TIMEOUT("dbadaptor.max_timeout", 30000);         // Max allowed timeout for DBAdaptor operations
+        MAX_TIMEOUT("dbadaptor.max_timeout", 30000),         // Max allowed timeout for DBAdaptor operations
+
+        // Intersect options
+        INTERSECT_ACTIVE("intersect.active", true),                       // Allow intersect queries with the SearchEngine (Solr)
+        INTERSECT_ALWAYS("intersect.always", false),                      // Force intersect queries
+        INTERSECT_PARAMS_THRESHOLD("intersect.params.threshold", 3);      // Minimum number of QueryParams in the query to intersect
 
         private final String key;
         private final Object value;
@@ -236,7 +246,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException  if there is an error creating the VariantExporter
      */
     protected VariantExporter newVariantExporter() throws StorageEngineException {
-        return new VariantExporter(getDBAdaptor());
+        return new VariantExporter(this);
     }
 
     /**
@@ -427,35 +437,138 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         VariantDBAdaptor dbAdaptor = getDBAdaptor();
         StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager();
 
-        if (configuration.getSearch().getActive() && getVariantSearchManager().isAlive(dbName)) {
-            // first, create the collection it it does not exist
-            if (!getVariantSearchManager().existCollection(dbName)) {
-                // by default: config=OpenCGAConfSet, shards=1, replicas=1
-                logger.info("Creating Solr collection " + dbName);
-                getVariantSearchManager().createCollection(dbName);
-            } else {
-                logger.info("Solr collection '" + dbName + "' exists.");
-            }
+        VariantSearchManager variantSearchManager = getVariantSearchManager();
+        // first, create the collection it it does not exist
+        variantSearchManager.create(dbName);
+        if (configuration.getSearch().getActive() && variantSearchManager.isAlive(dbName)) {
 
             // then, load variants
             queryOptions = new QueryOptions();
             queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES_DATA, VariantField.STUDIES_FILES));
             VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
-            getVariantSearchManager().load(dbName, iterator);
+            variantSearchManager.load(dbName, iterator);
+        } else {
+            throw new StorageEngineException("Solr is not alive!");
         }
         dbAdaptor.close();
     }
 
     /**
-     * Drops a file from the Variant Storage.
+     * Removes a file from the Variant Storage.
      *
      * @param study  StudyName or StudyId
      * @param fileId FileId
-     * @throws StorageEngineException If the file can not be deleted or there was some problem deleting it.
+     * @throws StorageEngineException If the file can not be removed or there was some problem deleting it.
      */
-    public abstract void dropFile(String study, int fileId) throws StorageEngineException;
+    public void removeFile(String study, int fileId) throws StorageEngineException {
+        removeFiles(study, Collections.singletonList(String.valueOf(fileId)));
+    }
 
-    public abstract void dropStudy(String studyName) throws StorageEngineException;
+    /**
+     * Removes a file from the Variant Storage.
+     *
+     * @param study  StudyName or StudyId
+     * @param files Files to remove
+     * @throws StorageEngineException If the file can not be removed  or there was some problem deleting it.
+     */
+    public abstract void removeFiles(String study, List<String> files) throws StorageEngineException;
+
+    /**
+     * Atomically updates the studyConfiguration before removing samples.
+     *
+     * @param study    Study
+     * @param files    Files to remove
+     * @return FileIds to remove
+     * @throws StorageEngineException StorageEngineException
+     */
+    protected List<Integer> preRemoveFiles(String study, List<String> files) throws StorageEngineException {
+        List<Integer> fileIds = new ArrayList<>();
+        getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+            fileIds.addAll(getStudyConfigurationManager().getFileIds(files, false, studyConfiguration));
+
+            boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
+            StudyConfigurationManager.addBatchOperation(studyConfiguration, REMOVE_OPERATION_NAME, fileIds, resume,
+                    BatchFileOperation.Type.REMOVE);
+
+            if (!studyConfiguration.getIndexedFiles().containsAll(fileIds)) {
+                // Remove indexed files to get non indexed files
+                fileIds.removeAll(studyConfiguration.getIndexedFiles());
+                throw new StorageEngineException("Unable to remove non indexed files: " + fileIds);
+            }
+
+            return studyConfiguration;
+        });
+        return fileIds;
+    }
+
+    /**
+     * Atomically updates the StudyConfiguration after removing samples.
+     *
+     * If success:
+     *    Updates remove status with READY
+     *    Removes the files from indexed files list
+     *    Removes the samples removed from the default cohort {@link StudyEntry#DEFAULT_COHORT}
+     *      * Be aware that some samples can be in multiple files.
+     *    Invalidates the cohorts with removed samples
+     * If error:
+     *    Updates remove status with ERROR
+     *
+     * @param study    Study
+     * @param fileIds  Removed file ids
+     * @param error    If the remove operation succeeded
+     * @throws StorageEngineException StorageEngineException
+     */
+    protected void postRemoveFiles(String study, List<Integer> fileIds, boolean error) throws StorageEngineException {
+        getStudyConfigurationManager().lockAndUpdate(study, studyConfiguration -> {
+            if (error) {
+                StudyConfigurationManager.setStatus(studyConfiguration, BatchFileOperation.Status.ERROR, REMOVE_OPERATION_NAME, fileIds);
+            } else {
+                for (Integer fileId : fileIds) {
+                    try {
+                        getDBAdaptor().getVariantSourceDBAdaptor().delete(studyConfiguration.getStudyId(), fileId);
+                    } catch (IOException e) {
+                        throw new StorageEngineException("Unable to remove VariantSource from file " + fileId, e);
+                    }
+                }
+
+                StudyConfigurationManager.setStatus(studyConfiguration, BatchFileOperation.Status.READY, REMOVE_OPERATION_NAME, fileIds);
+                studyConfiguration.getIndexedFiles().removeAll(fileIds);
+                Set<Integer> removedSamples = new HashSet<>();
+                for (Integer fileId : fileIds) {
+                    removedSamples.addAll(studyConfiguration.getSamplesInFiles().get(fileId));
+                }
+                List<Integer> invalidCohorts = new ArrayList<>();
+                for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
+                    Set<Integer> cohort = studyConfiguration.getCohorts().get(cohortId);
+                    for (Integer removedSample : removedSamples) {
+                        if (cohort.contains(removedSample)) {
+                            logger.info("Invalidating statistics of cohort "
+                                    + studyConfiguration.getCohortIds().inverse().get(cohortId)
+                                    + " (" + cohortId + ')');
+                            invalidCohorts.add(cohortId);
+                            break;
+                        }
+                    }
+                }
+                studyConfiguration.getCalculatedStats().removeAll(invalidCohorts);
+                studyConfiguration.getInvalidStats().addAll(invalidCohorts);
+
+                // Restore default cohort with indexed samples
+                Integer defaultCohort = studyConfiguration.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
+                studyConfiguration.getCohorts()
+                        .put(defaultCohort, StudyConfiguration.getIndexedSamples(studyConfiguration).values());
+            }
+            return studyConfiguration;
+        });
+    }
+
+    /**
+     * Remove a whole study from the Variant Storage.
+     *
+     * @param study  StudyName or StudyId
+     * @throws StorageEngineException If the file can not be removed or there was some problem deleting it.
+     */
+    public abstract void removeStudy(String study) throws StorageEngineException;
 
     @Override
     public void testConnection() throws StorageEngineException {}
@@ -500,7 +613,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return new StudyConfigurationManager(new FileStudyConfigurationAdaptor());
     }
 
-    protected VariantSearchManager getVariantSearchManager() throws StorageEngineException {
+    public VariantSearchManager getVariantSearchManager() throws StorageEngineException {
         if (variantSearchManager.get() == null) {
             synchronized (variantSearchManager) {
                 if (variantSearchManager.get() == null) {
@@ -509,11 +622,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
         }
         return variantSearchManager.get();
-    }
-
-    public VariantQueryResult<Variant> get(Query query, QueryOptions options) throws StorageEngineException {
-        setDefaultTimeout(options);
-        return getDBAdaptor().get(query, options);
     }
 
     public VariantQueryResult<Variant> getPhased(String variant, String studyName, String sampleName, QueryOptions options, int windowsSize)
@@ -532,11 +640,149 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         options.put(QueryOptions.TIMEOUT, timeout);
     }
 
+    public VariantQueryResult<Variant> get(Query query, QueryOptions options) throws StorageEngineException {
+        return (VariantQueryResult<Variant>) getOrIterator(query, options, false);
+    }
+
     public VariantDBIterator iterator(Query query, QueryOptions options) throws StorageEngineException {
-        VariantDBAdaptor dbAdaptor = getDBAdaptor();
-        VariantDBIterator iterator = dbAdaptor.iterator(query, options);
-        iterator.addCloseable(dbAdaptor);
-        return iterator;
+        return (VariantDBIterator) getOrIterator(query, options, true);
+    }
+
+    protected Object getOrIterator(Query query, QueryOptions options, boolean iterator) throws StorageEngineException {
+        if (options == null) {
+            options = QueryOptions.empty();
+        }
+        // TODO: Use CacheManager ?
+        query = preProcessQuery(query, getStudyConfigurationManager());
+        if (doQuerySearchManager(query, options)) {
+            try {
+                if (iterator) {
+                    return getVariantSearchManager().iterator(dbName, query, options);
+                } else {
+                    return getVariantSearchManager().query(dbName, query, options);
+                }
+            } catch (IOException | VariantSearchException e) {
+                throw new VariantQueryException("Error querying Solr", e);
+            }
+        } else {
+            VariantDBAdaptor dbAdaptor = getDBAdaptor();
+            if (doIntersectWithSearch(query, options)) {
+                // Intersect Solr+Engine
+
+                int limit = options.getInt(QueryOptions.LIMIT, 0);
+                int skip = options.getInt(QueryOptions.SKIP, 0);
+                boolean pagination = skip > 0 || limit > 0;
+
+                Iterator<?> variantsIterator;
+                Number numTotalResults = null;
+                AtomicLong searchCount = null;
+
+                if (isQueryCovered(query)) {
+                    // If the query is fully covered, the numTotalResults from solr is correct.
+                    searchCount = new AtomicLong();
+                    numTotalResults = searchCount;
+                    // Skip count in storage. We already know the numTotalResults
+                    options.put(QueryOptions.SKIP_COUNT, true);
+                } else {
+                    if (options.getBoolean("approxCount")) {
+                        options.put(QueryOptions.SKIP_COUNT, true);
+                        numTotalResults = approxCount(query, options).first();
+                    }
+                }
+
+                if (pagination) {
+                    if (isQueryCovered(query)) {
+                        // We can use limit+skip directly in solr
+                        variantsIterator = variantIdIteratorFromSearch(query, limit, skip, searchCount);
+
+                        // Remove limit and skip from Options for storage. The Search Engine already knows the pagination.
+                        options = new QueryOptions(options);
+                        options.remove(QueryOptions.LIMIT);
+                        options.remove(QueryOptions.SKIP);
+                    } else {
+                        logger.debug("Client side pagination. limit : {} , skip : {}", limit, skip);
+                        // Can't limit+skip only from solr. Need to limit+skip also in client side
+                        variantsIterator = variantIdIteratorFromSearch(query);
+                    }
+                } else {
+                    variantsIterator = variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0, searchCount);
+                }
+                Query engineQuery = getEngineQuery(query, options, getStudyConfigurationManager());
+
+                logger.debug("Intersect query " + engineQuery.toJson() + " options " + options.toJson());
+                if (iterator) {
+                    return dbAdaptor.iterator(variantsIterator, engineQuery, options);
+                } else {
+                    setDefaultTimeout(options);
+                    VariantQueryResult<Variant> queryResult = dbAdaptor.get(variantsIterator, engineQuery, options);
+                    if (numTotalResults != null) {
+                        queryResult.setNumTotalResults(numTotalResults.longValue());
+                    }
+                    queryResult.setWarningMsg("Data from Solr + " + getStorageEngineId());
+                    return queryResult;
+                }
+            } else {
+                if (iterator) {
+                    return dbAdaptor.iterator(query, options);
+                } else {
+                    setDefaultTimeout(options);
+                    return dbAdaptor.get(query, options);
+                }
+            }
+        }
+    }
+
+    protected Query preProcessQuery(Query query, StudyConfigurationManager studyConfigurationManager) throws StorageEngineException {
+        return query;
+    }
+
+    /**
+     * Decide if a query should be resolved using SearchManager or not.
+     *
+     * @param query     Query
+     * @param options   QueryOptions
+     * @return          true if should resolve only with SearchManager
+     * @throws StorageEngineException StorageEngineException
+     */
+    protected boolean doQuerySearchManager(Query query, QueryOptions options) throws StorageEngineException {
+        return !options.getBoolean(SKIP_SEARCH, false)
+                && isQueryCovered(query)
+                && (options.getBoolean(QueryOptions.COUNT) || isIncludeCovered(options))
+                && searchActiveAndAlive();
+    }
+
+    /**
+     * Decide if a query should be resolved intersecting with SearchManager or not.
+     *
+     * @param query       Query
+     * @param options     QueryOptions
+     * @return            true if should intersect
+     * @throws StorageEngineException StorageEngineException
+     */
+    protected boolean doIntersectWithSearch(Query query, QueryOptions options)
+            throws StorageEngineException {
+        if (options.getBoolean(SKIP_SEARCH, false)) {
+            return false;
+        }
+
+        Boolean queryIntersect = null;
+        if (options.get(QUERY_INTERSECT) != null) {
+            queryIntersect = options.getBoolean(QUERY_INTERSECT, false);
+        }
+        if (!getOptions().getBoolean(INTERSECT_ACTIVE.key(), INTERSECT_ACTIVE.defaultValue())
+                || Boolean.FALSE.equals(queryIntersect)) {
+            // If intersect is not active, do not intersect.
+            return false;
+        } else if (getOptions().getBoolean(INTERSECT_ALWAYS.key(), INTERSECT_ALWAYS.defaultValue())
+                || Boolean.TRUE.equals(queryIntersect)) {
+            return searchActiveAndAlive();
+        }
+        // TODO: Improve this heuristic
+        // Count only real params
+        Collection<VariantQueryParam> coveredParams = coveredParams(query);
+        int intersectParamsThreshold = getOptions().getInt(INTERSECT_PARAMS_THRESHOLD.key(), INTERSECT_PARAMS_THRESHOLD.defaultValue());
+        return searchActiveAndAlive()
+                && (coveredParams.size() >= intersectParamsThreshold || options.getBoolean(QUERY_INTERSECT, false));
     }
 
     public QueryResult distinct(Query query, String field) throws StorageEngineException {
@@ -560,11 +806,51 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public QueryResult<Long> count(Query query) throws StorageEngineException {
-        return getDBAdaptor().count(query);
+        query = preProcessQuery(query, getStudyConfigurationManager());
+        if (!doQuerySearchManager(query, new QueryOptions(QueryOptions.COUNT, true))) {
+            return getDBAdaptor().count(query);
+        } else {
+            try {
+                StopWatch watch = StopWatch.createStarted();
+                long count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 0)).getNumTotalResults();
+                int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
+                return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
+            } catch (IOException | VariantSearchException e) {
+                throw new VariantQueryException("Error querying Solr", e);
+            }
+        }
     }
 
-    public QueryResult<Long> aproxCount(Query query, QueryOptions options) throws StorageEngineException {
-        return getDBAdaptor().count(query);
+    public QueryResult<Long> approxCount(Query query, QueryOptions options) throws StorageEngineException {
+        long count;
+        StopWatch watch = StopWatch.createStarted();
+        try {
+            if (doQuerySearchManager(query, new QueryOptions(QueryOptions.COUNT, true))) {
+                count = getVariantSearchManager().query(dbName, query, new QueryOptions(QueryOptions.LIMIT, 0)).getNumTotalResults();
+            } else {
+                int numSamples = options.getInt("numSamples", 1000);
+                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, numSamples);
+
+                VariantQueryResult<VariantSearchModel> nativeResult = getVariantSearchManager().nativeQuery(dbName, query, queryOptions);
+                List<String> variantIds = nativeResult.getResult().stream().map(VariantSearchModel::getId).collect(Collectors.toList());
+                // Adjust numSamples if the results from SearchManager is smaller than numSamples
+                if (variantIds.size() < numSamples) {
+                    numSamples = variantIds.size();
+                }
+                long numSearchResults = nativeResult.getNumTotalResults();
+
+                Query engineQuery = getEngineQuery(query, options, getStudyConfigurationManager());
+
+                engineQuery.put(ID.key(), variantIds);
+                long numResults = getDBAdaptor().count(engineQuery).first();
+                logger.debug("NumResults: {}, NumSearchResults: {}, NumSamples: {}", numResults, numSearchResults, numSamples);
+                count = (long) ((numResults / (float) numSamples) * numSearchResults);
+            }
+        } catch (IOException | VariantSearchException e) {
+            throw new VariantQueryException("Error querying Solr", e);
+        }
+        int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
+        return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
     }
 
     /**
@@ -595,6 +881,42 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     protected boolean searchActiveAndAlive() throws StorageEngineException {
         return configuration.getSearch().getActive() && getVariantSearchManager() != null && getVariantSearchManager().isAlive(dbName);
+    }
+
+
+    protected Iterator<String> variantIdIteratorFromSearch(Query query) throws StorageEngineException {
+        return variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0, null);
+    }
+
+    protected Iterator<String> variantIdIteratorFromSearch(Query query, int limit, int skip, AtomicLong numTotalResults)
+            throws StorageEngineException {
+        Iterator<String> variantsIterator;
+        QueryOptions queryOptions = new QueryOptions()
+                .append(QueryOptions.LIMIT, limit)
+                .append(QueryOptions.SKIP, skip)
+                .append(QueryOptions.INCLUDE, VariantField.ID.fieldName());
+        try {
+            // Do not iterate for small queries
+            if (limit < 10000) {
+                VariantQueryResult<VariantSearchModel> nativeResult = getVariantSearchManager().nativeQuery(dbName, query, queryOptions);
+                if (numTotalResults != null) {
+                    numTotalResults.set(nativeResult.getNumTotalResults());
+                }
+                variantsIterator = nativeResult.getResult()
+                        .stream()
+                        .map(VariantSearchModel::getId)
+                        .iterator();
+            } else {
+                VariantSearchIterator nativeIterator = getVariantSearchManager().nativeIterator(dbName, query, queryOptions);
+                if (numTotalResults != null) {
+                    numTotalResults.set(nativeIterator.getNumFound());
+                }
+                variantsIterator = Iterators.transform(nativeIterator, VariantSearchModel::getId);
+            }
+        } catch (VariantSearchException | IOException e) {
+            throw new VariantQueryException("Error querying Solr", e);
+        }
+        return variantsIterator;
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,11 +28,12 @@ import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.Annotable;
-import org.opencb.opencga.catalog.models.Annotation;
-import org.opencb.opencga.catalog.models.AnnotationSet;
-import org.opencb.opencga.catalog.models.Variable;
+import org.opencb.opencga.catalog.managers.AbstractManager;
+import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.models.summaries.FeatureCount;
 import org.opencb.opencga.catalog.models.summaries.VariableSummary;
 import org.slf4j.Logger;
@@ -43,6 +44,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
+import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.checkStudyPermission;
+import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.addCompQueryFilter;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.fixAnnotationQuery;
 
@@ -50,6 +53,8 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.fixAnnotationQu
  * Created by pfurio on 07/07/16.
  */
 abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
+
+    private static final String VARIABLE_SETS = "variableSets";
 
     AnnotationMongoDBAdaptor(Logger logger) {
         super(logger);
@@ -129,6 +134,7 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         }
 
         Document document = MongoDBUtils.getMongoDBDocument(annotationSet, "AnnotationSet");
+        document.put("variableSetId", annotationSet.getVariableSetId());
 
         // Insert the annotation set in the database
         Bson query = Filters.and(
@@ -144,11 +150,12 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         return endQuery("Create annotation set", startTime, getAnnotationSet(id, annotationSet.getName()));
     }
 
-    public QueryResult<AnnotationSet> searchAnnotationSet(long id, long variableSetId, @Nullable String annotation)
-            throws CatalogDBException {
+    public QueryResult<AnnotationSet> searchAnnotationSet(AbstractManager.MyResourceId resource, long variableSetId,
+                                                          @Nullable String annotation, String studyPermission)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
-        QueryResult<? extends Annotable> aggregate = baseSearchAnnotationSet(id, variableSetId, annotation);
+        QueryResult<? extends Annotable> aggregate = baseSearchAnnotationSet(resource, variableSetId, annotation, studyPermission);
         List<AnnotationSet> annotationSets = new ArrayList<>(aggregate.getNumResults());
         for (Annotable annotable : aggregate.getResult()) {
             annotationSets.add((AnnotationSet) annotable.getAnnotationSets().get(0));
@@ -157,11 +164,12 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         return endQuery("Search annotation set", startTime, annotationSets);
     }
 
-    public QueryResult<ObjectMap> searchAnnotationSetAsMap(long id, long variableSetId, @Nullable String annotation)
-            throws CatalogDBException {
+    public QueryResult<ObjectMap> searchAnnotationSetAsMap(AbstractManager.MyResourceId resource, long variableSetId,
+                                                           @Nullable String annotation, String studyPermission)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
-        QueryResult<? extends Annotable> aggregate = baseSearchAnnotationSet(id, variableSetId, annotation);
+        QueryResult<? extends Annotable> aggregate = baseSearchAnnotationSet(resource, variableSetId, annotation, studyPermission);
         List<ObjectMap> annotationSets = new ArrayList<>(aggregate.getNumResults());
         for (Annotable annotable : aggregate.getResult()) {
             annotationSets.add((ObjectMap) annotable.getAnnotationSetAsMap().get(0));
@@ -170,8 +178,9 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         return endQuery("Search annotation set", startTime, annotationSets);
     }
 
-    private QueryResult<? extends Annotable> baseSearchAnnotationSet(long id, long variableSetId, @Nullable String annotation)
-            throws CatalogDBException {
+    private QueryResult<? extends Annotable> baseSearchAnnotationSet(AbstractManager.MyResourceId resource, long variableSetId,
+                                                                     @Nullable String annotation, String studyPermission)
+            throws CatalogDBException, CatalogAuthorizationException {
         Map<String, Variable> variableMap = null;
         Document filter = new Document();
 
@@ -191,7 +200,7 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
             }
         }
 
-        return commonGetAnnotationSet(id, filter, null);
+        return commonGetAnnotationSet(resource, filter, null, studyPermission);
     }
 
     private Document createAnnotationQueryFilter(Query query, Map<String, Variable> variableMap) throws CatalogDBException {
@@ -285,10 +294,25 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         return endQuery("Get annotation set", startTime, annotationSets);
     }
 
-    public QueryResult<ObjectMap> getAnnotationSetAsMap(long id, @Nullable String annotationSetName) throws CatalogDBException {
+    public QueryResult<AnnotationSet> getAnnotationSet(AbstractManager.MyResourceId resource, @Nullable String annotationSetName,
+                                                       String studyPermission) throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
-        QueryResult<? extends Annotable> aggregate = commonGetAnnotationSet(id, null, annotationSetName);
+        QueryResult<? extends Annotable> aggregate = commonGetAnnotationSet(resource, null, annotationSetName, studyPermission);
+
+        List<AnnotationSet> annotationSets = new ArrayList<>(aggregate.getNumResults());
+        for (Annotable annotable : aggregate.getResult()) {
+            annotationSets.add((AnnotationSet) annotable.getAnnotationSets().get(0));
+        }
+
+        return endQuery("Get annotation set", startTime, annotationSets);
+    }
+
+    public QueryResult<ObjectMap> getAnnotationSetAsMap(AbstractManager.MyResourceId resource, @Nullable String annotationSetName,
+                                                        String studyPermission) throws CatalogDBException, CatalogAuthorizationException {
+        long startTime = startQuery();
+
+        QueryResult<? extends Annotable> aggregate = commonGetAnnotationSet(resource, null, annotationSetName, studyPermission);
 
         List<ObjectMap> annotationSets = new ArrayList<>(aggregate.getNumResults());
         for (Annotable annotable : aggregate.getResult()) {
@@ -320,6 +344,73 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         }
 
         return getCollection().aggregate(aggregation, getConverter(), null);
+    }
+
+    private QueryResult<? extends Annotable> commonGetAnnotationSet(AbstractManager.MyResourceId resource, Bson queryAnnotation,
+                                                                    @Nullable String annotationSetName, String studyPermission)
+            throws CatalogDBException, CatalogAuthorizationException {
+        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(
+                new Query(StudyDBAdaptor.QueryParams.ID.key(), resource.getStudyId()), new QueryOptions());
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Internal error: Study " + resource.getStudyId() + " not found.");
+        }
+        Document matchPermissions = getQueryForAuthorisedEntries(queryResult.first(), resource.getUser(), studyPermission,
+                "VIEW_ANNOTATIONS");
+
+        List<Bson> aggregation = new ArrayList<>();
+        aggregation.add(Aggregates.match(matchPermissions.append(PRIVATE_ID, resource.getResourceId())));
+//        aggregation.add(Aggregates.project(Projections.include(AnnotationSetParams.ID.key(), AnnotationSetParams.ANNOTATION_SETS.key())));
+        aggregation.add(Aggregates.unwind("$" + AnnotationSetParams.ANNOTATION_SETS.key()));
+        if (queryAnnotation != null) {
+            aggregation.add(Aggregates.match(queryAnnotation));
+        }
+
+        if (annotationSetName != null && !annotationSetName.isEmpty()) {
+            aggregation.add(Aggregates.match(new Document(AnnotationSetParams.ANNOTATION_SETS_NAME.key(), annotationSetName)));
+        }
+
+        for (Bson bson : aggregation) {
+            try {
+                logger.debug("Get annotation: {}", bson.toBsonDocument(Document.class, com.mongodb.MongoClient.getDefaultCodecRegistry()));
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+            }
+        }
+
+        QueryResult<? extends Annotable> results = getCollection().aggregate(aggregation, getConverter(), null);
+
+        if (results.getNumResults() > 0) {
+            // Check if the user has the CONFIDENTIAL PERMISSION
+            boolean confidential = checkStudyPermission(queryResult.first(), resource.getUser(),
+                            StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString());
+            if (!confidential) {
+                // If the user does not have the confidential permission, we will have to remove those annotation sets coming from
+                // confidential variable sets
+                List<Document> variableSets = (List<Document>) queryResult.first().get(VARIABLE_SETS);
+                Set<Long> confidentialVariableSets = new HashSet<>();
+                for (Document variableSet : variableSets) {
+                    if (variableSet.getBoolean("confidential")) {
+                        confidentialVariableSets.add(variableSet.getLong("id"));
+                    }
+                }
+
+                if (confidentialVariableSets.size() > 0) {
+                    // The study contains confidential variable sets so we do have to check if any of the annotations come from
+                    // confidential variable sets
+                    for (Annotable annotable : results.getResult()) {
+                        Iterator<AnnotationSet> iterator = annotable.getAnnotationSets().iterator();
+                        while (iterator.hasNext()) {
+                            AnnotationSet annotationSet = iterator.next();
+                            if (confidentialVariableSets.contains(annotationSet.getVariableSetId())) {
+                                iterator.remove();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return results;
     }
 
     public QueryResult<AnnotationSet> updateAnnotationSet(long id, AnnotationSet annotationSet) throws CatalogDBException {

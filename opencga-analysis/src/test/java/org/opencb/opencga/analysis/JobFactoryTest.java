@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,10 +74,10 @@ public class JobFactoryTest {
 
         assertEquals(Job.JobStatus.READY, job.getStatus().getName());
         assertEquals(2, job.getOutput().size());
-        for (Long fileId : job.getOutput()) {
-            File file = catalogManager.getFile(fileId, sessionId).first();
+        for (File fileAux : job.getOutput()) {
+            File file = catalogManager.getFile(fileAux.getId(), sessionId).first();
             if (file.getName().contains("out")) {
-                String contentFile = new BufferedReader(new InputStreamReader(catalogManager.downloadFile(fileId, sessionId))).readLine();
+                String contentFile = new BufferedReader(new InputStreamReader(catalogManager.downloadFile(fileAux.getId(), sessionId))).readLine();
                 assertEquals(helloWorld, contentFile);
             }
         }

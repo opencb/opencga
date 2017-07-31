@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
@@ -143,6 +143,11 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 //        DataStore dataStore = getDataStore(catalogManager, studyIdByInputFileId, File.Bioformat.VARIANT, sessionId);
         DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
 
+        // Create default cohort if needed.
+        if (step.equals(Type.INDEX) || step.equals(Type.LOAD)) {
+            createDefaultCohortIfNeeded(study, sessionId);
+        }
+
         // Update study configuration BEFORE executing the index and fetching files from Catalog
         updateStudyConfiguration(sessionId, studyIdByInputFileId, dataStore);
 
@@ -177,12 +182,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyIdByInputFileId);
 
-        VariantStorageEngine variantStorageEngine;
-        try {
-            variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            throw new StorageEngineException("Unable to create StorageEngine", e);
-        }
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
 
         // Add species and assembly
         String scientificName = studyInfo.getOrganism().getScientificName();
@@ -230,16 +230,11 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         }
 
         if (step.equals(Type.INDEX) || step.equals(Type.LOAD)) {
-            boolean modified = false;
             for (File file : filesToIndex) {
-                modified |= updateDefaultCohort(file, study, options, sessionId);
+                updateDefaultCohort(file, study, options, sessionId);
             }
             if (calculateStats) {
                 updateDefaultCohortStatus(study, Cohort.CohortStatus.CALCULATING, sessionId);
-            }
-            if (modified) {
-                // Update again the StudyConfiguration.
-                updateStudyConfiguration(sessionId, study.getId(), dataStore);
             }
         }
         // Only if we are not transforming or if a path has been passed, we will update catalog information
@@ -283,9 +278,10 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 copyResults(outdir, catalogOutDirId, sessionId);
             }
             updateFileInfo(study, filesToIndex, storagePipelineResults, outdir, saveIntermediateFiles, options, sessionId);
-            if (calculateStats) {
-                updateDefaultCohortStatus(sessionId, study, exception);
-            }
+//            if (calculateStats) {
+//                updateDefaultCohortStatus(sessionId, study, exception);
+//            }
+            updateStudyConfiguration(sessionId, study.getId(), dataStore);
         }
 
         if (exception == null) {
@@ -560,13 +556,14 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         /* Get file samples */
         boolean modified = false;
         List<Sample> sampleList;
-        if (file.getSampleIds() == null || file.getSampleIds().isEmpty()) {
+        if (file.getSamples() == null || file.getSamples().isEmpty()) {
             final ObjectMap fileModifyParams = new ObjectMap(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), new ObjectMap());
             sampleList = FileMetadataReader.get(catalogManager).getFileSamples(study, file,
                     catalogManager.getFileManager().getUri(file), fileModifyParams,
                     options.getBoolean(FileMetadataReader.CREATE_MISSING_SAMPLES, true), false, options, sessionId);
         } else {
-            Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), file.getSampleIds());
+            Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(),
+                    file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
             sampleList = catalogManager.getSampleManager().get(study.getId(), query, new QueryOptions(), sessionId).getResult();
         }
 
@@ -575,8 +572,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(study.getId(), query, new QueryOptions(), sessionId);
 
         if (cohorts.getResult().isEmpty()) {
-            defaultCohort = catalogManager.getCohortManager().create(study.getId(), StudyEntry.DEFAULT_COHORT, Study.Type.COLLECTION,
-                    "Default cohort with almost all indexed samples", Collections.emptyList(), null, null, sessionId).first();
+            defaultCohort = createDefaultCohort(study, sessionId);
             modified = true;
         } else {
             defaultCohort = cohorts.first();
@@ -584,7 +580,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         //Samples are the already indexed plus those that are going to be indexed
         ObjectMap updateParams = new ObjectMap();
-        Set<Long> samples = new HashSet<>(defaultCohort.getSamples());
+        Set<Long> samples = new HashSet<>(defaultCohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
         samples.addAll(sampleList.stream().map(Sample::getId).collect(Collectors.toList()));
         if (samples.size() != defaultCohort.getSamples().size()) {
             logger.debug("Updating \"{}\" cohort", StudyEntry.DEFAULT_COHORT);
@@ -595,6 +591,21 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             modified = true;
         }
         return modified;
+    }
+
+    private Cohort createDefaultCohortIfNeeded(Study study, String sessionId) throws CatalogException {
+        Query query = new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT);
+        Cohort cohort = catalogManager.getCohortManager().get(study.getId(), query, null, sessionId).first();
+        if (cohort == null) {
+            return createDefaultCohort(study, sessionId);
+        } else {
+            return cohort;
+        }
+    }
+
+    private Cohort createDefaultCohort(Study study, String sessionId) throws CatalogException {
+        return catalogManager.getCohortManager().create(study.getId(), StudyEntry.DEFAULT_COHORT, Study.Type.COLLECTION,
+                "Default cohort with almost all indexed samples", Collections.emptyList(), null, null, sessionId).first();
     }
 
     private void updateDefaultCohortStatus(String sessionId, Study study, StorageEngineException exception) throws CatalogException {
@@ -628,39 +639,36 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         List<File> filteredFiles = new ArrayList<>(fileList.size());
         for (File file : fileList) {
-            if (file.getStatus().getName().equals(File.FileStatus.READY)
-                    && file.getFormat().equals(File.Format.VCF)) {
+            if (file.getStatus().getName().equals(File.FileStatus.READY) && file.getFormat().equals(File.Format.VCF)) {
+                String indexStatus;
                 if (file.getIndex() != null && file.getIndex().getStatus() != null && file.getIndex().getStatus().getName() != null) {
-                    switch (file.getIndex().getStatus().getName()) {
-                        case FileIndex.IndexStatus.NONE:
-                            filteredFiles.add(file);
-                            break;
-                        case FileIndex.IndexStatus.INDEXING:
-                        case FileIndex.IndexStatus.TRANSFORMING:
-                            if (!resume) {
-                                logger.warn("File already being transformed. "
-                                                + "We can only transform VCF files not transformed, the status is {}. "
-                                                + "Do '" + VariantStorageEngine.Options.RESUME.key() + "' to continue.",
-                                        file.getIndex().getStatus().getName());
-                            } else {
-                                filteredFiles.add(file);
-                            }
-                            break;
-                        case FileIndex.IndexStatus.TRANSFORMED:
-                        case FileIndex.IndexStatus.LOADING:
-                        case FileIndex.IndexStatus.READY:
-                        default:
-                            logger.warn("We can only transform VCF files not transformed, the status is {}",
-                                    file.getIndex().getStatus().getName());
-                            break;
-                    }
+                    indexStatus = file.getIndex().getStatus().getName();
                 } else {
-                    // This block should not happen ever
-                    filteredFiles.add(file);
-                    logger.warn("This block should not happen ever");
+                    indexStatus = FileIndex.IndexStatus.NONE;
                 }
-            } else {
-                logger.warn("");
+                switch (indexStatus) {
+                    case FileIndex.IndexStatus.NONE:
+                        filteredFiles.add(file);
+                        break;
+                    case FileIndex.IndexStatus.INDEXING:
+                    case FileIndex.IndexStatus.TRANSFORMING:
+                        if (!resume) {
+                            logger.warn("File already being transformed. "
+                                            + "We can only transform VCF files not transformed, the status is {}. "
+                                            + "Do '" + VariantStorageEngine.Options.RESUME.key() + "' to continue.",
+                                    indexStatus);
+                        } else {
+                            filteredFiles.add(file);
+                        }
+                        break;
+                    case FileIndex.IndexStatus.TRANSFORMED:
+                    case FileIndex.IndexStatus.LOADING:
+                    case FileIndex.IndexStatus.READY:
+                    default:
+                        logger.warn("We can only transform VCF files not transformed, the status is {}",
+                                indexStatus);
+                        break;
+                }
             }
         }
         return filteredFiles;

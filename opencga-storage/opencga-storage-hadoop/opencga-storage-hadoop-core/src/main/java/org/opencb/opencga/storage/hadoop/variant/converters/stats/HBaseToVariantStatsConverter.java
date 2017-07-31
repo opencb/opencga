@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,15 +70,11 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
             if (value != null && startsWith(columnBytes, VariantPhoenixHelper.STATS_PREFIX_BYTES)
                     && endsWith(columnBytes, VariantPhoenixHelper.STATS_PROTOBUF_SUFIX_BYTES)) {
                 String columnName = Bytes.toString(columnBytes);
-                String[] split = columnName.split("_");
+                String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
                 Integer studyId = getStudyId(split);
                 Integer cohortId = getCohortId(split);
 
-                Map<Integer, VariantStats> statsMap = studyCohortStatsMap.get(studyId);
-                if (statsMap == null) {
-                    statsMap = new HashMap<>();
-                    studyCohortStatsMap.put(studyId, statsMap);
-                }
+                Map<Integer, VariantStats> statsMap = studyCohortStatsMap.computeIfAbsent(studyId, k -> new HashMap<>());
                 statsMap.put(cohortId, convert(value));
             }
         }
@@ -101,11 +97,7 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
                     Integer studyId = getStudyId(split);
                     Integer cohortId = getCohortId(split);
 
-                    Map<Integer, VariantStats> statsMap = studyCohortStatsMap.get(studyId);
-                    if (statsMap == null) {
-                        statsMap = new HashMap<>();
-                        studyCohortStatsMap.put(studyId, statsMap);
-                    }
+                    Map<Integer, VariantStats> statsMap = studyCohortStatsMap.computeIfAbsent(studyId, k -> new HashMap<>());
                     statsMap.put(cohortId, convert(value));
                 }
             }
@@ -154,30 +146,6 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
             throw new RuntimeException(e);
         }
         return stats;
-    }
-
-    public boolean startsWith(byte[] bytes, byte[] startsWith) {
-        if (bytes.length < startsWith.length) {
-            return false;
-        }
-        for (int i = 0; i < startsWith.length; i++) {
-            if (startsWith[i] != bytes[i]) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public boolean endsWith(byte[] bytes, byte[] endsWith) {
-        if (bytes.length < endsWith.length) {
-            return false;
-        }
-        for (int i = endsWith.length - 1, f = bytes.length - 1; i >= 0; i--, f--) {
-            if (endsWith[i] != bytes[f]) {
-                return false;
-            }
-        }
-        return true;
     }
 
 }

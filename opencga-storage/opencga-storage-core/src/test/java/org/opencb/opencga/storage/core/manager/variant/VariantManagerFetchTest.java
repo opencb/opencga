@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.storage.core.manager.variant;
 
 import org.junit.Assert;
@@ -81,7 +97,7 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
 
     @Test
     public void testQueryAnonymous() throws Exception {
-        catalogManager.createStudyAcls(studyStr, "anonymous", StudyAclEntry.StudyPermissions.VIEW_STUDY.name(), null, sessionId);
+        catalogManager.createStudyAcls(studyStr, "*", StudyAclEntry.StudyPermissions.VIEW_STUDY.name(), null, sessionId);
 
 //        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), "s1");
 //        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), "p1:s1");
@@ -98,10 +114,8 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
     @Test
     public void testQueryAnonymousWithoutPermissions() throws Exception {
         Query query = new Query(VariantQueryParam.STUDIES.key(), studyId);
-        CatalogAuthorizationException exception = CatalogAuthorizationException
-                .deny("anonymous", StudyAclEntry.StudyPermissions.VIEW_STUDY.toString(), "Study", studyId, null);
-        thrown.expectMessage(exception.getMessage());
-        thrown.expect(exception.getClass());
+        thrown.expectMessage("cannot view study");
+        thrown.expect(CatalogAuthorizationException.class);
         variantManager.get(query, new QueryOptions(), null);
     }
 

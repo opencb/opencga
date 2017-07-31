@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,10 +93,6 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = annotationCommandExecutor.createAnnotationSet(cohortsCommandOptions.annotationCreateCommandOptions,
                         openCGAClient.getCohortClient());
                 break;
-            case "annotation-sets-all-info":
-                queryResponse = annotationCommandExecutor.getAllAnnotationSets(cohortsCommandOptions.annotationAllInfoCommandOptions,
-                        openCGAClient.getCohortClient());
-                break;
             case "annotation-sets-search":
                 queryResponse = annotationCommandExecutor.searchAnnotationSets(cohortsCommandOptions.annotationSearchCommandOptions,
                         openCGAClient.getCohortClient());
@@ -105,7 +101,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = annotationCommandExecutor.deleteAnnotationSet(cohortsCommandOptions.annotationDeleteCommandOptions,
                         openCGAClient.getCohortClient());
                 break;
-            case "annotation-sets-info":
+            case "annotation-sets":
                 queryResponse = annotationCommandExecutor.getAnnotationSet(cohortsCommandOptions.annotationInfoCommandOptions,
                         openCGAClient.getCohortClient());
                 break;
@@ -133,15 +129,17 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotNull(CohortDBAdaptor.QueryParams.STATUS.key(), commandOptions.status);
         query.putIfNotEmpty(CohortDBAdaptor.QueryParams.SAMPLES.key(), commandOptions.samples);
 
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, commandOptions.dataModelOptions.exclude);
-        queryOptions.put(QueryOptions.LIMIT, commandOptions.numericOptions.limit);
-        queryOptions.put(QueryOptions.SKIP, commandOptions.numericOptions.skip);
-        queryOptions.put("count", commandOptions.numericOptions.count);
+        if (commandOptions.numericOptions.count) {
+            return openCGAClient.getCohortClient().count(query);
+        } else {
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);
+            queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, commandOptions.dataModelOptions.exclude);
+            queryOptions.put(QueryOptions.LIMIT, commandOptions.numericOptions.limit);
+            queryOptions.put(QueryOptions.SKIP, commandOptions.numericOptions.skip);
 
-        return openCGAClient.getCohortClient().search(query,queryOptions);
-
+            return openCGAClient.getCohortClient().search(query, queryOptions);
+        }
     }
 
 
@@ -214,7 +212,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.put("calculate", cohortsCommandOptions.statsCommandOptions.calculate);
         queryOptions.put("delete", cohortsCommandOptions.statsCommandOptions.delete);
         queryOptions.putIfNotEmpty("log", cohortsCommandOptions.statsCommandOptions.log);
-        queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.OUT_DIR_ID.key(), cohortsCommandOptions.statsCommandOptions.outdirId);
+        queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.OUT_DIR.key(), cohortsCommandOptions.statsCommandOptions.outdirId);
         return openCGAClient.getCohortClient().getStats(cohortsCommandOptions.statsCommandOptions.cohort, query, queryOptions);
     }
 

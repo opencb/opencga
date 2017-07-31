@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ public class JobWSServerTest {
         assertEquals(description, job.getDescription());
         assertEquals(commandLine, job.getCommandLine());
         assertEquals(status.toString(), job.getStatus().getName());
-        assertEquals(outDirId, job.getOutDirId());
+        assertEquals(outDirId, job.getOutDir().getId());
     }
 
     @Test
@@ -120,7 +120,7 @@ public class JobWSServerTest {
         assertEquals(20, job.getEndTime());
         assertEquals(commandLine, job.getCommandLine());
         assertEquals(status.toString(), job.getStatus().getName());
-        assertEquals(outDirId, job.getOutDirId());
+        assertEquals(outDirId, job.getOutDir().getId());
     }
 
     @Test

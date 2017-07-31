@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
@@ -8,7 +24,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
@@ -26,6 +41,7 @@ import org.opencb.opencga.catalog.utils.AnnotationManager;
 import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -165,6 +181,7 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         family.setAnnotationSets(ParamUtils.defaultObject(family.getAnnotationSets(), Collections.emptyList()));
         family.setAnnotationSets(AnnotationManager.validateAnnotationSets(family.getAnnotationSets(), studyDBAdaptor));
         family.setAcl(Collections.emptyList());
+        family.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));
         family.setAttributes(ParamUtils.defaultObject(family.getAttributes(), Collections.emptyMap()));
 
         checkAndCreateAllIndividualsFromFamily(studyId, family, sessionId);
@@ -220,7 +237,11 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         if (!create) {
             // Just check everything is fine
 
-            if (individual.getId() > 0) {
+            if (individual.getId() > 0 || (StringUtils.isNotEmpty(individual.getName()) && StringUtils.isNumeric(individual.getName()))
+                    && Long.parseLong(individual.getName()) > 0) {
+                if (individual.getId() <= 0) {
+                    individual.setId(Long.parseLong(individual.getName()));
+                }
                 individualDBAdaptor.checkId(individual.getId());
 
                 // Check studyId of the individual
@@ -295,12 +316,14 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
 
         String userId = catalogManager.getUserManager().getId(sessionId);
         long studyId = familyDBAdaptor.getStudyId(id);
-        MyResourceId resource = new MyResourceId(userId, studyId, id);
-        authorizationManager.checkPermissions(resource, FamilyAclEntry.FamilyPermissions.VIEW, MongoDBAdaptorFactory.FAMILY_COLLECTION);
 
-        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(id, options);
-        authorizationManager.filterFamilies(userId, studyId, familyQueryResult.getResult());
-        familyQueryResult.setNumResults(familyQueryResult.getResult().size());
+        Query query = new Query()
+                .append(FamilyDBAdaptor.QueryParams.ID.key(), id)
+                .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, options, userId);
+        if (familyQueryResult.getNumResults() <= 0) {
+            throw CatalogAuthorizationException.deny(userId, "view", "family", id, "");
+        }
         return familyQueryResult;
     }
 
@@ -310,14 +333,8 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
 
         String userId = catalogManager.getUserManager().getId(sessionId);
 
-        if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
-            throw CatalogAuthorizationException.deny(userId, "view", "families", studyId, null);
-        }
-
         query.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-        QueryResult<Family> queryResult = familyDBAdaptor.get(query, options);
-        authorizationManager.filterFamilies(userId, studyId, queryResult.getResult());
-        queryResult.setNumResults(queryResult.getResult().size());
+        QueryResult<Family> queryResult = familyDBAdaptor.get(query, options, userId);
 
         return queryResult;
     }
@@ -333,73 +350,70 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
 
     public QueryResult<Family> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getId(sessionId);
-        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
-
-        // Check any permission in studies
-        for (Long studyId : studyIds) {
-            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
-        }
-        logger.info(studyIds.toString());
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
-        // FIXME: Although the search method is multi-study, we can only use the smart resolutor for one study at the moment.
         // We change the FATHER, MOTHER and CHILDREN parameters for FATHER_ID, MOTHER_ID and CHILDREN_IDS which is what the DBAdaptor
         // understands
         if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.FATHER.key()))) {
-            if (studyIds.size() <= 1) {
-                String studyStrAux = studyIds.size() == 1 ? Long.toString(studyIds.get(0)) : null;
-                MyResourceIds resourceIds = catalogManager.getIndividualManager()
-                        .getIds(query.getString(FamilyDBAdaptor.QueryParams.FATHER.key()), studyStrAux, sessionId);
-                query.put(FamilyDBAdaptor.QueryParams.FATHER_ID.key(), resourceIds.getResourceIds());
-            } else {
-                throw new CatalogException("Operation not supported. Cannot look for individuals from 0 or different studies. Please "
-                        + "choose only one study");
-            }
+            MyResourceIds resourceIds = catalogManager.getIndividualManager()
+                    .getIds(query.getString(FamilyDBAdaptor.QueryParams.FATHER.key()), Long.toString(studyId), sessionId);
+            query.put(FamilyDBAdaptor.QueryParams.FATHER_ID.key(), resourceIds.getResourceIds());
             query.remove(FamilyDBAdaptor.QueryParams.FATHER.key());
         }
         if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.MOTHER.key()))) {
-            if (studyIds.size() <= 1) {
-                String studyStrAux = studyIds.size() == 1 ? Long.toString(studyIds.get(0)) : null;
-                MyResourceIds resourceIds = catalogManager.getIndividualManager()
-                        .getIds(query.getString(FamilyDBAdaptor.QueryParams.MOTHER.key()), studyStrAux, sessionId);
-                query.put(FamilyDBAdaptor.QueryParams.MOTHER_ID.key(), resourceIds.getResourceIds());
-            } else {
-                throw new CatalogException("Operation not supported. Cannot look for individuals from 0 or different studies. Please "
-                        + "choose only one study");
-            }
+            MyResourceIds resourceIds = catalogManager.getIndividualManager()
+                    .getIds(query.getString(FamilyDBAdaptor.QueryParams.MOTHER.key()), Long.toString(studyId), sessionId);
+            query.put(FamilyDBAdaptor.QueryParams.MOTHER_ID.key(), resourceIds.getResourceIds());
             query.remove(FamilyDBAdaptor.QueryParams.MOTHER.key());
         }
         if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.CHILDREN.key()))) {
-            if (studyIds.size() <= 1) {
-                String studyStrAux = studyIds.size() == 1 ? Long.toString(studyIds.get(0)) : null;
-                MyResourceIds resourceIds = catalogManager.getIndividualManager()
-                        .getIds(query.getString(FamilyDBAdaptor.QueryParams.CHILDREN.key()), studyStrAux, sessionId);
-                query.put(FamilyDBAdaptor.QueryParams.CHILDREN_IDS.key(), resourceIds.getResourceIds());
-            } else {
-                throw new CatalogException("Operation not supported. Cannot look for individuals from 0 or different studies. Please "
-                        + "choose only one study");
-            }
+            MyResourceIds resourceIds = catalogManager.getIndividualManager()
+                    .getIds(query.getString(FamilyDBAdaptor.QueryParams.CHILDREN.key()), Long.toString(studyId), sessionId);
+            query.put(FamilyDBAdaptor.QueryParams.CHILDREN_IDS.key(), resourceIds.getResourceIds());
             query.remove(FamilyDBAdaptor.QueryParams.CHILDREN.key());
         }
 
-        QueryResult<Family> queryResult = null;
-        for (Long studyId : studyIds) {
-            query.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        query.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
-            QueryResult<Family> queryResultAux = familyDBAdaptor.get(query, options);
-            authorizationManager.filterFamilies(userId, studyId, queryResultAux.getResult());
-
-            if (queryResult == null) {
-                queryResult = queryResultAux;
-            } else {
-                queryResult.getResult().addAll(queryResultAux.getResult());
-                queryResult.setNumTotalResults(queryResult.getNumTotalResults() + queryResultAux.getNumTotalResults());
-                queryResult.setDbTime(queryResult.getDbTime() + queryResultAux.getDbTime());
-            }
-        }
-        queryResult.setNumResults(queryResult.getResult().size());
-
+        QueryResult<Family> queryResult = familyDBAdaptor.get(query, options, userId);
+//            authorizationManager.filterFamilies(userId, studyId, queryResultAux.getResult());
         return queryResult;
+    }
+
+    public QueryResult<Family> count(String studyStr, Query query, String sessionId) throws CatalogException {
+        String userId = catalogManager.getUserManager().getId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+        // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
+        // We change the FATHER, MOTHER and CHILDREN parameters for FATHER_ID, MOTHER_ID and CHILDREN_IDS which is what the DBAdaptor
+        // understands
+        if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.FATHER.key()))) {
+//            String studyStrAux = studyIds.size() == 1 ? Long.toString(studyIds.get(0)) : null;
+            MyResourceIds resourceIds = catalogManager.getIndividualManager()
+                    .getIds(query.getString(FamilyDBAdaptor.QueryParams.FATHER.key()), Long.toString(studyId), sessionId);
+            query.put(FamilyDBAdaptor.QueryParams.FATHER_ID.key(), resourceIds.getResourceIds());
+            query.remove(FamilyDBAdaptor.QueryParams.FATHER.key());
+        }
+        if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.MOTHER.key()))) {
+//            String studyStrAux = studyIds.size() == 1 ? Long.toString(studyIds.get(0)) : null;
+            MyResourceIds resourceIds = catalogManager.getIndividualManager()
+                    .getIds(query.getString(FamilyDBAdaptor.QueryParams.MOTHER.key()), Long.toString(studyId), sessionId);
+            query.put(FamilyDBAdaptor.QueryParams.MOTHER_ID.key(), resourceIds.getResourceIds());
+            query.remove(FamilyDBAdaptor.QueryParams.MOTHER.key());
+        }
+        if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.CHILDREN.key()))) {
+//            String studyStrAux = studyIds.size() == 1 ? Long.toString(studyIds.get(0)) : null;
+            MyResourceIds resourceIds = catalogManager.getIndividualManager()
+                    .getIds(query.getString(FamilyDBAdaptor.QueryParams.CHILDREN.key()), Long.toString(studyId), sessionId);
+            query.put(FamilyDBAdaptor.QueryParams.CHILDREN_IDS.key(), resourceIds.getResourceIds());
+            query.remove(FamilyDBAdaptor.QueryParams.CHILDREN.key());
+        }
+
+        query.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Long> queryResultAux = familyDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
+        return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
+                queryResultAux.getErrorMsg(), Collections.emptyList());
     }
 
     @Override
@@ -408,7 +422,7 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         MyResourceId resource = getId(Long.toString(id), null, sessionId);
-        authorizationManager.checkPermissions(resource, FamilyAclEntry.FamilyPermissions.UPDATE, MongoDBAdaptorFactory.FAMILY_COLLECTION);
+        authorizationManager.checkFamilyPermission(resource.getStudyId(), id, resource.getUser(), FamilyAclEntry.FamilyPermissions.UPDATE);
 
         QueryResult<Family> familyQueryResult = familyDBAdaptor.get(id, new QueryOptions());
         if (familyQueryResult.getNumResults() == 0) {
@@ -529,15 +543,22 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         MyResourceId resourceId = getId(id, studyStr, sessionId);
-        authorizationManager.checkPermissions(resourceId, FamilyAclEntry.FamilyPermissions.WRITE_ANNOTATIONS,
-                MongoDBAdaptorFactory.FAMILY_COLLECTION);
+        authorizationManager.checkFamilyPermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
+                FamilyAclEntry.FamilyPermissions.WRITE_ANNOTATIONS);
         MyResourceId variableSetResource = catalogManager.getStudyManager().getVariableSetId(variableSetId,
                 Long.toString(resourceId.getStudyId()), sessionId);
 
-        VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null).first();
+        QueryResult<VariableSet> variableSet = studyDBAdaptor.getVariableSet(variableSetResource.getResourceId(), null,
+                resourceId.getUser(), null);
+        if (variableSet.getNumResults() == 0) {
+            // Variable set must be confidential and the user does not have those permissions
+            throw new CatalogAuthorizationException("Permission denied: User " + resourceId.getUser() + " cannot create annotations over "
+                    + "that variable set");
+        }
 
-        QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(resourceId.getResourceId(), variableSet,
-                annotationSetName, annotations, attributes, familyDBAdaptor);
+        QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(resourceId.getResourceId(), variableSet.first(),
+                annotationSetName, annotations, catalogManager.getStudyManager().getCurrentRelease(resourceId.getStudyId()), attributes,
+                familyDBAdaptor);
 
         auditManager.recordUpdate(AuditRecord.Resource.family, resourceId.getResourceId(), resourceId.getUser(),
                 new ObjectMap("annotationSets", annotationSet.first()), "annotate", null);
@@ -547,29 +568,33 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
 
     @Override
     public QueryResult<AnnotationSet> getAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
-        long familyId = commonGetAllAnnotationSets(id, studyStr, sessionId);
-        return familyDBAdaptor.getAnnotationSet(familyId, null);
+        MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
+        return familyDBAdaptor.getAnnotationSet(resource, null,
+                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
     }
 
     @Override
     public QueryResult<ObjectMap> getAllAnnotationSetsAsMap(String id, @Nullable String studyStr, String sessionId) throws
             CatalogException {
-        long familyId = commonGetAllAnnotationSets(id, studyStr, sessionId);
-        return familyDBAdaptor.getAnnotationSetAsMap(familyId, null);
+        MyResourceId resource = commonGetAllAnnotationSets(id, studyStr, sessionId);
+        return familyDBAdaptor.getAnnotationSetAsMap(resource, null,
+                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
     }
 
     @Override
     public QueryResult<AnnotationSet> getAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        long familyId = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
-        return familyDBAdaptor.getAnnotationSet(familyId, annotationSetName);
+        MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
+        return familyDBAdaptor.getAnnotationSet(resource, annotationSetName,
+                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
     }
 
     @Override
     public QueryResult<ObjectMap> getAnnotationSetAsMap(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        long familyId = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
-        return familyDBAdaptor.getAnnotationSetAsMap(familyId, annotationSetName);
+        MyResourceId resource = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
+        return familyDBAdaptor.getAnnotationSetAsMap(resource, annotationSetName,
+                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
     }
 
     @Override
@@ -580,13 +605,12 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         ParamUtils.checkObj(newAnnotations, "newAnnotations");
 
         MyResourceId resourceId = getId(id, studyStr, sessionId);
-        authorizationManager.checkPermissions(resourceId, FamilyAclEntry.FamilyPermissions.WRITE_ANNOTATIONS,
-                MongoDBAdaptorFactory.FAMILY_COLLECTION);
+        authorizationManager.checkFamilyPermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
+                FamilyAclEntry.FamilyPermissions.WRITE_ANNOTATIONS);
 
         // Update the annotation
         QueryResult<AnnotationSet> queryResult =
-                AnnotationManager.updateAnnotationSet(resourceId.getResourceId(), annotationSetName, newAnnotations, familyDBAdaptor,
-                        studyDBAdaptor);
+                AnnotationManager.updateAnnotationSet(resourceId, annotationSetName, newAnnotations, familyDBAdaptor, studyDBAdaptor);
 
         if (queryResult == null || queryResult.getNumResults() == 0) {
             throw new CatalogException("There was an error with the update");
@@ -598,7 +622,7 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream()
                         .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
-                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), null);
+                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), 1, null);
         auditManager.recordUpdate(AuditRecord.Resource.family, resourceId.getResourceId(), resourceId.getUser(),
                 new ObjectMap("annotationSets", Collections.singletonList(annotationSetUpdate)), "Update annotation", null);
 
@@ -612,14 +636,16 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
 
         MyResourceId resourceId = getId(id, studyStr, sessionId);
-        authorizationManager.checkPermissions(resourceId, FamilyAclEntry.FamilyPermissions.DELETE_ANNOTATIONS,
-                MongoDBAdaptorFactory.FAMILY_COLLECTION);
+        authorizationManager.checkFamilyPermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
+                FamilyAclEntry.FamilyPermissions.DELETE_ANNOTATIONS);
 
         QueryResult<AnnotationSet> annotationSet = familyDBAdaptor.getAnnotationSet(resourceId.getResourceId(), annotationSetName);
         if (annotationSet == null || annotationSet.getNumResults() == 0) {
             throw new CatalogException("Could not delete annotation set. The annotation set with name " + annotationSetName + " could not "
                     + "be found in the database.");
         }
+        // We make this query because it will check the proper permissions in case the variable set is confidential
+        studyDBAdaptor.getVariableSet(annotationSet.first().getVariableSetId(), new QueryOptions(), resourceId.getUser(), null);
 
         familyDBAdaptor.deleteAnnotationSet(resourceId.getResourceId(), annotationSetName);
 
@@ -635,8 +661,8 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         ParamUtils.checkParameter(id, "id");
 
         AbstractManager.MyResourceId resourceId = getId(id, studyStr, sessionId);
-        authorizationManager.checkPermissions(resourceId, FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS,
-                MongoDBAdaptorFactory.FAMILY_COLLECTION);
+//        authorizationManager.checkFamilyPermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
+//                FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS);
 
         long variableSetId = -1;
         if (StringUtils.isNotEmpty(variableSetStr)) {
@@ -644,7 +670,8 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
                     sessionId).getResourceId();
         }
 
-        return familyDBAdaptor.searchAnnotationSetAsMap(resourceId.getResourceId(), variableSetId, annotation);
+        return familyDBAdaptor.searchAnnotationSetAsMap(resourceId, variableSetId, annotation,
+                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
     }
 
     @Override
@@ -653,8 +680,8 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         ParamUtils.checkParameter(id, "id");
 
         AbstractManager.MyResourceId resourceId = getId(id, studyStr, sessionId);
-        authorizationManager.checkPermissions(resourceId, FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS,
-                MongoDBAdaptorFactory.FAMILY_COLLECTION);
+//        authorizationManager.checkFamilyPermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
+//                FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS);
 
         long variableSetId = -1;
         if (StringUtils.isNotEmpty(variableSetStr)) {
@@ -662,25 +689,26 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
                     sessionId).getResourceId();
         }
 
-        return familyDBAdaptor.searchAnnotationSet(resourceId.getResourceId(), variableSetId, annotation);
+        return familyDBAdaptor.searchAnnotationSet(resourceId, variableSetId, annotation,
+                StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.toString());
     }
 
-    private long commonGetAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
+    private MyResourceId commonGetAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
-        MyResourceId resourceId = getId(id, studyStr, sessionId);
-        authorizationManager.checkPermissions(resourceId, FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS,
-                MongoDBAdaptorFactory.FAMILY_COLLECTION);
-        return resourceId.getResourceId();
+        return getId(id, studyStr, sessionId);
+//        authorizationManager.checkFamilyPermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
+//                FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS);
+//        return resourceId.getResourceId();
     }
 
-    private long commonGetAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
+    private MyResourceId commonGetAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkAlias(annotationSetName, "annotationSetName", configuration.getCatalog().getOffset());
-        MyResourceId resourceId = getId(id, studyStr, sessionId);
-        authorizationManager.checkPermissions(resourceId, FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS,
-                MongoDBAdaptorFactory.FAMILY_COLLECTION);
-        return resourceId.getResourceId();
+        return getId(id, studyStr, sessionId);
+//        authorizationManager.checkFamilyPermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
+//                FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS);
+//        return resourceId.getResourceId();
     }
 
     public List<QueryResult<FamilyAclEntry>> updateAcl(String family, String studyStr, String memberIds, AclParams familyAclParams,
@@ -704,8 +732,8 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         String collectionName = MongoDBAdaptorFactory.FAMILY_COLLECTION;
         // Check the user has the permissions needed to change permissions over those families
         for (Long familyId : resourceIds.getResourceIds()) {
-            MyResourceId tmpResource = new MyResourceId(resourceIds.getUser(), resourceIds.getStudyId(), familyId);
-            authorizationManager.checkPermissions(tmpResource, FamilyAclEntry.FamilyPermissions.SHARE, collectionName);
+            authorizationManager.checkFamilyPermission(resourceIds.getStudyId(), familyId, resourceIds.getUser(),
+                    FamilyAclEntry.FamilyPermissions.SHARE);
         }
 
         // Validate that the members are actually valid members
@@ -716,13 +744,15 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
             members = Collections.emptyList();
         }
         CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
-        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
+//        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
         switch (familyAclParams.getAction()) {
             case SET:
-                return authorizationManager.setAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
+                return authorizationManager.setAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
+                        collectionName);
             case ADD:
-                return authorizationManager.addAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
+                return authorizationManager.addAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
+                        collectionName);
             case REMOVE:
                 return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
             case RESET:

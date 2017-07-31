@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,20 +58,21 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     public static final String DB_NAME = "opencga_variants_test";
     public static final int FILE_ID = 6;
     public static final Set<String> VARIANTS_WITH_CONFLICTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-            "22:16080425:TA:-",
+            "22:16050655:G:A", // Overlaps with a CNV
+//            "22:16080425:TA:-",
             "22:16080425:T:C",
             "22:16080426:A:G",
-            "22:16136748:ATTA:-",
+//            "22:16136748:ATTA:-",
             "22:16136749:T:A",
             "22:16137302:G:C",
             "22:16137301:AG:-",
-            "22:16206615:C:A",
-            "22:16206615:-:C",
-            "22:16285168:-:CAAAC", // <-- This won't be a conflict with the new var end.
-            "22:16285169:T:G",
+//            "22:16206615:C:A",
+//            "22:16206615:-:C",
+//            "22:16285168:-:CAAAC", // <-- This won't be a conflict with the new var end.
+//            "22:16285169:T:G",
             "22:16464051:T:C",
             "22:16482314:C:T",
-            "22:16482314:C:-",
+//            "22:16482314:C:-",
             "22:16532311:A:C",
             "22:16532321:A:T",
             "22:16538352:A:C",
@@ -125,10 +126,14 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     }
 
     public static URI getResourceUri(String resourceName) throws IOException {
+        return getResourceUri(resourceName, resourceName);
+    }
+
+    public static URI getResourceUri(String resourceName, String targetName) throws IOException {
         Path rootDir = getTmpRootDir();
-        Path resourcePath = rootDir.resolve(resourceName);
+        Path resourcePath = rootDir.resolve(targetName);
         if (!resourcePath.getParent().toFile().exists()) {
-            Files.createDirectory(resourcePath.getParent());
+            Files.createDirectories(resourcePath.getParent());
         }
         if (!resourcePath.toFile().exists()) {
             Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(resourceName), resourcePath, StandardCopyOption
@@ -157,6 +162,10 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
 
     public URI newOutputUri() throws IOException {
         return newOutputUri(1, outputUri);
+    }
+
+    public URI newOutputUri(int extraCalls) throws IOException {
+        return newOutputUri(1 + extraCalls, outputUri);
     }
 
     public static URI newOutputUri(int extraCalls, URI outputUri) throws IOException {
@@ -304,16 +313,18 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         return new StudyConfiguration(STUDY_ID, STUDY_NAME);
     }
 
-    public void assertWithConflicts(Variant variant, Runnable assertCondition) {
+    public boolean assertWithConflicts(Variant variant, Runnable assertCondition) {
         try {
             assertCondition.run();
         } catch (AssertionError e) {
             if (VARIANTS_WITH_CONFLICTS.contains(variant.toString())) {
                 logger.error(e.getMessage());
+                return false;
             } else {
                 throw e;
             }
         }
+        return true;
     }
     public void printActiveThreadsNumber() {
         List<String> threads = Thread.getAllStackTraces()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,10 +31,7 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.Cohort;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
@@ -71,20 +68,16 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         File file = opencga.createFile(studyId, "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
 
-        List<Long> sampleIds = file.getSampleIds();
-
         for (int i = 0; i < coh.length; i++) {
-            coh[i] = catalogManager.getCohortManager().create(studyId, "coh" + i, Study.Type.CONTROL_SET, "", sampleIds.subList(sampleIds
-                    .size() / coh.length * i, sampleIds.size() / coh.length * (i + 1)), null, null, sessionId).first().getId();
+            coh[i] = catalogManager.getCohortManager().create(studyId, "coh" + i, Study.Type.CONTROL_SET, "", file.getSamples().subList(file.getSamples()
+                    .size() / coh.length * i, file.getSamples().size() / coh.length * (i + 1)), null, null, sessionId).first().getId();
         }
         QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false);
         queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
         variantManager.index(null, String.valueOf(file.getId()), createTmpOutdir(file), queryOptions, sessionId);
 
-
         all = catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT),
                 new QueryOptions(), sessionId).first().getId();
-
     }
 
     public File beforeAggregated(String fileName, VariantSource.Aggregation aggregation) throws Exception {
@@ -246,8 +239,11 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         catalogManager.modifyCohort(coh[0], new ObjectMap("description", "NewDescription"), new QueryOptions(), sessionId);
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohort(coh[0], null, sessionId).first().getStatus().getName());
 
-        catalogManager.modifyCohort(coh[0], new ObjectMap("samples", catalogManager.getCohort(coh[0], null, sessionId).first()
-                .getSamples().subList(0, 100)), new QueryOptions(), sessionId);
+        List<Long> newCohort = catalogManager.getCohort(coh[0], null, sessionId).first().getSamples().stream()
+                .map(Sample::getId)
+                .limit(100)
+                .collect(Collectors.toList());
+        catalogManager.modifyCohort(coh[0], new ObjectMap("samples", newCohort), new QueryOptions(), sessionId);
         assertEquals(Cohort.CohortStatus.INVALID, catalogManager.getCohort(coh[0], null, sessionId).first().getStatus().getName());
 
         calculateStats(coh[0]);
@@ -453,9 +449,9 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
                 for (Map.Entry<String, VariantStats> entry : sourceEntry.getStats().entrySet()) {
                     assertTrue("In variant " + variant.toString(), cohorts.containsKey(entry.getKey()));
                     if (cohorts.get(entry.getKey()) != null) {
-                        assertEquals("Variant: " + variant.toString() + " does not have the correct number of samples in cohort '" + entry.getKey() + "'.",
+                        assertEquals("Variant: " + variant.toString() + " does not have the correct number of samples in cohort '" + entry.getKey() + "'. jsonVariant: " + variant.toJson() ,
                                 cohorts.get(entry.getKey()).getSamples().size(),
-                                entry.getValue().getGenotypesCount().values().stream().reduce((integer, integer2) -> integer + integer2).orElse(0).intValue());
+                                entry.getValue().getGenotypesCount().values().stream().reduce(Integer::sum).orElse(0).intValue());
                     }
                 }
             }

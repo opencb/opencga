@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,10 +49,12 @@ public class DocumentToVariantAnnotationConverterTest {
     public void setUp() throws JsonProcessingException {
         //Setup variant
         // 19:45411941:T:C
-        // curl 'http://${CELLBASE_HOST}/cellbase/webservices/rest/v3/hsapiens/genomic/variant/19:45411941:T:C/full_annotation?exclude
+        // curl 'http://${CELLBASE_HOST}/cellbase/webservices/rest/v3/hsapiens/genomic/variant/19:45411941:T:C/full_annotation?exclude'
         // =expression'
         String variantJson = "{\"chromosome\":\"19\",\"start\":45411941,\"reference\":\"T\",\"alternate\":\"C\"," +
-                "\"id\":\"rs429358\",\"consequenceTypes\":[{\"geneName\":\"TOMM40\",\"ensemblGeneId\":\"ENSG00000130204\"," +
+                "\"id\":\"rs429358\"," +
+                "\"displayConsequenceType\": \"missense_variant\"," +
+                "\"consequenceTypes\":[{\"geneName\":\"TOMM40\",\"ensemblGeneId\":\"ENSG00000130204\"," +
                 "\"ensemblTranscriptId\":\"ENST00000252487\",\"strand\":\"+\",\"biotype\":\"protein_coding\"," +
                 "\"sequenceOntologyTerms\":[{\"accession\":\"SO:0001632\",\"name\":\"downstream_gene_variant\"}]}," +
                 "{\"geneName\":\"TOMM40\",\"ensemblGeneId\":\"ENSG00000130204\",\"ensemblTranscriptId\":\"ENST00000592434\"," +
@@ -146,6 +148,7 @@ public class DocumentToVariantAnnotationConverterTest {
 //        System.out.println("annotation = " + jsonObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(variantAnnotation));
         dbObject = new Document()
                 .append(ANNOT_ID_FIELD, "?")
+                .append(DISPLAY_CONSEQUENCE_TYPE_FIELD, 1583)
                 .append(CONSEQUENCE_TYPE_FIELD, asList(
                         new Document(CT_GENE_NAME_FIELD, "TOMM40")
                                 .append(CT_ENSEMBL_GENE_ID_FIELD, "ENSG00000130204")

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,11 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getSamplesMetadata;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -54,47 +57,18 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
     }
 
     /**
-     * Delete all the variants from the database resulting of executing the query.
-     *
-     * @param query   Query to be executed in the database
-     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
-     * @return A QueryResult with the number of deleted variants
-     */
-    @Deprecated
-    QueryResult delete(Query query, QueryOptions options);
-
     /**
-     * Delete all the given samples belonging to the study from the database.
+     * Fetch all variants resulting of executing the query in the database. Returned fields are taken from
+     * the 'include' and 'exclude' fields at options.
      *
-     * @param studyName   The study name where samples belong to
-     * @param sampleNames Sample names to be deleted, these must belong to the study
-     * @param options     Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
-     * @return A QueryResult with a list with all the samples deleted
+     * @param variants Iterator with variants to filter
+     * @param query    Query to be executed in the database to filter variants
+     * @param options  Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+     * @return A QueryResult with the result of the query
      */
-    @Deprecated
-    QueryResult deleteSamples(String studyName, List<String> sampleNames, QueryOptions options);
-
-    /**
-     * Delete the given file from the database with all the samples it has.
-     *
-     * @param studyName The study where the file belong
-     * @param fileName  The file name to be deleted, it must belong to the study
-     * @param options   Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
-     * @return A QueryResult with the file deleted
-     */
-    @Deprecated
-    QueryResult deleteFile(String studyName, String fileName, QueryOptions options);
-
-    /**
-     * Delete the given study from the database.
-     *
-     * @param studyName The study name to delete
-     * @param options   Query modifiers, accepted values are: purge
-     * @return A QueryResult with the study deleted
-     */
-    @Deprecated
-    QueryResult deleteStudy(String studyName, QueryOptions options);
-
+    default VariantQueryResult<Variant> get(Iterator<?> variants, Query query, QueryOptions options) {
+        return iterator(variants, query, options).toQueryResult(getSamplesMetadata(query, options, getStudyConfigurationManager()));
+    }
 
     /**
      * Fetch all variants resulting of executing the query in the database. Returned fields are taken from
@@ -194,8 +168,6 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
     QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions);
 
     QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, QueryOptions options);
-
-    QueryResult deleteStats(String studyName, String cohortName, QueryOptions options);
 
     QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
 

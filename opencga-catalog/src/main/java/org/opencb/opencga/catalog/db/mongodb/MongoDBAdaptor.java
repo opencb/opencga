@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,10 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.models.Family;
+import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.Sample;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -42,6 +46,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
     static final String PRIVATE_ID = "_id";
     static final String PRIVATE_PROJECT_ID = "_projectId";
+    static final String PRIVATE_OWNER_ID = "_ownerId";
     static final String PRIVATE_STUDY_ID = "_studyId";
     static final String FILTER_ROUTE_PROJECTS = "projects.";
     static final String FILTER_ROUTE_STUDIES = "projects.studies.";
@@ -129,6 +134,55 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
     }
 
+    // Auxiliar methods used in family/get and clinicalAnalysis/get to retrieve the whole referenced documents
+    protected Individual getIndividual(Individual individual) {
+        Individual retIndividual = individual;
+        if (individual != null && individual.getId() > 0) {
+            QueryResult<Individual> individualQueryResult = null;
+            try {
+                individualQueryResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(individual.getId(),
+                        QueryOptions.empty());
+            } catch (CatalogDBException e) {
+                logger.error(e.getMessage(), e);
+            }
+            if (individualQueryResult != null && individualQueryResult.getNumResults() == 1) {
+                retIndividual = individualQueryResult.first();
+            }
+        }
+        return retIndividual;
+    }
+
+    protected Sample getSample(Sample sample) {
+        Sample retSample = sample;
+        if (sample != null && sample.getId() > 0) {
+            QueryResult<Sample> sampleQueryResult = null;
+            try {
+                sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(sample.getId(), QueryOptions.empty());
+            } catch (CatalogDBException e) {
+                logger.error(e.getMessage(), e);
+            }
+            if (sampleQueryResult != null && sampleQueryResult.getNumResults() == 1) {
+                retSample = sampleQueryResult.first();
+            }
+        }
+        return retSample;
+    }
+
+    protected Family getFamily(Family family) {
+        Family retFamily = family;
+        if (family != null && family.getId() > 0) {
+            QueryResult<Family> familyQueryResult = null;
+            try {
+                familyQueryResult = dbAdaptorFactory.getCatalogFamilyDBAdaptor().get(family.getId(), QueryOptions.empty());
+            } catch (CatalogDBException e) {
+                logger.error(e.getMessage(), e);
+            }
+            if (familyQueryResult != null && familyQueryResult.getNumResults() == 1) {
+                retFamily = familyQueryResult.first();
+            }
+        }
+        return retFamily;
+    }
 
     protected QueryResult rank(MongoDBCollection collection, Bson query, String groupByField, String idField, int numResults, boolean asc) {
         if (groupByField == null || groupByField.isEmpty()) {
@@ -200,19 +254,6 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             return groupBy(collection, query, Arrays.asList(groupByField.split(",")), idField, options);
         } else {
             return groupBy(collection, query, Arrays.asList(groupByField), idField, options);
-//            Bson match = Aggregates.match(query);
-//            List<Bson> projections = new ArrayList<>();
-//            addDateProjection(projections, Arrays.asList(groupByField));
-//            projections.add(Projections.include(groupByField, idField));
-//            Bson project = Aggregates.project(Projections.fields(projections));
-////            Bson project = Aggregates.project(Projections.include(groupByField, idField));
-//            Bson group;
-//            if (options.getBoolean("count", false)) {
-//                group = Aggregates.group("$" + groupByField, Accumulators.sum("count", 1));
-//            } else {
-//                group = Aggregates.group("$" + groupByField, Accumulators.addToSet("features", "$" + idField));
-//            }
-//            return collection.aggregate(Arrays.asList(match, project, group), options);
         }
     }
 
@@ -223,33 +264,29 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
 
         List<String> groupByFields = new ArrayList<>(groupByField);
-//        if (groupByField.size() == 1) {
-//            // if only one field then we call to simple groupBy
-//            return groupBy(collection, query, groupByField.get(0), idField, options);
-//        } else {
-            Bson match = Aggregates.match(query);
+        Bson match = Aggregates.match(query);
 
-            // add all group-by fields to the projection together with the aggregation field name
-            List<String> includeGroupByFields = new ArrayList<>(groupByField);
-            includeGroupByFields.add(idField);
-            List<Bson> projections = new ArrayList<>();
-            addDateProjection(projections, includeGroupByFields, groupByFields);
-            projections.add(Projections.include(includeGroupByFields));
-            Bson project = Aggregates.project(Projections.fields(projections));
+        // add all group-by fields to the projection together with the aggregation field name
+        List<String> includeGroupByFields = new ArrayList<>(groupByField);
+        includeGroupByFields.add(idField);
+        List<Bson> projections = new ArrayList<>();
+        addDateProjection(projections, includeGroupByFields, groupByFields);
+        projections.add(Projections.include(includeGroupByFields));
+        Bson project = Aggregates.project(Projections.fields(projections));
 //            Bson project = Aggregates.project(Projections.include(groupByFields));
 
-            // _id document creation to have the multiple id
-            Document id = new Document();
-            for (String s : groupByFields) {
-                id.append(s, "$" + s);
-            }
-            Bson group;
-            if (options.getBoolean("count", false)) {
-                group = Aggregates.group(id, Accumulators.sum("count", 1));
-            } else {
-                group = Aggregates.group(id, Accumulators.addToSet("features", "$" + idField));
-            }
-            return collection.aggregate(Arrays.asList(match, project, group), options);
+        // _id document creation to have the multiple id
+        Document id = new Document();
+        for (String s : groupByFields) {
+            id.append(s, "$" + s);
+        }
+        Bson group;
+        if (options.getBoolean("count", false)) {
+            group = Aggregates.group(id, Accumulators.sum("count", 1));
+        } else {
+            group = Aggregates.group(id, Accumulators.addToSet("features", "$" + idField));
+        }
+        return collection.aggregate(Arrays.asList(match, project, group), options);
 //        }
     }
 
@@ -274,7 +311,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             projections.add(dateProjection);
             includeGroupByFields.remove("day");
             if (!includeGroupByFields.remove("month")) {
-                 groupByFields.add("month");
+                groupByFields.add("month");
             }
             if (!includeGroupByFields.remove("year")) {
                 groupByFields.add("year");

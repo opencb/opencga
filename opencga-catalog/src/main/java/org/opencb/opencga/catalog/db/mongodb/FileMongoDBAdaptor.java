@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
@@ -31,15 +31,16 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.DatasetDBAdaptor;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.FileConverter;
+import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +50,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
 
+import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 /**
@@ -108,57 +110,8 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         if (!file.isExternal()) {
             dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, file.getSize());
         }
-//        try {
-//            dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, file.getSize());
-//        } catch (CatalogDBException e) {
-//            delete(newFileId, options);
-//            throw new CatalogDBException("File from study { id:" + studyId + "} was removed from the database due to problems "
-//                    + "with the study collection.");
-//        }
 
         return endQuery("Create file", startTime, get(newFileId, options));
-    }
-
-    @Override
-    public QueryResult<File> get(Query query, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!=" + File.FileStatus.REMOVED);
-        }
-        Bson bson;
-        try {
-            bson = parseQuery(query, false);
-        } catch (NumberFormatException e) {
-            throw new CatalogDBException("Get file: Could not parse all the arguments from query - " + e.getMessage(), e.getCause());
-        }
-        QueryOptions qOptions;
-        if (options != null) {
-            qOptions = new QueryOptions(options);
-        } else {
-            qOptions = new QueryOptions();
-        }
-        qOptions = filterOptions(qOptions, FILTER_ROUTE_FILES);
-
-        QueryResult<File> fileQueryResult;
-        // TODO: Add the lookup for experiments
-        if (qOptions.get("lazy") != null && !qOptions.getBoolean("lazy")) {
-            Bson match = Aggregates.match(bson);
-            Bson lookup = Aggregates.lookup("job", QueryParams.JOB_ID.key(), JobDBAdaptor.QueryParams.ID.key(), "job");
-            fileQueryResult = fileCollection.aggregate(Arrays.asList(match, lookup), fileConverter, qOptions);
-        } else {
-            fileQueryResult = fileCollection.find(bson, fileConverter, qOptions);
-        }
-        logger.debug("File get: query : {}, project: {}, dbTime: {}",
-                bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()), qOptions == null ? "" : qOptions.toJson(),
-                fileQueryResult.getDbTime());
-        return endQuery("get File", startTime, fileQueryResult);
-    }
-
-    @Override
-    public QueryResult<File> get(long fileId, QueryOptions options) throws CatalogDBException {
-        checkId(fileId);
-        Query query = new Query(QueryParams.ID.key(), fileId);
-        return get(query, options);
     }
 
     @Override
@@ -185,75 +138,17 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     }
 
     @Override
-    public QueryResult<Map<String, Map<String, FileAclEntry>>> getAcls(long studyId, List<String> filePaths, List<String> userIds)
-            throws CatalogDBException {
-
-        long startTime = startQuery();
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-//        DBObject match = new BasicDBObject("$match", new BasicDBObject(PRIVATE_STUDY_ID, studyId).append("path", new BasicDBObject("$in",
-//                filePaths)));
-//        DBObject unwind = new BasicDBObject("$unwind", "$acl");
-//        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("acl.userId", new BasicDBObject("$in", userIds)));
-//        DBObject project = new BasicDBObject("$project", new BasicDBObject("path", 1).append("id", 1).append("acl", 1));
-//        QueryResult<DBObject> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
-
-        Bson match = Aggregates.match(Filters.and(Filters.eq(PRIVATE_STUDY_ID, studyId), Filters.in(QueryParams.PATH.key(), filePaths)));
-        Bson unwind = Aggregates.unwind("$" + QueryParams.ACL.key());
-        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACL_MEMBER.key(), userIds));
-        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.PATH.key(), QueryParams.ACL.key()));
-        QueryResult<Document> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
-
-        List<File> files = parseFiles(result);
-        Map<String, Map<String, FileAclEntry>> pathAclMap = new HashMap<>();
-        for (File file : files) {
-//            AclEntry acl = file.getAcl().get(0);
-            for (FileAclEntry acl : file.getAcl()) {
-                if (pathAclMap.containsKey(file.getPath())) {
-                    Map<String, FileAclEntry> userAclMap = pathAclMap.get(file.getPath());
-                    if (!userAclMap.containsKey(acl.getMember())) {
-                        userAclMap.put(acl.getMember(), acl);
-                    }
-                } else {
-                    HashMap<String, FileAclEntry> userAclMap = new HashMap<>();
-                    userAclMap.put(acl.getMember(), acl);
-                    pathAclMap.put(file.getPath(), userAclMap);
-                }
-            }
-        }
-//        Map<String, Acl> pathAclMap = files.stream().collect(Collectors.toMap(File::getPath, file -> file.getAcl().get(0)));
-        logger.debug("getFilesAcl for {} paths and {} users, dbTime: {} ", filePaths.size(), userIds.size(), result.getDbTime());
-        return endQuery("getFilesAcl", startTime, Collections.singletonList(pathAclMap));
-    }
-
-    @Override
     public long getStudyIdByFileId(long fileId) throws CatalogDBException {
-        QueryResult queryResult = nativeGet(new Query(QueryParams.ID.key(), fileId), null);
+        Query query = new Query()
+                .append(QueryParams.ID.key(), fileId)
+                .append(QueryParams.STATUS_NAME.key(), "!=null");
+        QueryResult queryResult = nativeGet(query, null);
 
         if (!queryResult.getResult().isEmpty()) {
             return (long) ((Document) queryResult.getResult().get(0)).get(PRIVATE_STUDY_ID);
         } else {
             throw CatalogDBException.idNotFound("File", fileId);
         }
-    }
-
-    @Override
-    public List<Long> getStudyIdsByFileIds(String fileIds) throws CatalogDBException {
-        Bson query = parseQuery(new Query(QueryParams.ID.key(), fileIds), false);
-        return fileCollection.distinct(PRIVATE_STUDY_ID, query, Long.class).getResult();
-    }
-
-    @Override
-    public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
-        QueryOptions qOptions;
-        if (options != null) {
-            qOptions = options;
-        } else {
-            qOptions = new QueryOptions();
-        }
-        qOptions = filterOptions(qOptions, FILTER_ROUTE_FILES);
-
-        return fileCollection.find(bson, qOptions);
     }
 
     @Override
@@ -264,15 +159,16 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
         if (myParams.isEmpty()) {
             logger.debug("The map of parameters to update file is empty. Originally it contained {}", parameters.safeToString());
-            throw new CatalogDBException("Nothing to update");
-        }
+        } else {
+            logger.debug("Update file. Query: {}, Update: {}", query.toBsonDocument(Document.class,
+                    MongoClient.getDefaultCodecRegistry()), myParams);
 
-        logger.debug("Update file. Query: {}, Update: {}",
-                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()), myParams);
 
-        QueryResult<UpdateResult> update = fileCollection.update(query, new Document("$set", myParams), new QueryOptions("multi", true));
-        if (update.first().getMatchedCount() == 0) {
-            throw new CatalogDBException("File " + id + " not found.");
+            QueryResult<UpdateResult> update = fileCollection.update(query, new Document("$set", myParams), new QueryOptions("multi",
+                    true));
+            if (update.first().getMatchedCount() == 0) {
+                throw new CatalogDBException("File " + id + " not found.");
+            }
         }
 
         QueryResult<File> queryResult = fileCollection.find(query, fileConverter, QueryOptions.empty());
@@ -369,14 +265,20 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
             }
         }
 
-        String[] acceptedIntegerListParams = {QueryParams.SAMPLE_IDS.key()};
-        filterIntegerListParams(parameters, fileParameters, acceptedIntegerListParams);
-        // Check if the sample ids exist.
-        if (parameters.containsKey(QueryParams.SAMPLE_IDS.key())) {
-            for (Integer sampleId : parameters.getAsIntegerList(QueryParams.SAMPLE_IDS.key())) {
-                if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().exists(sampleId)) {
-                    throw CatalogDBException.idNotFound("Sample", sampleId);
+        // Check if the samples exist.
+        if (parameters.containsKey(QueryParams.SAMPLES.key())) {
+            List<Object> objectSampleList = parameters.getAsList(QueryParams.SAMPLES.key());
+            List<Sample> sampleList = new ArrayList<>();
+            for (Object sample : objectSampleList) {
+                if (sample instanceof Sample) {
+                    if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().exists(((Sample) sample).getId())) {
+                        throw CatalogDBException.idNotFound("Sample", ((Sample) sample).getId());
+                    }
+                    sampleList.add((Sample) sample);
                 }
+            }
+            if (sampleList.size() > 0) {
+                fileParameters.put(QueryParams.SAMPLES.key(), fileConverter.convertSamples(sampleList));
             }
         }
 
@@ -481,6 +383,31 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     }
 
     @Override
+    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+            throws CatalogDBException, CatalogAuthorizationException {
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        }
+        if (studyPermission == null) {
+            studyPermission = StudyAclEntry.StudyPermissions.VIEW_FILES;
+        }
+
+        // Get the study document
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
+        }
+
+        // Get the document query needed to check the permissions as well
+        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
+                studyPermission.name(), studyPermission.getFilePermission().name());
+        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        logger.debug("File count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        return fileCollection.count(bson);
+    }
+
+    @Override
     public QueryResult distinct(Query query, String field) throws CatalogDBException {
         Bson bsonDocument = parseQuery(query, false);
         return fileCollection.distinct(field, bsonDocument);
@@ -492,17 +419,147 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     }
 
     @Override
+    public QueryResult<File> get(Query query, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+        List<File> documentList = new ArrayList<>();
+        DBIterator<File> dbIterator = iterator(query, options);
+        while (dbIterator.hasNext()) {
+            documentList.add(dbIterator.next());
+        }
+        QueryResult<File> queryResult = endQuery("Get", startTime, documentList);
+
+        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
+            QueryResult<Long> count = count(query);
+            queryResult.setNumTotalResults(count.first());
+        }
+        return queryResult;
+    }
+
+    @Override
+    public QueryResult<File> get(long fileId, QueryOptions options) throws CatalogDBException {
+        checkId(fileId);
+        Query query = new Query(QueryParams.ID.key(), fileId);
+        return get(query, options);
+    }
+
+    @Override
+    public QueryResult<File> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+        long startTime = startQuery();
+        List<File> documentList = new ArrayList<>();
+        DBIterator<File> dbIterator = iterator(query, options, user);
+        while (dbIterator.hasNext()) {
+            documentList.add(dbIterator.next());
+        }
+        QueryResult<File> queryResult = endQuery("Get", startTime, documentList);
+
+        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
+            QueryResult<Long> count = count(query, user, StudyAclEntry.StudyPermissions.VIEW_FILES);
+            queryResult.setNumTotalResults(count.first());
+        }
+        return queryResult;
+    }
+
+    @Override
+    public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+        List<Document> documentList = new ArrayList<>();
+        DBIterator<Document> dbIterator = nativeIterator(query, options);
+        while (dbIterator.hasNext()) {
+            documentList.add(dbIterator.next());
+        }
+        QueryResult<Document> queryResult = endQuery("Native get", startTime, documentList);
+
+        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
+            QueryResult<Long> count = count(query);
+            queryResult.setNumTotalResults(count.first());
+        }
+        return queryResult;
+    }
+
+    @Override
     public DBIterator<File> iterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
-        MongoCursor<Document> iterator = fileCollection.nativeQuery().find(bson, options).iterator();
-        return new MongoDBIterator<>(iterator, fileConverter);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        return new MongoDBIterator<>(mongoCursor, fileConverter);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
-        MongoCursor<Document> iterator = fileCollection.nativeQuery().find(bson, options).iterator();
-        return new MongoDBIterator<>(iterator);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        return new MongoDBIterator<>(mongoCursor);
+    }
+
+    @Override
+    public DBIterator<File> iterator(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document studyDocument = getStudyDocument(query);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
+
+        return new MongoDBIterator<>(mongoCursor, fileConverter);
+    }
+
+    @Override
+    public DBIterator nativeIterator(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document studyDocument = getStudyDocument(query);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
+
+        return new MongoDBIterator<>(mongoCursor);
+    }
+
+    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
+        MongoCursor<Document> documentMongoCursor;
+        try {
+            documentMongoCursor = getMongoCursor(query, options, null, null);
+        } catch (CatalogAuthorizationException e) {
+            throw new CatalogDBException(e);
+        }
+        return documentMongoCursor;
+    }
+
+    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options, Document studyDocument, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document queryForAuthorisedEntries = null;
+        if (studyDocument != null && user != null) {
+            // Get the document query needed to check the permissions as well
+            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                    StudyAclEntry.StudyPermissions.VIEW_FILES.name(), FileAclEntry.FilePermissions.VIEW.name());
+        }
+
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        }
+        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        QueryOptions qOptions;
+        if (options != null) {
+            qOptions = options;
+        } else {
+            qOptions = new QueryOptions();
+        }
+        qOptions = filterOptions(qOptions, FILTER_ROUTE_FILES);
+
+        logger.debug("File get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        // TODO: Add the lookup for experiments
+        if (qOptions.get("lazy") != null && !qOptions.getBoolean("lazy")) {
+            Bson match = Aggregates.match(bson);
+            Bson lookup = Aggregates.lookup("job", QueryParams.JOB_ID.key(), JobDBAdaptor.QueryParams.ID.key(), "job");
+            return fileCollection.nativeQuery().aggregate(Arrays.asList(match, lookup), qOptions).iterator();
+        } else {
+            return fileCollection.nativeQuery().find(bson, qOptions).iterator();
+        }
+    }
+
+    private Document getStudyDocument(Query query) throws CatalogDBException {
+        // Get the study document
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
+        }
+        return queryResult.first();
     }
 
     @Override
@@ -536,6 +593,10 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     // Auxiliar methods
 
     private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
+        return parseQuery(query, isolated, null);
+    }
+
+    private Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
 
         if (isolated) {
@@ -586,6 +647,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                     case MODIFICATION_DATE:
                     case DESCRIPTION:
                     case EXTERNAL:
+                    case RELEASE:
                     case STATUS:
                     case STATUS_NAME:
                     case STATUS_MSG:
@@ -596,9 +658,6 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                     case EXPERIMENT_ID:
                     case SAMPLE_IDS:
                     case JOB_ID:
-                    case ACL:
-                    case ACL_MEMBER:
-                    case ACL_PERMISSIONS:
                     case INDEX:
                     case INDEX_USER_ID:
                     case INDEX_CREATION_DATE:
@@ -618,6 +677,9 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
             }
         }
 
+        if (authorisation != null && authorisation.size() > 0) {
+            andBsonList.add(authorisation);
+        }
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);
         } else {
@@ -629,88 +691,6 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.PATH.key(), path);
         QueryResult<Long> count = fileCollection.count(query);
         return count.getResult().get(0) != 0;
-    }
-
-    // TODO: Check these deprecated methods and get rid of them at some point
-
-    @Deprecated
-    public QueryResult<File> getAllFiles(Query query, QueryOptions options) throws CatalogDBException {
-        throw new UnsupportedOperationException("Deprecated method. Use get instead.");
-/*
-        long startTime = startQuery();
-
-        List<DBObject> mongoQueryList = new LinkedList<>();
-
-        for (Map.Entry<String, Object> entry : query.entrySet()) {
-            String key = entry.getKey().split("\\.")[0];
-            try {
-                if (isDataStoreOption(key) || isOtherKnownOption(key)) {
-                    continue;   //Exclude DataStore options
-                }
-                FileFilterOption option = FileFilterOption.valueOf(key);
-                switch (option) {
-                    case id:
-                        addCompQueryFilter(option, option.name(), query, PRIVATE_ID, mongoQueryList);
-                        break;
-                    case studyId:
-                        addCompQueryFilter(option, option.name(), query, PRIVATE_STUDY_ID, mongoQueryList);
-                        break;
-                    case directory:
-                        mongoQueryList.add(new BasicDBObject("path", new BasicDBObject("$regex", "^" + query.getString("directory") +
-                                "[^/]+/?$")));
-                        break;
-                    default:
-                        String queryKey = entry.getKey().replaceFirst(option.name(), option.getKey());
-                        addCompQueryFilter(option, entry.getKey(), query, queryKey, mongoQueryList);
-                        break;
-                    case minSize:
-                        mongoQueryList.add(new BasicDBObject("size", new BasicDBObject("$gt", query.getInt("minSize"))));
-                        break;
-                    case maxSize:
-                        mongoQueryList.add(new BasicDBObject("size", new BasicDBObject("$lt", query.getInt("maxSize"))));
-                        break;
-                    case like:
-                        mongoQueryList.add(new BasicDBObject("name", new BasicDBObject("$regex", query.getString("like"))));
-                        break;
-                    case startsWith:
-                        mongoQueryList.add(new BasicDBObject("name", new BasicDBObject("$regex", "^" + query.getString("startsWith"))));
-                        break;
-                    case startDate:
-                        mongoQueryList.add(new BasicDBObject("creationDate", new BasicDBObject("$lt", query.getString("startDate"))));
-                        break;
-                    case endDate:
-                        mongoQueryList.add(new BasicDBObject("creationDate", new BasicDBObject("$gt", query.getString("endDate"))));
-                        break;
-                }
-            } catch (IllegalArgumentException e) {
-                throw new CatalogDBException(e);
-            }
-        }
-
-        BasicDBObject mongoQuery = new BasicDBObject("$and", mongoQueryList);
-        QueryOptions queryOptions = filterOptions(options, FILTER_ROUTE_FILES);
-//        QueryResult<DBObject> queryResult = fileCollection.find(mongoQuery, null, File.class, queryOptions);
-        QueryResult<File> queryResult = fileCollection.find(mongoQuery, null, new ComplexTypeConverter<File, DBObject>() {
-            @Override
-            public File convertToDataModelType(DBObject object) {
-                try {
-                    return getObjectReader(File.class).readValue(restoreDotsInKeys(object).toString());
-                } catch (IOException e) {
-                    return null;
-                }
-            }
-
-            @Override
-            public DBObject convertToStorageType(File object) {
-                return null;
-            }
-        }, queryOptions);
-        logger.debug("File search: query : {}, project: {}, dbTime: {}", mongoQuery, queryOptions == null ? "" : queryOptions.toJson(),
-                queryResult.getDbTime());
-//        List<File> files = parseFiles(queryResult);
-
-        return endQuery("Search File", startTime, queryResult);
-        */
     }
 
     QueryResult<File> setStatus(long fileId, String status) throws CatalogDBException {
@@ -764,13 +744,23 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         logger.debug("FileId {} extracted from {} jobs", fileId, result.first());
     }
 
+    @Override
     public QueryResult<Long> extractSampleFromFiles(Query query, List<Long> sampleIds) throws CatalogDBException {
         long startTime = startQuery();
         Bson bsonQuery = parseQuery(query, true);
-        Bson update = new Document("$pull", new Document(QueryParams.SAMPLE_IDS.key(), new Document("$in", sampleIds)));
+        Bson update = new Document("$pull", new Document(QueryParams.SAMPLES.key(), new Document("id", new Document("$in", sampleIds))));
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
         QueryResult<UpdateResult> updateQueryResult = fileCollection.update(bsonQuery, update, multi);
         return endQuery("Extract samples from files", startTime, Collections.singletonList(updateQueryResult.first().getModifiedCount()));
     }
 
+    @Override
+    public void addSamplesToFile(long fileId, List<Sample> samples) throws CatalogDBException {
+        if (samples == null || samples.size() == 0) {
+            return;
+        }
+        List<Document> sampleList = fileConverter.convertSamples(samples);
+        Bson update = Updates.addEachToSet(QueryParams.SAMPLES.key(), sampleList);
+        fileCollection.update(Filters.eq(PRIVATE_ID, fileId), update, QueryOptions.empty());
+    }
 }

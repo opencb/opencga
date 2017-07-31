@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,7 +89,11 @@ public class AbstractDocumentConverter {
     protected final <T> T getDefault(Document object, String key, T defaultValue) {
         Object o = object.get(key);
         if (o != null) {
-            return (T) o;
+            try {
+                return (T) o;
+            } catch (ClassCastException e) {
+                return defaultValue;
+            }
         } else {
             return defaultValue;
         }
@@ -98,12 +102,29 @@ public class AbstractDocumentConverter {
     protected final int getDefault(Document object, String key, int defaultValue) {
         Object o = object.get(key);
         if (o != null) {
-            if (o instanceof Integer) {
-                return (Integer) o;
+            if (o instanceof Number) {
+                return ((Number) o).intValue();
             } else {
                 try {
                     return Integer.parseInt(o.toString());
-                } catch (Exception e) {
+                } catch (NumberFormatException e) {
+                    return defaultValue;
+                }
+            }
+        } else {
+            return defaultValue;
+        }
+    }
+
+    protected final float getDefault(Document object, String key, float defaultValue) {
+        Object o = object.get(key);
+        if (o != null) {
+            if (o instanceof Number) {
+                return ((Number) o).floatValue();
+            } else {
+                try {
+                    return Float.parseFloat(o.toString());
+                } catch (NumberFormatException e) {
                     return defaultValue;
                 }
             }
@@ -115,12 +136,12 @@ public class AbstractDocumentConverter {
     protected final double getDefault(Document object, String key, double defaultValue) {
         Object o = object.get(key);
         if (o != null) {
-            if (o instanceof Double) {
-                return (Double) o;
+            if (o instanceof Number) {
+                return ((Number) o).doubleValue();
             } else {
                 try {
                     return Double.parseDouble(o.toString());
-                } catch (Exception e) {
+                } catch (NumberFormatException e) {
                     return defaultValue;
                 }
             }

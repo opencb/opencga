@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package org.opencb.opencga.storage.core.variant.transform;
 
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
+import org.opencb.biodata.formats.variant.VariantFactory;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantFactory;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
@@ -41,8 +41,8 @@ public class VariantAvroTransformTask extends VariantTransformTask<ByteBuffer> {
     protected final AvroEncoder<VariantAvro> encoder;
 
     public VariantAvroTransformTask(VariantFactory factory, VariantSource source, Path outputFileJsonFile,
-                                    VariantGlobalStatsCalculator variantStatsTask, boolean includesrc) {
-        super(factory, source, outputFileJsonFile, variantStatsTask, includesrc);
+                                    VariantGlobalStatsCalculator variantStatsTask, boolean includeSrc, boolean generateReferenceBlocks) {
+        super(factory, source, outputFileJsonFile, variantStatsTask, includeSrc, generateReferenceBlocks);
         this.encoder = new AvroEncoder<>(VariantAvro.getClassSchema());
     }
 

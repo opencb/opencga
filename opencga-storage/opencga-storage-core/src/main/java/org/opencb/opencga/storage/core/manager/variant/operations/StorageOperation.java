@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -112,16 +113,15 @@ public abstract class StorageOperation {
             throws IOException, CatalogException, StorageEngineException {
 
         CatalogStudyConfigurationFactory studyConfigurationFactory = new CatalogStudyConfigurationFactory(catalogManager);
+        StudyConfigurationManager studyConfigurationManager = getVariantStorageEngine(dataStore).getStudyConfigurationManager();
         try {
-            StudyConfigurationManager studyConfigurationManager = StorageEngineFactory.get()
-                    .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName()).getStudyConfigurationManager();
             // Update StudyConfiguration. Add new elements and so
             studyConfigurationFactory.updateStudyConfigurationFromCatalog(studyId, studyConfigurationManager, sessionId);
             StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration((int) studyId, null).first();
             // Update Catalog file and cohort status.
             studyConfigurationFactory.updateCatalogFromStudyConfiguration(studyConfiguration, null, sessionId);
             return studyConfiguration;
-        } catch (StorageEngineException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+        } catch (StorageEngineException e) {
             throw new StorageEngineException("Unable to update StudyConfiguration", e);
         }
     }
@@ -228,6 +228,16 @@ public abstract class StorageOperation {
         return dataStore;
     }
 
+    protected VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws StorageEngineException {
+        VariantStorageEngine variantStorageEngine;
+        try {
+            variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+            throw new StorageEngineException("Unable to create StorageEngine", e);
+        }
+        return variantStorageEngine;
+    }
+
     public static String buildDatabaseName(String databasePrefix, String userId, String alias) {
         String prefix;
         if (StringUtils.isNotEmpty(databasePrefix)) {
@@ -237,6 +247,12 @@ public abstract class StorageOperation {
             }
         } else {
             prefix = "opencga_";
+        }
+        // Project alias contains the userId:
+        // userId@projectAlias
+        int idx = alias.indexOf('@');
+        if (idx >= 0) {
+            alias = alias.substring(idx + 1);
         }
 
         return prefix + userId + '_' + alias;

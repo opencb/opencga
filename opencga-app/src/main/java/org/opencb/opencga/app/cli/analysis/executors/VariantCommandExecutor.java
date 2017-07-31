@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import org.opencb.opencga.analysis.execution.plugins.hist.VariantHistogramAnalys
 import org.opencb.opencga.analysis.execution.plugins.ibs.IbsAnalysis;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
@@ -38,6 +39,7 @@ import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperati
 import org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.analysis.VariantSampleFilter;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -49,6 +51,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VARIANT_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.LOAD;
 import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.TRANSFORM;
 
@@ -80,8 +83,8 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             case "ibs":
                 ibs();
                 break;
-            case "delete":
-                delete();
+            case VARIANT_REMOVE_COMMAND:
+                remove();
                 break;
             case "query":
                 query();
@@ -203,8 +206,19 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
     }
 
-    private void delete() {
-        throw new UnsupportedOperationException();
+    private void remove() throws CatalogException, StorageEngineException, IOException {
+        VariantCommandOptions.VariantRemoveCommandOptions cliOptions = variantCommandOptions.variantRemoveCommandOptions;
+
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+
+        QueryOptions options = new QueryOptions();
+        options.put(VariantStorageEngine.Options.RESUME.key(), cliOptions.genericVariantRemoveOptions.resume);
+        options.putAll(cliOptions.commonOptions.params);
+        if (cliOptions.genericVariantRemoveOptions.files.size() == 1 && cliOptions.genericVariantRemoveOptions.files.get(0).equalsIgnoreCase(VariantQueryUtils.ALL)) {
+            variantManager.removeStudy(cliOptions.study, sessionId, options);
+        } else {
+            List<File> removedFiles = variantManager.removeFile(cliOptions.genericVariantRemoveOptions.files, cliOptions.study, sessionId, options);
+        }
     }
 
     private void index() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException, StorageEngineException,

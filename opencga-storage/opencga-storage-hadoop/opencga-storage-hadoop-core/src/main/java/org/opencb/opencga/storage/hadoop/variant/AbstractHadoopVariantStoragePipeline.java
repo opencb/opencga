@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,34 +28,35 @@ import org.apache.hadoop.fs.FileSystem;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantNormalizer;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.VariantFileUtils;
+import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
-import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConverter;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.hpg.bigdata.core.io.ProtoFileWriter;
-import org.opencb.commons.ProgressLogger;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
+import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
+import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
@@ -65,6 +66,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,6 +81,7 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
@@ -93,23 +96,33 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     protected final HBaseCredentials archiveTableCredentials;
     protected final HBaseCredentials variantsTableCredentials;
     protected MRExecutor mrExecutor = null;
+    protected boolean loadArch;
+    protected boolean loadVar;
+
     private final Logger logger = LoggerFactory.getLogger(AbstractHadoopVariantStoragePipeline.class);
 
-    // Do not create phoenix indexes. Testing purposes only
-    public static final String SKIP_CREATE_PHOENIX_INDEXES = "skip.create.phoenix.indexes";
-
     public AbstractHadoopVariantStoragePipeline(
-            StorageConfiguration configuration, String storageEngineId, Logger logger,
+            StorageConfiguration configuration,
             VariantHadoopDBAdaptor dbAdaptor,
             VariantReaderUtils variantReaderUtils, ObjectMap options,
             HBaseCredentials archiveCredentials, MRExecutor mrExecutor,
             Configuration conf) {
-        super(configuration, storageEngineId, dbAdaptor, variantReaderUtils, options);
+        super(configuration, STORAGE_ENGINE_ID, dbAdaptor, variantReaderUtils, options);
         this.archiveTableCredentials = archiveCredentials;
         this.mrExecutor = mrExecutor;
         this.dbAdaptor = dbAdaptor;
         this.variantsTableCredentials = dbAdaptor == null ? null : dbAdaptor.getCredentials();
         this.conf = new Configuration(conf);
+
+        loadArch = this.options.getBoolean(HADOOP_LOAD_ARCHIVE, false);
+        loadVar = this.options.getBoolean(HADOOP_LOAD_VARIANT, false);
+
+        if (!loadArch && !loadVar) {
+            loadArch = true;
+            loadVar = true;
+            this.options.put(HADOOP_LOAD_ARCHIVE, loadArch);
+            this.options.put(HADOOP_LOAD_VARIANT, loadVar);
+        }
     }
 
     @Override
@@ -144,18 +157,25 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                                             int batchSize, String extension, String compression,
                                             BiConsumer<String, RuntimeException> malformatedHandler, boolean failOnError)
             throws StorageEngineException {
+        VariantStudyMetadata variantMetadata = new VariantStudyMetadata().addVariantSource(source);
 
         //Writer
         DataWriter<VcfSliceProtos.VcfSlice> dataWriter = new ProtoFileWriter<>(outputVariantsFile, compression);
 
         // Normalizer
-        VariantNormalizer normalizer = new VariantNormalizer();
+        VariantNormalizer normalizer = new VariantNormalizer(true, true, false);
+        for (VariantStudyMetadata.VariantMetadataRecord record : variantMetadata.getFormat().values()) {
+            normalizer.configure(record.getId(), record.getNumberType(), record.getType());
+        }
+        for (VariantStudyMetadata.VariantMetadataRecord record : variantMetadata.getInfo().values()) {
+            normalizer.configure(record.getId(), record.getNumberType(), record.getType());
+        }
         normalizer.setGenerateReferenceBlocks(generateReferenceBlocks);
 
         // Stats calculator
         VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
 
-        VariantReader dataReader = null;
+        final VariantReader dataReader;
         try {
             if (VariantReaderUtils.isVcf(input.toString())) {
                 InputStream inputStream = FileUtils.newInputStream(input);
@@ -188,17 +208,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
             // Use a supplier to avoid concurrent modifications of non thread safe objects.
             Supplier<ParallelTaskRunner.TaskWithException<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice, ?>> supplier =
-                    () -> {
-                        VariantToVcfSliceConverter converter = new VariantToVcfSliceConverter();
-                        return batch -> {
-                            List<VcfSliceProtos.VcfSlice> slices = new ArrayList<>(batch.size());
-                            for (ImmutablePair<Long, List<Variant>> pair : batch) {
-                                slices.add(converter.convert(pair.getRight(), pair.getLeft().intValue()));
-                                progressLogger.increment(pair.getRight().size());
-                            }
-                            return slices;
-                        };
-                    };
+                    () -> new VariantToVcfSliceConverterTask(progressLogger);
 
             ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
                     .setNumTasks(options.getInt(Options.TRANSFORM_THREADS.key(), 1))
@@ -292,15 +302,6 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
     @Override
     public URI preLoad(URI input, URI output) throws StorageEngineException {
-        boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
-        boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
-
-        if (!loadArch && !loadVar) {
-            loadArch = true;
-            loadVar = true;
-            options.put(HADOOP_LOAD_ARCHIVE, loadArch);
-            options.put(HADOOP_LOAD_VARIANT, loadVar);
-        }
 
         if (loadArch) {
             super.preLoad(input, output);
@@ -358,28 +359,22 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         return input;
     }
 
+    @Override
+    protected void securePreLoad(StudyConfiguration studyConfiguration, VariantSource source) throws StorageEngineException {
+        super.securePreLoad(studyConfiguration, source);
+        if (!studyConfiguration.getAttributes().containsKey(MERGE_LOAD_SAMPLE_COLUMNS)) {
+            boolean loadSampleColumns = getOptions().getBoolean(MERGE_LOAD_SAMPLE_COLUMNS, DEFAULT_MERGE_LOAD_SAMPLE_COLUMNS);
+            studyConfiguration.getAttributes().put(MERGE_LOAD_SAMPLE_COLUMNS, loadSampleColumns);
+        }
+        MergeMode mergeMode;
+        if (!studyConfiguration.getAttributes().containsKey(Options.MERGE_MODE.key())) {
+            mergeMode = MergeMode.from(options);
+            studyConfiguration.getAttributes().put(Options.MERGE_MODE.key(), mergeMode);
+        }
+    }
+
     protected void preMerge(URI input) throws StorageEngineException {
         int studyId = getStudyId();
-
-        VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
-        try {
-            Connection jdbcConnection = dbAdaptor.getJdbcConnection();
-            String tableName = variantsTableCredentials.getTable();
-            phoenixHelper.registerNewStudy(jdbcConnection, tableName, studyId);
-            if (!options.getBoolean(SKIP_CREATE_PHOENIX_INDEXES, false)) {
-                if (options.getString(VariantAnnotationManager.SPECIES, "hsapiens").equalsIgnoreCase("hsapiens")) {
-                    List<PhoenixHelper.Column> columns = VariantPhoenixHelper.getHumanPopulationFrequenciesColumns();
-                    phoenixHelper.getPhoenixHelper().addMissingColumns(jdbcConnection, tableName, columns, true);
-                    List<PhoenixHelper.Index> popFreqIndices = VariantPhoenixHelper.getPopFreqIndices(tableName);
-                    phoenixHelper.getPhoenixHelper().createIndexes(jdbcConnection, tableName, popFreqIndices, false);
-                }
-                phoenixHelper.createVariantIndexes(jdbcConnection, tableName);
-            } else {
-                logger.info("Skip create indexes!!");
-            }
-        } catch (SQLException e) {
-            throw new StorageEngineException("Unable to register study in Phoenix", e);
-        }
 
         long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
 
@@ -396,9 +391,6 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     }
 
     protected void securePreMerge(StudyConfiguration studyConfiguration, VariantSource source) throws StorageEngineException {
-
-        boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
-        boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
 
         if (loadVar) {
             // Load into variant table
@@ -571,9 +563,6 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         int studyId = getStudyId();
         int fileId = options.getInt(Options.FILE_ID.key());
 
-        boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
-        boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
-
         ArchiveTableHelper.setChunkSize(conf, conf.getInt(ARCHIVE_CHUNK_SIZE, DEFAULT_ARCHIVE_CHUNK_SIZE));
         ArchiveTableHelper.setStudyId(conf, studyId);
 
@@ -658,32 +647,137 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     }
 
     @Override
-    protected void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration) throws
+    protected void checkLoadedVariants(int fileId, StudyConfiguration studyConfiguration) throws
             StorageEngineException {
         logger.warn("Skip check loaded variants");
     }
 
     @Override
     public URI postLoad(URI input, URI output) throws StorageEngineException {
-        if (options.getBoolean(HADOOP_LOAD_VARIANT)) {
-            // Current StudyConfiguration may be outdated. Remove it.
-            options.remove(VariantStorageEngine.Options.STUDY_CONFIGURATION.key());
+        if (loadArch) {
+            logger.debug("Nothing to do");
+        }
 
-//            HadoopCredentials dbCredentials = getDbCredentials();
-//            VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor(dbCredentials);
+        if (loadVar) {
+            return postMerge(input, output);
+        }
+        return input;
+    }
 
-            options.put(VariantStorageEngine.Options.FILE_ID.key(), options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES));
-
-            return super.postLoad(input, output);
-        } else {
+    public URI postMerge(URI input, URI output) throws StorageEngineException {
+        final List<Integer> fileIds = getLoadedFiles();
+        if (fileIds.isEmpty()) {
             logger.debug("Skip post load");
             return input;
         }
+
+        registerLoadedFiles(fileIds);
+
+        dbAdaptor.getStudyConfigurationManager().lockAndUpdate(getStudyId(), studyConfiguration -> {
+            securePostMerge(fileIds, studyConfiguration);
+            return studyConfiguration;
+        });
+
+        return input;
     }
 
-    @Override
-    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
-        super.securePostLoad(fileIds, studyConfiguration);
+    protected void registerLoadedFiles(List<Integer> fileIds) throws StorageEngineException {
+        // Current StudyConfiguration may be outdated. Force fetch.
+        StudyConfiguration studyConfiguration = getStudyConfiguration(true);
+
+        VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
+
+        String tableName = variantsTableCredentials.getTable();
+        try (Connection jdbcConnection = phoenixHelper.newJdbcConnection()) {
+            HBaseLock hBaseLock = new HBaseLock(dbAdaptor.getHBaseManager(), tableName,
+                    dbAdaptor.getGenomeHelper().getColumnFamily(),
+                    VariantPhoenixKeyFactory.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0));
+            long lock;
+            try {
+                long lockDuration = TimeUnit.MINUTES.toMillis(5);
+                try {
+                    lock = hBaseLock.lock(GenomeHelper.PHOENIX_LOCK_COLUMN, lockDuration, TimeUnit.SECONDS.toMillis(5));
+                } catch (TimeoutException e) {
+                    int duration = 10;
+                    logger.info("Waiting to get Lock over HBase table {} up to {} minutes ...", tableName, 10);
+                    lock = hBaseLock.lock(GenomeHelper.PHOENIX_LOCK_COLUMN, lockDuration, TimeUnit.MINUTES.toMillis(duration));
+                }
+                logger.debug("Winning lock {}", lock);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new StorageEngineException("Error locking table to modify Phoenix columns!", e);
+            } catch (TimeoutException | IOException e) {
+                throw new StorageEngineException("Error locking table to modify Phoenix columns!", e);
+            }
+
+            if (MergeMode.from(studyConfiguration.getAttributes()).equals(MergeMode.ADVANCED)) {
+                try {
+                    phoenixHelper.registerNewStudy(jdbcConnection, tableName, studyConfiguration.getStudyId());
+                } catch (SQLException e) {
+                    throw new StorageEngineException("Unable to register study in Phoenix", e);
+                }
+            }
+
+            if (studyConfiguration.getAttributes().getBoolean(HadoopVariantStorageEngine.MERGE_LOAD_SAMPLE_COLUMNS)) {
+                try {
+                    Set<Integer> previouslyIndexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration).values();
+                    Set<Integer> newSamples = new HashSet<>();
+                    for (Integer fileId : fileIds) {
+                        for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
+                            if (!previouslyIndexedSamples.contains(sampleId)) {
+                                newSamples.add(sampleId);
+                            }
+                        }
+                    }
+                    phoenixHelper.registerNewSamples(jdbcConnection, tableName, studyConfiguration.getStudyId(), newSamples);
+
+                } catch (SQLException e) {
+                    throw new StorageEngineException("Unable to register samples in Phoenix", e);
+                }
+            }
+
+            try {
+                hBaseLock.unlock(GenomeHelper.PHOENIX_LOCK_COLUMN, lock);
+            } catch (IOException e) {
+                throw new StorageEngineException("Error releasing lock", e);
+            }
+
+            if (!options.getBoolean(VARIANT_TABLE_INDEXES_SKIP, false)) {
+                try {
+                    if (options.getString(VariantAnnotationManager.SPECIES, "hsapiens").equalsIgnoreCase("hsapiens")) {
+                        List<PhoenixHelper.Column> columns = VariantPhoenixHelper.getHumanPopulationFrequenciesColumns();
+                        phoenixHelper.getPhoenixHelper().addMissingColumns(jdbcConnection, tableName, columns, true);
+                        List<PhoenixHelper.Index> popFreqIndices = VariantPhoenixHelper.getPopFreqIndices(tableName);
+                        phoenixHelper.getPhoenixHelper().createIndexes(jdbcConnection, tableName, popFreqIndices, false);
+                    }
+                    phoenixHelper.createVariantIndexes(jdbcConnection, tableName);
+                } catch (SQLException e) {
+                    throw new StorageEngineException("Unable to create Phoenix Indexes", e);
+                }
+            } else {
+                logger.info("Skip create indexes!!");
+            }
+
+        } catch (SQLException | ClassNotFoundException e) {
+            throw new StorageEngineException("Error with Phoenix connection", e);
+        }
+
+        // This method checks the loaded variants (if possible) and adds the loaded files to the studyConfiguration
+        super.postLoad(null, null);
+    }
+
+    protected List<Integer> getLoadedFiles() {
+        List<Integer> fileIds;
+        if (options.getBoolean(HADOOP_LOAD_VARIANT)) {
+            fileIds = options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES);
+            options.put(Options.FILE_ID.key(), fileIds);
+        } else {
+            fileIds = Collections.emptyList();
+        }
+        return fileIds;
+    }
+
+    protected void securePostMerge(List<Integer> fileIds, StudyConfiguration studyConfiguration) {
         BatchFileOperation.Status status = dbAdaptor.getStudyConfigurationManager()
                 .setStatus(studyConfiguration, BatchFileOperation.Status.READY, VariantTableDriver.JOB_OPERATION_NAME, fileIds);
         if (status != BatchFileOperation.Status.DONE) {

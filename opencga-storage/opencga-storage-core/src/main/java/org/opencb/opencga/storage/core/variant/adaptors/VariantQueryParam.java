@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.opencb.commons.datastore.core.QueryParam;
@@ -9,6 +25,8 @@ import java.util.List;
 import static org.opencb.commons.datastore.core.QueryParam.Type.BOOLEAN;
 import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT;
 import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.ALL;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.NONE;
 
 /**
  * Created on 30/03/17.
@@ -78,7 +96,7 @@ public final class VariantQueryParam implements QueryParam {
             = new VariantQueryParam("genotype", TEXT_ARRAY, GENOTYPE_DESCR);
 
     public static final String RETURNED_SAMPLES_DESCR
-            = "List of samples to be returned";
+            = "List of samples to be returned. Accepts " + ALL + " and " + NONE;
     public static final VariantQueryParam RETURNED_SAMPLES
             = new VariantQueryParam("returnedSamples", TEXT_ARRAY, RETURNED_SAMPLES_DESCR);
 
@@ -86,6 +104,15 @@ public final class VariantQueryParam implements QueryParam {
             = "Returns the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.";
     public static final VariantQueryParam SAMPLES_METADATA
             = new VariantQueryParam("samplesMetadata", TEXT_ARRAY, SAMPLES_METADATA_DESCR);
+
+    public static final String INCLUDE_FORMAT_DESCR
+            = "List of FORMAT names from Samples Data to include in the output. e.g: DP,AD. Accepts " + ALL + " and " + NONE;
+    public static final VariantQueryParam INCLUDE_FORMAT = new VariantQueryParam("include-format", TEXT_ARRAY, INCLUDE_FORMAT_DESCR);
+
+    public static final String INCLUDE_GENOTYPE_DESCR
+            = "Include genotypes, apart of other formats defined with include-format";
+    public static final VariantQueryParam INCLUDE_GENOTYPE = new VariantQueryParam("include-genotype", BOOLEAN, INCLUDE_GENOTYPE_DESCR);
+
 
     public static final String FILES_DESCR
             = "Select variants in specific files";

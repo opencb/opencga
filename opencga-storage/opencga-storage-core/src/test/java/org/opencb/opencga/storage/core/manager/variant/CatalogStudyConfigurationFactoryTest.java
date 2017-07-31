@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -162,7 +162,8 @@ public class CatalogStudyConfigurationFactoryTest {
 
             assertEquals(file.getName(), entry.getKey());
             int id = (int) file.getId();
-            assertEquals(file.getSampleIds().stream().map(Long::intValue).collect(Collectors.toSet()), studyConfiguration.getSamplesInFiles().get((id)));
+            assertEquals(file.getSamples().stream().map(Sample::getId).map(Long::intValue).collect(Collectors.toSet()),
+                    studyConfiguration.getSamplesInFiles().get((id)));
             if (file.getIndex() == null || file.getIndex().getStatus() == null || file.getIndex().getStatus().getName() == null
                     || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
                 assertFalse(studyConfiguration.getIndexedFiles().contains(id));

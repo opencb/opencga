@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,18 @@ import java.util.List;
 /**
  * Created by pfurio on 29/07/16.
  */
+@Deprecated
 public abstract class AbstractAcl<T extends AbstractAclEntry> {
 
+    @Deprecated
     protected List<T> acl;
 
     public List<T> getAcl() {
         return acl;
     }
 
+    public AbstractAcl setAcl(List<T> acl) {
+        this.acl = acl;
+        return this;
+    }
 }

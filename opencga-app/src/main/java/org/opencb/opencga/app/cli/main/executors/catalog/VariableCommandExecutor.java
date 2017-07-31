@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,7 +88,8 @@ public class VariableCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating variable");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull(VariableSetParams.UNIQUE.key(), variableCommandOptions.createCommandOptions.unique);
+        params.put(VariableSetParams.UNIQUE.key(), variableCommandOptions.createCommandOptions.unique);
+        params.put(VariableSetParams.CONFIDENTIAL.key(), variableCommandOptions.createCommandOptions.confidential);
         params.putIfNotEmpty(VariableSetParams.DESCRIPTION.key(), variableCommandOptions.createCommandOptions.description);
         params.putIfNotEmpty(VariableSetParams.NAME.key(), variableCommandOptions.createCommandOptions.name);
 

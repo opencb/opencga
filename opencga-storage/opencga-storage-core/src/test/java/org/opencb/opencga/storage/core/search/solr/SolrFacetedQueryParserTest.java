@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.storage.core.search.solr;
 
 import org.codehaus.jackson.map.ObjectMapper;
@@ -7,7 +23,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.opencga.storage.core.config.SearchConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.search.VariantSearchManager;
 
 /**
  * Created by jtarraga on 09/03/17.
@@ -18,6 +33,7 @@ public class SolrFacetedQueryParserTest {
     public String host = "http://bioinfo.hpc.cam.ac.uk/solr/"; //hgvav1_hgvauser_reference_grch37/select?facet=on&fq=chromosome:22&indent=on&q=*:*&rows=0&wt=json&facet.field=studies&facet.field=type
 
     //public String collection = "test1";
+    public String mode = "cloud";
     public String collection = "hgvav1_hgvauser_reference_grch37";
 
     public String study = collection;
@@ -29,7 +45,7 @@ public class SolrFacetedQueryParserTest {
         int timeout = 300 * 1000; // SearchConfiguration.DEFAULT_TIMEOUT;
         int rows = 0;
         StorageConfiguration config = new StorageConfiguration();
-        config.setSearch(new SearchConfiguration(host, collection, user, password, active, timeout, rows));
+        config.setSearch(new SearchConfiguration(host, mode, user, password, active, timeout, rows));
         VariantSearchManager searchManager = new VariantSearchManager(null, null, config);
         try {
             queryOptions.put(QueryOptions.LIMIT, rows);

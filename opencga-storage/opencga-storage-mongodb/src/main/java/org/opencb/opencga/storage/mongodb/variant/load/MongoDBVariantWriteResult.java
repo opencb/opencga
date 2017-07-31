@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,10 @@
  */
 
 package org.opencb.opencga.storage.mongodb.variant.load;
+
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * Created on 30/10/15.
@@ -69,7 +73,11 @@ public class MongoDBVariantWriteResult {
     /** Time in nanoseconds into updating the missing variants. */
     private long fillGapsNanoTime;
 
+    /** List of Genotypes seen in all loaded variants. */
+    private Set<String> genotypes;
+
     public MongoDBVariantWriteResult() {
+        genotypes = new HashSet<>();
     }
 
     public MongoDBVariantWriteResult(long newVariants, long updatedVariants, long updatedMissingVariants, long overlappedVariants,
@@ -80,12 +88,14 @@ public class MongoDBVariantWriteResult {
         this.overlappedVariants = overlappedVariants;
         this.skippedVariants = skippedVariants;
         this.nonInsertedVariants = nonInsertedVariants;
+        this.genotypes = new HashSet<>();
     }
 
 
     public MongoDBVariantWriteResult(long newVariants, long updatedVariants, long updatedMissingVariants, long overlappedVariants,
                                      long skippedVariants, long nonInsertedVariants,
-                                     long newVariantsNanoTime, long existingVariantsNanoTime, long fillGapsNanoTime) {
+                                     long newVariantsNanoTime, long existingVariantsNanoTime, long fillGapsNanoTime,
+                                     Set<String> genotypes) {
         this.newVariants = newVariants;
         this.updatedVariants = updatedVariants;
         this.updatedMissingVariants = updatedMissingVariants;
@@ -95,6 +105,7 @@ public class MongoDBVariantWriteResult {
         this.newVariantsNanoTime = newVariantsNanoTime;
         this.existingVariantsNanoTime = existingVariantsNanoTime;
         this.fillGapsNanoTime = fillGapsNanoTime;
+        this.genotypes = genotypes;
     }
 
     public void merge(MongoDBVariantWriteResult... others) {
@@ -108,6 +119,7 @@ public class MongoDBVariantWriteResult {
             newVariantsNanoTime += other.newVariantsNanoTime;
             existingVariantsNanoTime += other.existingVariantsNanoTime;
             fillGapsNanoTime += other.fillGapsNanoTime;
+            genotypes.addAll(other.genotypes);
         }
     }
 
@@ -192,6 +204,14 @@ public class MongoDBVariantWriteResult {
         return this;
     }
 
+    public Set<String> getGenotypes() {
+        return genotypes;
+    }
+
+    public MongoDBVariantWriteResult setGenotypes(Set<String> genotypes) {
+        this.genotypes = genotypes;
+        return this;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -201,49 +221,32 @@ public class MongoDBVariantWriteResult {
         if (!(o instanceof MongoDBVariantWriteResult)) {
             return false;
         }
-
         MongoDBVariantWriteResult that = (MongoDBVariantWriteResult) o;
-
-        if (newVariants != that.newVariants) {
-            return false;
-        }
-        if (updatedVariants != that.updatedVariants) {
-            return false;
-        }
-        if (updatedMissingVariants != that.updatedMissingVariants) {
-            return false;
-        }
-        if (overlappedVariants != that.overlappedVariants) {
-            return false;
-        }
-        if (skippedVariants != that.skippedVariants) {
-            return false;
-        }
-        if (nonInsertedVariants != that.nonInsertedVariants) {
-            return false;
-        }
-        if (newVariantsNanoTime != that.newVariantsNanoTime) {
-            return false;
-        }
-        if (existingVariantsNanoTime != that.existingVariantsNanoTime) {
-            return false;
-        }
-        return fillGapsNanoTime == that.fillGapsNanoTime;
-
+        return newVariants == that.newVariants
+                && updatedVariants == that.updatedVariants
+                && updatedMissingVariants == that.updatedMissingVariants
+                && overlappedVariants == that.overlappedVariants
+                && skippedVariants == that.skippedVariants
+                && nonInsertedVariants == that.nonInsertedVariants
+                && newVariantsNanoTime == that.newVariantsNanoTime
+                && existingVariantsNanoTime == that.existingVariantsNanoTime
+                && fillGapsNanoTime == that.fillGapsNanoTime
+                && Objects.equals(genotypes, that.genotypes);
     }
 
     @Override
     public int hashCode() {
-        int result = (int) (newVariants ^ (newVariants >>> 32));
-        result = 31 * result + (int) (updatedVariants ^ (updatedVariants >>> 32));
-        result = 31 * result + (int) (updatedMissingVariants ^ (updatedMissingVariants >>> 32));
-        result = 31 * result + (int) (overlappedVariants ^ (overlappedVariants >>> 32));
-        result = 31 * result + (int) (skippedVariants ^ (skippedVariants >>> 32));
-        result = 31 * result + (int) (nonInsertedVariants ^ (nonInsertedVariants >>> 32));
-        result = 31 * result + (int) (newVariantsNanoTime ^ (newVariantsNanoTime >>> 32));
-        result = 31 * result + (int) (existingVariantsNanoTime ^ (existingVariantsNanoTime >>> 32));
-        result = 31 * result + (int) (fillGapsNanoTime ^ (fillGapsNanoTime >>> 32));
-        return result;
+        return Objects.hash(
+                newVariants,
+                updatedVariants,
+                updatedMissingVariants,
+                overlappedVariants,
+                skippedVariants,
+                nonInsertedVariants,
+                newVariantsNanoTime,
+                existingVariantsNanoTime,
+                fillGapsNanoTime,
+                genotypes);
     }
 
     @Override

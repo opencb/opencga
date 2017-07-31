@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ public class HBaseStudyConfigurationDBAdaptor extends StudyConfigurationAdaptor 
             // Create a new instance of HBaseManager to close only if needed
             this.hBaseManager = new HBaseManager(hBaseManager);
         }
-        lock = new HBaseLock(hBaseManager, this.tableName, genomeHelper.getColumnFamily(), studiesRow);
+        lock = new HBaseLock(this.hBaseManager, this.tableName, genomeHelper.getColumnFamily(), studiesRow);
     }
 
     @Override

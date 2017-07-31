@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,35 +26,32 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
-import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
-import org.opencb.biodata.formats.variant.io.VariantReader;
-import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
-import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
-import org.opencb.biodata.models.variant.*;
+import org.opencb.biodata.formats.variant.vcf4.VariantAggregatedVcfFactory;
+import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
+import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
-import org.opencb.biodata.tools.variant.tasks.VariantRunner;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.commons.run.Task;
 import org.opencb.hpg.bigdata.core.io.avro.AvroFileWriter;
-import org.opencb.commons.ProgressLogger;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
-import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
+import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata.VariantMetadataRecord;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.opencga.storage.core.variant.transform.MalformedVariantHandler;
 import org.opencb.opencga.storage.core.variant.transform.VariantAvroTransformTask;
 import org.opencb.opencga.storage.core.variant.transform.VariantJsonTransformTask;
@@ -67,10 +64,14 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -225,7 +226,12 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         String format = options.getString(Options.TRANSFORM_FORMAT.key(), Options.TRANSFORM_FORMAT.defaultValue());
         String parser = options.getString("transform.parser", HTSJDK_PARSER);
 
+        // Create empty VariantSource
         VariantSource source = buildVariantSource(input);
+        // Read VariantSource
+        source = VariantReaderUtils.readVariantSource(input, source);
+
+        VariantStudyMetadata variantMetadata = new VariantStudyMetadata().addVariantSource(source);
         String fileName = source.getFileName();
         boolean generateReferenceBlocks = options.getBoolean(Options.GVCF.key(), false);
 
@@ -266,44 +272,43 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
         logger.info("Transforming variants using {} into {} ...", parser, format);
         long start, end;
-        if (numTasks == 1 && "json".equals(format)) { //Run transformation with a SingleThread runner. The legacy way
-            if (!".gz".equals(extension)) { //FIXME: Add compatibility with snappy compression
-                logger.warn("Force using gzip compression");
-                extension = ".gz";
-                outputVariantsFile = output.resolve(fileName + ".variants.json" + extension);
-            }
-
-            //Ped Reader
-            PedigreeReader pedReader = null;
-            if (pedigree != null && pedigree.toFile().exists()) {    //FIXME Add "endsWith(".ped") ??
-                pedReader = new PedigreePedReader(pedigree.toString());
-            }
-
-            //Reader
-            VariantReader reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
-
-            //Writers
-            VariantJsonWriter jsonWriter = new VariantJsonWriter(source, output);
-            jsonWriter.includeStats(includeStats);
-
-            List<VariantWriter> writers = Collections.<VariantWriter>singletonList(jsonWriter);
-
-            //Runner
-            VariantRunner vr = new VariantRunner(source, reader, pedReader, writers,
-                    Collections.<Task<Variant>>singletonList(new VariantGlobalStatsCalculator(source)), batchSize);
-
-            logger.info("Single thread transform...");
-            start = System.currentTimeMillis();
-            try {
-                vr.run();
-            } catch (IOException e) {
-                throw new StorageEngineException("Fail runner execution", e);
-            }
-            end = System.currentTimeMillis();
-
-        } else if ("avro".equals(format)) {
-            //Read VariantSource
-            source = VariantReaderUtils.readVariantSource(input, source);
+//        if (numTasks == 1 && "json".equals(format)) { //Run transformation with a SingleThread runner. The legacy way
+//            if (!".gz".equals(extension)) { //FIXME: Add compatibility with snappy compression
+//                logger.warn("Force using gzip compression");
+//                extension = ".gz";
+//                outputVariantsFile = output.resolve(fileName + ".variants.json" + extension);
+//            }
+//
+//            //Ped Reader
+//            PedigreeReader pedReader = null;
+//            if (pedigree != null && pedigree.toFile().exists()) {    //FIXME Add "endsWith(".ped") ??
+//                pedReader = new PedigreePedReader(pedigree.toString());
+//            }
+//
+//            //Reader
+//            VariantReader reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
+//
+//            //Writers
+//            VariantJsonWriter jsonWriter = new VariantJsonWriter(source, output);
+//            jsonWriter.includeStats(includeStats);
+//
+//            List<VariantWriter> writers = Collections.singletonList(jsonWriter);
+//
+//            //Runner
+//            VariantRunner vr = new VariantRunner(source, reader, pedReader, writers,
+//                    Collections.singletonList(new VariantGlobalStatsCalculator(source)), batchSize);
+//
+//            logger.info("Single thread transform...");
+//            start = System.currentTimeMillis();
+//            try {
+//                vr.run();
+//            } catch (IOException e) {
+//                throw new StorageEngineException("Fail runner execution", e);
+//            }
+//            end = System.currentTimeMillis();
+//
+//        } else
+        if ("avro".equals(format)) {
 
             //Reader
             StringDataReader dataReader = new StringDataReader(input);
@@ -334,15 +339,20 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
                 taskSupplier = () -> new VariantAvroTransformTask(header.getKey(), header.getValue(), finalSource, outputMetaFile,
                         statsCalculator, includeSrc, generateReferenceBlocks)
-                        .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
+                        .setFailOnError(failOnError)
+                        .addMalformedErrorHandler(malformedHandler)
+                        .configureNormalizer(variantMetadata);
             } else {
                 // TODO Create a utility to determine which extensions are variants files
                 final VariantVcfFactory factory = createVariantVcfFactory(source, fileName);
                 logger.info("Using Biodata to read variants.");
                 final VariantSource finalSource = source;
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
-                taskSupplier = () -> new VariantAvroTransformTask(factory, finalSource, outputMetaFile, statsCalculator, includeSrc)
-                        .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
+                taskSupplier = () -> new VariantAvroTransformTask(factory, finalSource, outputMetaFile, statsCalculator,
+                        includeSrc, generateReferenceBlocks)
+                        .setFailOnError(failOnError)
+                        .addMalformedErrorHandler(malformedHandler)
+                        .configureNormalizer(variantMetadata);
             }
 
             logger.info("Generating output file {}", outputVariantsFile);
@@ -367,9 +377,6 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             }
             end = System.currentTimeMillis();
         } else if ("json".equals(format)) {
-            //Read VariantSource
-            source = VariantReaderUtils.readVariantSource(input, source);
-
             //Reader
             StringDataReader dataReader = new StringDataReader(input);
             long fileSize = 0;
@@ -394,14 +401,19 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(finalSource);
                 taskSupplier = () -> new VariantJsonTransformTask(header.getKey(), header.getValue(), finalSource,
                         outputMetaFile, statsCalculator, includeSrc, generateReferenceBlocks)
-                        .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
+                        .setFailOnError(failOnError)
+                        .addMalformedErrorHandler(malformedHandler)
+                        .configureNormalizer(variantMetadata);
             } else {
                 // TODO Create a utility to determine which extensions are variants files
                 final VariantVcfFactory factory = createVariantVcfFactory(source, fileName);
                 logger.info("Using Biodata to read variants.");
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
-                taskSupplier = () -> new VariantJsonTransformTask(factory, finalSource, outputMetaFile, statsCalculator, includeSrc)
-                        .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
+                taskSupplier = () -> new VariantJsonTransformTask(factory, finalSource, outputMetaFile, statsCalculator,
+                        includeSrc, generateReferenceBlocks)
+                        .setFailOnError(failOnError)
+                        .addMalformedErrorHandler(malformedHandler)
+                        .configureNormalizer(variantMetadata);
             }
 
             logger.info("Generating output file {}", outputVariantsFile);
@@ -426,8 +438,6 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             }
             end = System.currentTimeMillis();
         } else if ("proto".equals(format)) {
-            //Read VariantSource
-            source = VariantReaderUtils.readVariantSource(input, source);
             Pair<Long, Long> times = processProto(input, fileName, output, source, outputVariantsFile, outputMetaFile,
                     includeSrc, parser, generateReferenceBlocks, batchSize, extension, compression, malformedHandler, failOnError);
             start = times.getKey();
@@ -485,10 +495,10 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         int studyId = options.getInt(Options.STUDY_ID.key(), -1);
         options.remove(Options.STUDY_CONFIGURATION.key());
 
+        VariantSource source = readVariantSource(input, options);
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
         dbAdaptor.getStudyConfigurationManager().lockAndUpdate(studyId, studyConfiguration -> {
             studyConfiguration = checkOrCreateStudyConfiguration(studyConfiguration);
-            VariantSource source = readVariantSource(input, options);
             securePreLoad(studyConfiguration, source);
             options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
             return studyConfiguration;
@@ -524,7 +534,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         try {
             fileId = Integer.parseInt(source.getFileId());
         } catch (NumberFormatException e) {
-            throw new StorageEngineException("FileId '" + source.getFileId() + "' is not an integer", e);
+            throw new StorageEngineException("FileId '" + source.getFileId() + "' from file " + fileName + " is not an integer", e);
         }
 
         if (fileId < 0) {
@@ -568,6 +578,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
 
         // Check Extra genotype fields
+        VariantStudyMetadata variantMetadata = studyConfiguration.getVariantMetadata();
         if (options.containsKey(Options.EXTRA_GENOTYPE_FIELDS.key())
                 && StringUtils.isNotEmpty(options.getString(Options.EXTRA_GENOTYPE_FIELDS.key()))) {
             List<String> extraFields = options.getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
@@ -580,24 +591,30 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             }
             if (!studyConfiguration.getAttributes().containsKey(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key())) {
                 List<String> extraFieldsType = new ArrayList<>(extraFields.size());
+                List<Map<String, Object>> formats = (List) source.getHeader().getMeta().get("FORMAT");
+                Map<String, VariantMetadataRecord> map = formats.stream()
+                        .map(VariantMetadataRecord::new)
+                        .collect(Collectors.toMap(VariantMetadataRecord::getId, r -> r));
                 for (String extraField : extraFields) {
-                    List<Map<String, Object>> formats = (List) source.getHeader().getMeta().get("FORMAT");
-                    VCFHeaderLineType type = VCFHeaderLineType.String;
-                    for (Map<String, Object> format : formats) {
-                        if (format.get("ID").toString().equals(extraField)) {
-                            if ("1".equals(format.get("Number"))) {
-                                try {
-                                    type = VCFHeaderLineType.valueOf(Objects.toString(format.get("Type")));
-                                } catch (IllegalArgumentException ignore) {
-                                    type = VCFHeaderLineType.String;
-                                }
-                            } else {
-                                //Fields with arity != 1 are loaded as String
-                                type = VCFHeaderLineType.String;
-                            }
-                            break;
-                        }
+                    VCFHeaderLineType type;
+                    VariantMetadataRecord metadataRecord = map.get(extraField);
+                    if (metadataRecord == null) {
+                        throw new StorageEngineException("Unknown FORMAT field " + extraField);
                     }
+                    variantMetadata.getFormat().put(metadataRecord.getId(), metadataRecord);
+
+                    if (Objects.equals(metadataRecord.getNumber(), 1)) {
+                        try {
+                            type = metadataRecord.getType();
+                        } catch (IllegalArgumentException ignore) {
+                            type = VCFHeaderLineType.String;
+                        }
+                    } else {
+                        //Fields with arity != 1 are loaded as String
+                        type = VCFHeaderLineType.String;
+                    }
+
+
                     switch (type) {
                         case String:
                         case Float:
@@ -615,6 +632,9 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), extraFieldsType);
             }
         }
+        List<String> formats = studyConfiguration.getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key());
+
+        variantMetadata.addVariantSource(source, formats);
     }
 
     protected StudyConfiguration checkOrCreateStudyConfiguration(boolean forceFetch) throws StorageEngineException {
@@ -643,7 +663,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
 
         // Check loaded variants BEFORE updating the StudyConfiguration
-        checkLoadedVariants(input, fileIds, getStudyConfiguration());
+        checkLoadedVariants(fileIds, getStudyConfiguration());
 
         StudyConfiguration studyConfiguration;
         try {
@@ -698,13 +718,13 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         }
     }
 
-    protected abstract void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration)
+    protected abstract void checkLoadedVariants(int fileId, StudyConfiguration studyConfiguration)
             throws StorageEngineException;
 
-    protected void checkLoadedVariants(URI input, List<Integer> fileIds, StudyConfiguration studyConfiguration)
+    protected void checkLoadedVariants(List<Integer> fileIds, StudyConfiguration studyConfiguration)
             throws StorageEngineException {
         for (Integer fileId : fileIds) {
-            checkLoadedVariants(input, fileId, studyConfiguration);
+            checkLoadedVariants(fileId, studyConfiguration);
         }
     }
 
@@ -766,15 +786,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
 
     public Thread newShutdownHook(String jobOperationName, List<Integer> files) {
-        return new Thread(() -> {
-            try {
-                logger.error("Shutdown hook!");
-                getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileOperation.Status.ERROR, jobOperationName, files);
-            } catch (StorageEngineException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        });
+        return getStudyConfigurationManager().buildShutdownHook(jobOperationName, getStudyId(), files);
     }
 
     public VariantDBAdaptor getDBAdaptor() {

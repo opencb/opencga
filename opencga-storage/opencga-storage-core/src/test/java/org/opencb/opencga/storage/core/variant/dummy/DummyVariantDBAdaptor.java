@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.storage.core.variant.dummy;
 
 import com.google.common.collect.BiMap;
@@ -183,34 +199,8 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     // Unsupported methods
-
-    @Override
-    public QueryResult delete(Query query, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public QueryResult deleteSamples(String studyName, List<String> sampleNames, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public QueryResult deleteFile(String studyName, String fileName, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public QueryResult deleteStudy(String studyName, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public QueryResult deleteStats(String studyName, String cohortName, QueryOptions options) {
         throw new UnsupportedOperationException();
     }
 
@@ -235,6 +225,11 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
             @Override
             public QueryResult updateSourceStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions queryOptions) {
                 return new QueryResult();
+            }
+
+            @Override
+            public void delete(int study, int file) {
+
             }
 
             @Override

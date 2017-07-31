@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.io.db;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -50,6 +51,10 @@ public class VariantDBReader implements VariantReader {
 
     public VariantDBReader(VariantDBAdaptor variantDBAdaptor, Query query, QueryOptions options) {
         this(null, variantDBAdaptor, query, options);
+    }
+
+    public VariantDBReader(VariantDBIterator iterator) {
+        this.iterator = iterator;
     }
 
     public VariantDBReader(StudyConfiguration studyConfiguration, VariantDBAdaptor variantDBAdaptor, Query query, QueryOptions options) {
@@ -96,6 +101,9 @@ public class VariantDBReader implements VariantReader {
 
     @Override
     public boolean open() {
+        if (iterator != null) {
+            return true;
+        }
         QueryOptions iteratorQueryOptions;
         if (options != null) { //Parse query options
             iteratorQueryOptions = new QueryOptions(options);
@@ -111,19 +119,22 @@ public class VariantDBReader implements VariantReader {
     @Override
     public List<Variant> read(int batchSize) {
 
-        long start = System.currentTimeMillis();
+        StopWatch watch = StopWatch.createStarted();
         List<Variant> variants = new ArrayList<>(batchSize);
         while (variants.size() < batchSize && iterator.hasNext()) {
             variants.add(iterator.next());
         }
-        logger.debug("another batch of {} elements read. time: {}ms", variants.size(), System.currentTimeMillis() - start);
-        logger.debug("time splitted: fetch = {}ms, convert = {}ms", iterator.getTimeFetching(), iterator.getTimeConverting());
 
-        timeFetching += iterator.getTimeFetching();
-        timeConverting += iterator.getTimeConverting();
+        long newTimeFetching = iterator.getTimeFetching(TimeUnit.MILLISECONDS);
+        long newTimeConverting = iterator.getTimeConverting(TimeUnit.MILLISECONDS);
 
-        iterator.setTimeConverting(0);
-        iterator.setTimeFetching(0);
+        logger.debug("another batch of {} elements read. time: {}ms", variants.size(), watch.getTime());
+        logger.debug("time splitted: fetch = {}ms, convert = {}ms",
+                newTimeFetching - this.timeFetching,
+                newTimeConverting - this.timeConverting);
+
+        this.timeFetching = newTimeFetching;
+        this.timeConverting = newTimeConverting;
 
         return variants;
     }

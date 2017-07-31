@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,7 +81,7 @@ public class CatalogSampleAnnotationsLoader {
                 annotationSet.add(new Annotation(annotationEntry.getKey(), annotationEntry.getValue()));
             }
             try {
-                CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "",
+                CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "", 1,
                         null), null);
             } catch (CatalogException e) {
                 String message = "Validation with the variableSet {id: " + variableSetId + "} over ped File = {id: " + pedFile.getId()
@@ -97,8 +97,8 @@ public class CatalogSampleAnnotationsLoader {
         //Add VariableSet (if needed)
         if (variableSetId == null) {
             auxTime = System.currentTimeMillis();
-            variableSet = catalogManager.createVariableSet(studyId, pedFile.getName(), true,
-                    "Auto-generated VariableSet from File = {id: " + pedFile.getId() + ", name: \"" + pedFile.getName() + "\"}",
+            variableSet = catalogManager.getStudyManager().createVariableSet(studyId, pedFile.getName(), true, false,
+                    "Auto-generated  VariableSet from File = {id: " + pedFile.getId() + ", name: \"" + pedFile.getName() + "\"}",
                     null, variableSet.getVariables(), sessionId).getResult().get(0);
             variableSetId = variableSet.getId();
             logger.debug("Added VariableSet = {id: {}} in {}ms", variableSetId, System.currentTimeMillis() - auxTime);
@@ -118,9 +118,9 @@ public class CatalogSampleAnnotationsLoader {
                 sample = loadedSamples.get(individual.getId());
                 logger.info("Sample " + individual.getId() + " already loaded with id : " + sample.getId());
             } else {
-                QueryResult<Sample> sampleQueryResult = catalogManager.createSample(studyId, individual.getId(), pedFile.getName(),
-                        "Sample loaded from the pedigree File = {id: " + pedFile.getId() + ", name: \"" + pedFile.getName() + "\" }",
-                        Collections.emptyMap(), null, sessionId);
+                QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().create(Long.toString(studyId), individual.getId(),
+                        pedFile.getName(), "Sample loaded from the pedigree File = {id: " + pedFile.getId() + ", name: \""
+                                + pedFile.getName() + "\" }", null, false, null, Collections.emptyMap(), null, sessionId);
                 sample = sampleQueryResult.getResult().get(0);
             }
             sampleMap.put(individual.getId(), sample);
@@ -294,7 +294,7 @@ public class CatalogSampleAnnotationsLoader {
                     variableList.size(), null, "", null, null));
         }
 
-        VariableSet variableSet = new VariableSet(-1, "", false, "", new HashSet(variableList), null);
+        VariableSet variableSet = new VariableSet(-1, "", false, false, "", new HashSet(variableList), 1, null);
         return variableSet;
     }
 

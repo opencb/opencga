@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,12 @@ import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
+import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -44,8 +48,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
+import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
-import static org.opencb.opencga.catalog.utils.CatalogMemberValidator.checkMembers;
 
 /**
  * Created by hpccoll1 on 14/08/15.
@@ -82,10 +87,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         long startTime = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-        /*
-        QueryResult<Long> count = sampleCollection.count(
-                new BasicDBObject("name", sample.getName()).append(PRIVATE_STUDY_ID, studyId));
-                */
         List<Bson> filterList = new ArrayList<>();
         filterList.add(Filters.eq(QueryParams.NAME.key(), sample.getName()));
         filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
@@ -93,7 +94,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
 
         Bson bson = Filters.and(filterList);
         QueryResult<Long> count = sampleCollection.count(bson);
-//                new BsonDocument("name", new BsonString(sample.getName())).append(PRIVATE_STUDY_ID, new BsonInt32(studyId)));
+
         if (count.getResult().get(0) > 0) {
             throw new CatalogDBException("Sample { name: '" + sample.getName() + "'} already exists.");
         }
@@ -108,40 +109,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         return endQuery("createSample", startTime, get(sampleId, options));
     }
 
-
-    @Override
-    public QueryResult<Sample> get(long sampleId, QueryOptions options) throws CatalogDBException {
-        checkId(sampleId);
-        return get(new Query(QueryParams.ID.key(), sampleId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED), options);
-//        long startTime = startQuery();
-//        //QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
-//
-////        DBObject query = new BasicDBObject(PRIVATE_ID, sampleId);
-//        Query query1 = new Query(QueryParams.ID.key(), sampleId);
-//        QueryResult<Sample> sampleQueryResult = get(query1, options);
-//
-////        QueryResult<Document> queryResult = sampleCollection.find(bson, filteredOptions);
-////        List<Sample> samples = parseSamples(queryResult);
-//
-//        if (sampleQueryResult.getResult().size() == 0) {
-//            throw CatalogDBException.idNotFound("Sample", sampleId);
-//        }
-//
-//        return endQuery("getSample", startTime, sampleQueryResult);
-    }
-
-//    @Override
-//    public QueryResult<Sample> getAllSamples(QueryOptions options) throws CatalogDBException {
-//        throw new UnsupportedOperationException("Deprecated method. Use get instead");
-//        /*
-//        int variableSetId = options.getInt(SampleFilterOption.variableSetId.toString());
-//        Map<String, Variable> variableMap = null;
-//        if (variableSetId > 0) {
-//            variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
-//                    .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
-//        }
-//        return getAllSamples(variableMap, options);*/
-//    }
 
     @Override
     public QueryResult<Sample> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException {
@@ -177,17 +144,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, sampleParams, acceptedMapParams);
 
-//        if (sampleParams.containsKey(QueryParams.INDIVIDUAL_ID.key())) {
-//            long individualId = parameters.getInt(QueryParams.INDIVIDUAL_ID.key());
-//            if (individualId > 0 && !dbAdaptorFactory.getCatalogIndividualDBAdaptor().exists(individualId)) {
-//                throw CatalogDBException.idNotFound("Individual", individualId);
-//            }
-//        }
-
         if (!sampleParams.isEmpty()) {
-            /*QueryResult<WriteResult> update = sampleCollection.update(new BasicDBObject(PRIVATE_ID, sampleId),
-                    new BasicDBObject("$set", sampleParams), null);
-                    */
             Bson query = Filters.eq(PRIVATE_ID, sampleId);
             Bson operation = new Document("$set", sampleParams);
             QueryResult<UpdateResult> update = sampleCollection.update(query, operation, null);
@@ -200,39 +157,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         return endQuery("Modify sample", startTime, get(sampleId, new QueryOptions()));
     }
 
-    public void unsetSampleAcl(long sampleId, List<String> members, List<String> permissions) throws CatalogDBException {
-        // Check that all the members (users) are correct and exist.
-        checkMembers(dbAdaptorFactory, getStudyId(sampleId), members);
-
-        // Remove the permissions the members might have had
-        for (String member : members) {
-            Document query = new Document(PRIVATE_ID, sampleId).append(QueryParams.ACL_MEMBER.key(), member);
-            Bson update;
-            if (permissions.size() == 0) {
-                update = new Document("$pull", new Document("acl", new Document("member", member)));
-            } else {
-                update = new Document("$pull", new Document("acl.$.permissions", new Document("$in", permissions)));
-            }
-            QueryResult<UpdateResult> updateResult = sampleCollection.update(query, update, null);
-            if (updateResult.first().getModifiedCount() == 0) {
-                throw new CatalogDBException("unsetSampleAcl: An error occurred when trying to stop sharing sample " + sampleId
-                        + " with other " + member + ".");
-            }
-        }
-
-        // Remove possible SampleAcls that might have permissions defined but no users
-//        Bson queryBson = new Document(QueryParams.ID.key(), sampleId)
-//                .append(QueryParams.ACL_MEMBER.key(),
-//                        new Document("$exists", true).append("$eq", Collections.emptyList()));
-//        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
-//        sampleCollection.update(queryBson, update, null);
-    }
-
     @Override
     public long getStudyId(long sampleId) throws CatalogDBException {
-        /*DBObject query = new BasicDBObject(PRIVATE_ID, sampleId);
-        BasicDBObject projection = new BasicDBObject(PRIVATE_STUDY_ID, true);
-        QueryResult<DBObject> queryResult = sampleCollection.find(query, projection, null);*/
         Bson query = new Document(PRIVATE_ID, sampleId);
         Bson projection = Projections.include(PRIVATE_STUDY_ID);
         QueryResult<Document> queryResult = sampleCollection.find(query, projection, null);
@@ -392,10 +318,36 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         }
     }
 
-
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
         Bson bson = parseQuery(query, false);
+        return sampleCollection.count(bson);
+    }
+
+
+    @Override
+    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+            throws CatalogDBException, CatalogAuthorizationException {
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        }
+
+        if (studyPermission == null) {
+            studyPermission = StudyAclEntry.StudyPermissions.VIEW_SAMPLES;
+        }
+
+        // Get the study document
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
+        }
+
+        // Get the document query needed to check the permissions as well
+        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
+                studyPermission.name(), studyPermission.getSamplePermission().name());
+        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        logger.debug("Sample count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return sampleCollection.count(bson);
     }
 
@@ -408,51 +360,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     @Override
     public QueryResult stats(Query query) {
         return null;
-    }
-
-    @Override
-    public QueryResult<Sample> get(Query query, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
-        Bson bson = parseQuery(query, false);
-        QueryOptions qOptions;
-        if (options != null) {
-            qOptions = options;
-        } else {
-            qOptions = new QueryOptions();
-        }
-        qOptions = filterOptions(qOptions, FILTER_ROUTE_SAMPLES);
-        QueryResult<Sample> sampleQueryResult;
-        if (qOptions.get("lazy") != null && !qOptions.getBoolean("lazy")) {
-            Bson match = Aggregates.match(bson);
-            Bson lookup = Aggregates.lookup("individual", QueryParams.INDIVIDUAL_ID.key(), IndividualDBAdaptor.QueryParams.ID.key(),
-                    "individual");
-            sampleQueryResult = sampleCollection.aggregate(Arrays.asList(match, lookup), sampleConverter, qOptions);
-        } else {
-            sampleQueryResult = sampleCollection.find(bson, sampleConverter, qOptions);
-        }
-        logger.debug("Sample get: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                qOptions == null ? "" : qOptions.toJson(), sampleQueryResult.getDbTime());
-        return endQuery("Get sample", startTime, sampleQueryResult);
-    }
-
-    @Override
-    public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        }
-        Bson bson = parseQuery(query, false);
-        QueryOptions qOptions;
-        if (options != null) {
-            qOptions = options;
-        } else {
-            qOptions = new QueryOptions();
-        }
-        //qOptions.append(MongoDBCollection.EXCLUDE, Arrays.asList(PRIVATE_ID, PRIVATE_STUDY_ID));
-        qOptions = filterOptions(qOptions, FILTER_ROUTE_SAMPLES);
-        return sampleCollection.find(bson, qOptions);
     }
 
     @Override
@@ -471,6 +378,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, sampleParameters, acceptedMapParams);
+
+        final String[] acceptedObjectParams = {QueryParams.ONTOLOGY_TERMS.key()};
+        filterObjectParams(parameters, sampleParameters, acceptedObjectParams);
 
         if (parameters.containsKey(QueryParams.NAME.key())) {
             // That can only be done to one sample...
@@ -588,17 +498,152 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     }
 
     @Override
+    public QueryResult<Sample> get(long sampleId, QueryOptions options) throws CatalogDBException {
+        checkId(sampleId);
+        Query query = new Query(QueryParams.ID.key(), sampleId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+        return get(query, options);
+    }
+
+    @Override
+    public QueryResult<Sample> get(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        long startTime = startQuery();
+        List<Sample> documentList = new ArrayList<>();
+        DBIterator<Sample> dbIterator = iterator(query, options, user);
+        while (dbIterator.hasNext()) {
+            documentList.add(dbIterator.next());
+        }
+        QueryResult<Sample> queryResult = endQuery("Get", startTime, documentList);
+
+        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
+            QueryResult<Long> count = count(query, user, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
+            queryResult.setNumTotalResults(count.first());
+        }
+        return queryResult;
+    }
+
+    @Override
+    public QueryResult<Sample> get(Query query, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+        List<Sample> documentList = new ArrayList<>();
+        DBIterator<Sample> dbIterator = iterator(query, options);
+        while (dbIterator.hasNext()) {
+            documentList.add(dbIterator.next());
+        }
+        QueryResult<Sample> queryResult = endQuery("Get", startTime, documentList);
+
+        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
+            QueryResult<Long> count = count(query);
+            queryResult.setNumTotalResults(count.first());
+        }
+        return queryResult;
+    }
+
+    @Override
+    public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+        List<Document> documentList = new ArrayList<>();
+        DBIterator<Document> dbIterator = nativeIterator(query, options);
+        while (dbIterator.hasNext()) {
+            documentList.add(dbIterator.next());
+        }
+        QueryResult<Document> queryResult = endQuery("Native get", startTime, documentList);
+
+        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
+        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
+            QueryResult<Long> count = count(query);
+            queryResult.setNumTotalResults(count.first());
+        }
+        return queryResult;
+    }
+
+    @Override
     public DBIterator<Sample> iterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
-        MongoCursor<Document> iterator = sampleCollection.nativeQuery().find(bson, options).iterator();
-        return new MongoDBIterator<>(iterator, sampleConverter);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        return new MongoDBIterator<>(mongoCursor, sampleConverter);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
-        MongoCursor<Document> iterator = sampleCollection.nativeQuery().find(bson, options).iterator();
-        return new MongoDBIterator<>(iterator);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        return new MongoDBIterator<>(mongoCursor);
+    }
+
+    @Override
+    public DBIterator<Sample> iterator(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document studyDocument = getStudyDocument(query);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
+        Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
+                StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
+                SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
+        return new MongoDBIterator<>(mongoCursor, sampleConverter, iteratorFilter);
+    }
+
+    @Override
+    public DBIterator nativeIterator(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document studyDocument = getStudyDocument(query);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
+        Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
+                StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
+                SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
+        return new MongoDBIterator<>(mongoCursor, iteratorFilter);
+    }
+
+    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
+        MongoCursor<Document> documentMongoCursor;
+        try {
+            documentMongoCursor = getMongoCursor(query, options, null, null);
+        } catch (CatalogAuthorizationException e) {
+            throw new CatalogDBException(e);
+        }
+        return documentMongoCursor;
+    }
+
+    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options, Document studyDocument, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
+        Document queryForAuthorisedEntries = null;
+        if (studyDocument != null && user != null) {
+            // Get the document query needed to check the permissions as well
+            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
+                    StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), SampleAclEntry.SamplePermissions.VIEW.name());
+        }
+
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        }
+        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        QueryOptions qOptions;
+        if (options != null) {
+            qOptions = options;
+        } else {
+            qOptions = new QueryOptions();
+        }
+        qOptions = filterOptions(qOptions, FILTER_ROUTE_SAMPLES);
+
+        logger.debug("Sample get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        if (qOptions.get("lazy") != null && !qOptions.getBoolean("lazy")) {
+            Bson match = Aggregates.match(bson);
+            Bson lookup = Aggregates.lookup("individual", QueryParams.INDIVIDUAL_ID.key(), IndividualDBAdaptor.QueryParams.ID.key(),
+                    "individual");
+            return sampleCollection.nativeQuery().aggregate(Arrays.asList(match, lookup), qOptions).iterator();
+        } else {
+            return  sampleCollection.nativeQuery().find(bson, qOptions).iterator();
+        }
+    }
+
+    private Document getStudyDocument(Query query) throws CatalogDBException {
+        // Get the study document
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
+        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_ID.key()) + " not found");
+        }
+        return queryResult.first();
     }
 
     @Override
@@ -630,6 +675,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     }
 
     private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
+        return parseQuery(query, isolated, null);
+    }
+
+    private Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
         List<Bson> annotationList = new ArrayList<>();
         // We declare variableMap here just in case we have different annotation queries
@@ -698,15 +747,14 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     case STATUS_DATE:
                     case SOMATIC:
                     case TYPE:
-                    case ACL:
-                    case ACL_MEMBER:
-                    case ACL_PERMISSIONS:
+                    case RELEASE:
                     case ONTOLOGY_TERMS_ID:
                     case ONTOLOGY_TERMS_NAME:
                     case ONTOLOGY_TERMS_SOURCE:
                     case ONTOLOGY_TERMS_AGE_OF_ONSET:
                     case ONTOLOGY_TERMS_MODIFIERS:
                     case ANNOTATION_SETS:
+                    case CREATION_DATE:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     default:
@@ -724,6 +772,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         if (annotationList.size() > 0) {
             Bson projection = Projections.elemMatch(QueryParams.ANNOTATION_SETS.key(), Filters.and(annotationList));
             andBsonList.add(projection);
+        }
+        if (authorisation != null && authorisation.size() > 0) {
+            andBsonList.add(authorisation);
         }
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

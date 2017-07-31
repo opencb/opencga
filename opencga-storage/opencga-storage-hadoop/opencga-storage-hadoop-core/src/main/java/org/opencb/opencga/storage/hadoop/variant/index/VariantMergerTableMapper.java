@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,10 @@ import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +73,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
     private boolean resolveConflict;
     private Integer archiveBatchSize;
 
-    protected static final EnumSet<VariantType> TARGET_VARIANT_TYPE_SET = EnumSet.of(
+    public static final EnumSet<VariantType> TARGET_VARIANT_TYPE_SET = EnumSet.of(
             VariantType.SNV, VariantType.SNP,
             VariantType.INDEL, VariantType.INSERTION, VariantType.DELETION,
             VariantType.MNV, VariantType.MNP);
@@ -82,7 +84,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
     }
 
     @Override
-    protected void setup(Context context) throws IOException, InterruptedException {
+    public void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
         int cores = context.getConfiguration().getInt(MRJobConfig.MAP_CPU_VCORES, 1);
         int parallelism = ForkJoinPool.getCommonPoolParallelism();
@@ -114,22 +116,31 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
             }
         }
 
-        // TODO: Allow other fields! Read from configuration
-        expectedFormats = Arrays.asList(VariantMerger.GT_KEY, VariantMerger.GENOTYPE_FILTER_KEY);
+        expectedFormats = HBaseToVariantConverter.getFormat(getStudyConfiguration());
 
-        variantMerger = new VariantMerger(collapseDeletions);
-        variantMerger.setStudyId(Integer.toString(getStudyConfiguration().getStudyId()));
-        variantMerger.setExpectedFormats(expectedFormats);
+
+        variantMerger = newVariantMerger(collapseDeletions);
         variantMerger.setExpectedSamples(this.getIndexedSamples().keySet());
         // Add all samples which are currently being indexed.
         variantMerger.addExpectedSamples(samplesToIndex);
 
 
-        variantMergerSamplesToIndex = new VariantMerger(collapseDeletions);
-        variantMergerSamplesToIndex.setStudyId(Integer.toString(getStudyConfiguration().getStudyId()));
-        variantMergerSamplesToIndex.setExpectedFormats(expectedFormats);
+        variantMergerSamplesToIndex = newVariantMerger(collapseDeletions);
         variantMergerSamplesToIndex.setExpectedSamples(samplesToIndex);
 
+    }
+
+    public VariantMerger newVariantMerger(boolean collapseDeletions) {
+        VariantMerger variantMerger = new VariantMerger(collapseDeletions);
+        variantMerger.setStudyId(Integer.toString(getStudyConfiguration().getStudyId()));
+        variantMerger.setExpectedFormats(expectedFormats);
+        for (VariantStudyMetadata.VariantMetadataRecord record : getStudyConfiguration().getVariantMetadata().getFormat().values()) {
+            variantMerger.configure(record.getId(), record.getNumberType(), record.getType());
+        }
+        for (VariantStudyMetadata.VariantMetadataRecord record : getStudyConfiguration().getVariantMetadata().getInfo().values()) {
+            variantMerger.configure(record.getId(), record.getNumberType(), record.getType());
+        }
+        return variantMerger;
     }
 
     public static  ForkJoinPool createForkJoinPool(final String prefix, int vcores) {
@@ -141,7 +152,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
     }
 
     @Override
-    protected void cleanup(Context context) throws IOException, InterruptedException {
+    public void cleanup(Context context) throws IOException, InterruptedException {
         super.cleanup(context);
     }
 

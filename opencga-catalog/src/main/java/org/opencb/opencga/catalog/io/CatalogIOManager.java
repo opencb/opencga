@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.io;
 
-import org.opencb.opencga.catalog.config.Configuration;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,10 +50,8 @@ public abstract class CatalogIOManager {
     protected static final String SHARED_DATA_FOLDER = "shared_data/";
     protected static final String DEFAULT_OPENCGA_JOBS_FOLDER = "jobs/";
     protected static Logger logger;
-    //    private Path opencgaRootDirPath;
     protected URI rootDir;
     protected URI jobsDir;
-    //    protected URI rootDir;
     protected URI tmp;
     @Deprecated
     protected Properties properties;
@@ -66,10 +64,9 @@ public abstract class CatalogIOManager {
     public CatalogIOManager(String catalogConfigurationFile) throws CatalogIOException {
         this();
         this.configuration = new Configuration();
-        //this.properties = new Properties();
+
         try {
             this.configuration.load(new FileInputStream(catalogConfigurationFile));
-            //this.properties.load(new FileInputStream(propertiesFile));
         } catch (IOException e) {
             throw new CatalogIOException("Error loading Catalog Configuration file", e);
         }
@@ -228,26 +225,6 @@ public abstract class CatalogIOManager {
     public URI createUser(String userId) throws CatalogIOException {
         checkParam(userId);
 
-        //    //just to show the previous version
-        //        Path usersPath = Paths.get(opencgaRootDir, CatalogIOManager.OPENCGA_USERS_FOLDER);
-        //        checkDirectoryUri(usersPath, true);
-        //
-        //        Path userPath = usersPath.resolve(userId);
-
-        //        try {
-        //            if(!Files.exists(userPath)) {
-        //                Files.createDirectory(userPath);
-        //                Files.createDirectory(Paths.get(userPath.toString(), CatalogIOManager.USER_PROJECTS_FOLDER));
-        //                Files.createDirectory(Paths.get(userPath.toString(), CatalogIOManager.USER_BIN_FOLDER));
-        //
-        //                return userPath;
-        //            }
-        //        } catch (IOException e) {
-        //            throw new CatalogIOManagerException("IOException" + e.toString());
-        //        }
-        //        return null;
-
-//        URI opencgaPath = new URI(opencgaRootDir);
         URI usersUri = getUsersUri();
         checkDirectoryUri(usersUri, true);
 
@@ -272,46 +249,13 @@ public abstract class CatalogIOManager {
         deleteDirectory(userUri);
     }
 
-    public URI createAnonymousUser(String anonymousUserId) throws CatalogIOException {
-        checkParam(anonymousUserId);
-
-        URI usersUri = getAnonymousUsersUri();
-        checkDirectoryUri(usersUri, true);
-
-        URI userUri = getAnonymousUserUri(anonymousUserId);
-        try {
-            if (!exists(userUri)) {
-                createDirectory(userUri);
-                createDirectory(userUri.resolve(USER_PROJECTS_FOLDER));
-                createDirectory(userUri.resolve(USER_BIN_FOLDER));
-
-                return userUri;
-            }
-        } catch (CatalogIOException e) {
-            throw e;
-        }
-        return null;
-    }
-
-    public void deleteAnonymousUser(String anonymousUserId) throws CatalogIOException {
-        URI anonymousUserUri = getAnonymousUserUri(anonymousUserId);
-        checkUriExists(anonymousUserUri);
-
-        deleteDirectory(anonymousUserUri);
-//        return anonymousUserPath;
-    }
-
     public URI createProject(String userId, String projectId) throws CatalogIOException {
         checkParam(projectId);
 
-//        URI projectRootUri = getProjectsUri(userId);
-//        checkDirectoryUri(projectRootUri, true);  //assuming catalogManager has checked it
-//        URI projectUri = projectRootUri.resolve(projectId);
         URI projectUri = getProjectUri(userId, projectId);
         try {
             if (!exists(projectUri)) {
                 projectUri = createDirectory(projectUri, true);
-                //createDirectory(projectUri.resolve(SHARED_DATA_FOLDER));
             }
         } catch (CatalogIOException e) {
             throw new CatalogIOException("createProject(): could not create the project folder", e);
@@ -370,18 +314,6 @@ public abstract class CatalogIOManager {
         deleteDirectory(studyUri);
     }
 
-//    public void renameStudy(String userId, String projectId, String oldStudyId, String newStudyId)
-//            throws CatalogIOManagerException {
-//        URI oldFolder = getStudyUri(userId, projectId, oldStudyId);
-//        URI newFolder = getStudyUri(userId, projectId, newStudyId);
-//
-//        try {
-//            rename(oldFolder, newFolder);
-//        } catch (IOException e) {
-//            throw new CatalogIOManagerException("renameStudy(): could not rename the study folder: " + e.toString());
-//        }
-//    }
-
     public URI createJobOutDir(String userId, String folderName)
             throws CatalogIOException {
         checkParam(folderName);
@@ -415,7 +347,6 @@ public abstract class CatalogIOManager {
         }
         checkDirectoryUri(studyUri, true);
 
-//        Path fullFolderPath = getFileUri(userid, projectId, studyId, objectId);
         URI folderUri = null;
         try {
             folderUri = studyUri.resolve(new URI(null, folderName, null));
@@ -479,14 +410,6 @@ public abstract class CatalogIOManager {
 
     public abstract DataInputStream getGrepFileObject(URI fileUri, String pattern, boolean ignoreCase, boolean multi)
             throws CatalogIOException;
-//
-//    public abstract DataInputStream getFileFromJob(Path jobPath, String filename, String zip)
-//            throws CatalogIOManagerException,FileNotFoundException;
-//
-//    public abstract DataInputStream getGrepFileFromJob(Path jobPath, String filename, String pattern, boolean ignoreCase,
-//                                                       boolean multi) throws CatalogIOManagerException,IOException;
-//
-//    public abstract InputStream getJobZipped(Path jobPath, String jobId) throws CatalogIOManagerException, IOException;
 
     public abstract DataOutputStream createOutputStream(URI fileUri, boolean overwrite) throws CatalogIOException;
 
@@ -504,5 +427,4 @@ public abstract class CatalogIOManager {
 
     public abstract Date getModificationDate(URI file) throws CatalogIOException;
 
-//    public abstract String getCreationDate(URI file);
 }

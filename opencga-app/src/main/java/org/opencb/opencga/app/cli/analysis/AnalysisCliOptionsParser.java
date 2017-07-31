@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 OpenCB
+ * Copyright 2015-2017 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,13 @@ import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 
 import java.util.List;
 import java.util.Map;
+
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VARIANT_REMOVE_COMMAND;
 
 /**
  * Created by imedina on 02/03/15.
@@ -76,6 +79,7 @@ public class AnalysisCliOptionsParser {
         JCommander variantSubCommands = jCommander.getCommands().get("variant");
         variantSubCommands.addCommand("index", variantCommandOptions.indexVariantCommandOptions);
         variantSubCommands.addCommand("index-search", variantCommandOptions.variantIndexSearchCommandOptions);
+        variantSubCommands.addCommand(VARIANT_REMOVE_COMMAND, variantCommandOptions.variantRemoveCommandOptions);
         variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantCommandOptions);
         variantSubCommands.addCommand("annotate", variantCommandOptions.annotateVariantCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
