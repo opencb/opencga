@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.AbstractAcl;
-import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.*;
@@ -25,7 +23,7 @@ import java.util.*;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Job extends AbstractAcl<JobAclEntry> {
+public class Job {
 
     /* Attributes known keys */
     @Deprecated
@@ -151,7 +149,6 @@ public class Job extends AbstractAcl<JobAclEntry> {
         this.attributes.putIfAbsent(Job.TYPE, Type.ANALYSIS);
         this.error = error != null ? error : "";
         this.errorDescription = errorDescription != null ? errorDescription : "";
-        this.acl = Collections.emptyList();
     }
 
     public static class JobStatus extends Status {
@@ -418,11 +415,6 @@ public class Job extends AbstractAcl<JobAclEntry> {
 
     public Job setTags(List<String> tags) {
         this.tags = tags;
-        return this;
-    }
-
-    public Job setAcl(List<JobAclEntry> acl) {
-        this.acl = acl;
         return this;
     }
 

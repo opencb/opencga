@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +26,7 @@ import java.util.Objects;
  *         <p>
  *         Set of samples grouped according to criteria
  */
-public class Cohort extends Annotable<CohortAclEntry> {
+public class Cohort extends Annotable {
 
     private long id;
     private String name;
@@ -51,18 +49,18 @@ public class Cohort extends Annotable<CohortAclEntry> {
     public Cohort(String name, Study.Type type, String creationDate, String description, List<Sample> samples, int release,
                   Map<String, Object> attributes) {
         this(-1, name, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(),
-                Collections.emptyList(), Collections.emptyMap(), release, attributes);
+                Collections.emptyMap(), release, attributes);
     }
 
     public Cohort(String name, Study.Type type, String creationDate, String description, List<Sample> samples,
                   List<AnnotationSet> annotationSetList, int release, Map<String, Object> attributes) {
-        this(-1, name, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(),
-                annotationSetList, Collections.emptyMap(), release, attributes);
+        this(-1, name, type, creationDate, new CohortStatus(), description, samples, null, annotationSetList,
+                Collections.emptyMap(), release, attributes);
     }
 
-    public Cohort(long id, String name, Study.Type type, String creationDate, CohortStatus status, String description,
-                  List<Sample> samples, Family family, List<CohortAclEntry> acl, List<AnnotationSet> annotationSets,
-                  Map<String, Object> stats, int release, Map<String, Object> attributes) {
+    public Cohort(long id, String name, Study.Type type, String creationDate, CohortStatus status, String description, List<Sample> samples,
+                  Family family, List<AnnotationSet> annotationSets, Map<String, Object> stats, int release,
+                  Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -71,7 +69,6 @@ public class Cohort extends Annotable<CohortAclEntry> {
         this.description = description;
         this.samples = samples;
         this.family = family;
-        this.acl = acl;
         this.annotationSets = annotationSets;
         this.release = release;
         this.stats = stats;
@@ -178,7 +175,6 @@ public class Cohort extends Annotable<CohortAclEntry> {
         sb.append(", description='").append(description).append('\'');
         sb.append(", samples=").append(samples);
         sb.append(", family=").append(family);
-        sb.append(", acl=").append(acl);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", stats=").append(stats);
         sb.append(", release=").append(release);
@@ -256,11 +252,6 @@ public class Cohort extends Annotable<CohortAclEntry> {
 
     public Cohort setFamily(Family family) {
         this.family = family;
-        return this;
-    }
-
-    public Cohort setAcl(List<CohortAclEntry> acl) {
-        this.acl = acl;
         return this;
     }
 

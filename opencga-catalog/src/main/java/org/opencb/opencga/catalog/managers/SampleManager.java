@@ -130,7 +130,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         sample.setSource(ParamUtils.defaultString(sample.getSource(), ""));
         sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
         sample.setType(ParamUtils.defaultString(sample.getType(), ""));
-        sample.setAcl(Collections.emptyList());
         sample.setOntologyTerms(ParamUtils.defaultObject(sample.getOntologyTerms(), Collections.emptyList()));
         sample.setAnnotationSets(ParamUtils.defaultObject(sample.getAnnotationSets(), Collections.emptyList()));
         sample.setAnnotationSets(AnnotationManager.validateAnnotationSets(sample.getAnnotationSets(), studyDBAdaptor));
@@ -219,7 +218,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         }
 
         Sample sample = new Sample(-1, name, source, individual, description, type, somatic,
-                catalogManager.getStudyManager().getCurrentRelease(studyId), Collections.emptyList(), Collections.emptyList(),
+                catalogManager.getStudyManager().getCurrentRelease(studyId), Collections.emptyList(),
                 new ArrayList<>(), attributes);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);

@@ -28,9 +28,8 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -49,6 +48,7 @@ import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -725,7 +725,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         boolean external = isExternal(studyId, path, uri);
         File file = new File(-1, Paths.get(path).getFileName().toString(), type, format, bioformat, uri, path, TimeUtils.getTime(),
                 TimeUtils.getTime(), description, status, external, size, new Experiment().setId(experimentId), samples,
-                new Job().setId(jobId), Collections.emptyList(), Collections.emptyList(), null, stats,
+                new Job().setId(jobId), Collections.emptyList(), null, stats,
                         catalogManager.getStudyManager().getCurrentRelease(studyId), attributes);
 
         //Find parent. If parents == true, create folders.
@@ -1666,8 +1666,8 @@ public class FileManager extends AbstractManager implements IFileManager {
         // Create the folder in catalog
         File folder = new File(-1, path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
                 stringPath, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY),
-                false, 0, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), allFileAcls.getResult(),
-                null, null, catalogManager.getStudyManager().getCurrentRelease(studyId), null);
+                false, 0, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), null, null,
+                catalogManager.getStudyManager().getCurrentRelease(studyId), null);
         QueryResult<File> queryResult = fileDBAdaptor.insert(folder, studyId, new QueryOptions());
         // Propagate ACLs
         if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
@@ -1833,7 +1833,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                 File subfile = new File(-1, externalPathDestiny.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                         File.Bioformat.NONE, normalizedUri, externalPathDestinyStr, TimeUtils.getTime(), TimeUtils.getTime(), description,
                         new File.FileStatus(File.FileStatus.READY), true, size, new Experiment(), Collections.emptyList(), new Job(),
-                        Collections.emptyList(), allFileAcls.getResult(), null, Collections.emptyMap(),
+                        Collections.emptyList(), null, Collections.emptyMap(),
                         catalogManager.getStudyManager().getCurrentRelease(studyId), Collections.emptyMap());
                 QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, studyId, new QueryOptions());
                 // Propagate ACLs
@@ -1903,10 +1903,11 @@ public class FileManager extends AbstractManager implements IFileManager {
                             File folder = new File(-1, dir.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
                                     File.Bioformat.NONE, dir.toUri(), destinyPath, TimeUtils.getTime(), TimeUtils.getTime(),
                                     description, new File.FileStatus(File.FileStatus.READY), true, 0, new Experiment(),
-                                    Collections.emptyList(), new Job(), Collections.emptyList(), allFileAcls.getResult(), null,
+                                    Collections.emptyList(), new Job(), Collections.emptyList(), null,
                                     Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(studyId),
                                     Collections.emptyMap());
                             QueryResult<File> queryResult = fileDBAdaptor.insert(folder, studyId, new QueryOptions());
+
                             // Propagate ACLs
                             if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
                                 authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()),
@@ -1952,10 +1953,11 @@ public class FileManager extends AbstractManager implements IFileManager {
                             File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                                     File.Bioformat.NONE, filePath.toUri(), destinyPath, TimeUtils.getTime(), TimeUtils.getTime(),
                                     description, new File.FileStatus(File.FileStatus.READY), true, size, new Experiment(),
-                                    Collections.emptyList(), new Job(), Collections.emptyList(), allFileAcls.getResult(), null,
+                                    Collections.emptyList(), new Job(), Collections.emptyList(), null,
                                     Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(studyId),
                                     Collections.emptyMap());
                             QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, studyId, new QueryOptions());
+
                             // Propagate ACLs
                             if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
                                 authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()),

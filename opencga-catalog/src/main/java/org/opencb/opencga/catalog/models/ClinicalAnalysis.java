@@ -16,15 +16,12 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.AbstractAcl;
-import org.opencb.opencga.catalog.models.acls.permissions.ClinicalAnalysisAclEntry;
-
 import java.util.Map;
 
 /**
  * Created by pfurio on 05/06/17.
  */
-public class ClinicalAnalysis extends AbstractAcl<ClinicalAnalysisAclEntry> {
+public class ClinicalAnalysis {
 
     private long id;
     private String name;
@@ -76,7 +73,6 @@ public class ClinicalAnalysis extends AbstractAcl<ClinicalAnalysisAclEntry> {
         sb.append(", status=").append(status);
         sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
-        sb.append(", acl=").append(acl);
         sb.append('}');
         return sb.toString();
     }

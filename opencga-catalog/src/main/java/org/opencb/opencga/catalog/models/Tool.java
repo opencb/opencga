@@ -16,16 +16,10 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.AbstractAcl;
-import org.opencb.opencga.catalog.models.acls.permissions.ToolAclEntry;
-
-import java.util.LinkedList;
-import java.util.List;
-
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Tool extends AbstractAcl<ToolAclEntry> {
+public class Tool {
 
     private long id;
     private String alias;
@@ -34,17 +28,15 @@ public class Tool extends AbstractAcl<ToolAclEntry> {
     private Object manifest;
     private Object result;
     private String path;
-//    private List<ToolAclEntry> acl;
 
     public Tool() {
     }
 
     public Tool(String alias, String name, String description, Object manifest, Object result, String path) {
-        this(-1, alias, name, description, manifest, result, path, new LinkedList());
+        this(-1, alias, name, description, manifest, result, path);
     }
 
-    public Tool(long id, String alias, String name, String description, Object manifest, Object result, String path,
-                List<ToolAclEntry> acl) {
+    public Tool(long id, String alias, String name, String description, Object manifest, Object result, String path) {
         this.id = id;
         this.alias = alias;
         this.name = name;
@@ -52,7 +44,6 @@ public class Tool extends AbstractAcl<ToolAclEntry> {
         this.manifest = manifest;
         this.result = result;
         this.path = path;
-        this.acl = acl;
     }
 
     @Override
@@ -65,7 +56,6 @@ public class Tool extends AbstractAcl<ToolAclEntry> {
         sb.append(", manifest=").append(manifest);
         sb.append(", result=").append(result);
         sb.append(", path='").append(path).append('\'');
-        sb.append(", acl=").append(acl);
         sb.append('}');
         return sb.toString();
     }
@@ -130,11 +120,6 @@ public class Tool extends AbstractAcl<ToolAclEntry> {
 
     public Tool setPath(String path) {
         this.path = path;
-        return this;
-    }
-
-    public Tool setAcl(List<ToolAclEntry> acl) {
-        this.acl = acl;
         return this;
     }
 

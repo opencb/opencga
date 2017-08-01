@@ -562,7 +562,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             }
 
             return new Sample(-1, name, source, individual != null ? individual.toIndividual(studyStr, studyManager, sessionId) : null,
-                    description, type, somatic, 1, null, annotationSetList, ontologyTerms, attributes);
+                    description, type, somatic, 1, annotationSetList, ontologyTerms, attributes);
         }
     }
 }

@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.models;
 
 import org.opencb.opencga.catalog.models.acls.AclParams;
-import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.*;
@@ -25,7 +24,7 @@ import java.util.*;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Sample extends Annotable<SampleAclEntry> {
+public class Sample extends Annotable {
 
     private long id;
     private String name;
@@ -47,13 +46,12 @@ public class Sample extends Annotable<SampleAclEntry> {
     }
 
     public Sample(long id, String name, String source, Individual individual, String description, int release) {
-        this(id, name, source, individual, description, "", false, release, Collections.emptyList(), new LinkedList<>(),
+        this(id, name, source, individual, description, "", false, release, new LinkedList<>(),
                 new ArrayList<>(), new HashMap<>());
     }
 
-    public Sample(long id, String name, String source, Individual individual, String description, String type, boolean somatic,
-                  int release, List<SampleAclEntry> acl, List<AnnotationSet> annotationSets, List<OntologyTerm> ontologyTermList,
-                  Map<String, Object> attributes) {
+    public Sample(long id, String name, String source, Individual individual, String description, String type, boolean somatic, int release,
+                  List<AnnotationSet> annotationSets, List<OntologyTerm> ontologyTermList, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.source = source;
@@ -65,7 +63,6 @@ public class Sample extends Annotable<SampleAclEntry> {
         this.description = description;
         this.release = release;
         this.ontologyTerms = ontologyTermList;
-        this.acl = acl;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
     }
@@ -73,7 +70,6 @@ public class Sample extends Annotable<SampleAclEntry> {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Sample{");
-        sb.append("acl=").append(acl);
         sb.append(", id=").append(id);
         sb.append(", name='").append(name).append('\'');
         sb.append(", source='").append(source).append('\'');
@@ -216,11 +212,6 @@ public class Sample extends Annotable<SampleAclEntry> {
 
     public Sample setOntologyTerms(List<OntologyTerm> ontologyTerms) {
         this.ontologyTerms = ontologyTerms;
-        return this;
-    }
-
-    public Sample setAcl(List<SampleAclEntry> acl) {
-        this.acl = acl;
         return this;
     }
 

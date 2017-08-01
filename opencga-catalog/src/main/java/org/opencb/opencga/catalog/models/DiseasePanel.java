@@ -16,16 +16,12 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.AbstractAcl;
-import org.opencb.opencga.catalog.models.acls.permissions.DiseasePanelAclEntry;
-
-import java.util.Collections;
 import java.util.List;
 
 /**
  * Created by pfurio on 01/06/16.
  */
-public class DiseasePanel extends AbstractAcl<DiseasePanelAclEntry> {
+public class DiseasePanel {
 
     private long id;
     private String name;
@@ -37,7 +33,6 @@ public class DiseasePanel extends AbstractAcl<DiseasePanelAclEntry> {
     private List<String> variants;
 
     private PanelStatus status;
-//    private List<DiseasePanelAclEntry> acl;
 
 
     public DiseasePanel() {
@@ -52,23 +47,8 @@ public class DiseasePanel extends AbstractAcl<DiseasePanelAclEntry> {
         this.genes = genes;
         this.regions = regions;
         this.variants = variants;
-        this.acl = Collections.emptyList();
         this.status = status;
     }
-
-    public DiseasePanel(long id, String name, String disease, String description, List<String> genes, List<String> regions,
-                        List<String> variants, PanelStatus status, List<DiseasePanelAclEntry> acl) {
-        this.id = id;
-        this.name = name;
-        this.disease = disease;
-        this.description = description;
-        this.genes = genes;
-        this.regions = regions;
-        this.variants = variants;
-        this.status = status;
-        this.acl = acl;
-    }
-
 
     public static class PanelStatus extends Status {
 
@@ -112,7 +92,6 @@ public class DiseasePanel extends AbstractAcl<DiseasePanelAclEntry> {
         sb.append(", regions=").append(regions);
         sb.append(", variants=").append(variants);
         sb.append(", status=").append(status);
-        sb.append(", acl=").append(acl);
         sb.append('}');
         return sb.toString();
     }
@@ -186,11 +165,6 @@ public class DiseasePanel extends AbstractAcl<DiseasePanelAclEntry> {
 
     public DiseasePanel setStatus(PanelStatus status) {
         this.status = status;
-        return this;
-    }
-
-    public DiseasePanel setAcl(List<DiseasePanelAclEntry> acl) {
-        this.acl = acl;
         return this;
     }
 

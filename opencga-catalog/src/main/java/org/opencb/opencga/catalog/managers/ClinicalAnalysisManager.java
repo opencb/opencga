@@ -176,7 +176,6 @@ public class ClinicalAnalysisManager extends AbstractManager {
         clinicalAnalysis.setDescription(ParamUtils.defaultString(clinicalAnalysis.getDescription(), ""));
 
         clinicalAnalysis.setStatus(new Status());
-        clinicalAnalysis.setAcl(Collections.emptyList());
         clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));
         clinicalAnalysis.setAttributes(ParamUtils.defaultObject(clinicalAnalysis.getAttributes(), Collections.emptyMap()));
 

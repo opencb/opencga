@@ -55,9 +55,6 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 FileAclEntry.FilePermissions.DELETE.name(), FileAclEntry.FilePermissions.SHARE.name()
                 )));
         acl.push(new FileAclEntry("jmmut", Collections.emptyList()));
-//        acl.push(new AclEntry("jcoll", true, true, true, true));
-//        acl.push(new AclEntry("jmmut", false, false, true, true));
-        file.setAcl(acl);
         System.out.println(catalogFileDBAdaptor.insert(file, studyId, null));
         file = new File("file.sam", File.Type.FILE, File.Format.PLAIN, File.Bioformat.ALIGNMENT, "data/file.sam", "",
                 new File.FileStatus(File.FileStatus.STAGE), 1000, 1);

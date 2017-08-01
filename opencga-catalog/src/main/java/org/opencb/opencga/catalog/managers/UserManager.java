@@ -450,7 +450,6 @@ public class UserManager extends AbstractManager implements IUserManager {
                 for (Project project : user.getProjects()) {
                     if (project.getStudies() != null) {
                         for (Study study : project.getStudies()) {
-                            study.setAcl(null);
                             study.setVariableSets(null);
                         }
                     }

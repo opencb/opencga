@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.permissions.FamilyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Collections;
@@ -26,7 +25,7 @@ import java.util.Map;
 /**
  * Created by pfurio on 02/05/17.
  */
-public class Family extends Annotable<FamilyAclEntry> {
+public class Family extends Annotable {
 
     private long id;
     private String name;
@@ -59,12 +58,12 @@ public class Family extends Annotable<FamilyAclEntry> {
                   String description, List<OntologyTerm> ontologyTerms, List<AnnotationSet> annotationSets, int release,
                   Map<String, Object> attributes) {
         this(-1, name, father, mother, children, parentalConsanguinity, TimeUtils.getTime(), new Status(), description, ontologyTerms,
-                annotationSets, Collections.emptyList(), release, attributes);
+                annotationSets, release, attributes);
     }
 
     public Family(long id, String name, Individual father, Individual mother, List<Individual> children, boolean parentalConsanguinity,
                   String creationDate, Status status, String description, List<OntologyTerm> ontologyTerms,
-                  List<AnnotationSet> annotationSets, List<FamilyAclEntry> acl, int release, Map<String, Object> attributes) {
+                  List<AnnotationSet> annotationSets, int release, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = father;
@@ -77,7 +76,6 @@ public class Family extends Annotable<FamilyAclEntry> {
         this.ontologyTerms = ontologyTerms;
         this.release = release;
         this.attributes = attributes;
-        this.acl = acl;
         this.annotationSets = annotationSets;
     }
 
@@ -96,7 +94,6 @@ public class Family extends Annotable<FamilyAclEntry> {
         sb.append(", ontologyTerms=").append(ontologyTerms);
         sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
-        sb.append(", acl=").append(acl);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
         return sb.toString();

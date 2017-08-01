@@ -16,9 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.AbstractAcl;
 import org.opencb.opencga.catalog.models.acls.AclParams;
-import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.net.URI;
@@ -29,7 +27,7 @@ import java.util.Map;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class File extends AbstractAcl<FileAclEntry> {
+public class File {
 
     private long id;
     private String name;
@@ -74,7 +72,6 @@ public class File extends AbstractAcl<FileAclEntry> {
     private Job job;
     private List<RelatedFile> relatedFiles;
 
-//    private List<FileAclEntry> acl;
     private FileIndex index;
 
     private Map<String, Object> stats;
@@ -87,14 +84,14 @@ public class File extends AbstractAcl<FileAclEntry> {
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status, long size,
                 int release) {
         this(-1, name, type, format, bioformat, null, path, TimeUtils.getTime(), TimeUtils.getTime(), description, status, false,
-                size, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), Collections.emptyList(),
-                new FileIndex(), Collections.emptyMap(), release, Collections.emptyMap());
+                size, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), new FileIndex(),
+                Collections.emptyMap(), release, Collections.emptyMap());
     }
 
     public File(long id, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String creationDate,
                 String modificationDate, String description, FileStatus status, boolean external, long size, Experiment experiment,
-                List<Sample> samples, Job job, List<RelatedFile> relatedFiles, List<FileAclEntry> acl, FileIndex index,
-                Map<String, Object> stats, int release, Map<String, Object> attributes) {
+                List<Sample> samples, Job job, List<RelatedFile> relatedFiles, FileIndex index, Map<String, Object> stats, int release,
+                Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -113,7 +110,6 @@ public class File extends AbstractAcl<FileAclEntry> {
         this.samples = samples;
         this.job = job;
         this.relatedFiles = relatedFiles;
-        this.acl = acl;
         this.index = index != null ? index : new FileIndex();
         this.stats = stats;
         this.attributes = attributes;
@@ -284,7 +280,6 @@ public class File extends AbstractAcl<FileAclEntry> {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("File{");
-        sb.append("acl=").append(acl);
         sb.append(", id=").append(id);
         sb.append(", name='").append(name).append('\'');
         sb.append(", type=").append(type);
@@ -469,11 +464,6 @@ public class File extends AbstractAcl<FileAclEntry> {
 
     public File setRelatedFiles(List<RelatedFile> relatedFiles) {
         this.relatedFiles = relatedFiles;
-        return this;
-    }
-
-    public File setAcl(List<FileAclEntry> acl) {
-        this.acl = acl;
         return this;
     }
 

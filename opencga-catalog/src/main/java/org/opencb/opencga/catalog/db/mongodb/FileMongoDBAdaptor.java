@@ -87,7 +87,6 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         long startTime = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-//        String ownerId = dbAdaptorFactory.getCatalogStudyDBAdaptor().getOwnerId(studyId);
 
         if (filePathExists(studyId, file.getPath())) {
             throw CatalogDBException.alreadyExists("File", studyId, "path", file.getPath());

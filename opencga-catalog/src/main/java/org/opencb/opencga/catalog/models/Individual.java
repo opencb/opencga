@@ -17,15 +17,17 @@
 package org.opencb.opencga.catalog.models;
 
 import org.opencb.opencga.catalog.models.acls.AclParams;
-import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Individual extends Annotable<IndividualAclEntry> {
+public class Individual extends Annotable {
 
     private long id;
     private String name;
@@ -51,7 +53,6 @@ public class Individual extends Annotable<IndividualAclEntry> {
     private List<Sample> samples;
     private boolean parentalConsanguinity;
 
-//    private List<IndividualAclEntry> acl;
 //    private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> attributes;
@@ -78,8 +79,8 @@ public class Individual extends Annotable<IndividualAclEntry> {
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Population population,
                       int release, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this(id, name, fatherId, motherId, family, sex, null, ethnicity, population, "", release, TimeUtils.getTime(), new Status(),
-                false, LifeStatus.UNKNOWN, AffectationStatus.UNKNOWN, Collections.emptyList(), new ArrayList<>(),
-                Collections.emptyList(), annotationSets, attributes);
+                false, LifeStatus.UNKNOWN, AffectationStatus.UNKNOWN, Collections.emptyList(), new ArrayList<>(), annotationSets,
+                attributes);
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
@@ -87,8 +88,8 @@ public class Individual extends Annotable<IndividualAclEntry> {
                       String dateOfBirth, boolean parentalConsanguinity, int release, List<AnnotationSet> annotationSets,
                       List<OntologyTerm> ontologyTermList) {
         this(id, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, population, dateOfBirth, release, TimeUtils.getTime(),
-                new Status(), parentalConsanguinity, lifeStatus, affectationStatus, ontologyTermList, new ArrayList<>(), new LinkedList<>(),
-                annotationSets, Collections.emptyMap());
+                new Status(), parentalConsanguinity, lifeStatus, affectationStatus, ontologyTermList, new ArrayList<>(), annotationSets,
+                Collections.emptyMap());
         if (population == null) {
             new Population();
         }
@@ -97,8 +98,8 @@ public class Individual extends Annotable<IndividualAclEntry> {
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
                       String ethnicity, Population population, String dateOfBirth, int release, String creationDate, Status status,
                       boolean parentalConsanguinity, LifeStatus lifeStatus, AffectationStatus affectationStatus,
-                      List<OntologyTerm> ontologyTerms, List<Sample> samples, List<IndividualAclEntry> acl,
-                      List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+                      List<OntologyTerm> ontologyTerms, List<Sample> samples, List<AnnotationSet> annotationSets,
+                      Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.fatherId = fatherId;
@@ -117,7 +118,6 @@ public class Individual extends Annotable<IndividualAclEntry> {
         this.affectationStatus = affectationStatus;
         this.ontologyTerms = ontologyTerms;
         this.samples = samples;
-        this.acl = acl;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
     }
@@ -236,7 +236,6 @@ public class Individual extends Annotable<IndividualAclEntry> {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Individual{");
-        sb.append("acl=").append(acl);
         sb.append(", id=").append(id);
         sb.append(", name='").append(name).append('\'');
         sb.append(", fatherId=").append(fatherId);
@@ -432,20 +431,6 @@ public class Individual extends Annotable<IndividualAclEntry> {
         this.parentalConsanguinity = parentalConsanguinity;
         return this;
     }
-
-    public Individual setAcl(List<IndividualAclEntry> acl) {
-        this.acl = acl;
-        return this;
-    }
-
-//    public List<AnnotationSet> getAnnotationSets() {
-//        return annotationSets;
-//    }
-//
-//    public Individual setAnnotationSets(List<AnnotationSet> annotationSets) {
-//        this.annotationSets = annotationSets;
-//        return this;
-//    }
 
     public Map<String, Object> getAttributes() {
         return attributes;

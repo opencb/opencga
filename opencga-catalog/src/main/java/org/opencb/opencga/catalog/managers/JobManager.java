@@ -668,7 +668,7 @@ public class JobManager extends AbstractManager implements IJobManager {
 
         String name = Paths.get(path).getFileName().toString();
 
-        Tool tool = new Tool(-1, alias, name, description, manifest, result, path, acl);
+        Tool tool = new Tool(-1, alias, name, description, manifest, result, path);
 
         QueryResult<Tool> queryResult = jobDBAdaptor.createTool(userId, tool);
 //        auditManager.recordCreation(AuditRecord.Resource.tool, queryResult.first().getId(), userId, queryResult.first(), null, null);

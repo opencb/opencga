@@ -428,7 +428,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         individual.setAnnotationSets(AnnotationManager.validateAnnotationSets(individual.getAnnotationSets(), studyDBAdaptor));
         individual.setAttributes(ParamUtils.defaultObject(individual.getAttributes(), Collections.emptyMap()));
         individual.setSamples(Collections.emptyList());
-        individual.setAcl(Collections.emptyList());
         individual.setStatus(new Status());
         individual.setCreationDate(TimeUtils.getTime());
 
