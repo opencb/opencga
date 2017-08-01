@@ -181,7 +181,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, fileIds);
         try {
             Runtime.getRuntime().addShutdownHook(hook);
-            getDBAdaptor().removeFile(study, files, new QueryOptions(options));
+            getDBAdaptor().removeFiles(study, files, new QueryOptions(options));
             postRemoveFiles(study, fileIds, false);
         } catch (Exception e) {
             postRemoveFiles(study, fileIds, true);
@@ -194,14 +194,13 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     public void removeStudy(String studyName) throws StorageEngineException {
         StudyConfigurationManager scm = getStudyConfigurationManager();
-        scm.lockAndUpdate(studyName, studyConfiguration -> {
+        int studyId = scm.lockAndUpdate(studyName, studyConfiguration -> {
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
             StudyConfigurationManager.addBatchOperation(studyConfiguration, REMOVE_OPERATION_NAME, Collections.emptyList(), resume,
                     BatchFileOperation.Type.REMOVE);
             return studyConfiguration;
-        });
+        }).getStudyId();
 
-        Integer studyId = scm.getStudyId(scm, null);
         Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, Collections.emptyList());
         try {
             Runtime.getRuntime().addShutdownHook(hook);

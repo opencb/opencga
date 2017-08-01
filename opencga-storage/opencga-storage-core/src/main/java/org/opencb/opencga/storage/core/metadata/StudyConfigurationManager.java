@@ -729,7 +729,7 @@ public class StudyConfigurationManager implements AutoCloseable {
                     if (!operation.sameOperation(fileIds, type, jobOperationName)) {
                         throw StorageEngineException.otherOperationInProgressException(operation, jobOperationName, fileIds);
                     } else {
-                        logger.info("Resuming Last batch loading due to error.");
+                        logger.info("Resuming last batch operation \"" + operation.getOperationName() + "\" due to error.");
                         resumeOperation = operation;
                     }
                     break;

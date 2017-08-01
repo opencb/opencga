@@ -566,11 +566,13 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Individual> documentList = new ArrayList<>();
-        DBIterator<Individual> dbIterator = iterator(query, options, user);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        QueryResult<Individual> queryResult;
+        try (DBIterator<Individual> dbIterator = iterator(query, options, user)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
-        QueryResult<Individual> queryResult = endQuery("Get", startTime, documentList);
+        queryResult = endQuery("Get", startTime, documentList);
         addSamples(queryResult, user);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
@@ -585,11 +587,13 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     public QueryResult<Individual> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Individual> documentList = new ArrayList<>();
-        DBIterator<Individual> dbIterator = iterator(query, options);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        QueryResult<Individual> queryResult;
+        try (DBIterator<Individual> dbIterator = iterator(query, options)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
-        QueryResult<Individual> queryResult = endQuery("Get", startTime, documentList);
+        queryResult = endQuery("Get", startTime, documentList);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
@@ -623,11 +627,13 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        DBIterator<Document> dbIterator = nativeIterator(query, options);
-        while (dbIterator.hasNext()) {
-            documentList.add(dbIterator.next());
+        QueryResult<Document> queryResult;
+        try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
+            while (dbIterator.hasNext()) {
+                documentList.add(dbIterator.next());
+            }
         }
-        QueryResult<Document> queryResult = endQuery("Native get", startTime, documentList);
+        queryResult = endQuery("Native get", startTime, documentList);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
@@ -739,11 +745,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(action);
-        DBIterator<Individual> catalogDBIterator = iterator(query, options);
-        while (catalogDBIterator.hasNext()) {
-            action.accept(catalogDBIterator.next());
+        try (DBIterator<Individual> catalogDBIterator = iterator(query, options)) {
+            while (catalogDBIterator.hasNext()) {
+                action.accept(catalogDBIterator.next());
+            }
         }
-        catalogDBIterator.close();
     }
 
     private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {

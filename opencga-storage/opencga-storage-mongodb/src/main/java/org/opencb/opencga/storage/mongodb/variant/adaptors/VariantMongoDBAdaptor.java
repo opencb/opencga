@@ -157,7 +157,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     /**
-     * Delete all the variants from the database resulting of executing the query.
+     * Remove all the variants from the database resulting of executing the query.
      *
      * @param query   Query to be executed in the database
      * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
@@ -172,7 +172,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     /**
-     * Delete all the given samples belonging to the study from the database.
+     * Remove all the given samples belonging to the study from the database.
      *
      * @param studyName   The study name where samples belong to
      * @param sampleNames Sample names to be deleted, these must belong to the study
@@ -185,22 +185,18 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     /**
-     * Delete the given file from the database with all the samples it has.
+     * Remove the given file from the database with all the samples it has.
      *
      * @param study     The study where the file belong
      * @param files     The file name to be deleted, it must belong to the study
      * @param options   Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
      * @return A QueryResult with the file deleted
      */
-    public QueryResult removeFile(String study, List<String> files, QueryOptions options) {
+    public QueryResult removeFiles(String study, List<String> files, QueryOptions options) {
 
         Integer studyId = studyConfigurationManager.getStudyId(study, null, false);
         StudyConfiguration sc = studyConfigurationManager.getStudyConfiguration(studyId, null).first();
         List<Integer> fileIds = studyConfigurationManager.getFileIds(files, false, sc);
-        Set<Integer> sampleIds = fileIds.stream()
-                .map(sc.getSamplesInFiles()::get)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toSet());
 
         ArrayList<Integer> otherIndexedFiles = new ArrayList<>(sc.getIndexedFiles());
         otherIndexedFiles.removeAll(fileIds);
@@ -209,49 +205,85 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (otherIndexedFiles.isEmpty()) {
             // If we are deleting all the files in the study, delete the whole study
             return removeStudy(study, new QueryOptions("purge", true));
-        } else {
-            // Remove all the study entries that does not contain any of the other indexed files.
-            // This include studies only with the files to remove and with negated fileIds (overlapped files)
-            Bson query = elemMatch(DocumentToVariantConverter.STUDIES_FIELD,
-                    and(
-                            eq(STUDYID_FIELD, studyId),
-//                            in(FILES_FIELD + '.' + FILEID_FIELD, fileIds),
-                            nin(FILES_FIELD + '.' + FILEID_FIELD, otherIndexedFiles)
-                    )
-            );
-            int batchSize = 5;
-            FindIterable<Document> findIterable = getVariantsCollection()
-                    .nativeQuery()
-                    .find(query, Projections.include("_id"), new QueryOptions())
-                    .batchSize(batchSize);
-
-            try (MongoCursor<Document> cursor = findIterable.iterator()) {
-                MongoDBCollection stageCollection = getStageCollection();
-                List<String> ids = new ArrayList<>(batchSize);
-                int i = 0;
-                while (cursor.hasNext()) {
-                    ids.add(cursor.next().getString("_id"));
-                    Bson updateStage = combine(
-                            pull(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyId.toString()),
-                            unset(studyId.toString()));
-                    if (ids.size() == batchSize || !cursor.hasNext()) {
-                        stageCollection.update(in("_id", ids), updateStage, new QueryOptions(MULTI, true));
-                        i++;
-                        logger.debug(i + " : clear stage ids = " + ids);
-                        ids.clear();
-                    }
-                }
-            }
-            removeStudy(studyId, query, true);
         }
 
-        // Then, remove the file and genotypes from the rest of variants
+        // Remove all the study entries that does not contain any of the other indexed files.
+        // This include studies only with the files to remove and with negated fileIds (overlapped files)
+        Bson query = elemMatch(DocumentToVariantConverter.STUDIES_FIELD,
+                and(
+                        eq(STUDYID_FIELD, studyId),
+//                            in(FILES_FIELD + '.' + FILEID_FIELD, fileIds),
+                        nin(FILES_FIELD + '.' + FILEID_FIELD, otherIndexedFiles)
+                )
+        );
+        removeFilesFromStageCollection(query, studyId, fileIds);
+
+        return removeFilesFromVariantsCollection(query, sc, fileIds);
+    }
+
+    private Bson removeFilesFromStageCollection(Bson query, Integer studyId, List<Integer> fileIds) {
+
+        int batchSize = 500;
+        FindIterable<Document> findIterable = getVariantsCollection()
+                .nativeQuery()
+                .find(query, Projections.include("_id"), new QueryOptions())
+                .batchSize(batchSize);
+
+        logger.info("Remove files from stage collection - step 1/3"); // Remove study if only contains removed files
+        MongoDBCollection stageCollection = getStageCollection();
+        int updatedStageDocuments = 0;
+        try (MongoCursor<Document> cursor = findIterable.iterator()) {
+            List<String> ids = new ArrayList<>(batchSize);
+            int i = 0;
+            while (cursor.hasNext()) {
+                ids.add(cursor.next().getString("_id"));
+                Bson updateStage = combine(
+                        pull(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyId.toString()),
+                        unset(studyId.toString()));
+                if (ids.size() == batchSize || !cursor.hasNext()) {
+                    updatedStageDocuments += stageCollection.update(in("_id", ids), updateStage, new QueryOptions(MULTI, true))
+                            .first().getModifiedCount();
+                    i++;
+                    logger.debug(i + " : clear stage ids = " + ids);
+                    ids.clear();
+                }
+            }
+        }
+
+        List<Bson> studyUpdate = new ArrayList<>(fileIds.size());
+
+        logger.info("Remove files from stage collection - step 2/3"); // Other studies
+        for (Integer fileId : fileIds) {
+            studyUpdate.add(unset(studyId + "." + fileId));
+        }
+        updatedStageDocuments += stageCollection.update(eq(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyId.toString()),
+                combine(studyUpdate), new QueryOptions(MULTI, true)).first().getModifiedCount();
+
+        logger.info("Remove files from stage collection - step 3/3"); // purge
+        long removedStageDocuments = removeEmptyVariantsFromStage();
+
+        logger.info("Updated " + updatedStageDocuments + " documents from stage");
+        logger.info("Removed " + removedStageDocuments + " documents from stage");
+        return query;
+    }
+
+    private QueryResult<UpdateResult> removeFilesFromVariantsCollection(Bson query, StudyConfiguration sc, List<Integer> fileIds) {
+
+        Set<Integer> sampleIds = fileIds.stream()
+                .map(sc.getSamplesInFiles()::get)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toSet());
+
+        // Update and remove variants from variants collection
+        int studyId = sc.getStudyId();
+        logger.info("Remove files from variants collection - step 1/3"); // Remove study if only contains removed files
+        long updatedVariantsDocuments = removeStudy(studyId, query).first().getModifiedCount();
+
 
         // Remove also negated fileIds
         List<Integer> negatedFileIds = fileIds.stream().map(i -> -i).collect(Collectors.toList());
         fileIds.addAll(negatedFileIds);
 
-        Bson query;
         // If default genotype is not the unknown genotype, we must iterate over all the documents in the study
         if (!sc.getAttributes().getString(DEFAULT_GENOTYPE.key()).equals(DocumentToSamplesConverter.UNKNOWN_GENOTYPE)) {
             query = eq(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, studyId);
@@ -278,16 +310,23 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         logger.debug("removeFile: query = " + query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         logger.debug("removeFile: update = " + update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
+        logger.info("Remove files from variants collection - step 2/3"); // Other studies
         QueryResult<UpdateResult> result2 = getVariantsCollection().update(query, update, new QueryOptions(MULTI, true));
 
         logger.debug("removeFile: matched  = " + result2.first().getMatchedCount());
         logger.debug("removeFile: modified = " + result2.first().getModifiedCount());
 
+
+        logger.info("Remove files from variants collection - step 3/3"); // purge
+        long removedVariantsDocuments = removeEmptyVariants();
+
+        logger.info("Updated " + (updatedVariantsDocuments + result2.first().getModifiedCount()) + " documents from variants");
+        logger.info("Removed " + removedVariantsDocuments + " documents from variants");
         return result2;
     }
 
     /**
-     * Delete the given study from the database.
+     * Remove the given study from the database.
      *
      * @param studyName The study name to delete
      * @param options   Query modifiers, accepted values are: purge
@@ -300,9 +339,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         Integer studyId = studyConfigurationManager.getStudyId(studyName, null, false);
         Bson query = queryParser.parseQuery(new Query(STUDIES.key(), studyId));
 
-        boolean purge = options.getBoolean("purge", false);
+        boolean purge = options.getBoolean("purge", true);
 
-        QueryResult<UpdateResult> result = removeStudy(studyId, query, purge);
+        QueryResult<UpdateResult> result = removeStudy(studyId, query);
+
+        if (purge) {
+            removeEmptyVariants();
+        }
 
         Bson eq = eq(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyId.toString());
         Bson combine = combine(pull(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyId.toString()), unset(studyId.toString()));
@@ -310,10 +353,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         logger.debug("removeStudy: stage update = " + combine.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         getStageCollection().update(eq, combine, new QueryOptions(MULTI, true));
 
+        if (purge) {
+            removeEmptyVariantsFromStage();
+        }
         return result;
     }
 
-    private QueryResult<UpdateResult> removeStudy(int studyId, Bson query, boolean purge) {
+    private QueryResult<UpdateResult> removeStudy(int studyId, Bson query) {
         // { $pull : { files : {  sid : <studyId> } } }
         Bson update = combine(
                 pull(DocumentToVariantConverter.STUDIES_FIELD, eq(STUDYID_FIELD, studyId)),
@@ -327,18 +373,17 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         logger.debug("removeStudy: matched  = {}", result.first().getMatchedCount());
         logger.debug("removeStudy: modified = {}", result.first().getModifiedCount());
 
-        if (purge) {
-            removeEmptyVariants();
-        }
         return result;
     }
 
-    private void removeEmptyVariants() {
+    private long removeEmptyVariants() {
         Bson purgeQuery = exists(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, false);
-        variantsCollection.remove(purgeQuery, new QueryOptions(MULTI, true));
+        return variantsCollection.remove(purgeQuery, new QueryOptions(MULTI, true)).first().getDeletedCount();
+    }
 
-        purgeQuery = eq(StageDocumentToVariantConverter.STUDY_FILE_FIELD, Collections.emptyList());
-        getStageCollection().remove(purgeQuery, new QueryOptions(MULTI, true));
+    private long removeEmptyVariantsFromStage() {
+        Bson purgeQuery = eq(StageDocumentToVariantConverter.STUDY_FILE_FIELD, Collections.emptyList());
+        return getStageCollection().remove(purgeQuery, new QueryOptions(MULTI, true)).first().getDeletedCount();
     }
 
     @Override

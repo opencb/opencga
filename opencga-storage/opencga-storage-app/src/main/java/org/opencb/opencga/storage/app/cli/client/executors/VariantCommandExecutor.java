@@ -49,9 +49,7 @@ import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.search.solr.VariantIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -68,6 +66,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VARIANT_REMOVE_COMMAND;
 
 /**
  * Created by imedina on 02/03/15.
@@ -121,6 +121,11 @@ public class VariantCommandExecutor extends CommandExecutor {
                 configure(variantCommandOptions.indexVariantsCommandOptions.commonOptions,
                         variantCommandOptions.indexVariantsCommandOptions.commonIndexOptions.dbName);
                 index();
+                break;
+            case VARIANT_REMOVE_COMMAND:
+                configure(variantCommandOptions.variantRemoveCommandOptions.commonOptions,
+                        variantCommandOptions.variantRemoveCommandOptions.dbName);
+                remove();
                 break;
             case "query":
                 configure(variantCommandOptions.variantQueryCommandOptions.commonOptions,
@@ -267,6 +272,19 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
     }
 
+    private void remove() throws Exception {
+        StorageVariantCommandOptions.VariantRemoveCommandOptions cliOptions = variantCommandOptions.variantRemoveCommandOptions;
+
+        variantStorageEngine.getOptions().put(VariantStorageEngine.Options.RESUME.key(), cliOptions.resume);
+        variantStorageEngine.getOptions().putAll(cliOptions.commonOptions.params);
+
+        if (cliOptions.files.size() == 1 && cliOptions.files.get(0).equalsIgnoreCase(VariantQueryUtils.ALL)) {
+            variantStorageEngine.removeStudy(cliOptions.study);
+        } else {
+            variantStorageEngine.removeFiles(cliOptions.study, cliOptions.files);
+        }
+    }
+
     private void query() throws Exception {
         StorageVariantCommandOptions.VariantQueryCommandOptions variantQueryCommandOptions = variantCommandOptions.variantQueryCommandOptions;
 
@@ -283,7 +301,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
         Query query = VariantQueryCommandUtils.parseQuery(variantQueryCommandOptions, studyNames);
         QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(variantQueryCommandOptions);
-        options.put("summary", variantQueryCommandOptions.summary);
+        options.put(VariantField.SUMMARY, variantQueryCommandOptions.summary);
 
         if (variantQueryCommandOptions.commonQueryOptions.count) {
             QueryResult<Long> result = variantStorageEngine.count(query);

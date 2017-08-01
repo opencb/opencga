@@ -105,7 +105,7 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
 
         long studyId = catalogManager.getStudyIdByFileId(files.get(0).getId());
 
-        List<File> removedFiles = variantManager.removeFile(fileIds, String.valueOf(studyId), sessionId);
+        List<File> removedFiles = variantManager.removeFile(fileIds, String.valueOf(studyId), sessionId, new QueryOptions());
         assertEquals(files.size(), removedFiles.size());
 
         Cohort all = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), null, sessionId).first();
@@ -127,7 +127,7 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
     }
 
     private void removeStudy(Object study, QueryOptions options) throws Exception {
-        variantManager.removeStudy(study.toString(), sessionId);
+        variantManager.removeStudy(study.toString(), sessionId, new QueryOptions());
 
         Query query = new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
         assertEquals(0, catalogManager.getFileManager().count(query, sessionId).first().intValue());
