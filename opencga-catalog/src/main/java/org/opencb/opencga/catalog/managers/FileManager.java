@@ -2202,30 +2202,33 @@ public class FileManager extends AbstractManager implements IFileManager {
 
             // Check the original files are not being indexed at the moment
             query = new Query(FileDBAdaptor.QueryParams.ID.key(), new ArrayList<>(fileIds));
-            DBIterator<File> iterator = fileDBAdaptor.iterator(query, new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor
-                    .QueryParams.INDEX.key(), FileDBAdaptor.QueryParams.ID.key())));
-            Map<Long, FileIndex> filesToUpdate = new HashMap<>();
-            while (iterator.hasNext()) {
-                File next = iterator.next();
-                String status = next.getIndex().getStatus().getName();
-                switch (status) {
-                    case FileIndex.IndexStatus.READY:
-                        // If they are already ready, we only need to remove the reference to the transformed files as they will be removed
-                        next.getIndex().setTransformedFile(null);
-                        filesToUpdate.put(next.getId(), next.getIndex());
-                        break;
-                    case FileIndex.IndexStatus.TRANSFORMED:
-                        // We need to remove the reference to the transformed files and change their status from TRANSFORMED to NONE
-                        next.getIndex().setTransformedFile(null);
-                        next.getIndex().getStatus().setName(FileIndex.IndexStatus.NONE);
-                        filesToUpdate.put(next.getId(), next.getIndex());
-                        break;
-                    case FileIndex.IndexStatus.NONE:
-                    case FileIndex.IndexStatus.DELETED:
-                    case FileIndex.IndexStatus.TRASHED:
-                        break;
-                    default:
-                        throw new CatalogException("Cannot delete files that are in use in storage.");
+            Map<Long, FileIndex> filesToUpdate;
+            try (DBIterator<File> iterator = fileDBAdaptor.iterator(query, new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                            FileDBAdaptor.QueryParams.INDEX.key(), FileDBAdaptor.QueryParams.ID.key())))) {
+                filesToUpdate = new HashMap<>();
+                while (iterator.hasNext()) {
+                    File next = iterator.next();
+                    String status = next.getIndex().getStatus().getName();
+                    switch (status) {
+                        case FileIndex.IndexStatus.READY:
+                            // If they are already ready, we only need to remove the reference to the transformed files as they will be
+                            // removed
+                            next.getIndex().setTransformedFile(null);
+                            filesToUpdate.put(next.getId(), next.getIndex());
+                            break;
+                        case FileIndex.IndexStatus.TRANSFORMED:
+                            // We need to remove the reference to the transformed files and change their status from TRANSFORMED to NONE
+                            next.getIndex().setTransformedFile(null);
+                            next.getIndex().getStatus().setName(FileIndex.IndexStatus.NONE);
+                            filesToUpdate.put(next.getId(), next.getIndex());
+                            break;
+                        case FileIndex.IndexStatus.NONE:
+                        case FileIndex.IndexStatus.DELETED:
+                        case FileIndex.IndexStatus.TRASHED:
+                            break;
+                        default:
+                            throw new CatalogException("Cannot delete files that are in use in storage.");
+                    }
                 }
             }
 
