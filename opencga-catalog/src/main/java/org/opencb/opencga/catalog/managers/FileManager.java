@@ -1668,7 +1668,12 @@ public class FileManager extends AbstractManager implements IFileManager {
                 stringPath, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY),
                 false, 0, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), allFileAcls.getResult(),
                 null, null, catalogManager.getStudyManager().getCurrentRelease(studyId), null);
-        fileDBAdaptor.insert(folder, studyId, new QueryOptions());
+        QueryResult<File> queryResult = fileDBAdaptor.insert(folder, studyId, new QueryOptions());
+        // Propagate ACLs
+        if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
+            authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()), allFileAcls.getResult(),
+                    MongoDBAdaptorFactory.FILE_COLLECTION);
+        }
     }
 
     public QueryResult<File> link(URI uriOrigin, String pathDestiny, long studyId, ObjectMap params, String sessionId)
@@ -1831,6 +1836,12 @@ public class FileManager extends AbstractManager implements IFileManager {
                         Collections.emptyList(), allFileAcls.getResult(), null, Collections.emptyMap(),
                         catalogManager.getStudyManager().getCurrentRelease(studyId), Collections.emptyMap());
                 QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, studyId, new QueryOptions());
+                // Propagate ACLs
+                if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
+                    authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()), allFileAcls.getResult(),
+                            MongoDBAdaptorFactory.FILE_COLLECTION);
+                }
+
                 File file = fileMetadataReader.setMetadataInformation(queryResult.first(), queryResult.first().getUri(),
                         new QueryOptions(), sessionId, false);
                 queryResult.setResult(Arrays.asList(file));
@@ -1895,7 +1906,12 @@ public class FileManager extends AbstractManager implements IFileManager {
                                     Collections.emptyList(), new Job(), Collections.emptyList(), allFileAcls.getResult(), null,
                                     Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(studyId),
                                     Collections.emptyMap());
-                            fileDBAdaptor.insert(folder, studyId, new QueryOptions());
+                            QueryResult<File> queryResult = fileDBAdaptor.insert(folder, studyId, new QueryOptions());
+                            // Propagate ACLs
+                            if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
+                                authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()),
+                                        allFileAcls.getResult(), MongoDBAdaptorFactory.FILE_COLLECTION);
+                            }
                         }
 
                     } catch (CatalogException e) {
@@ -1940,6 +1956,12 @@ public class FileManager extends AbstractManager implements IFileManager {
                                     Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(studyId),
                                     Collections.emptyMap());
                             QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, studyId, new QueryOptions());
+                            // Propagate ACLs
+                            if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
+                                authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()),
+                                        allFileAcls.getResult(), MongoDBAdaptorFactory.FILE_COLLECTION);
+                            }
+
                             File file = fileMetadataReader.setMetadataInformation(queryResult.first(), queryResult.first().getUri(),
                                     new QueryOptions(), sessionId, false);
                             if (isTransformedFile(file.getName())) {
