@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Created by jtarraga on 07/04/17.
  *
- * @author Joaquín Tárraga &lt;joaquintarraga@gmail.com&gt;
+ * @author Joaquin Tarraga &lt;joaquintarraga@gmail.com&gt;
  */
 public abstract class ScoreQueryGenerator extends QueryGenerator {
     protected static final List<String> NUM_OPS = Arrays.asList(">", ">=", "<", "<=");
