@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.models.tool;
+package org.opencb.opencga.catalog.old.models.tool;
 
 @Deprecated
 public class Acl {

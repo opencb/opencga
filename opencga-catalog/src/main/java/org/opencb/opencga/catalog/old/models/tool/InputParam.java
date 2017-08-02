@@ -14,43 +14,43 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.models.tool;
+package org.opencb.opencga.catalog.old.models.tool;
 
-public class ExampleOption {
+public class InputParam {
 
-    private String paramName, value;
+    private String name, dataType;
 
-    public ExampleOption() {
+    public InputParam() {
 
     }
 
-    public ExampleOption(String executionId, String value) {
-        this.paramName = executionId;
-        this.value = value;
+    public InputParam(String name, String dataType) {
+        this.name = name;
+        this.dataType = dataType;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("ExampleOption{");
-        sb.append("paramName='").append(paramName).append('\'');
-        sb.append(", value='").append(value).append('\'');
+        final StringBuilder sb = new StringBuilder("InputParam{");
+        sb.append("name='").append(name).append('\'');
+        sb.append(", dataType='").append(dataType).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public String getParamName() {
-        return paramName;
+    public String getName() {
+        return name;
     }
 
-    public void setParamName(String paramName) {
-        this.paramName = paramName;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public String getValue() {
-        return value;
+    public String getDataType() {
+        return dataType;
     }
 
-    public void setValue(String value) {
-        this.value = value;
+    public void setDataType(String dataType) {
+        this.dataType = dataType;
     }
 }

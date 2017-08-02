@@ -23,11 +23,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Status;
-
-import java.util.LinkedList;
 
 import static org.junit.Assert.*;
 
@@ -39,7 +36,6 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void createProjectTest() throws CatalogException, JsonProcessingException {
         Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", new Status(), "", 1000, "", null, 1);
-        LinkedList<AclEntry> acl = new LinkedList<>();
         System.out.println(catalogProjectDBAdaptor.insert(p, user1.getId(), null));
         p = new Project("Project about some more genomes", "2000G", "Tomorrow", "Cool", new Status(), "", 3000, "", null, 1);
         System.out.println(catalogProjectDBAdaptor.insert(p, user1.getId(), null));

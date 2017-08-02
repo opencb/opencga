@@ -14,29 +14,31 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.models.tool;
+package org.opencb.opencga.catalog.old.models.tool;
 
-public class Option {
+import java.util.List;
 
-    private String name, description;
-    private boolean required;
+public class Example {
 
-    public Option() {
+    private String name, executionId;
+    private List<ExampleOption> options;
+
+    public Example() {
 
     }
 
-    public Option(String name, String description, boolean required) {
+    public Example(String name, String executionId, List<ExampleOption> options) {
         this.name = name;
-        this.description = description;
-        this.required = required;
+        this.executionId = executionId;
+        this.options = options;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Option{");
+        final StringBuilder sb = new StringBuilder("Example{");
         sb.append("name='").append(name).append('\'');
-        sb.append(", description='").append(description).append('\'');
-        sb.append(", required=").append(required);
+        sb.append(", executionId='").append(executionId).append('\'');
+        sb.append(", options=").append(options);
         sb.append('}');
         return sb.toString();
     }
@@ -49,19 +51,19 @@ public class Option {
         this.name = name;
     }
 
-    public boolean isRequired() {
-        return required;
+    public String getExecutionId() {
+        return executionId;
     }
 
-    public void setRequired(boolean required) {
-        this.required = required;
+    public void setExecutionId(String executionId) {
+        this.executionId = executionId;
     }
 
-    public String getDescription() {
-        return description;
+    public List<ExampleOption> geOptions() {
+        return options;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void setOptions(List<ExampleOption> options) {
+        this.options = options;
     }
 }

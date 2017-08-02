@@ -342,22 +342,6 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         return projectQueryResult.first().getCurrentRelease();
     }
 
-    @Deprecated
-    @Override
-    public QueryResult<Study> share(long studyId, AclEntry acl) throws CatalogException {
-        throw new UnsupportedOperationException();
-    }
-
-//    @Override
-//    public void membersHavePermissionsInStudy(long studyId, List<String> members) throws CatalogException {
-//        for (String member : members) {
-//            if (!member.equals("*") && !member.equals("anonymous") && !memberExists(studyId, member)) {
-//                throw new CatalogException("Cannot update ACL for " + member + ". First, a general study permission must be "
-//                        + "defined for that member.");
-//            }
-//        }
-//    }
-
     @Override
     public MyResourceId getVariableSetId(String variableStr, @Nullable String studyStr, String sessionId) throws CatalogException {
         if (StringUtils.isEmpty(variableStr)) {

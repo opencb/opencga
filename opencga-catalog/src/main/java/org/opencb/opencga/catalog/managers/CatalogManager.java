@@ -741,14 +741,6 @@ public class CatalogManager implements AutoCloseable {
         return fileManager.grep(fileId, pattern, options, sessionId);
     }
 
-
-    @Deprecated
-    public QueryResult shareFile(String fileIds, String userIds, AclEntry acl, String sessionId) throws CatalogException {
-        throw new CatalogException("The method being called is deprecated.");
-
-    }
-
-
     public List<QueryResult<FileAclEntry>> getAllFileAcls(String fileIdsStr, @Nullable String studyStr, String sessionId)
             throws CatalogException {
         AbstractManager.MyResourceIds resource = fileManager.getIds(fileIdsStr, studyStr, sessionId);

@@ -30,7 +30,6 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
-import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -108,34 +107,6 @@ class MongoDBUtils {
     /*
     * Helper methods
     ********************/
-
-    /**
-     * Checks if the field {@link AclEntry#userId} is valid.
-     *
-     * The "userId" can be:
-     *  - '*' referring to all the users. See {@link AclEntry#USER_OTHERS_ID}
-     *  - '@{groupId}' referring to a {@link Group}. See {@link AclEntry#USER_OTHERS_ID}
-     *  - '{userId}' referring to a specific user.
-     *
-     * @param dbAdaptorFactory dbAdaptorFactory
-     * @param userId userId
-     * @param studyId studyId
-     * @throws CatalogDBException CatalogDBException
-     */
-    @Deprecated
-    public static void checkAclUserId(DBAdaptorFactory dbAdaptorFactory, String userId, long studyId) throws CatalogDBException {
-        if (userId.equals(AclEntry.USER_OTHERS_ID)) {
-            return;
-        } else if (userId.startsWith("@")) {
-            String groupId = userId.substring(1);
-            QueryResult<Group> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, groupId, null);
-            if (queryResult.getNumResults() == 0) {
-                throw CatalogDBException.idNotFound("Group", groupId);
-            }
-        } else {
-            dbAdaptorFactory.getCatalogUserDBAdaptor().checkId(userId);
-        }
-    }
 
     static User parseUser(QueryResult<Document> result) throws CatalogDBException {
         return parseObject(result, User.class);

@@ -14,31 +14,27 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.models.tool;
+package org.opencb.opencga.catalog.old.models.tool;
 
-import java.util.List;
+public class ConfigAttr {
 
-public class Example {
+    private String name;
+    private String value;
 
-    private String name, executionId;
-    private List<ExampleOption> options;
-
-    public Example() {
+    public ConfigAttr() {
 
     }
 
-    public Example(String name, String executionId, List<ExampleOption> options) {
+    public ConfigAttr(String name, String value) {
         this.name = name;
-        this.executionId = executionId;
-        this.options = options;
+        this.value = value;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Example{");
+        final StringBuilder sb = new StringBuilder("ConfigAttr{");
         sb.append("name='").append(name).append('\'');
-        sb.append(", executionId='").append(executionId).append('\'');
-        sb.append(", options=").append(options);
+        sb.append(", value='").append(value).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -51,19 +47,11 @@ public class Example {
         this.name = name;
     }
 
-    public String getExecutionId() {
-        return executionId;
+    public String getValue() {
+        return value;
     }
 
-    public void setExecutionId(String executionId) {
-        this.executionId = executionId;
-    }
-
-    public List<ExampleOption> geOptions() {
-        return options;
-    }
-
-    public void setOptions(List<ExampleOption> options) {
-        this.options = options;
+    public void setValue(String value) {
+        this.value = value;
     }
 }
