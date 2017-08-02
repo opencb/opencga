@@ -127,8 +127,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         params.putIfNotEmpty(IbsAnalysis.SAMPLES, cliOptions.samples);
         params.putIfNotEmpty(IbsAnalysis.OUTDIR, cliOptions.outdir);
 
-        new PluginExecutor(catalogManager, sessionId).execute(IbsAnalysis.class, "default",
-                catalogManager.getStudyId(cliOptions.study, sessionId), params);
+        String userId1 = catalogManager.getUserManager().getId(sessionId);
+        new PluginExecutor(catalogManager, sessionId).execute(IbsAnalysis.class, "default", catalogManager.getStudyManager().getId
+                (userId1, cliOptions.study), params);
 
 
     }
@@ -385,8 +386,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         Query query = VariantQueryCommandUtils.parseBasicVariantQuery(cliOptions.variantQueryOptions, new Query());
         params.putAll(query);
 
+        String userId1 = catalogManager.getUserManager().getId(sessionId);
         new PluginExecutor(catalogManager, sessionId)
-                .execute(VariantHistogramAnalysis.class, "default", catalogManager.getStudyId(cliOptions.study, sessionId), params);
+                .execute(VariantHistogramAnalysis.class, "default", catalogManager.getStudyManager().getId(userId1, cliOptions.study), params);
 
     }
 }

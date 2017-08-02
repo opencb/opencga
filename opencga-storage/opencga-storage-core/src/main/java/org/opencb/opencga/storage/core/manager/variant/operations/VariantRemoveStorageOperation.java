@@ -41,7 +41,7 @@ public class VariantRemoveStorageOperation extends StorageOperation {
 
         List<String> files = new ArrayList<>(studyInfo.getFileInfos().size());
         for (FileInfo fileInfo : studyInfo.getFileInfos()) {
-            org.opencb.opencga.catalog.models.File file = catalogManager.getFile(fileInfo.getFileId(), sessionId).first();
+            File file = catalogManager.getFileManager().get(fileInfo.getFileId(), null, sessionId).first();
             if (file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
                 files.add(String.valueOf(fileInfo.getFileId()));
             } else {
@@ -63,9 +63,8 @@ public class VariantRemoveStorageOperation extends StorageOperation {
         // Update study configuration to synchronize
         updateStudyConfiguration(sessionId, studyInfo.getStudyId(), dataStore);
 
-        return catalogManager.getAllFiles(studyInfo.getStudyId(),
-                new Query(FileDBAdaptor.QueryParams.ID.key(), files),
-                new QueryOptions(), sessionId)
+        return catalogManager.getFileManager().get(studyInfo.getStudyId(), new Query(FileDBAdaptor.QueryParams.ID.key(), files), new
+                QueryOptions(), sessionId)
                 .getResult();
     }
 

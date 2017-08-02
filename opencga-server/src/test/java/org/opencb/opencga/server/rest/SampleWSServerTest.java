@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.models.Cohort;
+import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
 
@@ -63,9 +64,11 @@ public class SampleWSServerTest {
     public void init() throws Exception {
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
-        sessionId = OpenCGAWSServer.catalogManager.login("user", CatalogManagerTest.PASSWORD, "localhost").first().getId();
-        studyId = OpenCGAWSServer.catalogManager.getStudyId("user@1000G:phase1");
-        in1 = OpenCGAWSServer.catalogManager.createIndividual(studyId, "in1", "f1", -1, -1, null, null, sessionId).first().getId();
+        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD, "localhost").first().getId();
+        studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user@1000G:phase1");
+        in1 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in1", "f1", (long) -1, (long) -1, null, "", "", "",
+                "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null,
+                sessionId).first().getId();
         s1 = OpenCGAWSServer.catalogManager.getSampleManager().create(Long.toString(studyId), "s1", "f1", "", null, false, null, null,
                 null, sessionId).first().getId();
         s2 = OpenCGAWSServer.catalogManager.getSampleManager().create(Long.toString(studyId), "s2", "f1", "", null, false, null, null,

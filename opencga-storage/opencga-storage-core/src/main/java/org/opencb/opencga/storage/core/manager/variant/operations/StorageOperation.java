@@ -148,7 +148,7 @@ public abstract class StorageOperation {
     }
 
     protected List<File> copyResults(Path tmpOutdirPath, long catalogPathOutDir, String sessionId) throws CatalogException, IOException {
-        File outDir = catalogManager.getFile(catalogPathOutDir, new QueryOptions(), sessionId).first();
+        File outDir = catalogManager.getFileManager().get(catalogPathOutDir, new QueryOptions(), sessionId).first();
 
         FileScanner fileScanner = new FileScanner(catalogManager);
 //        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutdirPath.toUri());

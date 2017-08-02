@@ -67,7 +67,7 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
 
         String export = Paths.get(opencga.createTmpOutdir(studyId, "_EXPORT_", sessionId)).resolve("export.avro").toString();
 
-        List<Sample> samples = catalogManager.getAllSamples(studyId, new Query(), new QueryOptions(), sessionId).getResult();
+        List<Sample> samples = catalogManager.getSampleManager().get(studyId, new Query(), new QueryOptions(), sessionId).getResult();
         List<String> someSamples = samples.stream().limit(samples.size() / 2).map(Sample::getName).collect(Collectors.toList());
         Query query = new Query(VariantQueryParam.RETURNED_STUDIES.key(), studyId)
                 .append(VariantQueryParam.RETURNED_SAMPLES.key(), someSamples);

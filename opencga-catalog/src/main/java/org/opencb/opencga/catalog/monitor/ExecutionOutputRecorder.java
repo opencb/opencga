@@ -159,7 +159,7 @@ public class ExecutionOutputRecorder {
         parameters.put(JobDBAdaptor.QueryParams.OUTPUT.key(), fileIds);
         parameters.put(JobDBAdaptor.QueryParams.END_TIME.key(), System.currentTimeMillis());
         try {
-            catalogManager.modifyJob(job.getId(), parameters, this.sessionId);
+            catalogManager.getJobManager().update(job.getId(), parameters, null, this.sessionId);
         } catch (CatalogException e) {
             logger.error("Critical error. Could not update job output files from job {} with output {}. Error: {}", job.getId(),
                     fileIds.toArray(), e.getMessage());

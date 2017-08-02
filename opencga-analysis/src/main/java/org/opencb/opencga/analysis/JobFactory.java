@@ -98,14 +98,14 @@ public class JobFactory {
         resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, jobSchedulerName);
         if (simulate) { //Simulate a job. Do not create it.
             jobQueryResult = new QueryResult<>("simulatedJob", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(
-                    new Job(jobName, catalogManager.getUserIdBySessionId(sessionId), toolName, description, commandLine, outDir,
+                    new Job(jobName, catalogManager.getUserManager().getId(sessionId), toolName, description, commandLine, outDir,
                             inputFiles, 1)));
         } else {
             if (execute) {
                 /** Create a RUNNING job in CatalogManager **/
-                jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, executor, params, commandLine, temporalOutDirUri,
-                        outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, new Job.JobStatus(Job.JobStatus.RUNNING),
-                        System.currentTimeMillis(), 0, null, sessionId);
+                jobQueryResult = catalogManager.getJobManager().create(studyId, jobName, toolName, description, executor, params,
+                        commandLine, temporalOutDirUri, outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, new Job
+                                .JobStatus(Job.JobStatus.RUNNING), System.currentTimeMillis(), (long) 0, null, sessionId);
                 Job job = jobQueryResult.first();
 
                 //Execute job in local
@@ -118,12 +118,13 @@ public class JobFactory {
                 } catch (IOException e) {
                     throw new AnalysisExecutionException(e.getCause());
                 }
-                jobQueryResult = catalogManager.getJob(job.getId(), null, sessionId);
+                jobQueryResult = catalogManager.getJobManager().get(job.getId(), null, sessionId);
 
             } else {
                 /** Create a PREPARED job in CatalogManager **/
-                jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, executor, params, commandLine, temporalOutDirUri,
-                        outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, new Job.JobStatus(Job.JobStatus.PREPARED), 0, 0, null, sessionId);
+                jobQueryResult = catalogManager.getJobManager().create(studyId, jobName, toolName, description, executor, params,
+                        commandLine, temporalOutDirUri, outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, new Job
+                                .JobStatus(Job.JobStatus.PREPARED), (long) 0, (long) 0, null, sessionId);
             }
         }
         return jobQueryResult;

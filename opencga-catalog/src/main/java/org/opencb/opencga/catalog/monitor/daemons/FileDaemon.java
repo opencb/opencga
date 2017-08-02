@@ -72,11 +72,8 @@ public class FileDaemon extends MonitorParentDaemon {
     }
 
     private void checkDeletedFiles() throws CatalogException {
-        QueryResult<File> files = catalogManager.searchFile(
-                -1,
-                new Query(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED),
-                new QueryOptions(),
-                sessionId);
+        QueryResult<File> files = catalogManager.getFileManager().get((long) -1, new Query(FileDBAdaptor.QueryParams.STATUS_NAME.key(),
+                File.FileStatus.TRASHED), new QueryOptions(), sessionId);
 
         long currentTimeMillis = System.currentTimeMillis();
         for (File file: files.getResult()) {
@@ -102,11 +99,8 @@ public class FileDaemon extends MonitorParentDaemon {
     }
 
     private void checkPendingRemoveFiles() throws CatalogException {
-        QueryResult<File> files = catalogManager.searchFile(
-                -1,
-                new Query(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED),
-                new QueryOptions(),
-                sessionId);
+        QueryResult<File> files = catalogManager.getFileManager().get((long) -1, new Query(FileDBAdaptor.QueryParams.STATUS_NAME.key(),
+                File.FileStatus.DELETED), new QueryOptions(), sessionId);
 
         long currentTimeMillis = System.currentTimeMillis();
         for (File file: files.getResult()) {

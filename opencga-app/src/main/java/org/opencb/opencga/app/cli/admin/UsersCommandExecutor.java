@@ -81,7 +81,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                 executor.commonOptions.adminPassword);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            QueryResult<Session> login = catalogManager.login("admin", configuration.getAdmin().getPassword(), "localhost");
+            QueryResult<Session> login = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword(), "localhost");
             String sessionId = login.first().getId();
 
             if (executor.syncAll) {
@@ -274,9 +274,8 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             catalogManager.getUserManager().validatePassword("admin", configuration.getAdmin().getPassword(), true);
 
-            User user = catalogManager.modifyUser(usersCommandOptions.QuotaUserCommandOptions.userId,
-                    new ObjectMap(UserDBAdaptor.QueryParams.QUOTA.key(), usersCommandOptions.QuotaUserCommandOptions.quota * 1073741824),
-                    null).first();
+            User user = catalogManager.getUserManager().update(usersCommandOptions.QuotaUserCommandOptions.userId, new ObjectMap
+                    (UserDBAdaptor.QueryParams.QUOTA.key(), usersCommandOptions.QuotaUserCommandOptions.quota * 1073741824), null, null).first();
 
             System.out.println("The disk quota has been properly updated: " + user.toString());
         }

@@ -103,7 +103,7 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
     private void removeFile(List<File> files, QueryOptions options, long outputId) throws Exception {
         List<String> fileIds = files.stream().map(File::getId).map(String::valueOf).collect(Collectors.toList());
 
-        long studyId = catalogManager.getStudyIdByFileId(files.get(0).getId());
+        long studyId = catalogManager.getFileManager().getStudyId(files.get(0).getId());
 
         List<File> removedFiles = variantManager.removeFile(fileIds, String.valueOf(studyId), sessionId, new QueryOptions());
         assertEquals(files.size(), removedFiles.size());
@@ -112,7 +112,8 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
         Set<Long> allSampleIds = all.getSamples().stream().map(Sample::getId).collect(Collectors.toSet());
 
         assertThat(all.getStatus().getName(), anyOf(is(Cohort.CohortStatus.INVALID), is(Cohort.CohortStatus.NONE)));
-        Set<Long> loadedSamples = catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY), null, sessionId)
+        Set<Long> loadedSamples = catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key
+                (), FileIndex.IndexStatus.READY), null, sessionId)
                 .getResult()
                 .stream()
                 .flatMap(f -> f.getSamples().stream())

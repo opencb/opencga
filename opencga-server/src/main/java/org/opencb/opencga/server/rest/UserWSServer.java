@@ -25,10 +25,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Project;
-import org.opencb.opencga.catalog.models.Session;
-import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -36,6 +33,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -60,7 +58,8 @@ public class UserWSServer extends OpenCGAWSServer {
                 createErrorResponse(new CatalogException("id, name, email or password not present"));
             }
 
-            QueryResult queryResult = catalogManager.createUser(user.id, user.name, user.email, user.password, user.organization, null, queryOptions);
+            QueryResult queryResult = catalogManager.getUserManager().create(user.id, user.name, user.email, user.password, user
+                    .organization, null, Account.FULL, queryOptions);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -82,7 +81,7 @@ public class UserWSServer extends OpenCGAWSServer {
                                     + "returned meaning that the client already has the most up to date user information.", hidden = true)
                             @QueryParam ("lastModified") String lastModified) {
         try {
-            QueryResult result = catalogManager.getUser(userId, lastModified, queryOptions, sessionId);
+            QueryResult result = catalogManager.getUserManager().get(userId, lastModified, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -100,7 +99,7 @@ public class UserWSServer extends OpenCGAWSServer {
         try {
             queryOptions.remove("password"); //Remove password from query options
 
-            queryResult = catalogManager.login(userId, password, sessionIp);
+            queryResult = catalogManager.getUserManager().login(userId, password, sessionIp);
             ObjectMap sessionMap = new ObjectMap();
             sessionMap.append("sessionId", queryResult.first().getId())
                     .append("id", queryResult.first().getId())
@@ -129,7 +128,7 @@ public class UserWSServer extends OpenCGAWSServer {
         try {
             if (map.containsKey("password")) {
                 String password = map.get("password");
-                queryResult = catalogManager.login(userId, password, sessionIp);
+                queryResult = catalogManager.getUserManager().login(userId, password, sessionIp);
             } else if (StringUtils.isNotEmpty(sessionId)) {
                 queryResult = catalogManager.getUserManager().refreshToken(userId, sessionId, sessionIp);
             } else {
@@ -177,7 +176,8 @@ public class UserWSServer extends OpenCGAWSServer {
             }
             String password = params.getString("password");
             String nPassword = params.getString("npassword");
-            QueryResult result = catalogManager.changePassword(userId, password, nPassword);
+            catalogManager.getUserManager().changePassword(userId, password, nPassword);
+            QueryResult result = new QueryResult("changePassword", 0, 0, 0, "", "", Collections.emptyList());
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -228,7 +228,7 @@ public class UserWSServer extends OpenCGAWSServer {
                                          UserUpdatePOST parameters) {
         try {
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
-            QueryResult result = catalogManager.modifyUser(userId, params, sessionId);
+            QueryResult result = catalogManager.getUserManager().update(userId, params, null, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

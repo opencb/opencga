@@ -28,9 +28,7 @@ import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Family;
-import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.*;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -64,12 +62,12 @@ public class FamilyManagerTest extends GenericTest {
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
 
-        catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, null);
-        sessionIdUser = catalogManager.login("user", PASSWORD, "127.0.0.1").first().getId();
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null);
+        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD, "127.0.0.1").first().getId();
 
         long projectId = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
-        catalogManager.createStudy(projectId, "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser);
+        catalogManager.getStudyManager().create(projectId, "Phase 1", "phase1", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, sessionIdUser);
     }
 
     @After

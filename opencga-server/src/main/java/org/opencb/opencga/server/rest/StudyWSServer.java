@@ -79,8 +79,8 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
         logger.debug("study = {}", study);
         try {
-            return createOkResponse(catalogManager.createStudy(projectId, study.name, study.alias, study.type, null,
-                    study.description, null, null, null, null, null, study.stats, study.attributes, queryOptions, sessionId));
+            return createOkResponse(catalogManager.getStudyManager().create(projectId, study.name, study.alias, study.type, null, study
+                    .description, null, null, null, null, null, study.stats, study.attributes, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -114,9 +114,10 @@ public class StudyWSServer extends OpenCGAWSServer {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 
             if (projectId != null) {
-                query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), catalogManager.getProjectId(projectId, sessionId));
+                String userId = catalogManager.getUserManager().getId(sessionId);
+                query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), catalogManager.getProjectManager().getId(userId, projectId));
             }
-            QueryResult<Study> queryResult = catalogManager.getAllStudies(query, queryOptions, sessionId);
+            QueryResult<Study> queryResult = catalogManager.getStudyManager().get(query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -142,7 +143,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 
-            QueryResult<Study> queryResult = catalogManager.getAllStudies(query, queryOptions, sessionId);
+            QueryResult<Study> queryResult = catalogManager.getStudyManager().get(query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -157,9 +158,10 @@ public class StudyWSServer extends OpenCGAWSServer {
             required = true) @PathParam("study") String studyStr,
                                  @ApiParam(value = "JSON containing the params to be updated.", required = true) StudyParams updateParams) {
         try {
-            long studyId = catalogManager.getStudyId(studyStr, sessionId);
-            QueryResult queryResult = catalogManager
-                    .modifyStudy(studyId, new ObjectMap(jsonObjectMapper.writeValueAsString(updateParams)), sessionId);
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+            QueryResult queryResult = catalogManager.getStudyManager().update(studyId, new ObjectMap(jsonObjectMapper.writeValueAsString
+                    (updateParams)), null, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -187,9 +189,10 @@ public class StudyWSServer extends OpenCGAWSServer {
             required = true) @PathParam("study") String studyStr) {
         try {
             List<QueryResult<Study>> queryResults = new LinkedList<>();
-            List<Long> studyIds = catalogManager.getStudyIds(studyStr, sessionId);
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
             for (Long studyId : studyIds) {
-                queryResults.add(catalogManager.getStudy(studyId, queryOptions, sessionId));
+                queryResults.add(catalogManager.getStudyManager().get(studyId, queryOptions, sessionId));
             }
             return createOkResponse(queryResults);
         } catch (Exception e) {
@@ -204,10 +207,11 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response summary(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr) {
         try {
-            List<Long> studyIds = catalogManager.getStudyIds(studyStr, sessionId);
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
             List<QueryResult<StudySummary>> queryResults = new LinkedList<>();
             for (Long studyId : studyIds) {
-                queryResults.add(catalogManager.getStudySummary(studyId, sessionId, queryOptions));
+                queryResults.add(catalogManager.getStudyManager().getSummary(studyId, sessionId, queryOptions));
             }
             return createOkResponse(queryResults);
         } catch (Exception e) {
@@ -250,8 +254,9 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes,
                                 @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes) {
         try {
-            long studyId = catalogManager.getStudyId(studyStr, sessionId);
-            QueryResult queryResult = catalogManager.getAllFiles(studyId, query, queryOptions, sessionId);
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+            QueryResult queryResult = catalogManager.getFileManager().get(studyId, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -281,8 +286,9 @@ public class StudyWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
                                   @ApiParam(value = "annotation") @QueryParam("annotation") String annotation) {
         try {
-            long studyId = catalogManager.getStudyId(studyStr, sessionId);
-            QueryResult queryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+            QueryResult queryResult = catalogManager.getSampleManager().get(studyId, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -315,8 +321,9 @@ public class StudyWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "Comma separated list of output file ids") @DefaultValue("")
                                @QueryParam("outputFiles") String outputFiles) {
         try {
-            long studyId = catalogManager.getStudyId(studyStr, sessionId);
-            return createOkResponse(catalogManager.getAllJobs(studyId, sessionId));
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+            return createOkResponse(catalogManager.getJobManager().get(studyId, null, null, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -421,7 +428,8 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @QueryParam("merge") boolean merge) {
 
         try {
-            List<Long> studyIds = catalogManager.getStudyIds(studyStr, sessionId);
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
             List<QueryResult> queryResults = new LinkedList<>();
             for (Long studyId : studyIds) {
                 QueryResult queryResult;
@@ -490,11 +498,9 @@ public class StudyWSServer extends OpenCGAWSServer {
         long sampleId = 33;
         QueryOptions qOptions = new QueryOptions(queryOptions);
         try {
-            File file = catalogManager.getAllFiles(studyId, query
-                            .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.ALIGNMENT)
-                            .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId)
-                            .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY),
-                    qOptions, sessionId).first();
+            File file = catalogManager.getFileManager().get(studyId, query.append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File
+                    .Bioformat.ALIGNMENT).append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId).append(FileDBAdaptor.QueryParams
+                    .INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY), qOptions, sessionId).first();
         } catch (CatalogException e) {
             e.printStackTrace();
         }
@@ -506,9 +512,9 @@ public class StudyWSServer extends OpenCGAWSServer {
             try {
                 AbstractManager.MyResourceId resource = catalogManager.getFileManager().getId(fileId, Long.toString(studyId), sessionId);
                 fileIdNum = resource.getResourceId();
-                QueryResult<File> queryResult = catalogManager.getFile(fileIdNum, sessionId);
+                QueryResult<File> queryResult = catalogManager.getFileManager().get(fileIdNum, null, sessionId);
                 file = queryResult.getResult().get(0);
-                fileUri = catalogManager.getFileUri(file);
+                fileUri = catalogManager.getFileManager().getUri(file);
             } catch (CatalogException e) {
                 e.printStackTrace();
                 return createErrorResponse(e);
@@ -544,8 +550,8 @@ public class StudyWSServer extends OpenCGAWSServer {
             if (indexAttributes.containsKey("baiFileId")) {
                 File baiFile = null;
                 try {
-                    baiFile = catalogManager.getFile(indexAttributes.getInt("baiFileId"), sessionId).getResult().get(0);
-                    URI baiUri = catalogManager.getFileUri(baiFile);
+                    baiFile = catalogManager.getFileManager().get((long) indexAttributes.getInt("baiFileId"), null, sessionId).getResult().get(0);
+                    URI baiUri = catalogManager.getFileManager().getUri(baiFile);
                     queryOptions.put(AlignmentDBAdaptor.QO_BAI_PATH, baiUri.getPath());  //TODO: Make uri-compatible
                 } catch (CatalogException e) {
                     e.printStackTrace();
@@ -582,8 +588,9 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response scanFiles(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr) {
         try {
-            long studyId = catalogManager.getStudyId(studyStr, sessionId);
-            Study study = catalogManager.getStudy(studyId, sessionId).first();
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+            Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
             FileScanner fileScanner = new FileScanner(catalogManager);
 
             /** First, run CheckStudyFiles to find new missing files **/
@@ -597,8 +604,8 @@ public class StudyWSServer extends OpenCGAWSServer {
             Map<String, URI> untrackedFiles = fileScanner.untrackedFiles(study, sessionId);
 
             /** Get missing files **/
-            List<File> missingFiles = catalogManager.getAllFiles(studyId, query.append(FileDBAdaptor.QueryParams.STATUS_NAME.key(),
-                    File.FileStatus.MISSING), queryOptions, sessionId).getResult();
+            List<File> missingFiles = catalogManager.getFileManager().get(studyId, query.append(FileDBAdaptor.QueryParams.STATUS_NAME.key
+                    (), File.FileStatus.MISSING), queryOptions, sessionId).getResult();
 
             ObjectMap fileStatus = new ObjectMap("untracked", untrackedFiles).append("found", found).append("missing", missingFiles);
 
@@ -644,8 +651,9 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response resyncFiles(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr) {
         try {
-            long studyId = catalogManager.getStudyId(studyStr, sessionId);
-            Study study = catalogManager.getStudy(studyId, sessionId).first();
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+            Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
             FileScanner fileScanner = new FileScanner(catalogManager);
 
             /* Resync files */
@@ -719,7 +727,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                 @PathParam("study") String studyStr,
             @ApiParam(value = "groupId", required = true) @PathParam("group") String groupId) {
         try {
-            QueryResult<Group> group = catalogManager.getGroup(studyStr, groupId, sessionId);
+            QueryResult<Group> group = catalogManager.getStudyManager().getGroup(studyStr, groupId, sessionId);
             return createOkResponse(group);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -780,9 +788,13 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "User or group id") @QueryParam("member") String member) {
         try {
             if (StringUtils.isEmpty(member)) {
-                return createOkResponse(catalogManager.getAllStudyAcls(studyStr, sessionId));
+                String userId = catalogManager.getUserManager().getId(sessionId);
+                long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+                return createOkResponse(catalogManager.getAuthorizationManager().getAllStudyAcls(userId, studyId));
             } else {
-                return createOkResponse(catalogManager.getStudyAcl(studyStr, member, sessionId));
+                String userId = catalogManager.getUserManager().getId(sessionId);
+                long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+                return createOkResponse(catalogManager.getAuthorizationManager().getStudyAcl(userId, studyId, member));
             }
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -882,7 +894,9 @@ public class StudyWSServer extends OpenCGAWSServer {
             required = true) @PathParam("study") String studyStr,
                            @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(catalogManager.getStudyAcl(studyStr, memberId, sessionId));
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+            return createOkResponse(catalogManager.getAuthorizationManager().getStudyAcl(userId, studyId, memberId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

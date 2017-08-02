@@ -21,7 +21,6 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.analysis.ToolManager;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.core.exception.VersionException;
 
@@ -60,7 +59,7 @@ public class ToolWSServer extends OpenCGAWSServer {
         try {
             List<QueryResult> results = new LinkedList<>();
             for (String id : toolIds) {
-                QueryResult<Tool> toolResult = catalogManager.getJobManager().getTool(catalogManager.getToolId(id), sessionId);
+                QueryResult<Tool> toolResult = catalogManager.getJobManager().getTool(catalogManager.getJobManager().getToolId(id), sessionId);
                 Tool tool = toolResult.getResult().get(0);
                 ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
                 tool.setManifest(toolManager.getManifest());
@@ -110,7 +109,7 @@ public class ToolWSServer extends OpenCGAWSServer {
         try {
             List<String> results = new LinkedList<>();
             for (String id : toolIds) {
-                Tool tool = catalogManager.getJobManager().getTool(catalogManager.getToolId(id), sessionId).getResult().get(0);
+                Tool tool = catalogManager.getJobManager().getTool(catalogManager.getJobManager().getToolId(id), sessionId).getResult().get(0);
                 ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
                 String help = toolManager.help("");
                 System.out.println(help);

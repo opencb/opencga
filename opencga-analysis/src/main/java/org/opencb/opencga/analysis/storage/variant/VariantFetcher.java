@@ -108,8 +108,8 @@ public class VariantFetcher implements AutoCloseable {
         QueryResult result;
         long fileIdNum;
 
-        fileIdNum = catalogManager.getFileId(fileId, null, sessionId);
-        File file = catalogManager.getFile(fileIdNum, sessionId).first();
+        fileIdNum = catalogManager.getFileManager().getId(fileId, null, sessionId).getResourceId();
+        File file = catalogManager.getFileManager().get(fileIdNum, null, sessionId).first();
 
         if (file.getIndex() == null || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
             throw new Exception("File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
@@ -120,7 +120,7 @@ public class VariantFetcher implements AutoCloseable {
                     " is not a Variant file.");
         }
 
-        long studyId = catalogManager.getStudyIdByFileId(file.getId());
+        long studyId = catalogManager.getFileManager().getStudyId(file.getId());
         result = getVariantsPerStudy(studyId, region, histogram, groupBy, interval, fileIdNum, sessionId, queryOptions);
         return result;
     }
@@ -207,7 +207,7 @@ public class VariantFetcher implements AutoCloseable {
     public QueryResult<Long> countByFile(long fileId, QueryOptions params, String sessionId) throws CatalogException, StorageEngineException, IOException {
         Query query = getVariantQuery(params);
         if (getMainStudyId(query, VariantQueryParam.STUDIES.key(), sessionId) == null) {
-            long studyId = catalogManager.getStudyIdByFileId(fileId);
+            long studyId = catalogManager.getFileManager().getStudyId(fileId);
             query.put(VariantQueryParam.STUDIES.key(), studyId);
         }
         query.put(VariantQueryParam.FILES.key(), fileId);
@@ -274,7 +274,8 @@ public class VariantFetcher implements AutoCloseable {
         if (query.containsKey(key)) {
             for (String id : query.getAsStringList(key)) {
                 if (!id.startsWith("!")) {
-                    long studyId = catalogManager.getStudyId(id, sessionId);
+                    String userId = catalogManager.getUserManager().getId(sessionId);
+                    long studyId = catalogManager.getStudyManager().getId(userId, id);
                     return studyId > 0 ? studyId : null;
                 }
             }
@@ -289,13 +290,12 @@ public class VariantFetcher implements AutoCloseable {
             samplesMap = new HashMap<>();
             for (Map.Entry<Integer, List<Integer>> entry : samplesToReturn.entrySet()) {
                 if (!entry.getValue().isEmpty()) {
-                    QueryResult<Sample> samplesQueryResult = catalogManager.getAllSamples(entry.getKey(),
-                            new Query(SampleDBAdaptor.QueryParams.ID.key(), entry.getValue()),
-                            new QueryOptions("exclude", Arrays.asList("projects.studies.samples.annotationSets",
-                                    "projects.studies.samples.attributes"))
-                            , sessionId);
+                    QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get((long) entry.getKey(), new Query
+                            (SampleDBAdaptor.QueryParams.ID.key(), entry.getValue()), new QueryOptions("exclude", Arrays.asList("projects" +
+                            ".studies.samples.annotationSets", "projects.studies.samples.attributes")), sessionId);
                     if (samplesQueryResult.getNumResults() != entry.getValue().size()) {
-                        throw new CatalogAuthorizationException("Permission denied. User " + catalogManager.getUserIdBySessionId(sessionId)
+                        throw new CatalogAuthorizationException("Permission denied. User " + catalogManager.getUserManager().getId
+                                (sessionId)
                                 + " can't read all the requested samples");
                     }
                     samplesMap.put((long) entry.getKey(), samplesQueryResult.getResult());
@@ -304,16 +304,14 @@ public class VariantFetcher implements AutoCloseable {
         } else {
             logger.debug("Missing returned samples! Obtaining returned samples from catalog.");
             List<Integer> returnedStudies = dbAdaptor.getReturnedStudies(query, queryOptions);
-            List<Study> studies = catalogManager.getAllStudies(new Query(StudyDBAdaptor.QueryParams.ID.key(), returnedStudies),
+            List<Study> studies = catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams.ID.key(), returnedStudies),
                     new QueryOptions("include", "projects.studies.id"), sessionId).getResult();
             samplesMap = new HashMap<>();
             List<Long> returnedSamples = new LinkedList<>();
             for (Study study : studies) {
-                QueryResult<Sample> samplesQueryResult = catalogManager.getAllSamples(study.getId(),
-                        new Query(),
-                        new QueryOptions("exclude", Arrays.asList("projects.studies.samples.annotationSets",
-                                "projects.studies.samples.attributes"))
-                        , sessionId);
+                QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(study.getId(), new Query(), new
+                        QueryOptions("exclude", Arrays.asList("projects.studies.samples.annotationSets", "projects.studies.samples" +
+                        ".attributes")), sessionId);
                 samplesQueryResult.getResult().sort((o1, o2) -> Long.compare(o1.getId(), o2.getId()));
                 samplesMap.put(study.getId(), samplesQueryResult.getResult());
                 samplesQueryResult.getResult().stream().map(Sample::getId).forEach(returnedSamples::add);

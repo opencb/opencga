@@ -63,14 +63,14 @@ public class JobWSServerTest {
     public void init() throws Exception {
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
-        sessionId = OpenCGAWSServer.catalogManager.login("user", CatalogManagerTest.PASSWORD, "localhost").first().getId();
-        studyId = OpenCGAWSServer.catalogManager.getStudyId("user@1000G:phase1");
+        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD, "localhost").first().getId();
+        studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user@1000G:phase1");
     }
 
     @Test
     public void createReadyJobPostTest() throws CatalogException, IOException {
-        File folder = OpenCGAWSServer.catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(),
-                File.Type.DIRECTORY), new QueryOptions(), sessionId).first();
+        File folder = OpenCGAWSServer.catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), File
+                .Type.DIRECTORY), new QueryOptions(), sessionId).first();
         String jobName = "MyJob";
         String toolName = "samtools";
         String description = "A job";
@@ -96,8 +96,8 @@ public class JobWSServerTest {
 
     @Test
     public void createErrorJobPostTest() throws CatalogException, IOException {
-        File folder = OpenCGAWSServer.catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(),
-                File.Type.DIRECTORY), new QueryOptions(), sessionId).first();
+        File folder = OpenCGAWSServer.catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), File
+                .Type.DIRECTORY), new QueryOptions(), sessionId).first();
         String jobName = "MyJob";
         String toolName = "samtools";
         String description = "A job";
@@ -125,8 +125,8 @@ public class JobWSServerTest {
 
     @Test
     public void createBadJobPostTest() throws CatalogException, IOException {
-        File folder = OpenCGAWSServer.catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(),
-                File.Type.DIRECTORY), new QueryOptions(), sessionId).first();
+        File folder = OpenCGAWSServer.catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), File
+                .Type.DIRECTORY), new QueryOptions(), sessionId).first();
         String toolName = "samtools";
         String description = "A job";
         String commandLine = "samtools --do-magic";

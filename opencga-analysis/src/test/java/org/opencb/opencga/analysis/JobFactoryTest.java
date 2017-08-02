@@ -55,15 +55,18 @@ public class JobFactoryTest {
     public void before() throws Exception {
         catalogManager = catalogManagerExternalResource.getCatalogManager();
 
-        User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
-        sessionId = catalogManager.login(userId, "user", "localhost").first().getId();
+        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.FULL, null).first();
+
+        sessionId = catalogManager.getUserManager().login(userId, "user", "localhost").first().getId();
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
-        studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, "Study 1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null, null, null, sessionId).first().getId();
+        studyId = catalogManager.getStudyManager().create(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, "Study 1", null, null,
+                null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null, null, null,
+                sessionId).first().getId();
         output = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data", "index").toString(), null, false,
                 null, QueryOptions.empty(), sessionId).first();
 
-        temporalOutDirUri = catalogManager.createJobOutDir(studyId, "JOB_TMP", sessionId);
+        temporalOutDirUri = catalogManager.getJobManager().createJobOutDir(studyId, "JOB_TMP", sessionId);
     }
 
     @Test
@@ -75,9 +78,10 @@ public class JobFactoryTest {
         assertEquals(Job.JobStatus.READY, job.getStatus().getName());
         assertEquals(2, job.getOutput().size());
         for (File fileAux : job.getOutput()) {
-            File file = catalogManager.getFile(fileAux.getId(), sessionId).first();
+            File file = catalogManager.getFileManager().get(fileAux.getId(), null, sessionId).first();
             if (file.getName().contains("out")) {
-                String contentFile = new BufferedReader(new InputStreamReader(catalogManager.downloadFile(fileAux.getId(), sessionId))).readLine();
+                String contentFile = new BufferedReader(new InputStreamReader(catalogManager.getFileManager().download(fileAux.getId(),
+                        -1, -1, null, sessionId))).readLine();
                 assertEquals(helloWorld, contentFile);
             }
         }
@@ -117,7 +121,7 @@ public class JobFactoryTest {
         Thread.sleep(1000);
         thread.interrupt();
         thread.join();
-        QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId, sessionId);
+        QueryResult<Job> allJobs = catalogManager.getJobManager().get(studyId, null, null, sessionId);
         assertEquals(1, allJobs.getNumResults());
         Job job = allJobs.first();
         assertEquals(Job.JobStatus.ERROR, job.getStatus().getName());

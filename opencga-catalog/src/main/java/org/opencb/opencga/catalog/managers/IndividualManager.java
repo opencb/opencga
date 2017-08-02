@@ -460,7 +460,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         }
 
         String userId = catalogManager.getUserManager().getId(sessionId);
-        long studyId = catalogManager.getStudyId(studyStr, sessionId);
+        String userId1 = catalogManager.getUserManager().getId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId1, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
 
         individual.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));

@@ -26,6 +26,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -97,7 +99,8 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
 
     @Test
     public void testQueryAnonymous() throws Exception {
-        catalogManager.createStudyAcls(studyStr, "*", StudyAclEntry.StudyPermissions.VIEW_STUDY.name(), null, sessionId);
+        Study.StudyAclParams aclParams = new Study.StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_STUDY.name(), AclParams.Action.ADD, null);
+        catalogManager.getStudyManager().updateAcl(studyStr, "*", aclParams, sessionId).get(0);
 
 //        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), "s1");
 //        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), "p1:s1");

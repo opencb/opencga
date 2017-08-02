@@ -925,6 +925,19 @@ public class FileManager extends AbstractManager implements IFileManager {
         return new QueryResult<>("File tree", dbTime, numResults, numResults, "", "", Arrays.asList(fileTree));
     }
 
+    @Override
+    public QueryResult<File> getFilesFromFolder(long folderId, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkId(folderId, "folderId");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        long studyId = getStudyId(folderId);
+        File folder = get(folderId, null, sessionId).first();
+        if (!folder.getType().equals(File.Type.DIRECTORY)) {
+            throw new CatalogDBException("File {id:" + folderId + ", path:'" + folder.getPath() + "'} is not a folder.");
+        }
+        Query query = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), folder.getPath());
+        return get(studyId, query, options, sessionId);
+    }
+
     private FileTree getTree(File folder, Query query, QueryOptions queryOptions, int maxDepth, long studyId, String userId)
             throws CatalogDBException {
 

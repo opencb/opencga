@@ -129,13 +129,13 @@ public class AnalysisFileIndexer {
 
 
         /** Query catalog for user data. **/
-        String userId = catalogManager.getUserIdBySessionId(sessionId);
-        File inputFile = catalogManager.getFile(fileId, sessionId).first();
+        String userId = catalogManager.getUserManager().getId(sessionId);
+        File inputFile = catalogManager.getFileManager().get(fileId, null, sessionId).first();
         File originalFile;
-        File outDir = catalogManager.getFile(outDirId, sessionId).first();
-        long studyIdByOutDirId = catalogManager.getStudyIdByFileId(outDirId);
-        long studyIdByInputFileId = catalogManager.getStudyIdByFileId(inputFile.getId());
-        Study study = catalogManager.getStudy(studyIdByOutDirId, sessionId).getResult().get(0);
+        File outDir = catalogManager.getFileManager().get(outDirId, null, sessionId).first();
+        long studyIdByOutDirId = catalogManager.getFileManager().getStudyId(outDirId);
+        long studyIdByInputFileId = catalogManager.getFileManager().getStudyId(inputFile.getId());
+        Study study = catalogManager.getStudyManager().get(studyIdByOutDirId, null, sessionId).getResult().get(0);
 
         if (inputFile.getType() != File.Type.FILE) {
             throw new CatalogException("Expected file type = " + File.Type.FILE + " instead of " + inputFile.getType());
@@ -166,7 +166,7 @@ public class AnalysisFileIndexer {
                     } else {
                         throw new CatalogException("Error: can't load this file. Only transformed files can be loaded.");
                     }
-                    QueryResult<File> result = catalogManager.searchFile(studyIdByOutDirId, query, sessionId);
+                    QueryResult<File> result = catalogManager.getFileManager().get(studyIdByOutDirId, query, null, sessionId);
                     indexedFileId = inputFile.getId();
                     inputFile = result.first();
                 } else if (inputFile.getAttributes().containsKey(Job.INDEXED_FILE_ID)) {
@@ -178,9 +178,9 @@ public class AnalysisFileIndexer {
                         VariantReaderUtils utils = new VariantReaderUtils();
                         try {
                             // Read the VariantSource to get the source file
-                            VariantSource variantSource = utils.readVariantSource(catalogManager.getFileUri(inputFile));
+                            VariantSource variantSource = utils.readVariantSource(catalogManager.getFileManager().getUri(inputFile));
                             Query query = new Query(FileDBAdaptor.QueryParams.NAME.key(), variantSource.getFileName());
-                            QueryResult<File> result = catalogManager.searchFile(studyIdByOutDirId, query, sessionId);
+                            QueryResult<File> result = catalogManager.getFileManager().get(studyIdByOutDirId, query, null, sessionId);
                             if (result.getResult().size() == 0) {
                                 // TODO: Continue with the transformed file as indexed file?
                                 throw new CatalogException("Unable to find file \"" + variantSource.getFileName() + "\" "
@@ -206,7 +206,7 @@ public class AnalysisFileIndexer {
 //                throw new CatalogException("Error: can't load this file. JobId unknown. Need jobId to know origin file. " +
 //                        "Only transformed files can be loaded.");
             } else {
-                Job job = catalogManager.getJob(inputFile.getJob().getId(), null, sessionId).first();
+                Job job = catalogManager.getJobManager().get(inputFile.getJob().getId(), null, sessionId).first();
                 if (job.getAttributes().containsKey(Job.INDEXED_FILE_ID)) {
                     indexedFileId = new ObjectMap(job.getAttributes()).getInt(Job.INDEXED_FILE_ID);
                 } else {
@@ -218,7 +218,7 @@ public class AnalysisFileIndexer {
                     indexedFileId = jobInputFiles.get(0).getId();
                 }
             }
-            originalFile = catalogManager.getFile(indexedFileId, null, sessionId).first();
+            originalFile = catalogManager.getFileManager().get(indexedFileId, null, sessionId).first();
             if (!originalFile.getStatus().getName().equals(File.FileStatus.READY)) {
                 throw new CatalogException("Error: Original file status must be \"READY\", not \"" + originalFile.getStatus().getName() + "\"");
             }
@@ -226,7 +226,8 @@ public class AnalysisFileIndexer {
             originalFile = inputFile;
         }
 
-        final DataStore dataStore = StorageOperation.getDataStore(catalogManager, catalogManager.getStudyIdByFileId(originalFile.getId()), originalFile.getBioformat(), sessionId);
+        final DataStore dataStore = StorageOperation.getDataStore(catalogManager, catalogManager.getFileManager().getStudyId(originalFile
+                .getId()), originalFile.getBioformat(), sessionId);
 
         /** Check if file can be indexed **/
         if (originalFile.getIndex() != null) {
@@ -270,28 +271,27 @@ public class AnalysisFileIndexer {
         if (simulate) {
             temporalOutDirUri = createSimulatedOutDirUri(randomString);
         } else {
-            temporalOutDirUri = catalogManager.createJobOutDir(studyIdByOutDirId, randomString, sessionId);
+            temporalOutDirUri = catalogManager.getJobManager().createJobOutDir(studyIdByOutDirId, randomString, sessionId);
         }
 
         /** Get file samples **/
         List<Sample> sampleList;
         if (originalFile.getSamples() == null || originalFile.getSamples().isEmpty()) {
             try {
-                sampleList = FileMetadataReader.get(catalogManager).getFileSamples(study, originalFile,
-                        catalogManager.getFileUri(originalFile), fileModifyParams,
+                sampleList = FileMetadataReader.get(catalogManager).getFileSamples(study, originalFile, catalogManager.getFileManager()
+                                .getUri(originalFile), fileModifyParams,
                         options.getBoolean(FileMetadataReader.CREATE_MISSING_SAMPLES, true), simulate, options, sessionId);
             } catch (CatalogException e) {
                 throw new AnalysisExecutionException(e);
             }
         } else {
-            sampleList = catalogManager.getAllSamples(study.getId(),
-                    new Query("id", originalFile.getSamples().stream().map(Sample::getId).collect(Collectors.toList())),
-                    new QueryOptions(), sessionId).getResult();
+            sampleList = catalogManager.getSampleManager().get(study.getId(), new Query("id", originalFile.getSamples().stream().map
+                    (Sample::getId).collect(Collectors.toList())), new QueryOptions(), sessionId).getResult();
         }
         if (!simulate) {
             Cohort defaultCohort;
-            QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyIdByOutDirId,
-                    new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), sessionId);
+            QueryResult<Cohort> cohorts = catalogManager.getCohortManager().get(studyIdByOutDirId, new Query(CohortDBAdaptor.QueryParams
+                    .NAME.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), sessionId);
             if (cohorts.getResult().isEmpty()) {
                 defaultCohort = catalogManager.getCohortManager().create(studyIdByOutDirId, StudyEntry.DEFAULT_COHORT,
                         Study.Type.COLLECTION, "Default cohort with almost all indexed samples", Collections.emptyList(), null, null,
@@ -313,7 +313,7 @@ public class AnalysisFileIndexer {
                 updateParams.append(CohortDBAdaptor.QueryParams.SAMPLES.key(), new ArrayList<>(samples));
             }
             if (!updateParams.isEmpty()) {
-                catalogManager.modifyCohort(defaultCohort.getId(), updateParams, new QueryOptions(), sessionId);
+                catalogManager.getCohortManager().update(defaultCohort.getId(), updateParams, new QueryOptions(), sessionId);
             }
         }
 
@@ -403,13 +403,13 @@ public class AnalysisFileIndexer {
             return new QueryResult<>("indexFile", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(job));
         } else {
             return new QueryResult<>("indexFile", (int) (System.currentTimeMillis() - start), 1, 1, "", "",
-                    catalogManager.getJob(job.getId(), null, sessionId).getResult());
+                    catalogManager.getJobManager().get(job.getId(), null, sessionId).getResult());
         }
     }
 
 
     private void modifyIndexJobId(long fileId, long jobId, boolean transform, boolean load, String sessionId) throws CatalogException {
-        File file = catalogManager.getFile(fileId, sessionId).first();
+        File file = catalogManager.getFileManager().get(fileId, null, sessionId).first();
         FileIndex index = file.getIndex();
         index.setJobId(jobId);
         if (transform && !load) {

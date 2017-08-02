@@ -210,7 +210,7 @@ public class OpenCGAWSServerTest {
         StorageMain.privateMain((Arrays.copyOfRange(args, 1, args.length)));
         storageJob.setCommandLine("echo 'Executing fake job CLI' " + storageJob.getCommandLine());
         ExecutorManager.execute(OpenCGAWSServer.catalogManager, storageJob, sessionId);
-        return OpenCGAWSServer.catalogManager.getJob(storageJob.getId(), null, sessionId).first();
+        return OpenCGAWSServer.catalogManager.getJobManager().get(storageJob.getId(), null, sessionId).first();
     }
 
 }

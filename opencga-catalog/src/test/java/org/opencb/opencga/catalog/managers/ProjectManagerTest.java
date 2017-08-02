@@ -28,8 +28,10 @@ import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Account;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 
 import java.io.IOException;
@@ -68,13 +70,13 @@ public class ProjectManagerTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, null);
-        catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, null);
-        catalogManager.createUser("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null);
+        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null);
+        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.FULL, null);
 
-        sessionIdUser = catalogManager.login("user", PASSWORD, "127.0.0.1").first().getId();
-        sessionIdUser2 = catalogManager.login("user2", PASSWORD, "127.0.0.1").first().getId();
-        sessionIdUser3 = catalogManager.login("user3", PASSWORD, "127.0.0.1").first().getId();
+        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD, "127.0.0.1").first().getId();
+        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD, "127.0.0.1").first().getId();
+        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD, "127.0.0.1").first().getId();
 
         project1 = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
@@ -84,9 +86,12 @@ public class ProjectManagerTest extends GenericTest {
         project3 = catalogManager.getProjectManager().create("project 1", "p1", "", "", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser3).first().getId();
 
-        studyId = catalogManager.createStudy(project1, "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first().getId();
-        studyId2 = catalogManager.createStudy(project1, "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser).first().getId();
-        studyId3 = catalogManager.createStudy(project2, "Study 1", "s1", Study.Type.CONTROL_SET, "", sessionIdUser2).first().getId();
+        studyId = catalogManager.getStudyManager().create(project1, "Phase 1", "phase1", Study.Type.TRIO, null, "Done", null, null, null,
+                null, null, null, null, null, sessionIdUser).first().getId();
+        studyId2 = catalogManager.getStudyManager().create(project1, "Phase 3", "phase3", Study.Type.CASE_CONTROL, null, "d", null, null,
+                null, null, null, null, null, null, sessionIdUser).first().getId();
+        studyId3 = catalogManager.getStudyManager().create(project2, "Study 1", "s1", Study.Type.CONTROL_SET, null, "", null, null, null,
+                null, null, null, null, null, sessionIdUser2).first().getId();
     }
 
     @Test
@@ -105,9 +110,9 @@ public class ProjectManagerTest extends GenericTest {
         }
 
         // Create a new study in project2 with some dummy permissions for user
-        long s2 = catalogManager.createStudy(project2, "Study 2", "s2", Study.Type.CONTROL_SET, "", sessionIdUser2).first().getId();
-        catalogManager.createStudyAcls(Long.toString(s2), "user", StudyAclEntry.StudyPermissions.VIEW_STUDY.toString(), null,
-                sessionIdUser2);
+        long s2 = catalogManager.getStudyManager().create(project2, "Study 2", "s2", Study.Type.CONTROL_SET, null, "", null, null, null, null, null, null, null, null, sessionIdUser2).first().getId();
+        Study.StudyAclParams aclParams2 = new Study.StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_STUDY.toString(), AclParams.Action.ADD, null);
+        catalogManager.getStudyManager().updateAcl(Long.toString(s2), "user", aclParams2, sessionIdUser2).get(0);
 
         QueryResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(1, queryResult.getNumResults());
@@ -116,8 +121,8 @@ public class ProjectManagerTest extends GenericTest {
 
         // Add permissions to a group were user belongs
         catalogManager.getStudyManager().createGroup(Long.toString(studyId3), "@member", "user", sessionIdUser2);
-        catalogManager.createStudyAcls(Long.toString(studyId3), "@member", StudyAclEntry.StudyPermissions.VIEW_STUDY.toString(), null,
-                sessionIdUser2);
+        Study.StudyAclParams aclParams1 = new Study.StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_STUDY.toString(), AclParams.Action.ADD, null);
+        catalogManager.getStudyManager().updateAcl(Long.toString(studyId3), "@member", aclParams1, sessionIdUser2).get(0);
 
         queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(1, queryResult.getNumResults());
@@ -125,9 +130,9 @@ public class ProjectManagerTest extends GenericTest {
         assertEquals("user2@pmp", queryResult.first().getAlias());
 
         // Add permissions to user in a study of user3
-        long s3 = catalogManager.createStudy(project3, "StudyProject3", "s3", Study.Type.CONTROL_SET, "", sessionIdUser3).first().getId();
-        catalogManager.createStudyAcls(Long.toString(s3), "user", StudyAclEntry.StudyPermissions.VIEW_STUDY.toString(), null,
-                sessionIdUser3);
+        long s3 = catalogManager.getStudyManager().create(project3, "StudyProject3", "s3", Study.Type.CONTROL_SET, null, "", null, null, null, null, null, null, null, null, sessionIdUser3).first().getId();
+        Study.StudyAclParams aclParams = new Study.StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_STUDY.toString(), AclParams.Action.ADD, null);
+        catalogManager.getStudyManager().updateAcl(Long.toString(s3), "user", aclParams, sessionIdUser3).get(0);
 
         queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(2, queryResult.getNumResults());

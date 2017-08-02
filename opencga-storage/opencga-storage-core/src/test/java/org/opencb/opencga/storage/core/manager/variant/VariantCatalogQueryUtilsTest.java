@@ -50,8 +50,10 @@ public class VariantCatalogQueryUtilsTest {
         addStudyId(3L);
 
         catalogManager = mock(CatalogManager.class);
-        doAnswer(invocation -> studyNameMap.get(invocation.getArgument(0).toString()))
-                .when(catalogManager).getStudyId(anyString(), anyString());
+        CatalogManager catalogManager1 = doAnswer(invocation -> studyNameMap.get(invocation.getArgument(0).toString()))
+                .when(catalogManager);
+        String userId = catalogManager1.getUserManager().getId(anyString());
+        catalogManager1.getStudyManager().getId(userId, anyString());
         catalogUtils = new VariantCatalogQueryUtils(catalogManager);
     }
 

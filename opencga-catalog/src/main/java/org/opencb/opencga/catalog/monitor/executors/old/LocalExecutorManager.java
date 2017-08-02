@@ -237,7 +237,7 @@ public class LocalExecutorManager implements ExecutorManager {
             parameters.put("resourceManagerAttributes", new ObjectMap("executionInfo", executionInfo));
         }
 //        parameters.put(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.DONE);
-        catalogManager.modifyJob(job.getId(), parameters, sessionId);
+        catalogManager.getJobManager().update(job.getId(), parameters, null, sessionId);
 
 //        /** Record output **/
 //        ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
@@ -260,12 +260,12 @@ public class LocalExecutorManager implements ExecutorManager {
 //            parameters.put(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.ERROR);
             parameters.put(JobDBAdaptor.QueryParams.ERROR.key(), error);
             parameters.put(JobDBAdaptor.QueryParams.ERROR_DESCRIPTION.key(), Job.ERROR_DESCRIPTIONS.get(error));
-            catalogManager.modifyJob(job.getId(), parameters, sessionId);
+            catalogManager.getJobManager().update(job.getId(), parameters, null, sessionId);
             objectMapper.writer().writeValue(outdir.resolve(JOB_STATUS_FILE).toFile(), new Job.JobStatus(Job.JobStatus.ERROR,
                     "Job finished with error."));
         }
 
-        return catalogManager.getJob(job.getId(), new QueryOptions(), sessionId);
+        return catalogManager.getJobManager().get(job.getId(), new QueryOptions(), sessionId);
     }
 
     protected void closeOutputStreams(Command com) {

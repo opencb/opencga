@@ -89,8 +89,9 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
             final Project.Organism organism;
 
             if (studyInfos == null || studyInfos.isEmpty()) {
-                long projectId = catalogManager.getProjectId(projectStr, sessionId);
-                Project project = catalogManager.getProject(projectId, null, sessionId).first();
+                String userId = catalogManager.getUserManager().getId(sessionId);
+                long projectId = catalogManager.getProjectManager().getId(userId, projectStr);
+                Project project = catalogManager.getProjectManager().get(projectId, null, sessionId).first();
                 studyStr = null;
                 alias = project.getAlias();
                 organism = project.getOrganism();
@@ -141,11 +142,11 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
             String loadFileStr = options.getString(VariantAnnotationManager.LOAD_FILE);
             if (StringUtils.isNotEmpty(loadFileStr)) {
                 if (!Paths.get(UriUtils.createUri(loadFileStr)).toFile().exists()) {
-                    long fileId = catalogManager.getFileId(loadFileStr, studyStr, sessionId);
+                    long fileId = catalogManager.getFileManager().getId(loadFileStr, studyStr, sessionId).getResourceId();
                     if (fileId < 0) {
                         throw new CatalogException("File '" + loadFileStr + "' does not exist!");
                     }
-                    File loadFile = catalogManager.getFile(fileId, sessionId).first();
+                    File loadFile = catalogManager.getFileManager().get(fileId, null, sessionId).first();
                     annotationOptions.put(VariantAnnotationManager.LOAD_FILE, loadFile.getUri().toString());
                 }
             }

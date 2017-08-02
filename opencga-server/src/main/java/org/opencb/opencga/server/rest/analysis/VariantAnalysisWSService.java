@@ -379,7 +379,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 query.append(STUDIES.key(), study);
             }
 
-            long studyId = catalogManager.getStudyId(study, sessionId);
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            long studyId = catalogManager.getStudyManager().getId(userId, study);
             Collection<String> sampleNames;
             if (all) {
                 sampleNames = variantSampleFilter.getSamplesInAllVariants(query, genotypes);
@@ -388,7 +389,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 sampleNames = samplesInAnyVariants.keySet();
             }
             Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.NAME.key(), String.join(",", sampleNames));
-            QueryResult<Sample> allSamples = catalogManager.getAllSamples(studyId, sampleQuery, queryOptions, sessionId);
+            QueryResult<Sample> allSamples = catalogManager.getSampleManager().get(studyId, sampleQuery, queryOptions, sessionId);
             return createOkResponse(allSamples);
         } catch (Exception e) {
             return createErrorResponse(e);

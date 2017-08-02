@@ -22,13 +22,13 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.api.ICohortManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
+import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -62,7 +62,8 @@ public class CohortWSServer extends OpenCGAWSServer {
                         + "variable name");
             }
 
-            long studyId = catalogManager.getStudyId(studyStr, sessionId);
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
             if (sampleIdsStr != null && !sampleIdsStr.isEmpty()) {
                 AbstractManager.MyResourceIds samples = catalogManager.getSampleManager().getIds(sampleIdsStr, Long.toString(studyId),
                         sessionId);
@@ -162,7 +163,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 List<QueryResult<Cohort>> queryResults = new LinkedList<>();
                 List<Long> cohortIds = cohortManager.getIds(cohortStr, studyStr, sessionId).getResourceIds();
                 for (Long cohortId : cohortIds) {
-                    queryResults.add(catalogManager.getCohort(cohortId, queryOptions, sessionId));
+                    queryResults.add(catalogManager.getCohortManager().get(cohortId, queryOptions, sessionId));
                 }
                 return createOkResponse(queryResults);
             } catch (Exception e) {
@@ -223,7 +224,7 @@ public class CohortWSServer extends OpenCGAWSServer {
         try {
             AbstractManager.MyResourceId resource = cohortManager.getId(cohortStr, studyStr, sessionId);
             long cohortId = resource.getResourceId();
-            Cohort cohort = catalogManager.getCohort(cohortId, QueryOptions.empty(), sessionId).first();
+            Cohort cohort = catalogManager.getCohortManager().get(cohortId, QueryOptions.empty(), sessionId).first();
             if (cohort.getSamples() == null || cohort.getSamples().size() == 0) {
                 return createOkResponse(new QueryResult<>("Samples from cohort " + cohortStr, -1, 0, 0, "The cohort has no samples", "",
                         Collections.emptyList()));
@@ -231,7 +232,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             long studyId = resource.getStudyId();
             query = new Query(SampleDBAdaptor.QueryParams.ID.key(),
                     cohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
-            QueryResult<Sample> allSamples = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
+            QueryResult<Sample> allSamples = catalogManager.getSampleManager().get(studyId, query, queryOptions, sessionId);
             allSamples.setId("Samples from cohort " + cohortStr);
             return createOkResponse(allSamples);
         } catch (Exception e) {
@@ -242,7 +243,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     private QueryResult<Cohort> createCohort(long studyId, String cohortName, Study.Type type, String cohortDescription, List
             <AnnotationSet> annotationSetList, Query query, QueryOptions queryOptions) throws CatalogException {
         //TODO CHANGE THIS for can insert the name also id(number)
-        QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
+        QueryResult<Sample> queryResult = catalogManager.getSampleManager().get(studyId, query, queryOptions, sessionId);
         //TODO FOR THIS. Its possible change the param query to a String
         //List<QueryResult<Sample>> queryResults = new LinkedList<>();
         //List<Long> sampleIds = catalogManager.getSampleIds(query.get("id").toString(), sessionId);
@@ -492,9 +493,19 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "User or group id") @QueryParam("member") String member) {
         try {
             if (StringUtils.isEmpty(member)) {
-                return createOkResponse(catalogManager.getAllCohortAcls(cohortIdsStr, studyStr, sessionId));
+                AbstractManager.MyResourceIds resource = catalogManager.getCohortManager().getIds(cohortIdsStr, studyStr, sessionId);
+                List<Long> cohortIds = resource.getResourceIds();
+                List<QueryResult<CohortAclEntry>> aclList = new ArrayList<>(cohortIds.size());
+                for (int i = 0; i < cohortIds.size(); i++) {
+                    Long cohortId = cohortIds.get(i);
+                    QueryResult<CohortAclEntry> allCohortAcls = catalogManager.getAuthorizationManager().getAllCohortAcls(resource.getUser(), cohortId);
+                    allCohortAcls.setId(Long.toString(cohortId));
+                    aclList.add(allCohortAcls);
+                }
+                return createOkResponse(aclList);
             } else {
-                return createOkResponse(catalogManager.getCohortAcl(cohortIdsStr, studyStr, member, sessionId));
+                AbstractManager.MyResourceId resource = catalogManager.getCohortManager().getId(cohortIdsStr, studyStr, sessionId);
+                return createOkResponse(catalogManager.getAuthorizationManager().getCohortAcl(resource.getUser(), resource.getResourceId(), member));
             }
         } catch (Exception e) {
             return createErrorResponse(e);

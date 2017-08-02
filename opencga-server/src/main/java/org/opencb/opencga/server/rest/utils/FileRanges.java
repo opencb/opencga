@@ -59,7 +59,7 @@ public class FileRanges extends OpenCGAWSServer {
             AbstractManager.MyResourceId resource = catalogManager.getFileManager().getId(fileIdStr, studyStr, sessionId);
             catalogManager.getAuthorizationManager().checkFilePermission(resource.getStudyId(), resource.getResourceId(),
                     resource.getUser(), FileAclEntry.FilePermissions.DOWNLOAD);
-            QueryResult<File> queryResult = catalogManager.getFile(resource.getResourceId(), this.queryOptions, sessionId);
+            QueryResult<File> queryResult = catalogManager.getFileManager().get(resource.getResourceId(), this.queryOptions, sessionId);
             File file = queryResult.getResult().get(0);
 
             List<String> rangeList = headers.getRequestHeader("range");
@@ -95,7 +95,7 @@ public class FileRanges extends OpenCGAWSServer {
                         .status(Response.Status.PARTIAL_CONTENT).build();
 
             } else {
-                stream = catalogManager.downloadFile(resource.getResourceId(), sessionId);
+                stream = catalogManager.getFileManager().download(resource.getResourceId(), -1, -1, null, sessionId);
                 return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, file.getName());
             }
         } catch (Exception e) {

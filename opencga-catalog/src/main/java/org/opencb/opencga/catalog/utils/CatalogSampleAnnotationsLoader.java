@@ -54,8 +54,8 @@ public class CatalogSampleAnnotationsLoader {
             throw new CatalogException(pedFile.getId() + " is not a pedigree file");
         }
 
-        URI fileUri = catalogManager.getFileUri(pedFile);
-        long studyId = catalogManager.getStudyIdByFileId(pedFile.getId());
+        URI fileUri = catalogManager.getFileManager().getUri(pedFile);
+        long studyId = catalogManager.getFileManager().getStudyId(pedFile.getId());
         long auxTime;
         long startTime = System.currentTimeMillis();
 
@@ -107,7 +107,7 @@ public class CatalogSampleAnnotationsLoader {
         //Add Samples
         Query samplesQuery = new Query("name", new LinkedList<>(ped.getIndividuals().keySet()));
         Map<String, Sample> loadedSamples = new HashMap<>();
-        for (Sample sample : catalogManager.getAllSamples(studyId, samplesQuery, null, sessionId).getResult()) {
+        for (Sample sample : catalogManager.getSampleManager().get(studyId, samplesQuery, null, sessionId).getResult()) {
             loadedSamples.put(sample.getName(), sample);
         }
 
@@ -139,7 +139,7 @@ public class CatalogSampleAnnotationsLoader {
 
         //TODO: Create Cohort
 
-        QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, new Query("variableSetId", variableSetId),
+        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(studyId, new Query("variableSetId", variableSetId),
                 null, sessionId);
         return new QueryResult<>("loadPedigree", (int) (System.currentTimeMillis() - startTime),
                 sampleMap.size(), sampleMap.size(), null, null, sampleQueryResult.getResult());
