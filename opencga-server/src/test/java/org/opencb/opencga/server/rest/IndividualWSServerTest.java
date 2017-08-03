@@ -64,7 +64,7 @@ public class IndividualWSServerTest {
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
         sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD, "localhost").first().getId();
-        studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user@1000G:phase1");
+        studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user", "1000G:phase1");
         in1 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in1", "f1", (long) -1, (long) -1, null, "", "", "",
                 "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null,
                 sessionId).first().getId();

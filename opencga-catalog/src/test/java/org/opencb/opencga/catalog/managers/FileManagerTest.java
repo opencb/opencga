@@ -562,8 +562,8 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void testCreateAndUpload() throws Exception {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
-        long studyId2 = catalogManager.getStudyManager().getId("user@1000G:phase3");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
+        long studyId2 = catalogManager.getStudyManager().getId("user", "1000G:phase3");
 
         CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
 
@@ -698,7 +698,7 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void testDownloadFile() throws CatalogException, IOException, InterruptedException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
 
         String fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
         int fileSize = 200;
@@ -818,7 +818,7 @@ public class FileManagerTest extends GenericTest {
     @Test
     public void searchFileTest() throws CatalogException, IOException {
 
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
 
         Query query;
         QueryResult<File> result;
@@ -1018,7 +1018,7 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void testSearchFileBoolean() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
 
         Query query;
         QueryResult<File> result;
@@ -1045,7 +1045,7 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void testSearchFileFail1() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         thrown.expect(CatalogDBException.class);
         catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.NATTRIBUTES.key() + ".numValue",
                 "==NotANumber"), null, sessionIdUser);
@@ -1053,7 +1053,7 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void testSearchFileFail3() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         thrown.expect(CatalogDBException.class);
         catalogManager.getFileManager().get(studyId, new Query("id", "~5"), null, sessionIdUser);
     }

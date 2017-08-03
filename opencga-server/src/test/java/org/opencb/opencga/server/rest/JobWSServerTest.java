@@ -64,7 +64,7 @@ public class JobWSServerTest {
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
         sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD, "localhost").first().getId();
-        studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user@1000G:phase1");
+        studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user", "1000G:phase1");
     }
 
     @Test

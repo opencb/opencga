@@ -857,7 +857,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateVariableSet() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(studyId, null, sessionIdUser).first();
         long variableSetNum = study.getVariableSets().size();
 
@@ -885,7 +885,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateRepeatedVariableSet() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(studyId, null, sessionIdUser).first();
 
         List<Variable> variables = Arrays.asList(
@@ -906,7 +906,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testDeleteVariableSet() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
 
         List<Variable> variables = Arrays.asList(
                 new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null,
@@ -928,7 +928,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testGetAllVariableSet() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
 
         List<Variable> variables = Arrays.asList(
                 new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null,
@@ -970,7 +970,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testDeleteVariableSetInUse() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         long sampleId1 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, null,
                 new QueryOptions(), sessionIdUser).first().getId();
         List<Variable> variables = Arrays.asList(
@@ -1025,7 +1025,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testAnnotate() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(studyId, null, sessionIdUser).first();
 
         Set<Variable> variables = new HashSet<>();
@@ -1058,7 +1058,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void searchSamples() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
 
         catalogManager.getStudyManager().createGroup(Long.toString(studyId), "myGroup", "user2,user3", sessionIdUser);
         catalogManager.getStudyManager().createGroup(Long.toString(studyId), "myGroup2", "user2,user3", sessionIdUser);
@@ -1074,7 +1074,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testSearchAnnotation() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(studyId, null, sessionIdUser).first();
 
         Set<Variable> variables = new HashSet<>();
@@ -1106,7 +1106,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testAnnotateMulti() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(studyId, null, sessionIdUser).first();
         long sampleId = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_1", "", "", null, false, null,
                 null, new QueryOptions(), sessionIdUser).first()
@@ -1134,7 +1134,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testAnnotateUnique() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(studyId, null, sessionIdUser).first();
         long sampleId = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_1", "", "", null, false, null,
                 null, new QueryOptions(), sessionIdUser).first()
@@ -1160,7 +1160,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testAnnotateIndividualUnique() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(studyId, null, sessionIdUser).first();
         long individualId = catalogManager.getIndividualManager().create(study.getId(), "INDIVIDUAL_1", "", (long) -1, (long) -1,
                 Individual.Sex.UNKNOWN, "", "", "", "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual
@@ -1187,7 +1187,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testAnnotateIncorrectType() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(studyId, null, sessionIdUser).first();
         long sampleId = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_1", "", "", null, false, null,
                 null, new QueryOptions(), sessionIdUser).first()
@@ -1217,7 +1217,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testAnnotateRange() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(studyId, null, sessionIdUser).first();
         long sampleId = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_1", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first()
                 .getId();
@@ -1251,7 +1251,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testAnnotateCategorical() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(studyId, null, sessionIdUser).first();
         long sampleId = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_1", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first()
                 .getId();
@@ -1287,7 +1287,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testAnnotateNested() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(studyId, null, sessionIdUser).first();
         long sampleId1 = catalogManager.getSampleManager().create(Long.toString(study.getId()), "SAMPLE_1", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first()
                 .getId();
@@ -1429,7 +1429,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testQuerySamples() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(studyId, null, sessionIdUser).first();
 
         VariableSet variableSet = study.getVariableSets().get(0);
@@ -1688,7 +1688,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testDeleteSample() throws CatalogException, IOException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         long sampleId = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first().getId();
 
         List<QueryResult<Sample>> queryResult = catalogManager.getSampleManager()
@@ -1713,7 +1713,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateCohort() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
 
         Sample sampleId1 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first();
         Sample sampleId2 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_2", "", "", null, false, null, null,
@@ -1764,7 +1764,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testGetAllCohorts() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
 
         Sample sampleId1 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first();
         Sample sampleId2 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_2", "", "", null, false, null, null,
@@ -1820,7 +1820,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateCohortFail() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         thrown.expect(CatalogException.class);
         List<Sample> sampleList = Arrays.asList(new Sample().setId(23L), new Sample().setId(4L), new Sample().setId(5L));
         catalogManager.getCohortManager().create(studyId, "MyCohort", Study.Type.FAMILY, "", sampleList, null, null,
@@ -1829,7 +1829,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateCohortAlreadyExisting() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
 
         Sample sampleId1 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first();
         catalogManager.getCohortManager().create(studyId, "MyCohort", Study.Type.FAMILY, "", Arrays.asList(sampleId1), null, null,
@@ -1843,7 +1843,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testUpdateCohort() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
 
         Sample sampleId1 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_1", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first();
         Sample sampleId2 = catalogManager.getSampleManager().create(Long.toString(studyId), "SAMPLE_2", "", "", null, false, null, null, new QueryOptions(), sessionIdUser).first();
@@ -1918,7 +1918,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testAnnotateIndividual() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(studyId, null, sessionIdUser).first();
         VariableSet variableSet = study.getVariableSets().get(0);
 

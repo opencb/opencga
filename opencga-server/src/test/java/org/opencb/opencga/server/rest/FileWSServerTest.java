@@ -86,7 +86,7 @@ public class FileWSServerTest {
     public void init() throws Exception {
         webTarget = serverTestUtils.getWebTarget();
         sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD, "localhost").first().getId();
-        studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user@1000G:phase1");
+        studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user", "1000G:phase1");
 
         if (ROOT_DIR.toFile().exists()) {
             IOUtils.deleteDirectory(ROOT_DIR);
