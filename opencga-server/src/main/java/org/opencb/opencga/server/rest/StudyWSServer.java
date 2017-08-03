@@ -30,7 +30,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.managers.api.IStudyManager;
+import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
@@ -57,7 +57,7 @@ import java.util.stream.Collectors;
 @Api(value = "Studies", position = 3, description = "Methods for working with 'studies' endpoint")
 public class StudyWSServer extends OpenCGAWSServer {
 
-    private IStudyManager studyManager;
+    private StudyManager studyManager;
 
     public StudyWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);

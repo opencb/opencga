@@ -16,13 +16,12 @@
 
 package org.opencb.opencga.server.rest.analysis;
 
-import org.opencb.opencga.catalog.managers.api.IJobManager;
+import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
@@ -38,7 +37,7 @@ import java.io.IOException;
 @Produces(MediaType.APPLICATION_JSON)
 public class AnalysisWSService extends OpenCGAWSServer {
 
-    protected IJobManager jobManager;
+    protected JobManager jobManager;
 
     public AnalysisWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {

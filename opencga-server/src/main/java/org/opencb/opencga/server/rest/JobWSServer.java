@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.managers.api.IJobManager;
+import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.acls.AclParams;
@@ -41,7 +41,7 @@ import java.util.*;
 @Api(value = "Jobs", position = 5, description = "Methods for working with 'jobs' endpoint")
 public class JobWSServer extends OpenCGAWSServer {
 
-    private IJobManager jobManager;
+    private JobManager jobManager;
 
     public JobWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);

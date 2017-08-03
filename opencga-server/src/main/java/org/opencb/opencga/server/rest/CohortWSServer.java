@@ -25,7 +25,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.managers.api.ICohortManager;
+import org.opencb.opencga.catalog.managers.CohortManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 @Api(value = "Cohorts", position = 9, description = "Methods for working with 'cohorts' endpoint")
 public class CohortWSServer extends OpenCGAWSServer {
 
-    private ICohortManager cohortManager;
+    private CohortManager cohortManager;
 
     public CohortWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
@@ -278,7 +278,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 //            long cohortId = catalogManager.getCohortId(cohortStr, sessionId);
             List<QueryResult<Cohort>> delete = cohortManager.delete(cohortStr, studyStr, queryOptions, sessionId);
             return createOkResponse(delete);
-        } catch (CatalogException | IOException e) {
+        } catch (CatalogException e) {
             return createErrorResponse(e);
         }
     }

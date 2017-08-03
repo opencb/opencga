@@ -24,21 +24,21 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.api.IFileManager;
+import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.storage.core.StoragePipelineResult;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
+import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.manager.models.FileInfo;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -62,7 +62,7 @@ import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_STATS;
  */
 public class VariantFileIndexerStorageOperation extends StorageOperation {
 
-    private final IFileManager fileManager;
+    private final FileManager fileManager;
 
 
     public static final String TRANSFORM = "transform";

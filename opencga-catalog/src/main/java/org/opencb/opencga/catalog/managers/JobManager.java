@@ -37,7 +37,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IJobManager;
-import org.opencb.opencga.catalog.managers.api.IUserManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
@@ -67,7 +66,7 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
 public class JobManager extends AbstractManager implements IJobManager {
 
     protected static Logger logger = LoggerFactory.getLogger(JobManager.class);
-    private IUserManager userManager;
+    private UserManager userManager;
 
     public static final String DELETE_FILES = "deleteFiles";
 

@@ -53,14 +53,14 @@ public class CatalogManager implements AutoCloseable {
     private DBAdaptorFactory catalogDBAdaptorFactory;
     private CatalogIOManagerFactory catalogIOManagerFactory;
 
-    private IUserManager userManager;
-    private IProjectManager projectManager;
-    private IStudyManager studyManager;
-    private IFileManager fileManager;
-    private IJobManager jobManager;
-    private IIndividualManager individualManager;
-    private ISampleManager sampleManager;
-    private ICohortManager cohortManager;
+    private UserManager userManager;
+    private ProjectManager projectManager;
+    private StudyManager studyManager;
+    private FileManager fileManager;
+    private JobManager jobManager;
+    private IndividualManager individualManager;
+    private SampleManager sampleManager;
+    private CohortManager cohortManager;
     private FamilyManager familyManager;
     private ClinicalAnalysisManager clinicalAnalysisManager;
 
@@ -257,35 +257,35 @@ public class CatalogManager implements AutoCloseable {
         catalogDBAdaptorFactory.close();
     }
 
-    public IUserManager getUserManager() {
+    public UserManager getUserManager() {
         return userManager;
     }
 
-    public IProjectManager getProjectManager() {
+    public ProjectManager getProjectManager() {
         return projectManager;
     }
 
-    public IStudyManager getStudyManager() {
+    public StudyManager getStudyManager() {
         return studyManager;
     }
 
-    public IFileManager getFileManager() {
+    public FileManager getFileManager() {
         return fileManager;
     }
 
-    public IJobManager getJobManager() {
+    public JobManager getJobManager() {
         return jobManager;
     }
 
-    public IIndividualManager getIndividualManager() {
+    public IndividualManager getIndividualManager() {
         return individualManager;
     }
 
-    public ISampleManager getSampleManager() {
+    public SampleManager getSampleManager() {
         return sampleManager;
     }
 
-    public ICohortManager getCohortManager() {
+    public CohortManager getCohortManager() {
         return cohortManager;
     }
 

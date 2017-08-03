@@ -38,7 +38,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IFileManager;
-import org.opencb.opencga.catalog.managers.api.IUserManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
@@ -80,7 +79,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     protected static Logger logger;
     private FileMetadataReader fileMetadataReader;
-    private IUserManager userManager;
+    private UserManager userManager;
 
     public static final String SKIP_TRASH = "SKIP_TRASH";
     public static final String DELETE_EXTERNAL_FILES = "DELETE_EXTERNAL_FILES";

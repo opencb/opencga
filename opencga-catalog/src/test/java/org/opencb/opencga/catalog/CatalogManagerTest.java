@@ -32,8 +32,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.api.IIndividualManager;
-import org.opencb.opencga.catalog.managers.api.IStudyManager;
+import org.opencb.opencga.catalog.managers.IndividualManager;
+import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
@@ -613,7 +613,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testGetOnlyStudyUserAnonymousCanSee() throws CatalogException {
-        IStudyManager studyManager = catalogManager.getStudyManager();
+        StudyManager studyManager = catalogManager.getStudyManager();
 
         try {
             studyManager.getIds("*", null);
@@ -640,7 +640,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testGetSelectedStudyUserAnonymousCanSee() throws CatalogException {
-        IStudyManager studyManager = catalogManager.getStudyManager();
+        StudyManager studyManager = catalogManager.getStudyManager();
 
         try {
             studyManager.getIds("*", "phase3");
@@ -661,7 +661,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testUpdateGroupInfo() throws CatalogException {
-        IStudyManager studyManager = catalogManager.getStudyManager();
+        StudyManager studyManager = catalogManager.getStudyManager();
 
         studyManager.createGroup(Long.toString(studyId), "group1", "", sessionIdUser);
         studyManager.createGroup(Long.toString(studyId), "group2", "", sessionIdUser);
@@ -677,7 +677,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void removeAllPermissionsToMember() throws CatalogException {
-        IStudyManager studyManager = catalogManager.getStudyManager();
+        StudyManager studyManager = catalogManager.getStudyManager();
 
         // Assign permissions to study
         Study.StudyAclParams studyAclParams = new Study.StudyAclParams("VIEW_STUDY", AclParams.Action.SET, null);
@@ -727,7 +727,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void removeUsersFromStudies() throws CatalogException {
-        IStudyManager studyManager = catalogManager.getStudyManager();
+        StudyManager studyManager = catalogManager.getStudyManager();
 
         // Assign permissions to study
         Study.StudyAclParams studyAclParams = new Study.StudyAclParams("VIEW_STUDY", AclParams.Action.SET, null);
@@ -1969,7 +1969,7 @@ public class CatalogManagerTest extends GenericTest {
         long studyId = catalogManager.getStudyManager().getId("user", "1000G:phase1");
         Study study = catalogManager.getStudyManager().get(studyId, null, sessionIdUser).first();
 
-        IIndividualManager individualManager = catalogManager.getIndividualManager();
+        IndividualManager individualManager = catalogManager.getIndividualManager();
         QueryResult<Individual> individualQueryResult = individualManager.create(study.getId(), "Test", null, -1, -1, Individual.Sex.UNDETERMINED, "", "",
                 "", "", "19870214", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.ALIVE, Individual.AffectationStatus.AFFECTED,
                 QueryOptions.empty(), sessionIdUser);

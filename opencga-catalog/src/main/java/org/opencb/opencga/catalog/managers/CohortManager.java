@@ -34,7 +34,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.ICohortManager;
-import org.opencb.opencga.catalog.managers.api.IUserManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
@@ -60,7 +59,7 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
 public class CohortManager extends AbstractManager implements ICohortManager {
 
     protected static Logger logger = LoggerFactory.getLogger(CohortManager.class);
-    private IUserManager userManager;
+    private UserManager userManager;
 
     public CohortManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                          DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,

@@ -36,7 +36,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IIndividualManager;
-import org.opencb.opencga.catalog.managers.api.IUserManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
@@ -62,7 +61,7 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
 public class IndividualManager extends AbstractManager implements IIndividualManager {
 
     protected static Logger logger = LoggerFactory.getLogger(IndividualManager.class);
-    private IUserManager userManager;
+    private UserManager userManager;
 
     private static final Map<Individual.KaryotypicSex, Individual.Sex> KARYOTYPIC_SEX_SEX_MAP;
     static {

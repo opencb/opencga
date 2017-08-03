@@ -25,7 +25,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -46,6 +45,7 @@ import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
 import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

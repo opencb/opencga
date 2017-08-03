@@ -25,8 +25,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.managers.api.ISampleManager;
-import org.opencb.opencga.catalog.managers.api.IStudyManager;
+import org.opencb.opencga.catalog.managers.SampleManager;
+import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.OntologyTerm;
@@ -50,7 +50,7 @@ import java.util.*;
 @Api(value = "Samples", position = 7, description = "Methods for working with 'samples' endpoint")
 public class SampleWSServer extends OpenCGAWSServer {
 
-    private ISampleManager sampleManager;
+    private SampleManager sampleManager;
 
     public SampleWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
@@ -562,7 +562,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     private static class CreateSamplePOST extends SamplePOST {
         public IndividualWSServer.IndividualPOST individual;
 
-        public Sample toSample(String studyStr, IStudyManager studyManager, String sessionId) throws CatalogException {
+        public Sample toSample(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
             List<AnnotationSet> annotationSetList = new ArrayList<>();
             if (annotationSets != null) {
                 for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {

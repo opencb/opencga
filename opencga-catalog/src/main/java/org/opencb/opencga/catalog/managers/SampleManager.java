@@ -33,7 +33,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.ISampleManager;
-import org.opencb.opencga.catalog.managers.api.IUserManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
@@ -59,7 +58,7 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
 public class SampleManager extends AbstractManager implements ISampleManager {
 
     protected static Logger logger = LoggerFactory.getLogger(SampleManager.class);
-    private IUserManager userManager;
+    private UserManager userManager;
 
     @Deprecated
     public SampleManager(AuthorizationManager authorizationManager, AuditManager auditManager,

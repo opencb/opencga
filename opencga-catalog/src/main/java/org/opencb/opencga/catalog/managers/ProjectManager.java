@@ -25,7 +25,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
@@ -38,6 +37,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IProjectManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.config.Configuration;
 
 import java.io.IOException;
 import java.util.ArrayList;

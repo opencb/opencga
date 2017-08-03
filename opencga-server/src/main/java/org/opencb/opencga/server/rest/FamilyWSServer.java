@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
-import org.opencb.opencga.catalog.managers.api.IStudyManager;
+import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.FamilyAclEntry;
@@ -357,7 +357,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public List<IndividualWSServer.IndividualPOST> children;
         public List<CommonModels.AnnotationSetParams> annotationSets;
 
-        public Family toFamily(String studyStr, IStudyManager studyManager, String sessionId) throws CatalogException {
+        public Family toFamily(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
             List<Individual> childrenList = new ArrayList<>();
             if (children != null) {
                 for (IndividualWSServer.IndividualPOST child : children) {

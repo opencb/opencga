@@ -36,7 +36,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.api.IFileManager;
+import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
@@ -96,7 +96,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
     private CatalogManager catalogManager;
-    private IFileManager fileManager;
+    private FileManager fileManager;
     private String ownerSessionId;
     private String studyAdmin1SessionId;
     private String studyAdmin2SessionId;

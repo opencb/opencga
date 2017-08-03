@@ -30,12 +30,8 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.catalog.managers.api.IFileManager;
-import org.opencb.opencga.catalog.models.DataStore;
-import org.opencb.opencga.catalog.models.FileIndex;
-import org.opencb.opencga.catalog.models.FileTree;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
@@ -74,7 +70,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Optio
 @Api(value = "Files", position = 4, description = "Methods for working with 'files' endpoint")
 public class FileWSServer extends OpenCGAWSServer {
 
-    private IFileManager fileManager;
+    private FileManager fileManager;
     public FileWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException,
             ClassNotFoundException, IllegalAccessException, InstantiationException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);

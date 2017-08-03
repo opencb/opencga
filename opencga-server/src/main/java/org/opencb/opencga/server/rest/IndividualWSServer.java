@@ -22,8 +22,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.managers.api.IIndividualManager;
-import org.opencb.opencga.catalog.managers.api.IStudyManager;
+import org.opencb.opencga.catalog.managers.IndividualManager;
+import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.OntologyTerm;
@@ -46,7 +46,7 @@ import java.util.*;
 @Api(value = "Individuals", position = 6, description = "Methods for working with 'individuals' endpoint")
 public class IndividualWSServer extends OpenCGAWSServer {
 
-    private IIndividualManager individualManager;
+    private IndividualManager individualManager;
 
     public IndividualWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
@@ -535,7 +535,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public Map<String, Object> attributes;
 
 
-        public Individual toIndividual(String studyStr, IStudyManager studyManager, String sessionId) throws CatalogException {
+        public Individual toIndividual(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
             List<AnnotationSet> annotationSetList = new ArrayList<>();
             if (annotationSets != null) {
                 for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {

@@ -18,7 +18,7 @@ package org.opencb.opencga.server.rest;
 
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.managers.api.IStudyManager;
+import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.models.Annotation;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 
@@ -37,7 +37,7 @@ public class CommonModels {
         public Map<String, Object> annotations;
         public Map<String, Object> attributes;
 
-        public AnnotationSet toAnnotationSet(String studyStr, IStudyManager studyManager, String sessionId) throws CatalogException {
+        public AnnotationSet toAnnotationSet(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
             AbstractManager.MyResourceId resource = studyManager.getVariableSetId(this.variableSet, studyStr, sessionId);
             Set<Annotation> annotationSet = new HashSet<>();
             for (Map.Entry<String, Object> entry : annotations.entrySet()) {
