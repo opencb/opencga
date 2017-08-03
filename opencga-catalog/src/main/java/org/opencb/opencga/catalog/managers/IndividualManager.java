@@ -35,7 +35,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.managers.api.IIndividualManager;
+import org.opencb.opencga.catalog.managers.api.IAnnotationSetManager;
+import org.opencb.opencga.catalog.managers.api.IEntryManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
@@ -58,7 +59,7 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
 /**
  * Created by hpccoll1 on 19/06/15.
  */
-public class IndividualManager extends AbstractManager implements IIndividualManager {
+public class IndividualManager extends AbstractManager implements IEntryManager<Long, Individual>, IAnnotationSetManager {
 
     protected static Logger logger = LoggerFactory.getLogger(IndividualManager.class);
     private UserManager userManager;
@@ -79,13 +80,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         KARYOTYPIC_SEX_SEX_MAP.put(Individual.KaryotypicSex.OTHER, Individual.Sex.UNDETERMINED);
     }
 
-    @Deprecated
-    public IndividualManager(AuthorizationManager authorizationManager, AuditManager auditManager,
-                             DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                             Properties catalogProperties) {
-        super(authorizationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
-    }
-
     public IndividualManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                              DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                              Configuration configuration) {
@@ -94,7 +88,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         this.userManager = catalogManager.getUserManager();
     }
 
-    @Override
     public QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Sex sex,
                                           String ethnicity, String populationName, String populationSubpopulation,
                                           String populationDescription, String dateOfBirth, Individual.KaryotypicSex karyotypicSex,
@@ -162,7 +155,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         return get(query.getInt("studyId"), query, options, sessionId);
     }
 
-    @Override
     public QueryResult<Individual> get(long studyId, Query query, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(sessionId, "sessionId");
@@ -178,12 +170,13 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     @Override
-    public DBIterator<Individual> iterator(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public DBIterator<Individual> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(sessionId, "sessionId");
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
         query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
         return individualDBAdaptor.iterator(query, options, userId);
@@ -265,48 +258,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     @Override
     public Long getStudyId(long individualId) throws CatalogException {
         return individualDBAdaptor.getStudyId(individualId);
-    }
-
-    @Override
-    public Long getId(String userId, String individualStr) throws CatalogException {
-        if (StringUtils.isNumeric(individualStr)) {
-            return Long.parseLong(individualStr);
-        }
-
-        // Resolve the studyIds and filter the individualName
-        ObjectMap parsedSampleStr = parseFeatureId(userId, individualStr);
-        List<Long> studyIds = getStudyIds(parsedSampleStr);
-        String individualName = parsedSampleStr.getString("featureName");
-
-        Query query = new Query(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
-                .append(IndividualDBAdaptor.QueryParams.NAME.key(), individualName);
-        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.individuals.id");
-        QueryResult<Individual> queryResult = individualDBAdaptor.get(query, qOptions);
-        if (queryResult.getNumResults() > 1) {
-            throw new CatalogException("Error: More than one individual id found based on " + individualName);
-        } else if (queryResult.getNumResults() == 0) {
-            return -1L;
-        } else {
-            return queryResult.first().getId();
-        }
-    }
-
-    @Deprecated
-    @Override
-    public Long getId(String id) throws CatalogDBException {
-        if (StringUtils.isNumeric(id)) {
-            return Long.parseLong(id);
-        }
-
-        Query query = new Query(IndividualDBAdaptor.QueryParams.NAME.key(), id);
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
-
-        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options);
-        if (individualQueryResult.getNumResults() == 1) {
-            return individualQueryResult.first().getId();
-        } else {
-            return -1L;
-        }
     }
 
     @Override
@@ -567,11 +518,10 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
     }
 
-    @Override
-    public List<QueryResult<Individual>> delete(String individualIdStr, @Nullable String studyStr, QueryOptions options, String sessionId)
+    public List<QueryResult<Individual>> delete(String individualIdStr, @Nullable String studyStr, ObjectMap options, String sessionId)
             throws CatalogException, IOException {
         ParamUtils.checkParameter(individualIdStr, "id");
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        options = ParamUtils.defaultObject(options, ObjectMap::new);
 
         MyResourceIds resourceId = getIds(individualIdStr, studyStr, sessionId);
         List<Long> individualIds = resourceId.getResourceIds();
@@ -689,7 +639,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
-    @Override
     public List<QueryResult<IndividualAclEntry>> updateAcl(String individual, String studyStr, String memberIds,
                                                            Individual.IndividualAclParams aclParams, String sessionId)
             throws CatalogException {
