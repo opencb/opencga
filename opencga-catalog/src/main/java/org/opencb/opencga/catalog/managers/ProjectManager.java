@@ -34,7 +34,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.managers.api.IProjectManager;
+import org.opencb.opencga.catalog.managers.api.ResourceManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -43,20 +43,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Properties;
 import java.util.stream.Collectors;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class ProjectManager extends AbstractManager implements IProjectManager {
-
-    @Deprecated
-    public ProjectManager(AuthorizationManager authorizationManager, AuditManager auditManager,
-                          DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                          Properties catalogProperties) {
-        super(authorizationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
-    }
+public class ProjectManager extends AbstractManager implements ResourceManager<Long, Project> {
 
     public ProjectManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                           DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
@@ -65,13 +57,11 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
                 configuration);
     }
 
-    @Override
     public String getUserId(long projectId) throws CatalogException {
         return projectDBAdaptor.getOwnerId(projectId);
 
     }
 
-    @Override
     public long getId(String userId, String projectStr) throws CatalogException {
         if (StringUtils.isNumeric(projectStr)) {
             long projectId = Long.parseLong(projectStr);
@@ -126,7 +116,6 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         }
     }
 
-    @Override
     public List<Long> getIds(String userId, String projectStr) throws CatalogException {
         if (StringUtils.isNumeric(projectStr)) {
             return Arrays.asList(Long.parseLong(projectStr));
@@ -162,21 +151,19 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         }
     }
 
-    @Deprecated
-    @Override
-    public long getId(String projectId) throws CatalogException {
-        if (StringUtils.isNumeric(projectId)) {
-            return Long.parseLong(projectId);
-        }
-
-        String[] split = projectId.split("@");
-        if (split.length != 2) {
-            return -1;
-        }
-        return projectDBAdaptor.getId(split[0], split[1]);
+    /**
+     * Obtain the list of projects and studies that are shared with the user.
+     *
+     * @param userId user whose projects and studies are being shared with.
+     * @param queryOptions QueryOptions object.
+     * @param sessionId Session id which should correspond to userId.
+     * @return A QueryResult object containing the list of projects and studies that are shared with the user.
+     * @throws CatalogException CatalogException
+     */
+    public QueryResult<Project> getSharedProjects(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException {
+        return get(new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + userId), queryOptions, sessionId);
     }
 
-    @Override
     public QueryResult<Project> create(String name, String alias, String description, String organization, String scientificName,
                                        String commonName, String taxonomyCode, String assembly, QueryOptions options, String sessionId)
             throws CatalogException {
@@ -376,12 +363,6 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         return queryResult;
     }
 
-    @Override
-    public List<QueryResult<Project>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public QueryResult<Integer> incrementRelease(String projectStr, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getId(sessionId);
         long projectId = getId(userId, projectStr);
@@ -472,7 +453,6 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         throw new NotImplementedException("Project: Operation not yet supported");
     }
 
-    @Override
     public QueryResult rank(String userId, Query query, String field, int numResults, boolean asc, String sessionId)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
@@ -498,7 +478,6 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
-    @Override
     public QueryResult groupBy(String userId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -523,7 +502,6 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
-    @Override
     public QueryResult groupBy(String userId, Query query, List<String> fields, QueryOptions options, String sessionId)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
