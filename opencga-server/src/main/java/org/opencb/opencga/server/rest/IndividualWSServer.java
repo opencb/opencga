@@ -18,10 +18,8 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.api.IIndividualManager;
@@ -30,6 +28,7 @@ import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.OntologyTerm;
 import org.opencb.opencga.catalog.models.acls.AclParams;
+import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -94,7 +93,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             AbstractManager.MyResourceIds resourceId = individualManager.getIds(individualStr, studyStr, sessionId);
 
             for (Long individualId : resourceId.getResourceIds()) {
-                queryResults.add(catalogManager.getIndividual(individualId, queryOptions, sessionId));
+                queryResults.add(catalogManager.getIndividualManager().get(individualId, queryOptions, sessionId));
             }
             return createOkResponse(queryResults);
         } catch (Exception e) {
@@ -334,8 +333,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                  @ApiParam(value = "params", required = true) IndividualPOST updateParams) {
         try {
             AbstractManager.MyResourceId resource = individualManager.getId(individualStr, studyStr, sessionId);
-            QueryResult<Individual> queryResult = catalogManager.modifyIndividual(resource.getResourceId(),
-                    new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams)), sessionId);
+            QueryOptions options = new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams));
+            QueryResult<Individual> queryResult = catalogManager.getIndividualManager().update(resource.getResourceId(), options,
+                    options, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -407,9 +407,21 @@ public class IndividualWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "User or group id") @QueryParam("member") String member) {
         try {
             if (StringUtils.isEmpty(member)) {
-                return createOkResponse(catalogManager.getAllIndividualAcls(individualIdsStr, studyStr, sessionId));
+                AbstractManager.MyResourceIds resource = catalogManager.getIndividualManager().getIds(individualIdsStr, studyStr, sessionId);
+                List<Long> individualIds = resource.getResourceIds();
+
+                List<QueryResult<IndividualAclEntry>> aclList = new ArrayList<>(individualIds.size());
+                for (int i = 0; i < individualIds.size(); i++) {
+                    Long individualId = individualIds.get(i);
+                    QueryResult<IndividualAclEntry> allIndividualAcls = catalogManager.getAuthorizationManager().getAllIndividualAcls(resource.getUser(), individualId);
+                    allIndividualAcls.setId(Long.toString(individualId));
+                    aclList.add(allIndividualAcls);
+                }
+                return createOkResponse(aclList);
             } else {
-                return createOkResponse(catalogManager.getIndividualAcl(individualIdsStr, studyStr, member, sessionId));
+                AbstractManager.MyResourceId resource = catalogManager.getIndividualManager().getId(individualIdsStr, studyStr, sessionId);
+                return createOkResponse(catalogManager.getAuthorizationManager().getIndividualAcl(resource.getUser(), resource
+                        .getResourceId(), member));
             }
         } catch (Exception e) {
             return createErrorResponse(e);

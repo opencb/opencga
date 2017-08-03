@@ -63,12 +63,17 @@ public class IndividualWSServerTest {
     public void init() throws Exception {
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
-        sessionId = OpenCGAWSServer.catalogManager.login("user", CatalogManagerTest.PASSWORD, "localhost").first().getId();
-        studyId = OpenCGAWSServer.catalogManager.getStudyId("user@1000G:phase1");
-        in1 = OpenCGAWSServer.catalogManager.createIndividual(studyId, "in1", "f1", -1, -1, null, null, sessionId).first().getId();
-        in2 = OpenCGAWSServer.catalogManager.createIndividual(studyId, "in2", "f1", -1, -1, null, null, sessionId).first().getId();
-        in3 = OpenCGAWSServer.catalogManager.createIndividual(studyId, "in3", "f2", -1, -1, null, null, sessionId).first().getId();
-        in4 = OpenCGAWSServer.catalogManager.createIndividual(studyId, "in4", "f2", -1, -1, null, null, sessionId).first().getId();
+        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD, "localhost").first().getId();
+        studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user@1000G:phase1");
+        in1 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in1", "f1", (long) -1, (long) -1, null, "", "", "",
+                "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null,
+                sessionId).first().getId();
+        in2 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in2", "f1", (long) -1, (long) -1, null, "", "", "",
+                "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null, sessionId).first().getId();
+        in3 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in3", "f2", (long) -1, (long) -1, null, "", "", "",
+                "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null, sessionId).first().getId();
+        in4 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in4", "f2", (long) -1, (long) -1, null, "", "", "",
+                "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null, sessionId).first().getId();
     }
 
 
@@ -148,7 +153,7 @@ public class IndividualWSServerTest {
 
         // FIXME: This will have to return an exception once we improve the delete behaviour
 //        thrown.expect(CatalogException.class);
-        OpenCGAWSServer.catalogManager.getIndividual(individual.getId(), null, sessionId);
+        OpenCGAWSServer.catalogManager.getIndividualManager().get(individual.getId(), null, sessionId);
 
     }
 

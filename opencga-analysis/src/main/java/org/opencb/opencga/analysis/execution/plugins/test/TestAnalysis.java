@@ -16,12 +16,10 @@
 
 package org.opencb.opencga.analysis.execution.plugins.test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.catalog.models.tool.Manifest;
-import org.opencb.opencga.catalog.models.tool.Execution;
-import org.opencb.opencga.catalog.models.tool.Option;
+import org.opencb.opencga.catalog.old.models.tool.Manifest;
+import org.opencb.opencga.catalog.old.models.tool.Execution;
+import org.opencb.opencga.catalog.old.models.tool.Option;
 import org.opencb.opencga.analysis.execution.plugins.OpenCGAAnalysis;
 
 import java.nio.file.Path;

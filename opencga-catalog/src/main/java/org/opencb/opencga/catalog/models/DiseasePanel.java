@@ -21,6 +21,7 @@ import java.util.List;
 /**
  * Created by pfurio on 01/06/16.
  */
+@Deprecated
 public class DiseasePanel {
 
     private long id;

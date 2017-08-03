@@ -22,15 +22,11 @@ import org.glassfish.jersey.media.multipart.file.StreamDataBodyPart;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.common.IOUtils;
@@ -89,8 +85,8 @@ public class FileWSServerTest {
     @Before
     public void init() throws Exception {
         webTarget = serverTestUtils.getWebTarget();
-        sessionId = OpenCGAWSServer.catalogManager.login("user", CatalogManagerTest.PASSWORD, "localhost").first().getId();
-        studyId = OpenCGAWSServer.catalogManager.getStudyId("user@1000G:phase1");
+        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD, "localhost").first().getId();
+        studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user@1000G:phase1");
 
         if (ROOT_DIR.toFile().exists()) {
             IOUtils.deleteDirectory(ROOT_DIR);
@@ -167,7 +163,7 @@ public class FileWSServerTest {
 
     @Test
     public void updateFilePOST() throws Exception {
-        File file = OpenCGAWSServer.catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"),
+        File file = OpenCGAWSServer.catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"),
                 new QueryOptions(), sessionId).first();
 
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.DESCRIPTION.key(), "Change description");
@@ -175,7 +171,7 @@ public class FileWSServerTest {
                 .queryParam("sid", sessionId).request().post(Entity.json(params), String.class);
 
         QueryResponse<Object> response = WSServerTestUtils.parseResult(json, Object.class);
-        file = OpenCGAWSServer.catalogManager.getFile(file.getId(), sessionId).first();
+        file = OpenCGAWSServer.catalogManager.getFileManager().get(file.getId(), null, sessionId).first();
         assertEquals(params.getString(FileDBAdaptor.QueryParams.DESCRIPTION.key()), file.getDescription());
     }
 

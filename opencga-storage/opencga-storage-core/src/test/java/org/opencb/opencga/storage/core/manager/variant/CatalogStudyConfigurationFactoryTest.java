@@ -73,11 +73,14 @@ public class CatalogStudyConfigurationFactoryTest {
         fileMetadataReader = FileMetadataReader.get(catalogManager);
         catalogFileUtils = new CatalogFileUtils(catalogManager);
 
-        User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
-        sessionId = catalogManager.login(userId, "user", "localhost").first().getId();
+        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.FULL, null).first();
+
+        sessionId = catalogManager.getUserManager().login(userId, "user", "localhost").first().getId();
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
-        studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, "Study 1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null, null, null, sessionId).first().getId();
+        studyId = catalogManager.getStudyManager().create(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, "Study 1", null, null,
+                null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null, null, null,
+                sessionId).first().getId();
         outputId = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data", "index").toString(), null,
                 true, null, QueryOptions.empty(), sessionId).first().getId();
         files.add(create("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
@@ -103,14 +106,14 @@ public class CatalogStudyConfigurationFactoryTest {
             catalogManager.getFileManager().setFileIndex(file.getId(), fileIndex, sessionId);
             indexedFiles.add((int) file.getId());
         }
-        return catalogManager.getFile(file.getId(), sessionId).first();
+        return catalogManager.getFileManager().get(file.getId(), null, sessionId).first();
     }
 
     @Test
     public void getNewStudyConfiguration() throws Exception {
         CatalogStudyConfigurationFactory studyConfigurationManager = new CatalogStudyConfigurationFactory(catalogManager);
 
-        Study study = catalogManager.getStudy(studyId, sessionId).first();
+        Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
 
         DummyStudyConfigurationAdaptor scAdaptor = spy(new DummyStudyConfigurationAdaptor());
         doReturn(new QueryResult<StudyConfiguration>("", 0, 0, 0, "", "", Collections.emptyList()))
@@ -126,7 +129,7 @@ public class CatalogStudyConfigurationFactoryTest {
     public void getNewStudyConfigurationNullManager() throws Exception {
         CatalogStudyConfigurationFactory studyConfigurationManager = new CatalogStudyConfigurationFactory(catalogManager);
 
-        Study study = catalogManager.getStudy(studyId, sessionId).first();
+        Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
         StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null, new QueryOptions(), sessionId);
 
         checkStudyConfiguration(study, studyConfiguration);
@@ -136,7 +139,7 @@ public class CatalogStudyConfigurationFactoryTest {
     public void getStudyConfiguration() throws Exception {
         CatalogStudyConfigurationFactory studyConfigurationManager = new CatalogStudyConfigurationFactory(catalogManager);
 
-        Study study = catalogManager.getStudy(studyId, sessionId).first();
+        Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
 
         DummyStudyConfigurationAdaptor scAdaptor = spy(new DummyStudyConfigurationAdaptor());
         StudyConfiguration studyConfigurationToReturn = new StudyConfiguration((int) study.getId(), "user@p1:s1");
@@ -158,7 +161,7 @@ public class CatalogStudyConfigurationFactoryTest {
         assertTrue(studyConfiguration.getInvalidStats().isEmpty());
 
         for (Map.Entry<String, Integer> entry : studyConfiguration.getFileIds().entrySet()) {
-            File file = catalogManager.getFile(entry.getValue(), sessionId).first();
+            File file = catalogManager.getFileManager().get((long) entry.getValue(), null, sessionId).first();
 
             assertEquals(file.getName(), entry.getKey());
             int id = (int) file.getId();

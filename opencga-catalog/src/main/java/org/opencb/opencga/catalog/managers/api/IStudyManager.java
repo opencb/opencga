@@ -108,11 +108,6 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      */
     List<QueryResult<Study>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException, IOException;
 
-    @Deprecated
-    QueryResult<Study> share(long studyId, AclEntry acl) throws CatalogException;
-
-//    void membersHavePermissionsInStudy(long studyId, List<String> members) throws CatalogException;
-
     /*---------------------*/
     /* VariableSet METHODS */
     /*---------------------*/

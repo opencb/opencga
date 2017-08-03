@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.OntologyTerm;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.AclParams;
+import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.core.exception.VersionException;
 
@@ -74,7 +75,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             List<QueryResult<Sample>> queryResults = new LinkedList<>();
             if (resourceIds.getResourceIds() != null && resourceIds.getResourceIds().size() > 0) {
                 for (Long sampleId : resourceIds.getResourceIds()) {
-                    queryResults.add(catalogManager.getSample(sampleId, queryOptions, sessionId));
+                    queryResults.add(catalogManager.getSampleManager().get(sampleId, queryOptions, sessionId));
                 }
             }
             return createOkResponse(queryResults);
@@ -126,7 +127,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             AbstractManager.MyResourceId resourceId = catalogManager.getFileManager().getId(fileIdStr, studyStr, sessionId);
             long varSetId = catalogManager.getStudyManager().getVariableSetId(variableSet, studyStr, sessionId).getResourceId();
 
-            File pedigreeFile = catalogManager.getFile(resourceId.getResourceId(), sessionId).first();
+            File pedigreeFile = catalogManager.getFileManager().get(resourceId.getResourceId(), null, sessionId).first();
             CatalogSampleAnnotationsLoader loader = new CatalogSampleAnnotationsLoader(catalogManager);
             QueryResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedigreeFile, varSetId, sessionId);
             return createOkResponse(sampleQueryResult);
@@ -440,9 +441,19 @@ public class SampleWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "User or group id") @QueryParam("member") String member) {
         try {
             if (StringUtils.isEmpty(member)) {
-                return createOkResponse(catalogManager.getAllSampleAcls(sampleIdsStr, studyStr, sessionId));
+                AbstractManager.MyResourceIds resourceId = catalogManager.getSampleManager().getIds(sampleIdsStr, studyStr, sessionId);
+                List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(resourceId.getResourceIds().size());
+                for (int i = 0; i < resourceId.getResourceIds().size(); i++) {
+                    Long sampleId = resourceId.getResourceIds().get(i);
+                    QueryResult<SampleAclEntry> allSampleAcls = catalogManager.getAuthorizationManager().getAllSampleAcls(resourceId.getUser(), sampleId);
+                    allSampleAcls.setId(Long.toString(resourceId.getResourceIds().get(i)));
+                    sampleAclList.add(allSampleAcls);
+                }
+                return createOkResponse(sampleAclList);
             } else {
-                return createOkResponse(catalogManager.getSampleAcl(sampleIdsStr, studyStr, member, sessionId));
+                AbstractManager.MyResourceId resourceId = catalogManager.getSampleManager().getId(sampleIdsStr, studyStr, sessionId);
+                return createOkResponse(catalogManager.getAuthorizationManager().getSampleAcl(resourceId.getUser(), resourceId
+                        .getResourceId(), member));
             }
         } catch (Exception e) {
             return createErrorResponse(e);

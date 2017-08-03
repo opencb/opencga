@@ -21,10 +21,7 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.CatalogManagerTest;
-import org.opencb.opencga.catalog.models.AnnotationSet;
-import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.Variable;
-import org.opencb.opencga.catalog.models.VariableSet;
+import org.opencb.opencga.catalog.models.*;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
@@ -71,8 +68,8 @@ public class VariableSetWSServerTest {
     public void init() throws Exception {
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
-        sessionId = OpenCGAWSServer.catalogManager.login("user", CatalogManagerTest.PASSWORD, "localhost").first().getId();
-        studyId = OpenCGAWSServer.catalogManager.getStudyId("user@1000G:phase1");
+        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD, "localhost").first().getId();
+        studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user@1000G:phase1");
         variableSetId = OpenCGAWSServer.catalogManager.getStudyManager().searchVariableSets(Long.toString(studyId), null,null, sessionId)
                 .first().getId();
 

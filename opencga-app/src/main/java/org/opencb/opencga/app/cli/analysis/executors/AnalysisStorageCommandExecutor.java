@@ -65,7 +65,8 @@ public abstract class AnalysisStorageCommandExecutor extends AnalysisCommandExec
 //    }
 
     protected Map<Long, String> getStudyIds(String sessionId) throws CatalogException {
-        return catalogManager.getAllStudies(new Query(), new QueryOptions("include", "projects.studies.id,projects.studies.alias"), sessionId)
+        return catalogManager.getStudyManager().get(new Query(), new QueryOptions("include", "projects.studies.id,projects.studies" +
+                ".alias"), sessionId)
                 .getResult()
                 .stream()
                 .collect(Collectors.toMap(Study::getId, Study::getAlias));

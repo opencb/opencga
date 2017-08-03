@@ -26,11 +26,9 @@ import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Project;
-import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.IOUtils;
 
 import java.io.IOException;
@@ -62,11 +60,12 @@ public class FileScannerTest {
     public void setUp() throws IOException, CatalogException {
         catalogManager = catalogManagerExternalResource.getCatalogManager();
 
-        catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, null);
-        sessionIdUser = catalogManager.login("user", PASSWORD, "127.0.0.1").first().getId();
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null);
+        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD, "127.0.0.1").first().getId();
         project = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first();
-        study = catalogManager.createStudy(project.getId(), "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first();
+        study = catalogManager.getStudyManager().create(project.getId(), "Phase 1", "phase1", Study.Type.TRIO, null, "Done", null, null,
+                null, null, null, null, null, null, sessionIdUser).first();
         folder = catalogManager.getFileManager().createFolder(Long.toString(study.getId()), Paths.get("data/test/folder/").toString(),
                 null, true, null, QueryOptions.empty(), sessionIdUser).first();
 
@@ -103,8 +102,10 @@ public class FileScannerTest {
     @Test
     public void testDeleteExisting() throws IOException, CatalogException {
 
-        File file = catalogManager.createFile(study.getId(), File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "file1.txt",
-                CatalogManagerTest.createDebugFile().toURI(), "", false, sessionIdUser).first();
+        QueryResult<File> queryResult = catalogManager.getFileManager().create(Long.toString(study.getId()), File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "file1.txt", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, false, null, null, sessionIdUser);
+
+        new CatalogFileUtils(catalogManager).upload(CatalogManagerTest.createDebugFile().toURI(), queryResult.first(), null, sessionIdUser, false, false, true, true, Long.MAX_VALUE);
+        File file = catalogManager.getFileManager().get(queryResult.first().getId(), null, sessionIdUser).first();
 
         CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString());
         List<File> files = new FileScanner(catalogManager).scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, false,
@@ -115,16 +116,16 @@ public class FileScannerTest {
     }
 
     public File getFile(long id) throws CatalogException {
-        return catalogManager.searchFile(study.getId(),
-                new Query(FileDBAdaptor.QueryParams.ID.key(), id)
-                        .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED + "," + Status.TRASHED + "," + Status.READY), sessionIdUser)
+        return catalogManager.getFileManager().get(study.getId(), new Query(FileDBAdaptor.QueryParams.ID.key(), id).append(FileDBAdaptor
+                .QueryParams.STATUS_NAME.key(), Status.DELETED + "," + Status.TRASHED + "," + Status.READY), null, sessionIdUser)
                 .first();
     }
 
     @Test
     public void testDeleteTrashed() throws IOException, CatalogException {
-        File file = catalogManager.createFile(study.getId(), File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "file1.txt",
-                CatalogManagerTest.createDebugFile().toURI(), "", false, sessionIdUser).first();
+        QueryResult<File> queryResult = catalogManager.getFileManager().create(Long.toString(study.getId()), File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "file1.txt", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, false, null, null, sessionIdUser);
+        new CatalogFileUtils(catalogManager).upload(CatalogManagerTest.createDebugFile().toURI(), queryResult.first(), null, sessionIdUser, false, false, true, true, Long.MAX_VALUE);
+        File file = catalogManager.getFileManager().get(queryResult.first().getId(), null, sessionIdUser).first();
 
         catalogManager.getFileManager().delete(Long.toString(file.getId()), null, new QueryOptions(), sessionIdUser);
 
@@ -151,16 +152,19 @@ public class FileScannerTest {
         Files.createDirectory(directory.resolve("s/"));
         CatalogManagerTest.createDebugFile(directory.resolve("s/file2.txt").toString());
 
-        File file = catalogManager.createFile(study.getId(), File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "file1.txt",
-                CatalogManagerTest.createDebugFile().toURI(), "", false, sessionIdUser).first();
+        QueryResult<File> queryResult1 = catalogManager.getFileManager().create(Long.toString(study.getId()), File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "file1.txt", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, false, null, null, sessionIdUser);
+        new CatalogFileUtils(catalogManager).upload(CatalogManagerTest.createDebugFile().toURI(), queryResult1.first(), null, sessionIdUser, false, false, true, true, Long.MAX_VALUE);
 
-        catalogManager.createFile(study.getId(), File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "s/file2.txt",
-                CatalogManagerTest.createDebugFile().toURI(), "", true, sessionIdUser).first();
+        File file = catalogManager.getFileManager().get(queryResult1.first().getId(), null, sessionIdUser).first();
+
+        QueryResult<File> queryResult = catalogManager.getFileManager().create(Long.toString(study.getId()), File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "s/file2.txt", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, true, null, null, sessionIdUser);
+        new CatalogFileUtils(catalogManager).upload(CatalogManagerTest.createDebugFile().toURI(), queryResult.first(), null, sessionIdUser, false, false, true, true, Long.MAX_VALUE);
+        catalogManager.getFileManager().get(queryResult.first().getId(), null, sessionIdUser).first();
 
         FileScanner fileScanner = new FileScanner(catalogManager);
         fileScanner.scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
 
-        File replacedFile = catalogManager.getFile(file.getId(), sessionIdUser).first();
+        File replacedFile = catalogManager.getFileManager().get(file.getId(), null, sessionIdUser).first();
         assertEquals(File.FileStatus.READY, replacedFile.getStatus().getName());
         assertEquals(file.getId(), replacedFile.getId());
         assertFalse(replacedFile.getAttributes().get("checksum").equals(file.getAttributes().get("checksum")));
@@ -206,9 +210,9 @@ public class FileScannerTest {
         List<File> files = fileScanner.scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
         assertEquals(1, files.size());
 
-        URI studyUri = catalogManager.getStudyUri(study.getId());
+        URI studyUri = catalogManager.getFileManager().getStudyUri(study.getId());
         CatalogManagerTest.createDebugFile(studyUri.resolve("data/test/folder/").resolve("file2.txt").getPath());
-        File root = catalogManager.searchFile(study.getId(), new Query("name", "."), sessionIdUser).first();
+        File root = catalogManager.getFileManager().get(study.getId(), new Query("name", "."), null, sessionIdUser).first();
         files = fileScanner.scan(root, studyUri, FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
 
         assertEquals(1, files.size());
@@ -228,7 +232,7 @@ public class FileScannerTest {
         assertEquals(0, files.size());
 
         //Add one extra file. ReSync study folder.
-        URI studyUri = catalogManager.getStudyUri(study.getId());
+        URI studyUri = catalogManager.getFileManager().getStudyUri(study.getId());
         Path filePath = CatalogManagerTest.createDebugFile(studyUri.resolve("data/test/folder/").resolve("file_scanner_test_file.txt").getPath()).toPath();
         files = fileScanner.reSync(study, true, sessionIdUser);
 

@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
+import org.opencb.opencga.catalog.models.acls.permissions.FamilyAclEntry;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -283,9 +284,30 @@ public class FamilyWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "User or group id") @QueryParam("member") String member) {
         try {
             if (StringUtils.isEmpty(member)) {
-                return createOkResponse(catalogManager.getAllFamilyAcls(familyIdsStr, studyStr, sessionId));
+                AbstractManager.MyResourceIds resources = catalogManager.getFamilyManager().getIds(familyIdsStr, studyStr, sessionId);
+                List<QueryResult<FamilyAclEntry>> familyResults = new ArrayList<>(resources.getResourceIds().size());
+                for (Long familyId : resources.getResourceIds()) {
+                    familyResults.add(catalogManager.getAuthorizationManager().getAllFamilyAcls(resources.getUser(), familyId));
+                }
+                //        return authorizationManager.getAllFamilyAcls(resources.getUser(), )
+//        for (Long familyId : resources.getResourceIds()) {
+//            authorizationManager.checkFamilyPermission(resources.getStudyId(), familyId, resources.getUser(),
+//                    FamilyAclEntry.FamilyPermissions.VIEW);
+//        }
+//        return authorizationManager.getAcls(resources.getResourceIds(), null, MongoDBAdaptorFactory.FAMILY_COLLECTION);
+                return createOkResponse(familyResults);
             } else {
-                return createOkResponse(catalogManager.getFamilyAcl(familyIdsStr, studyStr, member, sessionId));
+                AbstractManager.MyResourceId resource = catalogManager.getFamilyManager().getId(familyIdsStr, studyStr, sessionId);
+                //        authorizationManager.checkFamilyPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
+//                FamilyAclEntry.FamilyPermissions.SHARE);
+//
+//        List<String> memberList = null;
+//        if (StringUtils.isNotEmpty(member)) {
+//            memberList = Arrays.asList(StringUtils.split(member, ","));
+//        }
+//        return authorizationManager.getFamilyAcl()
+//        return authorizationManager.getAcl(resource.getResourceId(), memberList, MongoDBAdaptorFactory.FAMILY_COLLECTION);
+                return createOkResponse(catalogManager.getAuthorizationManager().getFamilyAcl(resource.getUser(), resource.getResourceId(), member));
             }
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -14,43 +14,44 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.models.tool;
+package org.opencb.opencga.catalog.old.models.tool;
 
-public class Icon {
+public class Author {
 
-    private String size, data;
+    private String name;
+    private String email;
 
-    public Icon() {
+    public Author() {
 
     }
 
-    public Icon(String size, String data) {
-        this.size = size;
-        this.data = data;
+    public Author(String name, String email) {
+        this.name = name;
+        this.email = email;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Icon{");
-        sb.append("size='").append(size).append('\'');
-        sb.append(", data='").append(data).append('\'');
+        final StringBuilder sb = new StringBuilder("Author{");
+        sb.append("name='").append(name).append('\'');
+        sb.append(", email='").append(email).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public String getSize() {
-        return size;
+    public String getName() {
+        return name;
     }
 
-    public void setSize(String size) {
-        this.size = size;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public String getData() {
-        return data;
+    public String getEmail() {
+        return email;
     }
 
-    public void setData(String data) {
-        this.data = data;
+    public void setEmail(String email) {
+        this.email = email;
     }
 }

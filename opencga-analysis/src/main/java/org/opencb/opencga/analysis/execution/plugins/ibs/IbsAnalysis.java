@@ -26,9 +26,9 @@ import org.opencb.opencga.analysis.execution.plugins.OpenCGAAnalysis;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.tool.Execution;
-import org.opencb.opencga.catalog.models.tool.Manifest;
-import org.opencb.opencga.catalog.models.tool.Option;
+import org.opencb.opencga.catalog.old.models.tool.Execution;
+import org.opencb.opencga.catalog.old.models.tool.Manifest;
+import org.opencb.opencga.catalog.old.models.tool.Option;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -89,12 +89,12 @@ public class IbsAnalysis extends OpenCGAAnalysis {
 
         Query samplesQuery = new Query();
         if (StringUtils.isNotEmpty(params.getString(SAMPLES))) {
-            List<Long> sampleIds = catalogManager.getSampleIds(params.getString(SAMPLES), sessionId);
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            List<Long> sampleIds = catalogManager.getSampleManager().getIds(userId, params.getString(SAMPLES));
             samplesQuery.append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
             query.append(VariantQueryParam.RETURNED_SAMPLES.key(), sampleIds);
         }
-        samples = catalogManager
-                .getAllSamples(studyId, samplesQuery, new QueryOptions(), sessionId)
+        samples = catalogManager.getSampleManager().get(studyId, samplesQuery, new QueryOptions(), sessionId)
                 .getResult()
                 .stream()
                 .map(Sample::getName)
@@ -110,7 +110,7 @@ public class IbsAnalysis extends OpenCGAAnalysis {
         } else {
             Path outfile;
             if (outdir.toAbsolutePath().toFile().isDirectory()) {
-                String alias = catalogManager.getStudy(studyId, sessionId).first().getAlias();
+                String alias = catalogManager.getStudyManager().get(studyId, null, sessionId).first().getAlias();
                 outfile = outdir.resolve(alias + ".genome.gz");
             } else {
                 outfile = outdir;

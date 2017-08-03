@@ -68,7 +68,8 @@ public class VariantStatsStorageOperation extends StorageOperation {
         boolean overwriteStats = options.getBoolean(Options.OVERWRITE_STATS.key(), false);
         boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
         boolean resume = options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue());
-        final Long fileId = fileIdStr == null ? null : catalogManager.getFileId(fileIdStr, Long.toString(studyId), sessionId);
+        final Long fileId = fileIdStr == null ? null : catalogManager.getFileManager().getId(fileIdStr, Long.toString(studyId),
+                sessionId).getResourceId();
 
 
         // Outdir must be empty
@@ -271,8 +272,8 @@ public class VariantStatsStorageOperation extends StorageOperation {
 
     private List<Long> createCohortsIfNeeded(long studyId, Set<String> cohortNames, String sessionId) throws CatalogException {
         List<Long> cohorts = new ArrayList<>();
-        Map<String, Long> catalogCohorts = catalogManager.getAllCohorts(studyId, null,
-                new QueryOptions(QueryOptions.INCLUDE, "name,id"), sessionId).getResult()
+        Map<String, Long> catalogCohorts = catalogManager.getCohortManager().get(studyId, null, new QueryOptions(QueryOptions.INCLUDE,
+                "name,id"), sessionId).getResult()
                 .stream()
                 .collect(Collectors.toMap(Cohort::getName, Cohort::getId));
         for (String cohortName : cohortNames) {
@@ -303,7 +304,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
      */
     public Aggregation getAggregation(long studyId, QueryOptions options, String sessionId) throws CatalogException {
         QueryOptions include = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ATTRIBUTES.key());
-        Study study = catalogManager.getStudy(studyId, include, sessionId).first();
+        Study study = catalogManager.getStudyManager().get(studyId, include, sessionId).first();
         Aggregation argsAggregation = options.get(Options.AGGREGATED_TYPE.key(), Aggregation.class, Aggregation.NONE);
         Object studyAggregationObj = study.getAttributes().get(Options.AGGREGATED_TYPE.key());
         Aggregation studyAggregation = null;
@@ -323,7 +324,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
                 //update study aggregation
                 Map<String, Aggregation> attributes = Collections.singletonMap(Options.AGGREGATED_TYPE.key(), argsAggregation);
                 ObjectMap parameters = new ObjectMap("attributes", attributes);
-                catalogManager.modifyStudy(studyId, parameters, sessionId);
+                catalogManager.getStudyManager().update(studyId, parameters, null, sessionId);
             }
         } else {
             if (studyAggregation == null) {
@@ -352,8 +353,8 @@ public class VariantStatsStorageOperation extends StorageOperation {
         Set<Long> studyIdSet = new HashSet<>();
         Map<Long, Cohort> cohortMap = new HashMap<>(cohortIds.size());
         for (Long cohortId : cohortIds) {
-            Cohort cohort = catalogManager.getCohort(cohortId, null, sessionId).first();
-            long studyIdByCohortId = catalogManager.getStudyIdByCohortId(cohortId);
+            Cohort cohort = catalogManager.getCohortManager().get(cohortId, null, sessionId).first();
+            long studyIdByCohortId = catalogManager.getCohortManager().getStudyId(cohortId);
             studyIdSet.add(studyIdByCohortId);
             switch (cohort.getStatus().getName()) {
                 case Cohort.CohortStatus.NONE:

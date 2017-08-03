@@ -76,7 +76,7 @@ public class FileScanner {
         Query query = new Query();
         query.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Arrays.asList(
                 File.FileStatus.READY, File.FileStatus.MISSING, File.FileStatus.TRASHED));
-        QueryResult<File> files = catalogManager.getAllFiles(study.getId(), query, new QueryOptions(), sessionId);
+        QueryResult<File> files = catalogManager.getFileManager().get(study.getId(), query, new QueryOptions(), sessionId);
 
         List<File> modifiedFiles = new LinkedList<>();
         for (File file : files.getResult()) {
@@ -105,11 +105,11 @@ public class FileScanner {
         Query query = new Query();
         query.put(FileDBAdaptor.QueryParams.URI.key(), "~.*"); //Where URI exists
         query.put(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.DIRECTORY);
-        List<File> files = catalogManager.searchFile(studyId, query, sessionId).getResult();
+        List<File> files = catalogManager.getFileManager().get(studyId, query, null, sessionId).getResult();
 
         List<File> scan = new LinkedList<>();
         for (File file : files) {
-            scan.addAll(scan(file, catalogManager.getFileUri(file), FileScannerPolicy.REPLACE, calculateChecksum,
+            scan.addAll(scan(file, catalogManager.getFileManager().getUri(file), FileScannerPolicy.REPLACE, calculateChecksum,
                     false, sessionId));
         }
         // TODO: Scan per file
@@ -129,14 +129,14 @@ public class FileScanner {
     public Map<String, URI> untrackedFiles(Study study, String sessionId)
             throws CatalogException {
         long studyId = study.getId();
-        URI studyUri = catalogManager.getStudyUri(studyId);
+        URI studyUri = catalogManager.getFileManager().getStudyUri(studyId);
 
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(studyUri);
         Map<String, URI> linkedFolders = new HashMap<>();
         linkedFolders.put("", studyUri);
         Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), "~.*"); //Where URI exists)
         QueryOptions queryOptions = new QueryOptions("include", "projects.studies.files.path,projects.studies.files.uri");
-        catalogManager.getAllFiles(studyId, query, queryOptions, sessionId).getResult()
+        catalogManager.getFileManager().get(studyId, query, queryOptions, sessionId).getResult()
                 .forEach(f -> linkedFolders.put(f.getPath(), f.getUri()));
 
         Map<String, URI> untrackedFiles = new HashMap<>();
@@ -152,8 +152,7 @@ public class FileScanner {
                 URI uri = iterator.next();
                 String filePath = entry.getKey() + entry.getValue().relativize(uri).toString();
 
-                QueryResult<File> searchFile = catalogManager.searchFile(studyId,
-                        new Query("path", filePath),
+                QueryResult<File> searchFile = catalogManager.getFileManager().get(studyId, new Query("path", filePath),
                         new QueryOptions("include", "projects.studies.files.id"), sessionId);
                 if (searchFile.getResult().isEmpty()) {
                     untrackedFiles.put(filePath, uri);
@@ -207,7 +206,7 @@ public class FileScanner {
             filter = uri -> true;
         }
         if (directoryToScan == null) {
-            directoryToScan = catalogManager.getFileUri(directory);
+            directoryToScan = catalogManager.getFileManager().getUri(directory);
         }
         if (!directoryToScan.getPath().endsWith("/")) {
             directoryToScan = URI.create(directoryToScan.toString() + "/");
@@ -215,7 +214,7 @@ public class FileScanner {
         if (!directory.getType().equals(File.Type.DIRECTORY)) {
             throw new CatalogException("Expected folder where place the found files.");
         }
-        long studyId = catalogManager.getStudyIdByFileId(directory.getId());
+        long studyId = catalogManager.getFileManager().getStudyId(directory.getId());
 
         long createFilesTime = 0, uploadFilesTime = 0, metadataReadTime = 0;
         Stream<URI> uris = catalogManager.getCatalogIOManagerFactory().get(directoryToScan).listFilesStream(directoryToScan);
@@ -236,7 +235,7 @@ public class FileScanner {
             }
 
             Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), filePath);
-            QueryResult<File> searchFile = catalogManager.searchFile(studyId, query, sessionId);
+            QueryResult<File> searchFile = catalogManager.getFileManager().get(studyId, query, null, sessionId);
             File file = null;
             boolean returnFile = false;
             if (searchFile.getNumResults() != 0) {
@@ -271,7 +270,8 @@ public class FileScanner {
                     start = System.currentTimeMillis();
                     File.Format format = FormatDetector.detect(uri);
                     File.Bioformat bioformat = BioformatDetector.detect(uri);
-                    file = catalogManager.createFile(studyId, format, bioformat, filePath, "", true, jobId, sessionId).first();
+                    file = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, format, bioformat, filePath,
+                            null, "", null, 0, -1, null, jobId, null, null, true, null, null, sessionId).first();
                     end = System.currentTimeMillis();
                     createFileTime = end - start;
                     createFilesTime += createFileTime;
@@ -311,7 +311,7 @@ public class FileScanner {
             }
 
             if (returnFile) { //Return only new and found files.
-                files.add(catalogManager.getFile(file.getId(), sessionId).first());
+                files.add(catalogManager.getFileManager().get(file.getId(), null, sessionId).first());
             }
             logger.info("Added file {}", filePath);
             logger.debug("{}s (create {}s, upload {}s, metadata {}s)", (System.currentTimeMillis() - fileScanStart) / 1000.0,

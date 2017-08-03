@@ -26,7 +26,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.Arrays;
 
 /**
  * Created by pfurio on 01/06/16.
@@ -70,7 +69,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
     })
     public Response infoSample(@ApiParam(value = "panelId", required = true) @PathParam("panelId") String panelId) {
         try {
-            QueryResult<DiseasePanel> queryResult = catalogManager.getDiseasePanel(panelId, queryOptions, sessionId);
+            QueryResult<DiseasePanel> queryResult = catalogManager.getStudyManager().getDiseasePanel(panelId, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

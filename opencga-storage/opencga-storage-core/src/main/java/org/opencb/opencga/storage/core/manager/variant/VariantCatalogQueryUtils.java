@@ -71,14 +71,20 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             defaultStudyStr = null;
         }
 
-        transformFilter(query, VariantQueryParam.STUDIES, value -> catalogManager.getStudyId(value, sessionId));
-        transformFilter(query, VariantQueryParam.RETURNED_STUDIES, value -> catalogManager.getStudyId(value, sessionId));
+        transformFilter(query, VariantQueryParam.STUDIES, value -> {
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            return catalogManager.getStudyManager().getId(userId, value);
+        });
+        transformFilter(query, VariantQueryParam.RETURNED_STUDIES, value -> {
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            return catalogManager.getStudyManager().getId(userId, value);
+        });
         transformFilter(query, VariantQueryParam.COHORTS, value ->
                 catalogManager.getCohortManager().getId(value, defaultStudyStr, sessionId).getResourceId());
-        transformFilter(query, VariantQueryParam.FILES, value ->
-                catalogManager.getFileId(value, defaultStudyStr, sessionId));
-        transformFilter(query, VariantQueryParam.RETURNED_FILES, value ->
-                catalogManager.getFileId(value, defaultStudyStr, sessionId));
+        transformFilter(query, VariantQueryParam.FILES,
+                value -> catalogManager.getFileManager().getId(value, defaultStudyStr, sessionId).getResourceId());
+        transformFilter(query, VariantQueryParam.RETURNED_FILES,
+                value -> catalogManager.getFileManager().getId(value, defaultStudyStr, sessionId).getResourceId());
         // TODO: Parse returned sample filter and add genotype filter
 
         if (isValidParam(query, SAMPLE_FILTER)) {
@@ -86,7 +92,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             Query sampleQuery = parseSampleAnnotationQuery(sampleAnnotation, SampleDBAdaptor.QueryParams::getParam);
             sampleQuery.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), defaultStudyId);
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID);
-            List<Long> sampleIds = catalogManager.getAllSamples(defaultStudyId, sampleQuery, options, sessionId).getResult().stream()
+            List<Long> sampleIds = catalogManager.getSampleManager().get(defaultStudyId, sampleQuery, options, sessionId).getResult()
+                    .stream()
                     .map(Sample::getId)
                     .collect(Collectors.toList());
 

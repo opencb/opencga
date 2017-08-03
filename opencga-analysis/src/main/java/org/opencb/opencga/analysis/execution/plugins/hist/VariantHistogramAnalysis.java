@@ -23,9 +23,9 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.execution.plugins.OpenCGAAnalysis;
-import org.opencb.opencga.catalog.models.tool.Execution;
-import org.opencb.opencga.catalog.models.tool.Manifest;
-import org.opencb.opencga.catalog.models.tool.Option;
+import org.opencb.opencga.catalog.old.models.tool.Execution;
+import org.opencb.opencga.catalog.old.models.tool.Manifest;
+import org.opencb.opencga.catalog.old.models.tool.Option;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 

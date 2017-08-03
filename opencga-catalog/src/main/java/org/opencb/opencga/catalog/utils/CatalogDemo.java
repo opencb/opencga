@@ -17,6 +17,8 @@
 package org.opencb.opencga.catalog.utils;
 
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.models.Account;
+import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -72,8 +74,8 @@ public final class CatalogDemo {
             String name = "User" + i;
             String password = id + "_pass";
             String email = id + "@gmail.com";
-            catalogManager.createUser(id, name, email, password, "organization", 2000L, null);
-            userSessions.put(id, catalogManager.login(id, password, "localhost").first().getId());
+            catalogManager.getUserManager().create(id, name, email, password, "organization", 2000L, Account.FULL, null);
+            userSessions.put(id, catalogManager.getUserManager().login(id, password, "localhost").first().getId());
         }
 
         // Create one project per user
@@ -92,8 +94,8 @@ public final class CatalogDemo {
             for (int i = 1; i <= 2; i++) {
                 String name = "Name of study" + i;
                 String alias = "study" + i;
-                studiesTmp.add(catalogManager.createStudy(projectId, name, alias, Study.Type.FAMILY, "Description of " + alias,
-                        userSession.getValue()).first().getId());
+                studiesTmp.add(catalogManager.getStudyManager().create(projectId, name, alias, Study.Type.FAMILY, null, "Description of "
+                        + alias, null, null, null, null, null, null, null, null, userSession.getValue()).first().getId());
             }
             studies.put(userSession.getKey(), studiesTmp);
         }
@@ -105,13 +107,16 @@ public final class CatalogDemo {
         String sessionId = userSessions.get("user5");
 
         // user5 will have the role "admin"
-        catalogManager.createStudyAcls(Long.toString(studyId), "user5", "", "admin", userSessions.get("user1"));
+        Study.StudyAclParams aclParams2 = new Study.StudyAclParams("", AclParams.Action.ADD, "admin");
+        catalogManager.getStudyManager().updateAcl(Long.toString(studyId), "user5", aclParams2, userSessions.get("user1")).get(0);
         // user5 will add the rest of users. user2, user3 and user4 go to group "members"
-        catalogManager.createGroup(Long.toString(studyId), "analyst", "user2,user3,user4", sessionId);
-//        // @members will have the role "analyst"
-        catalogManager.createStudyAcls(Long.toString(studyId), "@analyst", "", "analyst", sessionId);
-//        // Add anonymous user to the role "denyAll". Later we will give it permissions to see some concrete samples.
-        catalogManager.createStudyAcls(Long.toString(studyId), "*", "", "locked", sessionId);
+        catalogManager.getStudyManager().createGroup(Long.toString(studyId), "analyst", "user2,user3,user4", sessionId);
+        //        // @members will have the role "analyst"
+        Study.StudyAclParams aclParams1 = new Study.StudyAclParams("", AclParams.Action.ADD, "analyst");
+        catalogManager.getStudyManager().updateAcl(Long.toString(studyId), "@analyst", aclParams1, sessionId).get(0);
+        //        // Add anonymous user to the role "denyAll". Later we will give it permissions to see some concrete samples.
+        Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, "locked");
+        catalogManager.getStudyManager().updateAcl(Long.toString(studyId), "*", aclParams, sessionId).get(0);
     }
 
 }

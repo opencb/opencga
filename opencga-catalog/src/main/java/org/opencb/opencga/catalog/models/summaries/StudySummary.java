@@ -37,7 +37,6 @@ public class StudySummary {
     private String cipher;
 
     private List<Group> groups;
-    private List<Role> roles;
 
     private List<Experiment> experiments;
 
@@ -144,15 +143,6 @@ public class StudySummary {
 
     public StudySummary setGroups(List<Group> groups) {
         this.groups = groups;
-        return this;
-    }
-
-    public List<Role> getRoles() {
-        return roles;
-    }
-
-    public StudySummary setRoles(List<Role> roles) {
-        this.roles = roles;
         return this;
     }
 

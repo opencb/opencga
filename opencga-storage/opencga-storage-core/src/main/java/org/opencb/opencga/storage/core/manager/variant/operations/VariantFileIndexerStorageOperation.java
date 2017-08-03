@@ -393,7 +393,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         for (File indexedFile : filesToIndex) {
             // Fetch from catalog. {@link #copyResult} may modify the content
-            indexedFile = catalogManager.getFile(indexedFile.getId(), sessionId).first();
+            indexedFile = catalogManager.getFileManager().get(indexedFile.getId(), null, sessionId).first();
             // Suppose that the missing results are due to errors, and those files were not indexed.
             StoragePipelineResult storagePipelineResult = map.get(indexedFile.getName());
 
@@ -569,7 +569,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         Cohort defaultCohort;
         Query query = new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT);
-        QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(study.getId(), query, new QueryOptions(), sessionId);
+        QueryResult<Cohort> cohorts = catalogManager.getCohortManager().get(study.getId(), query, new QueryOptions(), sessionId);
 
         if (cohorts.getResult().isEmpty()) {
             defaultCohort = createDefaultCohort(study, sessionId);
@@ -619,7 +619,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
     private void updateDefaultCohortStatus(Study study, String status, String sessionId) throws CatalogException {
 
         Query query = new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT);
-        Cohort defaultCohort = catalogManager.getAllCohorts(study.getId(), query, new QueryOptions(), sessionId).first();
+        Cohort defaultCohort = catalogManager.getCohortManager().get(study.getId(), query, new QueryOptions(), sessionId).first();
 
         catalogManager.getCohortManager().setStatus(Long.toString(defaultCohort.getId()), status, null,
                 sessionId);

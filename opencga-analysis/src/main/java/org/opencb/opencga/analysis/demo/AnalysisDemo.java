@@ -17,7 +17,6 @@
 package org.opencb.opencga.analysis.demo;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -51,8 +50,9 @@ public class AnalysisDemo {
             throws CatalogException, StorageEngineException {
         String path = "data/peds";
         URI sourceUri = inputFile.toUri();
-        File file = catalogManager.createFile(studyId, File.Format.PED, File.Bioformat.PEDIGREE,
-                Paths.get(path, inputFile.getFileName().toString()).toString(), "Description", true, -1, sessionId).first();
+        File file = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PED, File.Bioformat
+                .PEDIGREE, Paths.get(path, inputFile.getFileName().toString()).toString(), null, "Description", null, 0, -1, null, (long)
+                -1, null, null, true, null, null, sessionId).first();
         new CatalogFileUtils(catalogManager).upload(sourceUri, file, null, sessionId, false, false, false, false);
         FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new QueryOptions(), sessionId, false);
 
@@ -65,16 +65,17 @@ public class AnalysisDemo {
             throws CatalogException, StorageEngineException, AnalysisExecutionException, JsonProcessingException {
         String path = "data/vcfs";
         URI sourceUri = inputFile.toUri();
-        File file = catalogManager.createFile(studyId, File.Format.VCF, File.Bioformat.VARIANT,
-                Paths.get(path, inputFile.getFileName().toString()).toString(), "Description", true, -1, sessionId).first();
+        File file = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.VCF, File.Bioformat
+                .VARIANT, Paths.get(path, inputFile.getFileName().toString()).toString(), null, "Description", null, 0, -1, null, (long)
+                -1, null, null, true, null, null, sessionId).first();
         new CatalogFileUtils(catalogManager).upload(sourceUri, file, null, sessionId, false, false, false, false);
         FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new QueryOptions(), sessionId, false);
 
 
         long inputFileId = file.getId();
 
-        QueryResult<File> outdirResult = catalogManager.searchFile(studyId,
-                new Query(FileDBAdaptor.QueryParams.PATH.key(), "data/jobs/"), sessionId);
+        QueryResult<File> outdirResult = catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.PATH.key(),
+                "data/jobs/"), null, sessionId);
         long outDirId;
         if (outdirResult.getResult().isEmpty()) {
             outDirId = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data/jobs/").toString(), null,

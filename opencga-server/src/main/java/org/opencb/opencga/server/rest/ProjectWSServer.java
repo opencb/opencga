@@ -19,7 +19,7 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -80,7 +80,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             List<Long> projectIds = catalogManager.getProjectManager().getIds(userId, projectsStr);
             List<QueryResult<Project>> queryResults = new ArrayList<>(projectIds.size());
             for (Long projectId : projectIds) {
-                queryResults.add(catalogManager.getProject(projectId, queryOptions, sessionId));
+                queryResults.add(catalogManager.getProjectManager().get(projectId, queryOptions, sessionId));
             }
             return createOkResponse(queryResults);
         } catch (Exception e) {
@@ -155,7 +155,8 @@ public class ProjectWSServer extends OpenCGAWSServer {
             String[] splittedProjectNames = projectsStr.split(",");
             for (int i = 0; i < projectIds.size(); i++) {
                 Long projectId = projectIds.get(i);
-                QueryResult<Study> allStudiesInProject = catalogManager.getAllStudiesInProject(projectId, queryOptions, sessionId);
+                QueryResult<Study> allStudiesInProject = catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams
+                        .PROJECT_ID.key(), projectId), queryOptions, sessionId);
                 // We set the id of the queryResult with the project id given by the user
                 allStudiesInProject.setId(splittedProjectNames[i]);
                 results.add(allStudiesInProject);

@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.models.Account;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -38,6 +39,7 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.core.common.TimeUtils;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -81,12 +83,13 @@ public class CatalogFileUtilsTest {
         catalogManager.installCatalogDB();
 
         //Create USER
-        catalogManager.createUser("user", "name", "mi@mail.com", "asdf", "", null, null);
-        userSessionId = catalogManager.login("user", "asdf", "--").getResult().get(0).getId();
+        catalogManager.getUserManager().create("user", "name", "mi@mail.com", "asdf", "", null, Account.FULL, null);
+        userSessionId = catalogManager.getUserManager().login("user", "asdf", "--").getResult().get(0).getId();
 //        adminSessionId = catalogManager.login("admin", "admin", "--").getResult().get(0).getString("sessionId");
         long projectId = catalogManager.getProjectManager().create("proj", "proj", "", "", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), userSessionId).getResult().get(0).getId();
-        studyId = catalogManager.createStudy(projectId, "std", "std", Study.Type.CONTROL_SET, "", userSessionId).getResult().get(0).getId();
+        studyId = catalogManager.getStudyManager().create(projectId, "std", "std", Study.Type.CONTROL_SET, null, "", null, null, null,
+                null, null, null, null, null, userSessionId).getResult().get(0).getId();
 
         catalogFileUtils = new CatalogFileUtils(catalogManager);
     }
@@ -98,21 +101,21 @@ public class CatalogFileUtilsTest {
         URI sourceUri;
 
         sourceUri = CatalogManagerTest.createDebugFile().toURI();
-        fileQueryResult = catalogManager.createFile(
-                studyId, File.Format.PLAIN, File.Bioformat.NONE, "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1,
-                userSessionId);
+        fileQueryResult = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PLAIN, File
+                .Bioformat.NONE, "item." + TimeUtils.getTimeMillis() + ".txt", null, "file at root", null, 0, -1, null, (long) -1, null,
+                null, true, null, null, userSessionId);
         catalogFileUtils.upload(sourceUri, fileQueryResult.getResult().get(0), null, userSessionId, false, false, true, false, 1000);
 
         sourceUri = CatalogManagerTest.createDebugFile().toURI();
-        fileQueryResult = catalogManager.createFile(
-                studyId, File.Format.PLAIN, File.Bioformat.NONE, "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1,
-                userSessionId);
+        fileQueryResult = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PLAIN, File
+                .Bioformat.NONE, "item." + TimeUtils.getTimeMillis() + ".txt", null, "file at root", null, 0, -1, null, (long) -1, null,
+                null, true, null, null, userSessionId);
         catalogFileUtils.upload(sourceUri, fileQueryResult.getResult().get(0), null, userSessionId, false, false, true, false, 100000000);
 
         sourceUri = CatalogManagerTest.createDebugFile().toURI();
-        fileQueryResult = catalogManager.createFile(
-                studyId, File.Format.PLAIN, File.Bioformat.NONE, "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1,
-                userSessionId);
+        fileQueryResult = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PLAIN, File
+                .Bioformat.NONE, "item." + TimeUtils.getTimeMillis() + ".txt", null, "file at root", null, 0, -1, null, (long) -1, null,
+                null, true, null, null, userSessionId);
         catalogFileUtils.upload(sourceUri, fileQueryResult.getResult().get(0), null, userSessionId, false, false, true, true);
     }
 //
@@ -307,8 +310,8 @@ public class CatalogFileUtilsTest {
 
     @Test
     public void unlinkFileNoUriTest() throws CatalogException, IOException {
-        File file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
-                "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1, userSessionId).first();
+        File file = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PLAIN, File.Bioformat
+                .NONE, "item." + TimeUtils.getTimeMillis() + ".txt", null, "file at root", null, 0, -1, null, (long) -1, null, null, true, null, null, userSessionId).first();
 
         // Now we try to unlink it
         thrown.expect(CatalogException.class);
@@ -318,8 +321,11 @@ public class CatalogFileUtilsTest {
 
     @Test
     public void deleteFilesTest1() throws CatalogException, IOException {
-        File file1 = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "my.txt", StringUtils.randomString(200)
-                .getBytes(), "", false, userSessionId).first();
+        QueryResult<File> queryResult = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "my.txt", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, false, null, null, userSessionId);
+
+        new CatalogFileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils.randomString(200)
+                .getBytes()), queryResult.first(), userSessionId, false, false, true);
+        File file1 = catalogManager.getFileManager().get(queryResult.first().getId(), null, userSessionId).first();
 
         thrown.expect(CatalogException.class);
         catalogFileUtils.delete(file1, userSessionId);
@@ -327,8 +333,10 @@ public class CatalogFileUtilsTest {
 
     @Test
     public void deleteFilesTest2() throws CatalogException, IOException {
-        File file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "my.txt", StringUtils.randomString(200)
-                .getBytes(), "", false, userSessionId).first();
+        QueryResult<File> queryResult = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "my.txt", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, false, null, null, userSessionId);
+        new CatalogFileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils.randomString(200)
+                .getBytes()), queryResult.first(), userSessionId, false, false, true);
+        File file = catalogManager.getFileManager().get(queryResult.first().getId(), null, userSessionId).first();
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(file.getUri());
         assertTrue(ioManager.exists(file.getUri()));
 
@@ -343,9 +351,9 @@ public class CatalogFileUtilsTest {
     public void deleteFoldersTest() throws CatalogException, IOException {
         List<File> folderFiles = new LinkedList<>();
         File folder = prepareFiles(folderFiles);
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(catalogManager.getFileUri(folder));
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(catalogManager.getFileManager().getUri(folder));
         for (File file : folderFiles) {
-            assertTrue(ioManager.exists(catalogManager.getFileUri(file)));
+            assertTrue(ioManager.exists(catalogManager.getFileManager().getUri(file)));
         }
 
         catalogManager.getFileManager().delete(Long.toString(folder.getId()), null, null, userSessionId);
@@ -371,19 +379,22 @@ public class CatalogFileUtilsTest {
     public void deleteFoldersTest2() throws CatalogException, IOException {
         List<File> folderFiles = new LinkedList<>();
         File folder = prepareFiles(folderFiles);
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(catalogManager.getFileUri(folder));
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(catalogManager.getFileManager().getUri(folder));
         for (File file : folderFiles) {
-            assertTrue(ioManager.exists(catalogManager.getFileUri(file)));
+            assertTrue(ioManager.exists(catalogManager.getFileManager().getUri(file)));
         }
 
         //Create deleted files inside the folder
-        File toDelete = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toDelete.txt",
-                StringUtils.randomString(200).getBytes(), "", true, userSessionId).first();
+        QueryResult<File> queryResult1 = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toDelete.txt", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, true, null, null, userSessionId);
+        new CatalogFileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils.randomString(200).getBytes()), queryResult1.first(), userSessionId, false, false, true);
+
+        File toDelete = catalogManager.getFileManager().get(queryResult1.first().getId(), null, userSessionId).first();
         catalogManager.getFileManager().delete(Long.toString(toDelete.getId()), null, null, userSessionId);
 //        catalogFileUtils.delete(toDelete.getId(), userSessionId);
 
-        File toTrash = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toTrash.txt",
-                StringUtils.randomString(200).getBytes(), "", true, userSessionId).first();
+        QueryResult<File> queryResult = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toTrash.txt", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, true, null, null, userSessionId);
+        new CatalogFileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils.randomString(200).getBytes()), queryResult.first(), userSessionId, false, false, true);
+        File toTrash = catalogManager.getFileManager().get(queryResult.first().getId(), null, userSessionId).first();
         catalogManager.getFileManager().delete(Long.toString(toTrash.getId()), null, null, userSessionId);
 
         catalogManager.getFileManager().delete(Long.toString(folder.getId()), null, null, userSessionId);
@@ -417,8 +428,8 @@ public class CatalogFileUtilsTest {
         URI fileUri;
 
         /** Check STAGE file. Nothing to do **/
-        file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
-                "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1, userSessionId).first();
+        file = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE,
+                "item." + TimeUtils.getTimeMillis() + ".txt", null, "file at root", null, 0, -1, null, (long) -1, null, null, true, null, null, userSessionId).first();
         returnedFile = catalogFileUtils.checkFile(file, true, userSessionId);
 
         assertSame("Should not modify the STAGE file, so should return the same file.", file, returnedFile);
@@ -426,8 +437,8 @@ public class CatalogFileUtilsTest {
 
         /** Check READY and existing file **/
         catalogFileUtils.upload(sourceUri, file, null, userSessionId, false, false, false, true);
-        fileUri = catalogManager.getFileUri(file);
-        file = catalogManager.getFile(file.getId(), userSessionId).first();
+        fileUri = catalogManager.getFileManager().getUri(file);
+        file = catalogManager.getFileManager().get(file.getId(), null, userSessionId).first();
         returnedFile = catalogFileUtils.checkFile(file, true, userSessionId);
 
         assertSame("Should not modify the READY and existing file, so should return the same file.", file, returnedFile);
@@ -441,7 +452,7 @@ public class CatalogFileUtilsTest {
         assertEquals(File.FileStatus.MISSING, returnedFile.getStatus().getName());
 
         /** Check MISSING file still missing **/
-        file = catalogManager.getFile(file.getId(), userSessionId).first();
+        file = catalogManager.getFileManager().get(file.getId(), null, userSessionId).first();
         returnedFile = catalogFileUtils.checkFile(file, true, userSessionId);
 
         assertEquals("Should not modify the still MISSING file, so should return the same file.", file.getStatus().getName(),
@@ -486,18 +497,28 @@ public class CatalogFileUtilsTest {
     private File prepareFiles(List<File> folderFiles) throws CatalogException, IOException {
         File folder = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("folder").toString(), null, false,
                 null, QueryOptions.empty(), userSessionId).first();
-        folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/my.txt", StringUtils
-                .randomString(200).getBytes(), "", true, userSessionId).first());
-        folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/my2.txt", StringUtils
-                .randomString(200).getBytes(), "", true, userSessionId).first());
-        folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/my3.txt", StringUtils
-                .randomString(200).getBytes(), "", true, userSessionId).first());
-        folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/my4.txt",
-                StringUtils.randomString(200).getBytes(), "", true, userSessionId).first());
-        folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/my5.txt",
-                StringUtils.randomString(200).getBytes(), "", true, userSessionId).first());
-        folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/subsubfolder/my6" +
-                ".txt", StringUtils.randomString(200).getBytes(), "", true, userSessionId).first());
+        QueryResult<File> queryResult5 = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder/my.txt", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, true, null, null, userSessionId);
+        new CatalogFileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils
+                .randomString(200).getBytes()), queryResult5.first(), userSessionId, false, false, true);
+        folderFiles.add(catalogManager.getFileManager().get(queryResult5.first().getId(), null, userSessionId).first());
+        QueryResult<File> queryResult4 = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder/my2.txt", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, true, null, null, userSessionId);
+        new CatalogFileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils
+                .randomString(200).getBytes()), queryResult4.first(), userSessionId, false, false, true);
+        folderFiles.add(catalogManager.getFileManager().get(queryResult4.first().getId(), null, userSessionId).first());
+        QueryResult<File> queryResult3 = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder/my3.txt", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, true, null, null, userSessionId);
+        new CatalogFileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils
+                .randomString(200).getBytes()), queryResult3.first(), userSessionId, false, false, true);
+        folderFiles.add(catalogManager.getFileManager().get(queryResult3.first().getId(), null, userSessionId).first());
+        QueryResult<File> queryResult2 = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/my4.txt", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, true, null, null, userSessionId);
+        new CatalogFileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils.randomString(200).getBytes()), queryResult2.first(), userSessionId, false, false, true);
+        folderFiles.add(catalogManager.getFileManager().get(queryResult2.first().getId(), null, userSessionId).first());
+        QueryResult<File> queryResult1 = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/my5.txt", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, true, null, null, userSessionId);
+        new CatalogFileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils.randomString(200).getBytes()), queryResult1.first(), userSessionId, false, false, true);
+        folderFiles.add(catalogManager.getFileManager().get(queryResult1.first().getId(), null, userSessionId).first());
+        QueryResult<File> queryResult = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/subsubfolder/my6" +
+                ".txt", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, true, null, null, userSessionId);
+        new CatalogFileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils.randomString(200).getBytes()), queryResult.first(), userSessionId, false, false, true);
+        folderFiles.add(catalogManager.getFileManager().get(queryResult.first().getId(), null, userSessionId).first());
         return folder;
     }
 

@@ -186,7 +186,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
         CatalogManager catalogManager = getCatalogManager();
         file = new FileMetadataReader(catalogManager).create(studyId, uri, "data/vcfs/", "", true, null, sessionId).first();
         new CatalogFileUtils(catalogManager).upload(uri, file, null, sessionId, false, false, true, false, Long.MAX_VALUE);
-        return catalogManager.getFile(file.getId(), sessionId).first();
+        return catalogManager.getFileManager().get(file.getId(), null, sessionId).first();
     }
 
     public static Job runStorageJob(CatalogManager catalogManager, Job job, Logger logger, String sessionId)
@@ -196,7 +196,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
         } catch (ExecutionException e) {
             throw new IOException(e.getCause());
         }
-        return catalogManager.getJob(job.getId(), null, sessionId).first();
+        return catalogManager.getJobManager().get(job.getId(), null, sessionId).first();
     }
 
     public Job runStorageJob(Job storageJob, String sessionId) throws CatalogException, IOException {
@@ -220,7 +220,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
     public String createTmpOutdir(long studyId, String sufix, String sessionId) throws CatalogException {
         String date = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss.SSS").format(new Date());
-        return getCatalogManager().createJobOutDir(studyId, "I_tmp_" + date + sufix, sessionId).toString();
+        return getCatalogManager().getJobManager().createJobOutDir(studyId, "I_tmp_" + date + sufix, sessionId).toString();
     }
 
 //    private class StorageLocalExecutorManager extends LocalExecutorManager {
