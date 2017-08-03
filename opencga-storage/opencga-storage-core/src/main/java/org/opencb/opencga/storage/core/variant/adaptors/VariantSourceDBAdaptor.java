@@ -64,7 +64,11 @@ public interface VariantSourceDBAdaptor extends AutoCloseable {
         }
     }
 
-    QueryResult<Long> count();
+    default QueryResult<Long> count() {
+        return count(new Query());
+    }
+
+    QueryResult<Long> count(Query query);
 
     void updateVariantSource(VariantSource variantSource) throws StorageEngineException;
 

@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isNegated;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.removeNegation;
@@ -688,9 +689,9 @@ public class StudyConfigurationManager implements AutoCloseable {
      * Adds a new {@link BatchFileOperation} to the StudyConfiguration.
      *
      * Only allow one running operation at the same time
-     * If any operation is in ERROR and is not the same operation, throw {@link StorageEngineException#otherOperationInProgressException}
-     * If any operation is DONE, RUNNING, and if same operation and resume=true, continue
-     * If all operations are ready, continue
+     *  If any operation is in ERROR and is not the same operation, throw {@link StorageEngineException#otherOperationInProgressException}
+     *  If any operation is DONE, RUNNING, is same operation and resume=true, continue
+     *  If all operations are ready, continue
      *
      * @param studyConfiguration StudyConfiguration
      * @param jobOperationName   Job operation name used to create the jobName and as {@link BatchFileOperation#operationName}
@@ -703,12 +704,37 @@ public class StudyConfigurationManager implements AutoCloseable {
     public static BatchFileOperation addBatchOperation(StudyConfiguration studyConfiguration, String jobOperationName,
                                                        List<Integer> fileIds, boolean resume, BatchFileOperation.Type type)
             throws StorageEngineException {
+        return addBatchOperation(studyConfiguration, jobOperationName, fileIds, resume, type, b -> false);
+    }
+
+    /**
+     * Adds a new {@link BatchFileOperation} to the StudyConfiguration.
+     *
+     * Allow execute concurrent operations depending on the "allowConcurrent" predicate.
+     *  If any operation is in ERROR, is not the same operation, and concurrency is not allowed,
+     *      throw {@link StorageEngineException#otherOperationInProgressException}
+     *  If any operation is DONE, RUNNING, is same operation and resume=true, continue
+     *  If all operations are ready, continue
+     *
+     * @param studyConfiguration StudyConfiguration
+     * @param jobOperationName   Job operation name used to create the jobName and as {@link BatchFileOperation#operationName}
+     * @param fileIds            Files to be processed in this batch.
+     * @param resume             Resume operation. Assume that previous operation went wrong.
+     * @param type               Operation type as {@link BatchFileOperation#type}
+     * @param allowConcurrent    Predicate to test if the new operation can be executed at the same time as a non ready operation.
+     *                           If not, throws {@link StorageEngineException#otherOperationInProgressException}
+     * @return                   The current batchOperation
+     * @throws StorageEngineException if the operation can't be executed
+     */
+    public static BatchFileOperation addBatchOperation(StudyConfiguration studyConfiguration, String jobOperationName,
+                                                       List<Integer> fileIds, boolean resume, BatchFileOperation.Type type,
+                                                       Predicate<BatchFileOperation> allowConcurrent)
+            throws StorageEngineException {
 
         List<BatchFileOperation> batches = studyConfiguration.getBatches();
         BatchFileOperation resumeOperation = null;
         boolean newOperation = false;
-        for (int i = 0; i < batches.size(); i++) {
-            BatchFileOperation operation = batches.get(i);
+        for (BatchFileOperation operation : batches) {
             BatchFileOperation.Status currentStatus = operation.currentStatus();
 
             switch (currentStatus) {
@@ -721,13 +747,21 @@ public class StudyConfigurationManager implements AutoCloseable {
                         if (operation.sameOperation(fileIds, type, jobOperationName)) {
                             throw StorageEngineException.currentOperationInProgressException(operation);
                         } else {
-                            throw StorageEngineException.otherOperationInProgressException(operation, jobOperationName, fileIds);
+                            if (allowConcurrent.test(operation)) {
+                                break;
+                            } else {
+                                throw StorageEngineException.otherOperationInProgressException(operation, jobOperationName, fileIds);
+                            }
                         }
                     }
                     // DO NOT BREAK!. Resuming last loading, go to error case.
                 case ERROR:
                     if (!operation.sameOperation(fileIds, type, jobOperationName)) {
-                        throw StorageEngineException.otherOperationInProgressException(operation, jobOperationName, fileIds);
+                        if (allowConcurrent.test(operation)) {
+                            break;
+                        } else {
+                            throw StorageEngineException.otherOperationInProgressException(operation, jobOperationName, fileIds, resume);
+                        }
                     } else {
                         logger.info("Resuming last batch operation \"" + operation.getOperationName() + "\" due to error.");
                         resumeOperation = operation;

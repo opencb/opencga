@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
@@ -29,7 +30,6 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -44,7 +44,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
-import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageConverterTask;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
@@ -63,9 +62,8 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 
-import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.*;
+import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.setStatus;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 
@@ -77,14 +75,14 @@ import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEn
 public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
     // Type of variants that won't be loaded.
-    public static final EnumSet<VariantType> SKIPPED_VARIANTS = EnumSet.of(
+    public static final Set<VariantType> SKIPPED_VARIANTS = Collections.unmodifiableSet(EnumSet.of(
             VariantType.NO_VARIATION,
             VariantType.SYMBOLIC,
 //            VariantType.CNV,
 //            VariantType.DUPLICATION,
             VariantType.INVERSION,
             VariantType.TRANSLOCATION,
-            VariantType.BREAKEND);
+            VariantType.BREAKEND));
 
     private final VariantMongoDBAdaptor dbAdaptor;
     private final ObjectMap loadStats = new ObjectMap();
@@ -238,7 +236,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         long skippedVariants = options.getLong("skippedVariants");
         if (doMerge) {
-            MongoDBVariantWriteResult writeResult = merge(Collections.singletonList(fileId), skippedVariants);
+            merge(Collections.singletonList(fileId), skippedVariants);
         }
         long end = System.currentTimeMillis();
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
@@ -314,7 +312,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     stageError();
                 } catch (StorageEngineException e) {
                     logger.error("Error at shutdown", e);
-                    throw new RuntimeException(e);
+                    throw Throwables.propagate(e);
                 }
             });
             try {
@@ -367,72 +365,36 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         Query query = new Query()
                 .append(VariantSourceDBAdaptor.VariantSourceQueryParam.STUDY_ID.key(), studyConfiguration.getStudyId())
                 .append(VariantSourceDBAdaptor.VariantSourceQueryParam.FILE_ID.key(), fileId);
-        Iterator<VariantSource> iterator = dbAdaptor.getVariantSourceDBAdaptor().iterator(query, new QueryOptions());
 
-        boolean loadStageResume = false;
-        boolean stage = true;
-
-        BatchFileOperation operation = getBatchFileOperation(studyConfiguration.getBatches(),
-                op -> op.getOperationName().equals(STAGE.key())
-                        && op.getFileIds().equals(Collections.singletonList(fileId))
-                        && !op.currentStatus().equals(BatchFileOperation.Status.READY)
-        );
-
-        if (iterator.hasNext()) {
-            // Already indexed!
+        BatchFileOperation operation;
+        if (dbAdaptor.getVariantSourceDBAdaptor().count(query).first() == 1) {
+            // Already staged!
             logger.info("File \"{}\" ({}) already staged!", fileName, fileId);
-            stage = false;
+
+            operation = StudyConfigurationManager.getOperation(studyConfiguration, STAGE.key(), Collections.singletonList(fileId));
+
             if (operation != null && !operation.currentStatus().equals(BatchFileOperation.Status.READY)) {
                 // There was an error writing the operation status. Restore to "READY"
                 operation.addStatus(BatchFileOperation.Status.READY);
             }
+            options.put(STAGE.key(), false);
         } else {
-            loadStageResume = isResumeStage(options);
+            boolean resume = isResumeStage(options);
+            operation = StudyConfigurationManager.addBatchOperation(
+                    studyConfiguration, STAGE.key(),
+                    Collections.singletonList(fileId),
+                    resume,
+                    BatchFileOperation.Type.OTHER,
+                    batchFileOperation -> batchFileOperation.getOperationName().equals(STAGE.key()));
 
-            if (operation != null) {
-                switch (operation.currentStatus()) {
-                    case RUNNING:
-                        if (!loadStageResume) {
-                            throw MongoVariantStorageEngineException.fileBeingStagedException(fileId, fileName);
-                        }
-                    case ERROR:
-                        // Resume stage
-                        loadStageResume = true;
-                        options.put(STAGE_RESUME.key(), true);
-                        break;
-                    default:
-                        throw new IllegalStateException("Unknown status: " + operation.currentStatus());
-                }
-            } else {
-                operation = new BatchFileOperation(STAGE.key(), Collections.singletonList(fileId), System.currentTimeMillis(),
-                        BatchFileOperation.Type.OTHER);
-                studyConfiguration.getBatches().add(operation);
+            // If there is more than one status is because we are resuming the operation.
+            if (operation.getStatus().size() != 1) {
+                options.put(STAGE_RESUME.key(), true);
             }
-            operation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
+            options.put(STAGE.key(), true);
         }
 
-        if (stage) {
-            BatchFileOperation mergeOperation = getBatchFileOperation(studyConfiguration.getBatches(),
-                    op -> op.getOperationName().equals(MERGE.key()) && !op.currentStatus().equals(BatchFileOperation.Status.READY));
-            if (mergeOperation != null) {
-                // Avoid stage new files if there are ongoing merge operations
-                throw MongoVariantStorageEngineException.otherOperationInProgressException(mergeOperation,
-                        STAGE.key(), Collections.singletonList(fileId));
-            }
-        }
-
-        options.put(STAGE.key(), stage);
         return operation;
-    }
-
-    private BatchFileOperation getBatchFileOperation(List<BatchFileOperation> batches, Predicate<BatchFileOperation> filter) {
-        for (int i = batches.size() - 1; i >= 0; i--) {
-            BatchFileOperation op = batches.get(i);
-            if (filter.test(op)) {
-                return op;
-            }
-        }
-        return null;
     }
 
     public void stageError() throws StorageEngineException {
@@ -536,10 +498,10 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 try {
                     logger.error("Merge shutdown hook!");
                     getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileOperation.Status.ERROR, MERGE.key(), fileIds);
-                } catch (StorageEngineException e) {
+                } catch (Exception e) {
                     logger.error("Failed setting status '" + MERGE.key() + "' operation over files " + fileIds
                             + " to '" + BatchFileOperation.Status.ERROR + '\'', e);
-                    throw new RuntimeException(e);
+                    throw Throwables.propagate(e);
                 }
             });
             Runtime.getRuntime().addShutdownHook(hook);
@@ -598,65 +560,20 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
     private StudyConfiguration preMerge(List<Integer> fileIds) throws StorageEngineException {
         int studyId = getStudyId();
-        Set<Integer> fileIdsSet = new HashSet<>(fileIds);
         return dbAdaptor.getStudyConfigurationManager().lockAndUpdate(studyId, studyConfiguration -> {
             for (Integer fileId : fileIds) {
                 if (studyConfiguration.getIndexedFiles().contains(fileId)) {
                     throw StorageEngineException.alreadyLoaded(fileId, studyConfiguration);
                 }
             }
+            boolean resume = isResumeMerge(options);
+            BatchFileOperation operation = StudyConfigurationManager
+                    .addBatchOperation(studyConfiguration, MERGE.key(), fileIds, resume, BatchFileOperation.Type.LOAD);
 
-            boolean loadMergeResume = isResumeMerge(options);
-
-            List<BatchFileOperation> batches = studyConfiguration.getBatches();
-            BatchFileOperation operation = null;
-            for (int i = batches.size() - 1; i >= 0; i--) {
-                BatchFileOperation op = batches.get(i);
-                if (op.getOperationName().equals(MERGE.key())
-                        && fileIds.size() == op.getFileIds().size()
-                        && fileIdsSet.containsAll(op.getFileIds())) {
-                    switch (op.currentStatus()) {
-                        case READY:// Already indexed!
-                            // TODO: Believe this ready? What if deleted?
-                            // It was not "indexed" so suppose "deleted" ?
-                            break;
-                        case DONE:
-                            // Already merged but still needs some work.
-                            logger.info("Files " + fileIds + " where already merged, but where not marked as indexed files.");
-                            options.put(MERGE_SKIP.key(), true);
-                        case RUNNING:
-                            if (!loadMergeResume) {
-                                throw MongoVariantStorageEngineException.filesBeingMergedException(fileIds);
-                            }
-                            break;
-                        case ERROR:
-                            // Resume merge
-                            loadMergeResume = true;
-                            options.put(MERGE_RESUME.key(), loadMergeResume);
-                            break;
-                        default:
-                            throw new IllegalStateException("Unknown status: " + op.currentStatus());
-                    }
-                    operation = op;
-                    break;
-                } else {
-                    // Can not merge any file if there is an ongoing MERGE or STAGE operation
-                    if (op.getOperationName().equals(MERGE.key()) || op.getOperationName().equals(STAGE.key())) {
-                        if (!op.currentStatus().equals(BatchFileOperation.Status.READY)) {
-                            throw MongoVariantStorageEngineException.otherOperationInProgressException(op, MERGE.key(), fileIds);
-                        }
-                    }
-                }
+            if (operation.currentStatus().equals(BatchFileOperation.Status.DONE)) {
+                options.put(MERGE_SKIP.key(), true);
             }
 
-            if (operation == null) {
-                operation = new BatchFileOperation(MERGE.key(), fileIds, System.currentTimeMillis(), BatchFileOperation.Type.LOAD);
-                studyConfiguration.getBatches().add(operation);
-                operation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
-            } else if (operation.currentStatus() == BatchFileOperation.Status.ERROR) {
-                // Only set to RUNNING if it was on ERROR
-                operation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
-            }
             return studyConfiguration;
         });
     }

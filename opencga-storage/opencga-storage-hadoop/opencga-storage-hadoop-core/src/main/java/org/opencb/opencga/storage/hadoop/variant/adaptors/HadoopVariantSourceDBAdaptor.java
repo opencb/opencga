@@ -72,7 +72,7 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     @Override
-    public QueryResult<Long> count() {
+    public QueryResult<Long> count(Query query) {
         throw new UnsupportedOperationException();
     }
 

@@ -474,79 +474,18 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
             boolean resume = options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue())
                     || options.getBoolean(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_RESUME, false);
-            BatchFileOperation op = addBatchOperation(studyConfiguration, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles, resume,
+            long timestamp = studyConfiguration.getBatches().stream().map(BatchFileOperation::getTimestamp).max(Long::compareTo).orElse(0L);
+            BatchFileOperation op = StudyConfigurationManager.addBatchOperation(
+                    studyConfiguration, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles, resume,
                     BatchFileOperation.Type.LOAD);
+            // Overwrite default timestamp. Use custom monotonic timestamp. (lastTimestamp + 1)
+            if (op.getTimestamp() > timestamp) {
+                op.setTimestamp(timestamp + 1);
+            }
             options.put(HADOOP_LOAD_VARIANT_STATUS, op.currentStatus());
             options.put(AbstractAnalysisTableDriver.TIMESTAMP, op.getTimestamp());
 
         }
-    }
-
-    /**
-     * Adds a new {@BatchOperation} to the StudyConfiguration.
-     *
-     * Only allow one running operation at the same time
-     * If the last operation is ready, continue
-     * If the last operation is in ERROR, continue if is the same operation and files.
-     * If the last operation is running, continue only if resume=true
-     *
-     * If is a new operation, increment the TimeStamp
-     *
-     * @param studyConfiguration StudyConfiguration
-     * @param jobOperationName   Job operation name used to create the jobName and as {@link BatchFileOperation#operationName}
-     * @param fileIds            Files to be processed in this batch.
-     * @param resume             Resume operation. Assume that previous operation went wrong.
-     * @param type               Operation type as {@link BatchFileOperation#type}
-     * @return                   The current batchOperation
-     * @throws StorageEngineException if the operation can't be executed
-     */
-    protected BatchFileOperation addBatchOperation(StudyConfiguration studyConfiguration, String jobOperationName, List<Integer> fileIds,
-                                                   boolean resume, BatchFileOperation.Type type)
-            throws StorageEngineException {
-
-        List<BatchFileOperation> batches = studyConfiguration.getBatches();
-        BatchFileOperation batchFileOperation;
-        boolean newOperation = false;
-        if (!batches.isEmpty()) {
-            batchFileOperation = batches.get(batches.size() - 1);
-            BatchFileOperation.Status currentStatus = batchFileOperation.currentStatus();
-
-            switch (currentStatus) {
-                case READY:
-                    batchFileOperation = new BatchFileOperation(jobOperationName, fileIds, batchFileOperation.getTimestamp() + 1, type);
-                    newOperation = true;
-                    break;
-                case DONE:
-                case RUNNING:
-                    if (!resume) {
-                        throw new StorageHadoopException("Unable to process a new batch. Ongoing batch operation: "
-                                + batchFileOperation);
-                    }
-                    // DO NOT BREAK!. Resuming last loading, go to error case.
-                case ERROR:
-                    Collections.sort(fileIds);
-                    Collections.sort(batchFileOperation.getFileIds());
-                    if (batchFileOperation.getFileIds().equals(fileIds)) {
-                        logger.info("Resuming Last batch loading due to error.");
-                    } else {
-                        throw new StorageHadoopException("Unable to resume last batch operation. "
-                                + "Must have the same files from the previous batch: " + batchFileOperation);
-                    }
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unknown Status " + currentStatus);
-            }
-        } else {
-            batchFileOperation = new BatchFileOperation(jobOperationName, fileIds, 1, type);
-            newOperation = true;
-        }
-        if (!Objects.equals(batchFileOperation.currentStatus(), BatchFileOperation.Status.DONE)) {
-            batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
-        }
-        if (newOperation) {
-            batches.add(batchFileOperation);
-        }
-        return batchFileOperation;
     }
 
     /**
