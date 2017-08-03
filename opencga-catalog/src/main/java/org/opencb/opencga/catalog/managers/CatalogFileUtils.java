@@ -317,7 +317,7 @@ public class CatalogFileUtils {
             if (!fileStatusEnum.equals(File.FileStatus.READY)) {
                 throw new CatalogIOException("Unable to relink a file with status : " + fileStatusEnum);
             }
-            if (!catalogManager.getFileManager().isExternal(file)) {
+            if (!file.isExternal()) {
                 throw new CatalogIOException("Unable to relink a non linked file");
             }
         } else {
@@ -456,7 +456,7 @@ public class CatalogFileUtils {
             }
         }
 
-        if (!catalogManager.getFileManager().isExternal(file)) { //Do not delete file if is external
+        if (!file.isExternal()) { //Do not delete file if is external
             URI fileUri = catalogManager.getFileManager().getUri(file);
             CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(fileUri);
             if (ioManager.isDirectory(fileUri)) {

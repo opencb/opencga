@@ -550,21 +550,6 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
-        throw new UnsupportedOperationException("User: Operation not supported.");
-    }
-
-    @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        throw new UnsupportedOperationException("User: Operation not supported.");
-    }
-
-    @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
-        throw new UnsupportedOperationException("User: Operation not supported.");
-    }
-
-    @Override
     public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
         throw new NotImplementedException("User: Operation not yet supported");
     }

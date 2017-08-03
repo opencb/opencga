@@ -88,6 +88,12 @@ public class File {
                 Collections.emptyMap(), release, Collections.emptyMap());
     }
 
+    public File(Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status, long size,
+                List<Sample> samples, long jobId, Map<String, Object> stats, Map<String, Object> attributes) {
+        this(-1, "", type, format, bioformat, null, path, TimeUtils.getTime(), TimeUtils.getTime(), description, status, false,
+                size, new Experiment(), samples, new Job().setId(jobId), Collections.emptyList(), new FileIndex(), stats, -1, attributes);
+    }
+
     public File(long id, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String creationDate,
                 String modificationDate, String description, FileStatus status, boolean external, long size, Experiment experiment,
                 List<Sample> samples, Job job, List<RelatedFile> relatedFiles, FileIndex index, Map<String, Object> stats, int release,

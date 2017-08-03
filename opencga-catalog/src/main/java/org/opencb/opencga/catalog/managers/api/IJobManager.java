@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers.api;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -170,18 +169,6 @@ public interface IJobManager extends ResourceManager<Long, Job> {
 
     QueryResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
             throws CatalogException;
-
-    @Deprecated
-    @Override
-    default QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Group by has to be called passing the study string");
-    }
-
-    @Deprecated
-    @Override
-    default QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Group by has to be called passing the study string");
-    }
 
     QueryResult<Job> queue(long studyId, String jobName, String description, String executable, Job.Type type, Map<String, String> params,
                            List<File> input, List<File> output, File outDir, String userId, Map<String, Object> attributes)

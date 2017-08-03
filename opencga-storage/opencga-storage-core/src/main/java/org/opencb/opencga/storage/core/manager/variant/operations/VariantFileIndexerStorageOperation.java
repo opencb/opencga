@@ -99,8 +99,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         // Check the output directory does not correspond with a catalog directory
         Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), outdir.toUri().toString());
-        QueryResult<Long> count = fileManager.count(query, sessionId);
-        if (count.first() > 0) {
+        QueryResult<File> count = fileManager.count(Long.toString(studyInfo.getStudyId()), query, sessionId);
+        if (count.getNumTotalResults() > 0) {
             throw new CatalogException("The output directory is pointing to one in catalog. Please, choose other out of catalog "
                     + "boundaries.");
         }

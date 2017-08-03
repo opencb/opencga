@@ -99,46 +99,6 @@ public interface ResourceManager<I, R> {
      */
     List<QueryResult<R>> restore(Query query, QueryOptions options, String sessionId) throws CatalogException;
 
-
-    /**
-     * Ranks the elements queried, groups them by the field(s) given and return it sorted.
-     *
-     *
-     * @param query      Query object containing the query that will be executed.
-     * @param field      A field or a comma separated list of fields by which the results will be grouped in.
-     * @param numResults Maximum number of results to be reported.
-     * @param asc        Order in which the results will be reported.
-     * @param sessionId  sessionId.
-     * @return           A QueryResult object containing each of the fields in field and the count of them matching the query.
-     * @throws CatalogException CatalogException
-     */
-    QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException;
-
-    /**
-     * Groups the elements queried by the field(s) given.
-     *
-     *
-     * @param query   Query object containing the query that will be executed.
-     * @param field   Field by which the results will be grouped in.
-     * @param options QueryOptions object.
-     * @param sessionId  sessionId.
-     * @return        A QueryResult object containing the results of the query grouped by the field.
-     * @throws CatalogException CatalogException
-     */
-    QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException;
-
-    /**
-     * Groups the elements queried by the field(s) given.
-     *
-     * @param query   Query object containing the query that will be executed.
-     * @param fields  List of fields by which the results will be grouped in.
-     * @param options QueryOptions object.
-     * @param sessionId  sessionId.
-     * @return        A QueryResult object containing the results of the query grouped by the fields.
-     * @throws CatalogException CatalogException
-     */
-    QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException;
-
     /**
      * Change the status of an entry.
      *

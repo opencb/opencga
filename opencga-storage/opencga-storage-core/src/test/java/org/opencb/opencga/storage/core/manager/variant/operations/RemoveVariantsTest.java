@@ -131,7 +131,7 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
         variantManager.removeStudy(study.toString(), sessionId, new QueryOptions());
 
         Query query = new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
-        assertEquals(0, catalogManager.getFileManager().count(query, sessionId).first().intValue());
+        assertEquals(0L, catalogManager.getFileManager().count(study.toString(), query, sessionId).getNumTotalResults());
 
         Cohort all = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), null, sessionId).first();
         assertTrue(all.getSamples().isEmpty());

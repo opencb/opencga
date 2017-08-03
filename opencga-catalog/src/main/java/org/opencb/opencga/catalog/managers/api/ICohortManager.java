@@ -20,7 +20,6 @@ package org.opencb.opencga.catalog.managers.api;
  * Created by pfurio on 06/07/16.
  */
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -29,7 +28,10 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.AnnotationSet;
+import org.opencb.opencga.catalog.models.Cohort;
+import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
 
@@ -138,18 +140,6 @@ public interface ICohortManager extends ResourceManager<Long, Cohort>, IAnnotati
 
     QueryResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
             throws CatalogException;
-
-    @Deprecated
-    @Override
-    default QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Group by has to be called passing the study string");
-    }
-
-    @Deprecated
-    @Override
-    default QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Group by has to be called passing the study string");
-    }
 
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.

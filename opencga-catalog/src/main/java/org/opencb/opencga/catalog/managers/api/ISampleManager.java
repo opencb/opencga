@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers.api;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -177,18 +176,6 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
 
     QueryResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
             throws CatalogException;
-
-    @Deprecated
-    @Override
-    default QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Group by has to be called passing the study string");
-    }
-
-    @Deprecated
-    @Override
-    default QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Group by has to be called passing the study string");
-    }
 
     List<QueryResult<SampleAclEntry>> updateAcl(String sample, String studyStr, String memberId, Sample.SampleAclParams sampleAclParams,
                                                 String sessionId) throws CatalogException;
