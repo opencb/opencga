@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant;
 import com.google.common.collect.BiMap;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import org.apache.commons.lang3.NotImplementedException;
@@ -33,6 +34,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
+import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -599,7 +601,16 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                     VCFHeaderLineType type;
                     VariantMetadataRecord metadataRecord = map.get(extraField);
                     if (metadataRecord == null) {
-                        throw new StorageEngineException("Unknown FORMAT field " + extraField);
+                        if (extraField.equals(VariantMerger.GENOTYPE_FILTER_KEY)) {
+                            metadataRecord = new VariantMetadataRecord(
+                                    VariantMerger.GENOTYPE_FILTER_KEY,
+                                    VCFHeaderLineCount.UNBOUNDED,
+                                    null,
+                                    VCFHeaderLineType.String,
+                                    "Sample genotype filter. Similar in concept to the FILTER field.");
+                        } else {
+                            throw new StorageEngineException("Unknown FORMAT field '" + extraField + '\'');
+                        }
                     }
                     variantMetadata.getFormat().put(metadataRecord.getId(), metadataRecord);
 
