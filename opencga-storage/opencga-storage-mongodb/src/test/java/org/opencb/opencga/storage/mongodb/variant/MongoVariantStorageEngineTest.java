@@ -25,7 +25,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -130,7 +129,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
             fail();
         } catch (StorageEngineException e) {
             e.printStackTrace();
-            MongoVariantStorageEngineException expected = MongoVariantStorageEngineException.fileBeingStagedException(FILE_ID, "variant-test-file.vcf.gz");
+//            MongoVariantStorageEngineException expected = MongoVariantStorageEngineException.fileBeingStagedException(FILE_ID, "variant-test-file.vcf.gz");
+            StorageEngineException expected = StorageEngineException.currentOperationInProgressException(operation);
             assertThat(e, instanceOf(StoragePipelineException.class));
             assertThat(e, hasCause(instanceOf(expected.getClass())));
             assertThat(e, hasCause(hasMessage(is(expected.getMessage()))));
@@ -145,7 +145,6 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
         );
     }
-
 
     @Test
     public void stageResumeFromError2Test() throws Exception {
@@ -234,6 +233,39 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
     }
 
     @Test
+    public void loadStageConcurrentDifferentFiles() throws Exception {
+        StudyConfiguration studyConfiguration = createStudyConfiguration();
+
+        URI file1 = getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
+        URI file2 = getResourceUri("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
+
+        URI file1Transformed = runDefaultETL(file1, variantStorageEngine, studyConfiguration, new ObjectMap(), true, false).getTransformResult();
+        URI file2Transformed = runDefaultETL(file2, variantStorageEngine, studyConfiguration, new ObjectMap(), true, false).getTransformResult();
+
+        ExecutorService executor = Executors.newFixedThreadPool(3);
+        Future<Integer> loadOne = executor.submit(() -> {
+            runDefaultETL(file1Transformed, getVariantStorageEngine(), studyConfiguration, new ObjectMap()
+                    .append(VariantStorageEngine.Options.FILE_ID.key(), -1)
+                    .append(MongoDBVariantOptions.STAGE.key(), true)
+                    .append(MongoDBVariantOptions.MERGE.key(), false), false, true);
+            return 0;
+        });
+        Future<Integer> loadTwo = executor.submit(() -> {
+            runDefaultETL(file2Transformed, getVariantStorageEngine(), studyConfiguration, new ObjectMap()
+                    .append(VariantStorageEngine.Options.FILE_ID.key(), -1)
+                    .append(MongoDBVariantOptions.STAGE.key(), true)
+                    .append(MongoDBVariantOptions.MERGE.key(), false), false, true);
+            return 0;
+        });
+
+        executor.shutdown();
+
+        assertEquals(0, loadOne.get().intValue());
+        assertEquals(0, loadTwo.get().intValue());
+
+    }
+
+    @Test
     public void loadMergeSameConcurrent() throws Exception {
         StudyConfiguration studyConfiguration = createStudyConfiguration();
         StoragePipelineResult storagePipelineResult = runDefaultETL(smallInputUri, variantStorageEngine, studyConfiguration,
@@ -246,7 +278,9 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
         assertEquals(1, exception.getResults().size());
         assertTrue(exception.getResults().get(0).isLoadExecuted());
         assertNotNull(exception.getResults().get(0).getLoadError());
-        MongoVariantStorageEngineException expected = MongoVariantStorageEngineException.filesBeingMergedException(Collections.singletonList(FILE_ID));
+        BatchFileOperation opInProgress = new BatchFileOperation(MongoDBVariantOptions.MERGE.key(), Collections.singletonList(FILE_ID), 0, BatchFileOperation.Type.LOAD);
+        opInProgress.addStatus(BatchFileOperation.Status.RUNNING);
+        StorageEngineException expected = StorageEngineException.currentOperationInProgressException(opInProgress);
         assertEquals(expected.getClass(), exception.getResults().get(0).getLoadError().getClass());
         assertEquals(expected.getMessage(), exception.getResults().get(0).getLoadError().getMessage());
     }

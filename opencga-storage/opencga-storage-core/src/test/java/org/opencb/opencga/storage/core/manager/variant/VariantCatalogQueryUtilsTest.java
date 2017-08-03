@@ -20,14 +20,15 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.managers.UserManager;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDIES;
 
 /**
@@ -50,10 +51,14 @@ public class VariantCatalogQueryUtilsTest {
         addStudyId(3L);
 
         catalogManager = mock(CatalogManager.class);
-        CatalogManager catalogManager1 = doAnswer(invocation -> studyNameMap.get(invocation.getArgument(0).toString()))
-                .when(catalogManager);
-        String userId = catalogManager1.getUserManager().getId(anyString());
-        catalogManager1.getStudyManager().getId(userId, anyString());
+        StudyManager studyManager = mock(StudyManager.class);
+        UserManager userManager = mock(UserManager.class);
+        when(catalogManager.getStudyManager()).thenReturn(studyManager);
+        when(catalogManager.getUserManager()).thenReturn(userManager);
+        when(userManager.getId(eq("sessionId"))).thenReturn("u");
+        doAnswer(invocation -> studyNameMap.get(invocation.getArgument(1).toString()))
+                .when(studyManager).getId(anyString(), anyString());
+
         catalogUtils = new VariantCatalogQueryUtils(catalogManager);
     }
 

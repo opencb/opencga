@@ -71,9 +71,10 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     @Override
-    public QueryResult<Long> count() {
+    public QueryResult<Long> count(Query query) {
+        Bson bson = parseQuery(query);
         MongoDBCollection coll = db.getCollection(collectionName);
-        return coll.count();
+        return coll.count(bson);
     }
 
     @Override

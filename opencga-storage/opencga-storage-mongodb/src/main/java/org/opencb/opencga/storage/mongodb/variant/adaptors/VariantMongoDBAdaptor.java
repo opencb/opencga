@@ -27,6 +27,8 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.json.JsonMode;
+import org.bson.json.JsonWriterSettings;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -132,7 +134,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 : storageEngineConfiguration.getVariant().getOptions();
 
         queryParser = new VariantMongoDBQueryParser(studyConfigurationManager);
-//        this.cacheManager = new CacheManager(storageConfiguration);
         NUMBER_INSTANCES.incrementAndGet();
     }
 
@@ -172,19 +173,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     /**
-     * Remove all the given samples belonging to the study from the database.
-     *
-     * @param studyName   The study name where samples belong to
-     * @param sampleNames Sample names to be deleted, these must belong to the study
-     * @param options     Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
-     * @return A QueryResult with a list with all the samples deleted
-     */
-    public QueryResult removeSamples(String studyName, List<String> sampleNames, QueryOptions options) {
-        //TODO
-        throw new UnsupportedOperationException();
-    }
-
-    /**
      * Remove the given file from the database with all the samples it has.
      *
      * @param study     The study where the file belong
@@ -209,24 +197,24 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         // Remove all the study entries that does not contain any of the other indexed files.
         // This include studies only with the files to remove and with negated fileIds (overlapped files)
-        Bson query = elemMatch(DocumentToVariantConverter.STUDIES_FIELD,
+        Bson studiesToRemoveQuery = elemMatch(DocumentToVariantConverter.STUDIES_FIELD,
                 and(
                         eq(STUDYID_FIELD, studyId),
 //                            in(FILES_FIELD + '.' + FILEID_FIELD, fileIds),
                         nin(FILES_FIELD + '.' + FILEID_FIELD, otherIndexedFiles)
                 )
         );
-        removeFilesFromStageCollection(query, studyId, fileIds);
+        removeFilesFromStageCollection(studiesToRemoveQuery, studyId, fileIds);
 
-        return removeFilesFromVariantsCollection(query, sc, fileIds);
+        return removeFilesFromVariantsCollection(studiesToRemoveQuery, sc, fileIds);
     }
 
-    private Bson removeFilesFromStageCollection(Bson query, Integer studyId, List<Integer> fileIds) {
+    private void removeFilesFromStageCollection(Bson studiesToRemoveQuery, Integer studyId, List<Integer> fileIds) {
 
         int batchSize = 500;
         FindIterable<Document> findIterable = getVariantsCollection()
                 .nativeQuery()
-                .find(query, Projections.include("_id"), new QueryOptions())
+                .find(studiesToRemoveQuery, Projections.include("_id"), new QueryOptions())
                 .batchSize(batchSize);
 
         logger.info("Remove files from stage collection - step 1/3"); // Remove study if only contains removed files
@@ -254,7 +242,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         logger.info("Remove files from stage collection - step 2/3"); // Other studies
         for (Integer fileId : fileIds) {
-            studyUpdate.add(unset(studyId + "." + fileId));
+            studyUpdate.add(unset(String.valueOf(studyId) + '.' + fileId));
         }
         updatedStageDocuments += stageCollection.update(eq(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyId.toString()),
                 combine(studyUpdate), new QueryOptions(MULTI, true)).first().getModifiedCount();
@@ -264,10 +252,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         logger.info("Updated " + updatedStageDocuments + " documents from stage");
         logger.info("Removed " + removedStageDocuments + " documents from stage");
-        return query;
     }
 
-    private QueryResult<UpdateResult> removeFilesFromVariantsCollection(Bson query, StudyConfiguration sc, List<Integer> fileIds) {
+    private QueryResult<UpdateResult> removeFilesFromVariantsCollection(Bson studiesToRemoveQuery, StudyConfiguration sc,
+                                                                        List<Integer> fileIds) {
 
         Set<Integer> sampleIds = fileIds.stream()
                 .map(sc.getSamplesInFiles()::get)
@@ -277,13 +265,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // Update and remove variants from variants collection
         int studyId = sc.getStudyId();
         logger.info("Remove files from variants collection - step 1/3"); // Remove study if only contains removed files
-        long updatedVariantsDocuments = removeStudy(studyId, query).first().getModifiedCount();
+        long updatedVariantsDocuments = removeStudyFromVariants(studyId, studiesToRemoveQuery).first().getModifiedCount();
 
 
         // Remove also negated fileIds
         List<Integer> negatedFileIds = fileIds.stream().map(i -> -i).collect(Collectors.toList());
         fileIds.addAll(negatedFileIds);
 
+        Bson query;
         // If default genotype is not the unknown genotype, we must iterate over all the documents in the study
         if (!sc.getAttributes().getString(DEFAULT_GENOTYPE.key()).equals(DocumentToSamplesConverter.UNKNOWN_GENOTYPE)) {
             query = eq(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, studyId);
@@ -341,9 +330,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         boolean purge = options.getBoolean("purge", true);
 
-        QueryResult<UpdateResult> result = removeStudy(studyId, query);
+        logger.info("Remove study from variants collection - step 1/" + (purge ? '2' : '1'));
+        QueryResult<UpdateResult> result = removeStudyFromVariants(studyId, query);
 
         if (purge) {
+            logger.info("Remove study from variants collection - step 2/2");
             removeEmptyVariants();
         }
 
@@ -351,15 +342,17 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         Bson combine = combine(pull(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyId.toString()), unset(studyId.toString()));
         logger.debug("removeStudy: stage query = " + eq.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         logger.debug("removeStudy: stage update = " + combine.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.info("Remove study from stage collection - step 1/" + (purge ? '2' : '1'));
         getStageCollection().update(eq, combine, new QueryOptions(MULTI, true));
 
         if (purge) {
+            logger.info("Remove study from stage collection - step 2/2");
             removeEmptyVariantsFromStage();
         }
         return result;
     }
 
-    private QueryResult<UpdateResult> removeStudy(int studyId, Bson query) {
+    private QueryResult<UpdateResult> removeStudyFromVariants(int studyId, Bson query) {
         // { $pull : { files : {  sid : <studyId> } } }
         Bson update = combine(
                 pull(DocumentToVariantConverter.STUDIES_FIELD, eq(STUDYID_FIELD, studyId)),
@@ -393,60 +386,18 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
 
-//        logger.info("******************** Summary => " + options.getBoolean("summary"));
-
-//
-//        VariantQueryResult<Variant> queryResult;
-//
-//        if (options.getBoolean("cache") && cacheManager.isTypeAllowed("var")) {
-//            List<Integer> studyIds = studyConfigurationManager.getStudyIds(query.getAsList(STUDIES.key()), options);
-//            // TODO : ONLY USING ONE STUDY ID ?
-//            String key = cacheManager.createKey(studyIds.get(0).toString(), "var", query, options);
-//            queryResult = new VariantQueryResult<>(cacheManager.get(key), null);
-//            if (queryResult.getResult() == null || queryResult.getResult().size() == 0) {
-//                queryResult = getVariantQueryResult(query, options);
-//                cacheManager.set(key, query, queryResult);
-//            }
-//        } else {
-//            if (options.getBoolean("summary", false) && storageConfiguration.getSearch().getActive()
-//                    && variantSearchManager != null && variantSearchManager.isAlive(credentials.getMongoDbName())) {
-//                try {
-//                    queryResult = variantSearchManager.query(credentials.getMongoDbName(), query, options);
-//                } catch (IOException | VariantSearchException e) {
-//                    throw Throwables.propagate(e);
-//                }
-//            } else {
-//                queryResult = getVariantQueryResult(query, options);
-//            }
-//        }
-//        return queryResult;
-//    }
-//
-//    private VariantQueryResult<Variant> getVariantQueryResult(Query query, QueryOptions options) {
         Document mongoQuery = queryParser.parseQuery(query);
         Document projection = queryParser.createProjection(query, options);
-//        logger.debug("Query to be executed: '{}'", mongoQuery.toJson(new JsonWriterSettings(JsonMode.SHELL, false)));
         options.putIfAbsent(QueryOptions.SKIP_COUNT, true);
 
-//        int defaultTimeout = configuration.getInt(DEFAULT_TIMEOUT.key(), DEFAULT_TIMEOUT.defaultValue());
-//        int maxTimeout = configuration.getInt(MAX_TIMEOUT.key(), MAX_TIMEOUT.defaultValue());
-//        int timeout = options.getInt(QueryOptions.TIMEOUT, defaultTimeout);
-//        if (timeout > maxTimeout || timeout < 0) {
-//            timeout = maxTimeout;
-//        }
-//        options.put(QueryOptions.TIMEOUT, timeout);
+        if (options.getBoolean("explain", false)) {
+            Document explain = variantsCollection.nativeQuery()
+                    .find(mongoQuery, projection, options)
+                    .modifiers(new Document("$explain", true))
+                    .first();
+            logger.debug("MongoDB Explain = {}", explain.toJson(new JsonWriterSettings(JsonMode.SHELL, true)));
+        }
 
-        // FIXME: MONGO_MIGRATION
-//        if (options.getBoolean("mongodb.explain", false)) {
-//            FindIterable<Document> dbCursor = variantsCollection.nativeQuery().find(mongoQuery, projection, options);
-//            DBObject explain = dbCursor.explain();
-//            try {
-//                System.err.println("mongodb.explain = "
-//                        + new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(explain));
-//            } catch (JsonProcessingException ignore) {
-//                System.err.println("mongodb.explain = " + explain);
-//            }
-//        }
         DocumentToVariantConverter converter = getDocumentToVariantConverter(query, options);
         Map<String, List<String>> samples = getSamplesMetadata(query, options, studyConfigurationManager);
         return new VariantQueryResult<>(variantsCollection.find(mongoQuery, projection, converter, options), samples);
@@ -529,33 +480,28 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             case "gene":
             case "ensemblGene":
                 documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CT_ENSEMBL_GENE_ID_FIELD;
+                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.CT_ENSEMBL_GENE_ID_FIELD;
                 break;
             case "ensemblTranscript":
                 documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CT_ENSEMBL_TRANSCRIPT_ID_FIELD;
+                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.CT_ENSEMBL_TRANSCRIPT_ID_FIELD;
                 break;
             case "ct":
             case "consequence_type":
                 documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD;
+                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD;
                 break;
             default:
                 documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CT_GENE_NAME_FIELD;
+                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.CT_GENE_NAME_FIELD;
                 break;
         }
         Document mongoQuery = queryParser.parseQuery(query);
         return variantsCollection.distinct(documentPath, mongoQuery);
-    }
-
-    @Override
-    public VariantDBIterator iterator() {
-        return iterator(new Query(), new QueryOptions());
     }
 
     @Override
@@ -567,16 +513,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             query = new Query();
         }
 
-//        if (options.getBoolean("summary", false) && storageConfiguration.getSearch().getActive()
-//                && variantSearchManager != null && variantSearchManager.isAlive(credentials.getMongoDbName())) {
-//            // Solr iterator
-//            try {
-//                return variantSearchManager.iterator(credentials.getMongoDbName(), query, options);
-//            } catch (VariantSearchException | IOException e) {
-//                e.printStackTrace();
-//            }
-//            //throw new UnsupportedOperationException("Summary option (i.e., Solr search) not implemented yet!!");
-//        } else {
         Document mongoQuery = queryParser.parseQuery(query);
         Document projection = queryParser.createProjection(query, options);
         DocumentToVariantConverter converter = getDocumentToVariantConverter(query, options);
@@ -701,9 +637,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             resultList.add(intervalObj);
         }
 
-        QueryResult queryResult = new QueryResult(region.toString(), ((Long) (dbTimeEnd - dbTimeStart)).intValue(),
+        return new QueryResult(region.toString(), ((Long) (dbTimeEnd - dbTimeStart)).intValue(),
                 resultList.size(), resultList.size(), null, null, resultList);
-        return queryResult;
     }
 
     @Override
@@ -718,6 +653,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) {
+        if (options == null) {
+            options = new QueryOptions();
+        } else {
+            options = new QueryOptions(options); // Copy given QueryOptions.
+        }
+
         String documentPath;
         String unwindPath;
         int numUnwinds = 2;
@@ -725,37 +666,32 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             case "gene":
             case "ensemblGene":
                 documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CT_ENSEMBL_GENE_ID_FIELD;
+                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.CT_ENSEMBL_GENE_ID_FIELD;
                 unwindPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
+                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
 
                 break;
             case "ct":
             case "consequence_type":
                 documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD;
+                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD;
                 unwindPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
+                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
                 numUnwinds = 3;
                 break;
             default:
                 documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CT_GENE_NAME_FIELD;
+                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.CT_GENE_NAME_FIELD;
                 unwindPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
+                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
                 break;
         }
 
         Document mongoQuery = queryParser.parseQuery(query);
 
-        if (options == null) {
-            options = new QueryOptions();
-        } else {
-            options = new QueryOptions(options); // Copy given QueryOptions.
-        }
         boolean count = options.getBoolean("count", false);
         int order = options.getInt("order", -1);
 
@@ -860,7 +796,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         for (VariantStatsWrapper wrapper : variantStatsWrappers) {
             Map<String, VariantStats> cohortStats = wrapper.getCohortStats();
             Iterator<VariantStats> iterator = cohortStats.values().iterator();
-            VariantStats variantStats = iterator.hasNext() ? iterator.next() : null;
+            if (!iterator.hasNext()) {
+                continue;
+            }
+            VariantStats variantStats = iterator.next();
             List<Document> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, studyConfiguration.getStudyId());   // TODO
             // remove when we remove fileId
 //            List cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId());   // TODO use when we
@@ -970,7 +909,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         Document queryDocument = queryParser.parseQuery(query);
         Document updateDocument = DocumentToVariantAnnotationConverter.convertToStorageType(attribute);
         return variantsCollection.update(queryDocument,
-                set(DocumentToVariantConverter.CUSTOM_ANNOTATION_FIELD + "." + name, updateDocument),
+                set(DocumentToVariantConverter.CUSTOM_ANNOTATION_FIELD + '.' + name, updateDocument),
                 new QueryOptions(MULTI, true));
     }
 
@@ -1086,15 +1025,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // Study indices
         ////////////////
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.STUDIES_FIELD
-                + "." + STUDYID_FIELD, 1)
+                + '.' + STUDYID_FIELD, 1)
                 .append(DocumentToVariantConverter.STUDIES_FIELD
-                        + "." + FILES_FIELD
-                        + "." + FILEID_FIELD, 1), onBackground);
+                        + '.' + FILES_FIELD
+                        + '.' + FILEID_FIELD, 1), onBackground);
         // Stats indices
         ////////////////
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.STATS_FIELD + "." + DocumentToVariantStatsConverter
+        variantsCollection.createIndex(new Document(DocumentToVariantConverter.STATS_FIELD + '.' + DocumentToVariantStatsConverter
                 .MAF_FIELD, 1), onBackground);
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.STATS_FIELD + "." + DocumentToVariantStatsConverter
+        variantsCollection.createIndex(new Document(DocumentToVariantConverter.STATS_FIELD + '.' + DocumentToVariantStatsConverter
                 .MGF_FIELD, 1), onBackground);
 
         // Annotation indices
@@ -1103,105 +1042,105 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // XRefs.id
         variantsCollection.createIndex(new Document()
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.XREFS_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.XREF_ID_FIELD, 1),
+                                + '.' + DocumentToVariantAnnotationConverter.XREFS_FIELD
+                                + '.' + DocumentToVariantAnnotationConverter.XREF_ID_FIELD, 1),
                 onBackground);
         // ConsequenceType.so
         variantsCollection.createIndex(new Document()
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD, 1),
+                                + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                                + '.' + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD, 1),
                 onBackground);
         // _gn_so : SPARSE
         variantsCollection.createIndex(new Document()
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.GENE_SO_FIELD, 1),
+                                + '.' + DocumentToVariantAnnotationConverter.GENE_SO_FIELD, 1),
                 onBackgroundSparse);
         // Population frequency : SPARSE
         variantsCollection.createIndex(new Document()
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_STUDY_FIELD, 1)
+                                + '.' + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
+                                + '.' + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_STUDY_FIELD, 1)
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_POP_FIELD, 1)
+                                + '.' + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
+                                + '.' + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_POP_FIELD, 1)
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, 1),
+                                + '.' + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
+                                + '.' + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, 1),
                 new ObjectMap(onBackgroundSparse).append(NAME, "pop_freq"));
         // Clinical clinvar : SPARSE
         variantsCollection.createIndex(new Document()
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.CLINICAL_DATA_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.CLINICAL_CLINVAR_FIELD
+                                + '.' + DocumentToVariantAnnotationConverter.CLINICAL_DATA_FIELD
+                                + '.' + DocumentToVariantAnnotationConverter.CLINICAL_CLINVAR_FIELD
                                 + ".clinicalSignificance", 1),
                 new ObjectMap(onBackgroundSparse).append(NAME, "clinvar"));
 
         // Conserved region score (phastCons, phylop, gerp)
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSERVED_REGION_GERP_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+                        + '.' + DocumentToVariantAnnotationConverter.CONSERVED_REGION_GERP_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
                 onBackground);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSERVED_REGION_PHYLOP_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+                        + '.' + DocumentToVariantAnnotationConverter.CONSERVED_REGION_PHYLOP_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
                 onBackground);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSERVED_REGION_PHASTCONS_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+                        + '.' + DocumentToVariantAnnotationConverter.CONSERVED_REGION_PHASTCONS_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
                 onBackground);
 
         // Functional score (cadd_scaled, cadd_raw)
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.FUNCTIONAL_CADD_SCALED_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+                        + '.' + DocumentToVariantAnnotationConverter.FUNCTIONAL_CADD_SCALED_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
                 onBackground);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.FUNCTIONAL_CADD_RAW_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+                        + '.' + DocumentToVariantAnnotationConverter.FUNCTIONAL_CADD_RAW_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
                 onBackground);
 
         // Drugs : SPARSE
         variantsCollection.createIndex(new Document()
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.DRUG_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.DRUG_NAME_FIELD, 1),
+                                + '.' + DocumentToVariantAnnotationConverter.DRUG_FIELD
+                                + '.' + DocumentToVariantAnnotationConverter.DRUG_NAME_FIELD, 1),
                 onBackgroundSparse);
         // Protein substitution score (polyphen , sift) : SPARSE
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_POLYPHEN_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.CT_PROTEIN_POLYPHEN_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
                 onBackgroundSparse);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_SIFT_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.CT_PROTEIN_SIFT_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
                 onBackgroundSparse);
 
         // Protein substitution score description (polyphen , sift) : SPARSE
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_POLYPHEN_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD, 1),
+                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.CT_PROTEIN_POLYPHEN_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD, 1),
                 onBackgroundSparse);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_SIFT_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD, 1),
+                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.CT_PROTEIN_SIFT_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD, 1),
                 onBackgroundSparse);
 
         // Protein Keywords : SPARSE
         variantsCollection.createIndex(new Document()
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_KEYWORDS, 1),
+                                + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                                + '.' + DocumentToVariantAnnotationConverter.CT_PROTEIN_KEYWORDS, 1),
                 onBackgroundSparse);
         // TranscriptAnnotationFlags : SPARSE
         variantsCollection.createIndex(new Document()
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.CT_TRANSCRIPT_ANNOT_FLAGS, 1),
+                                + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                                + '.' + DocumentToVariantAnnotationConverter.CT_TRANSCRIPT_ANNOT_FLAGS, 1),
                 onBackgroundSparse);
 
         logger.debug("sent order to create indices");
@@ -1220,19 +1159,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
         this.studyConfigurationManager = studyConfigurationManager;
-    }
-
-    public static List<Integer> getLoadedSamples(int fileId, StudyConfiguration studyConfiguration) {
-        List<Integer> loadedSampleIds = new LinkedList<>();
-        for (Integer indexedFile : studyConfiguration.getIndexedFiles()) {
-            if (indexedFile.equals(fileId)) {
-                continue;
-            } else {
-                loadedSampleIds.addAll(studyConfiguration.getSamplesInFiles().get(indexedFile));
-            }
-        }
-        loadedSampleIds.removeAll(studyConfiguration.getSamplesInFiles().get(fileId));
-        return loadedSampleIds;
     }
 
 }

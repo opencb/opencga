@@ -53,15 +53,26 @@ public class StorageEngineException extends Exception {
         return otherOperationInProgressException(opInProgress, currentOperation.getOperationName(), currentOperation.getFileIds());
     }
 
-    public static StorageEngineException otherOperationInProgressException(BatchFileOperation opInProgress,
-                                                                           String currentOperationName, List<Integer> fileIds) {
-        if (currentOperationName.equals(opInProgress.getOperationName()) && fileIds.equals(opInProgress.getFileIds())) {
+    public static StorageEngineException otherOperationInProgressException(BatchFileOperation operation, String jobOperationName,
+                                                                           List<Integer> fileIds) {
+        return otherOperationInProgressException(operation, jobOperationName, fileIds, false);
+    }
+
+    public static StorageEngineException otherOperationInProgressException(BatchFileOperation opInProgress, String currentOperationName,
+                                                                           List<Integer> fileIds, boolean resume) {
+        if (opInProgress.sameOperation(fileIds, opInProgress.getType(), currentOperationName)) {
             return currentOperationInProgressException(opInProgress);
         }
-        return new StorageEngineException("Can not " + currentOperationName + " files " + fileIds
-                + " while there is an operation \"" + opInProgress.getOperationName() + "\" "
-                + "in status \"" + opInProgress.currentStatus() + "\" for files " + opInProgress.getFileIds() + ". "
-                + "Finish or resume operations to continue.");
+        if (resume && opInProgress.getOperationName().equals(currentOperationName)) {
+            return new StorageEngineException("Can not resume \"" + currentOperationName + "\" "
+                    + "in status \"" + opInProgress.currentStatus() + "\" with input files " + fileIds + ". "
+                    + "Input files must be same from the previous batch: " + opInProgress.getFileIds());
+        } else {
+            return new StorageEngineException("Can not \"" + currentOperationName + "\" files " + fileIds
+                    + " while there is an operation \"" + opInProgress.getOperationName() + "\" "
+                    + "in status \"" + opInProgress.currentStatus() + "\" for files " + opInProgress.getFileIds() + ". "
+                    + "Finish or resume operation to continue.");
+        }
     }
 
     public static StorageEngineException currentOperationInProgressException(BatchFileOperation opInProgress) {
