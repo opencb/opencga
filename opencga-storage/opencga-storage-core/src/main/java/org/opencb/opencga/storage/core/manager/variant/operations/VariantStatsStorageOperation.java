@@ -240,7 +240,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
                 if (!cohort.contains(":")) {
                     cohort = studyId + ":" + cohort;
                 }
-                long cohortId = catalogManager.getCohortManager().getId(userId, cohort);
+                long cohortId = catalogManager.getCohortManager().getId(cohort, String.valueOf(studyId), sessionId).getResourceId();
                 if (cohortId < 0) {
                     throw new CatalogException("Cohort '" + cohort + "' not found");
                 }
