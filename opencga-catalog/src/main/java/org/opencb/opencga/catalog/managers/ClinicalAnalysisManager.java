@@ -17,11 +17,14 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.managers.api.IEntryManager;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
@@ -36,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,7 +49,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 05/06/17.
  */
-public class ClinicalAnalysisManager extends AbstractManager {
+public class ClinicalAnalysisManager extends AbstractManager implements IEntryManager<Long, ClinicalAnalysis> {
 
     protected static Logger logger = LoggerFactory.getLogger(CohortManager.class);
 
@@ -160,6 +164,17 @@ public class ClinicalAnalysisManager extends AbstractManager {
         return new MyResourceIds(userId, studyId, clinicalIds);
     }
 
+    @Override
+    public Long getStudyId(long entryId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public DBIterator<ClinicalAnalysis> iterator(String studyStr, Query query, QueryOptions options, String sessionId)
+            throws CatalogException {
+        return null;
+    }
+
 
     public QueryResult<ClinicalAnalysis> create(String studyStr, ClinicalAnalysis clinicalAnalysis, QueryOptions options,
                                                 String sessionId) throws CatalogException {
@@ -271,5 +286,60 @@ public class ClinicalAnalysisManager extends AbstractManager {
         QueryResult<Long> queryResultAux = clinicalDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_CLINICAL_ANALYSIS);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
+    }
+
+    @Override
+    public List<QueryResult<ClinicalAnalysis>> delete(String entries, @Nullable String studyStr, ObjectMap params, String sessionId)
+            throws CatalogException, IOException {
+        return null;
+    }
+
+    @Override
+    public QueryResult rank(long studyId, Query query, String field, int numResults, boolean asc, String sessionId) throws
+            CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
+            throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult<ClinicalAnalysis> get(Long id, QueryOptions options, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult<ClinicalAnalysis> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult<ClinicalAnalysis> update(Long id, ObjectMap parameters, QueryOptions options, String sessionId)
+            throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public List<QueryResult<ClinicalAnalysis>> delete(Query query, QueryOptions options, String sessionId)
+            throws CatalogException, IOException {
+        return null;
+    }
+
+    @Override
+    public List<QueryResult<ClinicalAnalysis>> restore(String ids, QueryOptions options, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public List<QueryResult<ClinicalAnalysis>> restore(Query query, QueryOptions options, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public void setStatus(String id, @Nullable String status, @Nullable String message, String sessionId) throws CatalogException {
+
     }
 }

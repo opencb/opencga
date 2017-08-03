@@ -25,6 +25,7 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
@@ -32,7 +33,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IAnnotationSetManager;
-import org.opencb.opencga.catalog.managers.api.ResourceManager;
+import org.opencb.opencga.catalog.managers.api.IEntryManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.FamilyAclEntry;
@@ -55,7 +56,7 @@ import static org.opencb.opencga.catalog.db.api.FamilyDBAdaptor.QueryParams.ONTO
 /**
  * Created by pfurio on 02/05/17.
  */
-public class FamilyManager extends AbstractManager implements ResourceManager<Long, Family>, IAnnotationSetManager {
+public class FamilyManager extends AbstractManager implements IEntryManager<Long, Family>, IAnnotationSetManager {
 
     public FamilyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                          DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
@@ -165,6 +166,16 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         }
 
         return new MyResourceIds(userId, studyId, familyIds);
+    }
+
+    @Override
+    public Long getStudyId(long entryId) throws CatalogException {
+        return familyDBAdaptor.getStudyId(entryId);
+    }
+
+    @Override
+    public DBIterator<Family> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
+        return null;
     }
 
     public QueryResult<Family> create(String studyStr, Family family, QueryOptions options, String sessionId) throws CatalogException {
@@ -413,6 +424,24 @@ public class FamilyManager extends AbstractManager implements ResourceManager<Lo
         QueryResult<Long> queryResultAux = familyDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
+    }
+
+    @Override
+    public List<QueryResult<Family>> delete(String entries, @Nullable String studyStr, ObjectMap params, String sessionId)
+            throws CatalogException, IOException {
+        return null;
+    }
+
+    @Override
+    public QueryResult rank(long studyId, Query query, String field, int numResults, boolean asc, String sessionId) throws
+            CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
+            throws CatalogException {
+        return null;
     }
 
     @Override
