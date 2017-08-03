@@ -326,6 +326,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         }
         return true;
     }
+
     public void printActiveThreadsNumber() {
         List<String> threads = Thread.getAllStackTraces()
                 .keySet()

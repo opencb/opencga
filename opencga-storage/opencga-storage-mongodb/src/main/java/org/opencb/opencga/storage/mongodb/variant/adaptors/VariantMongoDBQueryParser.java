@@ -677,13 +677,13 @@ public class VariantMongoDBQueryParser {
         if (query != null) {
             if (query.get(COHORTS.key()) != null && !query.getString(COHORTS.key()).isEmpty()) {
                 addQueryFilter(DocumentToVariantConverter.STATS_FIELD
-                                + "." + DocumentToVariantStatsConverter.COHORT_ID,
+                                + '.' + DocumentToVariantStatsConverter.COHORT_ID,
                         query.getString(COHORTS.key()), builder, QueryOperation.AND,
                         s -> {
                             try {
                                 return Integer.parseInt(s);
                             } catch (NumberFormatException ignore) {
-                                int indexOf = s.lastIndexOf(":");
+                                int indexOf = s.lastIndexOf(':');
                                 if (defaultStudyConfiguration == null && indexOf < 0) {
                                     throw VariantQueryException.malformedParam(COHORTS, s, "Expected {study}:{cohort}");
                                 } else {
@@ -732,7 +732,7 @@ public class VariantMongoDBQueryParser {
                 for (String numgt : query.getAsStringList("numgt")) {
                     String[] split = numgt.split(":");
                     addCompQueryFilter(
-                            DocumentToVariantConverter.STATS_FIELD + "." + DocumentToVariantStatsConverter.NUMGT_FIELD + "." + split[0],
+                            DocumentToVariantConverter.STATS_FIELD + '.' + DocumentToVariantStatsConverter.NUMGT_FIELD + '.' + split[0],
                             split[1], builder, false);
                 }
             }
@@ -740,11 +740,11 @@ public class VariantMongoDBQueryParser {
     }
 
     protected Document createProjection(Query query, QueryOptions options) {
-        Document projection = new Document();
-
         if (options == null) {
             options = new QueryOptions();
         }
+
+        Document projection = new Document();
 
         if (options.containsKey(QueryOptions.SORT) && !options.getString(QueryOptions.SORT).equals("_id")) {
             if (options.getBoolean(QueryOptions.SORT)) {
@@ -838,7 +838,7 @@ public class VariantMongoDBQueryParser {
     }
 
     private QueryBuilder addQueryIntegerFilter(String key, String value, final QueryBuilder builder, VariantQueryUtils.QueryOperation op) {
-        return this.<Integer>addQueryFilter(key, value, builder, op, elem -> {
+        return this.addQueryFilter(key, value, builder, op, elem -> {
             try {
                 return Integer.parseInt(elem);
             } catch (NumberFormatException e) {

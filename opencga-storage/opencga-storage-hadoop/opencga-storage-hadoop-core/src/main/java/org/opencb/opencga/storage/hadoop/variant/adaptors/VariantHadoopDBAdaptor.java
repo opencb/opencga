@@ -293,11 +293,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantDBIterator iterator() {
-        return iterator(new Query(), new QueryOptions());
-    }
-
-    @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
 
         if (options == null) {

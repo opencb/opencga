@@ -80,15 +80,15 @@ public class VariantQueryException extends IllegalArgumentException {
     }
 
     public static VariantQueryException cohortNotFound(int cohortId, int studyId, Collection<String> availableCohorts) {
-        return cohortNotFound2(cohortId, null, studyId, availableCohorts);
+        return cohortNotFound(cohortId, null, studyId, availableCohorts);
     }
 
     public static VariantQueryException cohortNotFound(String cohortName, int studyId, Collection<String> availableCohorts) {
-        return cohortNotFound2(null, String.valueOf(cohortName), studyId, availableCohorts);
+        return cohortNotFound(null, String.valueOf(cohortName), studyId, availableCohorts);
     }
 
-    private static VariantQueryException cohortNotFound2(Number cohortId, String cohortName, int studyId,
-                                                         Collection<String> availableCohorts) {
+    private static VariantQueryException cohortNotFound(Number cohortId, String cohortName, int studyId,
+                                                        Collection<String> availableCohorts) {
         List<String> availableCohortsList = availableCohorts == null ? Collections.emptyList() : new ArrayList<>(availableCohorts);
         availableCohortsList.sort(String::compareTo);
         return new VariantQueryException("Cohort { "

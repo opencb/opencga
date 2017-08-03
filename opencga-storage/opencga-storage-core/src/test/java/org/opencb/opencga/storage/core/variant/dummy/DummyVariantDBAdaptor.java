@@ -100,11 +100,6 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantDBIterator iterator() {
-        return iterator(new Query(), new QueryOptions());
-    }
-
-    @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
         List<Variant> variants = new ArrayList<>(TEMPLATES.size());
         for (String template : TEMPLATES) {
