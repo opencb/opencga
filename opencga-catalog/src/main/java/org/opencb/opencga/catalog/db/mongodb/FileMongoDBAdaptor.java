@@ -31,7 +31,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.FileConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -704,49 +707,6 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
         return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
-    }
-
-    /**
-     * Checks whether the fileId is being referred on any other document.
-     *
-     * @param fileId file id.
-     * @throws CatalogDBException when the fileId is being used as input of any job or dataset.
-     */
-    private void checkCanDelete(long fileId) throws CatalogDBException {
-
-        // Check if the file is being used as input of any job
-        Query query = new Query(JobDBAdaptor.QueryParams.INPUT.key(), fileId);
-        Long count = dbAdaptorFactory.getCatalogJobDBAdaptor().count(query).first();
-        if ((count > 0)) {
-            throw new CatalogDBException("The file " + fileId + " cannot be deleted/removed because it is being used as input of "
-                    + count + " jobs.");
-        }
-
-        query = new Query(DatasetDBAdaptor.QueryParams.FILES.key(), fileId);
-        count = dbAdaptorFactory.getCatalogDatasetDBAdaptor().count(query).first();
-        if ((count > 0)) {
-            throw new CatalogDBException("The file " + fileId + " cannot be deleted/removed because it is part of "
-                    + count + " dataset(s).");
-        }
-
-    }
-
-    /**
-     * Remove the references from active documents that are pointing to the current fileId.
-     *
-     * @param fileId file Id.
-     * @throws CatalogDBException when there is any kind of error.
-     */
-    private void deleteReferencesToFile(long fileId) throws CatalogDBException {
-        // Remove references from datasets
-        Query query = new Query(DatasetDBAdaptor.QueryParams.FILES.key(), fileId);
-        QueryResult<Long> result = dbAdaptorFactory.getCatalogDatasetDBAdaptor()
-                .extractFilesFromDatasets(query, Collections.singletonList(fileId));
-        logger.debug("FileId {} extracted from {} datasets", fileId, result.first());
-
-        // Remove references from jobs
-        result = dbAdaptorFactory.getCatalogJobDBAdaptor().extractFiles(Collections.singletonList(fileId));
-        logger.debug("FileId {} extracted from {} jobs", fileId, result.first());
     }
 
     @Override

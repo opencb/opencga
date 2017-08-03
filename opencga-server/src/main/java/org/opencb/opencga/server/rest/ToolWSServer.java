@@ -18,9 +18,7 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
 import org.glassfish.jersey.media.multipart.FormDataParam;
-import org.opencb.opencga.analysis.ToolManager;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.core.exception.VersionException;
 
@@ -28,9 +26,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.nio.file.Paths;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -55,21 +50,22 @@ public class ToolWSServer extends OpenCGAWSServer {
     })
     public Response info(@PathParam(value = "toolId") @DefaultValue("") @FormDataParam("toolId") String toolId,
                          @ApiParam(value = "execution", required = false)  @DefaultValue("") @QueryParam("execution") String execution) {
-        String[] toolIds = toolId.split(",");
-        try {
-            List<QueryResult> results = new LinkedList<>();
-            for (String id : toolIds) {
-                QueryResult<Tool> toolResult = catalogManager.getJobManager().getTool(catalogManager.getJobManager().getToolId(id), sessionId);
-                Tool tool = toolResult.getResult().get(0);
-                ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
-                tool.setManifest(toolManager.getManifest());
-                tool.setResult(toolManager.getResult());
-                results.add(toolResult);
-            }
-            return createOkResponse(results);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+//        String[] toolIds = toolId.split(",");
+//        try {
+//            List<QueryResult> results = new LinkedList<>();
+//            for (String id : toolIds) {
+//                QueryResult<Tool> toolResult = catalogManager.getJobManager().getTool(catalogManager.getJobManager().getToolId(id), sessionId);
+//                Tool tool = toolResult.getResult().get(0);
+//                ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
+//                tool.setManifest(toolManager.getManifest());
+//                tool.setResult(toolManager.getResult());
+//                results.add(toolResult);
+//            }
+//            return createOkResponse(results);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+            return createErrorResponse(new CatalogException("Not implemented"));
+//        }
     }
 
     @GET
@@ -86,18 +82,19 @@ public class ToolWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "userId", required = false) @QueryParam(value = "userId") @DefaultValue("") String userId,
                            @ApiParam(value = "alias", required = false) @QueryParam(value = "alias") @DefaultValue("") String alias,
                            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
-        try {
-            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
-            QueryResult<Tool> toolResult = catalogManager.getJobManager().getTools(query, queryOptions, sessionId);
-            for (Tool tool : toolResult.getResult()) {
-                ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), "");
-                tool.setManifest(toolManager.getManifest());
-                tool.setResult(toolManager.getResult());
-            }
-            return createOkResponse(toolResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+//        try {
+//            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
+//            QueryResult<Tool> toolResult = catalogManager.getJobManager().getTools(query, queryOptions, sessionId);
+//            for (Tool tool : toolResult.getResult()) {
+//                ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), "");
+//                tool.setManifest(toolManager.getManifest());
+//                tool.setResult(toolManager.getResult());
+//            }
+//            return createOkResponse(toolResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+        return createErrorResponse(new CatalogException("Not implemented"));
     }
 
     @GET
@@ -105,20 +102,21 @@ public class ToolWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Tool help", position = 3)
     public Response help(@PathParam(value = "toolId") @DefaultValue("") @FormDataParam("toolId") String toolId,
                          @ApiParam(value = "execution", required = false)  @DefaultValue("") @QueryParam("execution") String execution) {
-        String[] toolIds = toolId.split(",");
-        try {
-            List<String> results = new LinkedList<>();
-            for (String id : toolIds) {
-                Tool tool = catalogManager.getJobManager().getTool(catalogManager.getJobManager().getToolId(id), sessionId).getResult().get(0);
-                ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
-                String help = toolManager.help("");
-                System.out.println(help);
-                results.add(help);
-            }
-            return createOkResponse(results);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+//        String[] toolIds = toolId.split(",");
+//        try {
+//            List<String> results = new LinkedList<>();
+//            for (String id : toolIds) {
+//                Tool tool = catalogManager.getJobManager().getTool(catalogManager.getJobManager().getToolId(id), sessionId).getResult().get(0);
+//                ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
+//                String help = toolManager.help("");
+//                System.out.println(help);
+//                results.add(help);
+//            }
+//            return createOkResponse(results);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+        return createErrorResponse(new CatalogException("Not implemented"));
     }
 
     @GET

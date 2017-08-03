@@ -19,7 +19,6 @@ package org.opencb.opencga.catalog.db.api;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.models.Tool;
 
 import java.util.HashMap;
 import java.util.List;
@@ -79,36 +78,6 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
     QueryResult<ObjectMap> incJobVisits(long jobId) throws CatalogDBException;
 
     long getStudyId(long jobId) throws CatalogDBException;
-
-    /**
-     * Extract the fileIds given from the jobs matching the query. It will try to take them out from the input and output arrays.
-     *
-     * @param fileIds file ids.
-     * @return A queryResult object containing the number of datasets matching the query.
-     * @throws CatalogDBException CatalogDBException.
-     */
-    @Deprecated
-    QueryResult<Long> extractFiles(List<Long> fileIds) throws CatalogDBException;
-
-    /*
-     * Tool methods
-     */
-
-    QueryResult<Tool> createTool(String userId, Tool tool) throws CatalogDBException;
-
-    QueryResult<Tool> getTool(long id) throws CatalogDBException;
-
-    long getToolId(String userId, String toolAlias) throws CatalogDBException;
-
-    QueryResult<Tool> getAllTools(Query query, QueryOptions queryOptions) throws CatalogDBException;
-
-    /*
-     * Experiments methods
-     */
-
-    boolean experimentExists(long experimentId);
-
-//    public abstract QueryResult<Tool> searchTool(QueryOptions options);
 
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),

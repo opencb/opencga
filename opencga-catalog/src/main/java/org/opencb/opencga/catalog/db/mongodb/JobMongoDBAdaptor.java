@@ -18,9 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
@@ -41,8 +39,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.Tool;
-import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -50,7 +46,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -182,116 +177,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         } else {
             throw CatalogDBException.idNotFound("Job", jobId);
         }
-    }
-
-    @Override
-    @Deprecated
-    public QueryResult<Long> extractFiles(List<Long> fileIds) throws CatalogDBException {
-        long startTime = startQuery();
-        long numResults;
-
-        // Check for input
-        Query query = new Query(QueryParams.INPUT.key(), fileIds);
-        Bson bsonQuery = parseQuery(query, false);
-        Bson update = new Document("$pull", new Document(QueryParams.INPUT.key(), new Document("$in", fileIds)));
-        QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
-        numResults = jobCollection.update(bsonQuery, update, multi).first().getModifiedCount();
-
-        // Check for output
-        query = new Query(QueryParams.OUTPUT.key(), fileIds);
-        bsonQuery = parseQuery(query, false);
-        update = new Document("$pull", new Document(QueryParams.OUTPUT.key(), new Document("$in", fileIds)));
-        numResults += jobCollection.update(bsonQuery, update, multi).first().getModifiedCount();
-
-        return endQuery("Extract files from jobs", startTime, Collections.singletonList(numResults));
-    }
-
-    @Override
-    public QueryResult<Tool> createTool(String userId, Tool tool) throws CatalogDBException {
-        long startTime = startQuery();
-
-        if (!dbAdaptorFactory.getCatalogUserDBAdaptor().exists(userId)) {
-            throw new CatalogDBException("User {id:" + userId + "} does not exist");
-        }
-
-        Query query1 = new Query(QueryParams.ID.key(), userId).append("tools.alias", tool.getAlias());
-        QueryResult<Long> count = dbAdaptorFactory.getCatalogUserDBAdaptor().count(query1);
-        if (count.getResult().get(0) != 0) {
-            throw new CatalogDBException("Tool {alias:\"" + tool.getAlias() + "\"} already exists for this user");
-        }
-
-        // Create and add the new tool
-        tool.setId(getNewId());
-
-        Document toolObject = getMongoDBDocument(tool, "tool");
-        Document query = new Document(PRIVATE_ID, userId);
-        query.put("tools.alias", new Document("$ne", tool.getAlias()));
-
-//        DBObject update = new BasicDBObject("$push", new BasicDBObject("tools", toolObject));
-        Bson push = Updates.push("tools", toolObject);
-        //Update object
-//        QueryResult<WriteResult> queryResult = userCollection.update(query, update, null);
-        QueryResult<UpdateResult> queryResult = dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection().update(query, push, null);
-
-        if (queryResult.getResult().get(0).getModifiedCount() == 0) { // Check if the project has been inserted
-            throw new CatalogDBException("Tool {alias:\"" + tool.getAlias() + "\"} already exists for this user");
-        }
-
-        return endQuery("Create tool", startTime, getTool(tool.getId()).getResult());
-    }
-
-    @Override
-    public QueryResult<Tool> getTool(long id) throws CatalogDBException {
-        long startTime = startQuery();
-
-        Bson query = Filters.eq("tools.id", id);
-        Bson projection = Projections.fields(Projections.elemMatch("tools", Filters.eq("id", id)), Projections.include("tools"));
-        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection()
-                .find(query, projection, new QueryOptions());
-
-        if (queryResult.getNumResults() != 1) {
-            throw new CatalogDBException("Tool {id:" + id + "} no exists");
-        }
-
-        User user = parseUser(queryResult);
-        return endQuery("Get tool", startTime, user.getTools());
-    }
-
-    @Override
-    public long getToolId(String userId, String toolAlias) throws CatalogDBException {
-
-        Bson query = Filters.and(Filters.eq(PRIVATE_ID, userId), Filters.eq("tools.alias", toolAlias));
-        Bson projection = Projections.elemMatch("tools", Filters.eq("alias", toolAlias));
-        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection().find(query,
-                projection, new QueryOptions());
-
-        if (queryResult.getNumResults() != 1) {
-            throw new CatalogDBException("Tool {alias:" + toolAlias + "} no exists");
-        }
-        User user = parseUser(queryResult);
-        return user.getTools().get(0).getId();
-    }
-
-    @Override
-    public QueryResult<Tool> getAllTools(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-
-        List<Bson> aggregations = Arrays.asList(
-                Aggregates.project(Projections.include("tools")),
-                Aggregates.unwind("$tools"),
-                Aggregates.match(parseQuery(query, false))
-        );
-        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection()
-                .aggregate(aggregations, queryOptions);
-
-        List<User> users = parseObjects(queryResult, User.class);
-        List<Tool> tools = users.stream().map(user -> user.getTools().get(0)).collect(Collectors.toList());
-        return endQuery("Get tools", startTime, tools);
-    }
-
-    @Override
-    public boolean experimentExists(long experimentId) {
-        return false;
     }
 
     @Override
