@@ -27,6 +27,8 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.json.JsonMode;
+import org.bson.json.JsonWriterSettings;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -69,7 +71,9 @@ import static com.mongodb.client.model.Updates.*;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.MULTI;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getIncludeFormats;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getReturnedFiles;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getSamplesMetadata;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
 
@@ -385,6 +389,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         Document mongoQuery = queryParser.parseQuery(query);
         Document projection = queryParser.createProjection(query, options);
         options.putIfAbsent(QueryOptions.SKIP_COUNT, true);
+
+        if (options.getBoolean("explain", false)) {
+            Document explain = variantsCollection.nativeQuery()
+                    .find(mongoQuery, projection, options)
+                    .modifiers(new Document("$explain", true))
+                    .first();
+            logger.debug("MongoDB Explain = {}", explain.toJson(new JsonWriterSettings(JsonMode.SHELL, true)));
+        }
 
         DocumentToVariantConverter converter = getDocumentToVariantConverter(query, options);
         Map<String, List<String>> samples = getSamplesMetadata(query, options, studyConfigurationManager);
