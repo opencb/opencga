@@ -68,11 +68,6 @@ public class JobManager extends AbstractManager implements IEntryManager<Long, J
 
     public static final String DELETE_FILES = "deleteFiles";
 
-    public JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, DBAdaptorFactory catalogDBAdaptorFactory,
-                      CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
-        super(authorizationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
-    }
-
     public JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                       DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                       Configuration configuration) {
@@ -80,13 +75,6 @@ public class JobManager extends AbstractManager implements IEntryManager<Long, J
                 configuration);
         this.userManager = catalogManager.getUserManager();
     }
-
-    @Deprecated
-    public JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, DBAdaptorFactory catalogDBAdaptorFactory,
-                      CatalogIOManagerFactory ioManagerFactory, Properties catalogProperties) {
-        super(authorizationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
-    }
-
 
     @Override
     public Long getStudyId(long jobId) throws CatalogException {

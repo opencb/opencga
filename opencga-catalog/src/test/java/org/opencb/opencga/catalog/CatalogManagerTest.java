@@ -30,10 +30,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogFileUtils;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.IndividualManager;
-import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
@@ -1668,8 +1665,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testModifySampleBadIndividual() throws CatalogException {
-        long sampleId1 = catalogManager.getSampleManager().create("user@1000G:phase1", "SAMPLE_1", "", "", null, new QueryOptions(),
-                sessionIdUser).first().getId();
+        long sampleId1 = catalogManager.getSampleManager().create("user@1000G:phase1", "SAMPLE_1", "", "", null, false, null, null, new
+                QueryOptions(), sessionIdUser).first().getId();
 
         thrown.expect(CatalogDBException.class);
         catalogManager.getSampleManager()
@@ -1678,8 +1675,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testModifySampleUnknownIndividual() throws CatalogException {
-        long sampleId1 = catalogManager.getSampleManager().create("user@1000G:phase1", "SAMPLE_1", "", "", null, new QueryOptions(),
-                sessionIdUser).first().getId();
+        long sampleId1 = catalogManager.getSampleManager().create("user@1000G:phase1", "SAMPLE_1", "", "", null, false, null, null, new
+                QueryOptions(), sessionIdUser).first().getId();
 
         catalogManager.getSampleManager()
                 .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), -1), null, sessionIdUser);

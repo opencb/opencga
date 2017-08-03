@@ -32,7 +32,8 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.managers.api.ISampleManager;
+import org.opencb.opencga.catalog.managers.api.IAnnotationSetManager;
+import org.opencb.opencga.catalog.managers.api.IEntryManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
@@ -55,17 +56,10 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class SampleManager extends AbstractManager implements ISampleManager {
+public class SampleManager extends AbstractManager implements IEntryManager<Long, Sample>, IAnnotationSetManager {
 
     protected static Logger logger = LoggerFactory.getLogger(SampleManager.class);
     private UserManager userManager;
-
-    @Deprecated
-    public SampleManager(AuthorizationManager authorizationManager, AuditManager auditManager,
-                         DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                         Properties catalogProperties) {
-        super(authorizationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
-    }
 
     public SampleManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                          DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
@@ -78,49 +72,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     @Override
     public Long getStudyId(long sampleId) throws CatalogException {
         return sampleDBAdaptor.getStudyId(sampleId);
-    }
-
-    @Override
-    public Long getId(String userId, String sampleStr) throws CatalogException {
-        if (StringUtils.isNumeric(sampleStr)) {
-            return Long.parseLong(sampleStr);
-        }
-
-        ObjectMap parsedSampleStr = parseFeatureId(userId, sampleStr);
-        List<Long> studyIds = getStudyIds(parsedSampleStr);
-        String sampleName = parsedSampleStr.getString("featureName");
-
-        Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
-                .append(SampleDBAdaptor.QueryParams.NAME.key(), sampleName)
-                .append(SampleDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
-        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.samples.id");
-        QueryResult<Sample> queryResult = sampleDBAdaptor.get(query, qOptions);
-        if (queryResult.getNumResults() > 1) {
-            throw new CatalogException("Error: More than one sample id found based on " + sampleName);
-        } else if (queryResult.getNumResults() == 0) {
-            return -1L;
-        } else {
-            return queryResult.first().getId();
-        }
-    }
-
-    @Deprecated
-    @Override
-    public Long getId(String id) throws CatalogException {
-        if (StringUtils.isNumeric(id)) {
-            return Long.parseLong(id);
-        }
-
-        Query query = new Query(SampleDBAdaptor.QueryParams.NAME.key(), id);
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
-
-        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, options);
-        if (sampleQueryResult.getNumResults() == 1) {
-            return sampleQueryResult.first().getId();
-        } else {
-            return -1L;
-        }
     }
 
     @Override
@@ -229,20 +180,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<Annotation> load(File file) throws CatalogException {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Deprecated
-    @Override
-    public QueryResult<Sample> create(String studyStr, String name, String source, String description,
-                                      Map<String, Object> attributes, QueryOptions options, String sessionId)
-            throws CatalogException {
-        return create(studyStr, name, source, description, null, false, null, attributes, options, sessionId);
-    }
-
-    @Override
     public MyResourceId getId(String sampleStr, @Nullable String studyStr, String sessionId) throws CatalogException {
         if (StringUtils.isEmpty(sampleStr)) {
             throw new CatalogException("Missing sample parameter");
@@ -345,7 +282,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         return sampleQueryResult;
     }
 
-    @Override
     public QueryResult<Sample> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -359,11 +295,12 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public DBIterator<Sample> iterator(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public DBIterator<Sample> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         return sampleDBAdaptor.iterator(query, options, userId);
@@ -409,8 +346,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     // TODO
     // This implementation should be changed and made better. Check the comment in IndividualManager -> delete(). Those changes
     // will probably make the delete from individualManager to be changed.
-    @Override
-    public List<QueryResult<Sample>> delete(String sampleIdStr, @Nullable String studyStr, QueryOptions options, String sessionId)
+    public List<QueryResult<Sample>> delete(String sampleIdStr, @Nullable String studyStr, ObjectMap options, String sessionId)
             throws CatalogException, IOException {
         ParamUtils.checkParameter(sampleIdStr, "id");
 //        options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -457,7 +393,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         return queryResultList;
     }
 
-    @Override
     public void checkCanDeleteSamples(MyResourceIds resources) throws CatalogException {
         for (Long sampleId : resources.getResourceIds()) {
             authorizationManager.checkSamplePermission(resources.getStudyId(), sampleId, resources.getUser(),
@@ -652,7 +587,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
-    @Override
     public List<QueryResult<SampleAclEntry>> updateAcl(String sample, String studyStr, String memberIds,
                                                        Sample.SampleAclParams sampleAclParams, String sessionId) throws CatalogException {
         int count = 0;
