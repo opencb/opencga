@@ -37,9 +37,6 @@ public abstract class VariantSourceEntryJsonMixin {
     public abstract Map<String, Integer> setSamplePositions();
 
     @JsonIgnore
-    public abstract VariantStats getStats();
-
-    @JsonIgnore
     public abstract VariantStats getCohortStats(String cohortName);
 
 }

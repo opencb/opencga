@@ -209,6 +209,7 @@ public enum VariantField {
         if (NAMES_MAP.get() == null) {
             Map<String, VariantField> map = new HashMap<>();
             for (VariantField variantField : VariantField.values()) {
+                map.put(variantField.name(), variantField);
                 for (String name : variantField.names) {
                     map.put(name, variantField);
                 }
