@@ -328,7 +328,9 @@ public class CatalogStudyConfigurationFactory {
                     new QueryOptions(), sessionId)) {
                 while (iterator.hasNext()) {
                     File file = iterator.next();
-                    if (file.getIndex() == null || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
+                    if (file.getIndex() == null
+                            || file.getIndex().getStatus() == null
+                            || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
                         final FileIndex index;
                         index = file.getIndex() == null ? new FileIndex() : file.getIndex();
                         logger.debug("File \"{}\":{} change status from {} to {}", file.getName(), file.getId(),
