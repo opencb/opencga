@@ -38,7 +38,10 @@ import org.opencb.opencga.catalog.db.mongodb.converters.FamilyConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.Annotable;
+import org.opencb.opencga.catalog.models.Family;
+import org.opencb.opencga.catalog.models.Status;
+import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.catalog.models.acls.permissions.FamilyAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -515,9 +518,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
             andBsonList.add(new Document("$isolated", 1));
         }
 
-        if (query.containsKey(QueryParams.ANNOTATION.key())) {
-            fixAnnotationQuery(query);
-        }
+        fixComplexQueryParam(QueryParams.ANNOTATION.key(), query);
+        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];

@@ -31,7 +31,6 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 
@@ -441,22 +440,23 @@ class MongoDBUtils {
      * Changes the format of the queries. Queries retrieved from the WS come as "annotation": "nestedKey.subkey=5,sex=male".
      * That will be changed to "annotation.nestedKey.subkey" : "=5"; "annotation.sex": "=male"
      *
+     * @param queryKey queryKey
      * @param query queryObject
      */
-    public static void fixAnnotationQuery(Query query) {
-        if (!query.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION.key())) {
+    public static void fixComplexQueryParam(String queryKey, Query query) {
+        if (!query.containsKey(queryKey)) {
             return;
         }
 
-        List<String> valueList = query.getAsStringList(SampleDBAdaptor.QueryParams.ANNOTATION.key(), ";");
+        List<String> valueList = query.getAsStringList(queryKey, ";");
         for (String annotation : valueList) {
             Matcher matcher = ANNOTATION_PATTERN.matcher(annotation);
             String key;
             String queryValueString;
             if (matcher.find()) {
                 key = matcher.group(1);
-                if (!key.startsWith(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".")) {
-                    key = SampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + key;
+                if (!key.startsWith(queryKey + ".")) {
+                    key = queryKey + "." + key;
                 }
                 queryValueString = matcher.group(2);
 
@@ -465,7 +465,7 @@ class MongoDBUtils {
         }
 
         // Remove the current query
-        query.remove(SampleDBAdaptor.QueryParams.ANNOTATION.key());
+        query.remove(queryKey);
     }
 
 

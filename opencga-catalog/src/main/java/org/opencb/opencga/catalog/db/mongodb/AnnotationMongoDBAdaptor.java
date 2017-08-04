@@ -47,7 +47,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.checkStudyPermission;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.addCompQueryFilter;
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.fixAnnotationQuery;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.fixComplexQueryParam;
 
 /**
  * Created by pfurio on 07/07/16.
@@ -193,7 +193,7 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
         }
         if (StringUtils.isNotEmpty(annotation)) {
             Query query = new Query("annotation", annotation);
-            fixAnnotationQuery(query);
+            fixComplexQueryParam("annotation", query);
             Document annotQuery = createAnnotationQueryFilter(query, variableMap);
             if (annotQuery != null) {
                 filter.putAll(annotQuery);
