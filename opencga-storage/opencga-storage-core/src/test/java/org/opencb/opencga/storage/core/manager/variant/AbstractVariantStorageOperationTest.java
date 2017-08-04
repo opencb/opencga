@@ -122,15 +122,16 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     @Before
     public final void setUpAbstract() throws Exception {
         catalogManager = opencga.getCatalogManager();
-        StorageConfiguration storageConfiguration = opencga.getStorageConfiguration();
+        StorageEngineFactory factory = opencga.getStorageEngineFactory();
+        StorageConfiguration storageConfiguration = factory.getStorageConfiguration();
         storageConfiguration.setDefaultStorageEngineId(STORAGE_ENGINE_DUMMY);
+        storageConfiguration.getStorageEngines().clear();
         storageConfiguration.getStorageEngines().add(new StorageEngineConfiguration(
                 STORAGE_ENGINE_DUMMY,
                 new StorageEtlConfiguration(),
                 new StorageEtlConfiguration(DummyVariantStorageEngine.class.getName(), new ObjectMap(), new DatabaseCredentials()),
                 new ObjectMap()
         ));
-        StorageEngineFactory factory = StorageEngineFactory.get(storageConfiguration);
         factory.unregisterVariantStorageManager(DummyVariantStorageEngine.STORAGE_ENGINE_ID);
 
         DummyStudyConfigurationAdaptor.clear();
