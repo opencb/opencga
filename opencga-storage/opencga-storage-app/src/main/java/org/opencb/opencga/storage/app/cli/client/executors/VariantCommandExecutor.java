@@ -301,7 +301,6 @@ public class VariantCommandExecutor extends CommandExecutor {
 
         Query query = VariantQueryCommandUtils.parseQuery(variantQueryCommandOptions, studyNames);
         QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(variantQueryCommandOptions);
-        options.put(VariantField.SUMMARY, variantQueryCommandOptions.summary);
 
         if (variantQueryCommandOptions.commonQueryOptions.count) {
             QueryResult<Long> result = variantStorageEngine.count(query);

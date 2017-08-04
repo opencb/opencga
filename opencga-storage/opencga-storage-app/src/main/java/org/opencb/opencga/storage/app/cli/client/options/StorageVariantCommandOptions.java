@@ -196,8 +196,9 @@ public class StorageVariantCommandOptions {
 
     /**
      *  query: basic, generic and specific options
+     *
+     * @see org.opencb.opencga.storage.app.cli.client.executors.VariantQueryCommandUtils#parseBasicVariantQuery
      */
-
     public static class BasicVariantQueryOptions {
 
         @Parameter(names = {"--id"}, description = VariantQueryParam.ID_DESCR, variableArity = true)
@@ -241,6 +242,9 @@ public class StorageVariantCommandOptions {
         public String maf;
     }
 
+    /**
+     * @see org.opencb.opencga.storage.app.cli.client.executors.VariantQueryCommandUtils#parseGenericVariantQuery
+     */
     public static class GenericVariantQueryOptions extends BasicVariantQueryOptions {
 
         @Parameter(names = {"--group-by"}, description = "Group by gene, ensembl gene or consequence_type")
@@ -276,7 +280,7 @@ public class StorageVariantCommandOptions {
         public String flags;
 
         // TODO Jacobo please implement this ASAP
-        @Parameter(names = {"--gene-trait"}, description = "List of gene trait association IDs or names. e.g. \"umls:C0007222,Cardiovascular Diseases\"", arity = 1)
+        @Parameter(names = {"--gene-trait"}, description = "[PENDING] List of gene trait association IDs or names. e.g. \"umls:C0007222,Cardiovascular Diseases\"", arity = 1)
         public String geneTrait;
 
         @Deprecated
@@ -303,10 +307,10 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--gwas"}, description = "[DEPRECATED]", arity = 1, hidden = true)
         public String gwas;
 
-        @Parameter(names = {"--cosmic"}, description = "", arity = 1, hidden = true)
+        @Parameter(names = {"--cosmic"}, description = VariantQueryParam.ANNOT_COSMIC_DESCR, arity = 1)
         public String cosmic;
 
-        @Parameter(names = {"--clinvar"}, description = "Alias to id", arity = 1)
+        @Parameter(names = {"--clinvar"}, description = VariantQueryParam.ANNOT_CLINVAR_DESCR, arity = 1)
         public String clinvar;
 
         @Deprecated
@@ -350,7 +354,7 @@ public class StorageVariantCommandOptions {
         public String includeFormat;
 
         @Parameter(names = {"--include-genotype"}, description = VariantQueryParam.INCLUDE_GENOTYPE_DESCR)
-        public String includeGenotype;
+        public boolean includeGenotype;
 
         @Parameter(names = {"--output-sample"}, description = "A comma separated list of samples from the SAME study to be returned")
         public String returnSample;
@@ -369,7 +373,7 @@ public class StorageVariantCommandOptions {
         public int interval;
 
         @Deprecated
-        @Parameter(names = {"--annot-xref"}, description = "XRef", arity = 1)
+        @Parameter(names = {"--annot-xref"}, description = "[DEPRECATED] XRef", arity = 1)
         public String annotXref;
 
         @Parameter(names = {"--sample-metadata"}, description = "Returns the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.")

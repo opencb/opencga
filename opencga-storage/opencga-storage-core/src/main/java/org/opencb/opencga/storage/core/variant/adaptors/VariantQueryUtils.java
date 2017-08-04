@@ -229,6 +229,28 @@ public class VariantQueryUtils {
         return defaultStudyConfiguration;
     }
 
+    public static boolean isOutputMultiStudy(Query query, QueryOptions options, Collection<?> studies) {
+        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
+        if (!returnedFields.contains(VariantField.STUDIES)) {
+            return false;
+        } else if (isValidParam(query, RETURNED_STUDIES)) {
+            String returnedStudies = query.getString(VariantQueryParam.RETURNED_STUDIES.key());
+            if (NONE.equals(returnedStudies)) {
+                return false;
+            } else if (ALL.equals(returnedStudies)) {
+                return studies.size() > 1;
+            } else {
+                return query.getAsList(VariantQueryParam.RETURNED_STUDIES.key()).size() > 1;
+            }
+        } else if (isValidParam(query, STUDIES)) {
+            String value = query.getString(VariantQueryParam.STUDIES.key());
+            long numStudies = splitValue(value, checkOperator(value)).stream().filter(s -> !isNegated(s)).count();
+            return numStudies > 1;
+        } else {
+            return studies.size() > 1;
+        }
+    }
+
     public static List<Integer> getReturnedStudies(Query query, QueryOptions options, StudyConfigurationManager studyConfigurationManager) {
         Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
         List<Integer> studyIds;

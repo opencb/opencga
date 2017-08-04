@@ -454,9 +454,13 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         final String noCallAllele = String.valueOf(VCFConstants.NO_CALL_ALLELE);
         VariantContextBuilder variantContextBuilder = new VariantContextBuilder();
         VariantType type = variant.getType();
+        StudyEntry studyEntry = variant.getStudy(this.studyConfiguration.getStudyName());
+        if (studyEntry == null) {
+            return null;
+        }
+
         Pair<Integer, Integer> adjustedRange = adjustedVariantStart(variant);
 
-        StudyEntry studyEntry = variant.getStudy(this.studyConfiguration.getStudyName());
         String[] ori = getOri(studyEntry);
         List<String> originalAlleles = getOriginalAlleles(ori);
         List<String> allelesArray;
