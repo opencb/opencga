@@ -66,7 +66,7 @@ public class VariantJsonWriter implements VariantWriter {
 
     private long numVariantsWritten;
     private boolean includeSrc = false;
-    private boolean includeStats;
+    private boolean includeStats = true;
     private boolean includeSamples = true;
     private boolean closeStreams;
 

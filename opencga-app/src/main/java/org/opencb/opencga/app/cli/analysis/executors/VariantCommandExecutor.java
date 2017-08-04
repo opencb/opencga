@@ -38,6 +38,7 @@ import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.analysis.VariantSampleFilter;
@@ -154,7 +155,18 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         queryCliOptions.output = exportCliOptions.output;
         queryCliOptions.genericVariantQueryOptions.gene = exportCliOptions.gene;
         queryCliOptions.numericOptions.count = exportCliOptions.numericOptions.count;
-        queryCliOptions.genericVariantQueryOptions.returnSample = "";
+        queryCliOptions.genericVariantQueryOptions.returnSample = VariantQueryUtils.NONE;
+        queryCliOptions.dataModelOptions.include = String.join(",",
+                VariantField.CHROMOSOME.fieldName(),
+                VariantField.START.fieldName(),
+                VariantField.ID.fieldName(),
+                VariantField.REFERENCE.fieldName(),
+                VariantField.ALTERNATE.fieldName(),
+                VariantField.TYPE.fieldName(),
+                VariantField.STUDIES_STUDY_ID.fieldName(),
+                VariantField.STUDIES_STATS.fieldName(),
+                VariantField.STUDIES_SECONDARY_ALTERNATES.fieldName()
+        );
 
         query();
     }
@@ -164,7 +176,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 //        AnalysisCliOptionsParser.QueryVariantCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
         VariantCommandOptions.VariantQueryCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
 
-        if ("TEXT".equals(cliOptions.commonOptions.outputFormat)) {
+        if ("TEXT".equalsIgnoreCase(cliOptions.commonOptions.outputFormat)) {
             cliOptions.commonOptions.outputFormat = "VCF";
         }
 
