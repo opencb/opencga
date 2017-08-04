@@ -53,6 +53,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.fixComplexQueryParam;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.parseUser;
 
 /**
@@ -633,6 +634,10 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     private Bson parseQuery(Query query) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
+
+        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];

@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.fixComplexQueryParam;
 
 /**
  * Created by pfurio on 05/06/17.
@@ -380,6 +381,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         if (isolated) {
             andBsonList.add(new Document("$isolated", 1));
         }
+
+        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
+
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];

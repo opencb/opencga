@@ -609,6 +609,10 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
             andBsonList.add(new Document("$isolated", 1));
         }
 
+        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
+        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
+
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
