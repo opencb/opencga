@@ -332,7 +332,7 @@ public class CatalogStudyConfigurationFactory {
                             || file.getIndex().getStatus() == null
                             || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
                         final FileIndex index;
-                        index = file.getIndex() == null ? new FileIndex() : file.getIndex();
+                        index = file.getIndex() == null || file.getIndex().getStatus() == null ? new FileIndex() : file.getIndex();
                         logger.debug("File \"{}\":{} change status from {} to {}", file.getName(), file.getId(),
                                 file.getIndex().getStatus().getName(), FileIndex.IndexStatus.READY);
                         index.getStatus().setName(FileIndex.IndexStatus.READY);
