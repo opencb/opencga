@@ -1546,8 +1546,8 @@ public class FileManagerTest extends GenericTest {
 
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, null);
         catalogManager.getStudyManager().updateAcl(Long.toString(studyId), "user2", aclParams, sessionIdUser).get(0);
-        List<QueryResult<FileAclEntry>> queryResults = fileManager.updateAcl("data/new/," + filePath.toString(),
-                Long.toString(studyId), "user2", new File.FileAclParams("VIEW", AclParams.Action.SET, null), sessionIdUser);
+        List<QueryResult<FileAclEntry>> queryResults = fileManager.updateAcl(Long.toString(studyId), "data/new/," + filePath.toString(),
+                "user2", new File.FileAclParams("VIEW", AclParams.Action.SET, null), sessionIdUser);
 
         assertEquals(3, queryResults.size());
         for (QueryResult<FileAclEntry> queryResult : queryResults) {

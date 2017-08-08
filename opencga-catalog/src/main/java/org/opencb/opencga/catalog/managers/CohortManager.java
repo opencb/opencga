@@ -524,59 +524,6 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
-    public List<QueryResult<CohortAclEntry>> updateAcl(String cohort, String studyStr, String memberIds, AclParams aclParams,
-                                                       String sessionId) throws CatalogException {
-        if (StringUtils.isEmpty(cohort)) {
-            throw new CatalogException("Missing cohort parameter");
-        }
-
-        if (aclParams.getAction() == null) {
-            throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
-        }
-
-        List<String> permissions = Collections.emptyList();
-        if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
-            permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
-            checkPermissions(permissions, CohortAclEntry.CohortPermissions::valueOf);
-        }
-
-        // Obtain the resource ids
-        MyResourceIds resourceIds = getIds(cohort, studyStr, sessionId);
-
-        // Check the user has the permissions needed to change permissions
-        for (Long cohortId : resourceIds.getResourceIds()) {
-            authorizationManager.checkCohortPermission(resourceIds.getStudyId(), cohortId, resourceIds.getUser(),
-                    CohortAclEntry.CohortPermissions.SHARE);
-        }
-
-        // Validate that the members are actually valid members
-        List<String> members;
-        if (memberIds != null && !memberIds.isEmpty()) {
-            members = Arrays.asList(memberIds.split(","));
-        } else {
-            members = Collections.emptyList();
-        }
-        CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
-//        studyManager.membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
-
-        String collectionName = MongoDBAdaptorFactory.COHORT_COLLECTION;
-
-        switch (aclParams.getAction()) {
-            case SET:
-                return authorizationManager.setAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
-                        collectionName);
-            case ADD:
-                return authorizationManager.addAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
-                        collectionName);
-            case REMOVE:
-                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
-            case RESET:
-                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, collectionName);
-            default:
-                throw new CatalogException("Unexpected error occurred. No valid action found.");
-        }
-    }
-
     @Override
     public QueryResult<AnnotationSet> createAnnotationSet(String id, @Nullable String studyStr, String variableSetId,
                                                           String annotationSetName, Map<String, Object> annotations,
@@ -754,4 +701,90 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         return cohortDBAdaptor.searchAnnotationSet(resource, variableSetId, annotation,
                 StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.toString());
     }
+
+
+    // **************************   ACLs  ******************************** //
+
+    public List<QueryResult<CohortAclEntry>> getAcls(String studyStr, String cohortStr, String sessionId) throws CatalogException {
+        MyResourceIds resource = getIds(cohortStr, studyStr, sessionId);
+
+        List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(resource.getResourceIds().size());
+        for (Long cohortId : resource.getResourceIds()) {
+            QueryResult<CohortAclEntry> allCohortAcls = authorizationManager.getAllCohortAcls(resource.getUser(), cohortId);
+            allCohortAcls.setId(String.valueOf(cohortId));
+            cohortAclList.add(allCohortAcls);
+        }
+
+        return cohortAclList;
+    }
+
+    public List<QueryResult<CohortAclEntry>> getAcl(String studyStr, String cohortStr, String member, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkObj(member, "member");
+
+        MyResourceIds resource = getIds(cohortStr, studyStr, sessionId);
+
+        List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(resource.getResourceIds().size());
+        for (Long cohortId : resource.getResourceIds()) {
+            QueryResult<CohortAclEntry> allCohortAcls = authorizationManager.getCohortAcl(resource.getUser(), cohortId, member);
+            allCohortAcls.setId(String.valueOf(cohortId));
+            cohortAclList.add(allCohortAcls);
+        }
+
+        return cohortAclList;
+    }
+
+    public List<QueryResult<CohortAclEntry>> updateAcl(String studyStr, String cohortStr, String memberIds, AclParams aclParams,
+                                                       String sessionId) throws CatalogException {
+        if (StringUtils.isEmpty(cohortStr)) {
+            throw new CatalogException("Missing cohort parameter");
+        }
+
+        if (aclParams.getAction() == null) {
+            throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
+        }
+
+        List<String> permissions = Collections.emptyList();
+        if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
+            permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
+            checkPermissions(permissions, CohortAclEntry.CohortPermissions::valueOf);
+        }
+
+        // Obtain the resource ids
+        MyResourceIds resourceIds = getIds(cohortStr, studyStr, sessionId);
+
+        // Check the user has the permissions needed to change permissions
+        for (Long cohortId : resourceIds.getResourceIds()) {
+            authorizationManager.checkCohortPermission(resourceIds.getStudyId(), cohortId, resourceIds.getUser(),
+                    CohortAclEntry.CohortPermissions.SHARE);
+        }
+
+        // Validate that the members are actually valid members
+        List<String> members;
+        if (memberIds != null && !memberIds.isEmpty()) {
+            members = Arrays.asList(memberIds.split(","));
+        } else {
+            members = Collections.emptyList();
+        }
+        CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
+//        studyManager.membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
+
+        String collectionName = MongoDBAdaptorFactory.COHORT_COLLECTION;
+
+        switch (aclParams.getAction()) {
+            case SET:
+                return authorizationManager.setAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
+                        collectionName);
+            case ADD:
+                return authorizationManager.addAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
+                        collectionName);
+            case REMOVE:
+                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
+            case RESET:
+                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, collectionName);
+            default:
+                throw new CatalogException("Unexpected error occurred. No valid action found.");
+        }
+    }
+
 }

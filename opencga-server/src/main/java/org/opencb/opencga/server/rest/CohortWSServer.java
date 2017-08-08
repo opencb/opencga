@@ -28,7 +28,6 @@ import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CohortManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
-import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -36,7 +35,6 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 15/12/14.
@@ -483,19 +481,9 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "User or group id") @QueryParam("member") String member) {
         try {
             if (StringUtils.isEmpty(member)) {
-                AbstractManager.MyResourceIds resource = catalogManager.getCohortManager().getIds(cohortIdsStr, studyStr, sessionId);
-                List<Long> cohortIds = resource.getResourceIds();
-                List<QueryResult<CohortAclEntry>> aclList = new ArrayList<>(cohortIds.size());
-                for (int i = 0; i < cohortIds.size(); i++) {
-                    Long cohortId = cohortIds.get(i);
-                    QueryResult<CohortAclEntry> allCohortAcls = catalogManager.getAuthorizationManager().getAllCohortAcls(resource.getUser(), cohortId);
-                    allCohortAcls.setId(Long.toString(cohortId));
-                    aclList.add(allCohortAcls);
-                }
-                return createOkResponse(aclList);
+                return createOkResponse(cohortManager.getAcls(studyStr, cohortIdsStr, sessionId));
             } else {
-                AbstractManager.MyResourceId resource = catalogManager.getCohortManager().getId(cohortIdsStr, studyStr, sessionId);
-                return createOkResponse(catalogManager.getAuthorizationManager().getCohortAcl(resource.getUser(), resource.getResourceId(), member));
+                return createOkResponse(cohortManager.getAcl(studyStr, cohortIdsStr, member, sessionId));
             }
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -515,7 +503,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true) StudyWSServer.MemberAclUpdateOld params) {
         try {
             AclParams aclParams = getAclParams(params.add, params.remove, params.set);
-            return createOkResponse(cohortManager.updateAcl(cohortIdStr, studyStr, memberId, aclParams, sessionId));
+            return createOkResponse(cohortManager.updateAcl(studyStr, cohortIdStr, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -535,7 +523,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value="JSON containing the parameters to add ACLs", required = true) CohortAcl params) {
         try {
             AclParams aclParams = new AclParams(params.getPermissions(), params.getAction());
-            return createOkResponse(cohortManager.updateAcl(params.cohort, studyStr, memberId, aclParams, sessionId));
+            return createOkResponse(cohortManager.updateAcl(studyStr, params.cohort, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

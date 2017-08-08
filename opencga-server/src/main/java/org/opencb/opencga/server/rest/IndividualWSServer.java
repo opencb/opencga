@@ -22,14 +22,12 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.IndividualManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.OntologyTerm;
 import org.opencb.opencga.catalog.models.acls.AclParams;
-import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -409,21 +407,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "User or group id") @QueryParam("member") String member) {
         try {
             if (StringUtils.isEmpty(member)) {
-                AbstractManager.MyResourceIds resource = catalogManager.getIndividualManager().getIds(individualIdsStr, studyStr, sessionId);
-                List<Long> individualIds = resource.getResourceIds();
-
-                List<QueryResult<IndividualAclEntry>> aclList = new ArrayList<>(individualIds.size());
-                for (int i = 0; i < individualIds.size(); i++) {
-                    Long individualId = individualIds.get(i);
-                    QueryResult<IndividualAclEntry> allIndividualAcls = catalogManager.getAuthorizationManager().getAllIndividualAcls(resource.getUser(), individualId);
-                    allIndividualAcls.setId(Long.toString(individualId));
-                    aclList.add(allIndividualAcls);
-                }
-                return createOkResponse(aclList);
+                return createOkResponse(individualManager.getAcls(studyStr, individualIdsStr, sessionId));
             } else {
-                AbstractManager.MyResourceId resource = catalogManager.getIndividualManager().getId(individualIdsStr, studyStr, sessionId);
-                return createOkResponse(catalogManager.getAuthorizationManager().getIndividualAcl(resource.getUser(), resource
-                        .getResourceId(), member));
+                return createOkResponse(individualManager.getAcl(studyStr, individualIdsStr, member, sessionId));
             }
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -482,7 +468,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     MemberAclUpdate params) {
         try {
             Individual.IndividualAclParams aclParams = getAclParams(params.add, params.remove, params.set);
-            return createOkResponse(individualManager.updateAcl(individualIdStr, studyStr, memberId, aclParams, sessionId));
+            return createOkResponse(individualManager.updateAcl(studyStr, individualIdStr, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -508,7 +494,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         try {
             Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(params.getPermissions(), params.getAction(),
                     params.sample, params.propagate);
-            return createOkResponse(individualManager.updateAcl(params.individual, studyStr, memberId, aclParams, sessionId));
+            return createOkResponse(individualManager.updateAcl(studyStr, params.individual, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

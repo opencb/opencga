@@ -2547,81 +2547,6 @@ public class FileManager extends ResourceManager<File> {
         auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
     }
 
-    public List<QueryResult<FileAclEntry>> updateAcl(String file, String studyStr, String memberIds, File.FileAclParams fileAclParams,
-                                                     String sessionId) throws CatalogException {
-        int count = 0;
-        count += StringUtils.isNotEmpty(file) ? 1 : 0;
-        count += StringUtils.isNotEmpty(fileAclParams.getSample()) ? 1 : 0;
-
-        if (count > 1) {
-            throw new CatalogException("Update ACL: Only one of these parameters are allowed: file or sample per query.");
-        } else if (count == 0) {
-            throw new CatalogException("Update ACL: At least one of these parameters should be provided: file or sample");
-        }
-
-        if (fileAclParams.getAction() == null) {
-            throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
-        }
-
-        List<String> permissions = Collections.emptyList();
-        if (StringUtils.isNotEmpty(fileAclParams.getPermissions())) {
-            permissions = Arrays.asList(fileAclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
-            checkPermissions(permissions, FileAclEntry.FilePermissions::valueOf);
-        }
-
-        if (StringUtils.isNotEmpty(fileAclParams.getSample())) {
-            // Obtain the sample ids
-            MyResourceIds ids = catalogManager.getSampleManager().getIds(fileAclParams.getSample(), studyStr, sessionId);
-
-            Query query = new Query(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ids.getResourceIds());
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
-            QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(ids.getStudyId(), query, options, sessionId);
-
-            Set<Long> fileSet = fileQueryResult.getResult().stream().map(File::getId).collect(Collectors.toSet());
-            file = StringUtils.join(fileSet, ",");
-
-            studyStr = Long.toString(ids.getStudyId());
-        }
-
-        // Obtain the resource ids
-        MyResourceIds resourceIds = getIds(file, studyStr, sessionId);
-        // Increase the list with the files/folders within the list of ids that correspond with folders
-        resourceIds = getRecursiveFilesAndFolders(resourceIds);
-
-        // Check the user has the permissions needed to change permissions over those files
-        for (Long fileId : resourceIds.getResourceIds()) {
-            authorizationManager.checkFilePermission(resourceIds.getStudyId(), fileId, resourceIds.getUser(),
-                    FileAclEntry.FilePermissions.SHARE);
-        }
-
-        // Validate that the members are actually valid members
-        List<String> members;
-        if (memberIds != null && !memberIds.isEmpty()) {
-            members = Arrays.asList(memberIds.split(","));
-        } else {
-            members = Collections.emptyList();
-        }
-        CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
-//        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
-
-        String collectionName = MongoDBAdaptorFactory.FILE_COLLECTION;
-
-        switch (fileAclParams.getAction()) {
-            case SET:
-                return authorizationManager.setAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
-                        collectionName);
-            case ADD:
-                return authorizationManager.addAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
-                        collectionName);
-            case REMOVE:
-                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
-            case RESET:
-                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, collectionName);
-            default:
-                throw new CatalogException("Unexpected error occurred. No valid action found.");
-        }
-    }
-
     /**
      * Fetch all the recursive files and folders within the list of file ids given.
      *
@@ -2668,5 +2593,110 @@ public class FileManager extends ResourceManager<File> {
     }
 
 
+    // **************************   ACLs  ******************************** //
+
+    public List<QueryResult<FileAclEntry>> getAcls(String studyStr, String fileStr, String sessionId) throws CatalogException {
+        MyResourceIds resource = getIds(fileStr, studyStr, sessionId);
+
+        List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceIds().size());
+        for (Long fileId : resource.getResourceIds()) {
+            QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(resource.getUser(), fileId, true);
+            allFileAcls.setId(String.valueOf(fileId));
+            fileAclList.add(allFileAcls);
+        }
+
+        return fileAclList;
+    }
+
+    public List<QueryResult<FileAclEntry>> getAcl(String studyStr, String fileStr, String member, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkObj(member, "member");
+
+        MyResourceIds resource = getIds(fileStr, studyStr, sessionId);
+
+        List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceIds().size());
+        for (Long fileId : resource.getResourceIds()) {
+            QueryResult<FileAclEntry> allFileAcls = authorizationManager.getFileAcl(resource.getUser(), fileId, member);
+            allFileAcls.setId(String.valueOf(fileId));
+            fileAclList.add(allFileAcls);
+        }
+
+        return fileAclList;
+    }
+
+    public List<QueryResult<FileAclEntry>> updateAcl(String studyStr, String fileStr, String memberIds, File.FileAclParams fileAclParams,
+                                                     String sessionId) throws CatalogException {
+        int count = 0;
+        count += StringUtils.isNotEmpty(fileStr) ? 1 : 0;
+        count += StringUtils.isNotEmpty(fileAclParams.getSample()) ? 1 : 0;
+
+        if (count > 1) {
+            throw new CatalogException("Update ACL: Only one of these parameters are allowed: file or sample per query.");
+        } else if (count == 0) {
+            throw new CatalogException("Update ACL: At least one of these parameters should be provided: file or sample");
+        }
+
+        if (fileAclParams.getAction() == null) {
+            throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
+        }
+
+        List<String> permissions = Collections.emptyList();
+        if (StringUtils.isNotEmpty(fileAclParams.getPermissions())) {
+            permissions = Arrays.asList(fileAclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
+            checkPermissions(permissions, FileAclEntry.FilePermissions::valueOf);
+        }
+
+        if (StringUtils.isNotEmpty(fileAclParams.getSample())) {
+            // Obtain the sample ids
+            MyResourceIds ids = catalogManager.getSampleManager().getIds(fileAclParams.getSample(), studyStr, sessionId);
+
+            Query query = new Query(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ids.getResourceIds());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
+            QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(ids.getStudyId(), query, options, sessionId);
+
+            Set<Long> fileSet = fileQueryResult.getResult().stream().map(File::getId).collect(Collectors.toSet());
+            fileStr = StringUtils.join(fileSet, ",");
+
+            studyStr = Long.toString(ids.getStudyId());
+        }
+
+        // Obtain the resource ids
+        MyResourceIds resourceIds = getIds(fileStr, studyStr, sessionId);
+        // Increase the list with the files/folders within the list of ids that correspond with folders
+        resourceIds = getRecursiveFilesAndFolders(resourceIds);
+
+        // Check the user has the permissions needed to change permissions over those files
+        for (Long fileId : resourceIds.getResourceIds()) {
+            authorizationManager.checkFilePermission(resourceIds.getStudyId(), fileId, resourceIds.getUser(),
+                    FileAclEntry.FilePermissions.SHARE);
+        }
+
+        // Validate that the members are actually valid members
+        List<String> members;
+        if (memberIds != null && !memberIds.isEmpty()) {
+            members = Arrays.asList(memberIds.split(","));
+        } else {
+            members = Collections.emptyList();
+        }
+        CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
+//        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
+
+        String collectionName = MongoDBAdaptorFactory.FILE_COLLECTION;
+
+        switch (fileAclParams.getAction()) {
+            case SET:
+                return authorizationManager.setAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
+                        collectionName);
+            case ADD:
+                return authorizationManager.addAcls(resourceIds.getStudyId(), resourceIds.getResourceIds(), members, permissions,
+                        collectionName);
+            case REMOVE:
+                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, permissions, collectionName);
+            case RESET:
+                return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, collectionName);
+            default:
+                throw new CatalogException("Unexpected error occurred. No valid action found.");
+        }
+    }
 
 }

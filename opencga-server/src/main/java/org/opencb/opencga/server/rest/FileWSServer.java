@@ -1324,18 +1324,9 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "User or group id") @QueryParam("member") String member) {
         try {
             if (StringUtils.isEmpty(member)) {
-                AbstractManager.MyResourceIds resource = catalogManager.getFileManager().getIds(fileIdStr, studyStr, sessionId);
-                List<QueryResult<FileAclEntry>> aclList = new ArrayList<>(resource.getResourceIds().size());
-                for (int i = 0; i < resource.getResourceIds().size(); i++) {
-                    Long fileId = resource.getResourceIds().get(i);
-                    QueryResult<FileAclEntry> allFileAcls = catalogManager.getAuthorizationManager().getAllFileAcls(resource.getUser(), fileId, true);
-                    allFileAcls.setId(Long.toString(resource.getResourceIds().get(i)));
-                    aclList.add(allFileAcls);
-                }
-                return createOkResponse(aclList);
+                return createOkResponse(fileManager.getAcls(studyStr, fileIdStr, sessionId));
             } else {
-                AbstractManager.MyResourceId resource = catalogManager.getFileManager().getId(fileIdStr, studyStr, sessionId);
-                return createOkResponse(catalogManager.getAuthorizationManager().getFileAcl(resource.getUser(), resource.getResourceId(), member));
+                return createOkResponse(fileManager.getAcl(studyStr, fileIdStr, member, sessionId));
             }
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1389,7 +1380,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true) StudyWSServer.MemberAclUpdateOld params) {
         try {
             File.FileAclParams aclParams = getAclParams(params.add, params.remove, params.set);
-            return createOkResponse(fileManager.updateAcl(fileIdStr, studyStr, memberId, aclParams, sessionId));
+            return createOkResponse(fileManager.updateAcl(studyStr, fileIdStr, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1411,7 +1402,7 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             File.FileAclParams aclParams = new File.FileAclParams(
                     params.getPermissions(), params.getAction(), params.sample);
-            return createOkResponse(fileManager.updateAcl(params.file, studyStr, memberId, aclParams, sessionId));
+            return createOkResponse(fileManager.updateAcl(studyStr, params.file, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

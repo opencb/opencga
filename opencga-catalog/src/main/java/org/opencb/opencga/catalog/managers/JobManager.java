@@ -511,9 +511,53 @@ public class JobManager extends ResourceManager<Job> {
         return queryResult;
     }
 
-    public List<QueryResult<JobAclEntry>> updateAcl(String job, String studyStr, String memberIds, AclParams aclParams, String sessionId)
+    public URI createJobOutDir(long studyId, String dirName, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(dirName, "dirName");
+
+        String userId = userManager.getId(sessionId);
+
+        URI uri = studyDBAdaptor.get(studyId, new QueryOptions("include", Collections.singletonList("projects.studies.uri")))
+                .first().getUri();
+
+        CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(uri);
+        return catalogIOManager.createJobOutDir(userId, dirName);
+    }
+
+
+    // **************************   ACLs  ******************************** //
+
+    public List<QueryResult<JobAclEntry>> getAcls(String studyStr, String jobStr, String sessionId) throws CatalogException {
+        MyResourceIds resource = getIds(jobStr, studyStr, sessionId);
+
+        List<QueryResult<JobAclEntry>> jobAclList = new ArrayList<>(resource.getResourceIds().size());
+        for (Long jobId : resource.getResourceIds()) {
+            QueryResult<JobAclEntry> allJobAcls = authorizationManager.getAllJobAcls(resource.getUser(), jobId);
+            allJobAcls.setId(String.valueOf(jobId));
+            jobAclList.add(allJobAcls);
+        }
+
+        return jobAclList;
+    }
+
+    public List<QueryResult<JobAclEntry>> getAcl(String studyStr, String jobStr, String member, String sessionId)
             throws CatalogException {
-        if (StringUtils.isEmpty(job)) {
+        ParamUtils.checkObj(member, "member");
+
+        MyResourceIds resource = getIds(jobStr, studyStr, sessionId);
+
+        List<QueryResult<JobAclEntry>> jobAclList = new ArrayList<>(resource.getResourceIds().size());
+        for (Long jobId : resource.getResourceIds()) {
+            QueryResult<JobAclEntry> allJobAcls = authorizationManager.getJobAcl(resource.getUser(), jobId, member);
+            allJobAcls.setId(String.valueOf(jobId));
+            jobAclList.add(allJobAcls);
+        }
+
+        return jobAclList;
+    }
+
+    public List<QueryResult<JobAclEntry>> updateAcl(String studyStr, String jobStr, String memberIds, AclParams aclParams, String sessionId)
+            throws CatalogException {
+        if (StringUtils.isEmpty(jobStr)) {
             throw new CatalogException("Missing job parameter");
         }
 
@@ -528,7 +572,7 @@ public class JobManager extends ResourceManager<Job> {
         }
 
         // Obtain the resource ids
-        MyResourceIds resourceIds = getIds(job, studyStr, sessionId);
+        MyResourceIds resourceIds = getIds(jobStr, studyStr, sessionId);
 
         // Check the user has the permissions needed to change permissions
         for (Long jobId : resourceIds.getResourceIds()) {
@@ -562,18 +606,6 @@ public class JobManager extends ResourceManager<Job> {
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }
-    }
-
-    public URI createJobOutDir(long studyId, String dirName, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(dirName, "dirName");
-
-        String userId = userManager.getId(sessionId);
-
-        URI uri = studyDBAdaptor.get(studyId, new QueryOptions("include", Collections.singletonList("projects.studies.uri")))
-                .first().getUri();
-
-        CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(uri);
-        return catalogIOManager.createJobOutDir(userId, dirName);
     }
 
 }

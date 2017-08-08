@@ -696,8 +696,7 @@ public class CatalogManagerTest extends GenericTest {
         // Assign permissions to all the samples
         Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams("VIEW,UPDATE", AclParams.Action.SET, null, null, null);
         List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
-        List<QueryResult<SampleAclEntry>> sampleAclResult = catalogManager.getSampleManager().updateAcl(
-                org.apache.commons.lang3.StringUtils.join(sampleIds, ","), Long.toString(studyId), "user2,user3",
+        List<QueryResult<SampleAclEntry>> sampleAclResult = catalogManager.getSampleManager().updateAcl(Long.toString(studyId), org.apache.commons.lang3.StringUtils.join(sampleIds, ","), "user2,user3",
                 sampleAclParams, sessionIdUser);
         assertEquals(sampleIds.size(), sampleAclResult.size());
         for (QueryResult<SampleAclEntry> sampleAclEntryQueryResult : sampleAclResult) {
@@ -746,8 +745,7 @@ public class CatalogManagerTest extends GenericTest {
         // Assign permissions to all the samples
         Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams("VIEW,UPDATE", AclParams.Action.SET, null, null, null);
         List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
-        List<QueryResult<SampleAclEntry>> sampleAclResult = catalogManager.getSampleManager().updateAcl(
-                org.apache.commons.lang3.StringUtils.join(sampleIds, ","), Long.toString(studyId), "user2,user3",
+        List<QueryResult<SampleAclEntry>> sampleAclResult = catalogManager.getSampleManager().updateAcl(Long.toString(studyId), org.apache.commons.lang3.StringUtils.join(sampleIds, ","), "user2,user3",
                 sampleAclParams, sessionIdUser);
         assertEquals(sampleIds.size(), sampleAclResult.size());
         for (QueryResult<SampleAclEntry> sampleAclEntryQueryResult : sampleAclResult) {
@@ -1064,7 +1062,7 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.getStudyManager().createGroup(Long.toString(studyId), "myGroup2", "user2,user3", sessionIdUser);
         catalogManager.getStudyManager().updateAcl(Long.toString(studyId), "@myGroup",
                 new Study.StudyAclParams("", AclParams.Action.SET, null), sessionIdUser);
-        catalogManager.getSampleManager().updateAcl("s_1", Long.toString(studyId), "@myGroup",
+        catalogManager.getSampleManager().updateAcl(Long.toString(studyId), "s_1", "@myGroup",
                 new Sample.SampleAclParams("VIEW", AclParams.Action.SET, null, null, null), sessionIdUser);
 
         QueryResult<Sample> search = catalogManager.getSampleManager().search(Long.toString(studyId), new Query(), new QueryOptions(),

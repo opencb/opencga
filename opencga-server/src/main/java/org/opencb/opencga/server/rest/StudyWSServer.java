@@ -786,26 +786,13 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "User or group id") @QueryParam("member") String member) {
         try {
             if (StringUtils.isEmpty(member)) {
-                String userId = catalogManager.getUserManager().getId(sessionId);
-                long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-                return createOkResponse(catalogManager.getAuthorizationManager().getAllStudyAcls(userId, studyId));
+                return createOkResponse(studyManager.getAcls(studyStr, sessionId));
             } else {
-                String userId = catalogManager.getUserManager().getId(sessionId);
-                long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-                return createOkResponse(catalogManager.getAuthorizationManager().getStudyAcl(userId, studyId, member));
+                return createOkResponse(studyManager.getAcl(studyStr, member, sessionId));
             }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-    }
-
-    public static class CreateAclCommands {
-        public String permissions;
-        public String members;
-    }
-
-    public static class CreateAclCommandsTemplate extends CreateAclCommands {
-        public String templateId;
     }
 
     // Temporal method used by deprecated methods. This will be removed at some point.
@@ -844,82 +831,6 @@ public class StudyWSServer extends OpenCGAWSServer {
         return new Study.StudyAclParams(permissions, action, template);
     }
 
-    @GET
-    @Path("/{study}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of users or groups", hidden = true)
-    public Response createRole(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-            required = true) @PathParam("study") String studyStr,
-                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
-                                       required = true) @QueryParam("members") String members,
-                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list")
-                               @DefaultValue("") @QueryParam("permissions") String permissions,
-                               @ApiParam(value = "Template of permissions to be used (admin, analyst or view_only)")
-                               @QueryParam("templateId") String templateId) {
-        try {
-            Study.StudyAclParams aclParams = getAclParams(permissions, null, null, templateId);
-            aclParams.setAction(AclParams.Action.SET);
-            return createOkResponse(studyManager.updateAcl(studyStr, members, aclParams, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @POST
-    @Path("/{study}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of users or groups [DEPRECATED]", hidden = true,
-            notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
-                    + "/acl/{members}/update entrypoint.")
-    public Response createRolePOST(
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
-            @PathParam("study") String studyStr,
-            @ApiParam(value="JSON containing the parameters defined in GET. Mandatory keys: 'members'", required = true)
-                    CreateAclCommandsTemplate params) {
-        try {
-            Study.StudyAclParams aclParams = getAclParams(params.permissions, null, null, params.templateId);
-            aclParams.setAction(AclParams.Action.SET);
-            return createOkResponse(studyManager.updateAcl(studyStr, params.members, aclParams, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{study}/acl/{memberId}/info")
-    @ApiOperation(value = "Return the set of permissions granted for the user or group [DEPRECATED]", position = 20, hidden = true,
-            notes = "DEPRECATED: The usage of this webservice is discouraged. From now one this will be internally managed by the "
-                + "/acl entrypoint.")
-    public Response getAcl(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-            required = true) @PathParam("study") String studyStr,
-                           @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
-        try {
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            return createOkResponse(catalogManager.getAuthorizationManager().getStudyAcl(userId, studyId, memberId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{study}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the user or group", hidden = true, position = 21)
-    public Response updateAcl(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-            required = true) @PathParam("study") String studyStr,
-                              @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
-                              @ApiParam(value = "Comma separated list of permissions to add")
-                              @QueryParam("add") String addPermissions,
-                              @ApiParam(value = "Comma separated list of permissions to remove")
-                              @QueryParam("remove") String removePermissions,
-                              @ApiParam(value = "Comma separated list of permissions to set")
-                              @QueryParam("set") String setPermissions) {
-        try {
-            Study.StudyAclParams aclParams = getAclParams(addPermissions, removePermissions, setPermissions, null);
-            return createOkResponse(studyManager.updateAcl(studyStr, memberId, aclParams, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
     public static class MemberAclUpdateOld {
         public String add;
         public String set;
@@ -928,17 +839,14 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{study}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the user or group [WARNING]", position = 21,
-            notes = "WARNING: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
+    @ApiOperation(value = "Update the set of permissions granted for the user or group [DEPRECATED]", position = 21,
+            notes = "DEPRECATED: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
                     + "to also support changing permissions using queries.")
     public Response updateAcl(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
             @PathParam("study") String studyStr,
             @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
             @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true) MemberAclUpdateOld params) {
-//        if (params == null || params.isEmpty()) {
-//            return createErrorResponse(new CatalogException("At least one of the keys 'addUsers', 'setUsers' or 'removeUsers'"));
-//        }
         try {
             Study.StudyAclParams aclParams = getAclParams(params.add, params.remove, params.set, null);
             return createOkResponse(studyManager.updateAcl(studyStr, memberId, aclParams, sessionId));
@@ -957,22 +865,6 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             Study.StudyAclParams aclParams = new Study.StudyAclParams(params.getPermissions(), params.getAction(), params.template);
             return createOkResponse(studyManager.updateAcl(params.study, memberId, aclParams, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{study}/acl/{memberId}/delete")
-    @ApiOperation(value = "Delete all the permissions granted for the user or group [DEPRECATED]", position = 22, hidden = true,
-            notes = "DEPRECATED: The usage of this webservice is discouraged. A RESET action has been added to the /acl/{members}/update "
-                    + "entrypoint.")
-    public Response deleteAcl(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-            required = true) @PathParam("study") String studyStr,
-                              @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
-        try {
-            Study.StudyAclParams aclParams = new Study.StudyAclParams(null, AclParams.Action.RESET, null);
-            return createOkResponse(studyManager.updateAcl(studyStr, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1006,12 +898,6 @@ public class StudyWSServer extends OpenCGAWSServer {
         @Deprecated
         public String groupId;
         public String users;
-    }
-
-    public static class GroupUpdateParams {
-        public String addUsers;
-        public String setUsers;
-        public String removeUsers;
     }
 
 }

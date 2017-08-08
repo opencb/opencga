@@ -690,9 +690,41 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 //        return resourceId.getResourceId();
     }
 
-    public List<QueryResult<FamilyAclEntry>> updateAcl(String family, String studyStr, String memberIds, AclParams familyAclParams,
+
+    // **************************   ACLs  ******************************** //
+
+    public List<QueryResult<FamilyAclEntry>> getAcls(String studyStr, String familyStr, String sessionId) throws CatalogException {
+        MyResourceIds resource = getIds(familyStr, studyStr, sessionId);
+
+        List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(resource.getResourceIds().size());
+        for (Long familyId : resource.getResourceIds()) {
+            QueryResult<FamilyAclEntry> allFamilyAcls = authorizationManager.getAllFamilyAcls(resource.getUser(), familyId);
+            allFamilyAcls.setId(String.valueOf(familyId));
+            familyAclList.add(allFamilyAcls);
+        }
+
+        return familyAclList;
+    }
+
+    public List<QueryResult<FamilyAclEntry>> getAcl(String studyStr, String familyStr, String member, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkObj(member, "member");
+
+        MyResourceIds resource = getIds(familyStr, studyStr, sessionId);
+
+        List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(resource.getResourceIds().size());
+        for (Long familyId : resource.getResourceIds()) {
+            QueryResult<FamilyAclEntry> allFamilyAcls = authorizationManager.getFamilyAcl(resource.getUser(), familyId, member);
+            allFamilyAcls.setId(String.valueOf(familyId));
+            familyAclList.add(allFamilyAcls);
+        }
+
+        return familyAclList;
+    }
+
+    public List<QueryResult<FamilyAclEntry>> updateAcl(String studyStr, String familyStr, String memberIds, AclParams familyAclParams,
                                                        String sessionId) throws CatalogException {
-        if (StringUtils.isEmpty(family)) {
+        if (StringUtils.isEmpty(familyStr)) {
             throw new CatalogException("Update ACL: Missing family parameter");
         }
 
@@ -706,7 +738,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             checkPermissions(permissions, FamilyAclEntry.FamilyPermissions::valueOf);
         }
 
-        MyResourceIds resourceIds = getIds(family, studyStr, sessionId);
+        MyResourceIds resourceIds = getIds(familyStr, studyStr, sessionId);
 
         String collectionName = MongoDBAdaptorFactory.FAMILY_COLLECTION;
         // Check the user has the permissions needed to change permissions over those families
