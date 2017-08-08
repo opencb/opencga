@@ -109,7 +109,7 @@ public class DummyStudyConfigurationAdaptor extends StudyConfigurationAdaptor {
         LOCK_STUDIES.get(studyId).unlock();
     }
 
-    public static synchronized void writeAndClear(Path path) {
+    public static void writeAll(Path path) {
         ObjectMapper objectMapper = new ObjectMapper(new JsonFactory());
         String prefix = "storage_configuration_" + NUM_PRINTS.incrementAndGet() + "_";
         for (StudyConfiguration studyConfiguration : DummyStudyConfigurationAdaptor.STUDY_CONFIGURATIONS_BY_NAME.values()) {
@@ -119,15 +119,17 @@ public class DummyStudyConfigurationAdaptor extends StudyConfigurationAdaptor {
                 throw new UncheckedIOException(e);
             }
         }
-        STUDY_CONFIGURATIONS_BY_NAME.clear();
-        STUDY_CONFIGURATIONS_BY_ID.clear();
-        LOCK_STUDIES.clear();
     }
 
     public static void clear() {
         STUDY_CONFIGURATIONS_BY_NAME.clear();
         STUDY_CONFIGURATIONS_BY_ID.clear();
         LOCK_STUDIES.clear();
+    }
+
+    public static synchronized void writeAndClear(Path path) {
+        writeAll(path);
+        clear();
     }
 
     @Override

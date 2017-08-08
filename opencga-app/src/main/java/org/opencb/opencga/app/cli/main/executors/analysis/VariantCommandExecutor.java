@@ -33,6 +33,7 @@ import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.variant.converters.VariantContextToAvroVariantConverter;
 import org.opencb.biodata.tools.variant.converters.VariantContextToProtoVariantConverter;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.app.cli.analysis.executors.VariantQueryCommandUtils;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -40,7 +41,6 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.server.grpc.AdminServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericServiceModel;
 import org.opencb.opencga.server.grpc.VariantServiceGrpc;
-import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -122,76 +122,18 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
         String study = resolveStudy(queryCommandOptions.study);
 
-        ObjectMap params = new ObjectMap();
-        params.putIfNotNull(VariantQueryParam.ID.key(), queryCommandOptions.genericVariantQueryOptions.id);
-        params.putIfNotEmpty(VariantQueryParam.REGION.key(), queryCommandOptions.genericVariantQueryOptions.region);
-//        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(),
-//                queryCommandOptions.queryVariantsOptions.chromosome);
-        params.putIfNotEmpty(VariantQueryParam.GENE.key(), queryCommandOptions.genericVariantQueryOptions.gene);
-        params.putIfNotNull(VariantQueryParam.TYPE.key(), queryCommandOptions.genericVariantQueryOptions.type);
-//        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.REFERENCE.key(), queryCommandOptions.queryVariantsOptions.reference);
-//        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ALTERNATE.key(), queryCommandOptions.queryVariantsOptions.alternate);
-        params.putIfNotEmpty(VariantQueryParam.RETURNED_STUDIES.key(), queryCommandOptions.genericVariantQueryOptions.returnStudy);
-        params.putIfNotEmpty(VariantQueryParam.RETURNED_SAMPLES.key(), queryCommandOptions.genericVariantQueryOptions.returnSample);
-//        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), queryCommandOptions.queryVariantsOptions.returnFile);
-        params.putIfNotEmpty(VariantQueryParam.STUDIES.key(), study);
-        params.putIfNotEmpty(VariantQueryParam.FILES.key(), queryCommandOptions.genericVariantQueryOptions.file);
-        params.putIfNotEmpty(VariantQueryParam.RETURNED_FILES.key(), queryCommandOptions.genericVariantQueryOptions.returnFile);
-        params.putIfNotEmpty(VariantQueryParam.FILTER.key(), queryCommandOptions.genericVariantQueryOptions.filter);
-        params.putIfNotEmpty(VariantQueryParam.STATS_MAF.key(), queryCommandOptions.genericVariantQueryOptions.maf);
-        params.putIfNotEmpty(VariantQueryParam.STATS_MGF.key(), queryCommandOptions.genericVariantQueryOptions.mgf);
-        params.putIfNotEmpty(VariantQueryParam.MISSING_ALLELES.key(), queryCommandOptions.genericVariantQueryOptions.missingAlleleCount);
-        params.putIfNotEmpty(VariantQueryParam.MISSING_GENOTYPES.key(),
-                queryCommandOptions.genericVariantQueryOptions.missingGenotypeCount);
-//        queryOptions.put(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(),
-//                queryCommandOptions.annotationExists);
-        params.putIfNotEmpty(VariantQueryParam.GENOTYPE.key(), queryCommandOptions.genericVariantQueryOptions.sampleGenotype);
-        params.putIfNotEmpty(VariantQueryParam.SAMPLES.key(), queryCommandOptions.genericVariantQueryOptions.samples);
-        params.putIfNotEmpty(VariantQueryParam.INCLUDE_FORMAT.key(), queryCommandOptions.genericVariantQueryOptions.includeFormat);
-        params.putIfNotEmpty(VariantQueryParam.INCLUDE_GENOTYPE.key(), queryCommandOptions.genericVariantQueryOptions.includeGenotype);
-        params.putIfNotEmpty(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), queryCommandOptions.genericVariantQueryOptions.consequenceType);
-        params.putIfNotEmpty(VariantQueryParam.ANNOT_XREF.key(), queryCommandOptions.genericVariantQueryOptions.annotXref);
-        params.putIfNotEmpty(VariantQueryParam.ANNOT_BIOTYPE.key(), queryCommandOptions.genericVariantQueryOptions.geneBiotype);
-        params.putIfNotEmpty(VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key(), queryCommandOptions.genericVariantQueryOptions.proteinSubstitution);
-//        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_POLYPHEN.key(), queryCommandOptions.queryVariantsOptions.polyphen);
-//        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_SIFT.key(), queryCommandOptions.queryVariantsOptions.sift);
-        params.putIfNotEmpty(VariantQueryParam.ANNOT_CONSERVATION.key(), queryCommandOptions.genericVariantQueryOptions.conservation);
-        params.putIfNotEmpty(VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),
-                queryCommandOptions.genericVariantQueryOptions.populationMaf);
-        params.putIfNotEmpty(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
-                queryCommandOptions.genericVariantQueryOptions.populationFreqs);
-//        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_REFERENCE_FREQUENCY.key(),
-//                queryCommandOptions.reference_frequency);
-        params.putIfNotEmpty(VariantQueryParam.ANNOT_TRANSCRIPTION_FLAGS.key(),
-                queryCommandOptions.genericVariantQueryOptions.flags);
-        params.putIfNotEmpty(VariantQueryParam.ANNOT_GENE_TRAITS_ID.key(), queryCommandOptions.genericVariantQueryOptions.geneTraitId);
-        params.putIfNotEmpty(VariantQueryParam.ANNOT_GENE_TRAITS_NAME.key(),
-                queryCommandOptions.genericVariantQueryOptions.geneTraitName);
-        params.putIfNotEmpty(VariantQueryParam.ANNOT_HPO.key(), queryCommandOptions.genericVariantQueryOptions.hpo);
-        params.putIfNotEmpty(VariantQueryParam.ANNOT_GO.key(), queryCommandOptions.genericVariantQueryOptions.go);
-//        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_EXPRESSION.key(), queryCommandOptions.genericVariantQueryOptions.expression);
-        params.putIfNotEmpty(VariantQueryParam.ANNOT_PROTEIN_KEYWORDS.key(),
-                queryCommandOptions.genericVariantQueryOptions.proteinKeywords);
-        params.putIfNotEmpty(VariantQueryParam.ANNOT_DRUG.key(), queryCommandOptions.genericVariantQueryOptions.drugs);
-        params.putIfNotEmpty(VariantQueryParam.ANNOT_FUNCTIONAL_SCORE.key(),
-                queryCommandOptions.genericVariantQueryOptions.functionalScore);
-        params.putIfNotEmpty(VariantQueryParam.UNKNOWN_GENOTYPE.key(), queryCommandOptions.genericVariantQueryOptions.unknownGenotype);
-//        params.put(QueryOptions.SORT, queryCommandOptions.sort);
-//        queryOptions.putIfNotEmpty("merge", queryCommandOptions.merge);
-        params.putIfNotEmpty(VariantCatalogQueryUtils.SAMPLE_FILTER.key(), queryCommandOptions.sampleFilter);
+        List<String> studies = new ArrayList<>();
+        for (Map.Entry<String, List<String>> entry : cliSession.getProjectsAndStudies().entrySet()) {
+            for (String s : entry.getValue()) {
+                studies.add(entry.getKey() + ':' + s);
+            }
+        }
+        Query query = VariantQueryCommandUtils.parseQuery(queryCommandOptions, studies);
+        QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(queryCommandOptions);
 
-        QueryOptions options = new QueryOptions();
-        options.putIfNotEmpty(QueryOptions.INCLUDE, queryCommandOptions.dataModelOptions.include);
-        options.putIfNotEmpty(QueryOptions.EXCLUDE, queryCommandOptions.dataModelOptions.exclude);
-        options.put(QueryOptions.LIMIT, queryCommandOptions.numericOptions.limit);
-        options.put(QueryOptions.SKIP, queryCommandOptions.numericOptions.skip);
-        options.put(QueryOptions.COUNT, queryCommandOptions.numericOptions.count);
-        options.putAll(variantCommandOptions.commonCommandOptions.params);
-
-        params.put("samplesMetadata", queryCommandOptions.genericVariantQueryOptions.samplesMetadata);
-        params.putIfNotEmpty("groupBy", queryCommandOptions.genericVariantQueryOptions.groupBy);
-        params.put("histogram", queryCommandOptions.genericVariantQueryOptions.histogram);
-        params.put("interval", queryCommandOptions.genericVariantQueryOptions.interval);
+        options.putIfNotEmpty("groupBy", queryCommandOptions.genericVariantQueryOptions.groupBy);
+        options.put("histogram", queryCommandOptions.genericVariantQueryOptions.histogram);
+        options.put("interval", queryCommandOptions.genericVariantQueryOptions.interval);
 
         List<String> annotations = queryCommandOptions.genericVariantQueryOptions.annotations == null
                 ? Collections.singletonList("gene")
@@ -201,11 +143,14 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         // Let's hide some STDOUT verbose messages from ManagedChannelImpl class
         Logger.getLogger(ManagedChannelImpl.class.getName()).setLevel(java.util.logging.Level.WARNING);
 
+
         boolean grpc = usingGrpcMode(queryCommandOptions.mode);
         if (!grpc) {
+            ObjectMap params = new ObjectMap(query);
+
             if (queryCommandOptions.numericOptions.count) {
                 return openCGAClient.getVariantClient().count(params, options);
-            } else if (queryCommandOptions.genericVariantQueryOptions.samplesMetadata || StringUtils.isNoneEmpty(queryCommandOptions.genericVariantQueryOptions.groupBy)
+            } else if (StringUtils.isNoneEmpty(queryCommandOptions.genericVariantQueryOptions.groupBy)
                     || queryCommandOptions.genericVariantQueryOptions.histogram) {
                 return openCGAClient.getVariantClient().genericQuery(params, options);
             } else {
@@ -228,8 +173,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             // We use a blocking stub to execute the query to gRPC
             VariantServiceGrpc.VariantServiceBlockingStub variantServiceBlockingStub = VariantServiceGrpc.newBlockingStub(channel);
 
+            ObjectMap params = new ObjectMap(query);
             params.putAll(options);
-            Query query = VariantStorageManager.getVariantQuery(params);
+            query = VariantStorageManager.getVariantQuery(params);
             Map<String, String> queryMap = new HashMap<>();
             Map<String, String> queryOptionsMap = new HashMap<>();
             for (String key : params.keySet()) {
@@ -263,7 +209,6 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         || queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("text")) {
                     options.put(QueryOptions.SKIP_COUNT, true);
                     options.put(QueryOptions.LIMIT, 1);
-                    params.put(VariantQueryParam.SAMPLES_METADATA.key(), true);
                     VariantQueryResult<Variant> variantQueryResult = openCGAClient.getVariantClient().query2(params, options);
 
                     List<String> samples = getSamplesFromVariantQueryResult(variantQueryResult, study);
@@ -285,7 +230,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private boolean usingGrpcMode(String mode) {
-        boolean grpc;
+        final boolean grpc;
         switch (mode.toUpperCase()) {
             case "AUTO":
                 grpc = isGrpcAvailable() == null;
@@ -337,7 +282,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         }
     }
 
-    private void printVcf(VariantQueryResult<Variant> variantQueryResult, Iterator<VariantProto.Variant> variantIterator, String study, List<String> samples, List<String> annotations, PrintStream outputStream) {
+    private void printVcf(VariantQueryResult<Variant> variantQueryResult, Iterator<VariantProto.Variant> variantIterator, String study,
+                          List<String> samples, List<String> annotations, PrintStream outputStream) {
 //        logger.debug("Samples from variantQueryResult: {}", variantQueryResult.getSamples());
 //
 //        Map<String, List<String>> samplePerStudy = new HashMap<>();

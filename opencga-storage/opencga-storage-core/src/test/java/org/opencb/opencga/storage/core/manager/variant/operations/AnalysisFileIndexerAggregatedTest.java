@@ -44,11 +44,6 @@ public class AnalysisFileIndexerAggregatedTest extends AbstractVariantStorageOpe
     private List<File> files = new ArrayList<>();
     private Logger logger = LoggerFactory.getLogger(AnalysisFileIndexerAggregatedTest.class);
 
-    public AnalysisFileIndexerAggregatedTest() {
-        super();
-    }
-
-
     @Before
     public void beforeAggregatedIndex() throws Exception {
         files.add(create("variant-test-aggregated-file.vcf.gz"));

@@ -71,6 +71,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
                         .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
                         .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DS,GL")
                         .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)
+                        .append(VariantStorageEngine.Options.GVCF.key(), false)
         });
         parameters.add(new Object[]{
                 new ObjectMap()
@@ -79,6 +80,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
                         .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED)
                         .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DS,GL")
                         .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)
+                        .append(VariantStorageEngine.Options.GVCF.key(), false)
         });
         return parameters;
     }

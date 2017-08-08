@@ -16,10 +16,13 @@
 
 package org.opencb.opencga.analysis.execution.plugins;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.old.models.tool.Manifest;
 import org.opencb.opencga.analysis.execution.plugins.test.TestAnalysis;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -33,6 +36,8 @@ import static org.junit.Assert.assertEquals;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class PluginFactoryTest {
+
+    private StorageEngineFactory storageEngineFactory;
 
     public static class TestAnalysis2 extends TestAnalysis {
 
@@ -53,6 +58,11 @@ public class PluginFactoryTest {
         }
     }
 
+    @Before
+    public void setUp() throws Exception {
+        storageEngineFactory = StorageEngineFactory.get(new StorageConfiguration());
+    }
+
     @Test
     public void testGetPlugin() throws Exception {
         Class<? extends OpenCGAAnalysis> testClass = PluginFactory.get().getPluginClass(TestAnalysis.PLUGIN_ID);
@@ -60,7 +70,7 @@ public class PluginFactoryTest {
 
         OpenCGAAnalysis testPlugin = PluginFactory.get().getPlugin(TestAnalysis.PLUGIN_ID);
         assertEquals(TestAnalysis.class, testPlugin.getClass());
-        testPlugin.init(LoggerFactory.getLogger(OpenCGAAnalysis.class), new ObjectMap(TestAnalysis.PARAM_1, "Hello").append(TestAnalysis.ERROR, false), null, null, -1, null, null);
+        testPlugin.init(LoggerFactory.getLogger(OpenCGAAnalysis.class), new ObjectMap(TestAnalysis.PARAM_1, "Hello").append(TestAnalysis.ERROR, false), null, storageEngineFactory, -1, null, null);
         int run = testPlugin.run();
         assertEquals(run, 0);
     }
@@ -72,7 +82,7 @@ public class PluginFactoryTest {
 
         OpenCGAAnalysis testPlugin = PluginFactory.get().getPlugin(TestAnalysis2.ID);
         assertEquals(TestAnalysis2.class, testPlugin.getClass());
-        testPlugin.init(LoggerFactory.getLogger(OpenCGAAnalysis.class), new ObjectMap(TestAnalysis.PARAM_1, "Hello World!").append(TestAnalysis.ERROR, false), null, null, -1, null, null);
+        testPlugin.init(LoggerFactory.getLogger(OpenCGAAnalysis.class), new ObjectMap(TestAnalysis.PARAM_1, "Hello World!").append(TestAnalysis.ERROR, false), null, storageEngineFactory, -1, null, null);
         int run = testPlugin.run();
         assertEquals(run, 0);
         assertEquals(TestAnalysis2.ID, testPlugin.getManifest().getId());

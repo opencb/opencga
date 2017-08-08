@@ -159,6 +159,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
         try (OutputStream os = new FileOutputStream(conf.resolve("storage-configuration.yml").toFile())) {
             storageConfiguration.serialize(os);
         }
+        StorageEngineFactory.configure(storageConfiguration);
         storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
 
 //        inputStream = StorageEngine.class.getClassLoader().getResourceAsStream("client-configuration-test.yml");

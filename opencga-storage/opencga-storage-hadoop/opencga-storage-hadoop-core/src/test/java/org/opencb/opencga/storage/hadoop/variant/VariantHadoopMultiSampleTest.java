@@ -267,6 +267,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
         options.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
+        options.put(HadoopVariantStorageEngine.MERGE_COLLAPSE_DELETIONS, false);
         options.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto");
         options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
         options.put(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
@@ -573,7 +574,8 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         Integer fileId = fileIds.get(fileIds.size() - 1);
         VariantSource source = loadFile("platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration,
                 new ObjectMap(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT, true)
-                .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_PENDING_FILES, StringUtils.join(fileIds, ","))
+                        .append(HadoopVariantStorageEngine.MERGE_COLLAPSE_DELETIONS, false)
+                        .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_PENDING_FILES, StringUtils.join(fileIds, ","))
         );
         sources.add(source);
         expectedVariants.addAll(checkArchiveTableLoadedVariants(studyConfiguration, dbAdaptor, source));

@@ -47,6 +47,9 @@ public final class StorageEngineFactory {
 
     public static void configure(StorageConfiguration configuration) {
         storageConfigurationDefault = configuration;
+        if (storageEngineFactory != null) {
+            storageEngineFactory.storageConfiguration = configuration;
+        }
     }
 
     private enum Type {
