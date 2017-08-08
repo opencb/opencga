@@ -99,22 +99,28 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "count", value = "Get a count of the number of results obtained. Deactivated by default.",
                     dataType = "boolean", paramType = "query")
     })
-    public Response getAllStudies(@ApiParam(value = "Project id or alias", required = true) @QueryParam("projectId") String projectId,
-                                  @ApiParam(value = "Study name") @QueryParam("name") String name,
-                                  @ApiParam(value = "Study alias") @QueryParam("alias") String alias,
-                                  @ApiParam(value = "Type of study: CASE_CONTROL, CASE_SET...") @QueryParam("type") String type,
-                                  @ApiParam(value = "Creation date") @QueryParam("creationDate") String creationDate,
-                                  @ApiParam(value = "Status") @QueryParam("status") String status,
-                                  @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes,
-                                  @Deprecated @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes,
-                                  @Deprecated @ApiParam(value = "Boolean attributes") @QueryParam("battributes") boolean battributes,
-                                  @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
-                                  @ApiParam(value = "Release value") @QueryParam("release") String release) {
+    public Response getAllStudies(
+            @Deprecated @ApiParam(value = "Project id or alias") @QueryParam("projectId") String projectId,
+            @Deprecated @ApiParam(value = "Project id or alias", required = true) @QueryParam("project") String projectStr,
+            @ApiParam(value = "Study name") @QueryParam("name") String name,
+            @ApiParam(value = "Study alias") @QueryParam("alias") String alias,
+            @ApiParam(value = "Type of study: CASE_CONTROL, CASE_SET...") @QueryParam("type") String type,
+            @ApiParam(value = "Creation date") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Status") @QueryParam("status") String status,
+            @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes,
+            @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes,
+            @ApiParam(value = "Boolean attributes") @QueryParam("battributes") boolean battributes,
+            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
+            @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
+            if (StringUtils.isNotEmpty(projectId) && StringUtils.isEmpty(projectStr)) {
+                projectStr = projectId;
+            }
+
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 
             if (projectId != null) {
-                query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), catalogManager.getProjectId(projectId, sessionId));
+                query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), catalogManager.getProjectId(projectStr, sessionId));
             }
             QueryResult<Study> queryResult = catalogManager.getAllStudies(query, queryOptions, sessionId);
             return createOkResponse(queryResult);
