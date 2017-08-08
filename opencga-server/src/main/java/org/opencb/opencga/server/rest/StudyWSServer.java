@@ -100,8 +100,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                     dataType = "boolean", paramType = "query")
     })
     public Response getAllStudies(
-            @Deprecated @ApiParam(value = "Project id or alias") @QueryParam("projectId") String projectId,
-            @Deprecated @ApiParam(value = "Project id or alias", required = true) @QueryParam("project") String projectStr,
+            @ApiParam(value = "Project id or alias") @QueryParam("projectId") String projectId,
             @ApiParam(value = "Study name") @QueryParam("name") String name,
             @ApiParam(value = "Study alias") @QueryParam("alias") String alias,
             @ApiParam(value = "Type of study: CASE_CONTROL, CASE_SET...") @QueryParam("type") String type,
@@ -113,14 +112,10 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
-            if (StringUtils.isNotEmpty(projectId) && StringUtils.isEmpty(projectStr)) {
-                projectStr = projectId;
-            }
-
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 
             if (projectId != null) {
-                query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), catalogManager.getProjectId(projectStr, sessionId));
+                query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), catalogManager.getProjectId(projectId, sessionId));
             }
             QueryResult<Study> queryResult = catalogManager.getAllStudies(query, queryOptions, sessionId);
             return createOkResponse(queryResult);
