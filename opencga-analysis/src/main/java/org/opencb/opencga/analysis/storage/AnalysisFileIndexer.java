@@ -135,7 +135,7 @@ public class AnalysisFileIndexer {
         File outDir = catalogManager.getFileManager().get(outDirId, null, sessionId).first();
         long studyIdByOutDirId = catalogManager.getFileManager().getStudyId(outDirId);
         long studyIdByInputFileId = catalogManager.getFileManager().getStudyId(inputFile.getId());
-        Study study = catalogManager.getStudyManager().get(studyIdByOutDirId, null, sessionId).getResult().get(0);
+        Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyIdByOutDirId), null, sessionId).getResult().get(0);
 
         if (inputFile.getType() != File.Type.FILE) {
             throw new CatalogException("Expected file type = " + File.Type.FILE + " instead of " + inputFile.getType());
@@ -313,7 +313,8 @@ public class AnalysisFileIndexer {
                 updateParams.append(CohortDBAdaptor.QueryParams.SAMPLES.key(), new ArrayList<>(samples));
             }
             if (!updateParams.isEmpty()) {
-                catalogManager.getCohortManager().update(defaultCohort.getId(), updateParams, new QueryOptions(), sessionId);
+                catalogManager.getCohortManager().update(null, String.valueOf(defaultCohort.getId()), updateParams, new QueryOptions(),
+                        sessionId);
             }
         }
 

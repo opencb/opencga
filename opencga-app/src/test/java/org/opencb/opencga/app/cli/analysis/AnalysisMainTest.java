@@ -110,7 +110,8 @@ public class AnalysisMainTest {
         assertEquals(Cohort.CohortStatus.NONE, catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.NAME
                 .key(), "ALL"), null, sessionId).first().getStatus().getName());
 
-        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file1.getId()), null, sessionId).first();
+        job = catalogManager.getJobManager().get(String.valueOf(studyId), new Query(JobDBAdaptor.QueryParams.INPUT.key(), file1.getId()),
+                null, sessionId).first();
         assertEquals(Job.JobStatus.READY, job.getStatus().getName());
 
         // Annotate variants from chr2 (which is not indexed)
@@ -131,7 +132,7 @@ public class AnalysisMainTest {
         assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(file2.getId(), null, sessionId).first().getIndex()
                 .getStatus().getName());
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getName());
-        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file2.getId()), null, sessionId).first();
+        job = catalogManager.getJobManager().get(String.valueOf(studyId), new Query(JobDBAdaptor.QueryParams.INPUT.key(), file2.getId()), null, sessionId).first();
         assertEquals(Job.JobStatus.READY, job.getStatus().getName());
         assertEquals(outdirId, job.getOutDir().getId());
 
@@ -142,7 +143,7 @@ public class AnalysisMainTest {
         execute(new String[]{"variant", "index", "--session-id", sessionId, "--file-id", String.valueOf(file3.getId())});
         assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(file3.getId(), null, sessionId).first().getIndex().getStatus().getName());
         assertEquals(Cohort.CohortStatus.INVALID, catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getName());
-        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file3.getId()), null, sessionId).first();
+        job = catalogManager.getJobManager().get(String.valueOf(studyId), new Query(JobDBAdaptor.QueryParams.INPUT.key(), file3.getId()), null, sessionId).first();
         assertEquals(Job.JobStatus.READY, job.getStatus().getName());
         Assert.assertNotEquals(outdirId, job.getOutDir().getId());
 
@@ -150,20 +151,20 @@ public class AnalysisMainTest {
         execute(new String[]{"variant", "index", "--session-id", sessionId, "--file-id", String.valueOf(file4.getId()), "--calculate-stats", "--queue"});
         assertEquals(FileIndex.IndexStatus.INDEXING, catalogManager.getFileManager().get(file4.getId(), null, sessionId).first().getIndex().getStatus().getName());
         assertEquals(Cohort.CohortStatus.CALCULATING, catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getName());
-        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file4.getId()), null, sessionId).first();
+        job = catalogManager.getJobManager().get(String.valueOf(studyId), new Query(JobDBAdaptor.QueryParams.INPUT.key(), file4.getId()), null, sessionId).first();
         assertEquals(Job.JobStatus.PREPARED, job.getStatus().getName());
         opencga.runStorageJob(job, sessionId);
 
         assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(file4.getId(), null, sessionId).first().getIndex().getStatus().getName());
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getName());
-        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file4.getId()), null, sessionId).first();
+        job = catalogManager.getJobManager().get(String.valueOf(studyId), new Query(JobDBAdaptor.QueryParams.INPUT.key(), file4.getId()), null, sessionId).first();
         assertEquals(Job.JobStatus.READY, job.getStatus().getName());
 
         // Index file5 and annotation
         execute(new String[]{"variant", "index", "--session-id", sessionId, "--file-id", String.valueOf(file5.getId()), "--annotate"});
         assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(file5.getId(), null, sessionId).first().getIndex().getStatus().getName());
         assertEquals(Cohort.CohortStatus.INVALID, catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getName());
-        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file5.getId()), null, sessionId).first();
+        job = catalogManager.getJobManager().get(String.valueOf(studyId), new Query(JobDBAdaptor.QueryParams.INPUT.key(), file5.getId()), null, sessionId).first();
         assertEquals(Job.JobStatus.READY, job.getStatus().getName());
 
         execute(new String[]{"variant", "stats", "--session-id", sessionId, "--study-id", String.valueOf(studyId), "--cohort-ids", "ALL", "--outdir-id", String.valueOf(outdirId)});
@@ -207,7 +208,7 @@ public class AnalysisMainTest {
         execute(new String[]{"variant", "index", "--session-id", sessionId, "--file-id", "user@p1:s1:" + file1.getPath(), "--calculate-stats", "--annotate"});
         assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(file1.getId(), null, sessionId).first().getIndex().getStatus().getName());
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getName());
-        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file1.getId()), null, sessionId).first();
+        job = catalogManager.getJobManager().get(String.valueOf(studyId), new Query(JobDBAdaptor.QueryParams.INPUT.key(), file1.getId()), null, sessionId).first();
         assertEquals(Job.JobStatus.READY, job.getStatus().getName());
 
         execute(new String[]{"variant", "stats", "--session-id", sessionId, "--study-id", "user@p1:s1", "--cohort-ids", c1 + "," + c2 + "," + c3 + "," + c4});
@@ -259,7 +260,7 @@ public class AnalysisMainTest {
         // Index file1
         execute(new String[]{"alignment", "index", "--session-id", sessionId, "--file-id", "user@p1:s1:" + bam.getPath()});
         assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(bam.getId(), null, sessionId).first().getIndex().getStatus().getName());
-        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), bam.getId()), null, sessionId).first();
+        job = catalogManager.getJobManager().get(String.valueOf(studyId), new Query(JobDBAdaptor.QueryParams.INPUT.key(), bam.getId()), null, sessionId).first();
         assertEquals(Job.JobStatus.READY, job.getStatus().getName());
 
         execute(new String[]{"alignment", "query", "--session-id", sessionId, "--file-id", "user@p1:s1:" + bam.getPath(), "--region", "20"});

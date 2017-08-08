@@ -462,16 +462,16 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readProject() throws CatalogException {
-        QueryResult<Project> project = catalogManager.getProjectManager().get(p1, null, ownerSessionId);
+        QueryResult<Project> project = catalogManager.getProjectManager().get(String.valueOf((Long) p1), null, ownerSessionId);
         assertEquals(1, project.getNumResults());
-        project = catalogManager.getProjectManager().get(p1, null, memberSessionId);
+        project = catalogManager.getProjectManager().get(String.valueOf((Long) p1), null, memberSessionId);
         assertEquals(1, project.getNumResults());
     }
 
     @Test
     public void readProjectDeny() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.getProjectManager().get(p1, null, externalSessionId);
+        catalogManager.getProjectManager().get(String.valueOf((Long) p1), null, externalSessionId);
     }
 
     /*--------------------------*/
@@ -480,16 +480,16 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readStudy() throws CatalogException {
-        QueryResult<Study> study = catalogManager.getStudyManager().get(s1, null, ownerSessionId);
+        QueryResult<Study> study = catalogManager.getStudyManager().get(String.valueOf((Long) s1), null, ownerSessionId);
         assertEquals(1, study.getNumResults());
-        study = catalogManager.getStudyManager().get(s1, null, memberSessionId);
+        study = catalogManager.getStudyManager().get(String.valueOf((Long) s1), null, memberSessionId);
         assertEquals(1, study.getNumResults());
     }
 
     @Test
     public void readStudyDeny() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.getStudyManager().get(s1, null, externalSessionId);
+        catalogManager.getStudyManager().get(String.valueOf((Long) s1), null, externalSessionId);
     }
 
     /*--------------------------*/
@@ -819,18 +819,18 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readIndividualByReadingSomeSample() throws CatalogException {
-        catalogManager.getIndividualManager().get(ind1, null, memberSessionId);
+        catalogManager.getIndividualManager().get(null, String.valueOf((Long) ind1), null, memberSessionId);
     }
 
     @Test
     public void readIndividualForbidden() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.getIndividualManager().get(ind2, null, externalSessionId);
+        catalogManager.getIndividualManager().get(null, String.valueOf((Long) ind2), null, externalSessionId);
     }
 
     @Test
     public void readIndividualStudyManager() throws CatalogException {
-        catalogManager.getIndividualManager().get(ind2, null, studyAdmin1SessionId);
+        catalogManager.getIndividualManager().get(null, String.valueOf((Long) ind2), null, studyAdmin1SessionId);
     }
 
     @Test
@@ -870,7 +870,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     }
 
     public void checkGetAllJobs(long studyId, Collection<Long> expectedJobs, String sessionId) throws CatalogException {
-        QueryResult<Job> allJobs = catalogManager.getJobManager().get(studyId, null, null, sessionId);
+        QueryResult<Job> allJobs = catalogManager.getJobManager().get(String.valueOf(studyId), (Query) null, null, sessionId);
 
         assertEquals(expectedJobs.size(), allJobs.getNumResults());
         allJobs.getResult().forEach(job -> assertTrue(expectedJobs + " does not contain job " + job.getName(), expectedJobs.contains(job
@@ -879,7 +879,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     /////////// Aux methods
     private Map<String, Group> getGroupMap() throws CatalogException {
-        return catalogManager.getStudyManager().get(s1, null, ownerSessionId).first().getGroups().stream().collect(Collectors.toMap(Group::getName, f -> f));
+        return catalogManager.getStudyManager().get(String.valueOf((Long) s1), null, ownerSessionId).first().getGroups().stream().collect(Collectors.toMap(Group::getName, f -> f));
     }
 
 }

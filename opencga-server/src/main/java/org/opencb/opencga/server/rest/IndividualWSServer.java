@@ -18,6 +18,7 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -89,13 +90,15 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                    @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                         @QueryParam("study") String studyStr) {
         try {
-            List<QueryResult<Individual>> queryResults = new LinkedList<>();
-            AbstractManager.MyResourceIds resourceId = individualManager.getIds(individualStr, studyStr, sessionId);
-
-            for (Long individualId : resourceId.getResourceIds()) {
-                queryResults.add(catalogManager.getIndividualManager().get(individualId, queryOptions, sessionId));
+            QueryResult<Individual> individualQueryResult = individualManager.get(studyStr, individualStr, queryOptions, sessionId);
+            // We parse the query result to create one queryresult per individual
+            List<QueryResult<Individual>> queryResultList = new ArrayList<>(individualQueryResult.getNumResults());
+            for (Individual individual : individualQueryResult.getResult()) {
+                queryResultList.add(new QueryResult<>(individual.getName() + "-" + individual.getId(), individualQueryResult.getDbTime(), 1,
+                        -1, individualQueryResult.getWarningMsg(), individualQueryResult.getErrorMsg(), Arrays.asList(individual)));
             }
-            return createOkResponse(queryResults);
+
+            return createOkResponse(queryResultList);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -332,10 +335,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                         @QueryParam("study") String studyStr,
                                  @ApiParam(value = "params", required = true) IndividualPOST updateParams) {
         try {
-            AbstractManager.MyResourceId resource = individualManager.getId(individualStr, studyStr, sessionId);
-            QueryOptions options = new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams));
-            QueryResult<Individual> queryResult = catalogManager.getIndividualManager().update(resource.getResourceId(), options,
-                    options, sessionId);
+            ObjectMap params = new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams));
+            QueryResult<Individual> queryResult = catalogManager.getIndividualManager().update(studyStr, individualStr, params,
+                    queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -350,7 +352,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                             @QueryParam("study") String studyStr) {
         try {
-            List<QueryResult<Individual>> queryResult = individualManager.delete(individualIds, studyStr, queryOptions, sessionId);
+            List<QueryResult<Individual>> queryResult = individualManager.delete(studyStr, individualIds, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -390,7 +392,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            QueryResult result = individualManager.groupBy(studyStr, query, queryOptions, fields, sessionId);
+            QueryResult result = individualManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

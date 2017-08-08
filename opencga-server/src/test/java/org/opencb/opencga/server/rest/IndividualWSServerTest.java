@@ -153,7 +153,7 @@ public class IndividualWSServerTest {
 
         // FIXME: This will have to return an exception once we improve the delete behaviour
 //        thrown.expect(CatalogException.class);
-        OpenCGAWSServer.catalogManager.getIndividualManager().get(individual.getId(), null, sessionId);
+        OpenCGAWSServer.catalogManager.getIndividualManager().get(null, String.valueOf((Long) individual.getId()), null, sessionId);
 
     }
 

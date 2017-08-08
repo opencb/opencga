@@ -70,15 +70,15 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr) {
         try {
-            AbstractManager.MyResourceIds resourceIds = sampleManager.getIds(sampleStr, studyStr, sessionId);
-
-            List<QueryResult<Sample>> queryResults = new LinkedList<>();
-            if (resourceIds.getResourceIds() != null && resourceIds.getResourceIds().size() > 0) {
-                for (Long sampleId : resourceIds.getResourceIds()) {
-                    queryResults.add(catalogManager.getSampleManager().get(sampleId, queryOptions, sessionId));
-                }
+            QueryResult<Sample> sampleQueryResult = sampleManager.get(studyStr, sampleStr, queryOptions, sessionId);
+            // We parse the query result to create one queryresult per sample
+            List<QueryResult<Sample>> queryResultList = new ArrayList<>(sampleQueryResult.getNumResults());
+            for (Sample sample : sampleQueryResult.getResult()) {
+                queryResultList.add(new QueryResult<>(sample.getName() + "-" + sample.getId(), sampleQueryResult.getDbTime(), 1, -1,
+                        sampleQueryResult.getWarningMsg(), sampleQueryResult.getErrorMsg(), Arrays.asList(sample)));
             }
-            return createOkResponse(queryResults);
+
+            return createOkResponse(queryResultList);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -204,8 +204,6 @@ public class SampleWSServer extends OpenCGAWSServer {
                                  @QueryParam("study") String studyStr,
                                  @ApiParam(value = "params", required = true) UpdateSamplePOST parameters) {
         try {
-            AbstractManager.MyResourceId resourceId = catalogManager.getSampleManager().getId(sampleStr, studyStr, sessionId);
-
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
             if (params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
                 if (!params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL.key())) {
@@ -218,9 +216,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 throw new CatalogException("Missing parameters to update.");
             }
 
-            QueryResult<Sample> queryResult = catalogManager.getSampleManager().update(resourceId.getResourceId(), params, queryOptions,
-                    sessionId);
-            return createOkResponse(queryResult);
+            return createOkResponse(sampleManager.update(studyStr, sampleStr, params, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -234,7 +230,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                            @QueryParam("study") String studyStr) {
         try {
-            List<QueryResult<Sample>> delete = catalogManager.getSampleManager().delete(sampleStr, studyStr, queryOptions, sessionId);
+            List<QueryResult<Sample>> delete = catalogManager.getSampleManager().delete(studyStr, sampleStr, queryOptions, sessionId);
             return createOkResponse(delete);
         } catch (CatalogException | IOException e) {
             return createErrorResponse(e);
@@ -271,7 +267,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 }
                 query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
             }
-            QueryResult result = sampleManager.groupBy(studyStr, query, queryOptions, fields, sessionId);
+            QueryResult result = sampleManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

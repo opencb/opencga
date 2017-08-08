@@ -32,8 +32,6 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.managers.api.IAnnotationSetManager;
-import org.opencb.opencga.catalog.managers.api.IEntryManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.FamilyAclEntry;
@@ -43,6 +41,8 @@ import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -56,11 +56,18 @@ import static org.opencb.opencga.catalog.db.api.FamilyDBAdaptor.QueryParams.ONTO
 /**
  * Created by pfurio on 02/05/17.
  */
-public class FamilyManager extends AbstractManager implements IEntryManager<Long, Family>, IAnnotationSetManager {
+public class FamilyManager extends AnnotationSetManager<Family> {
 
-    public FamilyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
+    protected static Logger logger = LoggerFactory.getLogger(FamilyManager.class);
+    private UserManager userManager;
+    private StudyManager studyManager;
+
+    FamilyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                          DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
+
+        this.userManager = catalogManager.getUserManager();
+        this.studyManager = catalogManager.getStudyManager();
     }
 
     /**
@@ -321,42 +328,17 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
     }
 
     @Override
-    public QueryResult<Family> get(Long id, QueryOptions options, String sessionId) throws CatalogException {
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        String userId = catalogManager.getUserManager().getId(sessionId);
-        long studyId = familyDBAdaptor.getStudyId(id);
-
-        Query query = new Query()
-                .append(FamilyDBAdaptor.QueryParams.ID.key(), id)
-                .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, options, userId);
-        if (familyQueryResult.getNumResults() <= 0) {
-            throw CatalogAuthorizationException.deny(userId, "view", "family", id, "");
-        }
-        return familyQueryResult;
-    }
-
-    public QueryResult<Family> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Family> get(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = userManager.getId(sessionId);
+        long studyId = studyManager.getId(userId, studyStr);
 
         query.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-        QueryResult<Family> queryResult = familyDBAdaptor.get(query, options, userId);
 
-        return queryResult;
+        return familyDBAdaptor.get(query, options, userId);
     }
-
-    @Override
-    public QueryResult<Family> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        return get(query.getLong(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), -1), query, options, sessionId);
-    }
-
 
     public QueryResult<Family> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getId(sessionId);
@@ -427,13 +409,13 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
     }
 
     @Override
-    public List<QueryResult<Family>> delete(String entries, @Nullable String studyStr, ObjectMap params, String sessionId)
+    public List<QueryResult<Family>> delete(@Nullable String studyStr, String entries, ObjectMap params, String sessionId)
             throws CatalogException, IOException {
         return null;
     }
 
     @Override
-    public QueryResult rank(long studyId, Query query, String field, int numResults, boolean asc, String sessionId) throws
+    public QueryResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String sessionId) throws
             CatalogException {
         return null;
     }
@@ -445,16 +427,20 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
     }
 
     @Override
-    public QueryResult<Family> update(Long id, ObjectMap parameters, QueryOptions options, String sessionId) throws CatalogException {
-        parameters = ParamUtils.defaultObject(parameters, ObjectMap::new);
+    public QueryResult<Family> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkObj(parameters, "Missing parameters");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        MyResourceId resource = getId(Long.toString(id), null, sessionId);
-        authorizationManager.checkFamilyPermission(resource.getStudyId(), id, resource.getUser(), FamilyAclEntry.FamilyPermissions.UPDATE);
+        MyResourceId resource = getId(entryStr, studyStr, sessionId);
+        long familyId = resource.getResourceId();
 
-        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(id, new QueryOptions());
+        authorizationManager.checkFamilyPermission(resource.getStudyId(), familyId, resource.getUser(),
+                FamilyAclEntry.FamilyPermissions.UPDATE);
+
+        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(familyId, new QueryOptions());
         if (familyQueryResult.getNumResults() == 0) {
-            throw new CatalogException("Family " + id + " not found");
+            throw new CatalogException("Family " + familyId + " not found");
         }
 
         long individual;
@@ -470,7 +456,7 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
                     individual = parameters.getLong(param.getKey());
                     if (familyQueryResult.first().getMother().getId() > 0) {
                         if (individual != familyQueryResult.first().getMother().getId()) {
-                            throw new CatalogException("Cannot update mother parameter of family. The family " + id + " already has "
+                            throw new CatalogException("Cannot update mother parameter of family. The family " + familyId + " already has "
                                     + "the mother defined");
                         } else {
                             iterator.remove();
@@ -482,7 +468,7 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
                     individual = parameters.getLong(param.getKey());
                     if (familyQueryResult.first().getFather().getId() > 0) {
                         if (individual != familyQueryResult.first().getFather().getId()) {
-                            throw new CatalogException("Cannot update mother parameter of family. The family " + id + " already has "
+                            throw new CatalogException("Cannot update mother parameter of family. The family " + familyId + " already has "
                                     + "the father defined");
                         } else {
                             iterator.remove();
@@ -492,7 +478,7 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
                     break;
                 case CHILDREN_IDS:
                     if (familyQueryResult.first().getChildren().size() > 0) {
-                        throw new CatalogException("Cannot update children parameter of family. The family " + id + " already has "
+                        throw new CatalogException("Cannot update children parameter of family. The family " + familyId + " already has "
                                 + "children defined");
                     }
                     List<Long> individualList = parameters.getAsLongList(param.getKey());
@@ -522,29 +508,9 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
             parameters.remove(ONTOLOGIES.key());
         }
 
-        QueryResult<Family> queryResult = familyDBAdaptor.update(id, parameters);
-        auditManager.recordUpdate(AuditRecord.Resource.family, id, resource.getUser(), parameters, null, null);
+        QueryResult<Family> queryResult = familyDBAdaptor.update(familyId, parameters);
+        auditManager.recordUpdate(AuditRecord.Resource.family, familyId, resource.getUser(), parameters, null, null);
         return queryResult;
-    }
-
-    @Override
-    public List<QueryResult<Family>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
-        return null;
-    }
-
-    @Override
-    public List<QueryResult<Family>> restore(String ids, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
-    }
-
-    @Override
-    public List<QueryResult<Family>> restore(Query query, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
-    }
-
-    @Override
-    public void setStatus(String id, @Nullable String status, @Nullable String message, String sessionId) throws CatalogException {
-
     }
 
     @Override

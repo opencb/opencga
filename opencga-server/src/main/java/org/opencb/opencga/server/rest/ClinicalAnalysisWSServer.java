@@ -26,6 +26,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -75,7 +78,15 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                          @QueryParam("study") String studyStr) {
         try {
-            return createOkResponse(clinicalManager.get(studyStr, clinicalAnalysisStr, queryOptions, sessionId));
+            QueryResult<ClinicalAnalysis> analysisQueryResult = clinicalManager.get(studyStr, clinicalAnalysisStr, queryOptions, sessionId);
+            // We parse the query result to create one queryresult per sample
+            List<QueryResult<ClinicalAnalysis>> queryResultList = new ArrayList<>(analysisQueryResult.getNumResults());
+            for (ClinicalAnalysis analysis : analysisQueryResult.getResult()) {
+                queryResultList.add(new QueryResult<>(analysis.getName() + "-" + analysis.getId(), analysisQueryResult.getDbTime(), 1, -1,
+                        analysisQueryResult.getWarningMsg(), analysisQueryResult.getErrorMsg(), Arrays.asList(analysis)));
+            }
+
+            return createOkResponse(queryResultList);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

@@ -19,6 +19,7 @@ package org.opencb.opencga.analysis;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.StringUtils;
@@ -121,7 +122,7 @@ public class JobFactoryTest {
         Thread.sleep(1000);
         thread.interrupt();
         thread.join();
-        QueryResult<Job> allJobs = catalogManager.getJobManager().get(studyId, null, null, sessionId);
+        QueryResult<Job> allJobs = catalogManager.getJobManager().get(String.valueOf(studyId), (Query) null, null, sessionId);
         assertEquals(1, allJobs.getNumResults());
         Job job = allJobs.first();
         assertEquals(Job.JobStatus.ERROR, job.getStatus().getName());

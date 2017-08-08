@@ -188,8 +188,7 @@ public class JobWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(studyId)) {
                 studyStr = studyId;
             }
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            long studyIdNum = catalogManager.getStudyManager().getId(userId, studyStr);
+
             // TODO this must be changed: only one queryOptions need to be passed
             if (query.containsKey(JobDBAdaptor.QueryParams.NAME.key())
                     && (query.get(JobDBAdaptor.QueryParams.NAME.key()) == null
@@ -199,9 +198,9 @@ public class JobWSServer extends OpenCGAWSServer {
             }
             QueryResult<Job> result;
             if (count) {
-                result = catalogManager.getJobManager().count(Long.toString(studyIdNum), query, sessionId);
+                result = catalogManager.getJobManager().count(studyStr, query, sessionId);
             } else {
-                result = catalogManager.getJobManager().get(studyIdNum, query, queryOptions, sessionId);
+                result = catalogManager.getJobManager().get(studyStr, query, queryOptions, sessionId);
             }
             return createOkResponse(result);
         } catch (Exception e) {
@@ -231,7 +230,7 @@ public class JobWSServer extends OpenCGAWSServer {
 //                                @QueryParam("deleteFiles") boolean deleteFiles) {
         try {
 //            QueryOptions options = new QueryOptions(JobManager.DELETE_FILES, deleteFiles);
-            List<QueryResult<Job>> delete = catalogManager.getJobManager().delete(jobIds, studyStr, queryOptions, sessionId);
+            List<QueryResult<Job>> delete = catalogManager.getJobManager().delete(studyStr, jobIds, queryOptions, sessionId);
             return createOkResponse(delete);
         } catch (CatalogException | IOException e) {
             return createErrorResponse(e);

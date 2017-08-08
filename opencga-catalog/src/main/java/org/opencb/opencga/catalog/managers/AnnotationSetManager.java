@@ -14,12 +14,17 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.managers.api;
+package org.opencb.opencga.catalog.managers;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.audit.AuditManager;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.AnnotationSet;
+import org.opencb.opencga.core.config.Configuration;
 
 import javax.annotation.Nullable;
 import java.util.Map;
@@ -27,7 +32,12 @@ import java.util.Map;
 /**
  * Created by pfurio on 06/07/16.
  */
-public interface IAnnotationSetManager {
+public abstract class AnnotationSetManager<R> extends ResourceManager<R> {
+
+    AnnotationSetManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
+                         DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
+        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
+    }
 
     /**
      * General method to create an annotation set that will have to be implemented. The managers implementing it will have to check the
@@ -44,9 +54,9 @@ public interface IAnnotationSetManager {
      * @throws CatalogException when the session id is not valid, the user does not have permissions or any of the annotation
      * parameters are not valid.
      */
-    QueryResult<AnnotationSet> createAnnotationSet(String id, @Nullable String studyStr, String variableSetId, String annotationSetName,
-                                                   Map<String, Object> annotations, Map<String, Object> attributes, String sessionId)
-            throws CatalogException;
+    public abstract QueryResult<AnnotationSet> createAnnotationSet(String id, @Nullable String studyStr, String variableSetId,
+                                                            String annotationSetName, Map<String, Object> annotations,
+                                                            Map<String, Object> attributes, String sessionId) throws CatalogException;
 
     /**
      * Retrieve all the annotation sets corresponding to entity.
@@ -57,7 +67,8 @@ public interface IAnnotationSetManager {
      * @return a queryResult containing all the annotation sets for that entity.
      * @throws CatalogException when the session id is not valid or the user does not have proper permissions to see the annotations.
      */
-    QueryResult<AnnotationSet> getAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException;
+    public abstract QueryResult<AnnotationSet> getAllAnnotationSets(String id, @Nullable String studyStr, String sessionId)
+            throws CatalogException;
 
     /**
      * Retrieve all the annotation sets corresponding to entity.
@@ -68,7 +79,8 @@ public interface IAnnotationSetManager {
      * @return a queryResult containing all the annotation sets for that entity as key:value pairs.
      * @throws CatalogException when the session id is not valid or the user does not have proper permissions to see the annotations.
      */
-    QueryResult<ObjectMap> getAllAnnotationSetsAsMap(String id, @Nullable String studyStr, String sessionId) throws CatalogException;
+    public abstract QueryResult<ObjectMap> getAllAnnotationSetsAsMap(String id, @Nullable String studyStr, String sessionId)
+            throws CatalogException;
 
     /**
      * Retrieve the annotation set of the corresponding entity.
@@ -81,8 +93,8 @@ public interface IAnnotationSetManager {
      * @throws CatalogException when the session id is not valid, the user does not have proper permissions to see the annotations or the
      * annotationSetName is not valid.
      */
-    QueryResult<AnnotationSet> getAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
-            throws CatalogException;
+    public abstract QueryResult<AnnotationSet> getAnnotationSet(String id, @Nullable String studyStr, String annotationSetName,
+                                                                String sessionId) throws CatalogException;
 
     /**
      * Retrieve the annotation set of the corresponding entity.
@@ -95,8 +107,8 @@ public interface IAnnotationSetManager {
      * @throws CatalogException when the session id is not valid, the user does not have proper permissions to see the annotations or the
      * annotationSetName is not valid.
      */
-    QueryResult<ObjectMap> getAnnotationSetAsMap(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
-            throws CatalogException;
+    public abstract QueryResult<ObjectMap> getAnnotationSetAsMap(String id, @Nullable String studyStr, String annotationSetName,
+                                                                 String sessionId) throws CatalogException;
 
 
     /**
@@ -111,7 +123,7 @@ public interface IAnnotationSetManager {
      * @throws CatalogException when the session id is not valid, the user does not have permissions to update the annotationSet,
      * the newAnnotations are not correct or the annotationSetName is not valid.
      */
-    QueryResult<AnnotationSet> updateAnnotationSet(String id, @Nullable String studyStr,  String annotationSetName,
+    public abstract QueryResult<AnnotationSet> updateAnnotationSet(String id, @Nullable String studyStr,  String annotationSetName,
                                                    Map<String, Object> newAnnotations, String sessionId) throws CatalogException;
 
     /**
@@ -125,8 +137,8 @@ public interface IAnnotationSetManager {
      * @throws CatalogException when the session id is not valid, the user does not have permissions to delete the annotationSet or
      * the annotation set name is not valid.
      */
-    QueryResult<AnnotationSet> deleteAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
-            throws CatalogException;
+    public abstract QueryResult<AnnotationSet> deleteAnnotationSet(String id, @Nullable String studyStr, String annotationSetName,
+                                                            String sessionId) throws CatalogException;
 
     /**
      * Deletes (or puts to the default value if mandatory) a list of annotations from the annotation set.
@@ -140,7 +152,7 @@ public interface IAnnotationSetManager {
      * @throws CatalogException when the session id is not valid, the user does not have permissions to delete the annotationSet,
      * the annotation set name is not valid or any of the annotation names are not valid.
      */
-    default QueryResult<AnnotationSet> deleteAnnotations(String id, @Nullable String studyStr, String annotationSetName, String annotations,
+    public QueryResult<AnnotationSet> deleteAnnotations(String id, @Nullable String studyStr, String annotationSetName, String annotations,
                                                          String sessionId) throws CatalogException {
         throw new CatalogException("Operation still not implemented");
     }
@@ -156,8 +168,8 @@ public interface IAnnotationSetManager {
      * @return a queryResult object containing the list of annotation sets that matches the query as key:value pairs.
      * @throws CatalogException when the session id is not valid, the user does not have permissions to look for annotationSets.
      */
-    QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, String variableSetId, @Nullable String annotation,
-                                                    String sessionId) throws CatalogException;
+    public abstract QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, String variableSetId,
+                                                             @Nullable String annotation, String sessionId) throws CatalogException;
 
     /**
      * Searches for annotation sets matching the parameters.
@@ -170,6 +182,6 @@ public interface IAnnotationSetManager {
      * @return a queryResult object containing the list of annotation sets that matches the query.
      * @throws CatalogException when the session id is not valid, the user does not have permissions to look for annotationSets.
      */
-    QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, String variableSetId, @Nullable String annotation,
-                                                   String sessionId) throws CatalogException;
+    public abstract QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, String variableSetId,
+                                                            @Nullable String annotation, String sessionId) throws CatalogException;
 }

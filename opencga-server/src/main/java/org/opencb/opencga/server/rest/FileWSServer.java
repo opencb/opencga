@@ -137,15 +137,16 @@ public class FileWSServer extends OpenCGAWSServer {
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                          @QueryParam("study") String studyStr) {
         try {
-            List<QueryResult<File>> queryResults = new LinkedList<>();
-            AbstractManager.MyResourceIds resourceIds = fileManager.getIds(fileStr, studyStr, sessionId);
-
-            for (Long fileId : resourceIds.getResourceIds()) {
-                QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(fileId, queryOptions, sessionId);
-                populateOldDeprecatedSampleIdsField(fileQueryResult);
-                queryResults.add(fileQueryResult);
+            QueryResult<File> fileQueryResult = fileManager.get(studyStr, fileStr, queryOptions, sessionId);
+            populateOldDeprecatedSampleIdsField(fileQueryResult);
+            // We parse the query result to create one queryresult per file
+            List<QueryResult<File>> queryResultList = new ArrayList<>(fileQueryResult.getNumResults());
+            for (File file : fileQueryResult.getResult()) {
+                queryResultList.add(new QueryResult<>(file.getName() + "-" + file.getId(), fileQueryResult.getDbTime(), 1, -1,
+                        fileQueryResult.getWarningMsg(), fileQueryResult.getErrorMsg(), Arrays.asList(file)));
             }
-            return createOkResponse(queryResults);
+
+            return createOkResponse(queryResultList);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1257,7 +1258,7 @@ public class FileWSServer extends OpenCGAWSServer {
             ObjectMap params = new ObjectMap()
                     .append(FileManager.DELETE_EXTERNAL_FILES, deleteExternal)
                     .append(FileManager.SKIP_TRASH, skipTrash);
-            List<QueryResult<File>> result = fileManager.delete(fileIdStr, studyStr, params, sessionId);
+            List<QueryResult<File>> result = fileManager.delete(studyStr, fileIdStr, params, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1307,7 +1308,7 @@ public class FileWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(sampleIds) && !query.containsKey(FileDBAdaptor.QueryParams.SAMPLES.key())) {
                 query.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleIds);
             }
-            QueryResult result = fileManager.groupBy(studyStr, query, queryOptions, fields, sessionId);
+            QueryResult result = fileManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

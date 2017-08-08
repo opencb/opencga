@@ -258,7 +258,7 @@ public class UserWSServer extends OpenCGAWSServer {
                                          @ApiParam(name = "params", value = "JSON string containing anything useful for the application "
                                                  + "such as user or default preferences", required = true) String parameters) {
         try {
-            return createOkResponse(catalogManager.getUserManager().setConfig(userId, sessionId, name, new ObjectMap(parameters)));
+            return createOkResponse(catalogManager.getUserManager().setConfig(userId, name, new ObjectMap(parameters), sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -275,7 +275,7 @@ public class UserWSServer extends OpenCGAWSServer {
                     @ApiParam(name = "params", value = "JSON containing anything useful for the application such as user or default "
                             + "preferences", required = true) ObjectMap params) {
         try {
-            return createOkResponse(catalogManager.getUserManager().setConfig(userId, sessionId, name, params));
+            return createOkResponse(catalogManager.getUserManager().setConfig(userId, name, params, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -288,7 +288,7 @@ public class UserWSServer extends OpenCGAWSServer {
                                      @ApiParam(value = "Unique name (typically the name of the application)", required = true)
                                      @PathParam("name") String name) {
         try {
-            return createOkResponse(catalogManager.getUserManager().deleteConfig(userId, sessionId, name));
+            return createOkResponse(catalogManager.getUserManager().deleteConfig(userId, name, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -301,7 +301,7 @@ public class UserWSServer extends OpenCGAWSServer {
                                      @ApiParam(value = "Unique name (typically the name of the application)", required = true)
                                      @PathParam("name") String name) {
         try {
-            return createOkResponse(catalogManager.getUserManager().getConfig(userId, sessionId, name));
+            return createOkResponse(catalogManager.getUserManager().getConfig(userId, name, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -347,8 +347,7 @@ public class UserWSServer extends OpenCGAWSServer {
                 myOptions = new QueryOptions();
             }
 
-            return createOkResponse(catalogManager.getUserManager().addFilter(userId, sessionId, name, description, bioformat, myQuery,
-                    myOptions));
+            return createOkResponse(catalogManager.getUserManager().addFilter(userId, name, description, bioformat, myQuery, myOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -362,8 +361,7 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response addFilterPOST(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                            @ApiParam(name = "params", value = "Filter parameters", required = true) User.Filter params) {
         try {
-            return createOkResponse(catalogManager.getUserManager().addFilter(userId, sessionId, params.getName(), params.getDescription(),
-                    params.getBioformat(), params.getQuery(), params.getOptions()));
+            return createOkResponse(catalogManager.getUserManager().addFilter(userId, params.getName(), params.getDescription(), params.getBioformat(), params.getQuery(), params.getOptions(), sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -399,7 +397,7 @@ public class UserWSServer extends OpenCGAWSServer {
                 params.put("options", new QueryOptions(queryOptionsStr));
             }
 
-            return createOkResponse(catalogManager.getUserManager().updateFilter(userId, sessionId, name, params));
+            return createOkResponse(catalogManager.getUserManager().updateFilter(userId, name, params, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -412,8 +410,7 @@ public class UserWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "Filter name", required = true) @PathParam("name") String name,
                               @ApiParam(name = "params", value = "Filter parameters", required = true) UpdateFilter params) {
         try {
-            return createOkResponse(catalogManager.getUserManager().updateFilter(userId, sessionId, name,
-                    new ObjectMap(jsonObjectMapper.writeValueAsString(params))));
+            return createOkResponse(catalogManager.getUserManager().updateFilter(userId, name, new ObjectMap(jsonObjectMapper.writeValueAsString(params)), sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -425,7 +422,7 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response deleteFilter(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                                  @ApiParam(value = "Filter name", required = true) @PathParam("name") String name) {
         try {
-            return createOkResponse(catalogManager.getUserManager().deleteFilter(userId, sessionId, name));
+            return createOkResponse(catalogManager.getUserManager().deleteFilter(userId, name, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -437,7 +434,7 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response getFilter(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                                  @ApiParam(value = "Filter name", required = true) @PathParam("name") String name) {
         try {
-            return createOkResponse(catalogManager.getUserManager().getFilter(userId, sessionId, name));
+            return createOkResponse(catalogManager.getUserManager().getFilter(userId, name, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

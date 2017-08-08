@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -34,12 +33,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.managers.api.ResourceManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.Configuration;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -48,18 +45,17 @@ import java.util.stream.Collectors;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class ProjectManager extends AbstractManager implements ResourceManager<Long, Project> {
+public class ProjectManager extends AbstractManager {
 
-    public ProjectManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
+    ProjectManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                           DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                           Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
                 configuration);
     }
 
-    public String getUserId(long projectId) throws CatalogException {
+    public String getOwner(long projectId) throws CatalogException {
         return projectDBAdaptor.getOwnerId(projectId);
-
     }
 
     public long getId(String userId, String projectStr) throws CatalogException {
@@ -226,9 +222,18 @@ public class ProjectManager extends AbstractManager implements ResourceManager<L
         return queryResult;
     }
 
-    @Override
-    public QueryResult<Project> get(Long projectId, QueryOptions options, String sessionId) throws CatalogException {
+    /**
+     * Reads a project from Catalog given a project id or alias.
+     *
+     * @param projectStr Project id or alias.
+     * @param options   Read options
+     * @param sessionId sessionId
+     * @return The specified object
+     * @throws CatalogException CatalogException
+     */
+    public QueryResult<Project> get(String projectStr, QueryOptions options, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getId(sessionId);
+        long projectId = getId(userId, projectStr);
 
         Query query = new Query(ProjectDBAdaptor.QueryParams.ID.key(), projectId);
         QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options, userId);
@@ -238,7 +243,15 @@ public class ProjectManager extends AbstractManager implements ResourceManager<L
         return projectQueryResult;
     }
 
-    @Override
+    /**
+     * Fetch all the project objects matching the query.
+     *
+     * @param query     Query to catalog.
+     * @param options   Query options, like "include", "exclude", "limit" and "skip"
+     * @param sessionId sessionId
+     * @return All matching elements.
+     * @throws CatalogException CatalogException
+     */
     public QueryResult<Project> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -270,12 +283,22 @@ public class ProjectManager extends AbstractManager implements ResourceManager<L
         return projectDBAdaptor.get(query, options, userId);
     }
 
-    @Override
-    public QueryResult<Project> update(Long projectId, ObjectMap parameters, QueryOptions options, String sessionId)
+    /**
+     * Update metada from projects.
+     *
+     * @param projectStr Project id or alias.
+     * @param parameters Parameters to change.
+     * @param options    options
+     * @param sessionId  sessionId
+     * @return The modified entry.
+     * @throws CatalogException CatalogException
+     */
+    public QueryResult<Project> update(String projectStr, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(parameters, "Parameters");
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = this.catalogManager.getUserManager().getId(sessionId);
+        long projectId = getId(userId, projectStr);
         String ownerId = projectDBAdaptor.getOwnerId(projectId);
 
         if (!userId.equals(ownerId)) {
@@ -346,7 +369,7 @@ public class ProjectManager extends AbstractManager implements ResourceManager<L
         return queryResult;
     }
 
-    public QueryResult rename(long projectId, String newProjectAlias, String sessionId)
+    public QueryResult<Project> rename(long projectId, String newProjectAlias, String sessionId)
             throws CatalogException {
         ParamUtils.checkAlias(newProjectAlias, "newProjectAlias", configuration.getCatalog().getOffset());
         ParamUtils.checkParameter(sessionId, "sessionId");
@@ -358,9 +381,9 @@ public class ProjectManager extends AbstractManager implements ResourceManager<L
         }
 
         userDBAdaptor.updateUserLastModified(ownerId);
-        QueryResult queryResult = projectDBAdaptor.renameAlias(projectId, newProjectAlias);
+        projectDBAdaptor.renameAlias(projectId, newProjectAlias);
         auditManager.recordUpdate(AuditRecord.Resource.project, projectId, userId, new ObjectMap("alias", newProjectAlias), null, null);
-        return queryResult;
+        return projectDBAdaptor.get(projectId, QueryOptions.empty());
     }
 
     public QueryResult<Integer> incrementRelease(String projectStr, String sessionId) throws CatalogException {
@@ -431,26 +454,6 @@ public class ProjectManager extends AbstractManager implements ResourceManager<L
         }
 
         return false;
-    }
-
-    @Override
-    public List<QueryResult<Project>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<QueryResult<Project>> restore(String ids, QueryOptions options, String sessionId) throws CatalogException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<QueryResult<Project>> restore(Query query, QueryOptions options, String sessionId) throws CatalogException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Project: Operation not yet supported");
     }
 
     public QueryResult rank(String userId, Query query, String field, int numResults, boolean asc, String sessionId)

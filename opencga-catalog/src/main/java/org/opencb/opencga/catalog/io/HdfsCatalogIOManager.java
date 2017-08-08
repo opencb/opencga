@@ -31,6 +31,7 @@ import java.util.Properties;
 /**
  * Created by imedina on 03/10/14.
  */
+@Deprecated
 public class HdfsCatalogIOManager extends CatalogIOManager {
 
 

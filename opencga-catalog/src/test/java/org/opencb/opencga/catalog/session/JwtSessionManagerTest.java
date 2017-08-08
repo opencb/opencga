@@ -33,7 +33,7 @@ import static org.junit.Assert.assertNull;
  */
 public class JwtSessionManagerTest extends GenericTest {
 
-    private JwtSessionManager jwtSessionManager;
+    private JwtManager jwtSessionManager;
     private String jwtToken;
     private String ip = "172.20.56.1";
 
@@ -42,7 +42,7 @@ public class JwtSessionManagerTest extends GenericTest {
         Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
         configuration.getAdmin().setSecretKey("12345");
         configuration.getAdmin().setAlgorithm("HS256");
-        jwtSessionManager = new JwtSessionManager(configuration);
+        jwtSessionManager = new JwtManager(configuration);
         testCreateJWTToken();
     }
 

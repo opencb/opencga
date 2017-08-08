@@ -20,7 +20,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Session;
-import org.opencb.opencga.catalog.session.JwtSessionManager;
+import org.opencb.opencga.catalog.session.JwtManager;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -28,11 +28,11 @@ import org.opencb.opencga.catalog.session.JwtSessionManager;
 public abstract class AuthenticationManager {
 
     protected Configuration configuration;
-    protected JwtSessionManager jwtSessionManager;
+    protected JwtManager jwtManager;
 
     AuthenticationManager(Configuration configuration) {
         this.configuration = configuration;
-        this.jwtSessionManager = new JwtSessionManager(configuration);
+        this.jwtManager = new JwtManager(configuration);
     }
 
     /**
@@ -58,7 +58,7 @@ public abstract class AuthenticationManager {
             return "*";
         }
 
-        return jwtSessionManager.getUserId(token);
+        return jwtManager.getUserId(token);
     }
 
     /**
@@ -92,6 +92,6 @@ public abstract class AuthenticationManager {
     public abstract void newPassword(String userId, String newPassword) throws CatalogException;
 
     public QueryResult<Session> createToken(String userId, String ip, Session.Type type) {
-        return jwtSessionManager.createToken(userId, ip, type);
+        return jwtManager.createToken(userId, ip, type);
     }
 }

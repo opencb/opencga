@@ -127,11 +127,11 @@ public class FileScannerTest {
         new CatalogFileUtils(catalogManager).upload(CatalogManagerTest.createDebugFile().toURI(), queryResult.first(), null, sessionIdUser, false, false, true, true, Long.MAX_VALUE);
         File file = catalogManager.getFileManager().get(queryResult.first().getId(), null, sessionIdUser).first();
 
-        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, new QueryOptions(), sessionIdUser);
+        catalogManager.getFileManager().delete(null, Long.toString(file.getId()), new QueryOptions(), sessionIdUser);
 
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(new Query()
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(String.valueOf(study.getId()),
+                new Query()
                         .append(FileDBAdaptor.QueryParams.ID.key(), file.getId())
-                        .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), study.getId())
                         .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY"),
                 new QueryOptions(), sessionIdUser);
         file = fileQueryResult.first();

@@ -1,5 +1,3 @@
-
-
 /*
  * Copyright 2015-2017 OpenCB
  *
@@ -33,44 +31,48 @@ import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.Date;
 
-public class JwtSessionManager {
-    protected static Logger logger = LoggerFactory.getLogger(JwtSessionManager.class);
-    protected Configuration configuration;
-    protected String secretKey;
-    protected Long expiration;
+public class JwtManager {
 
-    public JwtSessionManager(Configuration configuration) {
+    private Configuration configuration;
+
+    private String secretKey;
+    private Long expiration;
+    private Logger logger;
+
+    public JwtManager(Configuration configuration) {
         this.configuration = configuration;
+
         this.secretKey = this.configuration.getAdmin().getSecretKey();
         this.expiration = this.configuration.getAuthentication().getExpiration();
+
+        logger = LoggerFactory.getLogger(JwtManager.class);
     }
 
     String createJWTToken(String userId, long expiration) {
         String jwt = null;
-
         try {
             long currentTime = System.currentTimeMillis();
             JwtBuilder jwtBuilder = Jwts.builder()
                     .setSubject(userId)
                     .setAudience("OpenCGA users")
                     .setIssuedAt(new Date(currentTime))
-                    .signWith(SignatureAlgorithm.forName(configuration.getAdmin().getAlgorithm()),
-                            this.secretKey.getBytes("UTF-8"));
-            if (expiration > -1) {
+                    .signWith(SignatureAlgorithm.forName(configuration.getAdmin().getAlgorithm()), this.secretKey.getBytes("UTF-8"));
+
+            // Set the expiration in number of seconds only if 'expiration' is greater than 0
+            if (expiration > 0) {
                 jwtBuilder.setExpiration(new Date(currentTime + expiration * 1000L));
             }
+
             jwt = jwtBuilder.compact();
         } catch (UnsupportedEncodingException e) {
             logger.error("error while creating jwt token");
         }
-
         return jwt;
     }
 
     Jws<Claims> parseClaims(String jwtKey) throws CatalogAuthenticationException {
         try {
-            Jws claims = Jwts.parser().setSigningKey(this.secretKey.getBytes("UTF-8")).parseClaimsJws(jwtKey);
-            return claims;
+            return Jwts.parser().setSigningKey(this.secretKey.getBytes("UTF-8")).parseClaimsJws(jwtKey);
         } catch (ExpiredJwtException e) {
             throw CatalogAuthenticationException.tokenExpired(jwtKey);
         } catch (MalformedJwtException | SignatureException e) {
@@ -85,11 +87,11 @@ public class JwtSessionManager {
     }
 
     public QueryResult<Session> createToken(String userId, String ip, Type type) {
-        QueryResult result = new QueryResult();
-        String jwtToken = null;
+        QueryResult<Session> result = new QueryResult<>();
+        String jwtToken;
 
         if (type.equals(Type.SYSTEM)) {
-            jwtToken = this.createJWTToken(userId, -1L);
+            jwtToken = this.createJWTToken(userId, 0L);
         } else {
             jwtToken = this.createJWTToken(userId, this.getExpiration());
         }

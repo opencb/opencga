@@ -143,7 +143,7 @@ public abstract class StorageManager {
 //        studyOptions.put(QueryOptions.INCLUDE,
 //                Arrays.asList(StudyDBAdaptor.QueryParams.URI.key(), StudyDBAdaptor.QueryParams.ALIAS.key(),
 //                        StudyDBAdaptor.QueryParams.DATASTORES.key()));
-        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyId, studyOptions, sessionId);
+        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(String.valueOf(studyId), studyOptions, sessionId);
         if (studyQueryResult .getNumResults() != 1) {
             logger.error("Critical error: Study {} not found in catalog.", studyId);
             throw new CatalogException("Critical error: Study " + studyId + " not found in catalog");
@@ -151,11 +151,11 @@ public abstract class StorageManager {
         Study study = studyQueryResult.first();
         studyInfo.setStudy(study);
         long projectId = catalogManager.getStudyManager().getProjectId(study.getId());
-        Project project = catalogManager.getProjectManager().get(projectId, new QueryOptions(), sessionId).first();
+        Project project = catalogManager.getProjectManager().get(String.valueOf((Long) projectId), new QueryOptions(), sessionId).first();
         studyInfo.setProjectId(project.getId());
         studyInfo.setProjectAlias(project.getAlias());
         studyInfo.setOrganism(project.getOrganism());
-        String user = catalogManager.getProjectManager().getUserId(project.getId());
+        String user = catalogManager.getProjectManager().getOwner(project.getId());
         studyInfo.setUserId(user);
 
 //        Path workspace = Paths.get(study.getUri().getRawPath()).resolve(".opencga").resolve("alignments");

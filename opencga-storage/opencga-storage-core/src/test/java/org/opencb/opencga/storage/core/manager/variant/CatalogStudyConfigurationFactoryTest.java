@@ -113,7 +113,7 @@ public class CatalogStudyConfigurationFactoryTest {
     public void getNewStudyConfiguration() throws Exception {
         CatalogStudyConfigurationFactory studyConfigurationManager = new CatalogStudyConfigurationFactory(catalogManager);
 
-        Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
+        Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first();
 
         DummyStudyConfigurationAdaptor scAdaptor = spy(new DummyStudyConfigurationAdaptor());
         doReturn(new QueryResult<StudyConfiguration>("", 0, 0, 0, "", "", Collections.emptyList()))
@@ -129,7 +129,7 @@ public class CatalogStudyConfigurationFactoryTest {
     public void getNewStudyConfigurationNullManager() throws Exception {
         CatalogStudyConfigurationFactory studyConfigurationManager = new CatalogStudyConfigurationFactory(catalogManager);
 
-        Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
+        Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first();
         StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null, new QueryOptions(), sessionId);
 
         checkStudyConfiguration(study, studyConfiguration);
@@ -139,7 +139,7 @@ public class CatalogStudyConfigurationFactoryTest {
     public void getStudyConfiguration() throws Exception {
         CatalogStudyConfigurationFactory studyConfigurationManager = new CatalogStudyConfigurationFactory(catalogManager);
 
-        Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
+        Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first();
 
         DummyStudyConfigurationAdaptor scAdaptor = spy(new DummyStudyConfigurationAdaptor());
         StudyConfiguration studyConfigurationToReturn = new StudyConfiguration((int) study.getId(), "user@p1:s1");

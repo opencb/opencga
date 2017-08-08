@@ -25,10 +25,13 @@ import static org.opencb.opencga.catalog.models.Session.Type.USER;
 /**
  * Created by jacobo on 11/09/14.
  */
+@Deprecated
 public class Session {
 
     private String id;
+    @Deprecated
     private String ip;
+    @Deprecated
     private String date;
     private Type type;
 

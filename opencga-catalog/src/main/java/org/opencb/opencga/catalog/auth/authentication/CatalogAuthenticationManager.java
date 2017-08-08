@@ -42,6 +42,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
 
     public CatalogAuthenticationManager(DBAdaptorFactory dbAdaptorFactory, Configuration configuration) {
         super(configuration);
+
         this.userDBAdaptor = dbAdaptorFactory.getCatalogUserDBAdaptor();
         this.metaDBAdaptor = dbAdaptorFactory.getCatalogMetaDBAdaptor();
     }
@@ -62,7 +63,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
         if (userId.equals("admin")) {
             storedPassword = metaDBAdaptor.getAdminPassword();
             try {
-                validSessionId = jwtSessionManager.getUserId(password).equals(userId);
+                validSessionId = jwtManager.getUserId(password).equals(userId);
             } catch (CatalogAuthenticationException e) {
                 validSessionId = false;
             }

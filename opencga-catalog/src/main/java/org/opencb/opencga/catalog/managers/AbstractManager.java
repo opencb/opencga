@@ -23,17 +23,20 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -48,8 +51,6 @@ public abstract class AbstractManager {
     protected final CatalogManager catalogManager;
 
     protected Configuration configuration;
-    @Deprecated
-    protected Properties catalogProperties;
 
     protected final DBAdaptorFactory catalogDBAdaptorFactory;
     protected final UserDBAdaptor userDBAdaptor;
@@ -67,32 +68,7 @@ public abstract class AbstractManager {
 
     protected static final String ANONYMOUS = "*";
 
-    @Deprecated
-    public AbstractManager(AuthorizationManager authorizationManager, AuditManager auditManager,
-                           DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                           Configuration configuration) {
-        this.authorizationManager = authorizationManager;
-        this.auditManager = auditManager;
-        this.configuration = configuration;
-        this.userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
-        this.studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
-        this.fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();
-        this.individualDBAdaptor = catalogDBAdaptorFactory.getCatalogIndividualDBAdaptor();
-        this.sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
-        this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
-        this.cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
-        this.familyDBAdaptor = catalogDBAdaptorFactory.getCatalogFamilyDBAdaptor();
-        this.datasetDBAdaptor = catalogDBAdaptorFactory.getCatalogDatasetDBAdaptor();
-        this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
-        this.clinicalDBAdaptor = catalogDBAdaptorFactory.getClinicalAnalysisDBAdaptor();
-        this.catalogIOManagerFactory = ioManagerFactory;
-        this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
-        this.catalogManager = null;
-
-        projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
-    }
-
-    public AbstractManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
+    AbstractManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                            DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                            Configuration configuration) {
         this.authorizationManager = authorizationManager;
@@ -113,30 +89,6 @@ public abstract class AbstractManager {
         this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
         this.catalogManager = catalogManager;
 
-        projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
-    }
-
-    @Deprecated
-    public AbstractManager(AuthorizationManager authorizationManager, AuditManager auditManager,
-                           DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                           Properties catalogProperties) {
-        this.authorizationManager = authorizationManager;
-        this.auditManager = auditManager;
-        this.catalogProperties = catalogProperties;
-        this.userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
-        this.studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
-        this.fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();
-        this.individualDBAdaptor = catalogDBAdaptorFactory.getCatalogIndividualDBAdaptor();
-        this.sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
-        this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
-        this.cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
-        this.familyDBAdaptor = catalogDBAdaptorFactory.getCatalogFamilyDBAdaptor();
-        this.datasetDBAdaptor = catalogDBAdaptorFactory.getCatalogDatasetDBAdaptor();
-        this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
-        this.clinicalDBAdaptor = catalogDBAdaptorFactory.getClinicalAnalysisDBAdaptor();
-        this.catalogIOManagerFactory = ioManagerFactory;
-        this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
-        this.catalogManager = null;
         projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
     }
 

@@ -80,7 +80,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             List<Long> projectIds = catalogManager.getProjectManager().getIds(userId, projectsStr);
             List<QueryResult<Project>> queryResults = new ArrayList<>(projectIds.size());
             for (Long projectId : projectIds) {
-                queryResults.add(catalogManager.getProjectManager().get(projectId, queryOptions, sessionId));
+                queryResults.add(catalogManager.getProjectManager().get(String.valueOf(projectId), queryOptions, sessionId));
             }
             return createOkResponse(queryResults);
         } catch (Exception e) {
@@ -176,9 +176,6 @@ public class ProjectWSServer extends OpenCGAWSServer {
                                          + "fields not previously defined.", required = true) ProjectUpdateParams updateParams)
             throws IOException {
         try {
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            long projectId = catalogManager.getProjectManager().getId(userId, projectStr);
-
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(updateParams));
             if (updateParams.organism != null) {
                 if (StringUtils.isNotEmpty(updateParams.organism.getAssembly())) {
@@ -196,7 +193,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
                 params.remove("organism");
             }
 
-            QueryResult result = catalogManager.getProjectManager().update(projectId, params, queryOptions, sessionId);
+            QueryResult result = catalogManager.getProjectManager().update(projectStr, params, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

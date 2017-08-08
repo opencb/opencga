@@ -160,12 +160,15 @@ public class CohortWSServer extends OpenCGAWSServer {
                                         @QueryParam("study") String studyStr) {
         try {
             try {
-                List<QueryResult<Cohort>> queryResults = new LinkedList<>();
-                List<Long> cohortIds = cohortManager.getIds(cohortStr, studyStr, sessionId).getResourceIds();
-                for (Long cohortId : cohortIds) {
-                    queryResults.add(catalogManager.getCohortManager().get(cohortId, queryOptions, sessionId));
+                QueryResult<Cohort> cohortQueryResult = cohortManager.get(studyStr, cohortStr, queryOptions, sessionId);
+                // We parse the query result to create one queryresult per cohort
+                List<QueryResult<Cohort>> queryResultList = new ArrayList<>(cohortQueryResult.getNumResults());
+                for (Cohort cohort : cohortQueryResult.getResult()) {
+                    queryResultList.add(new QueryResult<>(cohort.getName() + "-" + cohort.getId(), cohortQueryResult.getDbTime(), 1, -1,
+                            cohortQueryResult.getWarningMsg(), cohortQueryResult.getErrorMsg(), Arrays.asList(cohort)));
                 }
-                return createOkResponse(queryResults);
+
+                return createOkResponse(queryResultList);
             } catch (Exception e) {
                 return createErrorResponse(e);
             }
@@ -222,19 +225,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                     @QueryParam("study") String studyStr) {
         try {
-            AbstractManager.MyResourceId resource = cohortManager.getId(cohortStr, studyStr, sessionId);
-            long cohortId = resource.getResourceId();
-            Cohort cohort = catalogManager.getCohortManager().get(cohortId, QueryOptions.empty(), sessionId).first();
-            if (cohort.getSamples() == null || cohort.getSamples().size() == 0) {
-                return createOkResponse(new QueryResult<>("Samples from cohort " + cohortStr, -1, 0, 0, "The cohort has no samples", "",
-                        Collections.emptyList()));
-            }
-            long studyId = resource.getStudyId();
-            query = new Query(SampleDBAdaptor.QueryParams.ID.key(),
-                    cohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
-            QueryResult<Sample> allSamples = catalogManager.getSampleManager().get(studyId, query, queryOptions, sessionId);
-            allSamples.setId("Samples from cohort " + cohortStr);
-            return createOkResponse(allSamples);
+            return createOkResponse(cohortManager.getSamples(studyStr, cohortStr, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -260,8 +251,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                                         @QueryParam("study") String studyStr,
                                  @ApiParam(value = "params", required = true) Map<String, Object> params) {
         try {
-            long cohortId = cohortManager.getId(cohortStr, studyStr, sessionId).getResourceId();
-            return createOkResponse(catalogManager.getCohortManager().update(cohortId, new ObjectMap(params), queryOptions,
+            return createOkResponse(catalogManager.getCohortManager().update(studyStr, cohortStr, new ObjectMap(params), queryOptions,
                     sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -276,7 +266,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                                         @QueryParam("study") String studyStr) {
         try {
 //            long cohortId = catalogManager.getCohortId(cohortStr, sessionId);
-            List<QueryResult<Cohort>> delete = cohortManager.delete(cohortStr, studyStr, queryOptions, sessionId);
+            List<QueryResult<Cohort>> delete = cohortManager.delete(studyStr, cohortStr, queryOptions, sessionId);
             return createOkResponse(delete);
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -476,7 +466,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            QueryResult result = cohortManager.groupBy(studyStr, query, queryOptions, fields, sessionId);
+            QueryResult result = cohortManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

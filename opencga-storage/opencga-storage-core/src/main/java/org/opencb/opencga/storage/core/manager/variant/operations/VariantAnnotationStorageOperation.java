@@ -91,7 +91,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
             if (studyInfos == null || studyInfos.isEmpty()) {
                 String userId = catalogManager.getUserManager().getId(sessionId);
                 long projectId = catalogManager.getProjectManager().getId(userId, projectStr);
-                Project project = catalogManager.getProjectManager().get(projectId, null, sessionId).first();
+                Project project = catalogManager.getProjectManager().get(String.valueOf((Long) projectId), null, sessionId).first();
                 studyStr = null;
                 alias = project.getAlias();
                 organism = project.getOrganism();

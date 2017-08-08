@@ -287,7 +287,6 @@ public interface AuthorizationManager {
      */
     QueryResult<FamilyAclEntry> getFamilyAcl(String userId, long familyId, String member) throws CatalogException;
 
-    //------------------------- End of job ACL ----------------------
 
     List<QueryResult<StudyAclEntry>> setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException;

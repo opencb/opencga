@@ -160,8 +160,8 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             String userId = catalogManager.getUserManager().getId(sessionId);
             long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            QueryResult queryResult = catalogManager.getStudyManager().update(studyId, new ObjectMap(jsonObjectMapper.writeValueAsString
-                    (updateParams)), null, sessionId);
+            QueryResult queryResult = catalogManager.getStudyManager().update(String.valueOf((Long) studyId), new ObjectMap
+                    (jsonObjectMapper.writeValueAsString(updateParams)), null, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -192,7 +192,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             String userId = catalogManager.getUserManager().getId(sessionId);
             List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
             for (Long studyId : studyIds) {
-                queryResults.add(catalogManager.getStudyManager().get(studyId, queryOptions, sessionId));
+                queryResults.add(catalogManager.getStudyManager().get(String.valueOf(studyId), queryOptions, sessionId));
             }
             return createOkResponse(queryResults);
         } catch (Exception e) {
@@ -321,9 +321,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "Comma separated list of output file ids") @DefaultValue("")
                                @QueryParam("outputFiles") String outputFiles) {
         try {
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            return createOkResponse(catalogManager.getJobManager().get(studyId, null, null, sessionId));
+            return createOkResponse(catalogManager.getJobManager().get(studyStr, new Query(), null, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -590,7 +588,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             String userId = catalogManager.getUserManager().getId(sessionId);
             long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
+            Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first();
             FileScanner fileScanner = new FileScanner(catalogManager);
 
             /** First, run CheckStudyFiles to find new missing files **/
@@ -653,7 +651,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             String userId = catalogManager.getUserManager().getId(sessionId);
             long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
+            Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first();
             FileScanner fileScanner = new FileScanner(catalogManager);
 
             /* Resync files */

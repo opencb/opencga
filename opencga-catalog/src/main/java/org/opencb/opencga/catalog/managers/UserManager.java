@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -34,7 +33,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.managers.api.ResourceManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.LDAPUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -54,7 +52,7 @@ import java.util.stream.Collectors;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class UserManager extends AbstractManager implements ResourceManager<String, User> {
+public class UserManager extends AbstractManager {
 
     private String INTERNAL_AUTHORIZATION = "internal";
     private Map<String, AuthenticationManager> authenticationManagerMap;
@@ -65,7 +63,7 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
     protected static final Pattern EMAILPATTERN = Pattern.compile(EMAIL_PATTERN);
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
 
-    public UserManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
+    UserManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                        DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                        Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
@@ -435,29 +433,15 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
         return LDAPUtils.getGroupsFromLdapUser(authenticationOrigin.getHost(), userRdn, base);
     }
 
-    private void checkGroupsFromExternalUser(String userId, List<String> groupIds, List<String> studyIds) throws CatalogException {
-        for (String studyStr : studyIds) {
-            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            if (studyId < 1) {
-                throw new CatalogException("Study " + studyStr + " not found.");
-            }
-
-            // TODO: What do we do with admin session id when logging in? We will need to update the groups.
-            //catalogManager.getSessionManager().createToken("admin", "private")
-//            for (String groupId : groupIds) {
-//                try {
-//                    catalogManager.getStudyManager().updateGroup(Long.toString(studyId), groupId, userId, null, null, )
-//                } catch (CatalogDBException e) {
-//                    // The user already belonged to the group.
-//                } catch (CatalogException e) {
-//                    // The group does not exist.
-//                }
-//            }
-
-        }
-    }
-
-    @Override
+    /**
+     * Reads a user from Catalog given a user id.
+     *
+     * @param userId    user id of the object to read
+     * @param options   Read options
+     * @param sessionId sessionId
+     * @return The specified object
+     * @throws CatalogException CatalogException
+     */
     public QueryResult<User> get(String userId, QueryOptions options, String sessionId) throws CatalogException {
         return get(userId, null, options, sessionId);
     }
@@ -496,21 +480,6 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
         return userQueryResult;
     }
 
-    @Override
-    public QueryResult<User> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Modify some params from the user profile.
-     * name
-     * email
-     * organization
-     * attributes
-     *
-     * @throws CatalogException
-     */
-    @Override
     public QueryResult<User> update(String userId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
@@ -575,7 +544,16 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
         return deletedUsers;
     }
 
-    @Override
+    /**
+     * Delete the entries satisfying the query.
+     *
+     * @param query     Query of the objects to be deleted.
+     * @param options   Deleting options.
+     * @param sessionId sessionId.
+     * @return A list with the deleted objects.
+     * @throws CatalogException CatalogException
+     * @throws IOException IOException.
+     */
     public List<QueryResult<User>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.ID.key());
         QueryResult<User> userQueryResult = userDBAdaptor.get(query, queryOptions);
@@ -584,19 +562,8 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
         return delete(userIdStr, options, sessionId);
     }
 
-    @Override
     public List<QueryResult<User>> restore(String ids, QueryOptions options, String sessionId) throws CatalogException {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<QueryResult<User>> restore(Query query, QueryOptions options, String sessionId) throws CatalogException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
-        throw new NotImplementedException("User: Operation not yet supported");
     }
 
     public QueryResult resetPassword(String userId, String sessionId) throws CatalogException {
@@ -724,18 +691,18 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
      * Add a new filter to the user account.
      *
      * @param userId user id to whom the filter will be associated.
-     * @param sessionId session id of the user asking to store the filter.
      * @param name Filter name.
      * @param description Filter description.
      * @param bioformat Bioformat where the filter should be applied.
      * @param query Query object.
      * @param queryOptions Query options object.
+     * @param sessionId session id of the user asking to store the filter.
      * @return the created filter.
      * @throws CatalogException if there already exists a filter with that same name for the user or if the user corresponding to the
      * session id is not the same as the provided user id.
      */
-    public QueryResult<User.Filter> addFilter(String userId, String sessionId, String name, String description, File.Bioformat bioformat,
-                                              Query query, QueryOptions queryOptions) throws CatalogException {
+    public QueryResult<User.Filter> addFilter(String userId, String name, String description, File.Bioformat bioformat, Query query,
+                                              QueryOptions queryOptions, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");
@@ -768,14 +735,14 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
      *
      *
      * @param userId user id to whom the filter should be updated.
-     * @param sessionId session id of the user asking to update the filter.
      * @param name Filter name.
      * @param params Map containing the parameters to be updated.
+     * @param sessionId session id of the user asking to update the filter.
      * @return the updated filter.
      * @throws CatalogException if the filter could not be updated because the filter name is not correct or if the user corresponding to
      * the session id is not the same as the provided user id.
      */
-    public QueryResult<User.Filter> updateFilter(String userId, String sessionId, String name, ObjectMap params) throws CatalogException {
+    public QueryResult<User.Filter> updateFilter(String userId, String name, ObjectMap params, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");
@@ -808,13 +775,13 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
      *
      *
      * @param userId user id to whom the filter should be deleted.
-     * @param sessionId session id of the user asking to delete the filter.
      * @param name filter name to be deleted.
+     * @param sessionId session id of the user asking to delete the filter.
      * @return the deleted filter.
      * @throws CatalogException when the filter cannot be removed or the name is not correct or if the user corresponding to the
      * session id is not the same as the provided user id.
      */
-    public QueryResult<User.Filter> deleteFilter(String userId, String sessionId, String name) throws CatalogException {
+    public QueryResult<User.Filter> deleteFilter(String userId, String name, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");
@@ -839,12 +806,12 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
      * Retrieves a filter.
      *
      * @param userId user id having the filter stored.
-     * @param sessionId session id of the user fetching the filter.
      * @param name Filter name to be fetched.
+     * @param sessionId session id of the user fetching the filter.
      * @return the filter.
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
      */
-    public QueryResult<User.Filter> getFilter(String userId, String sessionId, String name) throws CatalogException {
+    public QueryResult<User.Filter> getFilter(String userId, String name, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");
@@ -899,13 +866,13 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
      * Creates or updates a configuration.
      *
      * @param userId user id to whom the config will be associated.
-     * @param sessionId session id of the user asking to store the config.
      * @param name Name of the configuration (normally, name of the application).
      * @param config Configuration to be stored.
+     * @param sessionId session id of the user asking to store the config.
      * @return the set configuration.
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
      */
-    public QueryResult setConfig(String userId, String sessionId, String name, ObjectMap config) throws CatalogException {
+    public QueryResult setConfig(String userId, String name, ObjectMap config, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");
@@ -924,13 +891,13 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
      * Deletes a configuration.
      *
      * @param userId user id to whom the configuration should be deleted.
-     * @param sessionId session id of the user asking to delete the configuration.
      * @param name Name of the configuration to be deleted (normally, name of the application).
+     * @param sessionId session id of the user asking to delete the configuration.
      * @return the deleted configuration.
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id or the configuration
      * did not exist.
      */
-    public QueryResult deleteConfig(String userId, String sessionId, String name) throws CatalogException {
+    public QueryResult deleteConfig(String userId, String name, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");
@@ -964,13 +931,13 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
      * Retrieves a configuration.
      *
      * @param userId user id having the configuration stored.
-     * @param sessionId session id of the user attempting to fetch the configuration.
      * @param name Name of the configuration to be fetched (normally, name of the application).
+     * @param sessionId session id of the user attempting to fetch the configuration.
      * @return the configuration.
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id or the configuration
      * does not exist.
      */
-    public QueryResult getConfig(String userId, String sessionId, String name) throws CatalogException {
+    public QueryResult getConfig(String userId, String name, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");

@@ -95,7 +95,8 @@ public class ProjectManagerTest extends GenericTest {
 
     @Test
     public void getOwnProjectNoStudies() throws CatalogException {
-        QueryResult<Project> projectQueryResult = catalogManager.getProjectManager().get(project3, null, sessionIdUser3);
+        QueryResult<Project> projectQueryResult = catalogManager.getProjectManager().get(String.valueOf((Long) project3), null,
+                sessionIdUser3);
         assertEquals(1, projectQueryResult.getNumResults());
     }
 
@@ -158,7 +159,8 @@ public class ProjectManagerTest extends GenericTest {
 
         ObjectMap objectMap = new ObjectMap();
         objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), 55);
-        QueryResult<Project> update = catalogManager.getProjectManager().update(myProject, objectMap, null, sessionIdUser);
+        QueryResult<Project> update = catalogManager.getProjectManager().update(String.valueOf((Long) myProject), objectMap, null,
+                sessionIdUser);
 
         assertEquals(1, update.getNumResults());
         assertEquals("Homo sapiens", update.first().getOrganism().getScientificName());
@@ -169,7 +171,7 @@ public class ProjectManagerTest extends GenericTest {
         objectMap = new ObjectMap();
         objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), "common");
 
-        update = catalogManager.getProjectManager().update(myProject, objectMap, null, sessionIdUser);
+        update = catalogManager.getProjectManager().update(String.valueOf((Long) myProject), objectMap, null, sessionIdUser);
 
         assertEquals(1, update.getNumResults());
         assertEquals("Homo sapiens", update.first().getOrganism().getScientificName());
@@ -182,6 +184,6 @@ public class ProjectManagerTest extends GenericTest {
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Cannot update organism");
-        catalogManager.getProjectManager().update(myProject, objectMap, null, sessionIdUser);
+        catalogManager.getProjectManager().update(String.valueOf((Long) myProject), objectMap, null, sessionIdUser);
     }
 }

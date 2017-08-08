@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -33,7 +32,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.managers.api.ResourceManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.DiseasePanelAclEntry;
@@ -50,7 +48,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -60,19 +57,12 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class StudyManager extends AbstractManager implements ResourceManager<Long, Study> {
+public class StudyManager extends AbstractManager {
 
     protected static Logger logger = LoggerFactory.getLogger(StudyManager.class);
     private static final String MEMBERS = "@members";
 
-    @Deprecated
-    public StudyManager(AuthorizationManager authorizationManager, AuditManager auditManager,
-                        DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                        Properties catalogProperties) {
-        super(authorizationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
-    }
-
-    public StudyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
+    StudyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                         DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                         Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
@@ -361,12 +351,21 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
         return new MyResourceId(userId, studyId, variableSetId);
     }
 
-    @Override
-    public QueryResult<Study> get(Long studyId, QueryOptions options, String sessionId) throws CatalogException {
+    /**
+     * Fetch a study from Catalog given a study id or alias.
+     *
+     * @param studyStr Study id or alias.
+     * @param options Read options
+     * @param sessionId sessionId
+     * @return The specified object
+     * @throws CatalogException CatalogException
+     */
+    public QueryResult<Study> get(String studyStr, QueryOptions options, String sessionId) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = catalogManager.getUserManager().getId(sessionId);
-        studyDBAdaptor.checkId(studyId);
+        Long studyId = getId(userId, studyStr);
+
         Query query = new Query(StudyDBAdaptor.QueryParams.ID.key(), studyId);
         QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, options, userId);
         if (studyQueryResult.getNumResults() <= 0) {
@@ -375,7 +374,15 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
         return studyQueryResult;
     }
 
-    @Override
+    /**
+     * Fetch all the study objects matching the query.
+     *
+     * @param query     Query to catalog.
+     * @param options   Query options, like "include", "exclude", "limit" and "skip"
+     * @param sessionId sessionId
+     * @return All matching elements.
+     * @throws CatalogException CatalogException
+     */
     public QueryResult<Study> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         QueryOptions qOptions = options != null ? new QueryOptions(options) : new QueryOptions();
@@ -386,21 +393,26 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
         }
 
         QueryResult<Study> allStudies = studyDBAdaptor.get(query, qOptions, userId);
-//        List<Study> studies = allStudies.getResult();
-//
-//        authorizationManager.filterStudies(userId, studies);
-//        allStudies.setResult(studies);
-//        allStudies.setNumResults(studies.size());
 
         return allStudies;
     }
 
-    @Override
-    public QueryResult<Study> update(Long studyId, ObjectMap parameters, QueryOptions options, String sessionId)
+    /**
+     * Update an existing catalog study.
+     *
+     * @param studyStr Study id or alias.
+     * @param parameters Parameters to change.
+     * @param options    options
+     * @param sessionId  sessionId
+     * @return The modified entry.
+     * @throws CatalogException CatalogException
+     */
+    public QueryResult<Study> update(String studyStr, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(parameters, "Parameters");
-        ParamUtils.checkId(studyId, "studyId");
         String userId = catalogManager.getUserManager().getId(sessionId);
+        long studyId = getId(userId, studyStr);
+
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPDATE_STUDY);
 
         if (parameters.containsKey("alias")) {
@@ -440,26 +452,6 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
         auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, new ObjectMap("alias", newStudyAlias), null, null);
         return new QueryResult();
 
-    }
-
-    @Override
-    public List<QueryResult<Study>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<QueryResult<Study>> restore(String ids, QueryOptions options, String sessionId) throws CatalogException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<QueryResult<Study>> restore(Query query, QueryOptions options, String sessionId) throws CatalogException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Project: Operation not yet supported");
     }
 
     public QueryResult rank(long projectId, Query query, String field, int numResults, boolean asc, String sessionId)
@@ -531,7 +523,7 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
         String userId = catalogManager.getUserManager().getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
 
-        Study studyInfo = get(studyId, queryOptions, sessionId).first();
+        Study studyInfo = get(String.valueOf((Long) studyId), queryOptions, sessionId).first();
 
         StudySummary studySummary = new StudySummary()
                 .setAlias(studyInfo.getAlias())

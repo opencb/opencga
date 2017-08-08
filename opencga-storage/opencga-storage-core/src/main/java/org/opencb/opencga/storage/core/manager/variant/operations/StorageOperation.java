@@ -189,7 +189,7 @@ public abstract class StorageOperation {
 
     public static DataStore getDataStore(CatalogManager catalogManager, long studyId, File.Bioformat bioformat, String sessionId)
             throws CatalogException {
-        Study study = catalogManager.getStudyManager().get(studyId, new QueryOptions(), sessionId).first();
+        Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), new QueryOptions(), sessionId).first();
         return getDataStore(catalogManager, study, bioformat, sessionId);
     }
 
@@ -211,12 +211,12 @@ public abstract class StorageOperation {
         DataStore dataStore;
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(ProjectDBAdaptor.QueryParams.ALIAS.key(), ProjectDBAdaptor.QueryParams.DATASTORES.key()));
-        Project project = catalogManager.getProjectManager().get(projectId, queryOptions, sessionId).first();
+        Project project = catalogManager.getProjectManager().get(String.valueOf((Long) projectId), queryOptions, sessionId).first();
         if (project.getDataStores() != null && project.getDataStores().containsKey(bioformat)) {
             dataStore = project.getDataStores().get(bioformat);
         } else { //get default datastore
             //Must use the UserByStudyId instead of the file owner.
-            String userId = catalogManager.getProjectManager().getUserId(projectId);
+            String userId = catalogManager.getProjectManager().getOwner(projectId);
             // Replace possible dots at the userId. Usually a special character in almost all databases. See #532
             userId = userId.replace('.', '_');
 
