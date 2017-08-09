@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.session;
+package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.Configuration;

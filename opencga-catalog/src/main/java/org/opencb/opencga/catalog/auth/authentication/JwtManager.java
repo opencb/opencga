@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.session;
+package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.*;
 import org.opencb.commons.datastore.core.QueryResult;

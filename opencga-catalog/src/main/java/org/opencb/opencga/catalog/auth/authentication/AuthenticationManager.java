@@ -20,7 +20,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Session;
-import org.opencb.opencga.catalog.session.JwtManager;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
