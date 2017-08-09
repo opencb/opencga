@@ -28,7 +28,9 @@ import java.util.Objects;
  * Created on 06/12/16.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
+ * @deprecated use {@link org.opencb.biodata.models.variant.metadata.VariantMetadata}
  */
+@Deprecated
 public class ExportMetadata {
     private final List<StudyConfiguration> studies;
     private final String date;
