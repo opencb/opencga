@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.math.NumberUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -25,22 +26,20 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.utils.CompressionDetector;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -51,6 +50,12 @@ public class FileUtils {
 
     private static Logger logger = LoggerFactory.getLogger(FileUtils.class);
     private final CatalogManager catalogManager;
+
+    public static final Map<File.Format, Pattern> FORMAT_MAP = new HashMap<>();
+
+    static {
+        FORMAT_MAP.put(File.Format.IMAGE, Pattern.compile(".*\\.(png|jpg|bmp|svg|gif|jpeg|tfg)(\\.[\\w]+)*", Pattern.CASE_INSENSITIVE));
+    }
 
     public FileUtils(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
@@ -732,6 +737,198 @@ public class FileUtils {
         targetIOManager.createFile(target, fileObject);
 
         //throw new CatalogIOManagerException("Unable to copy from " + source.getScheme() + " to " + target.getScheme());
+    }
+
+    public static File.Bioformat detectBioformat(URI uri) {
+        return detectBioformat(uri, detectFormat(uri), CompressionDetector.detect(uri));
+    }
+
+    public static File.Bioformat detectBioformat(URI uri, File.Format format, File.Compression compression) {
+        String path = uri.getPath();
+        Path source = Paths.get(uri);
+        String mimeType;
+
+        try {
+            switch (format) {
+                case VCF:
+                case GVCF:
+                case BCF:
+                    return File.Bioformat.VARIANT;
+                case TBI:
+                    break;
+                case SAM:
+                case BAM:
+                case CRAM:
+                    return File.Bioformat.ALIGNMENT;
+                case BAI:
+                    return File.Bioformat.NONE; //TODO: Alignment?
+                case FASTQ:
+                    return File.Bioformat.SEQUENCE;
+                case PED:
+                    return File.Bioformat.PEDIGREE;
+                case TAB_SEPARATED_VALUES:
+                    break;
+                case COMMA_SEPARATED_VALUES:
+                    break;
+                case PROTOCOL_BUFFER:
+                    break;
+                case PLAIN:
+                    break;
+                case JSON:
+                case AVRO:
+                    String file;
+                    if (compression != File.Compression.NONE) {
+                        file = com.google.common.io.Files.getNameWithoutExtension(uri.getPath()); //Remove compression extension
+                        file = com.google.common.io.Files.getNameWithoutExtension(file);  //Remove format extension
+                    } else {
+                        file = com.google.common.io.Files.getNameWithoutExtension(uri.getPath()); //Remove format extension
+                    }
+
+                    if (file.endsWith("variants")) {
+                        return File.Bioformat.VARIANT;
+                    } else if (file.endsWith("alignments")) {
+                        return File.Bioformat.ALIGNMENT;
+                    }
+                    break;
+                case PARQUET:
+                    break;
+                case IMAGE:
+                case BINARY:
+                case EXECUTABLE:
+                case UNKNOWN:
+                case XML:
+                    return File.Bioformat.NONE;
+                default:
+                    break;
+            }
+
+            mimeType = Files.probeContentType(source);
+
+            if (path.endsWith(".nw")) {
+                return File.Bioformat.OTHER_NEWICK;
+            }
+
+            if (mimeType == null
+                    || !mimeType.equalsIgnoreCase("text/plain")
+                    || path.endsWith(".redirection")
+                    || path.endsWith(".Rout")
+                    || path.endsWith("cel_files.txt")
+                    || !path.endsWith(".txt")) {
+                return File.Bioformat.NONE;
+            }
+
+            FileInputStream fstream = new FileInputStream(path);
+            BufferedReader br = new BufferedReader(new InputStreamReader(fstream));
+
+            String strLine;
+            int numberOfLines = 20;
+
+            int i = 0;
+            boolean names = false;
+            while ((strLine = br.readLine()) != null) {
+                if (strLine.equalsIgnoreCase("")) {
+                    continue;
+                }
+                if (i == numberOfLines) {
+                    break;
+                }
+                if (strLine.startsWith("#")) {
+                    if (strLine.startsWith("#NAMES")) {
+                        names = true;
+                    } else {
+                        continue;
+                    }
+                } else {
+                    String[] fields = strLine.split("\t");
+                    if (fields.length > 2) {
+                        if (names && NumberUtils.isNumber(fields[1])) {
+                            return File.Bioformat.DATAMATRIX_EXPRESSION;
+                        }
+                    } else if (fields.length == 1) {
+                        if (fields[0].split(" ").length == 1 && !NumberUtils.isNumber(fields[0])) {
+                            return File.Bioformat.IDLIST;
+                        }
+                    } else if (fields.length == 2) {
+                        if (!fields[0].contains(" ") && NumberUtils.isNumber(fields[1])) {
+                            return File.Bioformat.IDLIST_RANKED;
+                        }
+                    }
+                }
+                i++;
+            }
+            br.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return File.Bioformat.NONE;
+    }
+
+    /**
+     *
+     * @param uri       Existing file uri to the file
+     * @return File.Format. UNKNOWN if can't detect any format.
+     */
+    public static File.Format detectFormat(URI uri) {
+        for (Map.Entry<File.Format, Pattern> entry : FORMAT_MAP.entrySet()) {
+            if (entry.getValue().matcher(uri.getPath()).matches()) {
+                return entry.getKey();
+            }
+        }
+
+        String path = uri.getPath();
+        String extension = com.google.common.io.Files.getFileExtension(path);
+        if (CompressionDetector.getCompression(extension) != File.Compression.NONE) {
+            path = com.google.common.io.Files.getNameWithoutExtension(path);
+            extension = com.google.common.io.Files.getFileExtension(path);
+        }
+
+        switch (extension.toLowerCase()) {
+            case "vcf":
+                return File.Format.VCF;
+            case "bcf":
+                return File.Format.BCF;
+            case "bam":
+                return File.Format.BAM;
+            case "bai":
+                return File.Format.BAI;
+            case "sam":
+                return File.Format.SAM;
+            case "cram":
+                return File.Format.CRAM;
+            case "ped":
+                return File.Format.PED;
+            case "fastq":
+                return File.Format.FASTQ;
+            case "tsv":
+                return File.Format.TAB_SEPARATED_VALUES;
+            case "csv":
+                return File.Format.COMMA_SEPARATED_VALUES;
+            case "txt":
+            case "log":
+                return File.Format.PLAIN;
+            case "xml":
+                return File.Format.XML;
+            case "json":
+                return File.Format.JSON;
+            case "proto":
+                return File.Format.PROTOCOL_BUFFER;
+            case "avro":
+                return File.Format.AVRO;
+            case "parquet":
+                return File.Format.PARQUET;
+            case "png":
+            case "bmp":
+            case "svg":
+            case "gif":
+            case "jpeg":
+            case "tif":
+                return File.Format.IMAGE;
+            default:
+                break;
+        }
+
+        //PLAIN
+        return File.Format.UNKNOWN;
     }
 
 }

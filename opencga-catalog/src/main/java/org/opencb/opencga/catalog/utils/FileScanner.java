@@ -268,8 +268,8 @@ public class FileScanner {
                             null, QueryOptions.empty(), sessionId).first();
                 } else {
                     start = System.currentTimeMillis();
-                    File.Format format = FormatDetector.detect(uri);
-                    File.Bioformat bioformat = BioformatDetector.detect(uri);
+                    File.Format format = FileUtils.detectFormat(uri);
+                    File.Bioformat bioformat = FileUtils.detectBioformat(uri);
                     file = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, format, bioformat, filePath,
                             null, "", null, 0, -1, null, jobId, null, null, true, null, null, sessionId).first();
                     end = System.currentTimeMillis();
