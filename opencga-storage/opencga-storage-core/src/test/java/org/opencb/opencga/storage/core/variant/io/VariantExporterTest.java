@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.io;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
@@ -46,7 +47,15 @@ public class VariantExporterTest extends VariantStorageBaseTest {
 
     @Before
     public void setUp() throws Exception {
-        runDefaultETL(smallInputUri, variantStorageEngine, newStudyConfiguration());
+        runDefaultETL(inputUri, variantStorageEngine, newStudyConfiguration(),
+                new QueryOptions()
+//                        .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "GL,DS")
+                        .append(VariantStorageEngine.Options.ANNOTATE.key(), false));
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        DummyStudyConfigurationAdaptor.writeAll(getTmpRootDir());
     }
 
     @Override

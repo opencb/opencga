@@ -20,12 +20,21 @@ public class VariantMetadataFactory {
     public VariantMetadataFactory() {
 
     }
+
     public VariantMetadata toVariantMetadata(Collection<StudyConfiguration> studyConfigurations) {
+        return toVariantMetadata(studyConfigurations, null, null);
+    }
+
+    public VariantMetadata toVariantMetadata(Collection<StudyConfiguration> studyConfigurations,
+                                             Map<Integer, List<Integer>> returnedSamples,
+                                             Map<Integer, List<Integer>> returnedFiles) {
         List<VariantDatasetMetadata> datasets = new ArrayList<>();
-        String specie = null;
+        String specie = "hsapiens";
         String assembly = null;
         for (StudyConfiguration studyConfiguration : studyConfigurations) {
-            VariantDatasetMetadata variantDatasetMetadata = toVariantDatasetMetadata(studyConfiguration);
+            VariantDatasetMetadata variantDatasetMetadata = toVariantDatasetMetadata(studyConfiguration,
+                    returnedSamples == null ? null : returnedSamples.get(studyConfiguration.getStudyId()),
+                    returnedFiles == null ? null : returnedFiles.get(studyConfiguration.getStudyId()));
             datasets.add(variantDatasetMetadata);
             if (studyConfiguration.getAttributes().containsKey(VariantAnnotationManager.SPECIES)) {
                 specie = studyConfiguration.getAttributes().getString(VariantAnnotationManager.SPECIES);
@@ -50,18 +59,31 @@ public class VariantMetadataFactory {
     }
 
     public VariantDatasetMetadata toVariantDatasetMetadata(StudyConfiguration studyConfiguration) {
+        return toVariantDatasetMetadata(studyConfiguration, null, null);
+    }
+
+    public VariantDatasetMetadata toVariantDatasetMetadata(StudyConfiguration studyConfiguration,
+                                                           Collection<Integer> returnedSamples,
+                                                           Collection<Integer> returnedFiles) {
 
         List<VariantFileMetadata> fileMetadata = new ArrayList<>(studyConfiguration.getIndexedFiles().size());
         Set<Integer> indexedSampleIds = new HashSet<>();
         ArrayList<Individual> individuals = new ArrayList<>();
 
         for (Integer fileId : studyConfiguration.getIndexedFiles()) {
+            if (returnedFiles != null && !returnedFiles.contains(fileId)) {
+                continue;
+            }
+
             LinkedHashSet<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
 
             List<String> sampleNames = toSampleNames(studyConfiguration, sampleIds);
             for (Integer sampleId : sampleIds) {
                 String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
                 if (indexedSampleIds.add(sampleId)) {
+                    if (returnedSamples != null && !returnedSamples.contains(sampleId)) {
+                        continue;
+                    }
                     individuals.add(
                             Individual.newBuilder()
                                     .setId(sampleName)
@@ -88,8 +110,8 @@ public class VariantMetadataFactory {
 
         List<VariantFileHeaderLine> lines = new ArrayList<>();
         if (studyConfiguration.getVariantMetadata() != null) {
-            toVariantFileHeaderLineSimple(lines, "ALT", studyConfiguration.getVariantMetadata().getAlternates().values());
-            toVariantFileHeaderLineSimple(lines, "FILTER", studyConfiguration.getVariantMetadata().getFilter().values());
+            toVariantFileHeaderLineSimple(lines, "ALT", studyConfiguration.getVariantMetadata().getAlternates());
+            toVariantFileHeaderLineSimple(lines, "FILTER", studyConfiguration.getVariantMetadata().getFilter());
             toVariantFileHeaderLine(lines, "FORMAT", studyConfiguration.getVariantMetadata().getFormat().values());
             toVariantFileHeaderLine(lines, "INFO", studyConfiguration.getVariantMetadata().getInfo().values());
             studyConfiguration.getVariantMetadata().getContig().forEach((contig, length) -> {
@@ -100,7 +122,6 @@ public class VariantMetadataFactory {
                         .setAttributes(Collections.singletonMap("length", String.valueOf(length)))
                         .build());
             });
-//            toVariantFileHeaderLineSimple(lines, "config", studyConfiguration.getVariantMetadata().getContig().values());
         }
 
         return VariantDatasetMetadata.newBuilder()
@@ -118,10 +139,12 @@ public class VariantMetadataFactory {
                 .build();
     }
 
-    protected void toVariantFileHeaderLineSimple(List<VariantFileHeaderLine> lines, String key, Collection<String> values) {
-        for (String value : values) {
-            lines.add(VariantFileHeaderLine.newBuilder().setKey(key).setId(value).build());
-        }
+    protected void toVariantFileHeaderLineSimple(List<VariantFileHeaderLine> lines, String key, Map<String, String> values) {
+        values.forEach((id, description) -> lines.add(VariantFileHeaderLine.newBuilder()
+                .setKey(key)
+                .setId(id)
+                .setDescription(description)
+                .build()));
     }
 
     protected void toVariantFileHeaderLine(List<VariantFileHeaderLine> lines, String key,
