@@ -107,7 +107,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                         params.putIfNotNull("study", executor.study);
                         params.putIfNotNull("expirationDate", executor.expDate);
                         LdapImportResult ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,
-                                executor.type, params, configuration.getAdmin().getPassword());
+                                executor.type, params, sessionId);
 
                         printImportReport(ldapImportResult);
                     }
@@ -151,7 +151,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                 params.putIfNotNull("study", executor.study);
                 params.putIfNotNull("expirationDate", executor.expDate);
                 LdapImportResult ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,
-                        executor.type, params, configuration.getAdmin().getPassword());
+                        executor.type, params, sessionId);
 
                 printImportReport(ldapImportResult);
 
@@ -165,13 +165,14 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
     }
 
-    private void importUsersAndGroups() throws CatalogException, NamingException {
+    private void importUsersAndGroups() throws CatalogException, NamingException, IOException {
         AdminCliOptionsParser.ImportCommandOptions executor = usersCommandOptions.importCommandOptions;
 
         setCatalogDatabaseCredentials(executor.databaseHost, executor.prefix, executor.databaseUser, executor.databasePassword,
                 executor.commonOptions.adminPassword);
-
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+            String token = catalogManager.getUserManager().login("admin", executor.commonOptions.adminPassword);
+
             ObjectMap params = new ObjectMap();
             params.putIfNotNull("users", executor.user);
             params.putIfNotNull("group", executor.group);
@@ -179,7 +180,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             params.putIfNotNull("study-group", executor.studyGroup);
             params.putIfNotNull("expirationDate", executor.expDate);
             LdapImportResult ldapImportResult = catalogManager.getUserManager()
-                    .importFromExternalAuthOrigin(executor.authOrigin, executor.type, params, configuration.getAdmin().getPassword());
+                    .importFromExternalAuthOrigin(executor.authOrigin, executor.type, params, token);
 
             printImportReport(ldapImportResult);
         }

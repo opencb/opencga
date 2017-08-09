@@ -71,7 +71,7 @@ public class VariantStorageManager extends StorageManager {
     }
 
     public void clearCache(String studyId, String type, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
 
     }
 
@@ -179,7 +179,7 @@ public class VariantStorageManager extends StorageManager {
 
     public void searchIndex(String study, Query query, QueryOptions queryOptions, String sessionId) throws StorageEngineException,
             IOException, VariantSearchException, IllegalAccessException, InstantiationException, ClassNotFoundException, CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, study);
         DataStore dataStore = getDataStore(studyId, sessionId);
         VariantStorageEngine variantStorageEngine =
@@ -233,7 +233,7 @@ public class VariantStorageManager extends StorageManager {
             throws CatalogException, StorageEngineException, IOException, URISyntaxException {
         VariantStatsStorageOperation statsOperation = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
 
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, study);
         statsOperation.calculateStats(studyId, cohorts, outDir, new QueryOptions(config), sessionId);
     }
@@ -428,7 +428,7 @@ public class VariantStorageManager extends StorageManager {
                             sessionId);
                     if (samplesQueryResult.getNumResults() != entry.getValue().size()) {
                         throw new CatalogAuthorizationException("Permission denied. User "
-                                + catalogManager.getUserManager().getId(sessionId) + " can't read all the requested samples");
+                                + catalogManager.getUserManager().getUserId(sessionId) + " can't read all the requested samples");
                     }
                     samplesMap.put((long) entry.getKey(), samplesQueryResult.getResult());
                 } else {

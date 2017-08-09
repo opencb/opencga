@@ -95,13 +95,13 @@ public class JobManager extends ResourceManager<Job> {
             jobId = Long.parseLong(jobStr);
             jobDBAdaptor.exists(jobId);
             studyId = jobDBAdaptor.getStudyId(jobId);
-            userId = userManager.getId(sessionId);
+            userId = userManager.getUserId(sessionId);
         } else {
             if (jobStr.contains(",")) {
                 throw new CatalogException("More than one job found");
             }
 
-            userId = userManager.getId(sessionId);
+            userId = userManager.getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
             jobId = smartResolutor(jobStr, studyId);
         }
@@ -123,9 +123,9 @@ public class JobManager extends ResourceManager<Job> {
             jobIds = Arrays.asList(Long.parseLong(jobStr));
             jobDBAdaptor.exists(jobIds.get(0));
             studyId = jobDBAdaptor.getStudyId(jobIds.get(0));
-            userId = userManager.getId(sessionId);
+            userId = userManager.getUserId(sessionId);
         } else {
-            userId = userManager.getId(sessionId);
+            userId = userManager.getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
             String[] jobSplit = jobStr.split(",");
@@ -182,7 +182,7 @@ public class JobManager extends ResourceManager<Job> {
 
     @Override
     public QueryResult<Job> create(String studyStr, Job job, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
@@ -236,7 +236,7 @@ public class JobManager extends ResourceManager<Job> {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
 
         query.put(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
@@ -267,7 +267,7 @@ public class JobManager extends ResourceManager<Job> {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         // If studyId is null, check if there is any on the query
@@ -297,7 +297,7 @@ public class JobManager extends ResourceManager<Job> {
     public QueryResult<Job> count(String studyStr, Query query, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         if (query.containsKey("inputFiles")) {
@@ -448,7 +448,7 @@ public class JobManager extends ResourceManager<Job> {
         ParamUtils.checkObj(field, "field");
         ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
 
@@ -474,7 +474,7 @@ public class JobManager extends ResourceManager<Job> {
             throw new CatalogException("Empty fields parameter.");
         }
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
 
@@ -513,7 +513,7 @@ public class JobManager extends ResourceManager<Job> {
     public URI createJobOutDir(long studyId, String dirName, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(dirName, "dirName");
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
 
         URI uri = studyDBAdaptor.get(studyId, new QueryOptions("include", Collections.singletonList("projects.studies.uri")))
                 .first().getUri();

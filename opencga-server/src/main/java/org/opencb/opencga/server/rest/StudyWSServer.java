@@ -19,9 +19,6 @@ package org.opencb.opencga.server.rest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.alignment.Alignment;
-import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -29,18 +26,11 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -126,7 +116,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             required = true) @PathParam("study") String studyStr,
                                  @ApiParam(value = "JSON containing the params to be updated.", required = true) StudyParams updateParams) {
         try {
-            String userId = catalogManager.getUserManager().getId(sessionId);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
             long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
             QueryResult queryResult = catalogManager.getStudyManager().update(String.valueOf((Long) studyId), new ObjectMap
                     (jsonObjectMapper.writeValueAsString(updateParams)), null, sessionId);
@@ -218,7 +208,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes,
                                 @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes) {
         try {
-            String userId = catalogManager.getUserManager().getId(sessionId);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
             long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
             QueryResult queryResult = catalogManager.getFileManager().get(studyId, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -250,7 +240,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
                                   @ApiParam(value = "annotation") @QueryParam("annotation") String annotation) {
         try {
-            String userId = catalogManager.getUserManager().getId(sessionId);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
             long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
             QueryResult queryResult = catalogManager.getSampleManager().get(studyId, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -297,7 +287,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response scanFiles(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr) {
         try {
-            String userId = catalogManager.getUserManager().getId(sessionId);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
             long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
             Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first();
             FileScanner fileScanner = new FileScanner(catalogManager);
@@ -360,7 +350,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response resyncFiles(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr) {
         try {
-            String userId = catalogManager.getUserManager().getId(sessionId);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
             long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
             Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first();
             FileScanner fileScanner = new FileScanner(catalogManager);

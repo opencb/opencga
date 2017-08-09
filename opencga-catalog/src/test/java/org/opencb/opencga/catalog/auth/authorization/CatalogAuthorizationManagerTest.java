@@ -387,7 +387,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getStudyManager().updateAcl(Long.toString(s1), externalUser, aclParams1, studyAdmin1SessionId).get(0);
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, AuthorizationManager.ROLE_ANALYST);
         catalogManager.getStudyManager().updateAcl(Long.toString(s1), externalUser, aclParams, studyAdmin1SessionId).get(0);
-        String userId = catalogManager.getUserManager().getId(studyAdmin1SessionId);
+        String userId = catalogManager.getUserManager().getUserId(studyAdmin1SessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, Long.toString(s1));
         studyAcls = catalogManager.getAuthorizationManager().getStudyAcl(userId, studyId, externalUser);
         assertEquals(1, studyAcls.getNumResults());
@@ -405,7 +405,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 //        catalogManager.unshareStudy(s1, externalUser, studyAdmin1SessionId);
         Study.StudyAclParams aclParams = new Study.StudyAclParams(null, AclParams.Action.RESET, null);
         catalogManager.getStudyManager().updateAcl(Long.toString(s1), externalUser, aclParams, studyAdmin1SessionId).get(0);
-        String userId = catalogManager.getUserManager().getId(studyAdmin1SessionId);
+        String userId = catalogManager.getUserManager().getUserId(studyAdmin1SessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, Long.toString(s1));
         QueryResult<StudyAclEntry> studyAcls = catalogManager.getAuthorizationManager().getStudyAcl(userId, studyId, externalUser);
         assertEquals(0, studyAcls.getNumResults());
@@ -422,7 +422,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void removeGroupFromRole() throws CatalogException {
-        String userId1 = catalogManager.getUserManager().getId(studyAdmin1SessionId);
+        String userId1 = catalogManager.getUserManager().getUserId(studyAdmin1SessionId);
         long studyId1 = catalogManager.getStudyManager().getId(userId1, Long.toString(s1));
         QueryResult<StudyAclEntry> studyAcls = catalogManager.getAuthorizationManager().getStudyAcl(userId1, studyId1, groupAdmin);
         assertEquals(1, studyAcls.getNumResults());
@@ -431,7 +431,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
         Study.StudyAclParams aclParams = new Study.StudyAclParams(null, AclParams.Action.RESET, null);
         catalogManager.getStudyManager().updateAcl(Long.toString(s1), groupAdmin, aclParams, ownerSessionId).get(0);
-        String userId = catalogManager.getUserManager().getId(ownerSessionId);
+        String userId = catalogManager.getUserManager().getUserId(ownerSessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, Long.toString(s1));
         studyAcls = catalogManager.getAuthorizationManager().getStudyAcl(userId, studyId, groupAdmin);
         assertEquals(0, studyAcls.getNumResults());

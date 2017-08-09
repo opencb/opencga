@@ -274,7 +274,7 @@ public class VariantFetcher implements AutoCloseable {
         if (query.containsKey(key)) {
             for (String id : query.getAsStringList(key)) {
                 if (!id.startsWith("!")) {
-                    String userId = catalogManager.getUserManager().getId(sessionId);
+                    String userId = catalogManager.getUserManager().getUserId(sessionId);
                     long studyId = catalogManager.getStudyManager().getId(userId, id);
                     return studyId > 0 ? studyId : null;
                 }
@@ -294,7 +294,7 @@ public class VariantFetcher implements AutoCloseable {
                             (SampleDBAdaptor.QueryParams.ID.key(), entry.getValue()), new QueryOptions("exclude", Arrays.asList("projects" +
                             ".studies.samples.annotationSets", "projects.studies.samples.attributes")), sessionId);
                     if (samplesQueryResult.getNumResults() != entry.getValue().size()) {
-                        throw new CatalogAuthorizationException("Permission denied. User " + catalogManager.getUserManager().getId
+                        throw new CatalogAuthorizationException("Permission denied. User " + catalogManager.getUserManager().getUserId
                                 (sessionId)
                                 + " can't read all the requested samples");
                     }

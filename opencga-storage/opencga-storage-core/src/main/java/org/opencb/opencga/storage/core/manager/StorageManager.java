@@ -76,13 +76,13 @@ public abstract class StorageManager {
 
 
     public void clearCache(String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
 
     }
 
 
     public void clearCache(String studyId, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
 
     }
 
@@ -102,7 +102,7 @@ public abstract class StorageManager {
         Long studyId;
         if (fileIdStrs.isEmpty()) {
             fileIds = Collections.emptyList();
-            String userId = catalogManager.getUserManager().getId(sessionId);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyIdStr);
         } else {
             AbstractManager.MyResourceIds resource = catalogManager.getFileManager().getIds(StringUtils.join(fileIdStrs, ","), studyIdStr,

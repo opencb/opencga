@@ -86,7 +86,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
 
@@ -153,7 +153,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         type = ParamUtils.defaultString(type, "");
         attributes = ParamUtils.defaultObject(attributes, Collections.<String, Object>emptyMap());
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
 
@@ -190,13 +190,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             sampleId = Long.parseLong(sampleStr);
             sampleDBAdaptor.exists(sampleId);
             studyId = sampleDBAdaptor.getStudyId(sampleId);
-            userId = userManager.getId(sessionId);
+            userId = userManager.getUserId(sessionId);
         } else {
             if (sampleStr.contains(",")) {
                 throw new CatalogException("More than one sample found");
             }
 
-            userId = userManager.getId(sessionId);
+            userId = userManager.getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
             Query query = new Query()
@@ -232,9 +232,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             sampleIds = Arrays.asList(Long.parseLong(sampleStr));
             sampleDBAdaptor.exists(sampleIds.get(0));
             studyId = sampleDBAdaptor.getStudyId(sampleIds.get(0));
-            userId = userManager.getId(sessionId);
+            userId = userManager.getUserId(sessionId);
         } else {
-            userId = userManager.getId(sessionId);
+            userId = userManager.getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
             List<String> sampleSplit = Arrays.asList(sampleStr.split(","));
@@ -278,7 +278,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
 
         query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
@@ -291,7 +291,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
@@ -300,7 +300,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     @Override
     public QueryResult<Sample> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {
@@ -318,7 +318,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     @Override
     public QueryResult<Sample> count(String studyStr, Query query, String sessionId) throws CatalogException {
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
@@ -453,7 +453,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         ParamUtils.checkObj(parameters, "parameters");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         MyResourceId resource = getId(entryStr, studyStr, sessionId);
 
         authorizationManager.checkSamplePermission(resource.getStudyId(), resource.getResourceId(), userId,
@@ -507,7 +507,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         ParamUtils.checkObj(field, "field");
         ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         Long studyId = studyManager.getId(userId, studyStr);
 
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
@@ -533,7 +533,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             throw new CatalogException("Empty fields parameter.");
         }
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
 

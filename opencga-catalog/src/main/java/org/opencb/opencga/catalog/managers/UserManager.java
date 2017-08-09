@@ -122,7 +122,7 @@ public class UserManager extends AbstractManager {
      * @return UserId owner of the sessionId. Empty string if SessionId does not match.
      * @throws CatalogException when the session id does not correspond to any user or the token has expired.
      */
-    public String getId(String sessionId) throws CatalogException {
+    public String getUserId(String sessionId) throws CatalogException {
         return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(sessionId);
     }
 
@@ -139,25 +139,6 @@ public class UserManager extends AbstractManager {
         String authOrigin = getAuthenticationOriginId(userId);
         authenticationManagerMap.get(authOrigin).changePassword(userId, oldPassword, newPassword);
         userDBAdaptor.updateUserLastModified(userId);
-    }
-
-    private String getAuthenticationOriginId(String userId) throws CatalogException {
-        QueryResult<User> user = userDBAdaptor.get(userId, new QueryOptions(), "");
-        if (user == null || user.getNumResults() == 0) {
-            throw new CatalogException(userId + " user not found");
-        }
-        return user.first().getAccount().getAuthOrigin();
-    }
-
-    private AuthenticationOrigin getAuthenticationOrigin(String authOrigin) {
-        if (configuration.getAuthentication().getAuthenticationOrigins() != null) {
-            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
-                if (authOrigin.equals(authenticationOrigin.getId())) {
-                    return authenticationOrigin;
-                }
-            }
-        }
-        return null;
     }
 
     /**
@@ -233,16 +214,17 @@ public class UserManager extends AbstractManager {
      * @param authOrigin Id present in the catalog configuration of the authentication origin.
      * @param accountType Type of the account to be created for the imported users (guest, full).
      * @param params Object map containing other parameters that are useful to import users.
-     * @param adminPassword Admin password.
+     * @param sessionId Valid admin token.
      * @throws CatalogException catalogException
      * @return LdapImportResult Object containing a summary of the actions performed.
      */
-    public LdapImportResult importFromExternalAuthOrigin(String authOrigin, String accountType, ObjectMap params, String adminPassword)
+    public LdapImportResult importFromExternalAuthOrigin(String authOrigin, String accountType, ObjectMap params, String sessionId)
             throws CatalogException {
-        // Validate the admin password.
         try {
-            login("admin", adminPassword);
-        } catch (IOException e) {
+            if (!authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(sessionId).equals("admin")) {
+                throw new CatalogException("Token does not belong to admin");
+            }
+        } catch (CatalogException e) {
             // We build an LdapImportResult that will contain the error message + the input information provided.
             logger.error(e.getMessage(), e);
             LdapImportResult retResult = new LdapImportResult();
@@ -254,182 +236,6 @@ public class UserManager extends AbstractManager {
         }
 
         return importFromExternalAuthOrigin(authOrigin, accountType, params);
-    }
-
-    private LdapImportResult importFromExternalAuthOrigin(String authOrigin, String accountType, ObjectMap params) throws CatalogException {
-        LdapImportResult retResult = new LdapImportResult();
-        LdapImportResult.Input input = new LdapImportResult.Input(params.getAsStringList("users"), params.getString("group"),
-                params.getString("study-group"), authOrigin, accountType, params.getString("study"));
-        retResult.setInput(input);
-
-        if (INTERNAL_AUTHORIZATION.equals(authOrigin)) {
-            retResult.setErrorMsg("Cannot import users from catalog. Authentication origin should be external.");
-            return retResult;
-        }
-
-        // Obtain the authentication origin parameters
-        AuthenticationOrigin authenticationOrigin = getAuthenticationOrigin(authOrigin);
-        if (authenticationOrigin == null) {
-            retResult.setErrorMsg("The authentication origin id " + authOrigin + " does not correspond with any id in our database.");
-            return retResult;
-        }
-
-        // Check account type
-        if (accountType != null) {
-            if (!Account.FULL.equalsIgnoreCase(accountType) && !Account.GUEST.equalsIgnoreCase(accountType)) {
-                retResult.setErrorMsg("The account type specified does not correspond with any of the valid ones. Valid account types:"
-                        + Account.FULL + " and " + Account.GUEST);
-                return retResult;
-            }
-        }
-
-        String base = ((String) authenticationOrigin.getOptions().get(AuthenticationOrigin.GROUPS_SEARCH));
-        Set<String> usersFromLDAP = new HashSet<>();
-        usersFromLDAP.addAll(retResult.getInput().getUsers());
-        try {
-            usersFromLDAP.addAll(LDAPUtils.getUsersFromLDAPGroup(authenticationOrigin.getHost(), retResult.getInput().getGroup(), base));
-        } catch (NamingException e) {
-            logger.error(e.getMessage(), e);
-            retResult.setErrorMsg(e.getMessage());
-            return retResult;
-        }
-        if (usersFromLDAP.size() == 0) {
-            retResult.setWarningMsg("No users were found. Nothing to do.");
-            return retResult;
-        }
-
-        base = ((String) authenticationOrigin.getOptions().get(AuthenticationOrigin.USERS_SEARCH));
-        List<Attributes> userAttrList;
-        try {
-            List<String> userList = new ArrayList<>(usersFromLDAP.size());
-            userList.addAll(usersFromLDAP);
-            userAttrList = LDAPUtils.getUserInfoFromLDAP(authenticationOrigin.getHost(), userList, base);
-        } catch (NamingException e) {
-            logger.error(e.getMessage(), e);
-            retResult.setErrorMsg(e.getMessage());
-            return retResult;
-        }
-
-        if (userAttrList.size() == 0) {
-            retResult.setWarningMsg("No users were found. Nothing to do.");
-            return retResult;
-        }
-
-        String type;
-        if (Account.GUEST.equalsIgnoreCase(accountType)) {
-            type = Account.GUEST;
-        } else {
-            type = Account.FULL;
-        }
-
-        Set<String> userList = new HashSet<>(userAttrList.size());
-        LdapImportResult.SummaryResult summaryResult = new LdapImportResult.SummaryResult();
-        summaryResult.setTotal(usersFromLDAP.size());
-
-        // Register users in catalog
-        for (Attributes attrs : userAttrList) {
-            String displayname;
-            String mail;
-            String uid;
-            String rdn;
-            try {
-                displayname = LDAPUtils.getFullName(attrs);
-                mail = LDAPUtils.getMail(attrs);
-                uid = LDAPUtils.getUID(attrs);
-                rdn = LDAPUtils.getRDN(attrs);
-            } catch (NamingException e) {
-                logger.error(e.getMessage(), e);
-                retResult.setErrorMsg(e.getMessage());
-                return retResult;
-            }
-
-            // Check if the user already exists in catalog
-            if (userDBAdaptor.exists(uid)) {
-                summaryResult.getExistingUsers().add(uid);
-                userList.add(uid);
-                continue;
-            }
-
-            logger.debug("Registering {} in Catalog", uid);
-
-            // Create the user in catalog
-            Account account = new Account().setType(type).setAuthOrigin(authOrigin);
-
-            // TODO: Parse expiration date
-//            if (params.get("expirationDate") != null) {
-//                account.setExpirationDate(...);
-//            }
-
-            Map<String, Object> attributes = new HashMap<>();
-            attributes.put("LDAP_RDN", rdn);
-            User user = new User(uid, displayname, mail, "", base, account, User.UserStatus.READY, "", -1, -1, new ArrayList<>(),
-                    new ArrayList<>(), new HashMap<>(), attributes);
-
-            userDBAdaptor.insert(user, QueryOptions.empty());
-
-            summaryResult.getNewUsers().add(uid);
-            userList.add(uid);
-        }
-
-        // Check users not found in LDAP
-        for (String uid : retResult.getInput().getUsers()) {
-            if (!userList.contains(uid)) {
-                summaryResult.getNonExistingUsers().add(uid);
-            }
-        }
-
-        LdapImportResult.Result result = new LdapImportResult.Result();
-        retResult.setResult(result);
-        result.setUserSummary(summaryResult);
-
-        if (StringUtils.isEmpty(retResult.getInput().getStudy()) || StringUtils.isEmpty(retResult.getInput().getStudyGroup())) {
-            return retResult;
-        }
-        long studyId = catalogManager.getStudyManager().getId("admin", retResult.getInput().getStudy());
-
-        if (studyId <= 0) {
-            retResult.setErrorMsg("Study not " + retResult.getInput().getStudy() + " found.");
-            return retResult;
-        }
-
-        try {
-            catalogManager.getStudyManager().createGroup(Long.toString(studyId), retResult.getInput().getStudyGroup(),
-                    StringUtils.join(userList, ","), ADMIN_TOKEN);
-        } catch (CatalogException e) {
-            if (e.getMessage().contains("users already belong to")) {
-                // Cannot create a group with those users because they already belong to other group
-                retResult.setErrorMsg(e.getMessage());
-                return retResult;
-            }
-            try {
-                GroupParams groupParams = new GroupParams(StringUtils.join(userList, ","), GroupParams.Action.ADD);
-                catalogManager.getStudyManager().updateGroup(Long.toString(studyId), retResult.getInput().getStudyGroup(), groupParams,
-                        ADMIN_TOKEN);
-            } catch (CatalogException e1) {
-                retResult.setErrorMsg(e1.getMessage());
-                return retResult;
-            }
-        }
-
-        try {
-            QueryResult<Group> group = catalogManager.getStudyManager().getGroup(Long.toString(studyId),
-                    retResult.getInput().getStudyGroup(), ADMIN_TOKEN);
-
-            retResult.getResult().setUsersInGroup(group.first().getUserIds());
-        } catch (CatalogException e) {
-            retResult.setErrorMsg(e.getMessage());
-        }
-        return retResult;
-    }
-
-    private List<String> fetchGroupsFromLdapUser(User user, AuthenticationOrigin authenticationOrigin) throws NamingException {
-        List<String> groups = new ArrayList<>();
-        if (user == null) {
-            return groups;
-        }
-        String userRdn = (String) user.getAttributes().get("LDAP_RDN");
-        String base = ((String) authenticationOrigin.getOptions().get(AuthenticationOrigin.USERS_SEARCH));
-        return LDAPUtils.getGroupsFromLdapUser(authenticationOrigin.getHost(), userRdn, base);
     }
 
     /**
@@ -718,7 +524,7 @@ public class UserManager extends AbstractManager {
             description = "";
         }
 
-        String userIdAux = getId(sessionId);
+        String userIdAux = getUserId(sessionId);
         userDBAdaptor.checkId(userId);
         if (!userId.equals(userIdAux)) {
             throw new CatalogException("User " + userIdAux + " is not authorised to store filters for user " + userId);
@@ -752,7 +558,7 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");
 
-        String userIdAux = getId(sessionId);
+        String userIdAux = getUserId(sessionId);
         userDBAdaptor.checkId(userId);
         if (!userId.equals(userIdAux)) {
             throw new CatalogException("User " + userIdAux + " is not authorised to update filters for user " + userId);
@@ -791,7 +597,7 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");
 
-        String userIdAux = getId(sessionId);
+        String userIdAux = getUserId(sessionId);
         userDBAdaptor.checkId(userId);
         if (!userId.equals(userIdAux)) {
             throw new CatalogException("User " + userIdAux + " is not authorised to delete filters for user " + userId);
@@ -821,7 +627,7 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");
 
-        String userIdAux = getId(sessionId);
+        String userIdAux = getUserId(sessionId);
         userDBAdaptor.checkId(userId);
         if (!userId.equals(userIdAux)) {
             throw new CatalogException("User " + userIdAux + " is not authorised to get filters from user " + userId);
@@ -847,7 +653,7 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
 
-        String userIdAux = getId(sessionId);
+        String userIdAux = getUserId(sessionId);
         userDBAdaptor.checkId(userId);
         if (!userId.equals(userIdAux)) {
             throw new CatalogException("User " + userIdAux + " is not authorised to get filters from user " + userId);
@@ -883,7 +689,7 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkObj(config, "ObjectMap");
 
-        String userIdAux = getId(sessionId);
+        String userIdAux = getUserId(sessionId);
         userDBAdaptor.checkId(userId);
         if (!userId.equals(userIdAux)) {
             throw new CatalogException("User " + userIdAux + " is not authorised to set configuration for user " + userId);
@@ -907,7 +713,7 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");
 
-        String userIdAux = getId(sessionId);
+        String userIdAux = getUserId(sessionId);
         userDBAdaptor.checkId(userId);
         if (!userId.equals(userIdAux)) {
             throw new CatalogException("User " + userIdAux + " is not authorised to delete the configuration of user " + userId);
@@ -947,7 +753,7 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");
 
-        String userIdAux = getId(sessionId);
+        String userIdAux = getUserId(sessionId);
         userDBAdaptor.checkId(userId);
         if (!userId.equals(userIdAux)) {
             throw new CatalogException("User " + userIdAux + " is not authorised to fetch the configuration of user " + userId);
@@ -1009,6 +815,201 @@ public class UserManager extends AbstractManager {
         if (userDBAdaptor.exists(userId)) {
             throw new CatalogException("The user already exists in our database. Please, choose a different one.");
         }
+    }
+
+    private String getAuthenticationOriginId(String userId) throws CatalogException {
+        QueryResult<User> user = userDBAdaptor.get(userId, new QueryOptions(), "");
+        if (user == null || user.getNumResults() == 0) {
+            throw new CatalogException(userId + " user not found");
+        }
+        return user.first().getAccount().getAuthOrigin();
+    }
+
+    private AuthenticationOrigin getAuthenticationOrigin(String authOrigin) {
+        if (configuration.getAuthentication().getAuthenticationOrigins() != null) {
+            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
+                if (authOrigin.equals(authenticationOrigin.getId())) {
+                    return authenticationOrigin;
+                }
+            }
+        }
+        return null;
+    }
+
+    private LdapImportResult importFromExternalAuthOrigin(String authOrigin, String accountType, ObjectMap params) throws CatalogException {
+        LdapImportResult retResult = new LdapImportResult();
+        LdapImportResult.Input input = new LdapImportResult.Input(params.getAsStringList("users"), params.getString("group"),
+                params.getString("study-group"), authOrigin, accountType, params.getString("study"));
+        retResult.setInput(input);
+
+        if (INTERNAL_AUTHORIZATION.equals(authOrigin)) {
+            retResult.setErrorMsg("Cannot import users from catalog. Authentication origin should be external.");
+            return retResult;
+        }
+
+        // Obtain the authentication origin parameters
+        AuthenticationOrigin authenticationOrigin = getAuthenticationOrigin(authOrigin);
+        if (authenticationOrigin == null) {
+            retResult.setErrorMsg("The authentication origin id " + authOrigin + " does not correspond with any id in our database.");
+            return retResult;
+        }
+
+        // Check account type
+        if (accountType != null) {
+            if (!Account.FULL.equalsIgnoreCase(accountType) && !Account.GUEST.equalsIgnoreCase(accountType)) {
+                retResult.setErrorMsg("The account type specified does not correspond with any of the valid ones. Valid account types:"
+                        + Account.FULL + " and " + Account.GUEST);
+                return retResult;
+            }
+        }
+
+        String base = ((String) authenticationOrigin.getOptions().get(AuthenticationOrigin.GROUPS_SEARCH));
+        Set<String> usersFromLDAP = new HashSet<>();
+        usersFromLDAP.addAll(retResult.getInput().getUsers());
+        try {
+            usersFromLDAP.addAll(LDAPUtils.getUsersFromLDAPGroup(authenticationOrigin.getHost(), retResult.getInput().getGroup(), base));
+        } catch (NamingException e) {
+            logger.error(e.getMessage(), e);
+            retResult.setErrorMsg(e.getMessage());
+            return retResult;
+        }
+        if (usersFromLDAP.size() == 0) {
+            retResult.setWarningMsg("No users were found. Nothing to do.");
+            return retResult;
+        }
+
+        base = ((String) authenticationOrigin.getOptions().get(AuthenticationOrigin.USERS_SEARCH));
+        List<Attributes> userAttrList;
+        try {
+            List<String> userList = new ArrayList<>(usersFromLDAP.size());
+            userList.addAll(usersFromLDAP);
+            userAttrList = LDAPUtils.getUserInfoFromLDAP(authenticationOrigin.getHost(), userList, base);
+        } catch (NamingException e) {
+            logger.error(e.getMessage(), e);
+            retResult.setErrorMsg(e.getMessage());
+            return retResult;
+        }
+
+        if (userAttrList.size() == 0) {
+            retResult.setWarningMsg("No users were found. Nothing to do.");
+            return retResult;
+        }
+
+        String type;
+        if (Account.GUEST.equalsIgnoreCase(accountType)) {
+            type = Account.GUEST;
+        } else {
+            type = Account.FULL;
+        }
+
+        Set<String> userList = new HashSet<>(userAttrList.size());
+        LdapImportResult.SummaryResult summaryResult = new LdapImportResult.SummaryResult();
+        summaryResult.setTotal(usersFromLDAP.size());
+
+        // Register users in catalog
+        for (Attributes attrs : userAttrList) {
+            String displayname;
+            String mail;
+            String uid;
+            String rdn;
+            try {
+                displayname = LDAPUtils.getFullName(attrs);
+                mail = LDAPUtils.getMail(attrs);
+                uid = LDAPUtils.getUID(attrs);
+                rdn = LDAPUtils.getRDN(attrs);
+            } catch (NamingException e) {
+                logger.error(e.getMessage(), e);
+                retResult.setErrorMsg(e.getMessage());
+                return retResult;
+            }
+
+            // Check if the user already exists in catalog
+            if (userDBAdaptor.exists(uid)) {
+                summaryResult.getExistingUsers().add(uid);
+                userList.add(uid);
+                continue;
+            }
+
+            logger.debug("Registering {} in Catalog", uid);
+
+            // Create the user in catalog
+            Account account = new Account().setType(type).setAuthOrigin(authOrigin);
+
+            // TODO: Parse expiration date
+//            if (params.get("expirationDate") != null) {
+//                account.setExpirationDate(...);
+//            }
+
+            Map<String, Object> attributes = new HashMap<>();
+            attributes.put("LDAP_RDN", rdn);
+            User user = new User(uid, displayname, mail, "", base, account, User.UserStatus.READY, "", -1, -1, new ArrayList<>(),
+                    new ArrayList<>(), new HashMap<>(), attributes);
+
+            userDBAdaptor.insert(user, QueryOptions.empty());
+
+            summaryResult.getNewUsers().add(uid);
+            userList.add(uid);
+        }
+
+        // Check users not found in LDAP
+        for (String uid : retResult.getInput().getUsers()) {
+            if (!userList.contains(uid)) {
+                summaryResult.getNonExistingUsers().add(uid);
+            }
+        }
+
+        LdapImportResult.Result result = new LdapImportResult.Result();
+        retResult.setResult(result);
+        result.setUserSummary(summaryResult);
+
+        if (StringUtils.isEmpty(retResult.getInput().getStudy()) || StringUtils.isEmpty(retResult.getInput().getStudyGroup())) {
+            return retResult;
+        }
+        long studyId = catalogManager.getStudyManager().getId("admin", retResult.getInput().getStudy());
+
+        if (studyId <= 0) {
+            retResult.setErrorMsg("Study not " + retResult.getInput().getStudy() + " found.");
+            return retResult;
+        }
+
+        try {
+            catalogManager.getStudyManager().createGroup(Long.toString(studyId), retResult.getInput().getStudyGroup(),
+                    StringUtils.join(userList, ","), ADMIN_TOKEN);
+        } catch (CatalogException e) {
+            if (e.getMessage().contains("users already belong to")) {
+                // Cannot create a group with those users because they already belong to other group
+                retResult.setErrorMsg(e.getMessage());
+                return retResult;
+            }
+            try {
+                GroupParams groupParams = new GroupParams(StringUtils.join(userList, ","), GroupParams.Action.ADD);
+                catalogManager.getStudyManager().updateGroup(Long.toString(studyId), retResult.getInput().getStudyGroup(), groupParams,
+                        ADMIN_TOKEN);
+            } catch (CatalogException e1) {
+                retResult.setErrorMsg(e1.getMessage());
+                return retResult;
+            }
+        }
+
+        try {
+            QueryResult<Group> group = catalogManager.getStudyManager().getGroup(Long.toString(studyId),
+                    retResult.getInput().getStudyGroup(), ADMIN_TOKEN);
+
+            retResult.getResult().setUsersInGroup(group.first().getUserIds());
+        } catch (CatalogException e) {
+            retResult.setErrorMsg(e.getMessage());
+        }
+        return retResult;
+    }
+
+    private List<String> fetchGroupsFromLdapUser(User user, AuthenticationOrigin authenticationOrigin) throws NamingException {
+        List<String> groups = new ArrayList<>();
+        if (user == null) {
+            return groups;
+        }
+        String userRdn = (String) user.getAttributes().get("LDAP_RDN");
+        String base = ((String) authenticationOrigin.getOptions().get(AuthenticationOrigin.USERS_SEARCH));
+        return LDAPUtils.getGroupsFromLdapUser(authenticationOrigin.getHost(), userRdn, base);
     }
 
 }

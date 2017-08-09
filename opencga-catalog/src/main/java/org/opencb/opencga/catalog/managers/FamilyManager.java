@@ -90,13 +90,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             familyId = Long.parseLong(familyStr);
             familyDBAdaptor.exists(familyId);
             studyId = familyDBAdaptor.getStudyId(familyId);
-            userId = catalogManager.getUserManager().getId(sessionId);
+            userId = catalogManager.getUserManager().getUserId(sessionId);
         } else {
             if (familyStr.contains(",")) {
                 throw new CatalogException("More than one family found");
             }
 
-            userId = catalogManager.getUserManager().getId(sessionId);
+            userId = catalogManager.getUserManager().getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
             Query query = new Query()
@@ -140,9 +140,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             familyIds = Arrays.asList(Long.parseLong(familyStr));
             familyDBAdaptor.checkId(familyIds.get(0));
             studyId = familyDBAdaptor.getStudyId(familyIds.get(0));
-            userId = catalogManager.getUserManager().getId(sessionId);
+            userId = catalogManager.getUserManager().getUserId(sessionId);
         } else {
-            userId = catalogManager.getUserManager().getId(sessionId);
+            userId = catalogManager.getUserManager().getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
             List<String> familySplit = Arrays.asList(familyStr.split(","));
@@ -184,7 +184,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     public QueryResult<Family> create(String studyStr, Family family, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_FAMILIES);
 
@@ -330,7 +330,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
 
         query.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
@@ -339,7 +339,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     public QueryResult<Family> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
@@ -372,7 +372,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     public QueryResult<Family> count(String studyStr, Query query, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.

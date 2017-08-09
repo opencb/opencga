@@ -55,7 +55,7 @@ public class VariantCatalogQueryUtilsTest {
         UserManager userManager = mock(UserManager.class);
         when(catalogManager.getStudyManager()).thenReturn(studyManager);
         when(catalogManager.getUserManager()).thenReturn(userManager);
-        when(userManager.getId(eq("sessionId"))).thenReturn("u");
+        when(userManager.getUserId(eq("sessionId"))).thenReturn("u");
         doAnswer(invocation -> studyNameMap.get(invocation.getArgument(1).toString()))
                 .when(studyManager).getId(anyString(), anyString());
 

@@ -221,9 +221,9 @@ public class FileWSServer extends OpenCGAWSServer {
         java.nio.file.Path filePath = null;
         final long studyId;
         try {
-            String userId1 = catalogManager.getUserManager().getId(sessionId);
+            String userId1 = catalogManager.getUserManager().getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId1, studyStr);
-            String userId = catalogManager.getUserManager().getId(sessionId);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
             catalogManager.getAuthorizationManager().checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPLOAD_FILES);
             // TODO: Improve upload method. Check upload permission not only at study level.
         } catch (Exception e) {
@@ -949,7 +949,7 @@ public class FileWSServer extends OpenCGAWSServer {
             if (uriList.size() == 1) {
                 // If it is just one uri to be linked, it will return an error response if there is some kind of error.
                 URI myUri = UriUtils.createUri(uriList.get(0));
-                String userId = catalogManager.getUserManager().getId(sessionId);
+                String userId = catalogManager.getUserManager().getUserId(sessionId);
                 long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
                 queryResultList.add(catalogManager.getFileManager().link(myUri, path, studyId, objectMap, sessionId));
             } else {
@@ -957,7 +957,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     logger.info("uri: {}", uri);
                     try {
                         URI myUri = UriUtils.createUri(uri);
-                        String userId = catalogManager.getUserManager().getId(sessionId);
+                        String userId = catalogManager.getUserManager().getUserId(sessionId);
                         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
                         queryResultList.add(catalogManager.getFileManager().link(myUri, path, studyId, objectMap, sessionId));
                     } catch (URISyntaxException | CatalogException | IOException e) {

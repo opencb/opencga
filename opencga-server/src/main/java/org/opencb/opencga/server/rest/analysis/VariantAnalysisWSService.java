@@ -379,7 +379,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 query.append(STUDIES.key(), study);
             }
 
-            String userId = catalogManager.getUserManager().getId(sessionId);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
             long studyId = catalogManager.getStudyManager().getId(userId, study);
             Collection<String> sampleNames;
             if (all) {

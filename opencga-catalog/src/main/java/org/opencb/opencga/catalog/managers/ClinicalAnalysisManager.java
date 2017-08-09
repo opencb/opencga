@@ -81,13 +81,13 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             clinicalAnalysisId = Long.parseLong(clinicalStr);
             clinicalDBAdaptor.exists(clinicalAnalysisId);
             studyId = clinicalDBAdaptor.getStudyId(clinicalAnalysisId);
-            userId = catalogManager.getUserManager().getId(sessionId);
+            userId = catalogManager.getUserManager().getUserId(sessionId);
         } else {
             if (clinicalStr.contains(",")) {
                 throw new CatalogException("More than one clinical analysis found");
             }
 
-            userId = catalogManager.getUserManager().getId(sessionId);
+            userId = catalogManager.getUserManager().getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
             Query query = new Query()
@@ -131,9 +131,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             clinicalIds = Arrays.asList(Long.parseLong(clinicalStr));
             clinicalDBAdaptor.checkId(clinicalIds.get(0));
             studyId = clinicalDBAdaptor.getStudyId(clinicalIds.get(0));
-            userId = catalogManager.getUserManager().getId(sessionId);
+            userId = catalogManager.getUserManager().getUserId(sessionId);
         } else {
-            userId = catalogManager.getUserManager().getId(sessionId);
+            userId = catalogManager.getUserManager().getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
             List<String> clinicalSplit = Arrays.asList(clinicalStr.split(","));
@@ -174,7 +174,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
@@ -188,7 +188,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
@@ -199,7 +199,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     @Override
     public QueryResult<ClinicalAnalysis> create(String studyStr, ClinicalAnalysis clinicalAnalysis, QueryOptions options,
                                                 String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_CLINICAL_ANALYSIS);
 
@@ -238,7 +238,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
     public QueryResult<ClinicalAnalysis> search(String studyStr, Query query, QueryOptions options, String sessionId)
             throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         if (query.containsKey("family")) {
@@ -271,7 +271,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
     public QueryResult<ClinicalAnalysis> count(String studyStr, Query query, String sessionId)
             throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         if (query.containsKey("family")) {

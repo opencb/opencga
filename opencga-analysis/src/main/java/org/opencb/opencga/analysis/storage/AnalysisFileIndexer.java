@@ -129,7 +129,7 @@ public class AnalysisFileIndexer {
 
 
         /** Query catalog for user data. **/
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         File inputFile = catalogManager.getFileManager().get(fileId, null, sessionId).first();
         File originalFile;
         File outDir = catalogManager.getFileManager().get(outDirId, null, sessionId).first();

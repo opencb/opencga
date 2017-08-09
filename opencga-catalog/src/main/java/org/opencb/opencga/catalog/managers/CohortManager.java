@@ -78,7 +78,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
     @Override
     public QueryResult<Cohort> create(String studyStr, Cohort cohort, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_COHORTS);
 
@@ -121,7 +121,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
 
         query.append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
@@ -171,7 +171,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         query = ParamUtils.defaultObject(query, Query::new);
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
 
         if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
             // First look for the sample ids.
@@ -191,7 +191,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         query = ParamUtils.defaultObject(query, Query::new);
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
 
         if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
@@ -220,13 +220,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             cohortId = Long.parseLong(cohortStr);
             cohortDBAdaptor.exists(cohortId);
             studyId = cohortDBAdaptor.getStudyId(cohortId);
-            userId = userManager.getId(sessionId);
+            userId = userManager.getUserId(sessionId);
         } else {
             if (cohortStr.contains(",")) {
                 throw new CatalogException("More than one cohort found");
             }
 
-            userId = userManager.getId(sessionId);
+            userId = userManager.getUserId(sessionId);
             studyId = studyManager.getId(userId, studyStr);
 
             Query query = new Query()
@@ -262,9 +262,9 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             cohortIds = Arrays.asList(Long.parseLong(cohortStr));
             cohortDBAdaptor.exists(cohortIds.get(0));
             studyId = cohortDBAdaptor.getStudyId(cohortIds.get(0));
-            userId = userManager.getId(sessionId);
+            userId = userManager.getUserId(sessionId);
         } else {
-            userId = userManager.getId(sessionId);
+            userId = userManager.getUserId(sessionId);
             studyId = studyManager.getId(userId, studyStr);
 
             List<String> cohortSplit = Arrays.asList(cohortStr.split(","));
@@ -286,7 +286,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
     @Override
     public QueryResult<Cohort> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
 
         if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
@@ -306,7 +306,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
     @Override
     public QueryResult<Cohort> count(String studyStr, Query query, String sessionId) throws CatalogException {
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
 
         if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
@@ -416,7 +416,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         ParamUtils.checkObj(fields, "fields");
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_COHORTS);
 
@@ -507,7 +507,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         query = ParamUtils.defaultObject(query, Query::new);
         ParamUtils.checkObj(field, "field");
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_COHORTS);
 

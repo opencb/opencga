@@ -109,7 +109,7 @@ public class JobWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(job.outDirId) && StringUtils.isEmpty(job.outDir)) {
                 job.outDir = job.outDirId;
             }
-            String userId = catalogManager.getUserManager().getId(sessionId);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
             long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
             Job.JobStatus jobStatus;
             if (Job.JobStatus.isValid(job.status.toString())) {

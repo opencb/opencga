@@ -171,7 +171,7 @@ public class ProjectManager extends AbstractManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
 
         //Only the user can create a project
-        String userId = this.catalogManager.getUserManager().getId(sessionId);
+        String userId = this.catalogManager.getUserManager().getUserId(sessionId);
         if (userId.isEmpty()) {
             throw new CatalogException("The session id introduced does not correspond to any registered user.");
         }
@@ -232,7 +232,7 @@ public class ProjectManager extends AbstractManager {
      * @throws CatalogException CatalogException
      */
     public QueryResult<Project> get(String projectStr, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long projectId = getId(userId, projectStr);
 
         Query query = new Query(ProjectDBAdaptor.QueryParams.ID.key(), projectId);
@@ -256,7 +256,7 @@ public class ProjectManager extends AbstractManager {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         query = new Query(query);
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
 
         // If study is provided, we need to check if it will be study alias or id
         if (StringUtils.isNotEmpty(query.getString(ProjectDBAdaptor.QueryParams.STUDY.key()))) {
@@ -297,7 +297,7 @@ public class ProjectManager extends AbstractManager {
             throws CatalogException {
         ParamUtils.checkObj(parameters, "Parameters");
         ParamUtils.checkParameter(sessionId, "sessionId");
-        String userId = this.catalogManager.getUserManager().getId(sessionId);
+        String userId = this.catalogManager.getUserManager().getUserId(sessionId);
         long projectId = getId(userId, projectStr);
         String ownerId = projectDBAdaptor.getOwnerId(projectId);
 
@@ -373,7 +373,7 @@ public class ProjectManager extends AbstractManager {
             throws CatalogException {
         ParamUtils.checkAlias(newProjectAlias, "newProjectAlias", configuration.getCatalog().getOffset());
         ParamUtils.checkParameter(sessionId, "sessionId");
-        String userId = this.catalogManager.getUserManager().getId(sessionId);
+        String userId = this.catalogManager.getUserManager().getUserId(sessionId);
         String ownerId = projectDBAdaptor.getOwnerId(projectId);
 
         if (!userId.equals(ownerId)) {
@@ -387,7 +387,7 @@ public class ProjectManager extends AbstractManager {
     }
 
     public QueryResult<Integer> incrementRelease(String projectStr, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long projectId = getId(userId, projectStr);
 
         if (!userId.equals(projectDBAdaptor.getOwnerId(projectId))) {
@@ -463,7 +463,7 @@ public class ProjectManager extends AbstractManager {
         ParamUtils.checkObj(userId, "userId");
         ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userOfQuery = this.catalogManager.getUserManager().getId(sessionId);
+        String userOfQuery = this.catalogManager.getUserManager().getUserId(sessionId);
         if (!userOfQuery.equals(userId)) {
             // The user cannot read projects of other users.
             throw CatalogAuthorizationException.cantRead(userOfQuery, "Project", -1, userId);
@@ -488,7 +488,7 @@ public class ProjectManager extends AbstractManager {
         ParamUtils.checkObj(userId, "userId");
         ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userOfQuery = this.catalogManager.getUserManager().getId(sessionId);
+        String userOfQuery = this.catalogManager.getUserManager().getUserId(sessionId);
         if (!userOfQuery.equals(userId)) {
             // The user cannot read projects of other users.
             throw CatalogAuthorizationException.cantRead(userOfQuery, "Project", -1, userId);
@@ -513,7 +513,7 @@ public class ProjectManager extends AbstractManager {
         ParamUtils.checkObj(userId, "userId");
         ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userOfQuery = this.catalogManager.getUserManager().getId(sessionId);
+        String userOfQuery = this.catalogManager.getUserManager().getUserId(sessionId);
         if (!userOfQuery.equals(userId)) {
             // The user cannot read projects of other users.
             throw CatalogAuthorizationException.cantRead(userOfQuery, "Project", -1, userId);

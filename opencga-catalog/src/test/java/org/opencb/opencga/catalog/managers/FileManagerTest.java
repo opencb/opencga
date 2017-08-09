@@ -223,7 +223,7 @@ public class FileManagerTest extends GenericTest {
 
     private QueryResult<File> link(URI uriOrigin, String pathDestiny, String studyIdStr, ObjectMap params, String sessionId)
             throws CatalogException, IOException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyIdStr);
         return fileManager.link(uriOrigin, pathDestiny, studyId, params, sessionId);
     }
@@ -743,7 +743,7 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void renameFileTest() throws CatalogException, IOException {
-        String userId = catalogManager.getUserManager().getId(sessionIdUser);
+        String userId = catalogManager.getUserManager().getUserId(sessionIdUser);
         long studyId = catalogManager.getStudyManager().getId(userId, "user@1000G:phase1");
         QueryResult<File> queryResult1 = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file.txt", null, "description", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, true, null, null, sessionIdUser);
         new FileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils.randomString(200).getBytes()), queryResult1.first(), sessionIdUser, false, false, true);
@@ -810,7 +810,7 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void renameFileAlreadyExists() throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionIdUser);
+        String userId = catalogManager.getUserManager().getUserId(sessionIdUser);
         long studyId = catalogManager.getStudyManager().getId(userId, "user@1000G:phase1");
         catalogManager.getFileManager().createFolder(Long.toString(studyId), "analysis/", new File.FileStatus(), false, "",
                 new QueryOptions(), sessionIdUser);
@@ -1288,7 +1288,7 @@ public class FileManagerTest extends GenericTest {
     @Test
     public void deleteFolderTest() throws CatalogException, IOException {
         List<File> folderFiles = new LinkedList<>();
-        String userId = catalogManager.getUserManager().getId(sessionIdUser);
+        String userId = catalogManager.getUserManager().getUserId(sessionIdUser);
         long studyId = catalogManager.getStudyManager().getId(userId, "user@1000G:phase3");
         File folder = createBasicDirectoryFileTestEnvironment(folderFiles, studyId);
 
@@ -1321,7 +1321,7 @@ public class FileManagerTest extends GenericTest {
     @Test
     public void deleteFolderTest2() throws CatalogException, IOException {
         List<File> folderFiles = new LinkedList<>();
-        String userId = catalogManager.getUserManager().getId(sessionIdUser);
+        String userId = catalogManager.getUserManager().getUserId(sessionIdUser);
         long studyId = catalogManager.getStudyManager().getId(userId, "user@1000G:phase3");
         File folder = createBasicDirectoryFileTestEnvironment(folderFiles, studyId);
 
@@ -1356,7 +1356,7 @@ public class FileManagerTest extends GenericTest {
     @Test
     public void deleteFolderTest3() throws CatalogException, IOException {
         List<File> folderFiles = new LinkedList<>();
-        String userId = catalogManager.getUserManager().getId(sessionIdUser);
+        String userId = catalogManager.getUserManager().getUserId(sessionIdUser);
         long studyId = catalogManager.getStudyManager().getId(userId, "user@1000G:phase3");
         File folder = createBasicDirectoryFileTestEnvironment(folderFiles, studyId);
 
@@ -1393,7 +1393,7 @@ public class FileManagerTest extends GenericTest {
     @Test
     public void deleteFolderTest4() throws CatalogException, IOException {
         List<File> folderFiles = new LinkedList<>();
-        String userId = catalogManager.getUserManager().getId(sessionIdUser);
+        String userId = catalogManager.getUserManager().getUserId(sessionIdUser);
         long studyId = catalogManager.getStudyManager().getId(userId, "user@1000G:phase3");
         File folder = createBasicDirectoryFileTestEnvironment(folderFiles, studyId);
 
@@ -1438,7 +1438,7 @@ public class FileManagerTest extends GenericTest {
     @Test
     public void deleteFolderTest5() throws CatalogException, IOException {
         List<File> folderFiles = new LinkedList<>();
-        String userId = catalogManager.getUserManager().getId(sessionIdUser);
+        String userId = catalogManager.getUserManager().getUserId(sessionIdUser);
         long studyId = catalogManager.getStudyManager().getId(userId, "user@1000G:phase3");
         File folder = createBasicDirectoryFileTestEnvironment(folderFiles, studyId);
 

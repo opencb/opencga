@@ -110,7 +110,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             }
         }
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
 
         Individual individual = new Individual(0, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity,
@@ -130,7 +130,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
 
         query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
@@ -147,7 +147,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Individual> queryResult = individualDBAdaptor.get(query, options, userId);
 //        authorizationManager.filterIndividuals(userId, studyId, queryResult.getResult());
@@ -161,7 +161,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
         query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
@@ -253,13 +253,13 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             individualId = Long.parseLong(individualStr);
             individualDBAdaptor.exists(individualId);
             studyId = individualDBAdaptor.getStudyId(individualId);
-            userId = userManager.getId(sessionId);
+            userId = userManager.getUserId(sessionId);
         } else {
             if (individualStr.contains(",")) {
                 throw new CatalogException("More than one individual found");
             }
 
-            userId = userManager.getId(sessionId);
+            userId = userManager.getUserId(sessionId);
             studyId = studyManager.getId(userId, studyStr);
 
             Query query = new Query()
@@ -295,9 +295,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             individualIds = Arrays.asList(Long.parseLong(individualStr));
             individualDBAdaptor.exists(individualIds.get(0));
             studyId = individualDBAdaptor.getStudyId(individualIds.get(0));
-            userId = userManager.getId(sessionId);
+            userId = userManager.getUserId(sessionId);
         } else {
-            userId = userManager.getId(sessionId);
+            userId = userManager.getUserId(sessionId);
             studyId = studyManager.getId(userId, studyStr);
 
             List<String> individualSplit = Arrays.asList(individualStr.split(","));
@@ -319,7 +319,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
     @Override
     public QueryResult<Individual> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
 
         query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
@@ -331,7 +331,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
     @Override
     public QueryResult<Individual> count(String studyStr, Query query, String sessionId) throws CatalogException {
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
 
         query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
@@ -388,7 +388,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             individual.setKaryotypicSex(Individual.KaryotypicSex.UNKNOWN);
         }
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
 
@@ -576,7 +576,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         ParamUtils.checkObj(field, "field");
         ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
 
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
@@ -600,7 +600,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         ParamUtils.checkObj(fields, "fields");
 
-        String userId = userManager.getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
 

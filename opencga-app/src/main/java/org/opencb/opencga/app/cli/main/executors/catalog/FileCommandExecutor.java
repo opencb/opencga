@@ -353,7 +353,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
             URI uri = UriUtils.createUri(input);
             logger.debug("uri: {}", uri.toString());
 
-            String userId1 = catalogManager.getUserManager().getId(sessionId);
+            String userId1 = catalogManager.getUserManager().getUserId(sessionId);
             long studyId = catalogManager.getStudyManager().getId(userId1, filesCommandOptions.linkCommandOptions.study);
             linkQueryResultList.add(catalogManager.getFileManager().link(uri, filesCommandOptions.linkCommandOptions.path, studyId,
                     objectMap, sessionId));
