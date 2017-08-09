@@ -21,7 +21,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.CatalogAuditManager;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBAdaptor;
@@ -32,6 +31,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.acls.permissions.*;
+import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,8 +41,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static org.opencb.opencga.catalog.utils.CatalogMemberValidator.checkMembers;
 
 /**
  * Created by pfurio on 12/05/16.
@@ -475,9 +473,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public QueryResult<StudyAclEntry> getStudyAcl(String userId, long studyId, String member) throws CatalogException {
-        studyDBAdaptor.checkId(studyId);
-        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
-
         try {
             checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
         } catch (CatalogException e) {
@@ -500,19 +495,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<SampleAclEntry> getAllSampleAcls(String userId, long sampleId) throws CatalogException {
-        sampleDBAdaptor.checkId(sampleId);
-        checkSamplePermission(sampleDBAdaptor.getStudyId(sampleId), sampleId, userId, SampleAclEntry.SamplePermissions.SHARE);
+    public QueryResult<SampleAclEntry> getAllSampleAcls(long studyId, long sampleId, String userId) throws CatalogException {
+        checkSamplePermission(studyId, sampleId, userId, SampleAclEntry.SamplePermissions.SHARE);
         return aclDBAdaptor.get(sampleId, null, MongoDBAdaptorFactory.SAMPLE_COLLECTION);
     }
 
     @Override
-    public QueryResult<SampleAclEntry> getSampleAcl(String userId, long sampleId, String member) throws CatalogException {
-        sampleDBAdaptor.checkId(sampleId);
-
-        long studyId = sampleDBAdaptor.getStudyId(sampleId);
-        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
-
+    public QueryResult<SampleAclEntry> getSampleAcl(long studyId, long sampleId, String userId, String member) throws CatalogException {
         try {
             checkSamplePermission(studyId, sampleId, userId, SampleAclEntry.SamplePermissions.SHARE);
         } catch (CatalogException e) {
@@ -540,21 +529,16 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<FileAclEntry> getAllFileAcls(String userId, long fileId, boolean checkPermission) throws CatalogException {
-        fileDBAdaptor.checkId(fileId);
+    public QueryResult<FileAclEntry> getAllFileAcls(long studyId, long fileId, String userId, boolean checkPermission)
+            throws CatalogException {
         if (checkPermission) {
-            checkFilePermission(fileDBAdaptor.getStudyIdByFileId(fileId), fileId, userId, FileAclEntry.FilePermissions.SHARE);
+            checkFilePermission(studyId, fileId, userId, FileAclEntry.FilePermissions.SHARE);
         }
         return aclDBAdaptor.get(fileId, null, MongoDBAdaptorFactory.FILE_COLLECTION);
     }
 
     @Override
-    public QueryResult<FileAclEntry> getFileAcl(String userId, long fileId, String member) throws CatalogException {
-        fileDBAdaptor.checkId(fileId);
-
-        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
-        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
-
+    public QueryResult<FileAclEntry> getFileAcl(long studyId, long fileId, String userId, String member) throws CatalogException {
         try {
             checkFilePermission(studyId, fileId, userId, FileAclEntry.FilePermissions.SHARE);
         } catch (CatalogException e) {
@@ -577,20 +561,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<IndividualAclEntry> getAllIndividualAcls(String userId, long individualId) throws CatalogException {
-        individualDBAdaptor.checkId(individualId);
-        checkIndividualPermission(individualDBAdaptor.getStudyId(individualId), individualId, userId,
-                IndividualAclEntry.IndividualPermissions.SHARE);
+    public QueryResult<IndividualAclEntry> getAllIndividualAcls(long studyId, long individualId, String userId) throws CatalogException {
+        checkIndividualPermission(studyId, individualId, userId, IndividualAclEntry.IndividualPermissions.SHARE);
         return aclDBAdaptor.get(individualId, null, MongoDBAdaptorFactory.INDIVIDUAL_COLLECTION);
     }
 
     @Override
-    public QueryResult<IndividualAclEntry> getIndividualAcl(String userId, long individualId, String member) throws CatalogException {
-        individualDBAdaptor.checkId(individualId);
-
-        long studyId = individualDBAdaptor.getStudyId(individualId);
-        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
-
+    public QueryResult<IndividualAclEntry> getIndividualAcl(long studyId, long individualId, String userId, String member)
+            throws CatalogException {
         try {
             checkIndividualPermission(studyId, individualId, userId, IndividualAclEntry.IndividualPermissions.SHARE);
         } catch (CatalogException e) {
@@ -613,19 +591,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<CohortAclEntry> getAllCohortAcls(String userId, long cohortId) throws CatalogException {
-        cohortDBAdaptor.checkId(cohortId);
-        checkCohortPermission(cohortDBAdaptor.getStudyId(cohortId), cohortId, userId, CohortAclEntry.CohortPermissions.SHARE);
+    public QueryResult<CohortAclEntry> getAllCohortAcls(long studyId, long cohortId, String userId) throws CatalogException {
+        checkCohortPermission(studyId, cohortId, userId, CohortAclEntry.CohortPermissions.SHARE);
         return aclDBAdaptor.get(cohortId, null, MongoDBAdaptorFactory.COHORT_COLLECTION);
     }
 
     @Override
-    public QueryResult<CohortAclEntry> getCohortAcl(String userId, long cohortId, String member) throws CatalogException {
-        cohortDBAdaptor.checkId(cohortId);
-
-        long studyId = cohortDBAdaptor.getStudyId(cohortId);
-        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
-
+    public QueryResult<CohortAclEntry> getCohortAcl(long studyId, long cohortId, String userId, String member) throws CatalogException {
         try {
             checkCohortPermission(studyId, cohortId, userId, CohortAclEntry.CohortPermissions.SHARE);
         } catch (CatalogException e) {
@@ -648,19 +620,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<JobAclEntry> getAllJobAcls(String userId, long jobId) throws CatalogException {
-        jobDBAdaptor.checkId(jobId);
-        checkJobPermission(jobDBAdaptor.getStudyId(jobId), jobId, userId, JobAclEntry.JobPermissions.SHARE);
+    public QueryResult<JobAclEntry> getAllJobAcls(long studyId, long jobId, String userId) throws CatalogException {
+        checkJobPermission(studyId, jobId, userId, JobAclEntry.JobPermissions.SHARE);
         return aclDBAdaptor.get(jobId, null, MongoDBAdaptorFactory.JOB_COLLECTION);
     }
 
     @Override
-    public QueryResult<JobAclEntry> getJobAcl(String userId, long jobId, String member) throws CatalogException {
-        jobDBAdaptor.checkId(jobId);
-
-        long studyId = jobDBAdaptor.getStudyId(jobId);
-        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
-
+    public QueryResult<JobAclEntry> getJobAcl(long studyId, long jobId, String userId, String member) throws CatalogException {
         try {
             checkJobPermission(studyId, jobId, userId, JobAclEntry.JobPermissions.SHARE);
         } catch (CatalogException e) {
@@ -683,19 +649,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<FamilyAclEntry> getAllFamilyAcls(String userId, long familyId) throws CatalogException {
-        familyDBAdaptor.checkId(familyId);
-        checkFamilyPermission(familyDBAdaptor.getStudyId(familyId), familyId, userId, FamilyAclEntry.FamilyPermissions.SHARE);
+    public QueryResult<FamilyAclEntry> getAllFamilyAcls(long studyId, long familyId, String userId) throws CatalogException {
+        checkFamilyPermission(studyId, familyId, userId, FamilyAclEntry.FamilyPermissions.SHARE);
         return aclDBAdaptor.get(familyId, null, MongoDBAdaptorFactory.FAMILY_COLLECTION);
     }
 
     @Override
-    public QueryResult<FamilyAclEntry> getFamilyAcl(String userId, long familyId, String member) throws CatalogException {
-        familyDBAdaptor.checkId(familyId);
-
-        long studyId = familyDBAdaptor.getStudyId(familyId);
-        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
-
+    public QueryResult<FamilyAclEntry> getFamilyAcl(long studyId, long familyId, String userId, String member) throws CatalogException {
         try {
             checkFamilyPermission(studyId, familyId, userId, FamilyAclEntry.FamilyPermissions.SHARE);
         } catch (CatalogException e) {

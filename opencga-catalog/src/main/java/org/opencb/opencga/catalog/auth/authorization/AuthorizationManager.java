@@ -144,23 +144,27 @@ public interface AuthorizationManager {
     /**
      * Return all the ACLs defined for the sample.
      *
-     * @param userId   user id asking for the ACLs.
+     *
+     * @param studyId study id.
      * @param sampleId sample id.
+     * @param userId   user id asking for the ACLs.
      * @return a list of sampleAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    QueryResult<SampleAclEntry> getAllSampleAcls(String userId, long sampleId) throws CatalogException;
+    QueryResult<SampleAclEntry> getAllSampleAcls(long studyId, long sampleId, String userId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
      *
-     * @param userId   user asking for the ACL.
+     *
+     * @param studyId study id.
      * @param sampleId sample id.
+     * @param userId   user asking for the ACL.
      * @param member   member whose permissions will be retrieved.
      * @return the SampleAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<SampleAclEntry> getSampleAcl(String userId, long sampleId, String member) throws CatalogException;
+    QueryResult<SampleAclEntry> getSampleAcl(long studyId, long sampleId, String userId, String member) throws CatalogException;
 
     //------------------------- End of sample ACL ----------------------
 
@@ -170,26 +174,30 @@ public interface AuthorizationManager {
     /**
      * Return all the ACLs defined for the file.
      *
-     * @param userId user id asking for the ACLs.
+     *
+     * @param studyId study id.
      * @param fileId file id.
+     * @param userId user id asking for the ACLs.
      * @param checkPermission Boolean indicating whether to check the SHARE permission and possibly fail or not. Added to be able to
      *                        propagate permissions to children files/folders when a user with WRITE permissions links or creates but it
      *                        is not able to see all the ACLs in the parent folder.
      * @return a list of FileAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    QueryResult<FileAclEntry> getAllFileAcls(String userId, long fileId, boolean checkPermission) throws CatalogException;
+    QueryResult<FileAclEntry> getAllFileAcls(long studyId, long fileId, String userId, boolean checkPermission) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
      *
-     * @param userId user asking for the ACL.
+     *
+     * @param studyId study id.
      * @param fileId file id.
+     * @param userId user asking for the ACL.
      * @param member member whose permissions will be retrieved.
      * @return the FileAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<FileAclEntry> getFileAcl(String userId, long fileId, String member) throws CatalogException;
+    QueryResult<FileAclEntry> getFileAcl(long studyId, long fileId, String userId, String member) throws CatalogException;
 
     //------------------------- End of file ACL ----------------------
 
@@ -198,23 +206,27 @@ public interface AuthorizationManager {
     /**
      * Return all the ACLs defined for the individual.
      *
-     * @param userId       user id asking for the ACLs.
+     *
+     * @param studyId study id.
      * @param individualId individual id.
+     * @param userId       user id asking for the ACLs.
      * @return a list of IndividualAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    QueryResult<IndividualAclEntry> getAllIndividualAcls(String userId, long individualId) throws CatalogException;
+    QueryResult<IndividualAclEntry> getAllIndividualAcls(long studyId, long individualId, String userId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
      *
-     * @param userId       user asking for the ACL.
+     *
+     * @param studyId study id.
      * @param individualId individual id.
+     * @param userId       user asking for the ACL.
      * @param member       member whose permissions will be retrieved.
      * @return the IndividualAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<IndividualAclEntry> getIndividualAcl(String userId, long individualId, String member) throws CatalogException;
+    QueryResult<IndividualAclEntry> getIndividualAcl(long studyId, long individualId, String userId, String member) throws CatalogException;
 
     //------------------------- End of individual ACL ----------------------
 
@@ -223,23 +235,27 @@ public interface AuthorizationManager {
     /**
      * Return all the ACLs defined for the cohort.
      *
-     * @param userId   user id asking for the ACLs.
+     *
+     * @param studyId study id.
      * @param cohortId cohort id.
+     * @param userId   user id asking for the ACLs.
      * @return a list of CohortAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    QueryResult<CohortAclEntry> getAllCohortAcls(String userId, long cohortId) throws CatalogException;
+    QueryResult<CohortAclEntry> getAllCohortAcls(long studyId, long cohortId, String userId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
      *
-     * @param userId   user asking for the ACL.
+     *
+     * @param studyId study id.
      * @param cohortId cohort id.
+     * @param userId   user asking for the ACL.
      * @param member   member whose permissions will be retrieved.
      * @return the CohortAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<CohortAclEntry> getCohortAcl(String userId, long cohortId, String member) throws CatalogException;
+    QueryResult<CohortAclEntry> getCohortAcl(long studyId, long cohortId, String userId, String member) throws CatalogException;
 
     //------------------------- End of cohort ACL ----------------------
 
@@ -248,44 +264,52 @@ public interface AuthorizationManager {
     /**
      * Return all the ACLs defined for the job.
      *
-     * @param userId user id asking for the ACLs.
+     *
+     * @param studyId study id.
      * @param jobId  job id.
+     * @param userId user id asking for the ACLs.
      * @return a list of JobAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    QueryResult<JobAclEntry> getAllJobAcls(String userId, long jobId) throws CatalogException;
+    QueryResult<JobAclEntry> getAllJobAcls(long studyId, long jobId, String userId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
      *
-     * @param userId user asking for the ACL.
+     *
+     * @param studyId study id.
      * @param jobId  job id.
+     * @param userId user asking for the ACL.
      * @param member member whose permissions will be retrieved.
      * @return the JobAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<JobAclEntry> getJobAcl(String userId, long jobId, String member) throws CatalogException;
+    QueryResult<JobAclEntry> getJobAcl(long studyId, long jobId, String userId, String member) throws CatalogException;
 
     /**
      * Return all the ACLs defined for the family.
      *
-     * @param userId user id asking for the ACLs.
+     *
+     * @param studyId study id.
      * @param familyId family id.
+     * @param userId user id asking for the ACLs.
      * @return a list of FamilyAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the family does not have proper permissions.
      */
-    QueryResult<FamilyAclEntry> getAllFamilyAcls(String userId, long familyId) throws CatalogException;
+    QueryResult<FamilyAclEntry> getAllFamilyAcls(long studyId, long familyId, String userId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
      *
-     * @param userId user asking for the ACL.
+     *
+     * @param studyId study id.
      * @param familyId  family id.
+     * @param userId user asking for the ACL.
      * @param member member whose permissions will be retrieved.
      * @return the FamilyAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<FamilyAclEntry> getFamilyAcl(String userId, long familyId, String member) throws CatalogException;
+    QueryResult<FamilyAclEntry> getFamilyAcl(long studyId, long familyId, String userId, String member) throws CatalogException;
 
 
     List<QueryResult<StudyAclEntry>> setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)

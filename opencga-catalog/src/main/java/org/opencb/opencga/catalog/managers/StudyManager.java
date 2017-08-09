@@ -40,7 +40,6 @@ import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.catalog.models.summaries.VariableSetSummary;
 import org.opencb.opencga.catalog.models.summaries.VariableSummary;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
-import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -1081,6 +1080,7 @@ public class StudyManager extends AbstractManager {
 
         List<QueryResult<StudyAclEntry>> studyAclList = new ArrayList<>(studyIds.size());
         for (Long studyId : studyIds) {
+            checkMembers(studyId, Arrays.asList(member));
             QueryResult<StudyAclEntry> allStudyAcls = authorizationManager.getStudyAcl(userId, studyId, member);
             allStudyAcls.setId(String.valueOf(studyId));
             studyAclList.add(allStudyAcls);
@@ -1145,7 +1145,7 @@ public class StudyManager extends AbstractManager {
             members = Collections.emptyList();
         }
         for (Long studyId : studyIds) {
-            CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, studyId, members);
+            checkMembers(studyId, members);
         }
 
         switch (aclParams.getAction()) {

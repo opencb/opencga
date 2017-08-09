@@ -36,7 +36,6 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.FamilyAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -696,7 +695,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(resource.getResourceIds().size());
         for (Long familyId : resource.getResourceIds()) {
-            QueryResult<FamilyAclEntry> allFamilyAcls = authorizationManager.getAllFamilyAcls(resource.getUser(), familyId);
+            QueryResult<FamilyAclEntry> allFamilyAcls =
+                    authorizationManager.getAllFamilyAcls(resource.getStudyId(), familyId, resource.getUser());
             allFamilyAcls.setId(String.valueOf(familyId));
             familyAclList.add(allFamilyAcls);
         }
@@ -709,10 +709,12 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         ParamUtils.checkObj(member, "member");
 
         MyResourceIds resource = getIds(familyStr, studyStr, sessionId);
+        checkMembers(resource.getStudyId(), Arrays.asList(member));
 
         List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(resource.getResourceIds().size());
         for (Long familyId : resource.getResourceIds()) {
-            QueryResult<FamilyAclEntry> allFamilyAcls = authorizationManager.getFamilyAcl(resource.getUser(), familyId, member);
+            QueryResult<FamilyAclEntry> allFamilyAcls =
+                    authorizationManager.getFamilyAcl(resource.getStudyId(), familyId, resource.getUser(), member);
             allFamilyAcls.setId(String.valueOf(familyId));
             familyAclList.add(allFamilyAcls);
         }
@@ -752,7 +754,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         } else {
             members = Collections.emptyList();
         }
-        CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
+        checkMembers(resourceIds.getStudyId(), members);
 //        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
         switch (familyAclParams.getAction()) {

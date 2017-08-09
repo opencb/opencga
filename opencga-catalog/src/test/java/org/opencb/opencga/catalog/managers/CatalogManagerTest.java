@@ -716,9 +716,10 @@ public class CatalogManagerTest extends GenericTest {
 
         // Get sample permissions for those members
         for (Long sampleId : sampleIds) {
-            QueryResult<SampleAclEntry> sampleAcl = catalogManager.getAuthorizationManager().getSampleAcl("user", sampleId, "user2");
+            QueryResult<SampleAclEntry> sampleAcl =
+                    catalogManager.getAuthorizationManager().getSampleAcl(studyId, sampleId, "user", "user2");
             assertEquals(0, sampleAcl.getNumResults());
-            sampleAcl = catalogManager.getAuthorizationManager().getSampleAcl("user", sampleId, "user3");
+            sampleAcl = catalogManager.getAuthorizationManager().getSampleAcl(studyId, sampleId, "user", "user3");
             assertEquals(0, sampleAcl.getNumResults());
         }
     }
@@ -777,9 +778,10 @@ public class CatalogManagerTest extends GenericTest {
         }
 
         for (Long sampleId : sampleIds) {
-            QueryResult<SampleAclEntry> sampleAcl = catalogManager.getAuthorizationManager().getSampleAcl("user", sampleId, "user2");
+            QueryResult<SampleAclEntry> sampleAcl =
+                    catalogManager.getAuthorizationManager().getSampleAcl(studyId, sampleId, "user", "user2");
             assertEquals(0, sampleAcl.getNumResults());
-            sampleAcl = catalogManager.getAuthorizationManager().getSampleAcl("user", sampleId, "user3");
+            sampleAcl = catalogManager.getAuthorizationManager().getSampleAcl(studyId, sampleId, "user", "user3");
             assertEquals(0, sampleAcl.getNumResults());
         }
     }

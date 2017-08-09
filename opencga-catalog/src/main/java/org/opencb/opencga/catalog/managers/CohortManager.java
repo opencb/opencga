@@ -37,7 +37,6 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -707,7 +706,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(resource.getResourceIds().size());
         for (Long cohortId : resource.getResourceIds()) {
-            QueryResult<CohortAclEntry> allCohortAcls = authorizationManager.getAllCohortAcls(resource.getUser(), cohortId);
+            QueryResult<CohortAclEntry> allCohortAcls =
+                    authorizationManager.getAllCohortAcls(resource.getStudyId(), cohortId, resource.getUser());
             allCohortAcls.setId(String.valueOf(cohortId));
             cohortAclList.add(allCohortAcls);
         }
@@ -720,10 +720,12 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         ParamUtils.checkObj(member, "member");
 
         MyResourceIds resource = getIds(cohortStr, studyStr, sessionId);
+        checkMembers(resource.getStudyId(), Arrays.asList(member));
 
         List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(resource.getResourceIds().size());
         for (Long cohortId : resource.getResourceIds()) {
-            QueryResult<CohortAclEntry> allCohortAcls = authorizationManager.getCohortAcl(resource.getUser(), cohortId, member);
+            QueryResult<CohortAclEntry> allCohortAcls =
+                    authorizationManager.getCohortAcl(resource.getStudyId(), cohortId, resource.getUser(), member);
             allCohortAcls.setId(String.valueOf(cohortId));
             cohortAclList.add(allCohortAcls);
         }
@@ -763,7 +765,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         } else {
             members = Collections.emptyList();
         }
-        CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
+        checkMembers(resourceIds.getStudyId(), members);
 //        studyManager.membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
         String collectionName = MongoDBAdaptorFactory.COHORT_COLLECTION;

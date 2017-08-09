@@ -42,7 +42,6 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
-import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -696,7 +695,7 @@ public class FileManager extends ResourceManager<File> {
 
         QueryResult<File> queryResult = fileDBAdaptor.insert(file, studyId, options);
         // We obtain the permissions set in the parent folder and set them to the file or folder being created
-        QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId, false);
+        QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(studyId, parentFileId, userId, false);
         // Propagate ACLs
         if (allFileAcls.getNumResults() > 0) {
             authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getId()), allFileAcls.getResult(),
@@ -1529,7 +1528,7 @@ public class FileManager extends ResourceManager<File> {
         String parentPath = getParentPath(stringPath);
         long parentFileId = fileDBAdaptor.getId(studyId, parentPath);
         // We obtain the permissions set in the parent folder and set them to the file or folder being created
-        QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId, checkPermissions);
+        QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(studyId, parentFileId, userId, checkPermissions);
 
         URI completeURI = Paths.get(studyURI).resolve(path).toUri();
 
@@ -1698,7 +1697,7 @@ public class FileManager extends ResourceManager<File> {
                 String parentPath = getParentPath(externalPathDestinyStr);
                 long parentFileId = fileDBAdaptor.getId(studyId, parentPath);
                 // We obtain the permissions set in the parent folder and set them to the file or folder being created
-                QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId, true);
+                QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(studyId, parentFileId, userId, true);
 
                 File subfile = new File(-1, externalPathDestiny.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                         File.Bioformat.NONE, normalizedUri, externalPathDestinyStr, TimeUtils.getTime(), TimeUtils.getTime(), description,
@@ -1765,7 +1764,7 @@ public class FileManager extends ResourceManager<File> {
                             // We obtain the permissions set in the parent folder and set them to the file or folder being created
                             QueryResult<FileAclEntry> allFileAcls;
                             try {
-                                allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId, true);
+                                allFileAcls = authorizationManager.getAllFileAcls(studyId, parentFileId, userId, true);
                             } catch (CatalogException e) {
                                 throw new RuntimeException(e);
                             }
@@ -1815,7 +1814,7 @@ public class FileManager extends ResourceManager<File> {
                             // We obtain the permissions set in the parent folder and set them to the file or folder being created
                             QueryResult<FileAclEntry> allFileAcls;
                             try {
-                                allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId, true);
+                                allFileAcls = authorizationManager.getAllFileAcls(studyId, parentFileId, userId, true);
                             } catch (CatalogException e) {
                                 throw new RuntimeException(e);
                             }
@@ -2600,7 +2599,8 @@ public class FileManager extends ResourceManager<File> {
 
         List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceIds().size());
         for (Long fileId : resource.getResourceIds()) {
-            QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(resource.getUser(), fileId, true);
+            QueryResult<FileAclEntry> allFileAcls =
+                    authorizationManager.getAllFileAcls(resource.getStudyId(), fileId, resource.getUser(), true);
             allFileAcls.setId(String.valueOf(fileId));
             fileAclList.add(allFileAcls);
         }
@@ -2613,10 +2613,12 @@ public class FileManager extends ResourceManager<File> {
         ParamUtils.checkObj(member, "member");
 
         MyResourceIds resource = getIds(fileStr, studyStr, sessionId);
+        checkMembers(resource.getStudyId(), Arrays.asList(member));
 
         List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceIds().size());
         for (Long fileId : resource.getResourceIds()) {
-            QueryResult<FileAclEntry> allFileAcls = authorizationManager.getFileAcl(resource.getUser(), fileId, member);
+            QueryResult<FileAclEntry> allFileAcls =
+                    authorizationManager.getFileAcl(resource.getStudyId(), fileId, resource.getUser(), member);
             allFileAcls.setId(String.valueOf(fileId));
             fileAclList.add(allFileAcls);
         }
@@ -2678,7 +2680,7 @@ public class FileManager extends ResourceManager<File> {
         } else {
             members = Collections.emptyList();
         }
-        CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
+        checkMembers(resourceIds.getStudyId(), members);
 //        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
         String collectionName = MongoDBAdaptorFactory.FILE_COLLECTION;

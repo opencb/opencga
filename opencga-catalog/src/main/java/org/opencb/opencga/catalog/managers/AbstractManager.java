@@ -25,18 +25,17 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -181,6 +180,49 @@ public abstract class AbstractManager {
         }
 
         return studyIds;
+    }
+
+    /**
+     * Checks if the list of members are all valid.
+     *
+     * The "members" can be:
+     *  - '*' referring to all the users.
+     *  - 'anonymous' referring to the anonymous user.
+     *  - '@{groupId}' referring to a {@link Group}.
+     *  - '{userId}' referring to a specific user.
+     * @param studyId studyId
+     * @param members List of members
+     * @throws CatalogDBException CatalogDBException
+     */
+    protected void checkMembers(long studyId, List<String> members) throws CatalogDBException {
+        for (String member : members) {
+            checkMember(studyId, member);
+        }
+    }
+
+    /**
+     * Checks if the member is valid.
+     *
+     * The "member" can be:
+     *  - '*' referring to all the users.
+     *  - '@{groupId}' referring to a {@link Group}.
+     *  - '{userId}' referring to a specific user.
+     * @param studyId studyId
+     * @param member member
+     * @throws CatalogDBException CatalogDBException
+     */
+    protected void checkMember(long studyId, String member) throws CatalogDBException {
+        if (member.equals("*")) {
+            return;
+        } else if (member.startsWith("@")) {
+            QueryResult<Group> queryResult = studyDBAdaptor.getGroup(studyId, member,
+                    Collections.emptyList());
+            if (queryResult.getNumResults() == 0) {
+                throw CatalogDBException.idNotFound("Group", member);
+            }
+        } else {
+            userDBAdaptor.checkId(member);
+        }
     }
 
     public static class MyResourceId {

@@ -38,7 +38,6 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -813,7 +812,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         List<QueryResult<IndividualAclEntry>> individualAclList = new ArrayList<>(resource.getResourceIds().size());
         for (Long individualId : resource.getResourceIds()) {
-            QueryResult<IndividualAclEntry> allIndividualAcls = authorizationManager.getAllIndividualAcls(resource.getUser(), individualId);
+            QueryResult<IndividualAclEntry> allIndividualAcls =
+                    authorizationManager.getAllIndividualAcls(resource.getStudyId(), individualId, resource.getUser());
             allIndividualAcls.setId(String.valueOf(individualId));
             individualAclList.add(allIndividualAcls);
         }
@@ -826,11 +826,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         ParamUtils.checkObj(member, "member");
 
         MyResourceIds resource = getIds(individualStr, studyStr, sessionId);
+        checkMembers(resource.getStudyId(), Arrays.asList(member));
 
         List<QueryResult<IndividualAclEntry>> individualAclList = new ArrayList<>(resource.getResourceIds().size());
         for (Long individualId : resource.getResourceIds()) {
             QueryResult<IndividualAclEntry> allIndividualAcls =
-                    authorizationManager.getIndividualAcl(resource.getUser(), individualId, member);
+                    authorizationManager.getIndividualAcl(resource.getStudyId(), individualId, resource.getUser(), member);
             allIndividualAcls.setId(String.valueOf(individualId));
             individualAclList.add(allIndividualAcls);
         }
@@ -892,7 +893,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         } else {
             members = Collections.emptyList();
         }
-        CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
+        checkMembers(resourceIds.getStudyId(), members);
 //        studyManager.membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
         String collectionName = MongoDBAdaptorFactory.INDIVIDUAL_COLLECTION;

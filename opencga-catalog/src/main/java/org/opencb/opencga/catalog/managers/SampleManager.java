@@ -35,7 +35,6 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -748,7 +747,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(resource.getResourceIds().size());
         for (Long sampleId : resource.getResourceIds()) {
-            QueryResult<SampleAclEntry> allSampleAcls = authorizationManager.getAllSampleAcls(resource.getUser(), sampleId);
+            QueryResult<SampleAclEntry> allSampleAcls =
+                    authorizationManager.getAllSampleAcls(resource.getStudyId(), sampleId, resource.getUser());
             allSampleAcls.setId(String.valueOf(sampleId));
             sampleAclList.add(allSampleAcls);
         }
@@ -761,10 +761,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         ParamUtils.checkObj(member, "member");
 
         MyResourceIds resource = getIds(sampleStr, studyStr, sessionId);
+        checkMembers(resource.getStudyId(), Arrays.asList(member));
 
         List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(resource.getResourceIds().size());
         for (Long sampleId : resource.getResourceIds()) {
-            QueryResult<SampleAclEntry> allSampleAcls = authorizationManager.getSampleAcl(resource.getUser(), sampleId, member);
+            QueryResult<SampleAclEntry> allSampleAcls =
+                    authorizationManager.getSampleAcl(resource.getStudyId(), sampleId, resource.getUser(), member);
             allSampleAcls.setId(String.valueOf(sampleId));
             sampleAclList.add(allSampleAcls);
         }
@@ -865,7 +867,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         } else {
             members = Collections.emptyList();
         }
-        CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
+        checkMembers(resourceIds.getStudyId(), members);
 //        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
         String collectionName = MongoDBAdaptorFactory.SAMPLE_COLLECTION;

@@ -42,7 +42,6 @@ import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -531,7 +530,7 @@ public class JobManager extends ResourceManager<Job> {
 
         List<QueryResult<JobAclEntry>> jobAclList = new ArrayList<>(resource.getResourceIds().size());
         for (Long jobId : resource.getResourceIds()) {
-            QueryResult<JobAclEntry> allJobAcls = authorizationManager.getAllJobAcls(resource.getUser(), jobId);
+            QueryResult<JobAclEntry> allJobAcls = authorizationManager.getAllJobAcls(resource.getStudyId(), jobId, resource.getUser());
             allJobAcls.setId(String.valueOf(jobId));
             jobAclList.add(allJobAcls);
         }
@@ -544,10 +543,11 @@ public class JobManager extends ResourceManager<Job> {
         ParamUtils.checkObj(member, "member");
 
         MyResourceIds resource = getIds(jobStr, studyStr, sessionId);
+        checkMembers(resource.getStudyId(), Arrays.asList(member));
 
         List<QueryResult<JobAclEntry>> jobAclList = new ArrayList<>(resource.getResourceIds().size());
         for (Long jobId : resource.getResourceIds()) {
-            QueryResult<JobAclEntry> allJobAcls = authorizationManager.getJobAcl(resource.getUser(), jobId, member);
+            QueryResult<JobAclEntry> allJobAcls = authorizationManager.getJobAcl(resource.getStudyId(), jobId, resource.getUser(), member);
             allJobAcls.setId(String.valueOf(jobId));
             jobAclList.add(allJobAcls);
         }
@@ -587,7 +587,7 @@ public class JobManager extends ResourceManager<Job> {
         } else {
             members = Collections.emptyList();
         }
-        CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
+        checkMembers(resourceIds.getStudyId(), members);
 //        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
         String collectionName = MongoDBAdaptorFactory.JOB_COLLECTION;
