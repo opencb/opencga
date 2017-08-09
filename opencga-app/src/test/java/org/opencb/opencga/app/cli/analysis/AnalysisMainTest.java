@@ -77,7 +77,7 @@ public class AnalysisMainTest {
 
         User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.FULL, null).first();
 
-        sessionId = catalogManager.getUserManager().login(userId, "user", "localhost").first().getId();
+        sessionId = catalogManager.getUserManager().login(userId, "user");
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
 

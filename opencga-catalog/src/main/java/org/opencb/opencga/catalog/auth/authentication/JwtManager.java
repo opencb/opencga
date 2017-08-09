@@ -17,18 +17,12 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.*;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Session;
-import org.opencb.opencga.catalog.models.Session.Type;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
-import java.util.Collections;
 import java.util.Date;
 
 public class JwtManager {
@@ -39,13 +33,35 @@ public class JwtManager {
     private Long expiration;
     private Logger logger;
 
-    public JwtManager(Configuration configuration) {
+    JwtManager(Configuration configuration) {
         this.configuration = configuration;
 
         this.secretKey = this.configuration.getAdmin().getSecretKey();
         this.expiration = this.configuration.getAuthentication().getExpiration();
 
         logger = LoggerFactory.getLogger(JwtManager.class);
+    }
+
+    String getSecretKey() {
+        return secretKey;
+    }
+
+    JwtManager setSecretKey(String secretKey) {
+        this.secretKey = secretKey;
+        return this;
+    }
+
+    Long getExpiration() {
+        return expiration;
+    }
+
+    JwtManager setExpiration(Long expiration) {
+        this.expiration = expiration;
+        return this;
+    }
+
+    String createJWTToken(String userId) {
+        return createJWTToken(userId, expiration);
     }
 
     String createJWTToken(String userId, long expiration) {
@@ -70,7 +86,23 @@ public class JwtManager {
         return jwt;
     }
 
-    Jws<Claims> parseClaims(String jwtKey) throws CatalogAuthenticationException {
+    void validateToken(String jwtKey) throws CatalogAuthenticationException {
+        parseClaims(jwtKey);
+    }
+
+    String getAudience(String jwtKey) throws CatalogAuthenticationException {
+        return parseClaims(jwtKey).getBody().getAudience();
+    }
+
+    String getUser(String jwtKey) throws CatalogAuthenticationException {
+        return parseClaims(jwtKey).getBody().getSubject();
+    }
+
+    Date getExpiration(String jwtKey) throws CatalogAuthenticationException {
+        return parseClaims(jwtKey).getBody().getExpiration();
+    }
+
+    private Jws<Claims> parseClaims(String jwtKey) throws CatalogAuthenticationException {
         try {
             return Jwts.parser().setSigningKey(this.secretKey.getBytes("UTF-8")).parseClaimsJws(jwtKey);
         } catch (ExpiredJwtException e) {
@@ -82,44 +114,5 @@ public class JwtManager {
         }
     }
 
-    public String getUserId(String jwtKey) throws CatalogAuthenticationException {
-        return parseClaims(jwtKey).getBody().getSubject();
-    }
 
-    public QueryResult<Session> createToken(String userId, String ip, Type type) {
-        QueryResult<Session> result = new QueryResult<>();
-        String jwtToken;
-
-        if (type.equals(Type.SYSTEM)) {
-            jwtToken = this.createJWTToken(userId, 0L);
-        } else {
-            jwtToken = this.createJWTToken(userId, this.getExpiration());
-        }
-
-        Session session = new Session(jwtToken, ip, TimeUtils.getTime(), type);
-        result.setResult(Collections.singletonList(session));
-        return result;
-    }
-
-    public String getSecretKey() {
-        return this.secretKey;
-    }
-
-    public void setSecretKey(String secretKey) {
-        this.secretKey = secretKey;
-    }
-
-    public Long getExpiration() {
-        return this.expiration;
-    }
-
-    public void setExpiration(Long expiration) {
-        this.expiration = expiration;
-    }
-
-    public void clearToken(String userId, String sessionId) throws CatalogException {
-    }
-
-    public void checkAdminSession(String sessionId) throws CatalogException {
-    }
 }

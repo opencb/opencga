@@ -106,8 +106,7 @@ public class UserManager extends AbstractManager {
             }
         }
 
-        ADMIN_TOKEN =  authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken("admin", "", Session.Type.SYSTEM).first()
-                .getId();
+        ADMIN_TOKEN =  authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createNonExpiringToken("admin");
     }
 
     static void checkEmail(String email) throws CatalogException {
@@ -241,10 +240,10 @@ public class UserManager extends AbstractManager {
     public LdapImportResult importFromExternalAuthOrigin(String authOrigin, String accountType, ObjectMap params, String adminPassword)
             throws CatalogException {
         // Validate the admin password.
-        QueryResult<Session> admin;
         try {
-            admin = login("admin", adminPassword, "localhost");
+            login("admin", adminPassword);
         } catch (IOException e) {
+            // We build an LdapImportResult that will contain the error message + the input information provided.
             logger.error(e.getMessage(), e);
             LdapImportResult retResult = new LdapImportResult();
             LdapImportResult.Input input = new LdapImportResult.Input(params.getAsStringList("users"), params.getString("group"),
@@ -584,10 +583,9 @@ public class UserManager extends AbstractManager {
         }
     }
 
-    public QueryResult<Session> login(String userId, String password, String sessionIp) throws CatalogException, IOException {
+    public String login(String userId, String password) throws CatalogException, IOException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(password, "password");
-        ParamUtils.checkParameter(sessionIp, "sessionIp");
 
         String authId;
         QueryResult<User> user = null;
@@ -658,20 +656,27 @@ public class UserManager extends AbstractManager {
             authenticationManagerMap.get(authId).authenticate(userId, password, true);
         }
 
-        QueryResult<Session> sessionTokenQueryResult =
-                authenticationManagerMap.get(authId).createToken(userId, sessionIp, Session.Type.USER);
+        String token = authenticationManagerMap.get(authId).createToken(userId);
 
         auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.login, AuditRecord.Magnitude.low, userId, userId, null,
-                sessionTokenQueryResult.first(), "User successfully logged in", null);
+                new ObjectMap("token", token), "User successfully logged in", null);
 
-        return sessionTokenQueryResult;
+        return token;
     }
 
-    public QueryResult<Session> refreshToken(String userId, String token, String sessionIp) throws CatalogException {
+    /**
+     * Create a new token if the token provided corresponds to the user and it is not expired yet.
+     *
+     * @param userId user id to whom the token belongs to.
+     * @param token active token.
+     * @return a new token with the default expiration updated.
+     * @throws CatalogException if the token does not correspond to the user or the token is expired.
+     */
+    public String refreshToken(String userId, String token) throws CatalogException {
         if (!userId.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
             throw new CatalogException("Cannot refresh token. The token received does not correspond to " + userId);
         }
-        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(userId, sessionIp, Session.Type.USER);
+        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(userId);
     }
 
     /**
@@ -682,9 +687,9 @@ public class UserManager extends AbstractManager {
      * @return an objectMap containing the new sessionId
      * @throws CatalogException if the password is not correct or the userId does not exist.
      */
-    public QueryResult<Session> getSystemTokenForUser(String userId, String adminCredentials) throws CatalogException {
+    public String getSystemTokenForUser(String userId, String adminCredentials) throws CatalogException {
         authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", adminCredentials, true);
-        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(userId, "localhost", Session.Type.SYSTEM);
+        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createNonExpiringToken(userId);
     }
 
     /**

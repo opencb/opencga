@@ -25,7 +25,10 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.Account;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Project;
+import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -94,20 +97,17 @@ public class UserWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Get identified and gain access to the system [DEPRECATED]" , hidden = true)
     public Response login(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                           @ApiParam(value = "User password", required = true) @QueryParam("password") String password) {
-        sessionIp = httpServletRequest.getRemoteAddr();
-        QueryResult<Session> queryResult;
+//        sessionIp = httpServletRequest.getRemoteAddr();
         try {
             queryOptions.remove("password"); //Remove password from query options
 
-            queryResult = catalogManager.getUserManager().login(userId, password, sessionIp);
-            ObjectMap sessionMap = new ObjectMap();
-            sessionMap.append("sessionId", queryResult.first().getId())
-                    .append("id", queryResult.first().getId())
-                    .append("ip", queryResult.first().getIp())
-                    .append("date", queryResult.first().getDate());
+            String token = catalogManager.getUserManager().login(userId, password);
+            ObjectMap sessionMap = new ObjectMap()
+                    .append("sessionId", token)
+                    .append("id", token)
+                    .append("token", token);
 
-            QueryResult<ObjectMap> login = new QueryResult<>("You successfully logged in", queryResult.getDbTime(), 1, 1,
-                    queryResult.getWarningMsg(), queryResult.getErrorMsg(), Arrays.asList(sessionMap));
+            QueryResult<ObjectMap> login = new QueryResult<>("You successfully logged in", 0, 1, 1, "", "", Arrays.asList(sessionMap));
 
             return createOkResponse(login);
         } catch (Exception e) {
@@ -123,26 +123,24 @@ public class UserWSServer extends OpenCGAWSServer {
                     + "a new token will be provided extending the expiration time.")
     public Response loginPost(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                               @ApiParam(value = "JSON containing the parameter 'password'") Map<String, String> map) {
-        sessionIp = httpServletRequest.getRemoteAddr();
-        QueryResult<Session> queryResult;
+//        sessionIp = httpServletRequest.getRemoteAddr();
         try {
+            String token;
             if (map.containsKey("password")) {
                 String password = map.get("password");
-                queryResult = catalogManager.getUserManager().login(userId, password, sessionIp);
+                token = catalogManager.getUserManager().login(userId, password);
             } else if (StringUtils.isNotEmpty(sessionId)) {
-                queryResult = catalogManager.getUserManager().refreshToken(userId, sessionId, sessionIp);
+                token = catalogManager.getUserManager().refreshToken(userId, sessionId);
             } else {
                 throw new Exception("Neither a password nor a token was provided.");
             }
 
-            ObjectMap sessionMap = new ObjectMap();
-            sessionMap.append("sessionId", queryResult.first().getId())
-                    .append("id", queryResult.first().getId())
-                    .append("ip", queryResult.first().getIp())
-                    .append("date", queryResult.first().getDate());
+            ObjectMap sessionMap = new ObjectMap()
+                    .append("sessionId", token)
+                    .append("id", token)
+                    .append("token", token);
 
-            QueryResult<ObjectMap> login = new QueryResult<>("You successfully logged in", queryResult.getDbTime(), 1, 1, queryResult
-                    .getWarningMsg(), queryResult.getErrorMsg(), Arrays.asList(sessionMap));
+            QueryResult<ObjectMap> login = new QueryResult<>("You successfully logged in", 0, 1, 1, "", "", Arrays.asList(sessionMap));
 
             return createOkResponse(login);
         } catch (Exception e) {

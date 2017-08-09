@@ -16,12 +16,9 @@
 
 package org.opencb.opencga.catalog.auth.authentication;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.Configuration;
@@ -53,33 +50,31 @@ public class JwtSessionManagerTest extends GenericTest {
 
     @Test
     public void testParseClaims() throws Exception {
-        Jws<Claims> claims = jwtSessionManager.parseClaims(jwtToken);
-        assertEquals(claims.getBody().getSubject(), "testUser");
+        assertEquals(jwtSessionManager.getUser(jwtToken), "testUser");
     }
 
     @Test(expected = CatalogAuthenticationException.class)
     public void testExpiredToken() throws CatalogAuthenticationException {
         String expiredToken = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJPcGVuQ0dBIEF1dGhlbnRpY2F0aW9uIiwiZXhwIjoxNDk2NzQ3MjI2LCJ1c2VySWQiOiJ0ZXN0VXNlciIsInR5cGUiOiJVU0VSIiwiaXAiOiIxNzIuMjAuNTYuMSJ9.cZbGHh46tP88QDATv4pwWODRf49tG9N2H_O8lXyjjIc";
-        jwtSessionManager.parseClaims(expiredToken);
+        jwtSessionManager.validateToken(expiredToken);
     }
 
     @Test(expected = CatalogAuthenticationException.class)
     public void testInvalidToken() throws CatalogAuthenticationException {
         String invalidToken = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJPcGVuQ0dBIEF1dGhlbnRpY2F0aW9uIiwiZXhwIjoxNDk2NzQ3MjI2LCJ1c2VySWQiOiJ0ZXN0VXNlciIsInR5cGUiOiJVU0VSIiwiaXAiOiIxNzIuMjAuNTYuMSJ9.cZbGHh46tP88QDATv4pwWODRf49tG9N2H_O8lXyjj";
-        jwtSessionManager.parseClaims(invalidToken);
+        jwtSessionManager.validateToken(invalidToken);
     }
 
     @Test(expected = CatalogAuthenticationException.class)
     public void testInvalidSecretKey() throws CatalogAuthenticationException {
         jwtSessionManager.setSecretKey("wrongKey");
-        jwtSessionManager.parseClaims(jwtToken);
+        jwtSessionManager.validateToken(jwtToken);
     }
 
     @Test
     public void testNonExpiringToken() throws CatalogException {
         String nonExpiringToken = jwtSessionManager.createJWTToken("System", -1L);
-        Jws<Claims> claims = jwtSessionManager.parseClaims(nonExpiringToken);
-        assertEquals(claims.getBody().getSubject(), "System");
-        assertNull(claims.getBody().getExpiration());
+        assertEquals(jwtSessionManager.getUser(nonExpiringToken), "System");
+        assertNull(jwtSessionManager.getExpiration(nonExpiringToken));
     }
 }

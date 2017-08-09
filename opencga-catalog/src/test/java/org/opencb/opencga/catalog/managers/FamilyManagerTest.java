@@ -62,7 +62,7 @@ public class FamilyManagerTest extends GenericTest {
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
 
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null);
-        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD, "127.0.0.1").first().getId();
+        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
 
         long projectId = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();

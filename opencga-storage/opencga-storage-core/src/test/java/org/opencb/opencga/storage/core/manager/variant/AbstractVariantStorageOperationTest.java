@@ -144,7 +144,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         policies.setUserCreation(Policies.UserCreation.ALWAYS);
 
         User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.FULL, null).first();
-        sessionId = catalogManager.getUserManager().login(userId, "user", "localhost").first().getId();
+        sessionId = catalogManager.getUserManager().login(userId, "user");
         projectAlias = "p1";
         projectId = catalogManager.getProjectManager().create(projectAlias, projectAlias, "Project 1", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();

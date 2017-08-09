@@ -74,7 +74,7 @@ public final class CatalogDemo {
             String password = id + "_pass";
             String email = id + "@gmail.com";
             catalogManager.getUserManager().create(id, name, email, password, "organization", 2000L, Account.FULL, null);
-            userSessions.put(id, catalogManager.getUserManager().login(id, password, "localhost").first().getId());
+            userSessions.put(id, catalogManager.getUserManager().login(id, password));
         }
 
         // Create one project per user

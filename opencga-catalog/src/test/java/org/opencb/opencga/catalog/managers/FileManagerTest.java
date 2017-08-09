@@ -126,9 +126,9 @@ public class FileManagerTest extends GenericTest {
         catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null);
         catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.FULL, null);
 
-        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD, "127.0.0.1").first().getId();
-        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD, "127.0.0.1").first().getId();
-        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD, "127.0.0.1").first().getId();
+        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
+        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD);
+        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD);
 
         projectId = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens", null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
         Project project2 = catalogManager.getProjectManager().create("Project Management Project", "pmp", "life art intelligent system", "myorg", "Homo sapiens", null, null, "GRCh38", new QueryOptions(), sessionIdUser2).first();

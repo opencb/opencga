@@ -147,7 +147,7 @@ public class OpenCGAClient {
         QueryResponse<ObjectMap> login = userClient.login(user, password);
         String sessionId;
         if (login.allResultsSize() == 1) {
-            sessionId = login.firstResult().getString("sessionId");
+            sessionId = login.firstResult().getString("token");
 
             if (this.sessionId != null) { // If the latest sessionId is still active
                 try {

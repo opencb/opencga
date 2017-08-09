@@ -123,9 +123,9 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null);
         catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.FULL, null);
 
-        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD, "127.0.0.1").first().getId();
-        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD, "127.0.0.1").first().getId();
-        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD, "127.0.0.1").first().getId();
+        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
+        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD);
+        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD);
 
         project1 = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
@@ -262,8 +262,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testAdminUserExists() throws Exception {
-        QueryResult<Session> login = catalogManager.getUserManager().login("admin", "admin", "localhost");
-        assertEquals("admin" ,catalogManager.getUserManager().getId(login.first().getId()));
+        String token = catalogManager.getUserManager().login("admin", "admin");
+        assertEquals("admin" ,catalogManager.getUserManager().getId(token));
     }
 
     @Test
@@ -275,26 +275,11 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testLogin() throws Exception {
-        catalogManager.getUserManager().login("user", PASSWORD, "127.0.0.1");
+        catalogManager.getUserManager().login("user", PASSWORD);
 
         thrown.expect(CatalogAuthenticationException.class);
         thrown.expectMessage(allOf(containsString("Incorrect"), containsString("password")));
-        catalogManager.getUserManager().login("user", "fakePassword", "127.0.0.1");
-    }
-
-    @Test
-    public void dummyLogin() throws Exception {
-        QueryResult<Session> user = catalogManager.getUserManager().login("user", PASSWORD, "127.0.0.1");
-
-        ObjectMap sessionMap = new ObjectMap();
-        sessionMap.append("id", user.first().getId()).append("sessionId", user.first().getId()).append("ip", user.first().getIp())
-                .append("date", user.first().getDate());
-
-        QueryResult<ObjectMap> login = new QueryResult<>("login", user.getDbTime(), 1, 1, user.getWarningMsg(), user.getErrorMsg(),
-                Arrays.asList(sessionMap));
-
-        System.out.println(login);
-
+        catalogManager.getUserManager().login("user", "fakePassword");
     }
 
     @Test
@@ -348,14 +333,14 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals(userPost.getEmail(), newEmail);
         assertEquals(null, userPost.getPassword());
 
-        catalogManager.getUserManager().login("user", newPassword, "localhost");
+        catalogManager.getUserManager().login("user", newPassword);
         for (Map.Entry<String, Object> entry : attributes.entrySet()) {
             assertEquals(userPost.getAttributes().get(entry.getKey()), entry.getValue());
         }
 
         catalogManager.getUserManager().changePassword("user", newPassword, PASSWORD);
         new QueryResult("changePassword", 0, 0, 0, "", "", Collections.emptyList());
-        catalogManager.getUserManager().login("user", PASSWORD, "localhost");
+        catalogManager.getUserManager().login("user", PASSWORD);
 
         try {
             params = new ObjectMap();
@@ -397,17 +382,17 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.getStudyManager().syncGroupWith(Long.toString(studyId), "ldap", new Group.Sync("ldap", "bio"), sessionIdUser);
         catalogManager.getStudyManager().updateAcl(Long.toString(studyId), "@ldap", new Study.StudyAclParams("",
                 AclParams.Action.SET, "view_only"), sessionIdUser);
-        QueryResult<Session> login = catalogManager.getUserManager().login("user", "password", "hh");
+        String token = catalogManager.getUserManager().login("user", "password");
 
         QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), QueryOptions.empty(),
-                login.first().getId());
+                token);
         assertEquals(1, studyQueryResult.getNumResults());
 
         // We remove the permissions for group ldap
         catalogManager.getStudyManager().updateAcl(Long.toString(studyId), "@ldap", new Study.StudyAclParams("",
                 AclParams.Action.RESET, ""), sessionIdUser);
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.getStudyManager().get(String.valueOf((Long) studyId), QueryOptions.empty(), login.first().getId());
+        catalogManager.getStudyManager().get(String.valueOf((Long) studyId), QueryOptions.empty(), token);
     }
 
     @Ignore
@@ -1623,9 +1608,8 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.getStudyManager().updateAcl("user@1000G:phase1", "dummy",
                 new Study.StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_STUDY.name(), AclParams.Action.SET, ""), sessionIdUser);
 
-        QueryResult<Session> login = catalogManager.getUserManager().login("dummy", "dummy", "oo");
-        QueryResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("dummy", QueryOptions.empty(),
-                login.first().getId());
+        String token = catalogManager.getUserManager().login("dummy", "dummy");
+        QueryResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("dummy", QueryOptions.empty(), token);
         assertEquals(1, queryResult.getNumResults());
 
         catalogManager.getStudyManager().updateAcl("user@1000G:phase1", "*",

@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.slf4j.LoggerFactory;
 
 import java.security.NoSuchAlgorithmException;
 
@@ -45,6 +46,8 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
 
         this.userDBAdaptor = dbAdaptorFactory.getCatalogUserDBAdaptor();
         this.metaDBAdaptor = dbAdaptorFactory.getCatalogMetaDBAdaptor();
+
+        this.logger = LoggerFactory.getLogger(CatalogAuthenticationManager.class);
     }
 
     public static String cypherPassword(String password) throws CatalogException {
@@ -63,7 +66,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
         if (userId.equals("admin")) {
             storedPassword = metaDBAdaptor.getAdminPassword();
             try {
-                validSessionId = jwtManager.getUserId(password).equals(userId);
+                validSessionId = jwtManager.getUser(password).equals(userId);
             } catch (CatalogAuthenticationException e) {
                 validSessionId = false;
             }
