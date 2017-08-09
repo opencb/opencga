@@ -33,7 +33,6 @@ import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
-import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
@@ -70,17 +69,9 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Create a new study", response = Study.class)
     public Response createStudyPOST(@ApiParam(value = "Project id or alias", required = true) @QueryParam("projectId") String projectIdStr,
                                     @ApiParam(value="study", required = true) StudyParams study) {
-        long projectId;
         try {
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            projectId = catalogManager.getProjectManager().getId(userId, projectIdStr);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-        logger.debug("study = {}", study);
-        try {
-            return createOkResponse(catalogManager.getStudyManager().create(projectId, study.name, study.alias, study.type, null, study
-                    .description, null, null, null, null, null, study.stats, study.attributes, queryOptions, sessionId));
+            return createOkResponse(catalogManager.getStudyManager().create(projectIdStr, study.name, study.alias, study
+                    .type, null, study.description, null, null, null, null, null, study.stats, study.attributes, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -101,7 +92,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     })
     public Response getAllStudies(
             @Deprecated @ApiParam(value = "Project id or alias") @QueryParam("projectId") String projectId,
-            @Deprecated @ApiParam(value = "Project id or alias", required = true) @QueryParam("project") String projectStr,
+            @ApiParam(value = "Project id or alias", required = true) @QueryParam("project") String projectStr,
             @ApiParam(value = "Study name") @QueryParam("name") String name,
             @ApiParam(value = "Study alias") @QueryParam("alias") String alias,
             @ApiParam(value = "Type of study: CASE_CONTROL, CASE_SET...") @QueryParam("type") String type,
@@ -115,41 +106,12 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             if (StringUtils.isNotEmpty(projectId) && StringUtils.isEmpty(projectStr)) {
                 projectStr = projectId;
+                query.remove(StudyDBAdaptor.QueryParams.PROJECT_ID.key());
             }
 
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 
-            if (projectId != null) {
-                String userId = catalogManager.getUserManager().getId(sessionId);
-                query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), catalogManager.getProjectManager().getId(userId, projectStr));
-            }
-            QueryResult<Study> queryResult = catalogManager.getStudyManager().get(query, queryOptions, sessionId);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @POST
-    @Path("/search")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Search studies", position = 2, hidden = true, response = Study[].class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
-                    example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
-                    example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer",
-                    paramType = "query"),
-            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
-    })
-    public Response getAllStudiesByPost(@ApiParam(value="studies", required = true) Query query,
-                                        @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
-        try {
-            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
-
-            QueryResult<Study> queryResult = catalogManager.getStudyManager().get(query, queryOptions, sessionId);
+            QueryResult<Study> queryResult = catalogManager.getStudyManager().get(projectStr, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -194,13 +156,15 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response info(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr) {
         try {
-            List<QueryResult<Study>> queryResults = new LinkedList<>();
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
-            for (Long studyId : studyIds) {
-                queryResults.add(catalogManager.getStudyManager().get(String.valueOf(studyId), queryOptions, sessionId));
+            QueryResult<Study> studyQueryResult = studyManager.get(studyStr, queryOptions, sessionId);
+            // We parse the query result to create one queryresult per study
+            List<QueryResult<Study>> queryResultList = new ArrayList<>(studyQueryResult.getNumResults());
+            for (Study study : studyQueryResult.getResult()) {
+                queryResultList.add(new QueryResult<>(study.getName() + "-" + study.getId(), studyQueryResult.getDbTime(), 1, -1,
+                        studyQueryResult.getWarningMsg(), studyQueryResult.getErrorMsg(), Arrays.asList(study)));
             }
-            return createOkResponse(queryResults);
+
+            return createOkResponse(queryResultList);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -213,13 +177,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response summary(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr) {
         try {
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
-            List<QueryResult<StudySummary>> queryResults = new LinkedList<>();
-            for (Long studyId : studyIds) {
-                queryResults.add(catalogManager.getStudyManager().getSummary(studyId, sessionId, queryOptions));
-            }
-            return createOkResponse(queryResults);
+            return createOkResponse(studyManager.getSummary(studyStr, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -331,259 +289,6 @@ public class StudyWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-    }
-
-    @Deprecated
-    @GET
-    @Path("/{study}/variants")
-    @ApiOperation(value = "[DEPRECATED]: use analysis/variant/query instead", position = 10, hidden = true, response = Variant[].class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
-                    example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
-                    example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer",
-                    paramType = "query"),
-            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-//            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
-    })
-    public Response getVariants(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-            required = true) @PathParam("study") String studyStr,
-                                @ApiParam(value = "List of variant ids") @QueryParam("ids") String ids,
-                                @ApiParam(value = "List of regions: {chr}:{start}-{end}") @QueryParam("region") String region,
-                                @ApiParam(value = "List of chromosomes") @QueryParam("chromosome") String chromosome,
-                                @ApiParam(value = "List of genes") @QueryParam("gene") String gene,
-                                @ApiParam(value = "Variant type: [SNV, MNV, INDEL, SV, CNV]") @QueryParam("type") String type,
-                                @ApiParam(value = "Reference allele") @QueryParam("reference") String reference,
-                                @ApiParam(value = "Main alternate allele") @QueryParam("alternate") String alternate,
-//                                @ApiParam(value = "") @QueryParam("studies") String studies,
-                                @ApiParam(value = "List of studies to be returned") @QueryParam("returnedStudies") String returnedStudies,
-                                @ApiParam(value = "List of samples to be returned") @QueryParam("returnedSamples") String returnedSamples,
-                                @ApiParam(value = "List of files to be returned.") @QueryParam("returnedFiles") String returnedFiles,
-                                @ApiParam(value = "Variants in specific files") @QueryParam("files") String files,
-                                @ApiParam(value = VariantQueryParam.FILTER_DESCR) @QueryParam("filter") String filter,
-                                @ApiParam(value = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}")
-                                @QueryParam("maf") String maf,
-                                @ApiParam(value = "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}")
-                                @QueryParam("mgf") String mgf,
-                                @ApiParam(value = "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}")
-                                @QueryParam("missingAlleles") String missingAlleles,
-                                @ApiParam(value = "Number of missing genotypes: [{study:}]{cohort}[<|>|<=|>=]{number}")
-                                @QueryParam("missingGenotypes") String missingGenotypes,
-                                @ApiParam(value = "Specify if the variant annotation must exists.")
-                                @QueryParam("annotationExists") boolean annotationExists,
-                                @ApiParam(value = "Samples with a specific genotype: "
-                                        + "{samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1")
-                                @QueryParam("genotype") String genotype,
-                                @ApiParam(value = VariantQueryParam.SAMPLES_DESCR) @QueryParam("samples") String samples,
-                                @ApiParam(value = "Consequence type SO term list. e.g. missense_variant,stop_lost or SO:0001583,SO:0001578")
-                                @QueryParam("annot-ct") String annot_ct,
-                                @ApiParam(value = "XRef") @QueryParam("annot-xref") String annot_xref,
-                                @ApiParam(value = "Biotype") @QueryParam("annot-biotype") String annot_biotype,
-                                @ApiParam(value = "Polyphen, protein substitution score. "
-                                        + "[<|>|<=|>=]{number} or [~=|=|]{description} e.g. <=0.9 , =benign")
-                                @QueryParam("polyphen") String polyphen,
-                                @ApiParam(value = "Sift, protein substitution score. "
-                                        + "[<|>|<=|>=]{number} or [~=|=|]{description} e.g. >0.1 , ~=tolerant")
-                                @QueryParam("sift") String sift,
-                                @ApiParam(value = "Protein substitution score. {protein_score}[<|>|<=|>=]{number} or "
-                                        + "{protein_score}[~=|=]{description} e.g. polyphen>0.1 , sift=tolerant")
-                                @QueryParam ("protein_substitution") String protein_substitution,
-                                @ApiParam(value = "Conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. "
-                                        + "phastCons>0.5,phylop<0.1,gerp>0.1") @QueryParam("conservation") String conservation,
-                                @ApiParam(value = "Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}")
-                                @QueryParam("annot-population-maf") String annotPopulationMaf,
-                                @ApiParam(value = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}")
-                                @QueryParam("alternate_frequency") String alternate_frequency,
-                                @ApiParam(value = "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}")
-                                @QueryParam("reference_frequency") String reference_frequency,
-                                @ApiParam(value = "List of transcript annotation flags. e.g. "
-                                        + "CCDS, basic, cds_end_NF, mRNA_end_NF, cds_start_NF, mRNA_start_NF, seleno")
-                                @QueryParam ("annot-transcription-flags") String transcriptionFlags,
-                                @ApiParam(value = "List of gene trait association id. e.g. \"umls:C0007222\" , \"OMIM:269600\"")
-                                @QueryParam("annot-gene-trait-id") String geneTraitId,
-                                @ApiParam(value = "List of gene trait association names. e.g. \"Cardiovascular Diseases\"")
-                                @QueryParam("annot-gene-trait-name") String geneTraitName,
-                                @ApiParam(value = "List of HPO terms. e.g. \"HP:0000545\"") @QueryParam("annot-hpo") String hpo,
-                                @ApiParam(value = "List of GO (Genome Ontology) terms. e.g. \"GO:0002020\"")
-                                @QueryParam("annot-go") String go,
-                                @ApiParam(value = "List of tissues of interest. e.g. \"tongue\"")
-                                @QueryParam("annot-expression") String expression,
-                                @ApiParam(value = "List of protein variant annotation keywords")
-                                @QueryParam("annot-protein-keywords") String proteinKeyword,
-                                @ApiParam(value = "List of drug names") @QueryParam("annot-drug") String drug,
-                                @ApiParam(value = "Functional score: "
-                                        + "{functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3")
-                                @QueryParam ("annot-functional-score") String functional,
-
-                                @ApiParam(value = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]")
-                                @QueryParam("unknownGenotype") String unknownGenotype,
-                                @ApiParam(value = "Returns the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.")
-                                @QueryParam("samplesMetadata") boolean samplesMetadata,
-                                @ApiParam(value = "Count results", required = false) @QueryParam("count") boolean count,
-                                @ApiParam(value = "Sort the results", required = false) @QueryParam("sort") boolean sort,
-                                @ApiParam(value = "Group variants by: [ct, gene, ensemblGene]", required = false) @DefaultValue("")
-                                @QueryParam("groupBy") String groupBy,
-                                @ApiParam(value = "Calculate histogram. Requires one region.", required = false) @DefaultValue("false")
-                                @QueryParam("histogram") boolean histogram,
-                                @ApiParam(value = "Histogram interval size", required = false) @DefaultValue("2000")
-                                @QueryParam("interval") int interval,
-                                @ApiParam(value = "Merge results", required = false) @DefaultValue("false")
-                                @QueryParam("merge") boolean merge) {
-
-        try {
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
-            List<QueryResult> queryResults = new LinkedList<>();
-            for (Long studyId : studyIds) {
-                QueryResult queryResult;
-                // Get all query options
-                QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-                Query query = VariantStorageManager.getVariantQuery(queryOptions);
-                query.putIfAbsent(VariantQueryParam.STUDIES.key(), studyId);
-                if (count) {
-                    queryResult = variantManager.count(query, sessionId);
-                } else if (histogram) {
-                    queryResult = variantManager.getFrequency(query, interval, sessionId);
-                } else if (StringUtils.isNotEmpty(groupBy)) {
-                    queryResult = variantManager.groupBy(groupBy, query, queryOptions, sessionId);
-                } else {
-                    queryResult = variantManager.get(query, queryOptions, sessionId);
-                }
-                queryResults.add(queryResult);
-            }
-            return createOkResponse(queryResults);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @Deprecated
-    @GET
-    @Path("/{study}/alignments")
-    @ApiOperation(value = "[DEPCRATED]: use analysis/alignment/query instead", position = 11, hidden = true, response = Alignment[].class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
-                    example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
-                    example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer",
-                    paramType = "query"),
-            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
-    })
-    public Response getAlignments(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-            required = true) @PathParam("study") String studyStr,
-                                  @ApiParam(value = "sample id", required = false) @DefaultValue("")
-                                  @QueryParam("sampleId") String sampleIds,
-                                  @ApiParam(value = "file id", required = false) @DefaultValue("") @QueryParam("fileId") String fileIds,
-                                  @ApiParam(value = "region with a maximum value of 10000 nucleotides", required = true) @DefaultValue("")
-                                  @QueryParam("region") String region,
-                                  @ApiParam(value = "view_as_pairs", required = false) @DefaultValue("false")
-                                  @QueryParam("view_as_pairs") boolean view_as_pairs,
-                                  @ApiParam(value = "include_coverage", required = false) @DefaultValue("true")
-                                  @QueryParam("include_coverage") boolean include_coverage,
-                                  @ApiParam(value = "process_differences", required = false) @DefaultValue("true")
-                                  @QueryParam("process_differences") boolean process_differences,
-                                  @ApiParam(value = "histogram", required = false) @DefaultValue("false")
-                                  @QueryParam("histogram") boolean histogram,
-                                  @ApiParam(value = "interval", required = false) @DefaultValue("2000")
-                                  @QueryParam("interval") int interval) {
-        query.put(VariantQueryParam.STUDIES.key(), studyStr);
-        List<Region> regions = Region.parseRegions(region);
-
-        List<QueryResult> results = new ArrayList<>();
-//        QueryResult alignmentsByRegion;
-        QueryResult alignmentsByRegion;
-
-        // TODO if SampleIds are passed we need to get the BAM files for them and execute the code below
-
-        long studyId = 4;
-        long sampleId = 33;
-        QueryOptions qOptions = new QueryOptions(queryOptions);
-        try {
-            File file = catalogManager.getFileManager().get(studyId, query.append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File
-                    .Bioformat.ALIGNMENT).append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId).append(FileDBAdaptor.QueryParams
-                    .INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY), qOptions, sessionId).first();
-        } catch (CatalogException e) {
-            e.printStackTrace();
-        }
-
-        for (String fileId : fileIds.split(",")) {
-            long fileIdNum;
-            File file;
-            URI fileUri;
-            try {
-                AbstractManager.MyResourceId resource = catalogManager.getFileManager().getId(fileId, Long.toString(studyId), sessionId);
-                fileIdNum = resource.getResourceId();
-                QueryResult<File> queryResult = catalogManager.getFileManager().get(fileIdNum, null, sessionId);
-                file = queryResult.getResult().get(0);
-                fileUri = catalogManager.getFileManager().getUri(file);
-            } catch (CatalogException e) {
-                e.printStackTrace();
-                return createErrorResponse(e);
-            }
-
-//            if (!file.getType().equals(File.Type.INDEX)) {
-            if (file.getIndex() == null || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
-                return createErrorResponse("", "File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
-                        " is not an indexed file.");
-            }
-            ObjectMap indexAttributes = new ObjectMap(file.getIndex().getAttributes());
-            DataStore dataStore;
-            try {
-                dataStore = StorageOperation.getDataStore(catalogManager, Integer.parseInt(studyStr), File.Bioformat.VARIANT, sessionId);
-            } catch (CatalogException e) {
-                e.printStackTrace();
-                return createErrorResponse(e);
-            }
-            String storageEngine = dataStore.getStorageEngine();
-            String dbName = dataStore.getDbName();
-
-            int chunkSize = indexAttributes.getInt("coverageChunkSize", 200);
-            QueryOptions queryOptions = new QueryOptions();
-            queryOptions.put(AlignmentDBAdaptor.QO_FILE_ID, Long.toString(fileIdNum));
-            queryOptions.put(AlignmentDBAdaptor.QO_BAM_PATH, fileUri.getPath());     //TODO: Make uri-compatible
-            queryOptions.put(AlignmentDBAdaptor.QO_VIEW_AS_PAIRS, view_as_pairs);
-            queryOptions.put(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, include_coverage);
-            queryOptions.put(AlignmentDBAdaptor.QO_PROCESS_DIFFERENCES, process_differences);
-            queryOptions.put(AlignmentDBAdaptor.QO_INTERVAL_SIZE, interval);
-            queryOptions.put(AlignmentDBAdaptor.QO_HISTOGRAM, histogram);
-            queryOptions.put(AlignmentDBAdaptor.QO_COVERAGE_CHUNK_SIZE, chunkSize);
-
-            if (indexAttributes.containsKey("baiFileId")) {
-                File baiFile = null;
-                try {
-                    baiFile = catalogManager.getFileManager().get((long) indexAttributes.getInt("baiFileId"), null, sessionId).getResult().get(0);
-                    URI baiUri = catalogManager.getFileManager().getUri(baiFile);
-                    queryOptions.put(AlignmentDBAdaptor.QO_BAI_PATH, baiUri.getPath());  //TODO: Make uri-compatible
-                } catch (CatalogException e) {
-                    e.printStackTrace();
-                    logger.error("Can't obtain bai file for file " + fileIdNum, e);
-                }
-            }
-
-            AlignmentDBAdaptor dbAdaptor;
-            try {
-
-                AlignmentStorageEngine alignmentStorageManager = storageEngineFactory.getAlignmentStorageEngine(storageEngine, dbName);
-                dbAdaptor = alignmentStorageManager.getDBAdaptor();
-            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException e) {
-                return createErrorResponse(e);
-            }
-
-            if (histogram) {
-                if (regions.size() != 1) {
-                    return createErrorResponse("", "Histogram fetch only accepts one region.");
-                }
-                alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(regions.get(0), new QueryOptions(queryOptions));
-            } else {
-                alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(regions, new QueryOptions(queryOptions));
-            }
-            results.add(alignmentsByRegion);
-        }
-
-        return createOkResponse(results);
     }
 
     @GET

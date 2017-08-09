@@ -212,17 +212,15 @@ public class VariantStorageManager extends StorageManager {
             throws CatalogException, StorageEngineException, IOException, URISyntaxException {
         VariantAnnotationStorageOperation annotOperation = new VariantAnnotationStorageOperation(catalogManager, storageConfiguration);
 
-        List<Long> studyIds;
+        List<String> studyIds;
         if (StringUtils.isNotEmpty(studies) || StringUtils.isEmpty(project)) {
-            // Only get specific studies if project is missing, or if some study is given
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            studyIds = catalogManager.getStudyManager().getIds(userId, studies);
+            studyIds = Arrays.asList(studies.split(","));
         } else {
             studyIds = Collections.emptyList();
         }
         List<StudyInfo> studiesList = new ArrayList<>(studyIds.size());
-        for (Long studyId : studyIds) {
-            studiesList.add(getStudyInfo(studyId.toString(), Collections.emptyList(), sessionId));
+        for (String studyId : studyIds) {
+            studiesList.add(getStudyInfo(studyId, Collections.emptyList(), sessionId));
         }
         return annotOperation.annotateVariants(project, studiesList, query, outDir, sessionId, config);
     }

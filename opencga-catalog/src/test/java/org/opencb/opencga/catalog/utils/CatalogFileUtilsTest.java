@@ -26,17 +26,15 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.utils.StringUtils;
-import org.opencb.opencga.catalog.CatalogManagerExternalResource;
-import org.opencb.opencga.catalog.CatalogManagerTest;
-import org.opencb.opencga.catalog.models.Account;
+import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
+import org.opencb.opencga.catalog.managers.CatalogManagerTest;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.ByteArrayInputStream;
@@ -88,8 +86,8 @@ public class CatalogFileUtilsTest {
 //        adminSessionId = catalogManager.login("admin", "admin", "--").getResult().get(0).getString("sessionId");
         long projectId = catalogManager.getProjectManager().create("proj", "proj", "", "", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), userSessionId).getResult().get(0).getId();
-        studyId = catalogManager.getStudyManager().create(projectId, "std", "std", Study.Type.CONTROL_SET, null, "", null, null, null,
-                null, null, null, null, null, userSessionId).getResult().get(0).getId();
+        studyId = catalogManager.getStudyManager().create(String.valueOf(projectId), "std", "std", Study.Type.CONTROL_SET, null, "",
+                null, null, null, null, null, null, null, null, userSessionId).getResult().get(0).getId();
 
         catalogFileUtils = new CatalogFileUtils(catalogManager);
     }

@@ -58,7 +58,7 @@ public class ProjectManager extends AbstractManager {
         return projectDBAdaptor.getOwnerId(projectId);
     }
 
-    public long getId(String userId, String projectStr) throws CatalogException {
+    long getId(String userId, String projectStr) throws CatalogException {
         if (StringUtils.isNumeric(projectStr)) {
             long projectId = Long.parseLong(projectStr);
             if (projectId > configuration.getCatalog().getOffset()) {
@@ -112,7 +112,7 @@ public class ProjectManager extends AbstractManager {
         }
     }
 
-    public List<Long> getIds(String userId, String projectStr) throws CatalogException {
+    List<Long> getIds(String userId, String projectStr) throws CatalogException {
         if (StringUtils.isNumeric(projectStr)) {
             return Arrays.asList(Long.parseLong(projectStr));
         }

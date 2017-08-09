@@ -174,33 +174,29 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @ApiOperation(httpMethod = "POST", position = 4, value = "Resource to upload a file by chunks", response = File.class)
-    public Response upload(@ApiParam(hidden = true) @FormDataParam("chunk_content") byte[] chunkBytes,
-                           @ApiParam(hidden = true) @FormDataParam("chunk_content") FormDataContentDisposition contentDisposition,
-                           @FormDataParam("file") InputStream fileInputStream,
-                           @FormDataParam("file") FormDataContentDisposition fileMetaData,
+    public Response upload(
+            @ApiParam(hidden = true) @FormDataParam("chunk_content") byte[] chunkBytes,
+            @ApiParam(hidden = true) @FormDataParam("chunk_content") FormDataContentDisposition contentDisposition,
+            @FormDataParam("file") InputStream fileInputStream,
+            @FormDataParam("file") FormDataContentDisposition fileMetaData,
 
-                           @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_id") String chunk_id,
-                           @ApiParam(hidden = true) @DefaultValue("false") @FormDataParam("last_chunk") String last_chunk,
-                           @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_total") String chunk_total,
-                           @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_size") String chunk_size,
-                           @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_hash") String chunkHash,
-                           @ApiParam(hidden = true) @DefaultValue("false") @FormDataParam("resume_upload") String resume_upload,
+            @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_id") String chunk_id,
+            @ApiParam(hidden = true) @DefaultValue("false") @FormDataParam("last_chunk") String last_chunk,
+            @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_total") String chunk_total,
+            @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_size") String chunk_size,
+            @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_hash") String chunkHash,
+            @ApiParam(hidden = true) @DefaultValue("false") @FormDataParam("resume_upload") String resume_upload,
 
-                           @ApiParam(value = "filename", required = false) @FormDataParam("filename") String filename,
-                           @ApiParam(value = "fileFormat", required = true) @DefaultValue("") @FormDataParam("fileFormat")
-                                   String fileFormat,
-                           @ApiParam(value = "bioformat", required = true) @DefaultValue("") @FormDataParam("bioformat")
-                                   String bioformat,
-                           @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @FormDataParam("studyId")
-                                   String studyIdStr,
-                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                           @FormDataParam("study") String studyStr,
-                           @ApiParam(value = "Path within catalog where the file will be located (default: root folder)",
-                                   required = true) @DefaultValue(".") @FormDataParam("relativeFilePath") String relativeFilePath,
-                           @ApiParam(value = "description", required = false) @DefaultValue("") @FormDataParam("description")
-                                   String description,
-                           @ApiParam(value = "Create the parent directories if they do not exist", required = false)
-                           @DefaultValue("true") @FormDataParam("parents") boolean parents) {
+            @ApiParam(value = "filename", required = false) @FormDataParam("filename") String filename,
+            @ApiParam(value = "fileFormat", required = true) @DefaultValue("") @FormDataParam("fileFormat") String fileFormat,
+            @ApiParam(value = "bioformat", required = true) @DefaultValue("") @FormDataParam("bioformat") String bioformat,
+            @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @FormDataParam("studyId") String studyIdStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @FormDataParam("study") String studyStr,
+            @ApiParam(value = "Path within catalog where the file will be located (default: root folder)",
+                    required = true) @DefaultValue(".") @FormDataParam("relativeFilePath") String relativeFilePath,
+            @ApiParam(value = "description", required = false) @DefaultValue("") @FormDataParam("description")
+                    String description,
+            @ApiParam(value = "Create the parent directories if they do not exist", required = false) @DefaultValue("true") @FormDataParam("parents") boolean parents) {
 
         if (StringUtils.isNotEmpty(studyIdStr)) {
             studyStr = studyIdStr;
@@ -765,182 +761,6 @@ public class FileWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-    }
-
-    @Deprecated
-    @GET
-    @Path("/{file}/fetch")
-    @ApiOperation(value = "File fetch [DEPRECATED]", notes = "DEPRECATED. Use .../files/{fileId}/[variants|alignments] or "
-            + ".../studies/{studyId}/[variants|alignments] instead", hidden = true, position = 15)
-    public Response fetch(@PathParam(value = "file") @DefaultValue("") String fileIds,
-                          @ApiParam(value = "region", allowMultiple = true, required = true) @DefaultValue("") @QueryParam("region") String region,
-                          @ApiParam(value = "view_as_pairs", required = false) @DefaultValue("false") @QueryParam("view_as_pairs") boolean view_as_pairs,
-                          @ApiParam(value = "include_coverage", required = false) @DefaultValue("true") @QueryParam("include_coverage") boolean include_coverage,
-                          @ApiParam(value = "process_differences", required = false) @DefaultValue("true") @QueryParam("process_differences") boolean process_differences,
-                          @ApiParam(value = "histogram", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
-                          @ApiParam(value = "GroupBy: [ct, gene, ensemblGene]", required = false) @DefaultValue("") @QueryParam("groupBy") String groupBy,
-                          @ApiParam(value = "variantSource", required = false) @DefaultValue("false") @QueryParam("variantSource") boolean variantSource,
-                          @ApiParam(value = "interval", required = false) @DefaultValue("2000") @QueryParam("interval") int interval) {
-        List<Region> regions = new LinkedList<>();
-        String[] splitFileId = fileIds.split(",");
-        List<Object> results = new LinkedList<>();
-        for (String r : region.split(",")) {
-            regions.add(new Region(r));
-        }
-
-        for (String fileId : splitFileId) {
-            long fileIdNum;
-            File file;
-            URI fileUri;
-
-            try {
-                fileIdNum = catalogManager.getFileManager().getId(fileId, null, sessionId).getResourceId();
-                QueryResult<File> queryResult = catalogManager.getFileManager().get(fileIdNum, null, sessionId);
-                file = queryResult.getResult().get(0);
-                fileUri = catalogManager.getFileManager().getUri(file);
-            } catch (CatalogException e) {
-                e.printStackTrace();
-                return createErrorResponse(e);
-            }
-
-//            if (!file.getType().equals(File.Type.INDEX)) {
-            if (file.getIndex() == null || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
-                return createErrorResponse("", "File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
-                        " is not an indexed file.");
-            }
-//            List<Index> indices = file.getIndices();
-//            Index index = null;
-//            for (Index i : indices) {
-//                if (i.getStorageEngine().equals(backend)) {
-//                    index = i;
-//                }
-//            }
-            ObjectMap indexAttributes = new ObjectMap(file.getIndex().getAttributes());
-            DataStore dataStore = null;
-            try {
-                dataStore = StorageOperation.getDataStore(catalogManager, catalogManager.getFileManager().getStudyId(file.getId()),
-                        file.getBioformat(), sessionId);
-            } catch (CatalogException e) {
-                e.printStackTrace();
-                return createErrorResponse(e);
-            }
-            String storageEngine = dataStore.getStorageEngine();
-            String dbName = dataStore.getDbName();
-//            QueryResult result;
-            QueryResult result;
-            switch (file.getBioformat()) {
-                case ALIGNMENT: {
-                    //TODO: getChunkSize from file.index.attributes?  use to be 200
-                    int chunkSize = indexAttributes.getInt("coverageChunkSize", 200);
-                    QueryOptions queryOptions = new QueryOptions();
-                    queryOptions.put(AlignmentDBAdaptor.QO_FILE_ID, Long.toString(fileIdNum));
-                    queryOptions.put(AlignmentDBAdaptor.QO_BAM_PATH, fileUri.getPath());     //TODO: Make uri-compatible
-                    queryOptions.put(AlignmentDBAdaptor.QO_VIEW_AS_PAIRS, view_as_pairs);
-                    queryOptions.put(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, include_coverage);
-                    queryOptions.put(AlignmentDBAdaptor.QO_PROCESS_DIFFERENCES, process_differences);
-                    queryOptions.put(AlignmentDBAdaptor.QO_INTERVAL_SIZE, interval);
-                    queryOptions.put(AlignmentDBAdaptor.QO_HISTOGRAM, histogram);
-                    queryOptions.put(AlignmentDBAdaptor.QO_COVERAGE_CHUNK_SIZE, chunkSize);
-
-                    if (indexAttributes.containsKey("baiFileId")) {
-                        File baiFile = null;
-                        try {
-                            baiFile = catalogManager.getFileManager().get((long) indexAttributes.getInt("baiFileId"), null, sessionId).getResult().get(0);
-                            URI baiUri = catalogManager.getFileManager().getUri(baiFile);
-                            queryOptions.put(AlignmentDBAdaptor.QO_BAI_PATH, baiUri.getPath());  //TODO: Make uri-compatible
-                        } catch (CatalogException e) {
-                            e.printStackTrace();
-                            logger.error("Can't obtain bai file for file " + fileIdNum, e);
-                        }
-                    }
-
-                    AlignmentDBAdaptor dbAdaptor;
-                    try {
-                        AlignmentStorageEngine alignmentStorageManager = storageEngineFactory.getAlignmentStorageEngine(storageEngine, dbName);
-                        dbAdaptor = alignmentStorageManager.getDBAdaptor();
-                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException e) {
-                        return createErrorResponse(e);
-                    }
-//                    QueryResult alignmentsByRegion;
-                    QueryResult alignmentsByRegion;
-                    if (histogram) {
-                        if (regions.size() != 1) {
-                            return createErrorResponse("", "Histogram fetch only accepts one region.");
-                        }
-                        alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(regions.get(0), new QueryOptions(queryOptions));
-                    } else {
-                        alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(regions, new QueryOptions(queryOptions));
-                    }
-                    result = alignmentsByRegion;
-                    break;
-                }
-
-                case VARIANT: {
-                    String warningMsg = null;
-                    Query query = VariantStorageManager.getVariantQuery(queryOptions);
-                    query.put(VariantQueryParam.REGION.key(), region);
-
-//                    for (Map.Entry<String, List<String>> entry : params.entrySet()) {
-//                        List<String> values = entry.getValue();
-//                        String csv = values.get(0);
-//                        for (int i = 1; i < values.size(); i++) {
-//                            csv += "," + values.get(i);
-//                        }
-//                        queryOptions.add(entry.getKey(), csv);
-//                    }
-//                    queryOptions.put("files", Arrays.asList(Integer.toString(fileIdNum)));
-                    query.put(VariantQueryParam.FILES.key(), fileIdNum);
-
-                    if (params.containsKey("fileId")) {
-                        warningMsg = "Do not use param \"fileI\". Use \"" + VariantQueryParam.RETURNED_FILES.key() + "\" instead";
-                        if (params.get("fileId").get(0).isEmpty()) {
-                            query.put(VariantQueryParam.RETURNED_FILES.key(), fileId);
-                        } else {
-                            List<String> files = params.get("fileId");
-                            query.put(VariantQueryParam.RETURNED_FILES.key(), files);
-                        }
-                    }
-
-                    VariantDBAdaptor dbAdaptor;
-                    try {
-                        dbAdaptor = storageEngineFactory.getVariantStorageEngine(storageEngine, dbName).getDBAdaptor();
-//                        dbAdaptor = new CatalogVariantDBAdaptor(catalogManager, dbAdaptor);
-                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException e) {
-                        return createErrorResponse(e);
-                    }
-//                    QueryResult queryResult;
-                    QueryResult queryResult;
-                    if (histogram) {
-                        queryOptions.put("interval", interval);
-                        queryResult = dbAdaptor.get(new Query(query), new QueryOptions(queryOptions));
-//                    } else if (variantSource) {
-//                        queryOptions.put("fileId", Integer.toString(fileIdNum));
-//                        queryResult = dbAdaptor.getVariantSourceDBAdaptor().getAllSources(queryOptions);
-                    } else if (!groupBy.isEmpty()) {
-                        queryResult = dbAdaptor.groupBy(new Query(query), groupBy, new QueryOptions(queryOptions));
-                    } else {
-                        //With merge = true, will return only one result.
-//                        queryOptions.put("merge", true);
-//                        queryResult = dbAdaptor.getAllVariantsByRegionList(regions, queryOptions).get(0);
-                        queryResult = dbAdaptor.get(new Query(query), new QueryOptions(queryOptions));
-                    }
-                    result = queryResult;
-                    if (warningMsg != null) {
-                        result.setWarningMsg(result.getWarningMsg() == null ? warningMsg : (result.getWarningMsg() + warningMsg));
-                    }
-                    break;
-
-                }
-                default:
-                    return createErrorResponse("", "Unknown bioformat '" + file.getBioformat() + '\'');
-            }
-
-            result.setId(Long.toString(fileIdNum));
-            System.out.println("result = " + result);
-            results.add(result);
-        }
-        System.out.println("results = " + results);
-        return createOkResponse(results);
     }
 
     @Deprecated

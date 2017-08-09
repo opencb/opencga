@@ -27,7 +27,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
-import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
@@ -135,9 +134,13 @@ public class FileManagerTest extends GenericTest {
         Project project2 = catalogManager.getProjectManager().create("Project Management Project", "pmp", "life art intelligent system", "myorg", "Homo sapiens", null, null, "GRCh38", new QueryOptions(), sessionIdUser2).first();
         Project project3 = catalogManager.getProjectManager().create("project 1", "p1", "", "", "Homo sapiens", null, null, "GRCh38", new QueryOptions(), sessionIdUser3).first();
 
-        studyId = catalogManager.getStudyManager().create(projectId, "Phase 1", "phase1", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, sessionIdUser).first().getId();
-        studyId2 = catalogManager.getStudyManager().create(projectId, "Phase 3", "phase3", Study.Type.CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, sessionIdUser).first().getId();
-        catalogManager.getStudyManager().create(project2.getId(), "Study 1", "s1", Study.Type.CONTROL_SET, null, "", null, null, null, null, null, null, null, null, sessionIdUser2).first().getId();
+
+        studyId = catalogManager.getStudyManager().create(String.valueOf(projectId), "Phase 1", "phase1", Study.Type.TRIO, null, "Done",
+                null, null, null, null, null, null, null, null, sessionIdUser).first().getId();
+        studyId2 = catalogManager.getStudyManager().create(String.valueOf(projectId), "Phase 3", "phase3", Study.Type.CASE_CONTROL, null,
+                "d", null, null, null, null, null, null, null, null, sessionIdUser).first().getId();
+        catalogManager.getStudyManager().create(String.valueOf(project2.getId()), "Study 1", "s1", Study.Type.CONTROL_SET, null, "",
+                null, null, null, null, null, null, null, null, sessionIdUser2).first().getId();
 
         catalogManager.getFileManager().createFolder(Long.toString(studyId2), Paths.get("data/test/folder/").toString(), null, true, null, QueryOptions.empty(), sessionIdUser);
 
@@ -517,8 +520,8 @@ public class FileManagerTest extends GenericTest {
                 null, QueryOptions.empty(), sessionIdUser2).first();
 
         Path myStudy = Files.createDirectory(catalogManagerResource.getOpencgaHome().resolve("myStudy"));
-        long id = catalogManager.getStudyManager().create(projectId, "name", "alias", Study.Type.CASE_CONTROL, "", "", null, null, null,
-                myStudy.toUri(), null, null, null, null, sessionIdUser2).first().getId();
+        long id = catalogManager.getStudyManager().create(String.valueOf(projectId), "name", "alias", Study.Type.CASE_CONTROL, "", "",
+                null, null, null, myStudy.toUri(), null, null, null, null, sessionIdUser2).first().getId();
         System.out.println("studyId = " + id);
         folder = catalogManager.getFileManager().createFolder(Long.toString(id), Paths.get("WOLOLO").toString(), null, true, null,
                 QueryOptions.empty(), sessionIdUser2).first();
@@ -727,7 +730,8 @@ public class FileManagerTest extends GenericTest {
 
         // Create a new study so more than one file will be found under the root /. However, it should be able to consider the study given
         // properly
-        catalogManager.getStudyManager().create(projectId, "Phase 2", "phase2", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, sessionIdUser).first().getId();
+        catalogManager.getStudyManager().create(String.valueOf(projectId), "Phase 2", "phase2", Study.Type.TRIO, null, "Done", null,
+                null, null, null, null, null, null, null, sessionIdUser).first().getId();
 
         QueryResult<FileTree> fileTree = catalogManager.getFileManager().getTree("/", "user@1000G:phase1", new Query(), new QueryOptions(),
                 5, sessionIdUser);

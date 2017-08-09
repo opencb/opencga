@@ -27,7 +27,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
-import org.opencb.opencga.catalog.CatalogManagerExternalResource;
+import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
@@ -145,8 +145,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
         p1 = catalogManager.getProjectManager().create("p1", "p1", null, null, "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), ownerSessionId).first().getId();
-        s1 = catalogManager.getStudyManager().create(p1, "s1", "s1", Study.Type.CASE_CONTROL, null, null, null, null, null, null, null,
-                null, null, null, ownerSessionId).first().getId();
+        s1 = catalogManager.getStudyManager().create(String.valueOf(p1), "s1", "s1", Study.Type.CASE_CONTROL, null, null, null, null,
+                null, null, null, null, null, null, ownerSessionId).first().getId();
         data_d1 = catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/").toString(), null, true, null,
                 QueryOptions.empty(), ownerSessionId).first().getId();
         data_d1_d2 = catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/d2/").toString(), null, false,

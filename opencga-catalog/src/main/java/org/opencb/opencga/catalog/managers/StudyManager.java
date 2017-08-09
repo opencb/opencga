@@ -77,7 +77,7 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.getProjectIdByStudyId(studyId);
     }
 
-    public List<Long> getIds(String userId, String studyStr) throws CatalogException {
+    List<Long> getIds(String userId, String studyStr) throws CatalogException {
         if (StringUtils.isNumeric(studyStr)) {
             long studyId = Long.parseLong(studyStr);
             if (studyId > configuration.getCatalog().getOffset()) {
@@ -204,7 +204,7 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public QueryResult<Study> create(long projectId, String name, String alias, Study.Type type, String creationDate,
+    public QueryResult<Study> create(String projectStr, String name, String alias, Study.Type type, String creationDate,
                                      String description, Status status, String cipher, String uriScheme, URI uri,
                                      Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes,
                                      QueryOptions options, String sessionId) throws CatalogException {
@@ -214,6 +214,8 @@ public class StudyManager extends AbstractManager {
         ParamUtils.checkAlias(alias, "alias", configuration.getCatalog().getOffset());
 
         String userId = catalogManager.getUserManager().getId(sessionId);
+        long projectId = catalogManager.getProjectManager().getId(userId, projectStr);
+
         description = ParamUtils.defaultString(description, "");
 //        creatorId = ParamUtils.defaultString(creatorId, userId);
         creationDate = ParamUtils.defaultString(creationDate, TimeUtils.getTime());
@@ -377,16 +379,21 @@ public class StudyManager extends AbstractManager {
     /**
      * Fetch all the study objects matching the query.
      *
+     * @param projectStr Project id or alias.
      * @param query     Query to catalog.
      * @param options   Query options, like "include", "exclude", "limit" and "skip"
      * @param sessionId sessionId
      * @return All matching elements.
      * @throws CatalogException CatalogException
      */
-    public QueryResult<Study> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Study> get(String projectStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         QueryOptions qOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+
         String userId = catalogManager.getUserManager().getId(sessionId);
+        long projectId = catalogManager.getProjectManager().getId(userId, projectStr);
+
+        query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId);
 
         if (!qOptions.containsKey("include") || qOptions.get("include") == null || qOptions.getAsStringList("include").isEmpty()) {
             qOptions.addToListOption("exclude", "projects.studies.attributes.studyConfiguration");
@@ -395,6 +402,20 @@ public class StudyManager extends AbstractManager {
         QueryResult<Study> allStudies = studyDBAdaptor.get(query, qOptions, userId);
 
         return allStudies;
+    }
+
+    /**
+     * Fetch all the study objects matching the query.
+     *
+     * @param query     Query to catalog.
+     * @param options   Query options, like "include", "exclude", "limit" and "skip"
+     * @param sessionId sessionId
+     * @return All matching elements.
+     * @throws CatalogException CatalogException
+     */
+    @Deprecated
+    public QueryResult<Study> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
+        return get(null, query, options, sessionId);
     }
 
     /**
@@ -516,11 +537,12 @@ public class StudyManager extends AbstractManager {
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
-    public QueryResult<StudySummary> getSummary(long studyId, String sessionId, QueryOptions queryOptions) throws CatalogException {
-
+    public QueryResult<StudySummary> getSummary(String studyStr, QueryOptions queryOptions, String sessionId) throws CatalogException {
         long startTime = System.currentTimeMillis();
 
         String userId = catalogManager.getUserManager().getId(sessionId);
+        Long studyId = getId(userId, studyStr);
+
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
 
         Study studyInfo = get(String.valueOf((Long) studyId), queryOptions, sessionId).first();

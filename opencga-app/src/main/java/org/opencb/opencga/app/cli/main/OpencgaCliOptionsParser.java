@@ -112,7 +112,6 @@ public class OpencgaCliOptionsParser {
         studySubCommands.addCommand("files", studyCommandOptions.filesCommandOptions);
         studySubCommands.addCommand("jobs", studyCommandOptions.jobsCommandOptions);
         studySubCommands.addCommand("samples", studyCommandOptions.samplesCommandOptions);
-        studySubCommands.addCommand("variants", studyCommandOptions.variantsCommandOptions);
         studySubCommands.addCommand("help", studyCommandOptions.helpCommandOptions);
         studySubCommands.addCommand("groups", studyCommandOptions.groupsCommandOptions);
         studySubCommands.addCommand("groups-create", studyCommandOptions.groupsCreateCommandOptions);

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog;
+package org.opencb.opencga.catalog.managers;
 
 import com.mongodb.BasicDBObject;
 import org.junit.*;
@@ -30,7 +30,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
@@ -135,12 +134,12 @@ public class CatalogManagerTest extends GenericTest {
         Project project3 = catalogManager.getProjectManager().create("project 1", "p1", "", "", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser3).first();
 
-        studyId = catalogManager.getStudyManager().create(project1, "Phase 1", "phase1", Study.Type.TRIO, null, "Done", null, null, null,
-                null, null, null, null, null, sessionIdUser).first().getId();
-        studyId2 = catalogManager.getStudyManager().create(project1, "Phase 3", "phase3", Study.Type.CASE_CONTROL, null, "d", null, null,
-                null, null, null, null, null, null, sessionIdUser).first().getId();
-        catalogManager.getStudyManager().create(project2, "Study 1", "s1", Study.Type.CONTROL_SET, null, "", null, null, null, null,
-                null, null, null, null, sessionIdUser2).first().getId();
+        studyId = catalogManager.getStudyManager().create(String.valueOf(project1), "Phase 1", "phase1", Study.Type.TRIO, null, "Done",
+                null, null, null, null, null, null, null, null, sessionIdUser).first().getId();
+        studyId2 = catalogManager.getStudyManager().create(String.valueOf(project1), "Phase 3", "phase3", Study.Type.CASE_CONTROL, null,
+                "d", null, null, null, null, null, null, null, null, sessionIdUser).first().getId();
+        catalogManager.getStudyManager().create(String.valueOf(project2), "Study 1", "s1", Study.Type.CONTROL_SET, null, "", null, null,
+                null, null, null, null, null, null, sessionIdUser2).first().getId();
 
         catalogManager.getFileManager().createFolder(Long.toString(studyId2), Paths.get("data/test/folder/").toString(), null, true,
                 null, QueryOptions.empty(), sessionIdUser);
@@ -543,13 +542,14 @@ public class CatalogManagerTest extends GenericTest {
     public void testGetAllStudies() throws CatalogException {
         Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
         long projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();
-        catalogManager.getStudyManager().create(projectId, "study_1", "study_1", Study.Type.CASE_CONTROL, "creationDate", "description", new Status(), null, null, null, null, null, null, null, sessionIdUser);
+        catalogManager.getStudyManager().create(String.valueOf(projectId), "study_1", "study_1", Study.Type.CASE_CONTROL, "creationDate", "description", new Status(), null, null, null, null, null, null, null, sessionIdUser);
 
-        catalogManager.getStudyManager().create(projectId, "study_2", "study_2", Study.Type.CASE_CONTROL, "creationDate", "description", new Status(), null, null, null, null, null, null, null, sessionIdUser);
 
-        catalogManager.getStudyManager().create(projectId, "study_3", "study_3", Study.Type.CASE_CONTROL, "creationDate", "description", new Status(), null, null, null, null, null, null, null, sessionIdUser);
-        long study_4 = catalogManager.getStudyManager().create(projectId, "study_4", "study_4", Study.Type.CASE_CONTROL, "creationDate",
-        "description", new Status(), null, null, null, null, null, null, null, sessionIdUser).first().getId();
+        catalogManager.getStudyManager().create(String.valueOf(projectId), "study_2", "study_2", Study.Type.CASE_CONTROL, "creationDate", "description", new Status(), null, null, null, null, null, null, null, sessionIdUser);
+
+        catalogManager.getStudyManager().create(String.valueOf(projectId), "study_3", "study_3", Study.Type.CASE_CONTROL, "creationDate", "description", new Status(), null, null, null, null, null, null, null, sessionIdUser);
+        long study_4 = catalogManager.getStudyManager().create(String.valueOf(projectId), "study_4", "study_4", Study.Type.CASE_CONTROL,
+        "creationDate", "description", new Status(), null, null, null, null, null, null, null, sessionIdUser).first().getId();
 
         assertEquals(new HashSet<>(Collections.emptyList()), catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams
                 .GROUP_USER_IDS.key(), "user2"), null, sessionIdUser).getResult().stream().map(Study::getAlias)
@@ -574,7 +574,8 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testGetId() throws CatalogException {
         // Create another study with alias phase3
-        catalogManager.getStudyManager().create(project2, "Phase 3", "phase3", Study.Type.CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, sessionIdUser2);
+        catalogManager.getStudyManager().create(String.valueOf(project2), "Phase 3", "phase3", Study.Type.CASE_CONTROL, null, "d", null,
+                null, null, null, null, null, null, null, sessionIdUser2);
 
         String userId = catalogManager.getUserManager().getId(sessionIdUser);
         List<Long> ids = catalogManager.getStudyManager().getIds(userId, "*");
@@ -620,8 +621,8 @@ public class CatalogManagerTest extends GenericTest {
         }
 
         // Create another study with alias phase3
-        QueryResult<Study> study = catalogManager.getStudyManager().create(project2, "Phase 3", "phase3", Study.Type.CASE_CONTROL, null,
-                "d", null, null, null, null, null, null, null, null, sessionIdUser2);
+        QueryResult<Study> study = catalogManager.getStudyManager().create(String.valueOf(project2), "Phase 3", "phase3", Study.Type
+        .CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, sessionIdUser2);
         try {
             studyManager.getIds("*", null);
             fail("This should throw an exception. No studies should be found for user anonymous");
@@ -647,8 +648,8 @@ public class CatalogManagerTest extends GenericTest {
         }
 
         // Create another study with alias phase3
-        QueryResult<Study> study = catalogManager.getStudyManager().create(project2, "Phase 3", "phase3", Study.Type.CASE_CONTROL, null,
-                "d", null, null, null, null, null, null, null, null, sessionIdUser2);
+        QueryResult<Study> study = catalogManager.getStudyManager().create(String.valueOf(project2), "Phase 3", "phase3", Study.Type
+        .CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, sessionIdUser2);
         Study.StudyAclParams aclParams = new Study.StudyAclParams("VIEW_STUDY", AclParams.Action.ADD, null);
         catalogManager.getStudyManager().updateAcl("phase3", "*", aclParams, sessionIdUser2).get(0);
 

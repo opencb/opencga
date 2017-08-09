@@ -89,13 +89,11 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
             final Project.Organism organism;
 
             if (studyInfos == null || studyInfos.isEmpty()) {
-                String userId = catalogManager.getUserManager().getId(sessionId);
-                long projectId = catalogManager.getProjectManager().getId(userId, projectStr);
-                Project project = catalogManager.getProjectManager().get(String.valueOf((Long) projectId), null, sessionId).first();
+                Project project = catalogManager.getProjectManager().get(projectStr, null, sessionId).first();
                 studyStr = null;
                 alias = project.getAlias();
                 organism = project.getOrganism();
-                dataStore = getDataStoreByProjectId(catalogManager, projectId, File.Bioformat.VARIANT, sessionId);
+                dataStore = getDataStoreByProjectId(catalogManager, project.getId(), File.Bioformat.VARIANT, sessionId);
                 studyIds = Collections.emptyList();
             } else {
                 StudyInfo info = studyInfos.get(0);
