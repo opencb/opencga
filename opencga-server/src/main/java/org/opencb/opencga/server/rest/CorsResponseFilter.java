@@ -24,6 +24,7 @@ import java.io.IOException;
 /**
  * Created by imedina on 08/07/16.
  */
+@Deprecated
 public class CorsResponseFilter implements ContainerResponseFilter {
 
     @Override

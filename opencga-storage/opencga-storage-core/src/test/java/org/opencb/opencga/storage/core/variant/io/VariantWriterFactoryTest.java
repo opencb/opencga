@@ -20,8 +20,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static org.junit.Assert.*;
-import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.*;
+import static org.junit.Assert.assertEquals;
+import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.JSON_GZ;
+import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.STATS_GZ;
 
 /**
  * Created on 07/12/16.
@@ -35,16 +36,17 @@ public class VariantWriterFactoryTest {
 
     @Test
     public void checkOutputTest() throws Exception {
-        assertEquals("path/myFile.json.gz", VariantWriterFactory.checkOutput("path/myFile", JSON_GZ));
-        assertEquals("path/myFile.json.gz", VariantWriterFactory.checkOutput("path/myFile.json", JSON_GZ));
-        assertEquals("path/myFile.json.gz", VariantWriterFactory.checkOutput("path/myFile.json.gz", JSON_GZ));
-        assertEquals("path/myFile.json.gz", VariantWriterFactory.checkOutput("path/myFile.json.gz.", JSON_GZ));
-        assertEquals("path/myFile.stats.tsv.gz", VariantWriterFactory.checkOutput("path/myFile.", STATS_GZ));
-        assertEquals("path/myFile.stats.tsv.gz", VariantWriterFactory.checkOutput("path/myFile", STATS_GZ));
-        assertEquals("path/myFile.stats.tsv.gz", VariantWriterFactory.checkOutput("path/myFile.stats", STATS_GZ));
-        assertEquals("path/myFile.stats.tsv.gz", VariantWriterFactory.checkOutput("path/myFile.stats.", STATS_GZ));
-        assertEquals("path/myFile.stats.tsv.gz", VariantWriterFactory.checkOutput("path/myFile.stats.tsv", STATS_GZ));
-        assertEquals("path/myFile.stats.tsv.gz", VariantWriterFactory.checkOutput("path/myFile.stats.tsv.gz", STATS_GZ));
+        String path = "";
+        assertEquals(path + "myFile.json.gz", VariantWriterFactory.checkOutput(path + "myFile", JSON_GZ));
+        assertEquals(path + "myFile.json.gz", VariantWriterFactory.checkOutput(path + "myFile.json", JSON_GZ));
+        assertEquals(path + "myFile.json.gz", VariantWriterFactory.checkOutput(path + "myFile.json.gz", JSON_GZ));
+        assertEquals(path + "myFile.json.gz", VariantWriterFactory.checkOutput(path + "myFile.json.gz.", JSON_GZ));
+        assertEquals(path + "myFile.stats.tsv.gz", VariantWriterFactory.checkOutput(path + "myFile.", STATS_GZ));
+        assertEquals(path + "myFile.stats.tsv.gz", VariantWriterFactory.checkOutput(path + "myFile", STATS_GZ));
+        assertEquals(path + "myFile.stats.tsv.gz", VariantWriterFactory.checkOutput(path + "myFile.stats", STATS_GZ));
+        assertEquals(path + "myFile.stats.tsv.gz", VariantWriterFactory.checkOutput(path + "myFile.stats.", STATS_GZ));
+        assertEquals(path + "myFile.stats.tsv.gz", VariantWriterFactory.checkOutput(path + "myFile.stats.tsv", STATS_GZ));
+        assertEquals(path + "myFile.stats.tsv.gz", VariantWriterFactory.checkOutput(path + "myFile.stats.tsv.gz", STATS_GZ));
     }
 
     @Test

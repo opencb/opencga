@@ -151,13 +151,22 @@ public class VariantWriterFactory {
             }
         }
 
-        Path path = Paths.get(output);
+        Path path = Paths.get(output).toAbsolutePath();
         File file = path.toFile();
         if (file.isDirectory()) {
-            throw new IOException("{}: Is a directory");
+            throw new IOException(path + ": Is a directory");
         } else {
-            if (file.canWrite()) {
-                throw new IOException("{}: Permission denied");
+            if (file.exists()) {
+                if (!file.canWrite()) {
+                    throw new IOException(path + ": Permission denied");
+                }
+            } else {
+                File parentFile = file.getParentFile();
+                if (!parentFile.exists()) {
+                    throw new IOException(parentFile + ": Not found");
+                } else if (!parentFile.canWrite()) {
+                    throw new IOException(parentFile + ": Permission denied");
+                }
             }
         }
         return output;
