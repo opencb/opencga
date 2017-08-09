@@ -26,11 +26,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
-import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.slf4j.Logger;
@@ -55,12 +54,12 @@ public class FileMetadataReader {
     private final CatalogManager catalogManager;
     protected static Logger logger = LoggerFactory.getLogger(FileMetadataReader.class);
     public static final String CREATE_MISSING_SAMPLES = "createMissingSamples";
-    private final CatalogFileUtils catalogFileUtils;
+    private final FileUtils catalogFileUtils;
 
 
     public FileMetadataReader(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
-        catalogFileUtils = new CatalogFileUtils(catalogManager);
+        catalogFileUtils = new FileUtils(catalogManager);
     }
 
     /**
@@ -484,7 +483,7 @@ public class FileMetadataReader {
 
             File variantsFile = fileQueryResult.first();
             URI fileUri = catalogManager.getFileManager().getUri(variantsFile);
-            try (InputStream is = FileUtils.newInputStream(Paths.get(fileUri.getPath()))) {
+            try (InputStream is = org.opencb.commons.utils.FileUtils.newInputStream(Paths.get(fileUri.getPath()))) {
                 VariantSource variantSource = new ObjectMapper().readValue(is, VariantSource.class);
                 VariantGlobalStats stats = variantSource.getStats();
                 catalogManager.getFileManager().update(inputFile.getId(), new ObjectMap("stats", new ObjectMap(VARIANT_STATS, stats)),

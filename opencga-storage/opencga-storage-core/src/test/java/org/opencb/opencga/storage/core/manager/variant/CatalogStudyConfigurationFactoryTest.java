@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
@@ -56,7 +56,7 @@ public class CatalogStudyConfigurationFactoryTest {
     static private long projectId;
     static private long studyId;
     static private FileMetadataReader fileMetadataReader;
-    static private CatalogFileUtils catalogFileUtils;
+    static private FileUtils catalogFileUtils;
     static private long outputId;
     static Logger logger = LoggerFactory.getLogger(CatalogStudyConfigurationFactoryTest.class);
     static private String catalogPropertiesFile;
@@ -71,7 +71,7 @@ public class CatalogStudyConfigurationFactoryTest {
 
         catalogManager = catalogManagerExternalResource.getCatalogManager();
         fileMetadataReader = FileMetadataReader.get(catalogManager);
-        catalogFileUtils = new CatalogFileUtils(catalogManager);
+        catalogFileUtils = new FileUtils(catalogManager);
 
         User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.FULL, null).first();
 

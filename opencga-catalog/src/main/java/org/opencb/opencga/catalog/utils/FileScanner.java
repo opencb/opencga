@@ -22,7 +22,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.File;
@@ -46,7 +46,7 @@ public class FileScanner {
 
     protected final CatalogManager catalogManager;
 
-    private CatalogFileUtils catalogFileUtils;
+    private FileUtils catalogFileUtils;
 
     public enum FileScannerPolicy {
         DELETE,     //Delete file and file entry. Then create a new one
@@ -57,7 +57,7 @@ public class FileScanner {
 
     public FileScanner(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
-        catalogFileUtils = new CatalogFileUtils(catalogManager);
+        catalogFileUtils = new FileUtils(catalogManager);
     }
 
     /**

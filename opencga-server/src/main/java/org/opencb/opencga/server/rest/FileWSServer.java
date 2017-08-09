@@ -21,14 +21,13 @@ import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
-import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
@@ -40,12 +39,7 @@ import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
@@ -302,7 +296,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     IOUtils.deleteDirectory(folderPath);
                     try {
                         QueryResult<File> queryResult1 = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.valueOf(fileFormat.toUpperCase()), File.Bioformat.valueOf(bioformat.toUpperCase()), relativeFilePath, null, description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, null, sessionId);
-                        new CatalogFileUtils(catalogManager).upload(completedFilePath.toUri(), queryResult1.first(), null, sessionId, false, false, true, true, Long.MAX_VALUE);
+                        new FileUtils(catalogManager).upload(completedFilePath.toUri(), queryResult1.first(), null, sessionId, false, false, true, true, Long.MAX_VALUE);
                         QueryResult<File> queryResult = catalogManager.getFileManager().get(queryResult1.first().getId(), null, sessionId);
                         File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
                                 new QueryOptions(queryOptions), sessionId, false);
@@ -390,7 +384,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
                 // Register the file and move it to the proper directory
                 QueryResult<File> queryResult1 = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.valueOf(fileFormat.toUpperCase()), File.Bioformat.valueOf(bioformat.toUpperCase()), destinationPath, null, description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, null, sessionId);
-                new CatalogFileUtils(catalogManager).upload(tempFilePath.toUri(), queryResult1.first(), null, sessionId, false, false, true, true, Long.MAX_VALUE);
+                new FileUtils(catalogManager).upload(tempFilePath.toUri(), queryResult1.first(), null, sessionId, false, false, true, true, Long.MAX_VALUE);
 
                 QueryResult<File> queryResult = catalogManager.getFileManager().get(queryResult1.first().getId(), null, sessionId);
                 File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
@@ -1013,7 +1007,7 @@ public class FileWSServer extends OpenCGAWSServer {
             AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
             File file = catalogManager.getFileManager().get(resource.getResourceId(), null, sessionId).first();
 
-            new CatalogFileUtils(catalogManager).link(file, calculateChecksum, uri, false, true, sessionId);
+            new FileUtils(catalogManager).link(file, calculateChecksum, uri, false, true, sessionId);
             file = catalogManager.getFileManager().get(file.getId(), queryOptions, sessionId).first();
             file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new QueryOptions(queryOptions), sessionId,
                     false);
@@ -1037,7 +1031,7 @@ public class FileWSServer extends OpenCGAWSServer {
             File file = catalogManager.getFileManager().get(resource.getResourceId(), null, sessionId).first();
 
             List<File> files;
-            CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
+            FileUtils catalogFileUtils = new FileUtils(catalogManager);
             FileMetadataReader fileMetadataReader = FileMetadataReader.get(catalogManager);
             if (file.getType() == File.Type.FILE) {
                 File file1 = catalogFileUtils.checkFile(file, false, sessionId);

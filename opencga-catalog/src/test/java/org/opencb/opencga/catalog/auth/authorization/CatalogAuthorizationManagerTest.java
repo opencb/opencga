@@ -34,7 +34,7 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.*;
@@ -156,7 +156,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         data_d1_d2_d3_d4 = catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/d2/d3/d4/").toString(),
                 null, false, null, QueryOptions.empty(), ownerSessionId).first().getId();
         QueryResult<File> queryResult = catalogManager.getFileManager().create(Long.toString(s1), File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/d1/d2/d3/d4/my.txt", null, "", new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, false, null, null, ownerSessionId);
-        new CatalogFileUtils(catalogManager).upload(new ByteArrayInputStream(("file " +
+        new FileUtils(catalogManager).upload(new ByteArrayInputStream(("file " +
                 "content").getBytes()), queryResult.first(), ownerSessionId, false, false, true);
         data_d1_d2_d3_d4_txt = catalogManager.getFileManager().get(queryResult.first().getId(), null, ownerSessionId).first().getId();
         data = catalogManager.getFileManager().get(s1, new Query(FileDBAdaptor.QueryParams.PATH.key(), "data/"), null, ownerSessionId).first().getId();

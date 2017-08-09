@@ -28,7 +28,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 
@@ -76,7 +76,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         pedFile = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PED, File.Bioformat
                 .OTHER_PED, "data/" + pedFileName, null, "", null, 0, -1, null, (long) -1, null, null, true, null, null, sessionId)
                 .getResult().get(0);
-        new CatalogFileUtils(catalogManager).upload(pedFileURL.toURI(), pedFile, null, sessionId, false, false, false, true, 10000000);
+        new FileUtils(catalogManager).upload(pedFileURL.toURI(), pedFile, null, sessionId, false, false, false, true, 10000000);
         pedFile = catalogManager.getFileManager().get(pedFile.getId(), null, sessionId).getResult().get(0);
     }
 

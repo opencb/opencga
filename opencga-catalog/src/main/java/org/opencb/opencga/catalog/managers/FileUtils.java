@@ -47,12 +47,12 @@ import java.util.stream.Stream;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CatalogFileUtils {
+public class FileUtils {
 
-    private static Logger logger = LoggerFactory.getLogger(CatalogFileUtils.class);
+    private static Logger logger = LoggerFactory.getLogger(FileUtils.class);
     private final CatalogManager catalogManager;
 
-    public CatalogFileUtils(CatalogManager catalogManager) {
+    public FileUtils(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
     }
 
