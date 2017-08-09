@@ -37,7 +37,6 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.catalog.utils.AnnotationManager;
 import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -91,7 +90,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         cohort.setCreationDate(TimeUtils.getTime());
         cohort.setDescription(ParamUtils.defaultString(cohort.getDescription(), ""));
         cohort.setAnnotationSets(ParamUtils.defaultObject(cohort.getAnnotationSets(), Collections::emptyList));
-        cohort.setAnnotationSets(AnnotationManager.validateAnnotationSets(cohort.getAnnotationSets(), studyDBAdaptor));
+        cohort.setAnnotationSets(validateAnnotationSets(cohort.getAnnotationSets()));
         cohort.setAttributes(ParamUtils.defaultObject(cohort.getAttributes(), HashMap<String, Object>::new));
         cohort.setRelease(studyManager.getCurrentRelease(studyId));
 
@@ -545,9 +544,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                     + "that variable set");
         }
 
-        QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(resource.getResourceId(), variableSet.first(),
-                annotationSetName, annotations, studyManager.getCurrentRelease(resource.getStudyId()), attributes,
-                cohortDBAdaptor);
+        QueryResult<AnnotationSet> annotationSet = createAnnotationSet(resource.getResourceId(), variableSet.first(), annotationSetName,
+                annotations, studyManager.getCurrentRelease(resource.getStudyId()), attributes, cohortDBAdaptor);
 
         auditManager.recordUpdate(AuditRecord.Resource.cohort, resource.getResourceId(), resource.getUser(),
                 new ObjectMap("annotationSets", annotationSet.first()), "annotate", null);
@@ -617,8 +615,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 .WRITE_ANNOTATIONS);
 
         // Update the annotation
-        QueryResult<AnnotationSet> queryResult =
-                AnnotationManager.updateAnnotationSet(resource, annotationSetName, newAnnotations, cohortDBAdaptor, studyDBAdaptor);
+        QueryResult<AnnotationSet> queryResult =  updateAnnotationSet(resource, annotationSetName, newAnnotations, cohortDBAdaptor);
 
         if (queryResult == null || queryResult.getNumResults() == 0) {
             throw new CatalogException("There was an error with the update");
