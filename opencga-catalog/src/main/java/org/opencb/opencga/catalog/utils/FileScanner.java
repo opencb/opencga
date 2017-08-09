@@ -129,7 +129,7 @@ public class FileScanner {
     public Map<String, URI> untrackedFiles(Study study, String sessionId)
             throws CatalogException {
         long studyId = study.getId();
-        URI studyUri = catalogManager.getFileManager().getStudyUri(studyId);
+        URI studyUri = study.getUri();
 
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(studyUri);
         Map<String, URI> linkedFolders = new HashMap<>();

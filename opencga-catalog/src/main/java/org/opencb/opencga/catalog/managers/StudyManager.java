@@ -293,20 +293,13 @@ public class StudyManager extends AbstractManager {
         auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.Action.create, AuditRecord.Magnitude.low, rootFile.getId(), userId,
                 null, rootFile, null, null);
         userDBAdaptor.updateUserLastModified(userId);
+
+        result.setResult(Arrays.asList(study));
         return result;
     }
 
     public int getCurrentRelease(long studyId) throws CatalogException {
         return getProjectCurrentRelease(studyDBAdaptor.getProjectIdByStudyId(studyId));
-    }
-
-    private int getProjectCurrentRelease(long projectId) throws CatalogException {
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key());
-        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(projectId, options);
-        if (projectQueryResult.getNumResults() == 0) {
-            throw new CatalogException("Internal error. Cannot retrieve current release from project");
-        }
-        return projectQueryResult.first().getCurrentRelease();
     }
 
     public MyResourceId getVariableSetId(String variableStr, @Nullable String studyStr, String sessionId) throws CatalogException {
@@ -453,25 +446,6 @@ public class StudyManager extends AbstractManager {
         QueryResult<Study> result = studyDBAdaptor.update(studyId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, parameters, null, null);
         return result;
-    }
-
-    private QueryResult rename(long studyId, String newStudyAlias, String sessionId) throws CatalogException {
-        ParamUtils.checkAlias(newStudyAlias, "newStudyAlias", configuration.getCatalog().getOffset());
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-//        String studyOwnerId = studyDBAdaptor.getStudyOwnerId(studyId);
-
-        //User can't write/modify the study
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPDATE_STUDY);
-
-        // Both users must bu updated
-        userDBAdaptor.updateUserLastModified(userId);
-//        userDBAdaptor.updateUserLastModified(studyOwnerId);
-        //TODO get all shared users to updateUserLastModified
-
-        //QueryResult queryResult = studyDBAdaptor.renameStudy(studyId, newStudyAlias);
-        auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, new ObjectMap("alias", newStudyAlias), null, null);
-        return new QueryResult();
-
     }
 
     public QueryResult rank(long projectId, Query query, String field, int numResults, boolean asc, String sessionId)
@@ -645,13 +619,6 @@ public class StudyManager extends AbstractManager {
         studyDBAdaptor.addUsersToGroup(studyId, MEMBERS, userList);
         // Create the group
         return studyDBAdaptor.createGroup(studyId, new Group(groupId, userList));
-    }
-
-    private boolean existsGroup(long studyId, String groupId) throws CatalogDBException {
-        Query query = new Query()
-                .append(StudyDBAdaptor.QueryParams.ID.key(), studyId)
-                .append(StudyDBAdaptor.QueryParams.GROUP_NAME.key(), groupId);
-        return studyDBAdaptor.count(query).first() > 0;
     }
 
     public QueryResult<Group> getGroup(String studyStr, String groupId, String sessionId) throws CatalogException {
@@ -933,10 +900,10 @@ public class StudyManager extends AbstractManager {
         return new QueryResult<>("Variable set summary", dbTime, 1, 1, "", "", Arrays.asList(variableSetSummary));
     }
 
+
     /*
      * Variables Methods
      */
-
     public QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique, Boolean confidential, String description,
                                                       Map<String, Object> attributes, List<Variable> variables, String sessionId)
             throws CatalogException {
@@ -1056,8 +1023,8 @@ public class StudyManager extends AbstractManager {
     }
 
 
-    // **************************   ACLs  ******************************** //
 
+    // **************************   ACLs  ******************************** //
     public List<QueryResult<StudyAclEntry>> getAcls(String studyStr, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         List<Long> studyIds = getIds(userId, studyStr);
@@ -1165,6 +1132,43 @@ public class StudyManager extends AbstractManager {
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }
+    }
+
+
+    // **************************   Private methods  ******************************** //
+    private int getProjectCurrentRelease(long projectId) throws CatalogException {
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key());
+        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(projectId, options);
+        if (projectQueryResult.getNumResults() == 0) {
+            throw new CatalogException("Internal error. Cannot retrieve current release from project");
+        }
+        return projectQueryResult.first().getCurrentRelease();
+    }
+
+    private QueryResult rename(long studyId, String newStudyAlias, String sessionId) throws CatalogException {
+        ParamUtils.checkAlias(newStudyAlias, "newStudyAlias", configuration.getCatalog().getOffset());
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+//        String studyOwnerId = studyDBAdaptor.getStudyOwnerId(studyId);
+
+        //User can't write/modify the study
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPDATE_STUDY);
+
+        // Both users must bu updated
+        userDBAdaptor.updateUserLastModified(userId);
+//        userDBAdaptor.updateUserLastModified(studyOwnerId);
+        //TODO get all shared users to updateUserLastModified
+
+        //QueryResult queryResult = studyDBAdaptor.renameStudy(studyId, newStudyAlias);
+        auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, new ObjectMap("alias", newStudyAlias), null, null);
+        return new QueryResult();
+
+    }
+
+    private boolean existsGroup(long studyId, String groupId) throws CatalogDBException {
+        Query query = new Query()
+                .append(StudyDBAdaptor.QueryParams.ID.key(), studyId)
+                .append(StudyDBAdaptor.QueryParams.GROUP_NAME.key(), groupId);
+        return studyDBAdaptor.count(query).first() > 0;
     }
 
 }

@@ -287,9 +287,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response scanFiles(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr) {
         try {
-            String userId = catalogManager.getUserManager().getUserId(sessionId);
-            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first();
+            Study study = catalogManager.getStudyManager().get(studyStr, null, sessionId).first();
             FileScanner fileScanner = new FileScanner(catalogManager);
 
             /** First, run CheckStudyFiles to find new missing files **/
@@ -303,8 +301,9 @@ public class StudyWSServer extends OpenCGAWSServer {
             Map<String, URI> untrackedFiles = fileScanner.untrackedFiles(study, sessionId);
 
             /** Get missing files **/
-            List<File> missingFiles = catalogManager.getFileManager().get(studyId, query.append(FileDBAdaptor.QueryParams.STATUS_NAME.key
-                    (), File.FileStatus.MISSING), queryOptions, sessionId).getResult();
+            List<File> missingFiles = catalogManager.getFileManager().get(studyStr,
+                    query.append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.MISSING),
+                    queryOptions, sessionId).getResult();
 
             ObjectMap fileStatus = new ObjectMap("untracked", untrackedFiles).append("found", found).append("missing", missingFiles);
 

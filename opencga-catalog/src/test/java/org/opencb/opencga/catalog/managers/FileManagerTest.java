@@ -253,10 +253,15 @@ public class FileManagerTest extends GenericTest {
                 "data/test/folder/file.txt"), null, sessionIdUser).getNumResults());
     }
 
+    URI getStudyURI() throws CatalogException {
+        return catalogManager.getStudyManager().get(String.valueOf(studyId), 
+                new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key()), sessionIdUser).first().getUri();    
+    }
+    
     @Test
     public void testLinkFolder() throws CatalogException, IOException {
 //        // We will link the same folders that are already created in this study into another folder
-        URI uri = Paths.get(catalogManager.getFileManager().getStudyUri(studyId)).resolve("data").toUri();
+        URI uri = Paths.get(getStudyURI()).resolve("data").toUri();
 //        long folderId = catalogManager.searchFile(studyId, new Query(FileDBAdaptor.QueryParams.PATH.key(), "data/"), null,
 //                sessionIdUser).first().getId();
 //        int numFiles = catalogManager.getAllFilesInFolder(folderId, null, sessionIdUser).getNumResults();
@@ -295,7 +300,7 @@ public class FileManagerTest extends GenericTest {
     @Test
     public void testLinkFolder2() throws CatalogException, IOException {
         // We will link the same folders that are already created in this study into another folder
-        URI uri = Paths.get(catalogManager.getFileManager().getStudyUri(studyId)).resolve("data").toUri();
+        URI uri = Paths.get(getStudyURI()).resolve("data").toUri();
 
         // Now we try to create it into a folder that does not exist with parents = false
         thrown.expect(CatalogException.class);
@@ -306,7 +311,7 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void testLinkFolder3() throws CatalogException, IOException {
-        URI uri = Paths.get(catalogManager.getFileManager().getStudyUri(studyId)).resolve("data").toUri();
+        URI uri = Paths.get(getStudyURI()).resolve("data").toUri();
         thrown.expect(CatalogException.class);
         thrown.expectMessage("already existed and is not external");
         link(uri, null, Long.toString(studyId), new ObjectMap(), sessionIdUser);
@@ -326,7 +331,7 @@ public class FileManagerTest extends GenericTest {
     // However, if we try to link to a different path, we will fail
     @Test
     public void testLinkFolder4() throws CatalogException, IOException {
-        URI uri = Paths.get(catalogManager.getFileManager().getStudyUri(studyId)).resolve("data").toUri();
+        URI uri = Paths.get(getStudyURI()).resolve("data").toUri();
         ObjectMap params = new ObjectMap("parents", true);
         QueryResult<File> allFiles = link(uri, "test/myLinkedFolder/", Long.toString(studyId), params, sessionIdUser);
         assertEquals(6, allFiles.getNumResults());
@@ -348,7 +353,7 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void testLinkNormalizedUris() throws CatalogException, IOException, URISyntaxException {
-        Path path = Paths.get(catalogManager.getFileManager().getStudyUri(studyId).resolve("data"));
+        Path path = Paths.get(getStudyURI().resolve("data"));
         URI uri = new URI("file://" + path.toString() + "/../data");
         ObjectMap params = new ObjectMap("parents", true);
         QueryResult<File> allFiles = link(uri, "test/myLinkedFolder/", Long.toString(studyId), params, sessionIdUser);
@@ -361,7 +366,7 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void testLinkNonExistentFile() throws CatalogException, IOException {
-        URI uri= Paths.get(catalogManager.getFileManager().getStudyUri(studyId).resolve("inexistentData")).toUri();
+        URI uri= Paths.get(getStudyURI().resolve("inexistentData")).toUri();
         ObjectMap params = new ObjectMap("parents", true);
         thrown.expect(CatalogIOException.class);
         thrown.expectMessage("does not exist");
@@ -424,7 +429,7 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void testUnlinkFolder() throws CatalogException, IOException {
-        URI uri = Paths.get(catalogManager.getFileManager().getStudyUri(studyId)).resolve("data").toUri();
+        URI uri = Paths.get(getStudyURI()).resolve("data").toUri();
         link(uri, "myDirectory", Long.toString(studyId), new ObjectMap("parents", true), sessionIdUser);
 
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(uri);

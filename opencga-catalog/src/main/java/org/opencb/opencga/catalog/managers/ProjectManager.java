@@ -417,45 +417,6 @@ public class ProjectManager extends AbstractManager {
         }
     }
 
-    // Return true if currentRelease is found in any entry
-    private boolean checkCurrentReleaseInUse(QueryResult<Study> allStudiesInProject, int currentRelease) throws CatalogDBException {
-        for (Study study : allStudiesInProject.getResult()) {
-            if (study.getRelease() == currentRelease) {
-                return true;
-            }
-        }
-        List<Long> studyIds = allStudiesInProject.getResult().stream().map(Study::getId).collect(Collectors.toList());
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
-                .append(FileDBAdaptor.QueryParams.RELEASE.key(), currentRelease);
-        if (fileDBAdaptor.count(query).first() > 0) {
-            return true;
-        }
-        if (sampleDBAdaptor.count(query).first() > 0) {
-            return true;
-        }
-        if (individualDBAdaptor.count(query).first() > 0) {
-            return true;
-        }
-        if (cohortDBAdaptor.count(query).first() > 0) {
-            return true;
-        }
-        if (familyDBAdaptor.count(query).first() > 0) {
-            return true;
-        }
-        if (jobDBAdaptor.count(query).first() > 0) {
-            return true;
-        }
-//        if (panelDBAdaptor.count(query).first() > 0) {
-//            return true;
-//        }
-        if (clinicalDBAdaptor.count(query).first() > 0) {
-            return true;
-        }
-
-        return false;
-    }
-
     public QueryResult rank(String userId, Query query, String field, int numResults, boolean asc, String sessionId)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
@@ -528,6 +489,45 @@ public class ProjectManager extends AbstractManager {
         }
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
+    }
+
+    // Return true if currentRelease is found in any entry
+    private boolean checkCurrentReleaseInUse(QueryResult<Study> allStudiesInProject, int currentRelease) throws CatalogDBException {
+        for (Study study : allStudiesInProject.getResult()) {
+            if (study.getRelease() == currentRelease) {
+                return true;
+            }
+        }
+        List<Long> studyIds = allStudiesInProject.getResult().stream().map(Study::getId).collect(Collectors.toList());
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(FileDBAdaptor.QueryParams.RELEASE.key(), currentRelease);
+        if (fileDBAdaptor.count(query).first() > 0) {
+            return true;
+        }
+        if (sampleDBAdaptor.count(query).first() > 0) {
+            return true;
+        }
+        if (individualDBAdaptor.count(query).first() > 0) {
+            return true;
+        }
+        if (cohortDBAdaptor.count(query).first() > 0) {
+            return true;
+        }
+        if (familyDBAdaptor.count(query).first() > 0) {
+            return true;
+        }
+        if (jobDBAdaptor.count(query).first() > 0) {
+            return true;
+        }
+//        if (panelDBAdaptor.count(query).first() > 0) {
+//            return true;
+//        }
+        if (clinicalDBAdaptor.count(query).first() > 0) {
+            return true;
+        }
+
+        return false;
     }
 
 }

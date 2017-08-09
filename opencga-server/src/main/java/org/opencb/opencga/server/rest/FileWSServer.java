@@ -23,6 +23,7 @@ import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -322,7 +323,9 @@ public class FileWSServer extends OpenCGAWSServer {
             java.nio.file.Path studyPath = null;
 
             try {
-                studyPath = Paths.get(catalogManager.getFileManager().getStudyUri(studyId));
+                QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyStr,
+                        new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key()), sessionId);
+                studyPath = Paths.get(studyQueryResult.first().getUri());
             } catch (CatalogException e) {
                 e.printStackTrace();
                 return createErrorResponse("Upload file", e.getMessage());

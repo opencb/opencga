@@ -210,7 +210,7 @@ public class FileScannerTest {
         List<File> files = fileScanner.scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
         assertEquals(1, files.size());
 
-        URI studyUri = catalogManager.getFileManager().getStudyUri(study.getId());
+        URI studyUri = study.getUri();
         CatalogManagerTest.createDebugFile(studyUri.resolve("data/test/folder/").resolve("file2.txt").getPath());
         File root = catalogManager.getFileManager().get(study.getId(), new Query("name", "."), null, sessionIdUser).first();
         files = fileScanner.scan(root, studyUri, FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
@@ -232,7 +232,7 @@ public class FileScannerTest {
         assertEquals(0, files.size());
 
         //Add one extra file. ReSync study folder.
-        URI studyUri = catalogManager.getFileManager().getStudyUri(study.getId());
+        URI studyUri = study.getUri();
         Path filePath = CatalogManagerTest.createDebugFile(studyUri.resolve("data/test/folder/").resolve("file_scanner_test_file.txt").getPath()).toPath();
         files = fileScanner.reSync(study, true, sessionIdUser);
 
