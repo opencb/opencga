@@ -36,7 +36,6 @@ public class JwtSessionManagerTest extends GenericTest {
 
     private JwtManager jwtSessionManager;
     private String jwtToken;
-    private String ip = "172.20.56.1";
 
     @Before
     public void setUp() throws Exception  {

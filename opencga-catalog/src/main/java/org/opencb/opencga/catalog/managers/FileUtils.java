@@ -26,7 +26,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.utils.CompressionDetector;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
@@ -740,7 +739,7 @@ public class FileUtils {
     }
 
     public static File.Bioformat detectBioformat(URI uri) {
-        return detectBioformat(uri, detectFormat(uri), CompressionDetector.detect(uri));
+        return detectBioformat(uri, detectFormat(uri), detectCompression(uri));
     }
 
     public static File.Bioformat detectBioformat(URI uri, File.Format format, File.Compression compression) {
@@ -877,7 +876,7 @@ public class FileUtils {
 
         String path = uri.getPath();
         String extension = com.google.common.io.Files.getFileExtension(path);
-        if (CompressionDetector.getCompression(extension) != File.Compression.NONE) {
+        if (getCompression(extension) != File.Compression.NONE) {
             path = com.google.common.io.Files.getNameWithoutExtension(path);
             extension = com.google.common.io.Files.getFileExtension(path);
         }
@@ -929,6 +928,38 @@ public class FileUtils {
 
         //PLAIN
         return File.Format.UNKNOWN;
+    }
+
+    public static File.Compression detectCompression(URI uri) {
+        String fileExtension = com.google.common.io.Files.getFileExtension(uri.getPath());
+        return getCompression(fileExtension);
+    }
+
+    public static File.Compression getCompression(String fileExtension) {
+        File.Compression compression;
+
+        // Check if fileExtension is null
+        if (fileExtension == null) {
+            return File.Compression.NONE;
+        }
+
+        switch (fileExtension.toLowerCase()) {
+            case "gz":
+            case "gzip":
+                compression = File.Compression.GZIP;
+                break;
+            case "zip":
+                compression = File.Compression.ZIP;
+                break;
+            case "snappy":
+            case "snz":
+                compression = File.Compression.SNAPPY;
+                break;
+            default:
+                compression = File.Compression.NONE;
+                break;
+        }
+        return compression;
     }
 
 }
