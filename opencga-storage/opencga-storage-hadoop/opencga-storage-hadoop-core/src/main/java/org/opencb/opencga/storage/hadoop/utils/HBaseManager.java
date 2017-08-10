@@ -303,6 +303,7 @@ public class HBaseManager extends Configured implements AutoCloseable {
         } catch (NamespaceNotFoundException ignored) {
             return false;
         }
+
     }
 
     /**
