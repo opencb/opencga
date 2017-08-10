@@ -43,7 +43,7 @@ public class CohortConverter extends GenericDocumentComplexConverter<Cohort> {
     }
 
     public List<Document> convertSamplesToDocument(List<Sample> sampleList) {
-        if (sampleList == null || sampleList.size() == 0) {
+        if (sampleList == null || sampleList.isEmpty()) {
             return Collections.emptyList();
         }
         List<Document> samples = new ArrayList(sampleList.size());

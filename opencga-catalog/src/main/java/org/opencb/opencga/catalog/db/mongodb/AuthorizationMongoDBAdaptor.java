@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -241,7 +242,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 Projections.include(QueryParams.ID.key(), QueryParams.ACL.key())));
 
         List<Bson> filters = new ArrayList<>();
-        if (members.size() > 0) {
+        if (CollectionUtils.isNotEmpty(members)) {
             List<Pattern> regexMemberList = new ArrayList<>(members.size());
             for (String member : members) {
                 if (!member.equals(ANONYMOUS)) {
@@ -253,7 +254,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             filters.add(Filters.in(QueryParams.ACL.key(), regexMemberList));
         }
 
-        if (filters.size() > 0) {
+        if (CollectionUtils.isNotEmpty(filters)) {
             Bson filter = filters.size() == 1 ? filters.get(0) : Filters.and(filters);
             aggregation.add(Aggregates.match(filter));
         }
@@ -277,7 +278,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 // If _acl was not previously defined, it can be null the first time
                 for (String memberPermission : memberList) {
                     String[] split = memberPermission.split("_", 2);
-                    if (memberSet.size() == 0 || memberSet.contains(split[0])) {
+                    if (memberSet.isEmpty() || memberSet.contains(split[0])) {
                         if (!permissions.containsKey(split[0])) {
                             permissions.put(split[0], new ArrayList<>());
                         }
@@ -451,13 +452,13 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     @Override
     public void removeFromMembers(List<Long> resourceIds, List<String> members, List<String> permissions, String entity)
             throws CatalogDBException {
-        if (members == null || members.size() == 0) {
+        if (members == null || members.isEmpty()) {
             return;
         }
         validateCollection(entity);
         MongoDBCollection collection = dbCollectionMap.get(entity);
 
-        if (permissions == null || permissions.size() == 0) {
+        if (permissions == null || permissions.isEmpty()) {
             // We get all possible permissions those members will have to do a full reset
             permissions = fullPermissionsMap.get(entity);
         }
@@ -476,7 +477,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     @Override
     public void resetMembersFromAllEntries(long studyId, List<String> members) throws CatalogDBException {
-        if (members == null || members.size() == 0) {
+        if (members == null || members.isEmpty()) {
             return;
         }
 
@@ -540,7 +541,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     private List<String> createPermissionArray(Map<String, List<String>> memberPermissionsMap) {
         List<String> myPermissions = new ArrayList<>(memberPermissionsMap.size() * 2);
         for (Map.Entry<String, List<String>> stringListEntry : memberPermissionsMap.entrySet()) {
-            if (stringListEntry.getValue().size() == 0) {
+            if (stringListEntry.getValue().isEmpty()) {
                 stringListEntry.getValue().add("NONE");
             }
 
@@ -554,7 +555,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     private List<String> createPermissionArray(List<String> members, List<String> permissions) {
         List<String> writtenPermissions;
-        if (permissions.size() == 0) {
+        if (permissions.isEmpty()) {
             writtenPermissions = Arrays.asList("NONE");
         } else {
             writtenPermissions = permissions;

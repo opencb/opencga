@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.auth.authorization;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.CatalogAuditManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -690,7 +691,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         List<String> userList = members.stream()
                 .filter(member -> !member.startsWith("@"))
                 .collect(Collectors.toList());
-        if (userList.size() > 0) {
+        if (CollectionUtils.isNotEmpty(userList)) {
             // We first add the member to the @members group in case they didn't belong already
             for (Long studyId : studyIds) {
                 studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, userList);
@@ -708,7 +709,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         List<String> userList = members.stream()
                 .filter(member -> !member.startsWith("@"))
                 .collect(Collectors.toList());
-        if (userList.size() > 0) {
+        if (CollectionUtils.isNotEmpty(userList)) {
             // We first add the member to the @members group in case they didn't belong already
             for (Long studyId : studyIds) {
                 studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, userList);
@@ -733,7 +734,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(long studyId, List<Long> ids, List<String> members,
                                                                      List<String> permissions, String entity) throws CatalogException {
-        if (ids == null || ids.size() == 0) {
+        if (ids == null || ids.isEmpty()) {
             logger.warn("Missing identifiers to set acls");
             return Collections.emptyList();
         }
@@ -742,7 +743,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         List<String> userList = members.stream()
                 .filter(member -> !member.startsWith("@"))
                 .collect(Collectors.toList());
-        if (userList.size() > 0) {
+        if (CollectionUtils.isNotEmpty(userList)) {
             // We first add the member to the @members group in case they didn't belong already
             studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, userList);
         }
@@ -763,7 +764,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(long studyId, List<Long> ids, List<String> members,
                                                                      List<String> permissions, String entity) throws CatalogException {
-        if (ids == null || ids.size() == 0) {
+        if (ids == null || ids.isEmpty()) {
             logger.warn("Missing identifiers to add acls");
             return Collections.emptyList();
         }
@@ -772,7 +773,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         List<String> userList = members.stream()
                 .filter(member -> !member.startsWith("@"))
                 .collect(Collectors.toList());
-        if (userList.size() > 0) {
+        if (CollectionUtils.isNotEmpty(userList)) {
             // We first add the member to the @members group in case they didn't belong already
             studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, userList);
         }
@@ -794,7 +795,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public <E extends AbstractAclEntry> List<QueryResult<E>> removeAcls(List<Long> ids, List<String> members,
                                                                         @Nullable List<String> permissions, String entity)
             throws CatalogException {
-        if (ids == null || ids.size() == 0) {
+        if (ids == null || ids.isEmpty()) {
             logger.warn("Missing identifiers to remove acls");
             return Collections.emptyList();
         }
@@ -815,7 +816,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public <E extends AbstractAclEntry> List<QueryResult<E>> replicateAcls(long studyId, List<Long> ids, List<E> aclEntries,
                                                                            String entity) throws CatalogException {
-        if (ids == null || ids.size() == 0) {
+        if (ids == null || ids.isEmpty()) {
             logger.warn("Missing identifiers to set acls");
             return Collections.emptyList();
         }

@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
@@ -1703,7 +1704,7 @@ public class FileManager extends ResourceManager<File> {
         }
 
         options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
-        if (pathList.size() > 0) {
+        if (CollectionUtils.isNotEmpty(pathList)) {
             // Search for all the files within the list of paths
             query = new Query()
                     .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
@@ -1946,7 +1947,7 @@ public class FileManager extends ResourceManager<File> {
         QueryResult<File> queryResult = fileDBAdaptor.get(query,
                 new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key()));
         List<Long> fileIds = queryResult.getResult().stream().map(File::getId).collect(Collectors.toList());
-        if (fileIds.size() == 0) {
+        if (fileIds.isEmpty()) {
             logger.debug("Could not obtain any id given the query: {}", query.safeToString());
             throw new CatalogDBException("Could not obtain any id given the query");
         }
@@ -1955,7 +1956,7 @@ public class FileManager extends ResourceManager<File> {
     }
 
     private void checkCanDelete(List<Long> fileIds) throws CatalogException {
-        if (fileIds == null || fileIds.size() == 0) {
+        if (fileIds == null || fileIds.isEmpty()) {
             throw new CatalogException("Nothing to delete");
         }
 

@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -357,7 +358,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     individualDBAdaptor.checkId(individual);
                     break;
                 case CHILDREN_IDS:
-                    if (familyQueryResult.first().getChildren().size() > 0) {
+                    if (CollectionUtils.isNotEmpty(familyQueryResult.first().getChildren())) {
                         throw new CatalogException("Cannot update children parameter of family. The family " + familyId + " already has "
                                 + "children defined");
                     }

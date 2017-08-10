@@ -50,7 +50,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
     }
 
     default void checkIds(List<String> userIds) throws CatalogDBException {
-        if (userIds == null || userIds.size() == 0) {
+        if (userIds == null || userIds.isEmpty()) {
             throw CatalogDBException.newInstance("No users to be checked.");
         }
 

@@ -129,7 +129,7 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
     private List<File> parseToListOfFiles(List<Long> longList) {
-        if (longList == null || longList.size() == 0) {
+        if (longList == null || longList.isEmpty()) {
             return Collections.emptyList();
         }
         List<File> fileList = new ArrayList<>(longList.size());
