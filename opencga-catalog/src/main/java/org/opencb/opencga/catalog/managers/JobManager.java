@@ -65,8 +65,6 @@ public class JobManager extends ResourceManager<Job> {
     private UserManager userManager;
     private StudyManager studyManager;
 
-    public static final String DELETE_FILES = "deleteFiles";
-
     JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                       DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                       Configuration configuration) {
@@ -136,30 +134,6 @@ public class JobManager extends ResourceManager<Job> {
         }
 
         return new MyResourceIds(userId, studyId, jobIds);
-    }
-
-    private Long smartResolutor(String jobName, long studyId) throws CatalogException {
-        if (StringUtils.isNumeric(jobName)) {
-            long jobId = Long.parseLong(jobName);
-            if (jobId > configuration.getCatalog().getOffset()) {
-                jobDBAdaptor.exists(jobId);
-                return jobId;
-            }
-        }
-
-        Query query = new Query()
-                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .append(JobDBAdaptor.QueryParams.NAME.key(), jobName);
-        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, JobDBAdaptor.QueryParams.ID.key());
-        QueryResult<Job> queryResult = jobDBAdaptor.get(query, qOptions);
-
-        if (queryResult.getNumResults() > 1) {
-            throw new CatalogException("Error: More than one job id found based on " + jobName);
-        } else if (queryResult.getNumResults() == 0) {
-            throw new CatalogException("Error: No job found based on " + jobName);
-        } else {
-            return queryResult.first().getId();
-        }
     }
 
     public QueryResult<ObjectMap> visit(long jobId, String sessionId) throws CatalogException {
@@ -605,6 +579,33 @@ public class JobManager extends ResourceManager<Job> {
                 return authorizationManager.removeAcls(resourceIds.getResourceIds(), members, null, collectionName);
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
+        }
+    }
+
+
+    // **************************   Private methods  ******************************** //
+
+    private Long smartResolutor(String jobName, long studyId) throws CatalogException {
+        if (StringUtils.isNumeric(jobName)) {
+            long jobId = Long.parseLong(jobName);
+            if (jobId > configuration.getCatalog().getOffset()) {
+                jobDBAdaptor.exists(jobId);
+                return jobId;
+            }
+        }
+
+        Query query = new Query()
+                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(JobDBAdaptor.QueryParams.NAME.key(), jobName);
+        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, JobDBAdaptor.QueryParams.ID.key());
+        QueryResult<Job> queryResult = jobDBAdaptor.get(query, qOptions);
+
+        if (queryResult.getNumResults() > 1) {
+            throw new CatalogException("Error: More than one job id found based on " + jobName);
+        } else if (queryResult.getNumResults() == 0) {
+            throw new CatalogException("Error: No job found based on " + jobName);
+        } else {
+            return queryResult.first().getId();
         }
     }
 

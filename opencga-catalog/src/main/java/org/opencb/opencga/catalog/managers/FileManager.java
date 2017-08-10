@@ -86,7 +86,8 @@ public class FileManager extends ResourceManager<File> {
 
     static {
         INCLUDE_STUDY_URI = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key());
-        INCLUDE_FILE_URI_PATH = new QueryOptions("include", Arrays.asList("projects.studies.files.uri", "projects.studies.files.path"));
+        INCLUDE_FILE_URI_PATH = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key()));
         ROOT_FIRST_COMPARATOR = (f1, f2) -> (f1.getPath() == null ? 0 : f1.getPath().length())
                 - (f2.getPath() == null ? 0 : f2.getPath().length());
         ROOT_LAST_COMPARATOR = (f1, f2) -> (f2.getPath() == null ? 0 : f2.getPath().length())
@@ -109,36 +110,19 @@ public class FileManager extends ResourceManager<File> {
         if (file.getUri() != null) {
             return file.getUri();
         } else {
-            // This should never be executed, since version 0.8-rc1 the URI is stored always.
-            return getUri(studyDBAdaptor.get(getStudyId(file.getId()), INCLUDE_STUDY_URI).first(), file);
-        }
-    }
-
-    public URI getUri(Study study, File file) throws CatalogException {
-        ParamUtils.checkObj(study, "Study");
-        ParamUtils.checkObj(file, "File");
-        if (file.getUri() != null) {
-            return file.getUri();
-        } else {
-            QueryResult<File> parents = getParents(file, false, INCLUDE_FILE_URI_PATH);
-            for (File parent : parents.getResult()) {
-                if (parent.getUri() != null) {
-                    String relativePath = file.getPath().replaceFirst(parent.getPath(), "");
-                    return parent.getUri().resolve(relativePath);
-                }
+            QueryResult<File> fileQueryResult = fileDBAdaptor.get(file.getId(), INCLUDE_STUDY_URI);
+            if (fileQueryResult.getNumResults() == 0) {
+                throw new CatalogException("File " + file.getId() + " not found");
             }
-            URI studyUri = study.getUri() == null ? getStudyUri(study.getId()) : study.getUri();
-            return file.getPath().isEmpty()
-                    ? studyUri
-                    : catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, file.getPath());
+            return fileQueryResult.first().getUri();
         }
     }
 
+    @Deprecated
     public URI getUri(long studyId, String filePath) throws CatalogException {
         ParamUtils.checkObj(filePath, "filePath");
 
-        List<File> parents = getParents(false, new QueryOptions("include", "projects.studies.files.path,projects.studies.files.uri"),
-                filePath, studyId).getResult();
+        List<File> parents = getParents(false, INCLUDE_FILE_URI_PATH, filePath, studyId).getResult();
 
         for (File parent : parents) {
             if (parent.getUri() != null) {
@@ -375,14 +359,31 @@ public class FileManager extends ResourceManager<File> {
         return new QueryResult<>("Update file index", 0, 1, 1, "", "", Arrays.asList(index));
     }
 
-    public boolean isRootFolder(File file) throws CatalogException {
-        ParamUtils.checkObj(file, "File");
-        return file.getPath().isEmpty();
-    }
-
     public QueryResult<File> getParents(long fileId, QueryOptions options, String sessionId) throws CatalogException {
         return getParents(true, options, get(fileId, new QueryOptions("include", "projects.studies.files.path"), sessionId).first()
                 .getPath(), getStudyId(fileId));
+    }
+
+    public QueryResult<File> getParent(long fileId, QueryOptions options, String sessionId) throws CatalogException {
+        File file = get(fileId, null, sessionId).first();
+        Path parent = Paths.get(file.getPath()).getParent();
+        String parentPath;
+        if (parent == null) {
+            parentPath = "";
+        } else {
+            parentPath = parent.toString().endsWith("/") ? parent.toString() : parent.toString() + "/";
+        }
+        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
+        String user = userManager.getUserId(sessionId);
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.PATH.key(), parentPath);
+        QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options, user);
+        if (fileQueryResult.getNumResults() == 0) {
+            throw CatalogAuthorizationException.deny(user, "view", "file", fileId, "");
+        }
+        fileQueryResult.setId(Long.toString(fileId));
+        return fileQueryResult;
     }
 
     public QueryResult<File> createFolder(String studyStr, String path, File.FileStatus status, boolean parents, String description,
@@ -584,28 +585,6 @@ public class FileManager extends ResourceManager<File> {
 
         QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options, userId);
 
-        return fileQueryResult;
-    }
-
-    public QueryResult<File> getParent(long fileId, QueryOptions options, String sessionId) throws CatalogException {
-        File file = get(fileId, null, sessionId).first();
-        Path parent = Paths.get(file.getPath()).getParent();
-        String parentPath;
-        if (parent == null) {
-            parentPath = "";
-        } else {
-            parentPath = parent.toString().endsWith("/") ? parent.toString() : parent.toString() + "/";
-        }
-        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
-        String user = userManager.getUserId(sessionId);
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .append(FileDBAdaptor.QueryParams.PATH.key(), parentPath);
-        QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options, user);
-        if (fileQueryResult.getNumResults() == 0) {
-            throw CatalogAuthorizationException.deny(user, "view", "file", fileId, "");
-        }
-        fileQueryResult.setId(Long.toString(fileId));
         return fileQueryResult;
     }
 
@@ -1577,51 +1556,6 @@ public class FileManager extends ResourceManager<File> {
         auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
     }
 
-    /**
-     * Fetch all the recursive files and folders within the list of file ids given.
-     *
-     * @param resourceIds ResourceId object containing the list of file ids, studyId and userId.
-     * @return a new ResourceId object
-     */
-    private MyResourceIds getRecursiveFilesAndFolders(MyResourceIds resourceIds) throws CatalogException {
-        Set<Long> fileIdSet = new HashSet<>();
-        fileIdSet.addAll(resourceIds.getResourceIds());
-
-        // Get info of the files to see if they are files or folders
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
-                .append(FileDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds());
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.TYPE.key()));
-
-        QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options);
-        if (fileQueryResult.getNumResults() != resourceIds.getResourceIds().size()) {
-            logger.error("Some files were not found for query {}", query.safeToString());
-            throw new CatalogException("Internal error. Some files were not found.");
-        }
-
-        List<String> pathList = new ArrayList<>();
-        for (File file : fileQueryResult.getResult()) {
-            if (file.getType().equals(File.Type.DIRECTORY)) {
-                pathList.add("~^" + file.getPath());
-            }
-        }
-
-        options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
-        if (pathList.size() > 0) {
-            // Search for all the files within the list of paths
-            query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
-                    .append(FileDBAdaptor.QueryParams.PATH.key(), pathList);
-            QueryResult<File> fileQueryResult1 = fileDBAdaptor.get(query, options);
-            fileIdSet.addAll(fileQueryResult1.getResult().stream().map(File::getId).collect(Collectors.toSet()));
-        }
-
-        List<Long> fileIdList = new ArrayList<>(fileIdSet.size());
-        fileIdList.addAll(fileIdSet);
-        return new MyResourceIds(resourceIds.getUser(), resourceIds.getStudyId(), fileIdList);
-    }
-
 
     // **************************   ACLs  ******************************** //
 
@@ -1734,6 +1668,56 @@ public class FileManager extends ResourceManager<File> {
 
 
     // **************************   Private methods   ******************************** //
+    private boolean isRootFolder(File file) throws CatalogException {
+        ParamUtils.checkObj(file, "File");
+        return file.getPath().isEmpty();
+    }
+
+    /**
+     * Fetch all the recursive files and folders within the list of file ids given.
+     *
+     * @param resourceIds ResourceId object containing the list of file ids, studyId and userId.
+     * @return a new ResourceId object
+     */
+    private MyResourceIds getRecursiveFilesAndFolders(MyResourceIds resourceIds) throws CatalogException {
+        Set<Long> fileIdSet = new HashSet<>();
+        fileIdSet.addAll(resourceIds.getResourceIds());
+
+        // Get info of the files to see if they are files or folders
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
+                .append(FileDBAdaptor.QueryParams.ID.key(), resourceIds.getResourceIds());
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.TYPE.key()));
+
+        QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options);
+        if (fileQueryResult.getNumResults() != resourceIds.getResourceIds().size()) {
+            logger.error("Some files were not found for query {}", query.safeToString());
+            throw new CatalogException("Internal error. Some files were not found.");
+        }
+
+        List<String> pathList = new ArrayList<>();
+        for (File file : fileQueryResult.getResult()) {
+            if (file.getType().equals(File.Type.DIRECTORY)) {
+                pathList.add("~^" + file.getPath());
+            }
+        }
+
+        options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
+        if (pathList.size() > 0) {
+            // Search for all the files within the list of paths
+            query = new Query()
+                    .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
+                    .append(FileDBAdaptor.QueryParams.PATH.key(), pathList);
+            QueryResult<File> fileQueryResult1 = fileDBAdaptor.get(query, options);
+            fileIdSet.addAll(fileQueryResult1.getResult().stream().map(File::getId).collect(Collectors.toSet()));
+        }
+
+        List<Long> fileIdList = new ArrayList<>(fileIdSet.size());
+        fileIdList.addAll(fileIdSet);
+        return new MyResourceIds(resourceIds.getUser(), resourceIds.getStudyId(), fileIdList);
+    }
+
     private List<String> getParentPaths(String filePath) {
         String path = "";
         String[] split = filePath.split("/");

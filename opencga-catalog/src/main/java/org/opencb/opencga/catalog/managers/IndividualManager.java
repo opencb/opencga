@@ -168,31 +168,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         return individualDBAdaptor.iterator(query, options, userId);
     }
 
-    private void addParentsInfoToAttributes(String userId, long studyId, QueryResult<Individual> queryResult) {
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(FamilyDBAdaptor.QueryParams.FATHER.key(), FamilyDBAdaptor.QueryParams.MOTHER.key()));
-        for (Individual individual : queryResult.getResult()) {
-            Query query = new Query()
-                    .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(FamilyDBAdaptor.QueryParams.CHILDREN_IDS.key(), individual.getId());
-            try {
-                QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions, userId);
-                if (familyQueryResult.getNumResults() == 0) {
-                    continue;
-                }
-                Map<String, Object> attributes = individual.getAttributes();
-                if (attributes == null) {
-                    individual.setAttributes(new HashMap<>());
-                    attributes = individual.getAttributes();
-                }
-                attributes.put(FamilyDBAdaptor.QueryParams.MOTHER.key(), familyQueryResult.first().getMother());
-                attributes.put(FamilyDBAdaptor.QueryParams.FATHER.key(), familyQueryResult.first().getFather());
-
-            } catch (CatalogException e) {
-                logger.warn("Error occurred when trying to fetch parents of individual: {}", e.getMessage(), e);
-            }
-        }
-    }
 
     public List<QueryResult<Individual>> restore(String individualIdStr, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(individualIdStr, "id");
@@ -619,34 +594,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
-    private List<Long> getSamplesFromIndividuals(MyResourceIds resourceIds) throws CatalogDBException {
-        // Look for all the samples belonging to the individual
-        Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
-                .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), resourceIds.getResourceIds());
-
-        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query,
-                new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()));
-
-        return sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
-    }
-
-    private MyResourceId commonGetAllInvidualSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(id, "id");
-        return getId(id, studyStr, sessionId);
-//        authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
-//                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
-//        return resource.getResourceId();
-    }
-
-    private MyResourceId commonGetAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
-            throws CatalogException {
-        ParamUtils.checkAlias(annotationSetName, "annotationSetName", configuration.getCatalog().getOffset());
-        return getId(id, studyStr, sessionId);
-//        authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
-//                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
-//        return resource.getResourceId();
-    }
 
     @Override
     public QueryResult<AnnotationSet> createAnnotationSet(String id, @Nullable String studyStr, String variableSetId,
@@ -805,6 +752,25 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
 
+    private MyResourceId commonGetAllInvidualSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(id, "id");
+        return getId(id, studyStr, sessionId);
+//        authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
+//                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
+//        return resource.getResourceId();
+    }
+
+
+    private MyResourceId commonGetAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkAlias(annotationSetName, "annotationSetName", configuration.getCatalog().getOffset());
+        return getId(id, studyStr, sessionId);
+//        authorizationManager.checkIndividualPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
+//                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
+//        return resource.getResourceId();
+    }
+
+
     // **************************   ACLs  ******************************** //
 
     public List<QueryResult<IndividualAclEntry>> getAcls(String studyStr, String individualStr, String sessionId) throws CatalogException {
@@ -955,6 +921,47 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
 
         return queryResults;
+    }
+
+
+    // **************************   Private methods  ******************************** //
+
+    private void addParentsInfoToAttributes(String userId, long studyId, QueryResult<Individual> queryResult) {
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(FamilyDBAdaptor.QueryParams.FATHER.key(), FamilyDBAdaptor.QueryParams.MOTHER.key()));
+        for (Individual individual : queryResult.getResult()) {
+            Query query = new Query()
+                    .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(FamilyDBAdaptor.QueryParams.CHILDREN_IDS.key(), individual.getId());
+            try {
+                QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions, userId);
+                if (familyQueryResult.getNumResults() == 0) {
+                    continue;
+                }
+                Map<String, Object> attributes = individual.getAttributes();
+                if (attributes == null) {
+                    individual.setAttributes(new HashMap<>());
+                    attributes = individual.getAttributes();
+                }
+                attributes.put(FamilyDBAdaptor.QueryParams.MOTHER.key(), familyQueryResult.first().getMother());
+                attributes.put(FamilyDBAdaptor.QueryParams.FATHER.key(), familyQueryResult.first().getFather());
+
+            } catch (CatalogException e) {
+                logger.warn("Error occurred when trying to fetch parents of individual: {}", e.getMessage(), e);
+            }
+        }
+    }
+
+    private List<Long> getSamplesFromIndividuals(MyResourceIds resourceIds) throws CatalogDBException {
+        // Look for all the samples belonging to the individual
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
+                .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), resourceIds.getResourceIds());
+
+        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query,
+                new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()));
+
+        return sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
     }
 
 }

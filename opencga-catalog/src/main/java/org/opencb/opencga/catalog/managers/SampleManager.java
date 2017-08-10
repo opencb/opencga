@@ -385,27 +385,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return queryResultList;
     }
 
-    void checkCanDeleteSamples(MyResourceIds resources) throws CatalogException {
-        for (Long sampleId : resources.getResourceIds()) {
-            authorizationManager.checkSamplePermission(resources.getStudyId(), sampleId, resources.getUser(),
-                    SampleAclEntry.SamplePermissions.DELETE);
-        }
-
-        // Check that the samples are not being used in cohorts
-        Query query = new Query()
-                .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId())
-                .append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), resources.getResourceIds());
-        long count = cohortDBAdaptor.count(query).first();
-        if (count > 0) {
-            if (resources.getResourceIds().size() == 1) {
-                throw new CatalogException("The sample " + resources.getResourceIds().get(0) + " is part of " + count + " cohorts. Please, "
-                        + "first update or delete the cohorts");
-            } else {
-                throw new CatalogException("Some samples are part of " + count + " cohorts. Please, first update or delete the cohorts");
-            }
-        }
-    }
-
 //    public List<QueryResult<Sample>> restore(String sampleIdStr, QueryOptions options, String sessionId) throws CatalogException {
 //        ParamUtils.checkParameter(sampleIdStr, "id");
 //        options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -560,24 +539,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
-    }
-
-    private MyResourceId commonGetAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(id, "id");
-        return catalogManager.getSampleManager().getId(id, studyStr, sessionId);
-//        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
-//                SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
-//        return resourceId.getResourceId();
-    }
-
-    private MyResourceId commonGetAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
-            throws CatalogException {
-        ParamUtils.checkParameter(id, "id");
-        ParamUtils.checkAlias(annotationSetName, "annotationSetName", configuration.getCatalog().getOffset());
-        return catalogManager.getSampleManager().getId(id, studyStr, sessionId);
-//        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
-//                SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
-//        return resourceId.getResourceId();
     }
 
     @Override
@@ -737,6 +698,25 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         return sampleDBAdaptor.searchAnnotationSet(resourceId, variableSetId, annotation,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.toString());
+    }
+
+
+    private MyResourceId commonGetAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(id, "id");
+        return catalogManager.getSampleManager().getId(id, studyStr, sessionId);
+//        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
+//                SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
+//        return resourceId.getResourceId();
+    }
+
+    private MyResourceId commonGetAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkParameter(id, "id");
+        ParamUtils.checkAlias(annotationSetName, "annotationSetName", configuration.getCatalog().getOffset());
+        return catalogManager.getSampleManager().getId(id, studyStr, sessionId);
+//        authorizationManager.checkSamplePermission(resourceId.getStudyId(), resourceId.getResourceId(), resourceId.getUser(),
+//                SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
+//        return resourceId.getResourceId();
     }
 
 
@@ -914,4 +894,29 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         return queryResults;
     }
+
+
+    // **************************   Private methods  ******************************** //
+
+    void checkCanDeleteSamples(MyResourceIds resources) throws CatalogException {
+        for (Long sampleId : resources.getResourceIds()) {
+            authorizationManager.checkSamplePermission(resources.getStudyId(), sampleId, resources.getUser(),
+                    SampleAclEntry.SamplePermissions.DELETE);
+        }
+
+        // Check that the samples are not being used in cohorts
+        Query query = new Query()
+                .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId())
+                .append(CohortDBAdaptor.QueryParams.SAMPLE_IDS.key(), resources.getResourceIds());
+        long count = cohortDBAdaptor.count(query).first();
+        if (count > 0) {
+            if (resources.getResourceIds().size() == 1) {
+                throw new CatalogException("The sample " + resources.getResourceIds().get(0) + " is part of " + count + " cohorts. Please, "
+                        + "first update or delete the cohorts");
+            } else {
+                throw new CatalogException("Some samples are part of " + count + " cohorts. Please, first update or delete the cohorts");
+            }
+        }
+    }
+
 }
