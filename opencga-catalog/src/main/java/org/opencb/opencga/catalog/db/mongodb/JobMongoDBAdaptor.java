@@ -92,7 +92,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     @Override
     public QueryResult<Long> extractFilesFromJobs(Query query, List<Long> fileIds) throws CatalogDBException {
-        if (fileIds == null || fileIds.size() == 0) {
+        if (fileIds == null || fileIds.isEmpty()) {
             throw new CatalogDBException("The array of fileIds is empty");
         }
 

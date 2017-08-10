@@ -122,13 +122,13 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
     }
 
     public void addMemberInfoToFamily(QueryResult<Family> familyQueryResult) {
-        if (familyQueryResult.getResult() == null || familyQueryResult.getResult().size() == 0) {
+        if (familyQueryResult.getResult() == null || familyQueryResult.getResult().isEmpty()) {
             return;
         }
         for (Family family : familyQueryResult.getResult()) {
             family.setFather(getIndividual(family.getFather()));
             family.setMother(getIndividual(family.getMother()));
-            if (family.getChildren() != null && family.getChildren().size() > 0) {
+            if (family.getChildren() != null && !family.getChildren().isEmpty()) {
                 family.setChildren(family.getChildren().stream().map(this::getIndividual).collect(Collectors.toList()));
             }
         }
@@ -604,14 +604,14 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
             }
         }
 
-        if (annotationList.size() > 0) {
+        if (!annotationList.isEmpty()) {
             Bson projection = Projections.elemMatch(QueryParams.ANNOTATION_SETS.key(), Filters.and(annotationList));
             andBsonList.add(projection);
         }
         if (authorisation != null && authorisation.size() > 0) {
             andBsonList.add(authorisation);
         }
-        if (andBsonList.size() > 0) {
+        if (!andBsonList.isEmpty()) {
             return Filters.and(andBsonList);
         } else {
             return new Document();

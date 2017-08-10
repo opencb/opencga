@@ -103,7 +103,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 return studyAclEntry;
             }
         }
-        return null;
+        return new StudyAclEntry("", Collections.emptyList());
     }
 
     @Override

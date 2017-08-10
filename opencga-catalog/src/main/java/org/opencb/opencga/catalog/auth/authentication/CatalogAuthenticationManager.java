@@ -110,7 +110,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
         QueryResult<User> user =
                 userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.EMAIL.key()), "");
 
-        if (user == null && user.getNumResults() != 1) {
+        if (user == null || user.getNumResults() != 1) {
             throw new CatalogException("Could not retrieve the user e-mail.");
         }
 

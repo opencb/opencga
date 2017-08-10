@@ -220,7 +220,7 @@ public class OpenCGAWSServer {
             logger.info("|  * Server logfile: " + configDirPath.getParent().resolve("logs").resolve("server.log"));
             initLogger(configDirPath.getParent().resolve("logs"));
         } else {
-            logger.error("No valid configuration directory provided: '{}'", configDirPath.toString());
+            logger.error("No valid configuration directory provided: '{}'");
         }
 
         logger.info("========================================================================\n");

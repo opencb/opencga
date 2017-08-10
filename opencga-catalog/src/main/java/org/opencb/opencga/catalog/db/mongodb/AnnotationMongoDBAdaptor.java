@@ -642,7 +642,7 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
 
         List<VariableSummary> variableSummaryList = new ArrayList<>();
 
-        List<FeatureCount> featureCountList = null;
+        List<FeatureCount> featureCountList = new ArrayList<>();
         VariableSummary v = new VariableSummary();
 
         for (Document document : result) {
