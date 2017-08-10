@@ -109,7 +109,7 @@ public class VariantSearchManager {
         try {
             SolrPing solrPing = new SolrPing();
             SolrPingResponse response = solrPing.process(solrClient, collection);
-            return response.getResponse().get("status").equals("OK");
+            return ("OK").equals(response.getResponse().get("status"));
         } catch (SolrServerException | IOException | SolrException e) {
             return false;
         }
@@ -556,7 +556,7 @@ public class VariantSearchManager {
 
                 countName = solrPivot.getValue().toString();
                 // Discard Ensembl genes and transcripts
-                if (!field.getName().equals("genes")
+                if (!("genes").equals(field.getName())
                         || (!countName.startsWith("ENSG0") && !countName.startsWith("ENST0"))) {
                     // and then check if this has to be include
                     if (toInclude(includes, field.getName(), solrPivot.getValue().toString())) {
@@ -619,7 +619,7 @@ public class VariantSearchManager {
 
     private String updateValueIfSoAcc(String fieldName, String fieldValue) {
         String value = fieldValue;
-        if (fieldName.equals("soAcc")) {
+        if (("soAcc").equals(fieldName)) {
             int so = Integer.parseInt(fieldValue);
             value = ConsequenceTypeMappings.accessionToTerm.get(so) + String.format(" (SO:%07d)", so);
         }
@@ -643,7 +643,7 @@ public class VariantSearchManager {
                 for (FacetField.Count solrCount: solrField.getValues()) {
                     countName = solrCount.getName();
                     // discard Ensembl genes and trascripts
-                    if (!field.getName().equals("genes")
+                    if (!("genes").equals(field.getName())
                             || (!countName.startsWith("ENSG0") && !countName.startsWith("ENST0"))) {
                         // and then check if this has to be include
                         if (toInclude(includes, field.getName(), solrCount.getName())) {
@@ -679,7 +679,7 @@ public class VariantSearchManager {
 
                         countName = solrPivot.getValue().toString();
                         // discard Ensembl genes and trascripts
-                        if (!field.getName().equals("genes")
+                        if (!("genes").equals(field.getName())
                                 || (!countName.startsWith("ENSG0") && !countName.startsWith("ENST0"))) {
                             // and then check if this has to be include
                             if (toInclude(includes, field.getName(), solrPivot.getValue().toString())) {

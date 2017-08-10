@@ -562,7 +562,7 @@ public class SolrQueryParser {
 
             case "<<":
             case "<<=":
-                String rightCloseOperator = op.equals("<<") ? "}" : "]";
+                String rightCloseOperator = ("<<").equals(op) ? "}" : "]";
                 if (StringUtils.isNotEmpty(prefix) && (prefix.startsWith("popFreq_") || prefix.startsWith("stats_"))) {
                     sb.append("(");
                     sb.append("(* -").append(prefix).append(getSolrFieldName(name)).append(":*)");
@@ -576,7 +576,7 @@ public class SolrQueryParser {
                 break;
             case ">>":
             case ">>=":
-                String leftCloseOperator = op.equals(">>") ? "{" : "[";
+                String leftCloseOperator = (">>").equals(op) ? "{" : "[";
                 sb.append("(");
                 if (StringUtils.isNotEmpty(prefix) && (prefix.startsWith("popFreq_") || prefix.startsWith("stats_"))) {
                     sb.append(prefix).append(getSolrFieldName(name)).append(":").append(leftCloseOperator).append(value).append(" TO *]");
@@ -829,7 +829,7 @@ public class SolrQueryParser {
         } else {
             try {
                 Number start, end, gap;
-                if (split[0].equals("start")) {
+                if (("start").equals(split[0])) {
                     start = Integer.parseInt(split[1]);
                     end = Integer.parseInt(split[2]);
                     gap = Integer.parseInt(split[3]);

@@ -2226,7 +2226,7 @@ public class FileManager extends ResourceManager<File> {
         }
 
         String stringPath = path.toString();
-        if (stringPath.equals("/")) {
+        if (("/").equals(stringPath)) {
             return;
         }
 

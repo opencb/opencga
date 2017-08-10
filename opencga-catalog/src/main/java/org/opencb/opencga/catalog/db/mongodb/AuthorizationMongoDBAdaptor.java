@@ -281,7 +281,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                         if (!permissions.containsKey(split[0])) {
                             permissions.put(split[0], new ArrayList<>());
                         }
-                        if (!split[1].equals("NONE")) {
+                        if (!("NONE").equals(split[1])) {
                             permissions.get(split[0]).add(split[1]);
                         }
                     }

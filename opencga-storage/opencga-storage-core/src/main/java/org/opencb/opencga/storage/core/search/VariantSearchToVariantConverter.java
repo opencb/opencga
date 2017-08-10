@@ -525,12 +525,12 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         && consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
                     for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
                         String source = score.getSource();
-                        if (source.equals("sift")) {
+                        if (("sift").equals(source)) {
                             if (score.getScore() < sift) {
                                 sift = score.getScore();
                                 siftDesc = score.getDescription();
                             }
-                        } else if (source.equals("polyphen")) {
+                        } else if (("polyphen").equals(source)) {
                             if (score.getScore() > polyphen) {
                                 polyphen = score.getScore();
                                 polyphenDesc = score.getDescription();
