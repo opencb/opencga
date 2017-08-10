@@ -67,7 +67,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
                 studyStr = studyIdStr;
             }
             logger.info("variables: {}", params.variables);
-            String userId = catalogManager.getUserManager().getId(sessionId);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
             long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
             QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().createVariableSet(studyId, params.name,
                     params.unique, params.confidential, params.description, null, params.variables, sessionId);

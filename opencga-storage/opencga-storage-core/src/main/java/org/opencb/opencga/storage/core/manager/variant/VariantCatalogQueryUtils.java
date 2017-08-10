@@ -72,11 +72,11 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         }
 
         transformFilter(query, VariantQueryParam.STUDIES, value -> {
-            String userId = catalogManager.getUserManager().getId(sessionId);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
             return catalogManager.getStudyManager().getId(userId, value);
         });
         transformFilter(query, VariantQueryParam.RETURNED_STUDIES, value -> {
-            String userId = catalogManager.getUserManager().getId(sessionId);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
             return catalogManager.getStudyManager().getId(userId, value);
         });
         transformFilter(query, VariantQueryParam.COHORTS, value ->

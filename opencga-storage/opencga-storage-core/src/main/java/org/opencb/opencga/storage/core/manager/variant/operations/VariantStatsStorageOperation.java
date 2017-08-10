@@ -209,7 +209,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
     protected List<Long> checkCohorts(long studyId, Aggregation aggregation, List<String> cohorts, QueryOptions options, String sessionId)
             throws CatalogException, IOException {
         List<Long> cohortIds;
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
 
         // Check aggregation mapping properties
         String tagMap = options.getString(Options.AGGREGATION_MAPPING_PROPERTIES.key());
@@ -301,7 +301,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
      */
     public Aggregation getAggregation(long studyId, QueryOptions options, String sessionId) throws CatalogException {
         QueryOptions include = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ATTRIBUTES.key());
-        Study study = catalogManager.getStudyManager().get(studyId, include, sessionId).first();
+        Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), include, sessionId).first();
         Aggregation argsAggregation = options.get(Options.AGGREGATED_TYPE.key(), Aggregation.class, Aggregation.NONE);
         Object studyAggregationObj = study.getAttributes().get(Options.AGGREGATED_TYPE.key());
         Aggregation studyAggregation = null;
@@ -321,7 +321,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
                 //update study aggregation
                 Map<String, Aggregation> attributes = Collections.singletonMap(Options.AGGREGATED_TYPE.key(), argsAggregation);
                 ObjectMap parameters = new ObjectMap("attributes", attributes);
-                catalogManager.getStudyManager().update(studyId, parameters, null, sessionId);
+                catalogManager.getStudyManager().update(String.valueOf((Long) studyId), parameters, null, sessionId);
             }
         } else {
             if (studyAggregation == null) {
@@ -350,7 +350,8 @@ public class VariantStatsStorageOperation extends StorageOperation {
         Set<Long> studyIdSet = new HashSet<>();
         Map<Long, Cohort> cohortMap = new HashMap<>(cohortIds.size());
         for (Long cohortId : cohortIds) {
-            Cohort cohort = catalogManager.getCohortManager().get(cohortId, null, sessionId).first();
+            Cohort cohort = catalogManager.getCohortManager().get(String.valueOf(studyId), String.valueOf(cohortId), null, sessionId)
+                    .first();
             long studyIdByCohortId = catalogManager.getCohortManager().getStudyId(cohortId);
             studyIdSet.add(studyIdByCohortId);
             switch (cohort.getStatus().getName()) {

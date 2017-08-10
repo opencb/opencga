@@ -18,8 +18,9 @@ package org.opencb.opencga.catalog.auth.authentication;
 
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.config.Configuration;
+import org.slf4j.LoggerFactory;
 
 import javax.naming.Context;
 import javax.naming.NamingException;
@@ -39,6 +40,8 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
         if (!this.host.startsWith("ldap://")) {
             this.host = "ldap://" + this.host;
         }
+
+        this.logger = LoggerFactory.getLogger(LDAPAuthenticationManager.class);
     }
 
     @Override

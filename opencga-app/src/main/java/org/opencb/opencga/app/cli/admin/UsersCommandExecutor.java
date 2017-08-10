@@ -21,14 +21,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.GroupParams;
-import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.results.LdapImportResult;
 
 import javax.naming.NamingException;
@@ -81,8 +80,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                 executor.commonOptions.adminPassword);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            QueryResult<Session> login = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword(), "localhost");
-            String sessionId = login.first().getId();
+            String sessionId = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
 
             if (executor.syncAll) {
                 QueryResult<Group> allGroups = catalogManager.getStudyManager().getGroup(executor.study, null, sessionId);
@@ -109,7 +107,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                         params.putIfNotNull("study", executor.study);
                         params.putIfNotNull("expirationDate", executor.expDate);
                         LdapImportResult ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,
-                                executor.type, params, configuration.getAdmin().getPassword());
+                                executor.type, params, sessionId);
 
                         printImportReport(ldapImportResult);
                     }
@@ -153,7 +151,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                 params.putIfNotNull("study", executor.study);
                 params.putIfNotNull("expirationDate", executor.expDate);
                 LdapImportResult ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,
-                        executor.type, params, configuration.getAdmin().getPassword());
+                        executor.type, params, sessionId);
 
                 printImportReport(ldapImportResult);
 
@@ -167,13 +165,14 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
     }
 
-    private void importUsersAndGroups() throws CatalogException, NamingException {
+    private void importUsersAndGroups() throws CatalogException, NamingException, IOException {
         AdminCliOptionsParser.ImportCommandOptions executor = usersCommandOptions.importCommandOptions;
 
         setCatalogDatabaseCredentials(executor.databaseHost, executor.prefix, executor.databaseUser, executor.databasePassword,
                 executor.commonOptions.adminPassword);
-
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+            String token = catalogManager.getUserManager().login("admin", executor.commonOptions.adminPassword);
+
             ObjectMap params = new ObjectMap();
             params.putIfNotNull("users", executor.user);
             params.putIfNotNull("group", executor.group);
@@ -181,7 +180,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             params.putIfNotNull("study-group", executor.studyGroup);
             params.putIfNotNull("expirationDate", executor.expDate);
             LdapImportResult ldapImportResult = catalogManager.getUserManager()
-                    .importFromExternalAuthOrigin(executor.authOrigin, executor.type, params, configuration.getAdmin().getPassword());
+                    .importFromExternalAuthOrigin(executor.authOrigin, executor.type, params, token);
 
             printImportReport(ldapImportResult);
         }

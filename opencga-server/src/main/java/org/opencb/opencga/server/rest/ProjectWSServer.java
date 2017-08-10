@@ -22,7 +22,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Study;
@@ -33,6 +32,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -76,13 +76,15 @@ public class ProjectWSServer extends OpenCGAWSServer {
     public Response info(@ApiParam(value = "Comma separated list of project ids or aliases", required = true) @PathParam("projects")
                                      String projectsStr) {
         try {
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            List<Long> projectIds = catalogManager.getProjectManager().getIds(userId, projectsStr);
-            List<QueryResult<Project>> queryResults = new ArrayList<>(projectIds.size());
-            for (Long projectId : projectIds) {
-                queryResults.add(catalogManager.getProjectManager().get(projectId, queryOptions, sessionId));
+            QueryResult<Project> projectQueryResult = catalogManager.getProjectManager().get(projectsStr, queryOptions, sessionId);
+            // We parse the query result to create one queryresult per project
+            List<QueryResult<Project>> queryResultList = new ArrayList<>(projectQueryResult.getNumResults());
+            for (Project project : projectQueryResult.getResult()) {
+                queryResultList.add(new QueryResult<>(project.getName() + "-" + project.getId(), projectQueryResult.getDbTime(), 1, -1,
+                        projectQueryResult.getWarningMsg(), projectQueryResult.getErrorMsg(), Arrays.asList(project)));
             }
-            return createOkResponse(queryResults);
+
+            return createOkResponse(queryResultList);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -149,17 +151,13 @@ public class ProjectWSServer extends OpenCGAWSServer {
     public Response getAllStudies(@ApiParam(value = "Comma separated list of project ID or alias", required = true)
                                       @PathParam("projects") String projectsStr) {
         try {
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            List<Long> projectIds = catalogManager.getProjectManager().getIds(userId, projectsStr);
-            List<QueryResult<Study>> results = new ArrayList<>(projectIds.size());
             String[] splittedProjectNames = projectsStr.split(",");
-            for (int i = 0; i < projectIds.size(); i++) {
-                Long projectId = projectIds.get(i);
-                QueryResult<Study> allStudiesInProject = catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams
-                        .PROJECT_ID.key(), projectId), queryOptions, sessionId);
-                // We set the id of the queryResult with the project id given by the user
-                allStudiesInProject.setId(splittedProjectNames[i]);
-                results.add(allStudiesInProject);
+            List<QueryResult<Study>> results = new ArrayList<>(splittedProjectNames.length);
+            for (String projectStr : splittedProjectNames) {
+                QueryResult<Study> studyQueryResult =
+                        catalogManager.getStudyManager().get(projectStr, new Query(), queryOptions, sessionId);
+                studyQueryResult.setId(projectsStr);
+                results.add(studyQueryResult);
             }
             return createOkResponse(results);
         } catch (Exception e) {
@@ -176,9 +174,6 @@ public class ProjectWSServer extends OpenCGAWSServer {
                                          + "fields not previously defined.", required = true) ProjectUpdateParams updateParams)
             throws IOException {
         try {
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            long projectId = catalogManager.getProjectManager().getId(userId, projectStr);
-
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(updateParams));
             if (updateParams.organism != null) {
                 if (StringUtils.isNotEmpty(updateParams.organism.getAssembly())) {
@@ -196,7 +191,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
                 params.remove("organism");
             }
 
-            QueryResult result = catalogManager.getProjectManager().update(projectId, params, queryOptions, sessionId);
+            QueryResult result = catalogManager.getProjectManager().update(projectStr, params, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

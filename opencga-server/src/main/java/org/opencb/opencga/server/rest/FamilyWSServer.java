@@ -22,12 +22,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
-import org.opencb.opencga.catalog.models.acls.permissions.FamilyAclEntry;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -63,15 +61,15 @@ public class FamilyWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                @QueryParam("study") String studyStr) {
         try {
-            AbstractManager.MyResourceIds resourceIds = familyManager.getIds(familyStr, studyStr, sessionId);
-
-            List<QueryResult<Family>> queryResults = new LinkedList<>();
-            if (resourceIds.getResourceIds() != null && resourceIds.getResourceIds().size() > 0) {
-                for (Long familyId : resourceIds.getResourceIds()) {
-                    queryResults.add(familyManager.get(familyId, queryOptions, sessionId));
-                }
+            QueryResult<Family> familyQueryResult = familyManager.get(studyStr, familyStr, queryOptions, sessionId);
+            // We parse the query result to create one queryresult per family
+            List<QueryResult<Family>> queryResultList = new ArrayList<>(familyQueryResult.getNumResults());
+            for (Family family : familyQueryResult.getResult()) {
+                queryResultList.add(new QueryResult<>(family.getName() + "-" + family.getId(), familyQueryResult.getDbTime(), 1, -1,
+                        familyQueryResult.getWarningMsg(), familyQueryResult.getErrorMsg(), Arrays.asList(family)));
             }
-            return createOkResponse(queryResults);
+
+            return createOkResponse(queryResultList);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -144,15 +142,13 @@ public class FamilyWSServer extends OpenCGAWSServer {
                                  @QueryParam("study") String studyStr,
                                  @ApiParam(value = "params", required = true) UpdateFamilyPOST parameters) {
         try {
-            AbstractManager.MyResourceId resourceId = catalogManager.getFamilyManager().getId(familyStr, studyStr, sessionId);
-
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
 
             if (params.size() == 0) {
                 throw new CatalogException("Missing parameters to update.");
             }
 
-            QueryResult<Family> queryResult = catalogManager.getFamilyManager().update(resourceId.getResourceId(), params, queryOptions,
+            QueryResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, familyStr, params, queryOptions,
                     sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -284,30 +280,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "User or group id") @QueryParam("member") String member) {
         try {
             if (StringUtils.isEmpty(member)) {
-                AbstractManager.MyResourceIds resources = catalogManager.getFamilyManager().getIds(familyIdsStr, studyStr, sessionId);
-                List<QueryResult<FamilyAclEntry>> familyResults = new ArrayList<>(resources.getResourceIds().size());
-                for (Long familyId : resources.getResourceIds()) {
-                    familyResults.add(catalogManager.getAuthorizationManager().getAllFamilyAcls(resources.getUser(), familyId));
-                }
-                //        return authorizationManager.getAllFamilyAcls(resources.getUser(), )
-//        for (Long familyId : resources.getResourceIds()) {
-//            authorizationManager.checkFamilyPermission(resources.getStudyId(), familyId, resources.getUser(),
-//                    FamilyAclEntry.FamilyPermissions.VIEW);
-//        }
-//        return authorizationManager.getAcls(resources.getResourceIds(), null, MongoDBAdaptorFactory.FAMILY_COLLECTION);
-                return createOkResponse(familyResults);
+                return createOkResponse(familyManager.getAcls(studyStr, familyIdsStr, sessionId));
             } else {
-                AbstractManager.MyResourceId resource = catalogManager.getFamilyManager().getId(familyIdsStr, studyStr, sessionId);
-                //        authorizationManager.checkFamilyPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
-//                FamilyAclEntry.FamilyPermissions.SHARE);
-//
-//        List<String> memberList = null;
-//        if (StringUtils.isNotEmpty(member)) {
-//            memberList = Arrays.asList(StringUtils.split(member, ","));
-//        }
-//        return authorizationManager.getFamilyAcl()
-//        return authorizationManager.getAcl(resource.getResourceId(), memberList, MongoDBAdaptorFactory.FAMILY_COLLECTION);
-                return createOkResponse(catalogManager.getAuthorizationManager().getFamilyAcl(resource.getUser(), resource.getResourceId(), member));
+                return createOkResponse(familyManager.getAcl(studyStr, familyIdsStr, member, sessionId));
             }
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -327,9 +302,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("memberIds") String memberId,
             @ApiParam(value="JSON containing the parameters to add ACLs", required = true) FamilyWSServer.FamilyAcl params) {
         try {
-            AclParams familyAclParams = new AclParams(
-                    params.getPermissions(), params.getAction());
-            return createOkResponse(familyManager.updateAcl(params.family, studyStr, memberId, familyAclParams, sessionId));
+            AclParams familyAclParams = new AclParams(params.getPermissions(), params.getAction());
+            return createOkResponse(familyManager.updateAcl(studyStr, params.family, memberId, familyAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

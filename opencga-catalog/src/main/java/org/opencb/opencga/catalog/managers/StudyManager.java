@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -33,7 +32,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.managers.api.ResourceManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.DiseasePanelAclEntry;
@@ -42,7 +40,6 @@ import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.catalog.models.summaries.VariableSetSummary;
 import org.opencb.opencga.catalog.models.summaries.VariableSummary;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
-import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -50,7 +47,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -60,19 +56,12 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class StudyManager extends AbstractManager implements ResourceManager<Long, Study> {
+public class StudyManager extends AbstractManager {
 
     protected static Logger logger = LoggerFactory.getLogger(StudyManager.class);
     private static final String MEMBERS = "@members";
 
-    @Deprecated
-    public StudyManager(AuthorizationManager authorizationManager, AuditManager auditManager,
-                        DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                        Properties catalogProperties) {
-        super(authorizationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
-    }
-
-    public StudyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
+    StudyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                         DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                         Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
@@ -87,7 +76,7 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
         return studyDBAdaptor.getProjectIdByStudyId(studyId);
     }
 
-    public List<Long> getIds(String userId, String studyStr) throws CatalogException {
+    List<Long> getIds(String userId, String studyStr) throws CatalogException {
         if (StringUtils.isNumeric(studyStr)) {
             long studyId = Long.parseLong(studyStr);
             if (studyId > configuration.getCatalog().getOffset()) {
@@ -214,7 +203,7 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
         }
     }
 
-    public QueryResult<Study> create(long projectId, String name, String alias, Study.Type type, String creationDate,
+    public QueryResult<Study> create(String projectStr, String name, String alias, Study.Type type, String creationDate,
                                      String description, Status status, String cipher, String uriScheme, URI uri,
                                      Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes,
                                      QueryOptions options, String sessionId) throws CatalogException {
@@ -223,7 +212,9 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
         ParamUtils.checkObj(type, "type");
         ParamUtils.checkAlias(alias, "alias", configuration.getCatalog().getOffset());
 
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        long projectId = catalogManager.getProjectManager().getId(userId, projectStr);
+
         description = ParamUtils.defaultString(description, "");
 //        creatorId = ParamUtils.defaultString(creatorId, userId);
         creationDate = ParamUtils.defaultString(creationDate, TimeUtils.getTime());
@@ -302,20 +293,13 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
         auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.Action.create, AuditRecord.Magnitude.low, rootFile.getId(), userId,
                 null, rootFile, null, null);
         userDBAdaptor.updateUserLastModified(userId);
+
+        result.setResult(Arrays.asList(study));
         return result;
     }
 
     public int getCurrentRelease(long studyId) throws CatalogException {
         return getProjectCurrentRelease(studyDBAdaptor.getProjectIdByStudyId(studyId));
-    }
-
-    private int getProjectCurrentRelease(long projectId) throws CatalogException {
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key());
-        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(projectId, options);
-        if (projectQueryResult.getNumResults() == 0) {
-            throw new CatalogException("Internal error. Cannot retrieve current release from project");
-        }
-        return projectQueryResult.first().getCurrentRelease();
     }
 
     public MyResourceId getVariableSetId(String variableStr, @Nullable String studyStr, String sessionId) throws CatalogException {
@@ -336,13 +320,13 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
                 throw new CatalogException("Variable set " + variableStr + " not found");
             }
             studyId = studyQueryResult.first().getId();
-            userId = catalogManager.getUserManager().getId(sessionId);
+            userId = catalogManager.getUserManager().getUserId(sessionId);
         } else {
             if (variableStr.contains(",")) {
                 throw new CatalogException("More than one variable set found. Please, choose just one variable set");
             }
 
-            userId = catalogManager.getUserManager().getId(sessionId);
+            userId = catalogManager.getUserManager().getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
             Query query = new Query()
@@ -361,12 +345,21 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
         return new MyResourceId(userId, studyId, variableSetId);
     }
 
-    @Override
-    public QueryResult<Study> get(Long studyId, QueryOptions options, String sessionId) throws CatalogException {
+    /**
+     * Fetch a study from Catalog given a study id or alias.
+     *
+     * @param studyStr Study id or alias.
+     * @param options Read options
+     * @param sessionId sessionId
+     * @return The specified object
+     * @throws CatalogException CatalogException
+     */
+    public QueryResult<Study> get(String studyStr, QueryOptions options, String sessionId) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = catalogManager.getUserManager().getId(sessionId);
-        studyDBAdaptor.checkId(studyId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        Long studyId = getId(userId, studyStr);
+
         Query query = new Query(StudyDBAdaptor.QueryParams.ID.key(), studyId);
         QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, options, userId);
         if (studyQueryResult.getNumResults() <= 0) {
@@ -375,32 +368,64 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
         return studyQueryResult;
     }
 
-    @Override
-    public QueryResult<Study> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
+    /**
+     * Fetch all the study objects matching the query.
+     *
+     * @param projectStr Project id or alias.
+     * @param query     Query to catalog.
+     * @param options   Query options, like "include", "exclude", "limit" and "skip"
+     * @param sessionId sessionId
+     * @return All matching elements.
+     * @throws CatalogException CatalogException
+     */
+    public QueryResult<Study> get(String projectStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         QueryOptions qOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-        String userId = catalogManager.getUserManager().getId(sessionId);
+
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        long projectId = catalogManager.getProjectManager().getId(userId, projectStr);
+
+        query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId);
 
         if (!qOptions.containsKey("include") || qOptions.get("include") == null || qOptions.getAsStringList("include").isEmpty()) {
             qOptions.addToListOption("exclude", "projects.studies.attributes.studyConfiguration");
         }
 
         QueryResult<Study> allStudies = studyDBAdaptor.get(query, qOptions, userId);
-//        List<Study> studies = allStudies.getResult();
-//
-//        authorizationManager.filterStudies(userId, studies);
-//        allStudies.setResult(studies);
-//        allStudies.setNumResults(studies.size());
 
         return allStudies;
     }
 
-    @Override
-    public QueryResult<Study> update(Long studyId, ObjectMap parameters, QueryOptions options, String sessionId)
+    /**
+     * Fetch all the study objects matching the query.
+     *
+     * @param query     Query to catalog.
+     * @param options   Query options, like "include", "exclude", "limit" and "skip"
+     * @param sessionId sessionId
+     * @return All matching elements.
+     * @throws CatalogException CatalogException
+     */
+    @Deprecated
+    public QueryResult<Study> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
+        return get(null, query, options, sessionId);
+    }
+
+    /**
+     * Update an existing catalog study.
+     *
+     * @param studyStr Study id or alias.
+     * @param parameters Parameters to change.
+     * @param options    options
+     * @param sessionId  sessionId
+     * @return The modified entry.
+     * @throws CatalogException CatalogException
+     */
+    public QueryResult<Study> update(String studyStr, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(parameters, "Parameters");
-        ParamUtils.checkId(studyId, "studyId");
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        long studyId = getId(userId, studyStr);
+
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPDATE_STUDY);
 
         if (parameters.containsKey("alias")) {
@@ -423,52 +448,13 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
         return result;
     }
 
-    private QueryResult rename(long studyId, String newStudyAlias, String sessionId) throws CatalogException {
-        ParamUtils.checkAlias(newStudyAlias, "newStudyAlias", configuration.getCatalog().getOffset());
-        String userId = catalogManager.getUserManager().getId(sessionId);
-//        String studyOwnerId = studyDBAdaptor.getStudyOwnerId(studyId);
-
-        //User can't write/modify the study
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPDATE_STUDY);
-
-        // Both users must bu updated
-        userDBAdaptor.updateUserLastModified(userId);
-//        userDBAdaptor.updateUserLastModified(studyOwnerId);
-        //TODO get all shared users to updateUserLastModified
-
-        //QueryResult queryResult = studyDBAdaptor.renameStudy(studyId, newStudyAlias);
-        auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, new ObjectMap("alias", newStudyAlias), null, null);
-        return new QueryResult();
-
-    }
-
-    @Override
-    public List<QueryResult<Study>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<QueryResult<Study>> restore(String ids, QueryOptions options, String sessionId) throws CatalogException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<QueryResult<Study>> restore(Query query, QueryOptions options, String sessionId) throws CatalogException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Project: Operation not yet supported");
-    }
-
     public QueryResult rank(long projectId, Query query, String field, int numResults, boolean asc, String sessionId)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         ParamUtils.checkObj(field, "field");
         ParamUtils.checkObj(projectId, "projectId");
 
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         authorizationManager.checkProjectPermission(projectId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -489,7 +475,7 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
         ParamUtils.checkObj(field, "field");
         ParamUtils.checkObj(projectId, "projectId");
 
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         authorizationManager.checkProjectPermission(projectId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -510,7 +496,7 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
         ParamUtils.checkObj(fields, "fields");
         ParamUtils.checkObj(projectId, "projectId");
 
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         authorizationManager.checkProjectPermission(projectId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -524,14 +510,15 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
-    public QueryResult<StudySummary> getSummary(long studyId, String sessionId, QueryOptions queryOptions) throws CatalogException {
-
+    public QueryResult<StudySummary> getSummary(String studyStr, QueryOptions queryOptions, String sessionId) throws CatalogException {
         long startTime = System.currentTimeMillis();
 
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        Long studyId = getId(userId, studyStr);
+
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
 
-        Study studyInfo = get(studyId, queryOptions, sessionId).first();
+        Study studyInfo = get(String.valueOf((Long) studyId), queryOptions, sessionId).first();
 
         StudySummary studySummary = new StudySummary()
                 .setAlias(studyInfo.getAlias())
@@ -590,88 +577,10 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
                 Collections.singletonList(studySummary));
     }
 
-    public List<QueryResult<StudyAclEntry>> updateAcl(String studyStr, String memberIds, Study.StudyAclParams aclParams, String sessionId)
-            throws CatalogException {
-        if (StringUtils.isEmpty(studyStr)) {
-            throw new CatalogException("Missing study parameter");
-        }
-
-        if (aclParams.getAction() == null) {
-            throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
-        }
-
-        List<String> permissions = Collections.emptyList();
-        if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
-            permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
-            checkPermissions(permissions, StudyAclEntry.StudyPermissions::valueOf);
-        }
-
-        if (StringUtils.isNotEmpty(aclParams.getTemplate())) {
-            EnumSet<StudyAclEntry.StudyPermissions> studyPermissions = null;
-            if (aclParams.getTemplate().equals(AuthorizationManager.ROLE_ADMIN)) {
-                studyPermissions = AuthorizationManager.getAdminAcls();
-            } else if (aclParams.getTemplate().equals(AuthorizationManager.ROLE_ANALYST)) {
-                studyPermissions = AuthorizationManager.getAnalystAcls();
-            } else if (aclParams.getTemplate().equals(AuthorizationManager.ROLE_VIEW_ONLY)) {
-                studyPermissions = AuthorizationManager.getViewOnlyAcls();
-            }
-
-            if (studyPermissions != null) {
-                // Merge permissions from the template with the ones written
-                Set<String> uniquePermissions = new HashSet<>();
-                uniquePermissions.addAll(permissions);
-
-                for (StudyAclEntry.StudyPermissions studyPermission : studyPermissions) {
-                    uniquePermissions.add(studyPermission.toString());
-                }
-
-                permissions = new ArrayList<>(uniquePermissions.size());
-                permissions.addAll(uniquePermissions);
-            }
-        }
-
-        String userId = catalogManager.getUserManager().getId(sessionId);
-        List<Long> studyIds = getIds(userId, studyStr);
-
-        // Check the user has the permissions needed to change permissions
-        for (Long studyId : studyIds) {
-            authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
-        }
-
-        // Validate that the members are actually valid members
-        List<String> members;
-        if (memberIds != null && !memberIds.isEmpty()) {
-            members = Arrays.asList(memberIds.split(","));
-        } else {
-            members = Collections.emptyList();
-        }
-        for (Long studyId : studyIds) {
-            CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, studyId, members);
-        }
-
-        switch (aclParams.getAction()) {
-            case SET:
-                return authorizationManager.setStudyAcls(studyIds, members, permissions);
-            case ADD:
-                return authorizationManager.addStudyAcls(studyIds, members, permissions);
-            case REMOVE:
-                return authorizationManager.removeStudyAcls(studyIds, members, permissions);
-            case RESET:
-                List<QueryResult<StudyAclEntry>> aclResult = new ArrayList<>(studyIds.size());
-                for (Long studyId : studyIds) {
-                    authorizationManager.resetPermissionsFromAllEntities(studyId, members);
-                    aclResult.add(authorizationManager.getAllStudyAcls(userId, studyId));
-                }
-                return aclResult;
-            default:
-                throw new CatalogException("Unexpected error occurred. No valid action found.");
-        }
-    }
-
     public QueryResult<Group> createGroup(String studyStr, String groupId, String users, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(groupId, "groupId");
 
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = getId(userId, studyStr);
         studyDBAdaptor.checkId(studyId);
 
@@ -712,15 +621,8 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
         return studyDBAdaptor.createGroup(studyId, new Group(groupId, userList));
     }
 
-    private boolean existsGroup(long studyId, String groupId) throws CatalogDBException {
-        Query query = new Query()
-                .append(StudyDBAdaptor.QueryParams.ID.key(), studyId)
-                .append(StudyDBAdaptor.QueryParams.GROUP_NAME.key(), groupId);
-        return studyDBAdaptor.count(query).first() > 0;
-    }
-
     public QueryResult<Group> getGroup(String studyStr, String groupId, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = getId(userId, studyStr);
         studyDBAdaptor.checkId(studyId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
@@ -740,7 +642,7 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
         ParamUtils.checkParameter(groupId, "Group name");
         ParamUtils.checkObj(groupParams.getAction(), "Action");
 
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = getId(userId, studyStr);
 
         // Fix the group name
@@ -808,7 +710,7 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
 
     public QueryResult<Group> syncGroupWith(String studyStr, String groupId, Group.Sync syncedFrom, String sessionId)
             throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPDATE_STUDY);
@@ -846,7 +748,7 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
     }
 
     public QueryResult<Group> deleteGroup(String studyStr, String groupId, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = getId(userId, studyStr);
         studyDBAdaptor.checkId(studyId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
@@ -900,7 +802,7 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
                                                         String genes, String regions, String variants,
                                                         QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(name, "name");
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_PANELS);
         ParamUtils.checkParameter(disease, "disease");
@@ -935,7 +837,7 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
     }
 
     public QueryResult<DiseasePanel> getDiseasePanel(String panelStr, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         Long panelId = getDiseasePanelId(userId, panelStr);
         long studyId = panelDBAdaptor.getStudyId(panelId);
         authorizationManager.checkDiseasePanelPermission(studyId, panelId, userId, DiseasePanelAclEntry.DiseasePanelPermissions.VIEW);
@@ -945,7 +847,7 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
 
     public QueryResult<DiseasePanel> updateDiseasePanel(String panelStr, ObjectMap parameters, String sessionId) throws CatalogException {
         ParamUtils.checkObj(parameters, "Parameters");
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         Long diseasePanelId = getDiseasePanelId(userId, panelStr);
         long studyId = panelDBAdaptor.getStudyId(diseasePanelId);
         authorizationManager.checkDiseasePanelPermission(studyId, diseasePanelId, userId,
@@ -998,10 +900,10 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
         return new QueryResult<>("Variable set summary", dbTime, 1, 1, "", "", Arrays.asList(variableSetSummary));
     }
 
+
     /*
      * Variables Methods
      */
-
     public QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique, Boolean confidential, String description,
                                                       Map<String, Object> attributes, List<Variable> variables, String sessionId)
             throws CatalogException {
@@ -1019,7 +921,7 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
             throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkObj(variables, "Variables Set");
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET);
         unique = ParamUtils.defaultObject(unique, true);
         confidential = ParamUtils.defaultObject(confidential, false);
@@ -1058,7 +960,7 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
 
     public QueryResult<VariableSet> searchVariableSets(String studyStr, Query query, QueryOptions options, String sessionId)
             throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = getId(userId, studyStr);
 //        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -1119,4 +1021,154 @@ public class StudyManager extends AbstractManager implements ResourceManager<Lon
         auditManager.recordDeletion(AuditRecord.Resource.variableSet, resource.getResourceId(), userId, queryResult.first(), null, null);
         return queryResult;
     }
+
+
+
+    // **************************   ACLs  ******************************** //
+    public List<QueryResult<StudyAclEntry>> getAcls(String studyStr, String sessionId) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        List<Long> studyIds = getIds(userId, studyStr);
+
+        List<QueryResult<StudyAclEntry>> studyAclList = new ArrayList<>(studyIds.size());
+        for (Long studyId : studyIds) {
+            QueryResult<StudyAclEntry> allStudyAcls = authorizationManager.getAllStudyAcls(userId, studyId);
+            allStudyAcls.setId(String.valueOf(studyId));
+            studyAclList.add(allStudyAcls);
+        }
+
+        return studyAclList;
+    }
+
+    public List<QueryResult<StudyAclEntry>> getAcl(String studyStr, String member, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(member, "member");
+
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        List<Long> studyIds = getIds(userId, studyStr);
+
+        List<QueryResult<StudyAclEntry>> studyAclList = new ArrayList<>(studyIds.size());
+        for (Long studyId : studyIds) {
+            checkMembers(studyId, Arrays.asList(member));
+            QueryResult<StudyAclEntry> allStudyAcls = authorizationManager.getStudyAcl(userId, studyId, member);
+            allStudyAcls.setId(String.valueOf(studyId));
+            studyAclList.add(allStudyAcls);
+        }
+
+        return studyAclList;
+    }
+
+    public List<QueryResult<StudyAclEntry>> updateAcl(String studyStr, String memberIds, Study.StudyAclParams aclParams, String sessionId)
+            throws CatalogException {
+        if (StringUtils.isEmpty(studyStr)) {
+            throw new CatalogException("Missing study parameter");
+        }
+
+        if (aclParams.getAction() == null) {
+            throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
+        }
+
+        List<String> permissions = Collections.emptyList();
+        if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
+            permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
+            checkPermissions(permissions, StudyAclEntry.StudyPermissions::valueOf);
+        }
+
+        if (StringUtils.isNotEmpty(aclParams.getTemplate())) {
+            EnumSet<StudyAclEntry.StudyPermissions> studyPermissions = null;
+            if (aclParams.getTemplate().equals(AuthorizationManager.ROLE_ADMIN)) {
+                studyPermissions = AuthorizationManager.getAdminAcls();
+            } else if (aclParams.getTemplate().equals(AuthorizationManager.ROLE_ANALYST)) {
+                studyPermissions = AuthorizationManager.getAnalystAcls();
+            } else if (aclParams.getTemplate().equals(AuthorizationManager.ROLE_VIEW_ONLY)) {
+                studyPermissions = AuthorizationManager.getViewOnlyAcls();
+            }
+
+            if (studyPermissions != null) {
+                // Merge permissions from the template with the ones written
+                Set<String> uniquePermissions = new HashSet<>();
+                uniquePermissions.addAll(permissions);
+
+                for (StudyAclEntry.StudyPermissions studyPermission : studyPermissions) {
+                    uniquePermissions.add(studyPermission.toString());
+                }
+
+                permissions = new ArrayList<>(uniquePermissions.size());
+                permissions.addAll(uniquePermissions);
+            }
+        }
+
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        List<Long> studyIds = getIds(userId, studyStr);
+
+        // Check the user has the permissions needed to change permissions
+        for (Long studyId : studyIds) {
+            authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
+        }
+
+        // Validate that the members are actually valid members
+        List<String> members;
+        if (memberIds != null && !memberIds.isEmpty()) {
+            members = Arrays.asList(memberIds.split(","));
+        } else {
+            members = Collections.emptyList();
+        }
+        for (Long studyId : studyIds) {
+            checkMembers(studyId, members);
+        }
+
+        switch (aclParams.getAction()) {
+            case SET:
+                return authorizationManager.setStudyAcls(studyIds, members, permissions);
+            case ADD:
+                return authorizationManager.addStudyAcls(studyIds, members, permissions);
+            case REMOVE:
+                return authorizationManager.removeStudyAcls(studyIds, members, permissions);
+            case RESET:
+                List<QueryResult<StudyAclEntry>> aclResult = new ArrayList<>(studyIds.size());
+                for (Long studyId : studyIds) {
+                    authorizationManager.resetPermissionsFromAllEntities(studyId, members);
+                    aclResult.add(authorizationManager.getAllStudyAcls(userId, studyId));
+                }
+                return aclResult;
+            default:
+                throw new CatalogException("Unexpected error occurred. No valid action found.");
+        }
+    }
+
+
+    // **************************   Private methods  ******************************** //
+    private int getProjectCurrentRelease(long projectId) throws CatalogException {
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key());
+        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(projectId, options);
+        if (projectQueryResult.getNumResults() == 0) {
+            throw new CatalogException("Internal error. Cannot retrieve current release from project");
+        }
+        return projectQueryResult.first().getCurrentRelease();
+    }
+
+    private QueryResult rename(long studyId, String newStudyAlias, String sessionId) throws CatalogException {
+        ParamUtils.checkAlias(newStudyAlias, "newStudyAlias", configuration.getCatalog().getOffset());
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+//        String studyOwnerId = studyDBAdaptor.getStudyOwnerId(studyId);
+
+        //User can't write/modify the study
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPDATE_STUDY);
+
+        // Both users must bu updated
+        userDBAdaptor.updateUserLastModified(userId);
+//        userDBAdaptor.updateUserLastModified(studyOwnerId);
+        //TODO get all shared users to updateUserLastModified
+
+        //QueryResult queryResult = studyDBAdaptor.renameStudy(studyId, newStudyAlias);
+        auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, new ObjectMap("alias", newStudyAlias), null, null);
+        return new QueryResult();
+
+    }
+
+    private boolean existsGroup(long studyId, String groupId) throws CatalogDBException {
+        Query query = new Query()
+                .append(StudyDBAdaptor.QueryParams.ID.key(), studyId)
+                .append(StudyDBAdaptor.QueryParams.GROUP_NAME.key(), groupId);
+        return studyDBAdaptor.count(query).first() > 0;
+    }
+
 }

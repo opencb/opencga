@@ -32,17 +32,15 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.managers.api.IAnnotationSetManager;
-import org.opencb.opencga.catalog.managers.api.IEntryManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.catalog.models.acls.permissions.FamilyAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.catalog.utils.AnnotationManager;
-import org.opencb.opencga.catalog.utils.CatalogMemberValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -56,11 +54,18 @@ import static org.opencb.opencga.catalog.db.api.FamilyDBAdaptor.QueryParams.ONTO
 /**
  * Created by pfurio on 02/05/17.
  */
-public class FamilyManager extends AbstractManager implements IEntryManager<Long, Family>, IAnnotationSetManager {
+public class FamilyManager extends AnnotationSetManager<Family> {
 
-    public FamilyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
+    protected static Logger logger = LoggerFactory.getLogger(FamilyManager.class);
+    private UserManager userManager;
+    private StudyManager studyManager;
+
+    FamilyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                          DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
+
+        this.userManager = catalogManager.getUserManager();
+        this.studyManager = catalogManager.getStudyManager();
     }
 
     /**
@@ -85,13 +90,13 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
             familyId = Long.parseLong(familyStr);
             familyDBAdaptor.exists(familyId);
             studyId = familyDBAdaptor.getStudyId(familyId);
-            userId = catalogManager.getUserManager().getId(sessionId);
+            userId = catalogManager.getUserManager().getUserId(sessionId);
         } else {
             if (familyStr.contains(",")) {
                 throw new CatalogException("More than one family found");
             }
 
-            userId = catalogManager.getUserManager().getId(sessionId);
+            userId = catalogManager.getUserManager().getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
             Query query = new Query()
@@ -135,9 +140,9 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
             familyIds = Arrays.asList(Long.parseLong(familyStr));
             familyDBAdaptor.checkId(familyIds.get(0));
             studyId = familyDBAdaptor.getStudyId(familyIds.get(0));
-            userId = catalogManager.getUserManager().getId(sessionId);
+            userId = catalogManager.getUserManager().getUserId(sessionId);
         } else {
-            userId = catalogManager.getUserManager().getId(sessionId);
+            userId = catalogManager.getUserManager().getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
             List<String> familySplit = Arrays.asList(familyStr.split(","));
@@ -179,7 +184,7 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
     }
 
     public QueryResult<Family> create(String studyStr, Family family, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_FAMILIES);
 
@@ -190,7 +195,7 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
         family.setStatus(new Status());
         family.setOntologyTerms(ParamUtils.defaultObject(family.getOntologyTerms(), Collections.emptyList()));
         family.setAnnotationSets(ParamUtils.defaultObject(family.getAnnotationSets(), Collections.emptyList()));
-        family.setAnnotationSets(AnnotationManager.validateAnnotationSets(family.getAnnotationSets(), studyDBAdaptor));
+        family.setAnnotationSets(validateAnnotationSets(family.getAnnotationSets()));
         family.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));
         family.setAttributes(ParamUtils.defaultObject(family.getAttributes(), Collections.emptyMap()));
 
@@ -203,163 +208,21 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
         return queryResult;
     }
 
-    private void checkAndCreateAllIndividualsFromFamily(long studyId, Family family, String sessionId) throws CatalogException {
-        if (family.getMother() == null) {
-            family.setMother(new Individual().setId(-1));
-        }
-        if (family.getFather() == null) {
-            family.setFather(new Individual().setId(-1));
-        }
-
-        // Check all individuals exist or can be created
-        checkAndCreateIndividual(studyId, family.getMother(), Individual.Sex.FEMALE, false, sessionId);
-        checkAndCreateIndividual(studyId, family.getFather(), Individual.Sex.MALE, false, sessionId);
-        if (family.getChildren() != null) {
-            for (Individual individual : family.getChildren()) {
-                checkAndCreateIndividual(studyId, individual, null, false, sessionId);
-            }
-        } else {
-            family.setChildren(Collections.emptyList());
-        }
-
-        // Create the ones that did not exist
-        checkAndCreateIndividual(studyId, family.getMother(), null, true, sessionId);
-        checkAndCreateIndividual(studyId, family.getFather(), null, true, sessionId);
-        for (Individual individual : family.getChildren()) {
-            checkAndCreateIndividual(studyId, individual, null, true, sessionId);
-        }
-    }
-
-
-    /**
-     * This method should be called two times. First time with !create to check if every individual is fine or can be created and a
-     * second time with create to create the individual if is needed.
-     *
-     * @param studyId studyId.
-     * @param individual individual.
-     * @param sex When !create, it will check whether the individual sex corresponds with the sex given. If null, this will not be checked.
-     * @param create Boolean indicating whether to make only checks or to create the individual.
-     * @param sessionId sessionID.
-     * @throws CatalogException catalogException.
-     */
-    private void checkAndCreateIndividual(long studyId, Individual individual, Individual.Sex sex, boolean create, String sessionId)
-            throws CatalogException {
-        if (!create) {
-            // Just check everything is fine
-
-            if (individual.getId() > 0 || (StringUtils.isNotEmpty(individual.getName()) && StringUtils.isNumeric(individual.getName()))
-                    && Long.parseLong(individual.getName()) > 0) {
-                if (individual.getId() <= 0) {
-                    individual.setId(Long.parseLong(individual.getName()));
-                }
-                individualDBAdaptor.checkId(individual.getId());
-
-                // Check studyId of the individual
-                long studyIdIndividual = individualDBAdaptor.getStudyId(individual.getId());
-                if (studyId != studyIdIndividual) {
-                    throw new CatalogException("Cannot create family in a different study than the one corresponding to the individuals.");
-                }
-
-                if (sex != null) {
-                    // Check the sex
-                    Query query = new Query()
-                            .append(IndividualDBAdaptor.QueryParams.ID.key(), individual.getId())
-                            .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-                    QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SEX.key());
-
-                    QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options);
-                    if (individualQueryResult.getNumResults() != 1) {
-                        throw new CatalogException("Internal error. Found " + individualQueryResult.getNumResults() + " results when it was"
-                                + " expected to get 1 individual result");
-                    }
-                    if (individualQueryResult.first().getSex() != sex) {
-                        throw new CatalogException("The sex of the individual " + individual.getId() + " does not correspond with "
-                                + "the expected sex: " + sex);
-                    }
-                }
-            } else {
-                if (StringUtils.isNotEmpty(individual.getName())) {
-                    Query query = new Query()
-                            .append(IndividualDBAdaptor.QueryParams.NAME.key(), individual.getName())
-                            .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-                    QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                            Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.SEX.key()));
-
-                    QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options);
-                    if (individualQueryResult.getNumResults() == 1) {
-                        // Check the sex
-                        if (sex != null && individualQueryResult.first().getSex() != sex) {
-                            throw new CatalogException("The sex of the individual " + individual.getName() + " does not correspond with "
-                                    + "the expected sex: " + sex);
-                        }
-
-                        individual.setId(individualQueryResult.first().getId());
-                    } else {
-                        // The individual has to be created.
-                        if (sex != null && sex != individual.getSex()) {
-                            throw new CatalogException("The sex of the individual " + individual.getName() + " does not correspond with "
-                                    + "the expected sex: " + sex);
-                        }
-                    }
-                }
-            }
-        } else {
-            // Create if it was not already created
-            if (individual.getId() <= 0 && StringUtils.isNotEmpty(individual.getName())) {
-                // We create the individual
-                QueryResult<Individual> individualQueryResult =
-                        catalogManager.getIndividualManager().create(Long.toString(studyId), individual, new QueryOptions(), sessionId);
-                if (individualQueryResult.getNumResults() == 0) {
-                    throw new CatalogException("Unexpected error occurred when creating the individual");
-                } else {
-                    // We set the id
-                    individual.setId(individualQueryResult.first().getId());
-                }
-            }
-        }
-
-    }
-
     @Override
-    public QueryResult<Family> get(Long id, QueryOptions options, String sessionId) throws CatalogException {
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        String userId = catalogManager.getUserManager().getId(sessionId);
-        long studyId = familyDBAdaptor.getStudyId(id);
-
-        Query query = new Query()
-                .append(FamilyDBAdaptor.QueryParams.ID.key(), id)
-                .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, options, userId);
-        if (familyQueryResult.getNumResults() <= 0) {
-            throw CatalogAuthorizationException.deny(userId, "view", "family", id, "");
-        }
-        return familyQueryResult;
-    }
-
-    public QueryResult<Family> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Family> get(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = userManager.getUserId(sessionId);
+        long studyId = studyManager.getId(userId, studyStr);
 
         query.append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-        QueryResult<Family> queryResult = familyDBAdaptor.get(query, options, userId);
 
-        return queryResult;
+        return familyDBAdaptor.get(query, options, userId);
     }
-
-    @Override
-    public QueryResult<Family> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        return get(query.getLong(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), -1), query, options, sessionId);
-    }
-
 
     public QueryResult<Family> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
@@ -392,7 +255,7 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
     }
 
     public QueryResult<Family> count(String studyStr, Query query, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
@@ -427,13 +290,13 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
     }
 
     @Override
-    public List<QueryResult<Family>> delete(String entries, @Nullable String studyStr, ObjectMap params, String sessionId)
+    public List<QueryResult<Family>> delete(@Nullable String studyStr, String entries, ObjectMap params, String sessionId)
             throws CatalogException, IOException {
         return null;
     }
 
     @Override
-    public QueryResult rank(long studyId, Query query, String field, int numResults, boolean asc, String sessionId) throws
+    public QueryResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String sessionId) throws
             CatalogException {
         return null;
     }
@@ -445,16 +308,20 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
     }
 
     @Override
-    public QueryResult<Family> update(Long id, ObjectMap parameters, QueryOptions options, String sessionId) throws CatalogException {
-        parameters = ParamUtils.defaultObject(parameters, ObjectMap::new);
+    public QueryResult<Family> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkObj(parameters, "Missing parameters");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        MyResourceId resource = getId(Long.toString(id), null, sessionId);
-        authorizationManager.checkFamilyPermission(resource.getStudyId(), id, resource.getUser(), FamilyAclEntry.FamilyPermissions.UPDATE);
+        MyResourceId resource = getId(entryStr, studyStr, sessionId);
+        long familyId = resource.getResourceId();
 
-        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(id, new QueryOptions());
+        authorizationManager.checkFamilyPermission(resource.getStudyId(), familyId, resource.getUser(),
+                FamilyAclEntry.FamilyPermissions.UPDATE);
+
+        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(familyId, new QueryOptions());
         if (familyQueryResult.getNumResults() == 0) {
-            throw new CatalogException("Family " + id + " not found");
+            throw new CatalogException("Family " + familyId + " not found");
         }
 
         long individual;
@@ -470,7 +337,7 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
                     individual = parameters.getLong(param.getKey());
                     if (familyQueryResult.first().getMother().getId() > 0) {
                         if (individual != familyQueryResult.first().getMother().getId()) {
-                            throw new CatalogException("Cannot update mother parameter of family. The family " + id + " already has "
+                            throw new CatalogException("Cannot update mother parameter of family. The family " + familyId + " already has "
                                     + "the mother defined");
                         } else {
                             iterator.remove();
@@ -482,7 +349,7 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
                     individual = parameters.getLong(param.getKey());
                     if (familyQueryResult.first().getFather().getId() > 0) {
                         if (individual != familyQueryResult.first().getFather().getId()) {
-                            throw new CatalogException("Cannot update mother parameter of family. The family " + id + " already has "
+                            throw new CatalogException("Cannot update mother parameter of family. The family " + familyId + " already has "
                                     + "the father defined");
                         } else {
                             iterator.remove();
@@ -492,7 +359,7 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
                     break;
                 case CHILDREN_IDS:
                     if (familyQueryResult.first().getChildren().size() > 0) {
-                        throw new CatalogException("Cannot update children parameter of family. The family " + id + " already has "
+                        throw new CatalogException("Cannot update children parameter of family. The family " + familyId + " already has "
                                 + "children defined");
                     }
                     List<Long> individualList = parameters.getAsLongList(param.getKey());
@@ -522,29 +389,9 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
             parameters.remove(ONTOLOGIES.key());
         }
 
-        QueryResult<Family> queryResult = familyDBAdaptor.update(id, parameters);
-        auditManager.recordUpdate(AuditRecord.Resource.family, id, resource.getUser(), parameters, null, null);
+        QueryResult<Family> queryResult = familyDBAdaptor.update(familyId, parameters);
+        auditManager.recordUpdate(AuditRecord.Resource.family, familyId, resource.getUser(), parameters, null, null);
         return queryResult;
-    }
-
-    @Override
-    public List<QueryResult<Family>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
-        return null;
-    }
-
-    @Override
-    public List<QueryResult<Family>> restore(String ids, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
-    }
-
-    @Override
-    public List<QueryResult<Family>> restore(Query query, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
-    }
-
-    @Override
-    public void setStatus(String id, @Nullable String status, @Nullable String message, String sessionId) throws CatalogException {
-
     }
 
     @Override
@@ -569,7 +416,7 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
                     + "that variable set");
         }
 
-        QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(resourceId.getResourceId(), variableSet.first(),
+        QueryResult<AnnotationSet> annotationSet = createAnnotationSet(resourceId.getResourceId(), variableSet.first(),
                 annotationSetName, annotations, catalogManager.getStudyManager().getCurrentRelease(resourceId.getStudyId()), attributes,
                 familyDBAdaptor);
 
@@ -622,8 +469,7 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
                 FamilyAclEntry.FamilyPermissions.WRITE_ANNOTATIONS);
 
         // Update the annotation
-        QueryResult<AnnotationSet> queryResult =
-                AnnotationManager.updateAnnotationSet(resourceId, annotationSetName, newAnnotations, familyDBAdaptor, studyDBAdaptor);
+        QueryResult<AnnotationSet> queryResult = updateAnnotationSet(resourceId, annotationSetName, newAnnotations, familyDBAdaptor);
 
         if (queryResult == null || queryResult.getNumResults() == 0) {
             throw new CatalogException("There was an error with the update");
@@ -724,9 +570,44 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
 //        return resourceId.getResourceId();
     }
 
-    public List<QueryResult<FamilyAclEntry>> updateAcl(String family, String studyStr, String memberIds, AclParams familyAclParams,
+
+    // **************************   ACLs  ******************************** //
+
+    public List<QueryResult<FamilyAclEntry>> getAcls(String studyStr, String familyStr, String sessionId) throws CatalogException {
+        MyResourceIds resource = getIds(familyStr, studyStr, sessionId);
+
+        List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(resource.getResourceIds().size());
+        for (Long familyId : resource.getResourceIds()) {
+            QueryResult<FamilyAclEntry> allFamilyAcls =
+                    authorizationManager.getAllFamilyAcls(resource.getStudyId(), familyId, resource.getUser());
+            allFamilyAcls.setId(String.valueOf(familyId));
+            familyAclList.add(allFamilyAcls);
+        }
+
+        return familyAclList;
+    }
+
+    public List<QueryResult<FamilyAclEntry>> getAcl(String studyStr, String familyStr, String member, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkObj(member, "member");
+
+        MyResourceIds resource = getIds(familyStr, studyStr, sessionId);
+        checkMembers(resource.getStudyId(), Arrays.asList(member));
+
+        List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(resource.getResourceIds().size());
+        for (Long familyId : resource.getResourceIds()) {
+            QueryResult<FamilyAclEntry> allFamilyAcls =
+                    authorizationManager.getFamilyAcl(resource.getStudyId(), familyId, resource.getUser(), member);
+            allFamilyAcls.setId(String.valueOf(familyId));
+            familyAclList.add(allFamilyAcls);
+        }
+
+        return familyAclList;
+    }
+
+    public List<QueryResult<FamilyAclEntry>> updateAcl(String studyStr, String familyStr, String memberIds, AclParams familyAclParams,
                                                        String sessionId) throws CatalogException {
-        if (StringUtils.isEmpty(family)) {
+        if (StringUtils.isEmpty(familyStr)) {
             throw new CatalogException("Update ACL: Missing family parameter");
         }
 
@@ -740,7 +621,7 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
             checkPermissions(permissions, FamilyAclEntry.FamilyPermissions::valueOf);
         }
 
-        MyResourceIds resourceIds = getIds(family, studyStr, sessionId);
+        MyResourceIds resourceIds = getIds(familyStr, studyStr, sessionId);
 
         String collectionName = MongoDBAdaptorFactory.FAMILY_COLLECTION;
         // Check the user has the permissions needed to change permissions over those families
@@ -756,7 +637,7 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
         } else {
             members = Collections.emptyList();
         }
-        CatalogMemberValidator.checkMembers(catalogDBAdaptorFactory, resourceIds.getStudyId(), members);
+        checkMembers(resourceIds.getStudyId(), members);
 //        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
         switch (familyAclParams.getAction()) {
@@ -774,4 +655,125 @@ public class FamilyManager extends AbstractManager implements IEntryManager<Long
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }
     }
+
+
+    // **************************   Private methods  ******************************** //
+
+    private void checkAndCreateAllIndividualsFromFamily(long studyId, Family family, String sessionId) throws CatalogException {
+        if (family.getMother() == null) {
+            family.setMother(new Individual().setId(-1));
+        }
+        if (family.getFather() == null) {
+            family.setFather(new Individual().setId(-1));
+        }
+
+        // Check all individuals exist or can be created
+        checkAndCreateIndividual(studyId, family.getMother(), Individual.Sex.FEMALE, false, sessionId);
+        checkAndCreateIndividual(studyId, family.getFather(), Individual.Sex.MALE, false, sessionId);
+        if (family.getChildren() != null) {
+            for (Individual individual : family.getChildren()) {
+                checkAndCreateIndividual(studyId, individual, null, false, sessionId);
+            }
+        } else {
+            family.setChildren(Collections.emptyList());
+        }
+
+        // Create the ones that did not exist
+        checkAndCreateIndividual(studyId, family.getMother(), null, true, sessionId);
+        checkAndCreateIndividual(studyId, family.getFather(), null, true, sessionId);
+        for (Individual individual : family.getChildren()) {
+            checkAndCreateIndividual(studyId, individual, null, true, sessionId);
+        }
+    }
+
+    /**
+     * This method should be called two times. First time with !create to check if every individual is fine or can be created and a
+     * second time with create to create the individual if is needed.
+     *
+     * @param studyId studyId.
+     * @param individual individual.
+     * @param sex When !create, it will check whether the individual sex corresponds with the sex given. If null, this will not be checked.
+     * @param create Boolean indicating whether to make only checks or to create the individual.
+     * @param sessionId sessionID.
+     * @throws CatalogException catalogException.
+     */
+    private void checkAndCreateIndividual(long studyId, Individual individual, Individual.Sex sex, boolean create, String sessionId)
+            throws CatalogException {
+        if (!create) {
+            // Just check everything is fine
+
+            if (individual.getId() > 0 || (StringUtils.isNotEmpty(individual.getName()) && StringUtils.isNumeric(individual.getName()))
+                    && Long.parseLong(individual.getName()) > 0) {
+                if (individual.getId() <= 0) {
+                    individual.setId(Long.parseLong(individual.getName()));
+                }
+                individualDBAdaptor.checkId(individual.getId());
+
+                // Check studyId of the individual
+                long studyIdIndividual = individualDBAdaptor.getStudyId(individual.getId());
+                if (studyId != studyIdIndividual) {
+                    throw new CatalogException("Cannot create family in a different study than the one corresponding to the individuals.");
+                }
+
+                if (sex != null) {
+                    // Check the sex
+                    Query query = new Query()
+                            .append(IndividualDBAdaptor.QueryParams.ID.key(), individual.getId())
+                            .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                    QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SEX.key());
+
+                    QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options);
+                    if (individualQueryResult.getNumResults() != 1) {
+                        throw new CatalogException("Internal error. Found " + individualQueryResult.getNumResults() + " results when it was"
+                                + " expected to get 1 individual result");
+                    }
+                    if (individualQueryResult.first().getSex() != sex) {
+                        throw new CatalogException("The sex of the individual " + individual.getId() + " does not correspond with "
+                                + "the expected sex: " + sex);
+                    }
+                }
+            } else {
+                if (StringUtils.isNotEmpty(individual.getName())) {
+                    Query query = new Query()
+                            .append(IndividualDBAdaptor.QueryParams.NAME.key(), individual.getName())
+                            .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                    QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                            Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.SEX.key()));
+
+                    QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options);
+                    if (individualQueryResult.getNumResults() == 1) {
+                        // Check the sex
+                        if (sex != null && individualQueryResult.first().getSex() != sex) {
+                            throw new CatalogException("The sex of the individual " + individual.getName() + " does not correspond with "
+                                    + "the expected sex: " + sex);
+                        }
+
+                        individual.setId(individualQueryResult.first().getId());
+                    } else {
+                        // The individual has to be created.
+                        if (sex != null && sex != individual.getSex()) {
+                            throw new CatalogException("The sex of the individual " + individual.getName() + " does not correspond with "
+                                    + "the expected sex: " + sex);
+                        }
+                    }
+                }
+            }
+        } else {
+            // Create if it was not already created
+            if (individual.getId() <= 0 && StringUtils.isNotEmpty(individual.getName())) {
+                // We create the individual
+                QueryResult<Individual> individualQueryResult =
+                        catalogManager.getIndividualManager().create(Long.toString(studyId), individual, new QueryOptions(), sessionId);
+                if (individualQueryResult.getNumResults() == 0) {
+                    throw new CatalogException("Unexpected error occurred when creating the individual");
+                } else {
+                    // We set the id
+                    individual.setId(individualQueryResult.first().getId());
+                }
+            }
+        }
+
+    }
+
+
 }

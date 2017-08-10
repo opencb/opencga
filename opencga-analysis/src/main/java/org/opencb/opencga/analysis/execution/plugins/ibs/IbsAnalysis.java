@@ -89,7 +89,7 @@ public class IbsAnalysis extends OpenCGAAnalysis {
 
         Query samplesQuery = new Query();
         if (StringUtils.isNotEmpty(params.getString(SAMPLES))) {
-            String userId = catalogManager.getUserManager().getId(sessionId);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
             List<Long> sampleIds = catalogManager.getSampleManager().getIds(params.getString(SAMPLES), String.valueOf(studyId), userId)
                     .getResourceIds();
             samplesQuery.append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
@@ -111,7 +111,7 @@ public class IbsAnalysis extends OpenCGAAnalysis {
         } else {
             Path outfile;
             if (outdir.toAbsolutePath().toFile().isDirectory()) {
-                String alias = catalogManager.getStudyManager().get(studyId, null, sessionId).first().getAlias();
+                String alias = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first().getAlias();
                 outfile = outdir.resolve(alias + ".genome.gz");
             } else {
                 outfile = outdir;

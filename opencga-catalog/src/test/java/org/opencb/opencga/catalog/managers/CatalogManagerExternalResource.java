@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog;
+package org.opencb.opencga.catalog.managers;
 
 import org.apache.log4j.Level;
 import org.junit.rules.ExternalResource;

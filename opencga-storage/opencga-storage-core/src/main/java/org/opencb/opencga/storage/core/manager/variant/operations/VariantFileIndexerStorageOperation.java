@@ -587,7 +587,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             updateParams.append(CohortDBAdaptor.QueryParams.SAMPLES.key(), new ArrayList<>(samples));
         }
         if (!updateParams.isEmpty()) {
-            catalogManager.getCohortManager().update(defaultCohort.getId(), updateParams, new QueryOptions(), sessionId);
+            catalogManager.getCohortManager().update(String.valueOf(study.getId()), String.valueOf(defaultCohort.getId()), updateParams,
+                    new QueryOptions(), sessionId);
             modified = true;
         }
         return modified;

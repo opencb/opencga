@@ -17,10 +17,10 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Session;
-import org.opencb.opencga.catalog.session.JwtSessionManager;
+import org.opencb.opencga.core.config.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -28,11 +28,15 @@ import org.opencb.opencga.catalog.session.JwtSessionManager;
 public abstract class AuthenticationManager {
 
     protected Configuration configuration;
-    protected JwtSessionManager jwtSessionManager;
+    protected JwtManager jwtManager;
+
+    protected Logger logger;
 
     AuthenticationManager(Configuration configuration) {
         this.configuration = configuration;
-        this.jwtSessionManager = new JwtSessionManager(configuration);
+        this.jwtManager = new JwtManager(configuration);
+
+        this.logger = LoggerFactory.getLogger(AuthenticationManager.class);
     }
 
     /**
@@ -58,7 +62,7 @@ public abstract class AuthenticationManager {
             return "*";
         }
 
-        return jwtSessionManager.getUserId(token);
+        return jwtManager.getUser(token);
     }
 
     /**
@@ -91,7 +95,35 @@ public abstract class AuthenticationManager {
      */
     public abstract void newPassword(String userId, String newPassword) throws CatalogException;
 
-    public QueryResult<Session> createToken(String userId, String ip, Session.Type type) {
-        return jwtSessionManager.createToken(userId, ip, type);
+    /**
+     * Create a token for the user with default expiration time.
+     *
+     * @param userId user.
+     * @return A token.
+     */
+    public String createToken(String userId) {
+        return jwtManager.createJWTToken(userId);
     }
+
+    /**
+     * Create a token for the user with no expiration time.
+     *
+     * @param userId user.
+     * @return A token.
+     */
+    public String createNonExpiringToken(String userId) {
+        return jwtManager.createJWTToken(userId, 0L);
+    }
+
+    /**
+     * Create a token for the user.
+     *
+     * @param userId user.
+     * @param expiration Expiration time in seconds.
+     * @return A token.
+     */
+    public String createToken(String userId, long expiration) {
+        return jwtManager.createJWTToken(userId, expiration);
+    }
+
 }

@@ -98,7 +98,7 @@ public class JobFactory {
         resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, jobSchedulerName);
         if (simulate) { //Simulate a job. Do not create it.
             jobQueryResult = new QueryResult<>("simulatedJob", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(
-                    new Job(jobName, catalogManager.getUserManager().getId(sessionId), toolName, description, commandLine, outDir,
+                    new Job(jobName, catalogManager.getUserManager().getUserId(sessionId), toolName, description, commandLine, outDir,
                             inputFiles, 1)));
         } else {
             if (execute) {
