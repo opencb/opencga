@@ -106,8 +106,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
 
         QueryResult<Cohort> queryResult = cohortDBAdaptor.insert(cohort, studyId, null);
-        auditManager.recordAction(AuditRecord.Resource.cohort, AuditRecord.Action.create, AuditRecord.Magnitude.low,
-                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+        auditManager.recordCreation(AuditRecord.Resource.cohort, queryResult.first().getId(), userId, queryResult.first(), null, null);
         return queryResult;
     }
 
@@ -456,11 +455,11 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             authorizationManager.checkCohortPermission(resource.getStudyId(), cohortId, resource.getUser(),
                     CohortAclEntry.CohortPermissions.DELETE);
             queryResult = cohortDBAdaptor.restore(cohortId, options);
-            auditManager.recordAction(AuditRecord.Resource.cohort, AuditRecord.Action.restore, AuditRecord.Magnitude.medium, cohortId,
-                    resource.getUser(), Status.DELETED, Cohort.CohortStatus.INVALID, "Cohort restore", new ObjectMap());
+            auditManager.recordRestore(AuditRecord.Resource.cohort, cohortId, resource.getUser(), Status.DELETED,
+                    Cohort.CohortStatus.INVALID, "Cohort restore", null);
             } catch (CatalogAuthorizationException e) {
-                auditManager.recordAction(AuditRecord.Resource.cohort, AuditRecord.Action.restore, AuditRecord.Magnitude.high, cohortId,
-                        resource.getUser(), null, null, e.getMessage(), null);
+                auditManager.recordRestore(AuditRecord.Resource.cohort, cohortId, resource.getUser(), null, null, e.getMessage(), null);
+
                 queryResult = new QueryResult<>("Restore cohort " + cohortId);
                 queryResult.setErrorMsg(e.getMessage());
             } catch (CatalogException e) {

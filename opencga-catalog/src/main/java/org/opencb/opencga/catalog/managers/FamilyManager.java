@@ -203,8 +203,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         QueryResult<Family> queryResult = familyDBAdaptor.insert(family, studyId, options);
-        auditManager.recordAction(AuditRecord.Resource.family, AuditRecord.Action.create, AuditRecord.Magnitude.low,
-                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+        auditManager.recordCreation(AuditRecord.Resource.family, queryResult.first().getId(), userId, queryResult.first(), null, null);
         return queryResult;
     }
 

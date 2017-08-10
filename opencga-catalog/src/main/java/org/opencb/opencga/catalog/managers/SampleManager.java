@@ -139,8 +139,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         QueryResult<Sample> queryResult = sampleDBAdaptor.insert(sample, studyId, options);
-        auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.Action.create, AuditRecord.Magnitude.low,
-                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+        auditManager.recordCreation(AuditRecord.Resource.sample, queryResult.first().getId(), userId, queryResult.first(), null, null);
+
         return queryResult;
     }
 
@@ -170,9 +170,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         QueryResult<Sample> queryResult = sampleDBAdaptor.insert(sample, studyId, options);
-//        auditManager.recordCreation(AuditRecord.Resource.sample, queryResult.first().getId(), userId, queryResult.first(), null, null);
-        auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.Action.create, AuditRecord.Magnitude.low,
-                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+        auditManager.recordCreation(AuditRecord.Resource.sample, queryResult.first().getId(), userId, queryResult.first(), null, null);
+
         return queryResult;
     }
 
@@ -360,8 +359,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                         .append(SampleDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
                 queryResult = sampleDBAdaptor.update(sampleId, updateParams);
 
-                auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.Action.delete, AuditRecord.Magnitude.high, sampleId,
-                        resourceId.getUser(), sampleQueryResult.first(), queryResult.first(), "", null);
+                auditManager.recordDeletion(AuditRecord.Resource.sample, sampleId, resourceId.getUser(), sampleQueryResult.first(),
+                        queryResult.first(), null, null);
 
                 // Remove the references to the sample id from the array of files
                 Query query = new Query()
@@ -369,8 +368,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 fileDBAdaptor.extractSampleFromFiles(query, Arrays.asList(sampleId));
 
             } catch (CatalogAuthorizationException e) {
-                auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.Action.delete, AuditRecord.Magnitude.high, sampleId,
-                        resourceId.getUser(), null, null, e.getMessage(), null);
+                auditManager.recordDeletion(AuditRecord.Resource.sample, sampleId, resourceId.getUser(), null, e.getMessage(), null);
+
                 queryResult = new QueryResult<>("Delete sample " + sampleId);
                 queryResult.setErrorMsg(e.getMessage());
             } catch (CatalogException e) {

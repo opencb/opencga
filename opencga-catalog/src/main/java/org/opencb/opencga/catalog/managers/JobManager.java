@@ -195,9 +195,8 @@ public class JobManager extends ResourceManager<Job> {
         }
 
         QueryResult<Job> queryResult = jobDBAdaptor.insert(job, studyId, options);
-//        auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getId(), userId, queryResult.first(), null, null);
-        auditManager.recordAction(AuditRecord.Resource.job, AuditRecord.Action.create, AuditRecord.Magnitude.low,
-                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+        auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getId(), userId, queryResult.first(), null, null);
+
         return queryResult;
     }
 
@@ -356,11 +355,12 @@ public class JobManager extends ResourceManager<Job> {
                         .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.DELETED);
                 queryResult = jobDBAdaptor.update(jobId, params);
                 queryResult.setId("Delete job " + jobId);
-                auditManager.recordAction(AuditRecord.Resource.job, AuditRecord.Action.delete, AuditRecord.Magnitude.high, jobId, userId,
-                        jobQueryResult.first(), queryResult.first(), "", null);
+                auditManager.recordDeletion(AuditRecord.Resource.job, jobId, userId, jobQueryResult.first(), queryResult.first(),
+                        null, null);
+
             } catch (CatalogAuthorizationException e) {
-                auditManager.recordAction(AuditRecord.Resource.job, AuditRecord.Action.delete, AuditRecord.Magnitude.high,
-                        jobId, userId, null, null, e.getMessage(), null);
+                auditManager.recordDeletion(AuditRecord.Resource.job, jobId, userId, null, e.getMessage(), null);
+
                 queryResult = new QueryResult<>("Delete job " + jobId);
                 queryResult.setErrorMsg(e.getMessage());
             } catch (CatalogException e) {
@@ -479,8 +479,8 @@ public class JobManager extends ResourceManager<Job> {
                 .setAttributes(attributes);
 
         QueryResult<Job> queryResult = jobDBAdaptor.insert(job, studyId, new QueryOptions());
-        auditManager.recordAction(AuditRecord.Resource.job, AuditRecord.Action.create, AuditRecord.Magnitude.low,
-                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+        auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getId(), userId, queryResult.first(), null, null);
+
         return queryResult;
     }
 

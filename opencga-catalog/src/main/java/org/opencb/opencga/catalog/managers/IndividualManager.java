@@ -119,9 +119,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 new ArrayList<>());
 
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
-//      auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
-        auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.create, AuditRecord.Magnitude.low,
-                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+        auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
+
         return queryResult;
     }
 
@@ -182,11 +181,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 authorizationManager.checkIndividualPermission(resource.getStudyId(), individualId, resource.getUser(),
                         IndividualAclEntry.IndividualPermissions.DELETE);
                 queryResult = individualDBAdaptor.restore(individualId, options);
-                auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.restore, AuditRecord.Magnitude.medium,
-                        individualId, resource.getUser(), Status.DELETED, Status.READY, "Individual restore", new ObjectMap());
+
+                auditManager.recordRestore(AuditRecord.Resource.individual, individualId, resource.getUser(), Status.DELETED,
+                        Status.READY, "Individual restore", null);
             } catch (CatalogAuthorizationException e) {
-                auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.restore, AuditRecord.Magnitude.high,
-                        individualId, resource.getUser(), null, null, e.getMessage(), null);
+                auditManager.recordRestore(AuditRecord.Resource.individual, individualId, resource.getUser(), null, null, e.getMessage(),
+                        null);
                 queryResult = new QueryResult<>("Restore individual " + individualId);
                 queryResult.setErrorMsg(e.getMessage());
             } catch (CatalogException e) {
@@ -370,8 +370,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setRelease(studyManager.getCurrentRelease(studyId));
 
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
-        auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.create, AuditRecord.Magnitude.low,
-                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+        auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
+
         return queryResult;
     }
 
@@ -517,11 +517,13 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         .append(IndividualDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
                 queryResult = individualDBAdaptor.update(individualId, updateParams);
 
-                auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.delete, AuditRecord.Magnitude.high,
-                        individualId, resourceId.getUser(), individualQueryResult.first(), queryResult.first(), "", null);
+                auditManager.recordDeletion(AuditRecord.Resource.individual, individualId, resourceId.getUser(),
+                        individualQueryResult.first(), queryResult.first(), null, null);
+
             } catch (CatalogAuthorizationException e) {
-                auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.delete, AuditRecord.Magnitude.high,
-                        individualId, userId, null, null, e.getMessage(), null);
+                auditManager.recordDeletion(AuditRecord.Resource.individual, individualId, resourceId.getUser(), null, e.getMessage(),
+                        null);
+
                 queryResult = new QueryResult<>("Delete individual " + individualId);
                 queryResult.setErrorMsg(e.getMessage());
             } catch (CatalogException e) {

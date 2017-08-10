@@ -562,8 +562,7 @@ public class FileManager extends ResourceManager<File> {
                     MongoDBAdaptorFactory.FILE_COLLECTION);
         }
 
-        auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.Action.create, AuditRecord.Magnitude.low,
-                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+        auditManager.recordCreation(AuditRecord.Resource.file, queryResult.first().getId(), userId, queryResult.first(), null, null);
 
         matchUpVariantFiles(queryResult.getResult(), sessionId);
 

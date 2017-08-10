@@ -193,9 +193,8 @@ public class UserManager extends AbstractManager {
         try {
             catalogIOManagerFactory.getDefault().createUser(user.getId());
             QueryResult<User> queryResult = userDBAdaptor.insert(user, options);
-//            auditManager.recordCreation(AuditRecord.Resource.user, user.getId(), userId, queryResult.first(), null, null);
-            auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.create, AuditRecord.Magnitude.low, user.getId(), id,
-                    null, queryResult.first(), null, null);
+            auditManager.recordCreation(AuditRecord.Resource.user, id, id, queryResult.first(), null, null);
+
             authenticationManagerMap.get(INTERNAL_AUTHORIZATION).newPassword(user.getId(), password);
             return queryResult;
         } catch (CatalogIOException | CatalogDBException e) {
@@ -464,8 +463,7 @@ public class UserManager extends AbstractManager {
 
         String token = authenticationManagerMap.get(authId).createToken(userId);
 
-        auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.login, AuditRecord.Magnitude.low, userId, userId, null,
-                new ObjectMap("token", token), "User successfully logged in", null);
+        auditManager.recordLogin(userId, true);
 
         return token;
     }

@@ -284,14 +284,12 @@ public class StudyManager extends AbstractManager {
         }
 
         study = studyDBAdaptor.update(study.getId(), new ObjectMap("uri", uri)).first();
-//        auditManager.recordCreation(AuditRecord.Resource.study, study.getId(), userId, study, null, null);
-        auditManager.recordAction(AuditRecord.Resource.study, AuditRecord.Action.create, AuditRecord.Magnitude.low, study.getId(), userId,
-                null, study, null, null);
+        auditManager.recordCreation(AuditRecord.Resource.study, study.getId(), userId, study, null, null);
+
         long rootFileId = fileDBAdaptor.getId(study.getId(), "");    //Set studyUri to the root folder too
         rootFile = fileDBAdaptor.update(rootFileId, new ObjectMap("uri", uri)).first();
-//        auditManager.recordCreation(AuditRecord.Resource.file, rootFile.getId(), userId, rootFile, null, null);
-        auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.Action.create, AuditRecord.Magnitude.low, rootFile.getId(), userId,
-                null, rootFile, null, null);
+        auditManager.recordCreation(AuditRecord.Resource.file, rootFile.getId(), userId, rootFile, null, null);
+
         userDBAdaptor.updateUserLastModified(userId);
 
         result.setResult(Arrays.asList(study));
@@ -829,9 +827,8 @@ public class StudyManager extends AbstractManager {
                 new DiseasePanel.PanelStatus());
 
         QueryResult<DiseasePanel> queryResult = panelDBAdaptor.insert(diseasePanel, studyId, options);
-//        auditManager.recordCreation(AuditRecord.Resource.panel, queryResult.first().getId(), userId, queryResult.first(), null, null);
-        auditManager.recordAction(AuditRecord.Resource.panel, AuditRecord.Action.create, AuditRecord.Magnitude.low,
-                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+        auditManager.recordCreation(AuditRecord.Resource.panel, queryResult.first().getId(), userId, queryResult.first(), null, null);
+
         return queryResult;
 
     }
@@ -945,9 +942,8 @@ public class StudyManager extends AbstractManager {
         CatalogAnnotationsValidator.checkVariableSet(variableSet);
 
         QueryResult<VariableSet> queryResult = studyDBAdaptor.createVariableSet(studyId, variableSet);
-//      auditManager.recordCreation(AuditRecord.Resource.variableSet, queryResult.first().getId(), userId, queryResult.first(), null, null);
-        auditManager.recordAction(AuditRecord.Resource.variableSet, AuditRecord.Action.create, AuditRecord.Magnitude.low,
-                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+        auditManager.recordCreation(AuditRecord.Resource.variableSet, queryResult.first().getId(), userId, queryResult.first(), null, null);
+
         return queryResult;
     }
 
