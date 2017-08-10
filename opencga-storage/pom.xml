@@ -126,38 +126,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>2.17</version>
-                <executions>
-                    <execution>
-                        <id>validate</id>
-                        <phase>validate</phase>
-                        <configuration>
-                            <configLocation>checkstyle.xml</configLocation>
-                            <excludes>
-                                org/opencb/opencga/storage/app/cli/**,
-                                org/opencb/opencga/storage/core/variant/io/VariantFieldsProtos.java,
-                                org/opencb/opencga/storage/core/variant/io/VariantEffectProtos.java,
-                                org/opencb/opencga/storage/mongodb/utils/TabixReader.java,
-                                org/opencb/opencga/storage/mongodb/alignment/BamManager.java,
-                                org/opencb/opencga/storage/mongodb/alignment/TabixAlignmentDBAdaptor.java,
-                                org/opencb/opencga/storage/alignment/**,
-                                org/opencb/opencga/storage/variant/**,
-                                org/opencb/opencga/storage/datamanagers/**,
-                                org/opencb/opencga/storage/app/service/OptionParser.java
-                            </excludes>
-                            <resourceExcludes>
-                                benchmark/jmeter/**
-                            </resourceExcludes>
-                        </configuration>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 

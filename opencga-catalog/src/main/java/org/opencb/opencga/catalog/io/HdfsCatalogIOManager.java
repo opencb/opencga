@@ -48,7 +48,7 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
         super(configuration);
     }
 
-    /**
+    /*
      * This class implements all the operations for Hadoop HDFS.
      * Useful links: http://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/FileSystem.html
      * http://linuxjunkies.wordpress.com/2011/11/21/a-hdfsclient-for-hadoop-using-the-native-java-api-a-tutorial/

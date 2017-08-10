@@ -381,7 +381,7 @@ public class StudyConfiguration {
      * @param fileIds               Additional files to include
      * @return      Map between sampleName and position
      */
-    public static BiMap<String, Integer> getIndexedSamplesPosition(StudyConfiguration studyConfiguration, int ... fileIds) {
+    public static BiMap<String, Integer> getIndexedSamplesPosition(StudyConfiguration studyConfiguration, int... fileIds) {
         Objects.requireNonNull(studyConfiguration, "StudyConfiguration is required");
         BiMap<String, Integer> samplesPosition = HashBiMap.create(studyConfiguration.getSampleIds().size());
         BiMap<Integer, String> idSamples = studyConfiguration.sampleIds.inverse();

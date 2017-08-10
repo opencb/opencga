@@ -325,7 +325,7 @@ public abstract class AbstractParentClient {
         return objectMap;
     }
 
-    protected ObjectMap addParamsToObjectMap(ObjectMap objectMap, String key, Object value, Object ... params) {
+    protected ObjectMap addParamsToObjectMap(ObjectMap objectMap, String key, Object value, Object... params) {
         objectMap = createIfNull(objectMap);
         objectMap.put(key, value);
         if (params != null && params.length > 0) {

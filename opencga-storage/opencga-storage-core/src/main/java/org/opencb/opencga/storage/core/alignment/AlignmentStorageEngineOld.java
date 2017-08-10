@@ -63,21 +63,21 @@ public abstract class AlignmentStorageEngineOld extends StorageEngine<AlignmentD
     private Logger logger = LoggerFactory.getLogger(AlignmentStorageEngineOld.class);
 
     public enum Options {
-        MEAN_COVERAGE_SIZE_LIST ("mean_coverage_size_list", Arrays.asList("200", "10000")),
-        PLAIN ("plain", false),
-        TRANSFORM_REGION_SIZE ("transform.region_size", 200000),
-        TRANSFORM_COVERAGE_CHUNK_SIZE ("transform.coverage_chunk_size", 1000),
-        WRITE_COVERAGE ("transform.write_coverage", true),
-        STUDY ("study", true),
-        FILE_ID ("fileId", ""),
-        FILE_ALIAS ("fileAlias", ""),
-        WRITE_ALIGNMENTS ("writeAlignments", false),
-        INCLUDE_COVERAGE ("includeCoverage", true),
-        CREATE_BAM_INDEX ("createBai", true),
-        ADJUST_QUALITY("adjustQuality", false),
-        ENCRYPT ("encrypt", false),
-        COPY_FILE ("copy", false),
-        DB_NAME ("database.name", "opencga"),
+        MEAN_COVERAGE_SIZE_LIST("mean_coverage_size_list", Arrays.asList("200", "10000")),
+        PLAIN("plain", false),
+        TRANSFORM_REGION_SIZE("transform.region_size", 200000),
+        TRANSFORM_COVERAGE_CHUNK_SIZE("transform.coverage_chunk_size", 1000),
+        WRITE_COVERAGE("transform.write_coverage", true),
+        STUDY("study", true),
+        FILE_ID("fileId", ""),
+        FILE_ALIAS("fileAlias", ""),
+        WRITE_ALIGNMENTS("writeAlignments", false),
+        INCLUDE_COVERAGE("includeCoverage", true),
+        CREATE_BAM_INDEX("createBai", true),
+        ADJUST_QUALIT("adjustQuality", false),
+        ENCRYPT("encrypt", false),
+        COPY_FILE("copy", false),
+        DB_NAME("database.name", "opencga"),
         @Deprecated
         TOOLS_SAMTOOLS("tools.samtools", null);
 
