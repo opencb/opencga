@@ -52,6 +52,7 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.LOADED_GENOTYPES;
 
 /**
  * Created on 31/03/17.
@@ -554,15 +555,23 @@ public class VariantMongoDBQueryParser {
                 Set<Integer> files = new HashSet<>();
                 String samples = query.getString(SAMPLES.key());
 
-                boolean filesFilterBySamples = !isValidParam(query, FILES) && defaultStudyConfiguration != null;
-                for (String sample : samples.split(",")) {
-                    int sampleId = studyConfigurationManager.getSampleId(sample, defaultStudyConfiguration);
-                    genotypesFilter.put(sampleId, Arrays.asList(
+                List<String> genotypes;
+                if (defaultStudyConfiguration != null) {
+                    genotypes = defaultStudyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key()).stream()
+                            .filter(gt -> DocumentToSamplesConverter.genotypeToDataModelType(gt).contains("1"))
+                            .collect(Collectors.toList());
+                } else {
+                    genotypes = Arrays.asList(
                             "1",
                             "0/1", "0|1", "1|0",
                             "1/1", "1|1",
                             "1/2", "1|2", "2|1"
-                    ));
+                    );
+                }
+                boolean filesFilterBySamples = !isValidParam(query, FILES) && defaultStudyConfiguration != null;
+                for (String sample : samples.split(",")) {
+                    int sampleId = studyConfigurationManager.getSampleId(sample, defaultStudyConfiguration);
+                    genotypesFilter.put(sampleId, genotypes);
                     if (filesFilterBySamples) {
                         int filesFromSample = 0;
                         for (Integer file : defaultStudyConfiguration.getIndexedFiles()) {
@@ -598,24 +607,28 @@ public class VariantMongoDBQueryParser {
                     QueryBuilder genotypesBuilder = QueryBuilder.start();
 
                     List<String> defaultGenotypes;
+                    List<String> otherGenotypes;
                     if (defaultStudyConfiguration != null) {
                         defaultGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
+                        otherGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
                     } else {
-                        defaultGenotypes = Arrays.asList("0/0", "0|0");
+                        defaultGenotypes = DEFAULT_GENOTYPE.defaultValue();
+                        otherGenotypes = Arrays.asList(
+                                "0/0", "0|0",
+                                "0/1", "1/0", "1/1", "-1/-1",
+                                "0|1", "1|0", "1|1", "-1|-1",
+                                "0|2", "2|0", "2|1", "1|2", "2|2",
+                                "0/2", "2/0", "2/1", "1/2", "2/2",
+                                DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
                     }
+
                     for (String genotype : genotypes) {
                         boolean negated = isNegated(genotype);
                         if (negated) {
                             genotype = removeNegation(genotype);
                         }
                         if (defaultGenotypes.contains(genotype)) {
-                            List<String> otherGenotypes = Arrays.asList(
-                                    "0/0", "0|0",
-                                    "0/1", "1/0", "1/1", "-1/-1",
-                                    "0|1", "1|0", "1|1", "-1|-1",
-                                    "0|2", "2|0", "2|1", "1|2", "2|2",
-                                    "0/2", "2/0", "2/1", "1/2", "2/2",
-                                    DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
+
                             if (negated) {
                                 for (String otherGenotype : otherGenotypes) {
                                     if (defaultGenotypes.contains(otherGenotype)) {
