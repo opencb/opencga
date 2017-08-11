@@ -396,13 +396,13 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public void setToMembers(List<Long> resourceIds, List<String> members, List<String> permissions, String entity)
+    public void setToMembers(List<Long> resourceIds, List<String> members, List<String> permissionList, String entity)
             throws CatalogDBException {
         validateCollection(entity);
         MongoDBCollection collection = dbCollectionMap.get(entity);
 
         // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
-        permissions = new ArrayList<>(permissions);
+        List<String> permissions = new ArrayList<>(permissionList);
         permissions.add("NONE");
 
         for (long resourceId : resourceIds) {
@@ -427,13 +427,13 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public void addToMembers(List<Long> resourceIds, List<String> members, List<String> permissions, String entity)
+    public void addToMembers(List<Long> resourceIds, List<String> members, List<String> permissionList, String entity)
             throws CatalogDBException {
         validateCollection(entity);
         MongoDBCollection collection = dbCollectionMap.get(entity);
 
         // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
-        permissions = new ArrayList<>(permissions);
+        List<String> permissions = new ArrayList<>(permissionList);
         permissions.add("NONE");
 
         List<String> myPermissions = createPermissionArray(members, permissions);
@@ -450,13 +450,17 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public void removeFromMembers(List<Long> resourceIds, List<String> members, List<String> permissions, String entity)
+    public void removeFromMembers(List<Long> resourceIds, List<String> members, List<String> permissionList, String entity)
             throws CatalogDBException {
+
         if (members == null || members.isEmpty()) {
             return;
         }
+
         validateCollection(entity);
         MongoDBCollection collection = dbCollectionMap.get(entity);
+
+        List<String> permissions = permissionList;
 
         if (permissions == null || permissions.isEmpty()) {
             // We get all possible permissions those members will have to do a full reset
