@@ -158,10 +158,14 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public long getId(String userId, String projectAlias) throws CatalogDBException {
+    public long getId(final String userId, final String projectAliasString) throws CatalogDBException {
+
+        String projectAlias = projectAliasString;
+
         if (projectAlias.contains("@")) {
             projectAlias = projectAlias.split("@", 2)[1];
         }
+
         QueryResult<Document> queryResult = userCollection.find(
                 new BsonDocument("projects.alias", new BsonString(projectAlias))
                         .append("id", new BsonString(userId)),

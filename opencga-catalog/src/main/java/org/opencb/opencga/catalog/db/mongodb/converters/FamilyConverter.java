@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
+import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.models.Family;
 import org.opencb.opencga.catalog.models.Individual;
 
@@ -58,7 +59,7 @@ public class FamilyConverter extends GenericDocumentComplexConverter<Family> {
                     children.add(new Document("id", individualId));
                 }
             }
-            if (children.size() > 0) {
+            if (CollectionUtils.isNotEmpty(children)) {
                 document.put("children", children);
             }
         } else {

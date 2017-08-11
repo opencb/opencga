@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.models.acls.permissions;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.utils.CollectionUtils;
 
 import java.util.Collections;
 import java.util.EnumSet;
@@ -59,7 +60,7 @@ public class FamilyAclEntry extends AbstractAclEntry<FamilyAclEntry.FamilyPermis
 
     public FamilyAclEntry(String member, List<String> permissions) {
         super(member, EnumSet.noneOf(FamilyPermissions.class));
-        if (permissions.size() > 0) {
+        if (CollectionUtils.isNotEmpty(permissions)) {
             this.permissions.addAll(permissions.stream().map(FamilyPermissions::valueOf).collect(Collectors.toList()));
         }
     }

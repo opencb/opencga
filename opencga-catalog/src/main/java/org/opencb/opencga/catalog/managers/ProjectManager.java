@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -271,10 +272,10 @@ public class ProjectManager extends AbstractManager {
             }
 
             query.remove(ProjectDBAdaptor.QueryParams.STUDY.key());
-            if (idList.size() > 0) {
+            if (CollectionUtils.isNotEmpty(idList)) {
                 query.put(ProjectDBAdaptor.QueryParams.STUDY_ID.key(), StringUtils.join(idList, ","));
             }
-            if (aliasList.size() > 0) {
+            if (CollectionUtils.isNotEmpty(aliasList)) {
                 query.put(ProjectDBAdaptor.QueryParams.STUDY_ALIAS.key(), StringUtils.join(aliasList, ","));
             }
         }

@@ -235,7 +235,7 @@ public class VariantStudyMetadata {
         public VariantMetadataRecord(Map<String, Object> record) {
             id = record.get("ID").toString();
             String numberStr = record.get("Number").toString();
-            if (numberStr.equals(".")) {
+            if ((".").equals(numberStr)) {
                 numberType = VCFHeaderLineCount.UNBOUNDED;
                 number = null;
             } else if (StringUtils.isNumeric(numberStr)) {

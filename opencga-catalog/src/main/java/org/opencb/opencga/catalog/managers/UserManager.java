@@ -411,7 +411,7 @@ public class UserManager extends AbstractManager {
                                     List<Attributes> userInfoFromLDAP = LDAPUtils.getUserInfoFromLDAP(authenticationOrigin.getHost(),
                                             Arrays.asList(userId),
                                             (String) authenticationOrigin.getOptions().get(AuthenticationOrigin.USERS_SEARCH));
-                                    if (userInfoFromLDAP == null || userInfoFromLDAP.size() == 0) {
+                                    if (userInfoFromLDAP == null || userInfoFromLDAP.isEmpty()) {
                                         throw new CatalogException("The user id " + userId + " does not exist nor could be found in LDAP.");
                                     }
                                     entry.getValue().authenticate(LDAPUtils.getRDN(userInfoFromLDAP.get(0)), password, true);
@@ -889,7 +889,7 @@ public class UserManager extends AbstractManager {
             return retResult;
         }
 
-        if (userAttrList.size() == 0) {
+        if (userAttrList.isEmpty()) {
             retResult.setWarningMsg("No users were found. Nothing to do.");
             return retResult;
         }

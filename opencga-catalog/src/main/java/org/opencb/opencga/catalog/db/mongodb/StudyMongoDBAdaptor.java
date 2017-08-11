@@ -681,7 +681,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             }
         }
         Study study = studyConverter.convertToDataModelType(studyQueryResult.first());
-        if (study.getVariableSets() == null || study.getVariableSets().size() == 0) {
+        if (study.getVariableSets() == null || study.getVariableSets().isEmpty()) {
             throw new CatalogDBException("Variable set not found.");
         }
         // Check if it is confidential

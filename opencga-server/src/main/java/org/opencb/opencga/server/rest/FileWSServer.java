@@ -22,6 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -1248,7 +1249,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Deprecated
     private void populateOldDeprecatedSampleIdsField(QueryResult<File> queryResult) {
         for (File file : queryResult.getResult()) {
-            if (file.getSamples() != null && file.getSamples().size() > 0) {
+            if (file.getSamples() != null && CollectionUtils.isNotEmpty(file.getSamples())) {
                 List<Long> sampleIds = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
                 file.setSampleIds(sampleIds);
             }
