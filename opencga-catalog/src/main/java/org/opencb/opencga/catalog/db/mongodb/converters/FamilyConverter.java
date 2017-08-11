@@ -20,10 +20,7 @@ import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.catalog.models.Family;
 import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.Relatives;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**

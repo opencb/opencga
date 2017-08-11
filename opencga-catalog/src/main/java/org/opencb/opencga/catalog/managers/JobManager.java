@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -330,7 +331,7 @@ public class JobManager extends ResourceManager<Job> {
                 authorizationManager.checkJobPermission(resourceIds.getStudyId(), jobId, userId, JobAclEntry.JobPermissions.DELETE);
 
                 QueryResult<Job> jobQueryResult = jobDBAdaptor.get(jobId, QueryOptions.empty());
-                if (jobQueryResult.first().getOutput() != null && jobQueryResult.first().getOutput().size() > 0) {
+                if (jobQueryResult.first().getOutput() != null && CollectionUtils.isNotEmpty(jobQueryResult.first().getOutput())) {
                     throw new CatalogException("The job created " + jobQueryResult.first().getOutput().size() + " files. Please, delete "
                             + "them first.");
                 }

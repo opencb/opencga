@@ -28,6 +28,7 @@ import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -394,7 +395,7 @@ abstract class AnnotationMongoDBAdaptor extends MongoDBAdaptor {
                     }
                 }
 
-                if (confidentialVariableSets.size() > 0) {
+                if (CollectionUtils.isNotEmpty(confidentialVariableSets)) {
                     // The study contains confidential variable sets so we do have to check if any of the annotations come from
                     // confidential variable sets
                     for (Annotable annotable : results.getResult()) {

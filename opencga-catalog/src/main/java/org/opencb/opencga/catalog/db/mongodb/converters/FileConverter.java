@@ -69,7 +69,7 @@ public class FileConverter extends GenericDocumentComplexConverter<File> {
     }
 
     public List<Document> convertSamples(List<Sample> sampleList) {
-        if (sampleList == null || sampleList.size() == 0) {
+        if (sampleList == null || sampleList.isEmpty()) {
             return Collections.emptyList();
         }
         List<Document> samples = new ArrayList(sampleList.size());

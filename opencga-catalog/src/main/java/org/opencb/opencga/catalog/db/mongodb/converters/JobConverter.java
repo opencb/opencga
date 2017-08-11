@@ -53,7 +53,7 @@ public class JobConverter extends GenericDocumentComplexConverter<Job> {
     }
 
     private List<Document> convertFilesToDocument(List<File> fileList) {
-        if (fileList == null || fileList.size() == 0) {
+        if (fileList == null || fileList.isEmpty()) {
             return Collections.emptyList();
         }
         List<Document> files = new ArrayList(fileList.size());

@@ -332,7 +332,7 @@ public class IndexDaemon extends MonitorParentDaemon {
             for (Map.Entry<String, String> param : job.getParams().entrySet()) {
                 commandLine.append(' ');
                 if (knownParams.contains(param.getKey())) {
-                    if (!param.getValue().equalsIgnoreCase("false")) {
+                    if (!("false").equalsIgnoreCase(param.getValue())) {
                         if (param.getKey().length() == 1) {
                             commandLine.append('-');
                         } else {

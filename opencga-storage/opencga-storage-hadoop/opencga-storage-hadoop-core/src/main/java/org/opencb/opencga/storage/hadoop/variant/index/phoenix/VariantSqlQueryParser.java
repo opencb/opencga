@@ -618,7 +618,7 @@ public class VariantSqlQueryParser {
                         gtFilters.add(filter);
                     } else {
                         genotype = genotype.replace('|', '/');
-                        if (genotype.equals("./.")) {
+                        if (("./.").equals(genotype)) {
                             genotype = NOCALL;
                         }
                         switch (genotype) {
