@@ -30,10 +30,17 @@ public class Family extends Annotable {
     private long id;
     private String name;
 
+    private List<Disease> diseases;
+    private List<Relatives> members;
+
+    @Deprecated
     private Individual father;
+    @Deprecated
     private Individual mother;
+    @Deprecated
     private List<Individual> children;
 
+    @Deprecated
     private boolean parentalConsanguinity;
 
     private String creationDate;
@@ -48,12 +55,31 @@ public class Family extends Annotable {
     public Family() {
     }
 
+    public Family(String name, List<Disease> diseases, List<Relatives> members, String description, int release,
+                  Map<String, Object> attributes) {
+        this(name, diseases, members, TimeUtils.getTime(), new Status(Status.READY), description, release, attributes);
+    }
+
+    public Family(String name, List<Disease> diseases, List<Relatives> members, String creationDate, Status status, String description,
+                  int release, Map<String, Object> attributes) {
+        this.name = name;
+        this.diseases = diseases;
+        this.members = members;
+        this.creationDate = creationDate;
+        this.status = status;
+        this.description = description;
+        this.release = release;
+        this.attributes = attributes;
+    }
+
+    @Deprecated
     public Family(String name, Individual father, Individual mother, List<Individual> children, boolean parentalConsanguinity,
                   String description, int release) {
         this(name, father, mother, children, parentalConsanguinity, description, Collections.emptyList(), Collections.emptyList(),
                 release, Collections.emptyMap());
     }
 
+    @Deprecated
     public Family(String name, Individual father, Individual mother, List<Individual> children, boolean parentalConsanguinity,
                   String description, List<OntologyTerm> ontologyTerms, List<AnnotationSet> annotationSets, int release,
                   Map<String, Object> attributes) {
@@ -61,6 +87,7 @@ public class Family extends Annotable {
                 annotationSets, release, attributes);
     }
 
+    @Deprecated
     public Family(long id, String name, Individual father, Individual mother, List<Individual> children, boolean parentalConsanguinity,
                   String creationDate, Status status, String description, List<OntologyTerm> ontologyTerms,
                   List<AnnotationSet> annotationSets, int release, Map<String, Object> attributes) {
@@ -79,11 +106,14 @@ public class Family extends Annotable {
         this.annotationSets = annotationSets;
     }
 
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Family{");
         sb.append("id=").append(id);
         sb.append(", name='").append(name).append('\'');
+        sb.append(", diseases=").append(diseases);
+        sb.append(", members=").append(members);
         sb.append(", father=").append(father);
         sb.append(", mother=").append(mother);
         sb.append(", children=").append(children);
@@ -98,6 +128,7 @@ public class Family extends Annotable {
         sb.append('}');
         return sb.toString();
     }
+
 
     public long getId() {
         return id;
@@ -114,6 +145,24 @@ public class Family extends Annotable {
 
     public Family setName(String name) {
         this.name = name;
+        return this;
+    }
+
+    public List<Disease> getDiseases() {
+        return diseases;
+    }
+
+    public Family setDiseases(List<Disease> diseases) {
+        this.diseases = diseases;
+        return this;
+    }
+
+    public List<Relatives> getMembers() {
+        return members;
+    }
+
+    public Family setMembers(List<Relatives> members) {
+        this.members = members;
         return this;
     }
 
@@ -206,5 +255,4 @@ public class Family extends Annotable {
         this.attributes = attributes;
         return this;
     }
-
 }

@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.models.*;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -76,36 +77,86 @@ public class FamilyManagerTest extends GenericTest {
 
     @Test
     public void createFamily() throws CatalogException {
-        Individual father = new Individual().setName("John").setSex(Individual.Sex.MALE);
-        Individual mother = new Individual().setName("Sue").setSex(Individual.Sex.FEMALE);
-        List<Individual> children = Arrays.asList(
-                new Individual().setName("son"), new Individual().setName("daughter")
-        );
-        Family family = new Family("family", father, mother, children, false, "", 1);
+        Disease disease1 = new Disease("dis1", "Disease 1", Collections.emptyList());
+        Disease disease2 = new Disease("dis2", "Disease 2", Collections.emptyList());
+
+        Individual father = new Individual().setName("father");
+        Individual mother = new Individual().setName("mother");
+
+        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), false);
+        Relatives relMother = new Relatives(mother, null, null, Arrays.asList("dis2"), false);
+        Relatives relChild1 = new Relatives(new Individual().setName("child1"), father, mother, Arrays.asList("dis1", "dis2"), true);
+        Relatives relChild2 = new Relatives(new Individual().setName("child2"), father, mother, Arrays.asList("dis1"), true);
+
+        Family family = new Family("Martinez-Martinez", Arrays.asList(disease1, disease2),
+                Arrays.asList(relFather, relMother, relChild1, relChild2),"", 1, Collections.emptyMap());
 
         QueryResult<Family> familyQueryResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, familyQueryResult.getNumResults());
-        assertEquals("John", familyQueryResult.first().getFather().getName());
-        assertEquals("Sue", familyQueryResult.first().getMother().getName());
-        assertEquals(2, familyQueryResult.first().getChildren().size());
-
-        QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, FamilyDBAdaptor.QueryParams.CHILDREN.key());
-        Query query = new Query(FamilyDBAdaptor.QueryParams.MOTHER.key(), "Sue");
-        QueryResult<Family> search = familyManager.search(STUDY, query, options, sessionIdUser);
-        assertEquals(null, search.first().getChildren());
-        assertEquals("Sue", search.first().getMother().getName());
-        assertEquals("John", search.first().getFather().getName());
-
-        options = new QueryOptions(QueryOptions.EXCLUDE, FamilyDBAdaptor.QueryParams.FATHER.key());
-        search = familyManager.search(STUDY, query, options, sessionIdUser);
-        assertEquals(2, search.first().getChildren().size());
-        assertEquals("Sue", search.first().getMother().getName());
-        assertEquals(null, search.first().getFather());
-
-        options = new QueryOptions(QueryOptions.INCLUDE, FamilyDBAdaptor.QueryParams.FATHER.key());
-        search = familyManager.search(STUDY, query, options, sessionIdUser);
-        assertEquals(null, search.first().getChildren());
-        assertEquals(null, search.first().getMother());
-        assertEquals("John", search.first().getFather().getName());
+        assertEquals(4, familyQueryResult.first().getMembers().size());
+        assertEquals(2, familyQueryResult.first().getDiseases().size());
     }
+
+    @Test
+    public void createFamilyMissingMember() throws CatalogException {
+        Disease disease1 = new Disease("dis1", "Disease 1", Collections.emptyList());
+        Disease disease2 = new Disease("dis2", "Disease 2", Collections.emptyList());
+
+        Individual father = new Individual().setName("father");
+        Individual mother = new Individual().setName("mother");
+
+        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), false);
+        Relatives relChild1 = new Relatives(new Individual().setName("child1"), father, mother, Arrays.asList("dis1", "dis2"), true);
+        Relatives relChild2 = new Relatives(new Individual().setName("child2"), father, mother, Arrays.asList("dis1"), true);
+
+        Family family = new Family("Martinez-Martinez", Arrays.asList(disease1, disease2),
+                Arrays.asList(relFather, relChild1, relChild2),"", 1, Collections.emptyMap());
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Missing family member");
+        familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+    }
+
+    @Test
+    public void createFamilyDiseaseNotPassed() throws CatalogException {
+        Disease disease1 = new Disease("dis1", "Disease 1", Collections.emptyList());
+        Disease disease2 = new Disease("dis2", "Disease 2", Collections.emptyList());
+
+        Individual father = new Individual().setName("father");
+        Individual mother = new Individual().setName("mother");
+
+        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), false);
+        Relatives relMother = new Relatives(mother, null, null, Arrays.asList("dis2"), false);
+        Relatives relChild1 = new Relatives(new Individual().setName("child1"), father, mother, Arrays.asList("dis1", "dis3"), true);
+        Relatives relChild2 = new Relatives(new Individual().setName("child2"), father, mother, Arrays.asList("dis1"), true);
+
+        Family family = new Family("Martinez-Martinez", Arrays.asList(disease1, disease2),
+                Arrays.asList(relFather, relMother, relChild1, relChild2),"", 1, Collections.emptyMap());
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Missing diseases");
+        familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+    }
+
+    @Test
+    public void createFamilyRepeatedMember() throws CatalogException {
+        Disease disease1 = new Disease("dis1", "Disease 1", Collections.emptyList());
+        Disease disease2 = new Disease("dis2", "Disease 2", Collections.emptyList());
+
+        Individual father = new Individual().setName("father");
+        Individual mother = new Individual().setName("mother");
+
+        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), false);
+        Relatives relMother = new Relatives(mother, null, null, Arrays.asList("dis2"), false);
+        Relatives relChild1 = new Relatives(new Individual().setName("child1"), father, mother, Arrays.asList("dis1", "dis2"), true);
+        Relatives relChild2 = new Relatives(new Individual().setName("child2"), father, mother, Arrays.asList("dis1"), true);
+
+        Family family = new Family("Martinez-Martinez", Arrays.asList(disease1, disease2),
+                Arrays.asList(relFather, relMother, relChild1, relChild2, relChild1),"", 1, Collections.emptyMap());
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Multiple members with same name");
+        familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+    }
+
 }

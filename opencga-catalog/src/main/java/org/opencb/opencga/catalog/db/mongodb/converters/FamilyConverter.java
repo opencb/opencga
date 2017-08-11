@@ -20,6 +20,7 @@ import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.catalog.models.Family;
 import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.Relatives;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,25 +45,21 @@ public class FamilyConverter extends GenericDocumentComplexConverter<Family> {
         Document document = super.convertToStorageType(object);
         document.put("id", document.getInteger("id").longValue());
 
-        long motherId = object.getMother() != null ? (object.getMother().getId() == 0 ? -1L : object.getMother().getId()) : -1L;
-        document.put("mother", new Document("id", motherId));
+        List<Document> memberList = (List) document.get("members");
+        for (int i = 0; i < memberList.size(); i++) {
+            Document relativesDocument = memberList.get(i);
 
-        long fatherId = object.getFather() != null ? (object.getFather().getId() == 0 ? -1L : object.getFather().getId()) : -1L;
-        document.put("father", new Document("id", fatherId));
+            Individual individual = object.getMembers().get(i).getIndividual();
+            long individualId = individual != null ? (individual.getId() == 0 ? -1L : individual.getId()) : -1L;
+            relativesDocument.put("individual", individualId > 0 ? new Document("id", individualId) : new Document());
 
-        if (object.getChildren() != null) {
-            List<Document> children = new ArrayList();
-            for (Individual individual : object.getChildren()) {
-                long individualId = individual != null ? (individual.getId() == 0 ? -1L : individual.getId()) : -1L;
-                if (individualId > 0) {
-                    children.add(new Document("id", individualId));
-                }
-            }
-            if (children.size() > 0) {
-                document.put("children", children);
-            }
-        } else {
-            document.put("children", Collections.emptyList());
+            Individual father = object.getMembers().get(i).getFather();
+            long fatherId = father != null ? (father.getId() == 0 ? -1L : father.getId()) : -1L;
+            relativesDocument.put("father", fatherId > 0 ? new Document("id", fatherId) : new Document());
+
+            Individual mother = object.getMembers().get(i).getMother();
+            long motherId = mother != null ? (mother.getId() == 0 ? -1L : mother.getId()) : -1L;
+            relativesDocument.put("mother", motherId > 0 ? new Document("id", motherId) : new Document());
         }
 
         return document;

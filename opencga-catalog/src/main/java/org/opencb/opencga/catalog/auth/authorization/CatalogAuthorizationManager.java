@@ -132,7 +132,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                         checkStudyPermission(study.getId(), userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
                         return; //Return if can read some study
                     } catch (CatalogException e) {
-                        e.printStackTrace();
+                        logger.error("{}", e.getMessage(), e);
                     }
                 }
             }

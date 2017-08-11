@@ -658,32 +658,32 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
     // **************************   Private methods  ******************************** //
 
-    private void checkAndCreateAllIndividualsFromFamily(long studyId, Family family, String sessionId) throws CatalogException {
-        if (family.getMother() == null) {
-            family.setMother(new Individual().setId(-1));
-        }
-        if (family.getFather() == null) {
-            family.setFather(new Individual().setId(-1));
-        }
-
-        // Check all individuals exist or can be created
-        checkAndCreateIndividual(studyId, family.getMother(), Individual.Sex.FEMALE, false, sessionId);
-        checkAndCreateIndividual(studyId, family.getFather(), Individual.Sex.MALE, false, sessionId);
-        if (family.getChildren() != null) {
-            for (Individual individual : family.getChildren()) {
-                checkAndCreateIndividual(studyId, individual, null, false, sessionId);
-            }
-        } else {
-            family.setChildren(Collections.emptyList());
-        }
-
-        // Create the ones that did not exist
-        checkAndCreateIndividual(studyId, family.getMother(), null, true, sessionId);
-        checkAndCreateIndividual(studyId, family.getFather(), null, true, sessionId);
-        for (Individual individual : family.getChildren()) {
-            checkAndCreateIndividual(studyId, individual, null, true, sessionId);
-        }
-    }
+//    private void checkAndCreateAllIndividualsFromFamily(long studyId, Family family, String sessionId) throws CatalogException {
+//        if (family.getMother() == null) {
+//            family.setMother(new Individual().setId(-1));
+//        }
+//        if (family.getFather() == null) {
+//            family.setFather(new Individual().setId(-1));
+//        }
+//
+//        // Check all individuals exist or can be created
+//        checkAndCreateIndividual(studyId, family.getMother(), Individual.Sex.FEMALE, false, sessionId);
+//        checkAndCreateIndividual(studyId, family.getFather(), Individual.Sex.MALE, false, sessionId);
+//        if (family.getChildren() != null) {
+//            for (Individual individual : family.getChildren()) {
+//                checkAndCreateIndividual(studyId, individual, null, false, sessionId);
+//            }
+//        } else {
+//            family.setChildren(Collections.emptyList());
+//        }
+//
+//        // Create the ones that did not exist
+//        checkAndCreateIndividual(studyId, family.getMother(), null, true, sessionId);
+//        checkAndCreateIndividual(studyId, family.getFather(), null, true, sessionId);
+//        for (Individual individual : family.getChildren()) {
+//            checkAndCreateIndividual(studyId, individual, null, true, sessionId);
+//        }
+//    }
 
     /**
      * This method should be called two times. First time with !create to check if every individual is fine or can be created and a
@@ -706,7 +706,12 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 if (individual.getId() <= 0) {
                     individual.setId(Long.parseLong(individual.getName()));
                 }
-                individualDBAdaptor.checkId(individual.getId());
+                QueryResult<Individual> indQueryResult = individualDBAdaptor.get(individual.getId(),
+                        new QueryOptions(QueryOptions.INCLUDE, individual.getName()));
+                if (indQueryResult.getNumResults() == 0) {
+                    throw new CatalogException("Individual id '" + individual.getId() + "' does not exist");
+                }
+                individual.setName(indQueryResult.first().getName());
 
                 // Check studyId of the individual
                 long studyIdIndividual = individualDBAdaptor.getStudyId(individual.getId());
@@ -760,6 +765,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         } else {
             // Create if it was not already created
             if (individual.getId() <= 0 && StringUtils.isNotEmpty(individual.getName())) {
+                individual.setSex(sex);
                 // We create the individual
                 QueryResult<Individual> individualQueryResult =
                         catalogManager.getIndividualManager().create(Long.toString(studyId), individual, new QueryOptions(), sessionId);
@@ -774,5 +780,207 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
     }
 
+//    /**
+//     * Validates that the family contains all the members needed to build a valid family.
+//     *
+//     * @param studyId
+//     * @param family
+//     * @throws CatalogException
+//     */
+//    private void validateFamily(long studyId, Family family) throws CatalogException {
+//        if (family.getMembers() == null || family.getMembers().size() == 0) {
+//            throw new CatalogException("Missing members in family");
+//        }
+//
+//        // Store all the disease ids in a set
+//        Set<String> diseaseSet = new HashSet<>();
+//        if (family.getDiseases() != null) {
+//            diseaseSet = family.getDiseases().stream().map(Disease::getId).collect(Collectors.toSet());
+//        }
+//
+//        Set<String> familyMembers = new HashSet<>(family.getMembers().size());
+//        for (Relatives relatives : family.getMembers()) {
+//            // Check if the individual is correct or can be created
+//            validateIndividual(studyId, relatives.getIndividual());
+//            if (familyMembers.contains(relatives.getIndividual().getName())) {
+//                throw new CatalogException("Multiple members with same name " + relatives.getIndividual().getName() + " found");
+//            }
+//            familyMembers.add(relatives.getIndividual().getName());
+//        }
+//
+//        // We iterate again to check that all the references to father and mother are already in the familyMembers set. Otherwise, that
+//        // individual information is missing.
+//        for (Relatives relatives : family.getMembers()) {
+//            // We are assuming that we are always going to have the relative name and not the id
+//            if (relatives.getFather() != null && !familyMembers.contains(relatives.getFather().getName())) {
+//                throw new CatalogException("Missing family member " + relatives.getFather().getName());
+//            }
+//            if (relatives.getMother() != null && !familyMembers.contains(relatives.getMother().getName())) {
+//                throw new CatalogException("Missing family member " + relatives.getMother().getName());
+//            }
+//
+//            // Check all the diseases are contained in the main array of diseases of the family
+//            if (relatives.getDiseases() != null) {
+//                if (!diseaseSet.containsAll(relatives.getDiseases())) {
+//                    throw new CatalogException("Missing diseases that some family members have from the main disease list: "
+//                            + StringUtils.join(relatives.getDiseases(), ","));
+//                }
+//            }
+//        }
+//
+//    }
+
+    private class MyFamily {
+        private Individual individual;
+        private Individual.Sex sex;
+        private boolean hasParents;
+        private List<String> children;
+
+        MyFamily() {
+            this.children = new ArrayList<>();
+        }
+
+        public Individual getIndividual() {
+            return individual;
+        }
+
+        public void setIndividual(Individual individual) {
+            this.individual = individual;
+        }
+
+        public Individual.Sex getSex() {
+            return sex;
+        }
+
+        public void setSex(Individual.Sex sex) {
+            this.sex = sex;
+        }
+
+        public boolean hasParents() {
+            return hasParents;
+        }
+
+        public void setHasParents() {
+            this.hasParents = true;
+        }
+
+        public List<String> getChildren() {
+            return children;
+        }
+
+        public void addChild(String child) {
+            this.children.add(child);
+        }
+
+    }
+
+    /**
+     * 1. Validates that the family contains all the members needed to build a valid family.
+     * 2. Once the object is validated (no exception raised), it will automatically create individuals that are not yet in Catalog.
+     * '  The family object is auto corrected so it can be directly inserted as is after having called this method.
+     *
+     * @param studyId study id.
+     * @param family family object.
+     * @param sessionId session id.
+     * @throws CatalogException if the family object is not valid, or the individuals cannot be created due to a lack of permissions.
+     */
+    private void checkAndCreateAllIndividualsFromFamily(long studyId, Family family, String sessionId) throws CatalogException {
+        // 1. Start validation of parameters.
+
+        if (family.getMembers() == null || family.getMembers().size() == 0) {
+            throw new CatalogException("Missing members in family");
+        }
+
+        // Store all the disease ids in a set
+        Set<String> diseaseSet = new HashSet<>();
+        if (family.getDiseases() != null) {
+            diseaseSet = family.getDiseases().stream().map(Disease::getId).collect(Collectors.toSet());
+        }
+
+        Map<String, MyFamily> familyMembers = new HashMap<>(family.getMembers().size());
+        for (Relatives relatives : family.getMembers()) {
+            // Check if the individual is correct or can be created
+            checkAndCreateIndividual(studyId, relatives.getIndividual(), null, false, sessionId);
+            String individualName = relatives.getIndividual().getName();
+            if (familyMembers.containsKey(individualName) && familyMembers.get(individualName).getIndividual() != null) {
+                throw new CatalogException("Multiple members with same name " + relatives.getIndividual().getName() + " found");
+            }
+            if (!familyMembers.containsKey(individualName)) {
+                familyMembers.put(individualName, new MyFamily());
+            }
+            familyMembers.get(individualName).setIndividual(relatives.getIndividual());
+
+            if (relatives.getFather() != null) {
+                String fatherName = relatives.getFather().getName();
+                if (!familyMembers.containsKey(fatherName)) {
+                    familyMembers.put(fatherName, new MyFamily());
+                }
+                familyMembers.get(fatherName).addChild(individualName);
+                familyMembers.get(fatherName).setSex(Individual.Sex.MALE);
+                familyMembers.get(individualName).setHasParents();
+            }
+            if (relatives.getMother() != null) {
+                String motherName = relatives.getMother().getName();
+                if (!familyMembers.containsKey(motherName)) {
+                    familyMembers.put(motherName, new MyFamily());
+                }
+                familyMembers.get(motherName).addChild(individualName);
+                familyMembers.get(motherName).setSex(Individual.Sex.FEMALE);
+                familyMembers.get(individualName).setHasParents();
+            }
+
+            // Check all the diseases are contained in the main array of diseases of the family
+            if (!diseaseSet.containsAll(relatives.getDiseases())) {
+                throw new CatalogException("Missing diseases that some family members have from the main disease list: "
+                        + StringUtils.join(relatives.getDiseases(), ","));
+            }
+        }
+
+        // We will assume that all the founders are in the first level.
+        // Look for the founders. hasParents = false
+        List<Set<String>> familyLevels; // Level 0 -> founders, level 1 -> children of founders, 2 -> children of children of founders ...
+        familyLevels = new ArrayList<>();
+        familyLevels.add(new HashSet<>());
+        for (Map.Entry<String, MyFamily> entry : familyMembers.entrySet()) {
+            // Check that all entries have a proper individual
+            if (entry.getValue().getIndividual() == null) {
+                throw new CatalogException("Missing family member " + entry.getKey());
+            }
+
+            if (!entry.getValue().hasParents()) {
+                familyLevels.get(0).add(entry.getKey());
+            }
+        }
+        populateFamily(familyLevels, familyMembers, 0);
+
+        // Check all the family members are contained in the familyLevels (no orphan childs)
+        int count = 0;
+        for (Set<String> familyLevel : familyLevels) {
+            count += familyLevel.size();
+        }
+        if (familyMembers.size() < count) {
+            throw new CatalogException("Unrelated children found. Please, relate all the members of the family.");
+        }
+
+        // 2. Create individuals if they do not exist.
+        for (Map.Entry<String, MyFamily> entry : familyMembers.entrySet()) {
+            checkAndCreateIndividual(studyId, entry.getValue().getIndividual(), entry.getValue().getSex(), true, sessionId);
+        }
+    }
+
+    private void populateFamily(List<Set<String>> familyLevels, Map<String, MyFamily> familyMembers, int level) {
+        for (String individualName : familyLevels.get(level)) {
+            if (familyMembers.get(individualName).getChildren().size() > 0) {
+                if (familyLevels.size() < level + 2) {
+                    familyLevels.add(new HashSet<>());
+                }
+                familyLevels.get(level + 1).addAll(familyMembers.get(individualName).getChildren());
+            }
+        }
+        // If we have added new children (there is other level)...
+        if (familyLevels.size() == level + 2) {
+            populateFamily(familyLevels, familyMembers, level + 1);
+        }
+    }
 
 }
