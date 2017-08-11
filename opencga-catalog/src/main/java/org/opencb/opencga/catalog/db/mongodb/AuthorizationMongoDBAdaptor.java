@@ -71,6 +71,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         ACL("_acl", TEXT_ARRAY, "");
 
         private static Map<String, QueryParams> map = new HashMap<>();
+
         static {
             for (QueryParams param : QueryParams.values()) {
                 map.put(param.key(), param);
@@ -126,8 +127,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     private void initPermissions() {
         this.fullPermissionsMap.put(STUDY_COLLECTION, Arrays.stream(StudyAclEntry.StudyPermissions.values())
-                        .map(StudyAclEntry.StudyPermissions::toString)
-                        .collect(Collectors.toList()));
+                .map(StudyAclEntry.StudyPermissions::toString)
+                .collect(Collectors.toList()));
         this.fullPermissionsMap.put(COHORT_COLLECTION, Arrays.stream(CohortAclEntry.CohortPermissions.values())
                 .map(CohortAclEntry.CohortPermissions::toString)
                 .collect(Collectors.toList()));
@@ -225,14 +226,13 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
      * permissions.
      *
      * @param resourceId Resource id being queried.
-     * @param members Members for which we want to fetch the permissions. If empty, it should return the permissions for all members.
-     * @param entity Entity where the query will be performed.
+     * @param membersList    Members for which we want to fetch the permissions. If empty, it should return the permissions for all members.
+     * @param entity     Entity where the query will be performed.
      * @return A map of user -> List of permissions.
      */
-    private Map<String, List<String>> internalGet(long resourceId, List<String> members, String entity) {
-        if (members == null) {
-            members = Collections.emptyList();
-        }
+    private Map<String, List<String>> internalGet(long resourceId, List<String> membersList, String entity) {
+
+        List<String> members = (membersList == null ? Collections.emptyList() : membersList);
 
         MongoDBCollection collection = dbCollectionMap.get(entity);
 
