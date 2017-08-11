@@ -70,11 +70,11 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
                 new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "json"));
         assertTrue("Incorrect transform file extension " + etlResult.getTransformResult() + ". Expected 'variants.json.gz'",
                 Paths.get(etlResult.getTransformResult()).toFile().getName().endsWith("variants.json.gz"));
-        VariantSource source = VariantReaderUtils.readVariantSource(Paths.get(etlResult.getTransformResult().getPath()), null);
+        VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(Paths.get(etlResult.getTransformResult().getPath()), null);
 
         assertTrue(studyConfiguration.getIndexedFiles().contains(6));
         checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
-        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, getExpectedNumLoadedVariants(source));
+        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, getExpectedNumLoadedVariants(fileMetadata));
     }
 
     @Test
@@ -87,9 +87,9 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
                 Paths.get(etlResult.getTransformResult()).toFile().getName().endsWith("variants.avro.gz"));
 
         assertTrue(studyConfiguration.getIndexedFiles().contains(6));
-        VariantSource variantSource = checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
+        VariantFileMetadata fileMetadata = checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
         checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, getExpectedNumLoadedVariants
-                (variantSource));
+                (fileMetadata));
     }
 
     @Test
@@ -409,8 +409,8 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
                 Paths.get(etlResult.getTransformResult()).toFile().getName().endsWith("variants.json.gz"));
 
         assertTrue(studyConfiguration.getIndexedFiles().contains(6));
-        VariantSource source = checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
-        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, getExpectedNumLoadedVariants(source));
+        VariantFileMetadata fileMetadata = checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
+        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, getExpectedNumLoadedVariants(fileMetadata));
 
     }
 
@@ -443,9 +443,9 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
                 Paths.get(etlResult.getTransformResult()).toFile().getName().endsWith("variants.avro.snappy"));
 
         assertTrue(studyConfiguration.getIndexedFiles().contains(6));
-        VariantSource variantSource = checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
+        VariantFileMetadata fileMetadata = checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
         checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, false, false, getExpectedNumLoadedVariants
-                (variantSource));
+                (fileMetadata));
 
     }
 
@@ -461,13 +461,13 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
                         .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
         );
 
-        VariantSource source = VariantReaderUtils.readVariantSource(Paths.get(etlResult.getTransformResult().getPath()), null);
-        checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration, source.getStats().getNumRecords());
+        VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(Paths.get(etlResult.getTransformResult().getPath()), null);
+        checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration, fileMetadata.getStats().getNumRecords());
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
-        checkLoadedVariants(dbAdaptor, studyConfiguration, true, false, getExpectedNumLoadedVariants(source));
+        checkLoadedVariants(dbAdaptor, studyConfiguration, true, false, getExpectedNumLoadedVariants(fileMetadata));
 
         VariantReader reader = VariantReaderUtils.getVariantReader(Paths.get(etlResult.getTransformResult().getPath()),
-                new VariantSource("", "2", STUDY_NAME, STUDY_NAME));
+                new VariantFileMetadata("2", "").toVariantDatasetMetadata(String.valueOf(STUDY_ID)));
 
         reader.open();
         reader.pre();
@@ -600,15 +600,15 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
     /* ---------------------------------------------------- */
 
 
-    private VariantSource checkTransformedVariants(URI variantsJson, StudyConfiguration studyConfiguration) throws StorageEngineException {
+    private VariantFileMetadata checkTransformedVariants(URI variantsJson, StudyConfiguration studyConfiguration) throws StorageEngineException {
         return checkTransformedVariants(variantsJson, studyConfiguration, -1);
     }
 
-    private VariantSource checkTransformedVariants(URI variantsJson, StudyConfiguration studyConfiguration, int expectedNumVariants)
+    private VariantFileMetadata checkTransformedVariants(URI variantsJson, StudyConfiguration studyConfiguration, int expectedNumVariants)
             throws StorageEngineException {
         long start = System.currentTimeMillis();
-        VariantSource source = new VariantSource(VCF_TEST_FILE_NAME, "6", "", "");
-        VariantReader variantReader = VariantReaderUtils.getVariantReader(Paths.get(variantsJson.getPath()), source);
+        VariantFileMetadata source = new VariantFileMetadata("6", VCF_TEST_FILE_NAME);
+        VariantReader variantReader = VariantReaderUtils.getVariantReader(Paths.get(variantsJson.getPath()), source.toVariantDatasetMetadata(String.valueOf(studyConfiguration.getStudyId())));
 
         variantReader.open();
         variantReader.pre();
@@ -754,8 +754,8 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
             }
         }
 
-        variantStorageEngine.getDBAdaptor().getVariantSourceDBAdaptor().iterator(new Query(), new QueryOptions()).forEachRemaining(vs -> {
-            assertNotEquals("2", vs.getFileId());
+        variantStorageEngine.getDBAdaptor().getVariantFileMetadataDBAdaptor().iterator(new Query(), new QueryOptions()).forEachRemaining(vs -> {
+            assertNotEquals("2", vs.getId());
         });
 
 

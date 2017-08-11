@@ -22,8 +22,9 @@ import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -122,7 +123,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
         Path outputVcf = getTmpRootDir().resolve("hts_sf_" + EXPORTED_FILE_NAME);
         QueryOptions options = new QueryOptions(QueryOptions.SORT, true);
         int failedVariants = VariantVcfDataWriter.htsExport(dbAdaptor.iterator(query, options),
-                studyConfiguration, dbAdaptor.getVariantSourceDBAdaptor()
+                studyConfiguration, dbAdaptor.getVariantFileMetadataDBAdaptor()
                 , new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), query, options);
 
         assertEquals(0, failedVariants);
@@ -138,7 +139,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
 //                .append(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
         Path outputVcf = getTmpRootDir().resolve("hts_mf_" + EXPORTED_FILE_NAME);
         int failedVariants = VariantVcfDataWriter.htsExport(dbAdaptor.iterator(query, new QueryOptions(QueryOptions.SORT, true)), studyConfiguration,
-                dbAdaptor.getVariantSourceDBAdaptor(),
+                dbAdaptor.getVariantFileMetadataDBAdaptor(),
                 new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), query, null);
 
         assertEquals(0, failedVariants);
@@ -147,7 +148,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
 
         VariantReader variantReader = new VariantVcfHtsjdkReader(
                 FileUtils.newInputStream(originalVcf),
-                new VariantSource(originalVcf.getFileName().toString(), "f", "s", ""),
+                getMetadata(originalVcf),
                 VARIANT_NORMALIZER);
         variantReader.open();
         variantReader.pre();
@@ -248,7 +249,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
         if (vcfPath.toString().endsWith(".gz")) {
             is = new GZIPInputStream(is);
         }
-        VariantReader variantVcfReader = new VariantVcfHtsjdkReader(is, new VariantSource(vcfPath.getFileName().toString(), "f", "s", ""), VARIANT_NORMALIZER);
+        VariantReader variantVcfReader = new VariantVcfHtsjdkReader(is, getMetadata(vcfPath), VARIANT_NORMALIZER);
         variantVcfReader.open();
         variantVcfReader.pre();
 
@@ -258,6 +259,10 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
         variantVcfReader.post();
         variantVcfReader.close();
         return variantMap;
+    }
+
+    protected static VariantDatasetMetadata getMetadata(Path vcfPath) {
+        return new VariantFileMetadata(vcfPath.getFileName().toString(), "").toVariantDatasetMetadata("");
     }
 
     public Map<String, Variant> readVCF(Path vcfPath, Integer lim, Region region, VariantReader variantVcfReader) {

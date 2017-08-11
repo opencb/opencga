@@ -24,22 +24,23 @@ import org.opencb.biodata.formats.feature.gff.io.GffReader;
 import org.opencb.biodata.formats.io.FormatReaderWrapper;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.io.avro.AvroDataReader;
+import org.opencb.commons.io.avro.AvroDataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.commons.ProgressLogger;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.commons.io.avro.AvroDataReader;
-import org.opencb.commons.io.avro.AvroDataWriter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
@@ -343,9 +344,9 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
             if (fileName.endsWith(".gz")) {
                 is = new GZIPInputStream(is);
             }
-            VariantSource source = new VariantSource(fileName, "f", "s", "s");
+            VariantDatasetMetadata metadata = new VariantFileMetadata(fileName, fileName).toVariantDatasetMetadata("s");
             ParallelTaskRunner<Variant, Void> ptr = new ParallelTaskRunner<>(
-                    new VariantVcfHtsjdkReader(is, source),
+                    new VariantVcfHtsjdkReader(is, metadata),
                     variantList -> {
                         for (Variant variant : variantList) {
                             Region region = new Region(normalizeChromosome(variant.getChromosome()), variant.getStart(), variant.getEnd());

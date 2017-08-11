@@ -351,7 +351,7 @@ public class VariantHbaseTestUtils {
         StudyConfiguration updatedStudyConfiguration = variantStorageManager.getDBAdaptor().getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         studyConfiguration.copy(updatedStudyConfiguration);
 
-        return variantStorageManager.readVariantSource(doTransform ? etlResult.getTransformResult() : etlResult.getInput());
+        return variantStorageManager.readVariantFileMetadata(doTransform ? etlResult.getTransformResult() : etlResult.getInput());
     }
 
     public static VariantSource loadFile(HadoopVariantStorageEngine variantStorageManager, String dbName, URI outputUri,

@@ -88,7 +88,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
                         .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT, true)
         );
 
-        source = variantStorageManager.readVariantSource(etlResult.getTransformResult());
+        source = variantStorageManager.readVariantFileMetadata(etlResult.getTransformResult());
         VariantGlobalStats stats = source.getStats();
         Assert.assertNotNull(stats);
 
@@ -237,7 +237,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
         HBaseManager hm = new HBaseManager(configuration.get());
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
         ArchiveTableHelper archiveHelper = dbAdaptor.getArchiveHelper(studyConfiguration.getStudyId(), FILE_ID);
-        VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(archiveHelper.getMeta());
+        VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(archiveHelper.getFileMetadata());
         hm.act(tableName, table -> {
             ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());
             for (Result result : resultScanner) {

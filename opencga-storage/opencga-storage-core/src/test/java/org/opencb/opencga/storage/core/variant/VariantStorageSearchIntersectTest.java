@@ -23,7 +23,7 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -65,7 +65,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
     private VariantDBAdaptor dbAdaptor;
     private StudyConfiguration studyConfiguration;
     private static VariantQueryResult<Variant> allVariants;
-    private VariantSource source;
+    private VariantFileMetadata fileMetadata;
     private static boolean loaded = false;
     private SolrClient solrClient;
 
@@ -95,7 +95,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
 
         StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyConfiguration, params);
-        source = variantStorageEngine.getVariantReaderUtils().readVariantSource(Paths.get(etlResult.getTransformResult().getPath()).toUri());
+        fileMetadata = variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(Paths.get(etlResult.getTransformResult().getPath()).toUri());
         Integer indexedFileId = studyConfiguration.getIndexedFiles().iterator().next();
 
         //Calculate stats

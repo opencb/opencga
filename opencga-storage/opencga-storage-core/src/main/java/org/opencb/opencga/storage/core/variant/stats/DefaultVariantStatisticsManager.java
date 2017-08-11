@@ -364,7 +364,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         long start = System.currentTimeMillis();
 
         loadVariantStats(variantStatsUri, studyConfiguration, options);
-        loadSourceStats(variantDBAdaptor, sourceStatsUri, studyConfiguration, options);
+//        loadSourceStats(variantDBAdaptor, sourceStatsUri, studyConfiguration, options);
 
         logger.info("finishing stats loading, time: {}ms", System.currentTimeMillis() - start);
 
@@ -469,7 +469,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
 
         // TODO if variantSourceStats doesn't have studyId and fileId, create another with variantSource.getStudyId() and variantSource
         // .getFileId()
-        variantDBAdaptor.getVariantSourceDBAdaptor().updateSourceStats(variantSourceStats, studyConfiguration, options);
+        variantDBAdaptor.getVariantFileMetadataDBAdaptor().updateStats(variantSourceStats, studyConfiguration, options);
 
     }
 

@@ -19,14 +19,13 @@ package org.opencb.opencga.storage.core.variant.io.db;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.tools.variant.VariantFileUtils;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,29 +71,30 @@ public class VariantDBReader implements VariantReader {
         return studyConfiguration != null ? new LinkedList<>(studyConfiguration.getSampleIds().keySet()) : null;
     }
 
+//    @Override
+//    public String getHeader() {
+//        return getVariantFileMetadata().getMetadata().get(VariantFileUtils.VARIANT_FILE_HEADER).toString();
+//    }
+
     @Override
-    public String getHeader() {
-        return getSource().getMetadata().get(VariantFileUtils.VARIANT_FILE_HEADER).toString();
+    public VariantFileMetadata getVariantFileMetadata() {
+        return getVariantFileMetadata(-1);
     }
 
-    public VariantSource getSource() {
-        return getSource(-1);
-    }
-
-    public VariantSource getSource(int fileId) {
-        Iterator<VariantSource> sourceIterator;
+    public VariantFileMetadata getVariantFileMetadata(int fileId) {
+        Iterator<VariantFileMetadata> iterator;
         try {
-            Query sourceQuery = new Query();
+            Query query = new Query();
             if (fileId >= 0) {
-                sourceQuery.put(VariantSourceDBAdaptor.VariantSourceQueryParam.FILE_ID.key(), fileId);
+                query.put(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.FILE_ID.key(), fileId);
             }
-            sourceIterator = variantDBAdaptor.getVariantSourceDBAdaptor()
-                    .iterator(sourceQuery, new QueryOptions());
+            iterator = variantDBAdaptor.getVariantFileMetadataDBAdaptor()
+                    .iterator(query, new QueryOptions());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-        if (sourceIterator.hasNext()) {
-            return sourceIterator.next();
+        if (iterator.hasNext()) {
+            return iterator.next();
         }
         return null;
     }

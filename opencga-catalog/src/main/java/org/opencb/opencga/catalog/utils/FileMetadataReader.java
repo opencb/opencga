@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.utils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.alignment.sam.io.AlignmentSamDataReader;
 import org.opencb.biodata.models.alignment.AlignmentHeader;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
 import org.opencb.biodata.tools.variant.VariantFileUtils;
@@ -50,6 +51,9 @@ import java.util.stream.Collectors;
 public class FileMetadataReader {
 
     public static final String VARIANT_STATS = "variantStats";
+    @Deprecated
+    public static final String VARIANT_SOURCE = "variantSource";
+    public static final String VARIANT_FILE_METADATA = "variantFileMetadata";
     private static final QueryOptions STUDY_QUERY_OPTIONS =
             new QueryOptions("include", Arrays.asList("projects.studies.id", "projects.studies.name", "projects.studies.alias"));
     private final CatalogManager catalogManager;
@@ -179,15 +183,15 @@ public class FileMetadataReader {
                     study = catalogManager.getStudyManager().get(studyId, STUDY_QUERY_OPTIONS, sessionId).first();
 //                    logger.trace("getStudy = " + (System.currentTimeMillis() - start) / 1000.0);
 
-                    VariantSource variantSource = null;
+                    VariantFileMetadata fileMetadata;
                     try {
-                        variantSource = readVariantSource(study, file, fileUri);
+                        fileMetadata = readVariantFileMetadata(file, fileUri);
                     } catch (IOException e) {
                         throw new CatalogIOException("Unable to read VariantSource", e);
                     }
-                    if (variantSource != null) {
+                    if (fileMetadata != null) {
                         HashMap<String, Object> attributes = new HashMap<>();
-                        attributes.put("variantSource", variantSource);
+                        attributes.put(VARIANT_FILE_METADATA, fileMetadata);
                         modifyParams.put(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
                     }
                     break;
@@ -271,16 +275,16 @@ public class FileMetadataReader {
             switch (fileModifyParams.containsKey("bioformat") ? (File.Bioformat) fileModifyParams.get("bioformat") : file.getBioformat()) {
                 case VARIANT: {
                     Object variantSourceObj = null;
-                    if (file.getAttributes().containsKey("variantSource")) {
-                        variantSourceObj = file.getAttributes().get("variantSource");
-                    } else if (attributes.containsKey("variantSource")) {
-                        variantSourceObj = fileModifyParams.getMap("attributes").get("variantSource");
+                    if (file.getAttributes().containsKey(VARIANT_FILE_METADATA)) {
+                        variantSourceObj = file.getAttributes().get(VARIANT_FILE_METADATA);
+                    } else if (attributes.containsKey(VARIANT_FILE_METADATA)) {
+                        variantSourceObj = fileModifyParams.getMap("attributes").get(VARIANT_FILE_METADATA);
                     }
                     if (variantSourceObj != null) {
-                        if (variantSourceObj instanceof VariantSource) {
-                            sortedSampleNames = ((VariantSource) variantSourceObj).getSamples();
+                        if (variantSourceObj instanceof VariantFileMetadata) {
+                            sortedSampleNames = ((VariantFileMetadata) variantSourceObj).getSampleIds();
                         } else if (variantSourceObj instanceof Map) {
-                            sortedSampleNames = new ObjectMap((Map) variantSourceObj).getAsStringList("samples");
+                            sortedSampleNames = new ObjectMap((Map) variantSourceObj).getAsStringList("sampleIds");
                         } else {
                             logger.warn("Unexpected object type of variantSource ({}) in file attributes. Expected {} or {}",
                                     variantSourceObj.getClass(), VariantSource.class, Map.class);
@@ -288,15 +292,15 @@ public class FileMetadataReader {
                     }
 
                     if (sortedSampleNames == null) {
-                        VariantSource variantSource = null;
+                        VariantFileMetadata metadata = null;
                         try {
-                            variantSource = readVariantSource(study, file, fileUri);
+                            metadata = readVariantFileMetadata(file, fileUri);
                         } catch (IOException e) {
                             throw new CatalogIOException("Unable to read VariantSource", e);
                         }
-                        if (variantSource != null) {
-                            attributes.put("variantSource", variantSource);
-                            sortedSampleNames = variantSource.getSamples();
+                        if (metadata != null) {
+                            attributes.put(VARIANT_FILE_METADATA, metadata);
+                            sortedSampleNames = metadata.getSampleIds();
                         } else {
                             sortedSampleNames = new LinkedList<>();
                         }
@@ -422,13 +426,11 @@ public class FileMetadataReader {
         return sampleNames;
     }
 
-    public static VariantSource readVariantSource(Study study, File file, URI fileUri)
+    public static VariantFileMetadata readVariantFileMetadata(File file, URI fileUri)
             throws IOException {
         if (file.getFormat() == File.Format.VCF || FormatDetector.detect(fileUri) == File.Format.VCF) {
-            //TODO: Fix aggregate and studyType
-            VariantSource source = new VariantSource(file.getName(), Long.toString(file.getId()),
-                    Long.toString(study.getId()), study.getName());
-            return VariantFileUtils.readVariantSource(Paths.get(fileUri.getPath()), source);
+            VariantFileMetadata metadata = new VariantFileMetadata(String.valueOf(file.getId()), file.getName());
+            return VariantFileUtils.readVariantFileMetadata(Paths.get(fileUri.getPath()), metadata);
         } else {
             return null;
         }

@@ -17,8 +17,8 @@
 package org.opencb.opencga.storage.core.variant.io.avro;
 
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
+import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
 import org.opencb.commons.io.avro.AvroDataReader;
 import org.opencb.opencga.storage.core.variant.io.AbstractVariantReader;
 
@@ -37,8 +37,8 @@ public class VariantAvroReader extends AbstractVariantReader {
 
     private final AvroDataReader<VariantAvro> avroDataReader;
 
-    public VariantAvroReader(File variantsFile, File metadataFile, VariantSource source) {
-        super(metadataFile.toPath(), source);
+    public VariantAvroReader(File variantsFile, File metadataFile, VariantDatasetMetadata metadata) {
+        super(metadataFile.toPath(), metadata);
         avroDataReader = new AvroDataReader<>(variantsFile, VariantAvro.class);
     }
 

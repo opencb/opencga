@@ -22,7 +22,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -32,7 +32,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHBaseArchiveDataWriter;
@@ -109,27 +109,27 @@ public class HadoopDirectVariantStoragePipeline extends AbstractHadoopVariantSto
         }
         int studyId = getStudyId();
 
-        VariantSource source = VariantReaderUtils.readVariantSource(sourcePath, null);
-        source.setFileId(fileId.toString());
-        source.setStudyId(Integer.toString(studyId));
+        VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(sourcePath, null);
+        fileMetadata.setId(fileId.toString());
+//        fileMetadata.setStudyId(Integer.toString(studyId));
 
         long start = System.currentTimeMillis();
         if (VariantReaderUtils.isProto(fileName)) {
-            ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), source);
+            ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), fileMetadata);
 
             ProgressLogger progressLogger = new ProgressLogger("Loaded slices:");
-            if (source.getStats() != null) {
-                progressLogger.setApproximateTotalCount(source.getStats().getNumRecords());
+            if (fileMetadata.getStats() != null) {
+                progressLogger.setApproximateTotalCount(fileMetadata.getStats().getNumRecords());
             }
 
             loadFromProto(input, table, helper, progressLogger);
         } else {
-            ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), source);
+            ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), fileMetadata);
 
             ProgressLogger progressLogger;
-            if (source.getStats() != null) {
+            if (fileMetadata.getStats() != null) {
                 progressLogger = new ProgressLogger("Loaded variants for file \"" + input.getFileName() + "\" :",
-                        source.getStats().getNumRecords());
+                        fileMetadata.getStats().getNumRecords());
             } else {
                 progressLogger = new ProgressLogger("Loaded variants for file \"" + input.getFileName() + "\" :");
             }
@@ -139,9 +139,9 @@ public class HadoopDirectVariantStoragePipeline extends AbstractHadoopVariantSto
         long end = System.currentTimeMillis();
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
 
-        HadoopVariantSourceDBAdaptor manager = dbAdaptor.getVariantSourceDBAdaptor();
+        HadoopVariantFileMetadataDBAdaptor manager = dbAdaptor.getVariantFileMetadataDBAdaptor();
         try {
-            manager.updateVariantSource(source);
+            manager.updateVariantFileMetadata(studyId, fileMetadata);
             manager.updateLoadedFilesSummary(studyId, Collections.singletonList(fileId));
         } catch (IOException e) {
             throw new StorageEngineException("Not able to store Variant Source for file!!!", e);
@@ -174,7 +174,7 @@ public class HadoopDirectVariantStoragePipeline extends AbstractHadoopVariantSto
 
     protected void loadFromAvro(Path input, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
             throws StorageEngineException {
-        VariantReader variantReader = VariantReaderUtils.getVariantReader(input, helper.getMeta().getVariantSource());
+        VariantReader variantReader = VariantReaderUtils.getVariantReader(input, helper.getDatasetMetadata());
         VariantSliceReader sliceReader = new VariantSliceReader(helper.getChunkSize(), variantReader, progressLogger);
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(1).setBatchSize(1).build();

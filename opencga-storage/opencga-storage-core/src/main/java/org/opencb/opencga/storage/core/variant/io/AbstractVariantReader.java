@@ -20,12 +20,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
 import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.commons.utils.FileUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -38,48 +40,50 @@ import java.util.*;
 public abstract class AbstractVariantReader implements VariantReader {
 
     private Path metadataPath;
-    private VariantSource source;
+    private VariantDatasetMetadata metadata;
     private LinkedHashMap<String, Integer> samplesPosition;
     private Map<String, LinkedHashMap<String, Integer>> samplesPositions;
+    private VariantFileMetadata fileMetadata;
 
-    public AbstractVariantReader(Path metadataPath, VariantSource source) {
+    public AbstractVariantReader(Path metadataPath, VariantDatasetMetadata metadata) {
         this.metadataPath = metadataPath;
-        this.source = source;
+        this.metadata = metadata;
         this.samplesPositions = Collections.emptyMap();
     }
 
     public AbstractVariantReader(Map<String, LinkedHashMap<String, Integer>> samplesPositions) {
         this.metadataPath = null;
-        this.source = null;
+        this.metadata = null;
         this.samplesPositions = samplesPositions;
     }
 
     @Override
     public boolean pre() {
+        if (metadata.getFiles().isEmpty()) {
+            fileMetadata = new VariantFileMetadata("", "");
+            metadata.getFiles().add(fileMetadata.getImpl());
+        } else {
+            fileMetadata = new VariantFileMetadata(metadata.getFiles().get(0));
+        }
+
         if (metadataPath != null) {
             Files.exists(metadataPath);
             try (InputStream inputStream = FileUtils.newInputStream(metadataPath)) {
-                ObjectMapper jsonObjectMapper = new ObjectMapper();
-
                 // Read global JSON file and copy its info into the already available VariantSource object
-                VariantSource readSource = jsonObjectMapper.readValue(inputStream, VariantSource.class);
-                source.setFileName(readSource.getFileName());
-                source.setFileId(readSource.getFileId());
-                source.setStudyName(readSource.getStudyName());
-                source.setStudyId(readSource.getStudyId());
-                source.setAggregation(readSource.getAggregation());
-                source.setMetadata(readSource.getMetadata());
-                source.setPedigree(readSource.getPedigree());
-                source.setSamplesPosition(readSource.getSamplesPosition());
-                source.setStats(readSource.getStats());
-                source.setType(readSource.getType());
+                VariantFileMetadata readMetadata = VariantReaderUtils.readVariantFileMetadataFromJson(inputStream);
+
+                fileMetadata.setId(readMetadata.getId());
+                fileMetadata.setAlias(readMetadata.getAlias());
+                fileMetadata.setHeader(readMetadata.getHeader());
+                fileMetadata.setSamplesPosition(readMetadata.getSamplesPosition());
+                fileMetadata.setStats(readMetadata.getStats());
             } catch (IOException ex) {
-                throw new RuntimeException(ex);
+                throw new UncheckedIOException(ex);
             }
         }
 
-        if (source != null) {
-            Map<String, Integer> samplesPosition = source.getSamplesPosition();
+        if (fileMetadata != null) {
+            Map<String, Integer> samplesPosition = fileMetadata.getSamplesPosition();
             this.samplesPosition = new LinkedHashMap<>(samplesPosition.size());
             String[] samples = new String[samplesPosition.size()];
             for (Map.Entry<String, Integer> entry : samplesPosition.entrySet()) {
@@ -94,7 +98,7 @@ public abstract class AbstractVariantReader implements VariantReader {
     }
 
     protected List<Variant> addSamplesPosition(List<Variant> variants) {
-        if (source == null) {
+        if (metadata == null) {
             for (Variant variant : variants) {
                 for (StudyEntry studyEntry : variant.getStudies()) {
                     LinkedHashMap samplesPosition = samplesPositions.get(studyEntry.getStudyId());
@@ -105,7 +109,7 @@ public abstract class AbstractVariantReader implements VariantReader {
             }
         } else {
             for (Variant variant : variants) {
-                variant.getStudy(source.getStudyId()).setSamplesPosition(samplesPosition);
+                variant.getStudy(metadata.getId()).setSamplesPosition(samplesPosition);
             }
         }
 
@@ -116,12 +120,16 @@ public abstract class AbstractVariantReader implements VariantReader {
 
     @Override
     public List<String> getSampleNames() {
-        return new ArrayList<>(source.getSamplesPosition().keySet());
+        return new ArrayList<>(fileMetadata.getSamplesPosition().keySet());
     }
+
+//    @Override
+//    public String getHeader() {
+//        return metadata.getMetadata().get(VariantFileUtils.VARIANT_FILE_HEADER).toString();
+//    }
 
     @Override
-    public String getHeader() {
-        return source.getMetadata().get(VariantFileUtils.VARIANT_FILE_HEADER).toString();
+    public VariantFileMetadata getVariantFileMetadata() {
+        return fileMetadata;
     }
-
 }

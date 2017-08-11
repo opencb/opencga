@@ -6,10 +6,9 @@ import org.codehaus.jackson.map.SerializationConfig;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 
@@ -60,8 +59,8 @@ public class VariantMetadataFactoryTest {
         studyConfiguration.getAttributes().put(VariantAnnotationManager.ASSEMBLY, "37");
 
         URI uri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
-        VariantSource variantSource = VariantReaderUtils.readVariantSource(Paths.get(uri), null);
-        studyConfiguration.getVariantMetadata().addVariantSource(variantSource);
+        VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(Paths.get(uri), null);
+        studyConfiguration.getVariantMetadata().addVariantFileHeader(fileMetadata.getHeader());
 
         variantMetadataFactory = new VariantMetadataFactory();
         objectWriter = new ObjectMapper()

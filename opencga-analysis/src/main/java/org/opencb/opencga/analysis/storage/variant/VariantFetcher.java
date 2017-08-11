@@ -37,7 +37,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -377,8 +377,8 @@ public class VariantFetcher implements AutoCloseable {
         return query;
     }
 
-    public VariantSourceDBAdaptor getSourceDBAdaptor(int studyId, String sessionId) throws CatalogException, StorageEngineException {
-        return getVariantDBAdaptor(studyId, sessionId).getVariantSourceDBAdaptor();
+    public VariantFileMetadataDBAdaptor getSourceDBAdaptor(int studyId, String sessionId) throws CatalogException, StorageEngineException {
+        return getVariantDBAdaptor(studyId, sessionId).getVariantFileMetadataDBAdaptor();
     }
 
 }

@@ -25,8 +25,8 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
-import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -86,7 +86,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final AtomicReference<java.sql.Connection> phoenixCon = new AtomicReference<>();
     private final VariantSqlQueryParser queryParser;
     private final VariantHBaseQueryParser hbaseQueryParser;
-    private final HadoopVariantSourceDBAdaptor variantSourceDBAdaptor;
+    private final HadoopVariantFileMetadataDBAdaptor variantSourceDBAdaptor;
     private boolean clientSideSkip;
     private HBaseManager hBaseManager;
 
@@ -110,7 +110,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         ObjectMap options = configuration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getVariant().getOptions();
         this.studyConfigurationManager.set(
                 new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(credentials.getTable(), conf, options, hBaseManager)));
-        this.variantSourceDBAdaptor = new HadoopVariantSourceDBAdaptor(genomeHelper, hBaseManager);
+        this.variantSourceDBAdaptor = new HadoopVariantFileMetadataDBAdaptor(genomeHelper, hBaseManager);
 
         clientSideSkip = !options.getBoolean(PhoenixHelper.PHOENIX_SERVER_OFFSET_AVAILABLE, true);
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable,
@@ -163,21 +163,21 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     public ArchiveTableHelper getArchiveHelper(int studyId, int fileId) throws StorageEngineException, IOException {
-        VcfMeta vcfMeta = getVcfMeta(studyId, fileId, null);
-        if (vcfMeta == null) {
+        VariantFileMetadata fileMetadata = getVariantFileMetadata(studyId, fileId, null);
+        if (fileMetadata == null) {
             throw new StorageEngineException("File '" + fileId + "' not found in study '" + studyId + "'");
         }
-        return new ArchiveTableHelper(genomeHelper, vcfMeta);
+        return new ArchiveTableHelper(genomeHelper, fileMetadata);
 
     }
 
-    public VcfMeta getVcfMeta(int studyId, int fileId, QueryOptions options) throws IOException {
-        HadoopVariantSourceDBAdaptor manager = getVariantSourceDBAdaptor();
-        return manager.getVcfMeta(studyId, fileId, options);
+    public VariantFileMetadata getVariantFileMetadata(int studyId, int fileId, QueryOptions options) throws IOException {
+        HadoopVariantFileMetadataDBAdaptor manager = getVariantFileMetadataDBAdaptor();
+        return manager.getVariantFileMetadata(studyId, fileId, options);
     }
 
     @Override
-    public HadoopVariantSourceDBAdaptor getVariantSourceDBAdaptor() {
+    public HadoopVariantFileMetadataDBAdaptor getVariantFileMetadataDBAdaptor() {
         return variantSourceDBAdaptor;
     }
 

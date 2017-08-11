@@ -20,6 +20,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.hadoop.conf.Configuration;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.tools.variant.converters.proto.VcfSliceToVariantListConverter;
 import org.opencb.commons.ProgressLogger;
@@ -86,8 +87,8 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
     }
 
     @Override
-    protected void securePreLoad(StudyConfiguration studyConfiguration, VariantSource source) throws StorageEngineException {
-        super.securePreLoad(studyConfiguration, source);
+    protected void securePreLoad(StudyConfiguration studyConfiguration, VariantFileMetadata fileMetadata) throws StorageEngineException {
+        super.securePreLoad(studyConfiguration, fileMetadata);
 
         final AtomicInteger ongoingLoads = new AtomicInteger(1); // this
         boolean resume = options.getBoolean(VariantStorageEngine.Options.RESUME.key(), VariantStorageEngine.Options.RESUME.defaultValue());
@@ -133,7 +134,7 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
         long counter = 0;
 
         VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, table, dbAdaptor.getHBaseManager(), true);
-        VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(helper.getMeta());
+        VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(helper.getDatasetMetadata());
         VariantHadoopDBWriter variantsWriter = newVariantHadoopDBWriter();
 
 //        ((Task<VcfSlice, VcfSlice>) t -> t)
@@ -174,7 +175,7 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
     @Override
     protected void loadFromAvro(Path input, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
             throws StorageEngineException {
-        VariantReader variantReader = VariantReaderUtils.getVariantReader(input, helper.getMeta().getVariantSource());
+        VariantReader variantReader = VariantReaderUtils.getVariantReader(input, helper.getDatasetMetadata());
         VariantSliceReader sliceReader = new VariantSliceReader(helper.getChunkSize(), variantReader, progressLogger);
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(1).setBatchSize(1).build();
@@ -219,7 +220,7 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
     }
 
     @Override
-    protected void securePreMerge(StudyConfiguration studyConfiguration, VariantSource source) throws StorageEngineException {
+    protected void securePreMerge(StudyConfiguration studyConfiguration, VariantFileMetadata fileMetadata) throws StorageEngineException {
     }
 
     @Override

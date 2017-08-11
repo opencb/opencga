@@ -22,8 +22,7 @@ import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.avro.VariantFileMetadata;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -33,11 +32,13 @@ import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
-import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantSourceSimpleConverter;
+import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantFileMetadataConverter;
 
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -45,29 +46,29 @@ import java.util.List;
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
+public class VariantFileMetadataMongoDBAdaptor implements VariantFileMetadataDBAdaptor {
 
 //    private static final Map<String, List> SAMPLES_IN_SOURCES = new HashMap<>();
 
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
-    private final DocumentToVariantSourceSimpleConverter variantSourceConverter;
+    private final DocumentToVariantFileMetadataConverter variantFileMetadataConverter;
     private final String collectionName;
 
-    public VariantSourceMongoDBAdaptor(MongoCredentials credentials, String collectionName) throws UnknownHostException {
+    public VariantFileMetadataMongoDBAdaptor(MongoCredentials credentials, String collectionName) throws UnknownHostException {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
         MongoDBConfiguration mongoDBConfiguration = credentials.getMongoDBConfiguration();
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
         this.collectionName = collectionName;
-        variantSourceConverter = new DocumentToVariantSourceSimpleConverter();
+        variantFileMetadataConverter = new DocumentToVariantFileMetadataConverter();
     }
 
-    public VariantSourceMongoDBAdaptor(MongoDataStore db, String collectionName) throws UnknownHostException {
+    public VariantFileMetadataMongoDBAdaptor(MongoDataStore db, String collectionName) throws UnknownHostException {
         mongoManager = null;
         this.db = db;
         this.collectionName = collectionName;
-        variantSourceConverter = new DocumentToVariantSourceSimpleConverter();
+        variantFileMetadataConverter = new DocumentToVariantFileMetadataConverter();
     }
 
     @Override
@@ -78,9 +79,9 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     @Override
-    public void updateVariantSource(VariantSource variantSource) {
+    public void updateVariantFileMetadata(String studyId, VariantFileMetadata metadata) {
         MongoDBCollection coll = db.getCollection(collectionName);
-        Document document = variantSourceConverter.convertToStorageType(variantSource);
+        Document document = variantFileMetadataConverter.convertToStorageType(studyId, metadata);
         String id = document.getString("_id");
         document.append("_id", id);
         QueryOptions options = new QueryOptions(MongoDBCollection.REPLACE, true).append(MongoDBCollection.UPSERT, true);
@@ -88,11 +89,11 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     @Override
-    public Iterator<VariantSource> iterator(Query query, QueryOptions options) {
+    public Iterator<VariantFileMetadata> iterator(Query query, QueryOptions options) {
         MongoDBCollection coll = db.getCollection(collectionName);
         Bson filter = parseQuery(query);
 
-        return new Iterator<VariantSource>() {
+        return new Iterator<VariantFileMetadata>() {
             private final MongoCursor<Document> iterator = coll.nativeQuery().find(filter, options).iterator();
             @Override
             public boolean hasNext() {
@@ -100,8 +101,8 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
             }
 
             @Override
-            public VariantSource next() {
-                return variantSourceConverter.convertToDataModelType(iterator.next());
+            public VariantFileMetadata next() {
+                return variantFileMetadataConverter.convertToDataModelType(iterator.next());
             }
         };
     }
@@ -165,7 +166,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 
     @Override
     public void delete(int study, int file) {
-        String id = DocumentToVariantSourceSimpleConverter.buildId(study, file);
+        String id = DocumentToVariantFileMetadataConverter.buildId(study, file);
         MongoDBCollection coll = db.getCollection(collectionName);
 
         DeleteResult deleteResult = coll.remove(Filters.eq("_id", id), null).first();
@@ -185,13 +186,26 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 
     protected Bson parseQuery(Query query) {
         LinkedList<Bson> filters = new LinkedList<>();
-        if (query.containsKey(VariantSourceQueryParam.STUDY_ID.key())) {
-            List<String> studyIds = query.getAsStringList(VariantSourceQueryParam.STUDY_ID.key());
-            filters.add(Filters.in(VariantSourceQueryParam.STUDY_ID.key(), studyIds));
-        }
-        if (query.containsKey(VariantSourceQueryParam.FILE_ID.key())) {
-            List<String> studyIds = query.getAsStringList(VariantSourceQueryParam.FILE_ID.key());
-            filters.add(Filters.in(VariantSourceQueryParam.FILE_ID.key(), studyIds));
+        if (VariantQueryUtils.isValidParam(query, VariantFileMetadataQueryParam.STUDY_ID)) {
+            List<String> studyIds = query.getAsStringList(VariantFileMetadataQueryParam.STUDY_ID.key());
+
+            if (VariantQueryUtils.isValidParam(query, VariantFileMetadataQueryParam.FILE_ID)) {
+                List<String> fileIds = query.getAsStringList(VariantFileMetadataQueryParam.FILE_ID.key());
+                List<String> ids = new ArrayList<>(studyIds.size() * fileIds.size());
+                for (String studyId : studyIds) {
+                    for (String fileId : fileIds) {
+                        ids.add(DocumentToVariantFileMetadataConverter.buildId(studyId, fileId));
+                    }
+                }
+                filters.add(Filters.in("_id", ids));
+            } else {
+                for (String studyId : studyIds) {
+                    filters.add(Filters.regex("_id", '^' + DocumentToVariantFileMetadataConverter.buildId(studyId, "")));
+                }
+            }
+        } else if (query.containsKey(VariantFileMetadataQueryParam.FILE_ID.key())) {
+            List<String> fileIds = query.getAsStringList(VariantFileMetadataQueryParam.FILE_ID.key());
+            filters.add(Filters.in("id", fileIds));
         }
         if (filters.isEmpty()) {
             return new Document();
@@ -293,16 +307,16 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 
 
     @Override
-    public QueryResult updateSourceStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions
+    public QueryResult updateStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions
             queryOptions) {
         MongoDBCollection coll = db.getCollection(collectionName);
 
-        VariantSource source = new VariantSource(new VariantFileMetadata());
+        VariantFileMetadata source = new VariantFileMetadata("", "");
         source.setStats(variantSourceStats.getFileStats());
-        Document globalStats = variantSourceConverter.convertToStorageType(source).get("stats", Document.class);
+        Document globalStats = variantFileMetadataConverter.convertToStorageType("", source).get("stats", Document.class);
 
-        Bson query = parseQuery(new Query(VariantSourceQueryParam.STUDY_ID.key(), variantSourceStats.getStudyId())
-                .append(VariantSourceQueryParam.FILE_ID.key(), variantSourceStats.getFileId()));
+        Bson query = parseQuery(new Query(VariantFileMetadataQueryParam.STUDY_ID.key(), variantSourceStats.getStudyId())
+                .append(VariantFileMetadataQueryParam.FILE_ID.key(), variantSourceStats.getFileId()));
         Bson update = Updates.set("stats", globalStats);
 
         return coll.update(query, update, null);

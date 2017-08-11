@@ -27,7 +27,7 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroWriter;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.slf4j.Logger;
@@ -216,7 +216,7 @@ public class VariantWriterFactory {
                         queryOptions.put(RETURNED_SAMPLES.key(), query.get(RETURNED_SAMPLES.key()));
                     }
 
-                    VariantSourceDBAdaptor sourceDBAdaptor = dbAdaptor.getVariantSourceDBAdaptor();
+                    VariantFileMetadataDBAdaptor sourceDBAdaptor = dbAdaptor.getVariantFileMetadataDBAdaptor();
                     exporter = new VariantVcfDataWriter(studyConfiguration, sourceDBAdaptor, outputStream, query, queryOptions);
                 } else {
                     throw new IllegalArgumentException("No study found named " + query.getAsStringList(RETURNED_STUDIES.key()).get(0));

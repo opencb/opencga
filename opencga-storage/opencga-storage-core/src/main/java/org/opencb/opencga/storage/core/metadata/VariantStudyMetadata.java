@@ -21,6 +21,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeaderLine;
 
 import java.util.*;
 
@@ -168,6 +170,7 @@ public class VariantStudyMetadata {
                 .toString();
     }
 
+    @Deprecated
     public VariantStudyMetadata addVariantSource(VariantSource source) {
         return addVariantSource(source, null);
     }
@@ -204,6 +207,28 @@ public class VariantStudyMetadata {
         return this;
     }
 
+    public VariantStudyMetadata addVariantFileHeader(VariantFileHeader header) {
+        return addVariantFileHeader(header, null);
+    }
+
+    public VariantStudyMetadata addVariantFileHeader(VariantFileHeader header, List<String> formats) {
+        for (VariantFileHeaderLine line : header.getLines()) {
+            VariantMetadataRecord record = new VariantMetadataRecord(line);
+            switch (line.getKey().toLowerCase()) {
+                case "info":
+                    info.put(record.getId(), record);
+                    break;
+                case "format":
+                    if (formats != null && !formats.contains(record.getId())) {
+                        continue;
+                    }
+                    format.put(record.getId(), record);
+                    break;
+            }
+        }
+        return this;
+    }
+
 
     public static class VariantMetadataRecord {
         private String id;
@@ -214,6 +239,22 @@ public class VariantStudyMetadata {
 //        private Map<String, String> other;
 
         protected VariantMetadataRecord() {
+        }
+
+        public VariantMetadataRecord(VariantFileHeaderLine line) {
+            this(line.getId(), null, null, StringUtils.isNotEmpty(line.getType())
+                    ? VCFHeaderLineType.valueOf(line.getType()) : null, line.getDescription());
+            String numberStr = line.getNumber();
+            if (numberStr == null || numberStr.equals(".")) {
+                numberType = VCFHeaderLineCount.UNBOUNDED;
+                number = null;
+            } else if (StringUtils.isNumeric(numberStr)) {
+                numberType = VCFHeaderLineCount.INTEGER;
+                number = Integer.valueOf(numberStr);
+            } else {
+                numberType = VCFHeaderLineCount.valueOf(numberStr);
+                number = null;
+            }
         }
 
         public VariantMetadataRecord(String id, VCFHeaderLineCount numberType, Integer number, VCFHeaderLineType type, String description) {

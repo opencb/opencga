@@ -24,8 +24,8 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.opencb.biodata.formats.variant.vcf4.VcfRecord;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.formats.variant.vcf4.VariantAggregatedVcfFactory;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
+import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
 import org.opencb.commons.run.Task;
 
 /**
@@ -40,7 +40,7 @@ public class CreateAccessionTask extends Task<VcfRecord> {
         'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z'
     };
 
-    private VariantSource source;
+    private VariantDatasetMetadata source;
     private String globalPrefix;
     private String studyPrefix;
 
@@ -54,19 +54,19 @@ public class CreateAccessionTask extends Task<VcfRecord> {
     private CombinationIterator<Character> iterator;
     private VariantVcfFactory variantFactory;
 
-    public CreateAccessionTask(VariantSource source, String globalPrefix, String studyPrefix) {
+    public CreateAccessionTask(VariantDatasetMetadata source, String globalPrefix, String studyPrefix) {
         this(source, globalPrefix, studyPrefix, 0);
     }
 
-    public CreateAccessionTask(VariantSource source, String globalPrefix, String studyPrefix, int priority) {
+    public CreateAccessionTask(VariantDatasetMetadata source, String globalPrefix, String studyPrefix, int priority) {
         this(source, globalPrefix, studyPrefix, null, priority);
     }
 
-    public CreateAccessionTask(VariantSource source, String globalPrefix, String studyPrefix, String lastAccession) {
+    public CreateAccessionTask(VariantDatasetMetadata source, String globalPrefix, String studyPrefix, String lastAccession) {
         this(source, globalPrefix, studyPrefix, lastAccession, 0);
     }
     
-    public CreateAccessionTask(VariantSource source, String globalPrefix, String studyPrefix, String lastAccession, int priority) {
+    public CreateAccessionTask(VariantDatasetMetadata source, String globalPrefix, String studyPrefix, String lastAccession, int priority) {
         super(priority);
         this.source = source;
         this.globalPrefix = globalPrefix != null ? globalPrefix : "";

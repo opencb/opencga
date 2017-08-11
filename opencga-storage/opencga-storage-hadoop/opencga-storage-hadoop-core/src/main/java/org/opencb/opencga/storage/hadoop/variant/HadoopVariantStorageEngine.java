@@ -25,7 +25,7 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -216,7 +216,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     if (doLoad && !error) {
                         // Read the VariantSource to get the original fileName (it may be different from the
                         // nextUri.getFileName if this is the transformed file)
-                        String fileName = storageETL.readVariantSource(nextUri, null).getFileName();
+                        String fileName = storageETL.readVariantFileMetadata(nextUri, null).getFileName();
                         // Get latest study configuration from DB, might have been changed since
                         StudyConfiguration studyConfiguration = storageETL.getStudyConfiguration();
                         // Get file ID for the provided file name
@@ -716,8 +716,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         return fullyQualified;
     }
 
-    public VariantSource readVariantSource(URI input) throws StorageEngineException {
-        return getVariantReaderUtils(null).readVariantSource(input);
+    public VariantFileMetadata readVariantFileMetadata(URI input) throws StorageEngineException {
+        return getVariantReaderUtils(null).readVariantFileMetadata(input);
     }
 
     private static class HdfsVariantReaderUtils extends VariantReaderUtils {
@@ -728,14 +728,14 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
 
         @Override
-        public VariantSource readVariantSource(URI input) throws StorageEngineException {
-            VariantSource source;
+        public VariantFileMetadata readVariantFileMetadata(URI input) throws StorageEngineException {
+            VariantFileMetadata source;
 
             if (input.getScheme() == null || input.getScheme().startsWith("file")) {
                 if (input.getPath().contains("variants.proto")) {
-                    return VariantReaderUtils.readVariantSource(Paths.get(input.getPath().replace("variants.proto", "file.json")), null);
+                    return VariantReaderUtils.readVariantFileMetadata(Paths.get(input.getPath().replace("variants.proto", "file.json")), null);
                 } else {
-                    return VariantReaderUtils.readVariantSource(Paths.get(input.getPath()), null);
+                    return VariantReaderUtils.readVariantFileMetadata(Paths.get(input.getPath()), null);
                 }
             }
 
@@ -749,7 +749,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             try (
                     InputStream inputStream = new GZIPInputStream(fs.open(metaPath))
             ) {
-                source = VariantReaderUtils.readVariantSource(inputStream);
+                source = VariantReaderUtils.readVariantFileMetadataFromJson(inputStream);
             } catch (IOException e) {
                 throw new StorageEngineException("Unable to read VariantSource", e);
             }

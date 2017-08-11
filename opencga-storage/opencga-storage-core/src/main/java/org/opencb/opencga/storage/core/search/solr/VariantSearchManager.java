@@ -34,7 +34,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -524,8 +523,7 @@ public class VariantSearchManager {
 
     private void loadAvro(String collection, Path path) throws IOException, VariantSearchException, StorageEngineException {
         // reader
-        VariantSource source = null;
-        VariantReader reader = VariantReaderUtils.getVariantReader(path, source);
+        VariantReader reader = VariantReaderUtils.getVariantReader(path, null);
 
         List<Variant> variants;
 

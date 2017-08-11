@@ -525,9 +525,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             } else {
                 for (Integer fileId : fileIds) {
                     try {
-                        getDBAdaptor().getVariantSourceDBAdaptor().delete(studyConfiguration.getStudyId(), fileId);
+                        getDBAdaptor().getVariantFileMetadataDBAdaptor().delete(studyConfiguration.getStudyId(), fileId);
                     } catch (IOException e) {
-                        throw new StorageEngineException("Unable to remove VariantSource from file " + fileId, e);
+                        throw new StorageEngineException("Unable to remove VariantFileMetadata from file " + fileId, e);
                     }
                 }
 

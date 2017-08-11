@@ -17,7 +17,7 @@
 package org.opencb.opencga.storage.core.manager.variant.operations;
 
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -514,8 +514,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             }
             VariantGlobalStats stats;
             try {
-                VariantSource variantSource = VariantReaderUtils.readVariantSource(metaFile, null);
-                stats = variantSource.getStats();
+                VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(metaFile, null);
+                stats = fileMetadata.getStats();
             } catch (StorageEngineException e) {
                 throw new CatalogException("Error reading file \"" + metaFile + "\"", e);
             }

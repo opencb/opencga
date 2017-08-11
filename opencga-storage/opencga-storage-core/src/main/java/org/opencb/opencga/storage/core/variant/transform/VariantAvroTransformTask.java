@@ -20,7 +20,7 @@ import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import org.opencb.biodata.formats.variant.VariantFactory;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.hpg.bigdata.core.io.avro.AvroEncoder;
@@ -40,16 +40,16 @@ public class VariantAvroTransformTask extends VariantTransformTask<ByteBuffer> {
 
     protected final AvroEncoder<VariantAvro> encoder;
 
-    public VariantAvroTransformTask(VariantFactory factory, VariantSource source, Path outputFileJsonFile,
+    public VariantAvroTransformTask(VariantFactory factory, String studyId, VariantFileMetadata fileMetadata, Path outputFileJsonFile,
                                     VariantGlobalStatsCalculator variantStatsTask, boolean includeSrc, boolean generateReferenceBlocks) {
-        super(factory, source, outputFileJsonFile, variantStatsTask, includeSrc, generateReferenceBlocks);
+        super(factory, studyId, fileMetadata, outputFileJsonFile, variantStatsTask, includeSrc, generateReferenceBlocks);
         this.encoder = new AvroEncoder<>(VariantAvro.getClassSchema());
     }
 
-    public VariantAvroTransformTask(VCFHeader header, VCFHeaderVersion version, VariantSource source,
+    public VariantAvroTransformTask(VCFHeader header, VCFHeaderVersion version, String studyId, VariantFileMetadata fileMetadata,
                                     Path outputFileJsonFile, VariantGlobalStatsCalculator variantStatsTask, boolean includeSrc,
                                     boolean generateReferenceBlocks) {
-        super(header, version, source, outputFileJsonFile, variantStatsTask, includeSrc, generateReferenceBlocks);
+        super(header, version, studyId, fileMetadata, outputFileJsonFile, variantStatsTask, includeSrc, generateReferenceBlocks);
         this.encoder = new AvroEncoder<>(VariantAvro.getClassSchema());
     }
 

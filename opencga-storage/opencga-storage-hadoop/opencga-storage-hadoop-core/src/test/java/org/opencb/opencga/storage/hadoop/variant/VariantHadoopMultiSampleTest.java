@@ -51,7 +51,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantFileMetadataDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantMergerTableMapper;
@@ -292,7 +292,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         System.out.println("StudyConfiguration = " + studyConfiguration);
 
-        HadoopVariantSourceDBAdaptor fileMetadataManager = dbAdaptor.getVariantSourceDBAdaptor();
+        HadoopVariantFileMetadataDBAdaptor fileMetadataManager = dbAdaptor.getVariantFileMetadataDBAdaptor();
         Set<Integer> loadedFiles = fileMetadataManager.getLoadedFiles(studyConfiguration.getStudyId());
         System.out.println("loadedFiles = " + loadedFiles);
         for (int fileId = 1; fileId <= 17; fileId++) {
@@ -306,7 +306,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         FileStudyConfigurationAdaptor.write(studyConfiguration, new File(outputUri.resolve("study_configuration.json").getPath()).toPath());
         try (FileOutputStream out = new FileOutputStream(outputUri.resolve("platinum.merged.vcf").getPath())) {
             VariantVcfDataWriter.htsExport(dbAdaptor.iterator(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions(QueryOptions.SORT, true)),
-                    studyConfiguration, dbAdaptor.getVariantSourceDBAdaptor(), out, new Query(), new QueryOptions());
+                    studyConfiguration, dbAdaptor.getVariantFileMetadataDBAdaptor(), out, new Query(), new QueryOptions());
         }
     }
 
@@ -356,7 +356,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     public void checkLoadedFilesS1S2(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor) throws IOException, StorageEngineException {
 
         Path path = Paths.get(getResourceUri("s1_s2.genome.vcf"));
-        VariantReader variantReader = new VariantVcfHtsjdkReader(new FileInputStream(path.toFile()), VariantReaderUtils.readVariantSource(path, null));
+        VariantReader variantReader = new VariantVcfHtsjdkReader(new FileInputStream(path.toFile()), VariantReaderUtils.readVariantFileMetadata(path, null));
         variantReader.open();
         variantReader.pre();
         Map<String, Variant> expectedVariants = new LinkedHashMap<>();

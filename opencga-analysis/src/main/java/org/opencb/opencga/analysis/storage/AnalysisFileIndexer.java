@@ -178,7 +178,7 @@ public class AnalysisFileIndexer {
                         VariantReaderUtils utils = new VariantReaderUtils();
                         try {
                             // Read the VariantSource to get the source file
-                            VariantSource variantSource = utils.readVariantSource(catalogManager.getFileManager().getUri(inputFile));
+                            VariantSource variantSource = utils.readVariantFileMetadata(catalogManager.getFileManager().getUri(inputFile));
                             Query query = new Query(FileDBAdaptor.QueryParams.NAME.key(), variantSource.getFileName());
                             QueryResult<File> result = catalogManager.getFileManager().get(studyIdByOutDirId, query, null, sessionId);
                             if (result.getResult().size() == 0) {
