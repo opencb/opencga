@@ -104,7 +104,7 @@ public class VariantMergerTableMapper extends AbstractArchiveTableMapper {
                 .stream()
                 .map(Integer::valueOf)
                 .collect(Collectors.toSet());
-        if (filesToIndex.size() == 0) {
+        if (filesToIndex.isEmpty()) {
             throw new IllegalStateException(
                     "File IDs to be indexed not found in configuration: " + VariantStorageEngine.Options.FILE_ID.key());
         }

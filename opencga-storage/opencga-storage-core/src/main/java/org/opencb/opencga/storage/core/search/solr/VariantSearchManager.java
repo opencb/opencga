@@ -40,6 +40,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.commons.datastore.core.result.FacetedQueryResultItem;
+import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -312,7 +313,7 @@ public class VariantSearchManager {
             }
 
             // insert the remaining variants
-            if (variantList.size() > 0) {
+            if (CollectionUtils.isNotEmpty(variantList)) {
                 insert(collection, variantList);
             }
 
@@ -469,7 +470,7 @@ public class VariantSearchManager {
      * @throws VariantSearchException  VariantSearchException
      */
     private void insert(String collection, List<Variant> variants) throws IOException, VariantSearchException {
-        if (variants != null && variants.size() > 0) {
+        if (variants != null && CollectionUtils.isNotEmpty(variants)) {
             List<VariantSearchModel> variantSearchModels = variantSearchToVariantConverter.convertListToStorageType(variants);
 
             if (!variantSearchModels.isEmpty()) {
@@ -514,7 +515,7 @@ public class VariantSearchManager {
         }
 
         // Insert the remaining variants
-        if (variants.size() > 0) {
+        if (CollectionUtils.isNotEmpty(variants)) {
             insert(collection, variants);
         }
 
@@ -545,7 +546,7 @@ public class VariantSearchManager {
                                                           PivotField pivot) {
         String countName;
         FacetedQueryResultItem.Field field = null;
-        if (pivot.getPivot() != null && pivot.getPivot().size() > 0) {
+        if (pivot.getPivot() != null && CollectionUtils.isNotEmpty(pivot.getPivot())) {
             field = new FacetedQueryResultItem().new Field();
             field.setName(name.split(",")[index]);
 
@@ -667,7 +668,7 @@ public class VariantSearchManager {
             NamedList<List<PivotField>> facetPivot = response.getFacetPivot();
             for (int i = 0; i < facetPivot.size(); i++) {
                 List<PivotField> solrPivots = facetPivot.getVal(i);
-                if (solrPivots != null && solrPivots.size() > 0) {
+                if (solrPivots != null && CollectionUtils.isNotEmpty(solrPivots)) {
                     // init field
                     FacetedQueryResultItem.Field field = new FacetedQueryResultItem().new Field();
                     field.setName(facetPivot.getName(i).split(",")[0]);

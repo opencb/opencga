@@ -23,6 +23,7 @@ import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,8 +41,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
     /**
      * Conversion: from storage type to data model.
      *
-     * @param variantSearchModel    Storage type object
-     * @return                 Data model object
+     * @param variantSearchModel Storage type object
+     * @return Data model object
      */
     @Override
     public Variant convertToDataModelType(VariantSearchModel variantSearchModel) {
@@ -56,7 +57,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
         // set studies and stats
         Map<String, StudyEntry> studyEntryMap = new HashMap<>();
-        if (variantSearchModel.getStudies() != null && variantSearchModel.getStudies().size() > 0) {
+        if (variantSearchModel.getStudies() != null && CollectionUtils.isNotEmpty(variantSearchModel.getStudies())) {
             List<StudyEntry> studies = new ArrayList<>();
             variantSearchModel.getStudies().forEach(s -> {
                 StudyEntry entry = new StudyEntry();
@@ -67,7 +68,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             variant.setStudies(studies);
         }
         if (variantSearchModel.getStats() != null && variantSearchModel.getStats().size() > 0) {
-            for (String key: variantSearchModel.getStats().keySet()) {
+            for (String key : variantSearchModel.getStats().keySet()) {
                 // key consists of 'stats' + "__" + studyId + "__" + cohort
                 String[] fields = key.split("__");
                 if (fields[1].contains("_")) {
@@ -130,7 +131,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
         // and finally, update the SO accession for each consequence type
         // and setProteinVariantAnnotation if SO accession is 1583
-        for (String geneToSoAcc: variantSearchModel.getGeneToSoAcc()) {
+        for (String geneToSoAcc : variantSearchModel.getGeneToSoAcc()) {
             String[] fields = geneToSoAcc.split("_");
             if (consequenceTypeMap.containsKey(fields[0])) {
                 int soAcc = Integer.parseInt(fields[1]);
@@ -235,22 +236,22 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
         VariantTraitAssociation variantTraitAssociation = new VariantTraitAssociation();
         List<ClinVar> clinVarList = new ArrayList<>(clinVarMap.size());
-        for (String key: clinVarMap.keySet()) {
+        for (String key : clinVarMap.keySet()) {
             ClinVar clinVar = new ClinVar();
             clinVar.setAccession(key);
             clinVar.setTraits(clinVarMap.get(key));
             clinVarList.add(clinVar);
         }
-        if (clinVarList.size() > 0 || cosmicList.size() > 0) {
-            if (clinVarList.size() > 0) {
+        if (CollectionUtils.isNotEmpty(clinVarList) || CollectionUtils.isNotEmpty(cosmicList)) {
+            if (CollectionUtils.isNotEmpty(clinVarList)) {
                 variantTraitAssociation.setClinvar(clinVarList);
             }
-            if (cosmicList.size() > 0) {
+            if (CollectionUtils.isNotEmpty(cosmicList)) {
                 variantTraitAssociation.setCosmic(cosmicList);
             }
             variantAnnotation.setVariantTraitAssociation(variantTraitAssociation);
         }
-        if (geneTraitAssociationList.size() > 0) {
+        if (CollectionUtils.isNotEmpty(geneTraitAssociationList)) {
             variantAnnotation.setGeneTraitAssociation(geneTraitAssociationList);
         }
 
@@ -263,8 +264,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
     /**
      * Conversion: from data model to storage type.
      *
-     * @param variant   Data model object
-     * @return          Storage type object
+     * @param variant Data model object
+     * @return Storage type object
      */
     @Override
     public VariantSearchModel convertToStorageType(Variant variant) {
@@ -286,7 +287,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         xrefs.add(variantSearchModel.getVariantId());
 
         // Set Studies Alias
-        if (variant.getStudies() != null && variant.getStudies().size() > 0) {
+        if (variant.getStudies() != null && CollectionUtils.isNotEmpty(variant.getStudies())) {
             List<String> studies = new ArrayList<>();
             Map<String, Float> stats = new HashMap<>();
 //            variant.getStudies().forEach(s -> studies.add(s.getStudyId()));
@@ -302,7 +303,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 // We store the cohort stats with the format stats_STUDY_COHORT = value, e.g. stats_1kg_phase3_ALL=0.02
                 if (studyEntry.getStats() != null && studyEntry.getStats().size() > 0) {
                     Map<String, VariantStats> studyStats = studyEntry.getStats();
-                    for (String key: studyStats.keySet()) {
+                    for (String key : studyStats.keySet()) {
                         stats.put("stats__" + studyId + "__" + key, studyStats.get(key).getMaf());
                     }
                 }
@@ -471,7 +472,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             });
                 }
             }
-            if (variantAnnotation.getGeneTraitAssociation() != null && variantAnnotation.getGeneTraitAssociation().size() > 0) {
+            if (variantAnnotation.getGeneTraitAssociation() != null
+                    && CollectionUtils.isNotEmpty(variantAnnotation.getGeneTraitAssociation())) {
                 for (GeneTraitAssociation geneTraitAssociation : variantAnnotation.getGeneTraitAssociation()) {
                     switch (geneTraitAssociation.getSource().toLowerCase()) {
                         case "hpo":
@@ -497,7 +499,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
     public List<VariantSearchModel> convertListToStorageType(List<Variant> variants) {
         List<VariantSearchModel> variantSearchModelList = new ArrayList<>(variants.size());
-        for (Variant variant: variants) {
+        for (Variant variant : variants) {
             VariantSearchModel variantSearchModel = convertToStorageType(variant);
             if (variantSearchModel.getId() != null) {
                 variantSearchModelList.add(variantSearchModel);
@@ -510,8 +512,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
      * Retrieve the protein substitution scores and descriptions from a consequence
      * type annotation: sift or polyphen, and update the variant search model.
      *
-     * @param consequenceTypes    List of consequence type target
-     * @param variantSearchModel  Variant search model to update
+     * @param consequenceTypes   List of consequence type target
+     * @param variantSearchModel Variant search model to update
      */
     private void setProteinScores(List<ConsequenceType> consequenceTypes, VariantSearchModel variantSearchModel) {
         double sift = 10;
