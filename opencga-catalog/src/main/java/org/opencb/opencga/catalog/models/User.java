@@ -229,7 +229,6 @@ public class User {
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", email='").append(email).append('\'');
-        sb.append(", password='").append(password).append('\'');
         sb.append(", organization='").append(organization).append('\'');
         sb.append(", account=").append(account);
         sb.append(", status=").append(status);
