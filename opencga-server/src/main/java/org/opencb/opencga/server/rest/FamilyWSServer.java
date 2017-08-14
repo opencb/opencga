@@ -90,13 +90,10 @@ public class FamilyWSServer extends OpenCGAWSServer {
                                    + " alias.") @QueryParam("study") String studyStr,
                            @ApiParam(value = "Family name") @QueryParam("name") String name,
                            @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
-                           @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("mother") String
-                                       mother,
-                           @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("father") String
-                                       father,
-                           @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("children") String
-                                       children,
-                           @ApiParam(value = "Comma separated list of ontology ids or names") @QueryParam("ontologies") String ontologies,
+                           @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("mother") String mother,
+                           @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("father") String father,
+                           @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("member") String member,
+                           @ApiParam(value = "Comma separated list of disease ids") @QueryParam("diseases") String diseases,
                            @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
                            @ApiParam(value = "variableSetId", hidden = true) @QueryParam("variableSetId") String variableSetId,
                            @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,

@@ -348,7 +348,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (QueryResult<Family> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("#NAME\tID\tMOTHER\tFATHER\tPARENTAL_CONSANGUINITY\tCHILDREN\tSTATUS\tCREATION_DATE\n");
+                sb.append("#NAME\tID\tMOTHER\tFATHER\tMEMBER\tSTATUS\tCREATION_DATE\n");
             }
 
             for (Family family : queryResult.getResult()) {
@@ -366,8 +366,8 @@ public class TextOutputWriter extends AbstractOutputWriter {
                                     .map(individual -> individual.getName() + "(" + individual.getId() + ")")
                                     .collect(Collectors.toList()), ", ")
                         : "NA";
-                sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n",
-                        family.getName(), family.getId(), mother, father, family.isParentalConsanguinity() ? "true" : "false", children,
+                sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
+                        family.getName(), family.getId(), mother, father, children,
                         family.getStatus().getName(), family.getCreationDate()));
             }
         }

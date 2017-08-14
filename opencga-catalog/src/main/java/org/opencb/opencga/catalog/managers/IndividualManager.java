@@ -935,7 +935,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         for (Individual individual : queryResult.getResult()) {
             Query query = new Query()
                     .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(FamilyDBAdaptor.QueryParams.CHILDREN_IDS.key(), individual.getId());
+                    .append(FamilyDBAdaptor.QueryParams.MEMBER_ID.key(), individual.getId());
             try {
                 QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions, userId);
                 if (familyQueryResult.getNumResults() == 0) {

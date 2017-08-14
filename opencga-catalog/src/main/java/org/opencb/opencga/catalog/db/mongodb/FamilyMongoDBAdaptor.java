@@ -526,10 +526,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
-                    case ONTOLOGIES:
-                    case ONTOLOGY_TERMS:
-                        addOntologyQueryFilter(QueryParams.ONTOLOGY_TERMS.key(), queryParam.key(), query, andBsonList);
-                        break;
                     case VARIABLE_SET_ID:
                         addOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), annotationList);
                         break;
@@ -552,7 +548,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                     case MOTHER_ID:
                         addAutoOrQuery("mother.id", queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
-                    case CHILDREN_IDS:
+                    case MEMBER_ID:
                         addAutoOrQuery("children.id", queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case NAME:
@@ -561,11 +557,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                     case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
-                    case ONTOLOGY_TERMS_ID:
-                    case ONTOLOGY_TERMS_NAME:
-                    case ONTOLOGY_TERMS_SOURCE:
-                    case ONTOLOGY_TERMS_AGE_OF_ONSET:
-                    case ONTOLOGY_TERMS_MODIFIERS:
                     case ANNOTATION_SETS:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;

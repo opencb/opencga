@@ -30,10 +30,10 @@ import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
 @Parameters(commandNames = {"families"}, commandDescription = "Family commands")
 public class FamilyCommandOptions {
 
-    public CreateCommandOptions createCommandOptions;
+//    public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public SearchCommandOptions searchCommandOptions;
-    public UpdateCommandOptions updateCommandOptions;
+//    public UpdateCommandOptions updateCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
     public AclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
@@ -57,10 +57,10 @@ public class FamilyCommandOptions {
         this.commonNumericOptions = numericOptions;
         this.jCommander = jCommander;
 
-        this.createCommandOptions = new CreateCommandOptions();
+//        this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
-        this.updateCommandOptions = new UpdateCommandOptions();
+//        this.updateCommandOptions = new UpdateCommandOptions();
 
         AnnotationCommandOptions annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
         this.annotationCreateCommandOptions = annotationCommandOptions.getCreateCommandOptions();
@@ -84,30 +84,30 @@ public class FamilyCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"create"}, commandDescription = "Create family.")
-    public class CreateCommandOptions extends GeneralCliOptions.StudyOption {
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-n", "--name"}, description = "Family name", required = true, arity = 1)
-        public String name;
-
-        @Parameter(names = {"--father"}, description = "Father name", arity = 1)
-        public String father;
-
-        @Parameter(names = {"--mother"}, description = "Mother name", arity = 1)
-        public String mother;
-
-        @Parameter(names = {"--children"}, description = "Comma separated list of child names", arity = 1)
-        public String children;
-
-        @Parameter(names = {"--description"}, description = "Description of the family", arity = 1)
-        public String description;
-
-        @Parameter(names = {"--parental-consanguinity"}, description = "Flag indicating if the parents descend from the same ancestor", arity = 0)
-        public boolean parentalConsanguinity;
-    }
+//    @Parameters(commandNames = {"create"}, commandDescription = "Create family.")
+//    public class CreateCommandOptions extends GeneralCliOptions.StudyOption {
+//
+//        @ParametersDelegate
+//        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+//
+//        @Parameter(names = {"-n", "--name"}, description = "Family name", required = true, arity = 1)
+//        public String name;
+//
+//        @Parameter(names = {"--father"}, description = "Father name", arity = 1)
+//        public String father;
+//
+//        @Parameter(names = {"--mother"}, description = "Mother name", arity = 1)
+//        public String mother;
+//
+//        @Parameter(names = {"--member"}, description = "Comma separated list of child names", arity = 1)
+//        public String member;
+//
+//        @Parameter(names = {"--description"}, description = "Description of the family", arity = 1)
+//        public String description;
+//
+//        @Parameter(names = {"--parental-consanguinity"}, description = "Flag indicating if the parents descend from the same ancestor", arity = 0)
+//        public boolean parentalConsanguinity;
+//    }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get family information")
     public class InfoCommandOptions extends BaseFamilyCommand {
@@ -135,15 +135,12 @@ public class FamilyCommandOptions {
         @Parameter(names = {"--mother"}, description = "Comma separated list of individual ids or names", arity = 1)
         public String mother;
 
-        @Parameter(names = {"--children"}, description = "Comma separated list of individual ids or names", arity = 1)
-        public String children;
+        @Parameter(names = {"--member"}, description = "Comma separated list of individual ids or names", arity = 1)
+        public String member;
 
         @Parameter(names = {"--parental-consanguinity"}, description = "Parental consanguinity", arity = 1)
         public Boolean parentalConsanguinity;
 
-        @Parameter(names = {"--ontologies"}, description = "Comma separated list of ontology ids or names", arity = 1)
-        public String ontologies;
-        
         @Parameter(names = {"--variable-set"}, description = "Variable set id or name", arity = 1)
         public String variableSetId;
 
@@ -155,26 +152,26 @@ public class FamilyCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"update"}, commandDescription = "Update family information")
-    public class UpdateCommandOptions extends BaseFamilyCommand {
-
-        @Parameter(names = {"--name"}, description = "New name", arity = 1)
-        public String name;
-
-        @Parameter(names = {"--father-id"}, description = "Father id", arity = 1)
-        public String fatherId;
-
-        @Parameter(names = {"--mother-id"}, description = "Mother id", arity = 1)
-        public String motherId;
-
-        @Parameter(names = {"--children"}, description = "Comma separated list of children ids", arity = 1)
-        public String children;
-
-        @Parameter(names = {"--parental-consanguinity"}, description = "Parental consanguinity", arity = 1)
-        public Boolean parentalConsanguinity;
-
-        @Parameter(names = {"--description"}, description = "Description of the family", arity = 1)
-        public String description;
-    }
+//    @Parameters(commandNames = {"update"}, commandDescription = "Update family information")
+//    public class UpdateCommandOptions extends BaseFamilyCommand {
+//
+//        @Parameter(names = {"--name"}, description = "New name", arity = 1)
+//        public String name;
+//
+//        @Parameter(names = {"--father-id"}, description = "Father id", arity = 1)
+//        public String fatherId;
+//
+//        @Parameter(names = {"--mother-id"}, description = "Mother id", arity = 1)
+//        public String motherId;
+//
+//        @Parameter(names = {"--member"}, description = "Comma separated list of member ids", arity = 1)
+//        public String children;
+//
+//        @Parameter(names = {"--parental-consanguinity"}, description = "Parental consanguinity", arity = 1)
+//        public Boolean parentalConsanguinity;
+//
+//        @Parameter(names = {"--description"}, description = "Description of the family", arity = 1)
+//        public String description;
+//    }
     
 }
