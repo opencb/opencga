@@ -230,18 +230,6 @@ public abstract class AbstractParentClient {
                     .get().readEntity(String.class);
         } else if (method.equalsIgnoreCase(POST)) {
             // TODO we still have to check the limit of the query, and keep querying while there are more results
-//            Form form = new Form();
-//            if (params != null) {
-//                for (String s : params.keySet()) {
-//                    Object value = params.get(s);
-//                    if (value instanceof Number) {
-//                        form.param(s, (Integer.toString((int) params.get(s))));
-//                    } else {
-//                        form.param(s, ((String) params.get(s)));
-//                    }
-//                }
-//            }
-
             if (params != null) {
                 for (String s : params.keySet()) {
                     if (!s.equals("body")) {
@@ -250,14 +238,12 @@ public abstract class AbstractParentClient {
                 }
             }
 
-//            ObjectMap json = new ObjectMap("body", params.get("body"));
-
             logger.debug("POST URL: " + path.getUri().toURL());
+            Object paramBody = params.get("body");
             Response body = path.request()
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.sessionId)
-                    .post(Entity.json(params.get("body")));
+                    .post(Entity.json(paramBody == null ? "" : paramBody));
             jsonString = body.readEntity(String.class);
-//            jsonString = path.request().post(Entity.json(params.get("body")), String.class);
         }
         return parseResult(jsonString, clazz);
     }

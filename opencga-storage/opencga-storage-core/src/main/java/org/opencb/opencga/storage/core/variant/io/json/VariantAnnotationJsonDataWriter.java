@@ -47,27 +47,17 @@ public class VariantAnnotationJsonDataWriter implements DataWriter<VariantAnnota
     @Override
     public boolean open() {
         /** Open output stream **/
-        OutputStreamWriter writer;
-        try {
-            OutputStream outputStream;
-            if (gzip) {
-                outputStream = new GZIPOutputStream(new FileOutputStream(outputPath.toFile()));
-            } else {
-                outputStream = new FileOutputStream(outputPath.toFile());
-            }
-            writer = new OutputStreamWriter(outputStream, Charsets.UTF_8);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
 
-        /** Initialize Json serializer**/
+        try (OutputStream outputStream = (gzip ? new GZIPOutputStream(new FileOutputStream(outputPath.toFile()))
+                : new FileOutputStream(outputPath.toFile()));
+             OutputStreamWriter writer = new OutputStreamWriter(outputStream, Charsets.UTF_8)) {
 
-        JsonFactory factory = new JsonFactory();
-        factory.setRootValueSeparator("\n");
-        ObjectMapper jsonObjectMapper = new ObjectMapper(factory);
-        jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
-        jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        try {
+            /** Initialize Json serializer**/
+            JsonFactory factory = new JsonFactory();
+            factory.setRootValueSeparator("\n");
+            ObjectMapper jsonObjectMapper = new ObjectMapper(factory);
+            jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
+            jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
             sequenceWriter = jsonObjectMapper.writerFor(VariantAnnotation.class).writeValues(writer);
         } catch (IOException e) {
             throw new UncheckedIOException(e);

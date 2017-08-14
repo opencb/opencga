@@ -326,7 +326,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
             chunkFrequency = chunkFrequencyManager.query(region, path, windowSize);
         }
 
-        if (coverage == null) {
+        if (coverage == null && chunkFrequency != null) {
             coverage = new RegionCoverage(region, chunkFrequency.getWindowSize(), chunkFrequency.getValues());
         }
 
