@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Collections;
@@ -30,7 +31,7 @@ public class Family extends Annotable {
     private long id;
     private String name;
 
-    private List<Disease> diseases;
+    private List<OntologyTerm> diseases;
     private List<Relatives> members;
 
     @Deprecated
@@ -47,6 +48,7 @@ public class Family extends Annotable {
     private Status status;
     private String description;
 
+    @Deprecated
     private List<OntologyTerm> ontologyTerms;
 
     private int release;
@@ -55,21 +57,22 @@ public class Family extends Annotable {
     public Family() {
     }
 
-    public Family(String name, List<Disease> diseases, List<Relatives> members, String description, int release,
+    public Family(String name, List<OntologyTerm> diseases, List<Relatives> members, String description, List<AnnotationSet> annotationSets,
                   Map<String, Object> attributes) {
-        this(name, diseases, members, TimeUtils.getTime(), new Status(Status.READY), description, release, attributes);
+        this(name, diseases, members, TimeUtils.getTime(), new Status(Status.READY), description, -1, annotationSets, attributes);
     }
 
-    public Family(String name, List<Disease> diseases, List<Relatives> members, String creationDate, Status status, String description,
-                  int release, Map<String, Object> attributes) {
+    public Family(String name, List<OntologyTerm> diseases, List<Relatives> members, String creationDate, Status status, String description,
+                  int release, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.name = name;
-        this.diseases = diseases;
-        this.members = members;
-        this.creationDate = creationDate;
-        this.status = status;
+        this.diseases = ParamUtils.defaultObject(diseases, Collections::emptyList);
+        this.members = ParamUtils.defaultObject(members, Collections::emptyList);
+        this.creationDate = ParamUtils.defaultObject(creationDate, TimeUtils::getTime);
+        this.status = ParamUtils.defaultObject(status, new Status());
         this.description = description;
         this.release = release;
-        this.attributes = attributes;
+        this.annotationSets = ParamUtils.defaultObject(annotationSets, Collections::emptyList);
+        this.attributes = ParamUtils.defaultObject(attributes, Collections::emptyMap);
     }
 
     @Deprecated
@@ -148,11 +151,11 @@ public class Family extends Annotable {
         return this;
     }
 
-    public List<Disease> getDiseases() {
+    public List<OntologyTerm> getDiseases() {
         return diseases;
     }
 
-    public Family setDiseases(List<Disease> diseases) {
+    public Family setDiseases(List<OntologyTerm> diseases) {
         this.diseases = diseases;
         return this;
     }

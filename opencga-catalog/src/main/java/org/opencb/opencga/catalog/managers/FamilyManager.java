@@ -16,12 +16,13 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -49,8 +50,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
-import static org.opencb.opencga.catalog.db.api.FamilyDBAdaptor.QueryParams.ONTOLOGIES;
-import static org.opencb.opencga.catalog.db.api.FamilyDBAdaptor.QueryParams.ONTOLOGY_TERMS;
 
 /**
  * Created by pfurio on 02/05/17.
@@ -324,7 +323,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             throw new CatalogException("Family " + familyId + " not found");
         }
 
-        long individual;
+        // In case the user is updating members or disease list, we will create the family variable. If it is != null, it will mean that
+        // all or some of those parameters have been passed to be updated, and we will need to call the private validator to check if the
+        // fields are valid.
+        Family family = null;
         Iterator<Map.Entry<String, Object>> iterator = parameters.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<String, Object> param = iterator.next();
@@ -333,60 +335,53 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 case NAME:
                     ParamUtils.checkAlias(parameters.getString(queryParam.key()), "name", configuration.getCatalog().getOffset());
                     break;
-                case MOTHER_ID:
-                    individual = parameters.getLong(param.getKey());
-                    if (familyQueryResult.first().getMother().getId() > 0) {
-                        if (individual != familyQueryResult.first().getMother().getId()) {
-                            throw new CatalogException("Cannot update mother parameter of family. The family " + familyId + " already has "
-                                    + "the mother defined");
-                        } else {
-                            iterator.remove();
+                case DISEASES:
+                case MEMBERS:
+                    if (family == null) {
+                        // We parse the parameters to a family object
+                        try {
+                            ObjectMapper objectMapper = new ObjectMapper();
+                            family = objectMapper.readValue(objectMapper.writeValueAsString(parameters), Family.class);
+                        } catch (IOException e) {
+                            logger.error("{}", e.getMessage(), e);
+                            throw new CatalogException(e);
                         }
-                    }
-                    individualDBAdaptor.checkId(individual);
-                    break;
-                case FATHER_ID:
-                    individual = parameters.getLong(param.getKey());
-                    if (familyQueryResult.first().getFather().getId() > 0) {
-                        if (individual != familyQueryResult.first().getFather().getId()) {
-                            throw new CatalogException("Cannot update mother parameter of family. The family " + familyId + " already has "
-                                    + "the father defined");
-                        } else {
-                            iterator.remove();
-                        }
-                    }
-                    individualDBAdaptor.checkId(individual);
-                    break;
-                case CHILDREN_IDS:
-                    if (CollectionUtils.isNotEmpty(familyQueryResult.first().getChildren())) {
-                        throw new CatalogException("Cannot update children parameter of family. The family " + familyId + " already has "
-                                + "children defined");
-                    }
-                    List<Long> individualList = parameters.getAsLongList(param.getKey());
-                    for (Long individualId : individualList) {
-                        individualDBAdaptor.checkId(individualId);
-                    }
-                    break;
-                case ONTOLOGIES:
-                case ONTOLOGY_TERMS:
-                    try {
-                        List<OntologyTerm> ontologyTerms = (List<OntologyTerm>) parameters.get(param.getKey());
-                    } catch (RuntimeException e) {
-                        throw new CatalogException("Invalid list of ontology terms.");
                     }
                     break;
                 case DESCRIPTION:
                 case ATTRIBUTES:
-                case PARENTAL_CONSANGUINITY:
                     break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);
             }
         }
 
-        if (parameters.containsKey(ONTOLOGIES.key())) {
-            parameters.put(ONTOLOGY_TERMS.key(), parameters.get(ONTOLOGIES.key()));
-            parameters.remove(ONTOLOGIES.key());
+        if (family != null) {
+            // MEMBERS or DISEASES have been passed. We will complete the family object with the stored parameters that are not expected
+            // to be updated
+            if (family.getMembers() == null) {
+                family.setMembers(familyQueryResult.first().getMembers());
+            }
+            if (family.getDiseases() == null) {
+                family.setDiseases(familyQueryResult.first().getDiseases());
+            }
+            checkAndCreateAllIndividualsFromFamily(resource.getStudyId(), family, sessionId);
+
+            ObjectMap tmpParams;
+            try {
+                ObjectMapper objectMapper = new ObjectMapper();
+                tmpParams = new ObjectMap(objectMapper.writeValueAsString(family));
+            } catch (JsonProcessingException e) {
+                logger.error("{}", e.getMessage(), e);
+                throw new CatalogException(e);
+            }
+
+            if (parameters.containsKey(FamilyDBAdaptor.QueryParams.MEMBERS.key())) {
+                parameters.put(FamilyDBAdaptor.QueryParams.MEMBERS.key(), tmpParams.get(FamilyDBAdaptor.QueryParams.MEMBERS.key()));
+            }
+            if (parameters.containsKey(FamilyDBAdaptor.QueryParams.DISEASES.key())) {
+                parameters.put(FamilyDBAdaptor.QueryParams.DISEASES.key(), tmpParams.get(FamilyDBAdaptor.QueryParams.DISEASES.key()));
+            }
         }
 
         QueryResult<Family> queryResult = familyDBAdaptor.update(familyId, parameters);
@@ -895,23 +890,26 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         // Store all the disease ids in a set
         Set<String> diseaseSet = new HashSet<>();
         if (family.getDiseases() != null) {
-            diseaseSet = family.getDiseases().stream().map(Disease::getId).collect(Collectors.toSet());
+            diseaseSet = family.getDiseases().stream().map(OntologyTerm::getId).collect(Collectors.toSet());
         }
 
         Map<String, MyFamily> familyMembers = new HashMap<>(family.getMembers().size());
         for (Relatives relatives : family.getMembers()) {
+            relatives.setDiseases(ParamUtils.defaultObject(relatives.getDiseases(), Collections::emptyList));
+            relatives.setCarrier(ParamUtils.defaultObject(relatives.getCarrier(), Collections::emptyList));
+
             // Check if the individual is correct or can be created
-            checkAndCreateIndividual(studyId, relatives.getIndividual(), null, false, sessionId);
-            String individualName = relatives.getIndividual().getName();
+            checkAndCreateIndividual(studyId, relatives.getMember(), null, false, sessionId);
+            String individualName = relatives.getMember().getName();
             if (familyMembers.containsKey(individualName) && familyMembers.get(individualName).getIndividual() != null) {
-                throw new CatalogException("Multiple members with same name " + relatives.getIndividual().getName() + " found");
+                throw new CatalogException("Multiple members with same name " + relatives.getMember().getName() + " found");
             }
             if (!familyMembers.containsKey(individualName)) {
                 familyMembers.put(individualName, new MyFamily());
             }
-            familyMembers.get(individualName).setIndividual(relatives.getIndividual());
+            familyMembers.get(individualName).setIndividual(relatives.getMember());
 
-            if (relatives.getFather() != null) {
+            if (relatives.getFather() != null && StringUtils.isNotEmpty(relatives.getFather().getName())) {
                 String fatherName = relatives.getFather().getName();
                 if (!familyMembers.containsKey(fatherName)) {
                     familyMembers.put(fatherName, new MyFamily());
@@ -920,7 +918,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 familyMembers.get(fatherName).setSex(Individual.Sex.MALE);
                 familyMembers.get(individualName).setHasParents();
             }
-            if (relatives.getMother() != null) {
+            if (relatives.getMother() != null && StringUtils.isNotEmpty(relatives.getMother().getName())) {
                 String motherName = relatives.getMother().getName();
                 if (!familyMembers.containsKey(motherName)) {
                     familyMembers.put(motherName, new MyFamily());
@@ -932,8 +930,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             // Check all the diseases are contained in the main array of diseases of the family
             if (!diseaseSet.containsAll(relatives.getDiseases())) {
-                throw new CatalogException("Missing diseases that some family members have from the main disease list: "
+                throw new CatalogException("Missing disease annotations that some family members have: "
                         + StringUtils.join(relatives.getDiseases(), ","));
+            }
+            // Check all the diseases are contained in the main array of diseases of the family
+            if (!diseaseSet.containsAll(relatives.getCarrier())) {
+                throw new CatalogException("Missing carrier disease annotations that some family members: "
+                        + StringUtils.join(relatives.getCarrier(), ","));
             }
         }
 
@@ -966,6 +969,16 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         // 2. Create individuals if they do not exist.
         for (Map.Entry<String, MyFamily> entry : familyMembers.entrySet()) {
             checkAndCreateIndividual(studyId, entry.getValue().getIndividual(), entry.getValue().getSex(), true, sessionId);
+        }
+
+        // Now that all the individuals have an id, we will update the parents id's just in case they were just created in catalog
+        for (Relatives relatives : family.getMembers()) {
+            if (relatives.getFather() != null && StringUtils.isNotEmpty(relatives.getFather().getName())) {
+                relatives.getFather().setId(familyMembers.get(relatives.getFather().getName()).getIndividual().getId());
+            }
+            if (relatives.getMother() != null && StringUtils.isNotEmpty(relatives.getMother().getName())) {
+                relatives.getMother().setId(familyMembers.get(relatives.getMother().getName()).getIndividual().getId());
+            }
         }
     }
 

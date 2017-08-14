@@ -36,6 +36,8 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
     enum QueryParams implements QueryParam {
         ID("id", INTEGER, ""),
         NAME("name", TEXT, ""),
+        MEMBERS("members", TEXT_ARRAY, ""),
+        DISEASES("diseases", TEXT_ARRAY, ""),
         PARENTAL_CONSANGUINITY("parentalConsanguinity", BOOLEAN, ""),
         FATHER("father", TEXT, ""),
         MOTHER("mother", TEXT, ""),

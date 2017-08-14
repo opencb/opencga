@@ -65,7 +65,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
     private FamilyConverter familyConverter;
 
     public FamilyMongoDBAdaptor(MongoDBCollection familyCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(SampleMongoDBAdaptor.class));
+        super(LoggerFactory.getLogger(FamilyMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.familyCollection = familyCollection;
         this.familyConverter = new FamilyConverter();
@@ -151,16 +151,13 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         long startTime = startQuery();
         Map<String, Object> familyParameters = new HashMap<>();
 
-        final String[] acceptedBooleanParams = {QueryParams.PARENTAL_CONSANGUINITY.key()};
-        filterBooleanParams(parameters, familyParameters, acceptedBooleanParams);
-
         final String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, familyParameters, acceptedParams);
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, familyParameters, acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.ONTOLOGY_TERMS.key()};
+        final String[] acceptedObjectParams = {QueryParams.MEMBERS.key(), QueryParams.DISEASES.key()};
         filterObjectParams(parameters, familyParameters, acceptedObjectParams);
 
         if (parameters.containsKey(QueryParams.NAME.key())) {
@@ -188,38 +185,19 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
             familyParameters.put(QueryParams.NAME.key(), parameters.get(QueryParams.NAME.key()));
         }
 
-        if (parameters.containsKey(QueryParams.MOTHER_ID.key())) {
-            long motherId = parameters.getLong(QueryParams.MOTHER_ID.key());
-            dbAdaptorFactory.getCatalogIndividualDBAdaptor().checkId(motherId);
-            familyParameters.put("mother.id", motherId);
-        }
-
-        if (parameters.containsKey(QueryParams.FATHER_ID.key())) {
-            long fatherId = parameters.getLong(QueryParams.FATHER_ID.key());
-            dbAdaptorFactory.getCatalogIndividualDBAdaptor().checkId(fatherId);
-            familyParameters.put("father.id", fatherId);
-        }
-
-        if (parameters.containsKey(QueryParams.CHILDREN_IDS.key())) {
-            List<Long> individualIds = parameters.getAsLongList(QueryParams.CHILDREN_IDS.key());
-            List<ObjectMap> individualIdList = new ArrayList<>(individualIds.size());
-            for (Long individualId : individualIds) {
-                dbAdaptorFactory.getCatalogIndividualDBAdaptor().checkId(individualId);
-                individualIdList.add(new ObjectMap("id", individualId));
-            }
-            familyParameters.put("children", individualIdList);
-        }
-
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
             familyParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             familyParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
-        logger.info(familyParameters.toString());
+        logger.debug(familyParameters.toString());
+
+        Document familyParametersDocument = getMongoDBDocument(familyParameters, "Family");
+        familyConverter.validateDocumentToUpdate(familyParametersDocument);
 
         if (!familyParameters.isEmpty()) {
             QueryResult<UpdateResult> update = familyCollection.update(parseQuery(query, false),
-                    new Document("$set", familyParameters), null);
+                    new Document("$set", familyParametersDocument), null);
             return endQuery("Update family", startTime, Arrays.asList(update.getNumTotalResults()));
         }
 
