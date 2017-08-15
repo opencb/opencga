@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.*;
@@ -29,6 +30,7 @@ public class Job {
     @Deprecated
     public static final String TYPE = "type";
     public static final String INDEXED_FILE_ID = "indexedFileId";
+    public static final String OPENCGA_OUTPUT_DIR = "OPENCGA_OUTPUT_DIR";
     /* ResourceManagerAttributes known keys */
     public static final String JOB_SCHEDULER_NAME = "jobSchedulerName";
     /* Errors */
@@ -97,18 +99,23 @@ public class Job {
     public Job() {
     }
 
+    public Job(String name, String toolId, String execution, Type type, String description, Map<String, String> params,
+               Map<String, Object> attributes) {
+        this(-1, name, "", toolId, type, TimeUtils.getTime(), description, -1, -1, execution, "", "", false, new JobStatus(), -1, null,
+                null, null, null, params, -1, attributes, null);
+    }
+
     public Job(String name, String userId, String executable, Type type, List<File> input, List<File> output, File outDir,
                Map<String, String> params, int release) {
         this(-1, name, userId, "", type, TimeUtils.getTime(), "", -1, -1, "", executable, "", false, new JobStatus(JobStatus.PREPARED),
-                -1, outDir, input, output, new ArrayList<>(), params, release, new HashMap<>(), new HashMap<>());
+                -1, outDir, input, output, null, params, release, null, null);
     }
 
     public Job(String name, String userId, String toolName, String description, String commandLine, File outDir, List<File> input,
                int release) {
         // FIXME: Modify this to take into account both toolName and executable for RC2
         this(-1, name, userId, toolName, Type.ANALYSIS, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, null,
-                null, commandLine, false, new JobStatus(JobStatus.PREPARED), 0, outDir, input, Collections.emptyList(),
-                Collections.emptyList(), new HashMap<>(), release, new HashMap<>(), new HashMap<>());
+                null, commandLine, false, new JobStatus(JobStatus.PREPARED), 0, outDir, input, null, null, null, release, null, null);
     }
 
     public Job(long id, String name, String userId, String toolId, Type type, String creationDate, String description, long startTime,
@@ -131,19 +138,15 @@ public class Job {
         this.status = status;
         this.size = size;
         this.outDir = outDir;
-        this.input = input;
-        this.output = output;
-        this.tags = tags;
+        this.input = ParamUtils.defaultObject(input, ArrayList::new);
+        this.output = ParamUtils.defaultObject(output, ArrayList::new);
+        this.tags = ParamUtils.defaultObject(tags, ArrayList::new);
         this.params = params;
         this.release = release;
-        this.attributes = attributes;
-        this.params = params != null ? params : new HashMap<>();
+        this.attributes = ParamUtils.defaultObject(attributes, HashMap::new);
+        this.resourceManagerAttributes = ParamUtils.defaultObject(resourceManagerAttributes, HashMap::new);
+        this.params = ParamUtils.defaultObject(params, HashMap::new);
         this.release = release;
-        this.attributes = attributes != null ? attributes : new HashMap<>();
-        this.resourceManagerAttributes = resourceManagerAttributes;
-        if (this.resourceManagerAttributes == null) {
-            this.resourceManagerAttributes = new HashMap<>();
-        }
         this.resourceManagerAttributes.putIfAbsent(Job.JOB_SCHEDULER_NAME, "");
         this.attributes.putIfAbsent(Job.TYPE, Type.ANALYSIS);
     }
