@@ -380,14 +380,14 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (QueryResult<Job> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("#NAME\tID\tTYPE\tTOOL_NAME\tCREATION_DATE\tEXECUTABLE\tEXECUTION\t#VISITS\tSTATUS\tINPUT")
+                sb.append("#NAME\tID\tTYPE\tTOOL_NAME\tCREATION_DATE\tEXECUTABLE\tEXECUTION\t#VISITED\tSTATUS\tINPUT")
                         .append("\tOUTPUT\tOUTPUT_DIRECTORY\n");
             }
 
             for (Job job : queryResult.getResult()) {
-                sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%s\t%s\t%d\n",
-                        job.getName(), job.getId(), job.getType(), job.getToolName(), job.getCreationDate(), job.getExecutable(),
-                        job.getExecution(), job.getVisits(), job.getStatus().getName(), StringUtils.join(job.getInput(), ", "),
+                sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\n",
+                        job.getName(), job.getId(), job.getType(), job.getToolId(), job.getCreationDate(), job.getExecutable(),
+                        job.getExecution(), job.isVisited(), job.getStatus().getName(), StringUtils.join(job.getInput(), ", "),
                         StringUtils.join(job.getOutput(), ", "), job.getOutDir().getId()));
             }
         }

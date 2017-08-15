@@ -137,11 +137,12 @@ public class JobManager extends ResourceManager<Job> {
         return new MyResourceIds(userId, studyId, jobIds);
     }
 
-    public QueryResult<ObjectMap> visit(long jobId, String sessionId) throws CatalogException {
+    public QueryResult<Job> visit(long jobId, String sessionId) throws CatalogException {
         MyResourceId resource = getId(Long.toString(jobId), null, sessionId);
 
         authorizationManager.checkJobPermission(resource.getStudyId(), jobId, resource.getUser(), JobAclEntry.JobPermissions.VIEW);
-        return jobDBAdaptor.incJobVisits(jobId);
+        ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.VISITED.key(), true);
+        return jobDBAdaptor.update(jobId, params);
     }
 
     public QueryResult<Job> create(long studyId, String name, String toolName, String description, String executor,
@@ -149,9 +150,9 @@ public class JobManager extends ResourceManager<Job> {
                                    List<File> inputFiles, List<File> outputFiles, Map<String, Object> attributes,
                                    Map<String, Object> resourceManagerAttributes, Job.JobStatus status, long startTime,
                                    long endTime, QueryOptions options, String sessionId) throws CatalogException {
-        Job job = new Job(-1, name, "", toolName, null, "", description, startTime, endTime, "", executor, "", commandLine, 0, status,
+        Job job = new Job(-1, name, "", toolName, null, "", description, startTime, endTime, executor, "", commandLine, false, status,
                 -1, new File().setId(outDirId), inputFiles, outputFiles, Collections.emptyList(), params, -1, attributes,
-                resourceManagerAttributes, "", "");
+                resourceManagerAttributes);
         return create(String.valueOf(studyId), job, options, sessionId);
     }
 
@@ -163,7 +164,7 @@ public class JobManager extends ResourceManager<Job> {
 
         ParamUtils.checkObj(job, "Job");
         ParamUtils.checkParameter(job.getName(), "Name");
-        ParamUtils.checkParameter(job.getToolName(), "toolName");
+        ParamUtils.checkParameter(job.getToolId(), "toolName");
         ParamUtils.checkParameter(job.getCommandLine(), "commandLine");
         ParamUtils.checkObj(job.getOutDir(), "outDir");
         job.setDescription(ParamUtils.defaultString(job.getDescription(), ""));

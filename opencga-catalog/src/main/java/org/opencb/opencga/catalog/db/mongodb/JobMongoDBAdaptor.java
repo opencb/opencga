@@ -19,7 +19,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
@@ -141,28 +140,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public String getStatus(long jobId, String sessionId) throws CatalogDBException {   // TODO remove?
         throw new UnsupportedOperationException("Not implemented method");
-    }
-
-    @Override
-    public QueryResult<ObjectMap> incJobVisits(long jobId) throws CatalogDBException {
-        long startTime = startQuery();
-
-//        BasicDBObject query = new BasicDBObject(PRIVATE_ID, jobId);
-        Bson query = Filters.eq(PRIVATE_ID, jobId);
-//        Job job = parseJob(jobCollection.<DBObject>find(query, new BasicDBObject("visits", true), null));
-
-        Job job = get(jobId, new QueryOptions(MongoDBCollection.INCLUDE, "visits")).first();
-        //Job job = parseJob(jobCollection.<DBObject>find(query, Projections.include("visits"), null));
-        long visits;
-        if (job != null) {
-            visits = job.getVisits() + 1;
-//            BasicDBObject set = new BasicDBObject("$set", new BasicDBObject("visits", visits));
-            Bson set = Updates.set("visits", visits);
-            jobCollection.update(query, set, null);
-        } else {
-            throw CatalogDBException.idNotFound("Job", jobId);
-        }
-        return endQuery("Inc visits", startTime, Collections.singletonList(new ObjectMap("visits", visits)));
     }
 
     @Override
@@ -290,8 +267,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             jobParameters.put(QueryParams.STATUS.key(), getMongoDBDocument(parameters.get(QueryParams.STATUS.key()), "Job.JobStatus"));
         }
 
-        String[] acceptedIntParams = {QueryParams.VISITS.key(), };
-        filterIntParams(parameters, jobParameters, acceptedIntParams);
+        String[] acceptedBooleanParams = {QueryParams.VISITED.key(), };
+        filterBooleanParams(parameters, jobParameters, acceptedBooleanParams);
 
         String[] acceptedLongParams = {QueryParams.START_TIME.key(), QueryParams.END_TIME.key(), QueryParams.SIZE.key(),
                 QueryParams.OUT_DIR_ID.key(), };
@@ -595,7 +572,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case OUTPUT_ERROR:
                     case EXECUTION:
                     case COMMAND_LINE:
-                    case VISITS:
+                    case VISITED:
                     case RELEASE:
                     case STATUS:
                     case STATUS_NAME:

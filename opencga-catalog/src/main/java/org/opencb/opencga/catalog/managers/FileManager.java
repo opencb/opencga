@@ -1507,7 +1507,7 @@ public class FileManager extends ResourceManager<File> {
         logger.info("job description: " + description);
         jobQueryResult = catalogManager.getJobManager().queue(studyId, jobName, description, "opencga-analysis.sh",
                 Job.Type.INDEX, params, fileIdList, outputList, outDir, userId, attributes);
-        jobQueryResult.first().setToolName(jobName);
+        jobQueryResult.first().setToolId(jobName);
 
         return jobQueryResult;
     }

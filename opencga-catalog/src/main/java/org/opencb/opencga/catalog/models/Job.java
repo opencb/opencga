@@ -55,7 +55,7 @@ public class Job {
      */
     private String userId;
 
-    private String toolName;
+    private String toolId;
 
     private Type type;
     /**
@@ -73,12 +73,11 @@ public class Job {
      * End time in milliseconds.
      */
     private long endTime;
-    private String outputError;
-    @Deprecated
     private String execution;
+    @Deprecated
     private String executable;
     private String commandLine;
-    private long visits;
+    private boolean visited;
     private JobStatus status;
     private long size;
     private File outDir;
@@ -86,49 +85,49 @@ public class Job {
     private List<File> output;   // output files of this job
     private List<String> tags;
 
+    private File stdOutput;
+    private File stdError;
+
     private Map<String, String> params;
+    private Map<String, Object> resourceManagerAttributes;
+
     private int release;
     private Map<String, Object> attributes;
-    private Map<String, Object> resourceManagerAttributes;
-    private String error;
-    private String errorDescription;
-
 
     public Job() {
     }
 
     public Job(String name, String userId, String executable, Type type, List<File> input, List<File> output, File outDir,
                Map<String, String> params, int release) {
-        this(-1, name, userId, "", type, TimeUtils.getTime(), "", -1, -1, "", "", executable, "", 0, new JobStatus(JobStatus.PREPARED),
-                -1, outDir, input, output, new ArrayList<>(), params, release, new HashMap<>(), new HashMap<>(), "", "");
+        this(-1, name, userId, "", type, TimeUtils.getTime(), "", -1, -1, "", executable, "", false, new JobStatus(JobStatus.PREPARED),
+                -1, outDir, input, output, new ArrayList<>(), params, release, new HashMap<>(), new HashMap<>());
     }
 
     public Job(String name, String userId, String toolName, String description, String commandLine, File outDir, List<File> input,
                int release) {
         // FIXME: Modify this to take into account both toolName and executable for RC2
-        this(-1, name, userId, toolName, Type.ANALYSIS, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", null,
-                null, commandLine, -1, new JobStatus(JobStatus.PREPARED), 0, outDir, input, Collections.emptyList(),
-                Collections.emptyList(), new HashMap<>(), release, new HashMap<>(), new HashMap<>(), ERRNO_NONE, null);
+        this(-1, name, userId, toolName, Type.ANALYSIS, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, null,
+                null, commandLine, false, new JobStatus(JobStatus.PREPARED), 0, outDir, input, Collections.emptyList(),
+                Collections.emptyList(), new HashMap<>(), release, new HashMap<>(), new HashMap<>());
     }
 
-    public Job(long id, String name, String userId, String toolName, Type type, String creationDate, String description, long startTime,
-               long endTime, String outputError, String execution, String executable, String commandLine, long visits, JobStatus status,
-               long size, File outDir, List<File> input, List<File> output, List<String> tags, Map<String, String> params, int release,
-               Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error, String errorDescription) {
+    public Job(long id, String name, String userId, String toolId, Type type, String creationDate, String description, long startTime,
+               long endTime, String execution, String executable, String commandLine, boolean visited, JobStatus status, long size,
+               File outDir, List<File> input, List<File> output, List<String> tags, Map<String, String> params, int release,
+               Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
         this.id = id;
         this.name = name;
         this.userId = userId;
-        this.toolName = toolName;
+        this.toolId = toolId;
         this.type = type;
         this.creationDate = creationDate;
         this.description = description;
         this.startTime = startTime;
         this.endTime = endTime;
-        this.outputError = outputError;
         this.execution = execution != null ? execution : "";
         this.executable = executable != null ? executable : "";
         this.commandLine = commandLine;
-        this.visits = visits;
+        this.visited = visited;
         this.status = status;
         this.size = size;
         this.outDir = outDir;
@@ -147,8 +146,6 @@ public class Job {
         }
         this.resourceManagerAttributes.putIfAbsent(Job.JOB_SCHEDULER_NAME, "");
         this.attributes.putIfAbsent(Job.TYPE, Type.ANALYSIS);
-        this.error = error != null ? error : "";
-        this.errorDescription = errorDescription != null ? errorDescription : "";
     }
 
     public static class JobStatus extends Status {
@@ -208,10 +205,8 @@ public class Job {
     }
 
     public enum Type {
-        ANALYSIS,
         INDEX,
-        COHORT_STATS,
-        TOOL
+        ANALYSIS
     }
 
     @Override
@@ -220,29 +215,27 @@ public class Job {
         sb.append("id=").append(id);
         sb.append(", name='").append(name).append('\'');
         sb.append(", userId='").append(userId).append('\'');
-        sb.append(", toolName='").append(toolName).append('\'');
+        sb.append(", toolId='").append(toolId).append('\'');
         sb.append(", type=").append(type);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", startTime=").append(startTime);
         sb.append(", endTime=").append(endTime);
-        sb.append(", outputError='").append(outputError).append('\'');
         sb.append(", execution='").append(execution).append('\'');
-        sb.append(", executable='").append(executable).append('\'');
         sb.append(", commandLine='").append(commandLine).append('\'');
-        sb.append(", visits=").append(visits);
+        sb.append(", visited=").append(visited);
         sb.append(", status=").append(status);
         sb.append(", size=").append(size);
         sb.append(", outDir=").append(outDir);
         sb.append(", input=").append(input);
         sb.append(", output=").append(output);
         sb.append(", tags=").append(tags);
+        sb.append(", stdOutput=").append(stdOutput);
+        sb.append(", stdError=").append(stdError);
         sb.append(", params=").append(params);
+        sb.append(", resourceManagerAttributes=").append(resourceManagerAttributes);
         sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
-        sb.append(", resourceManagerAttributes=").append(resourceManagerAttributes);
-        sb.append(", error='").append(error).append('\'');
-        sb.append(", errorDescription='").append(errorDescription).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -328,15 +321,6 @@ public class Job {
         return this;
     }
 
-    public String getOutputError() {
-        return outputError;
-    }
-
-    public Job setOutputError(String outputError) {
-        this.outputError = outputError;
-        return this;
-    }
-
     public String getExecution() {
         return execution;
     }
@@ -355,12 +339,12 @@ public class Job {
         return this;
     }
 
-    public long getVisits() {
-        return visits;
+    public boolean isVisited() {
+        return visited;
     }
 
-    public Job setVisits(long visits) {
-        this.visits = visits;
+    public Job setVisited(boolean visited) {
+        this.visited = visited;
         return this;
     }
 
@@ -427,6 +411,24 @@ public class Job {
         return this;
     }
 
+    public File getStdOutput() {
+        return stdOutput;
+    }
+
+    public Job setStdOutput(File stdOutput) {
+        this.stdOutput = stdOutput;
+        return this;
+    }
+
+    public File getStdError() {
+        return stdError;
+    }
+
+    public Job setStdError(File stdError) {
+        this.stdError = stdError;
+        return this;
+    }
+
     public int getRelease() {
         return release;
     }
@@ -454,30 +456,12 @@ public class Job {
         return this;
     }
 
-    public String getError() {
-        return error;
+    public String getToolId() {
+        return toolId;
     }
 
-    public Job setError(String error) {
-        this.error = error;
-        return this;
-    }
-
-    public String getErrorDescription() {
-        return errorDescription;
-    }
-
-    public Job setErrorDescription(String errorDescription) {
-        this.errorDescription = errorDescription;
-        return this;
-    }
-
-    public String getToolName() {
-        return toolName;
-    }
-
-    public Job setToolName(String toolName) {
-        this.toolName = toolName;
+    public Job setToolId(String toolId) {
+        this.toolId = toolId;
         return this;
     }
 

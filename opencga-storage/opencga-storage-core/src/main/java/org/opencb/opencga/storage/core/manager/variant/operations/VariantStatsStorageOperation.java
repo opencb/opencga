@@ -63,7 +63,6 @@ public class VariantStatsStorageOperation extends StorageOperation {
     public void calculateStats(long studyId, List<String> cohorts, String outdirStr,
                                QueryOptions options, String sessionId)
             throws CatalogException, IOException, URISyntaxException, StorageEngineException {
-        Job.Type step = Job.Type.COHORT_STATS;
         String fileIdStr = options.getString(Options.FILE_ID.key(), null);
         boolean overwriteStats = options.getBoolean(Options.OVERWRITE_STATS.key(), false);
         boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
