@@ -164,7 +164,9 @@ public class JobManager extends ResourceManager<Job> {
         }
         ObjectMap attributes = new ObjectMap();
         attributes.putIfNotNull(Job.OPENCGA_OUTPUT_DIR, outDir);
+        attributes.putIfNotNull(Job.OPENCGA_STUDY, studyStr);
         Job job = new Job(jobName, toolId, execution, Job.Type.ANALYSIS, description, params, attributes);
+
         return create(studyStr, job, QueryOptions.empty(), sessionId);
     }
 

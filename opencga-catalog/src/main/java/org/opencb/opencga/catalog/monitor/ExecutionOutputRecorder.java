@@ -80,7 +80,7 @@ public class ExecutionOutputRecorder {
     }
 
     @Deprecated
-    public void recordJobOutput(Job job) {
+    public void recordJobOutputOld(Job job) {
     }
 
     /**
@@ -92,6 +92,9 @@ public class ExecutionOutputRecorder {
      * @throws IOException ioException.
      */
     public void recordJobOutput(Job job, Path tmpOutdirPath) throws CatalogException, IOException {
+        // parameters to update in the job
+        ObjectMap parameters = new ObjectMap();
+
         logger.debug("Moving data from temporary folder to catalog folder...");
 
         // Delete job.status file
@@ -109,6 +112,105 @@ public class ExecutionOutputRecorder {
         URI tmpOutDirUri = tmpOutdirPath.toUri();
         /* Scans the output directory from a job or index to find all files. **/
         logger.debug("Scan the temporal output directory ({}) from a job to find all generated files.", tmpOutDirUri);
+
+        // Create the catalog output directory
+        String studyStr = (String) job.getAttributes().get(Job.OPENCGA_STUDY);
+        String outputDir = (String) job.getAttributes().get(Job.OPENCGA_OUTPUT_DIR);
+        File outDir;
+        try {
+             outDir = catalogManager.getFileManager().createFolder(studyStr, outputDir, new File.FileStatus(), true, "",
+                     QueryOptions.empty(), sessionId).first();
+             parameters.append(JobDBAdaptor.QueryParams.OUT_DIR.key(), outDir);
+        } catch (CatalogException e) {
+            logger.error("Cannot find file {}. Error: {}", job.getOutDir().getId(), e.getMessage());
+            throw e;
+        }
+
+        FileScanner fileScanner = new FileScanner(catalogManager);
+        List<File> files;
+        try {
+            logger.info("Scanning files from {} to move to {}", outDir.getPath(), tmpOutdirPath);
+            files = fileScanner.scan(outDir, tmpOutDirUri, fileScannerPolicy, calculateChecksum, true, uri -> true, job.getId(), sessionId);
+        } catch (IOException e) {
+            logger.warn("IOException when scanning temporal directory. Error: {}", e.getMessage());
+            throw e;
+        } catch (CatalogException e) {
+            logger.warn("CatalogException when scanning temporal directory. Error: {}", e.getMessage());
+            throw e;
+        }
+
+        List<Long> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
+        if (!ioManager.exists(tmpOutDirUri)) {
+            logger.warn("Output folder doesn't exist");
+            return;
+        }
+
+        List<URI> uriList;
+        try {
+            uriList = ioManager.listFiles(tmpOutDirUri);
+        } catch (CatalogIOException e) {
+            logger.warn("Could not obtain the URI of the files within the directory {}", tmpOutDirUri);
+            logger.error(e.getMessage());
+            throw e;
+        }
+
+        if (uriList.isEmpty()) {
+            try {
+                ioManager.deleteDirectory(tmpOutDirUri);
+            } catch (CatalogIOException e) {
+                if (ioManager.exists(tmpOutDirUri)) {
+                    logger.error("Could not delete empty directory {}. Error: {}", tmpOutDirUri, e.getMessage());
+                    throw e;
+                }
+            }
+        } else {
+            logger.error("Error processing job output. Temporal job out dir is not empty. " + uriList);
+        }
+
+        parameters.put(JobDBAdaptor.QueryParams.OUTPUT.key(), fileIds);
+        parameters.put(JobDBAdaptor.QueryParams.END_TIME.key(), System.currentTimeMillis());
+        try {
+            catalogManager.getJobManager().update(job.getId(), parameters, null, this.sessionId);
+        } catch (CatalogException e) {
+            logger.error("Critical error. Could not update job output files from job {} with output {}. Error: {}", job.getId(),
+                    fileIds.toArray(), e.getMessage());
+            throw e;
+        }
+
+        //TODO: "input" files could be modified by the tool. Have to be scanned, calculate the new Checksum and
+    }
+
+
+    /**
+     * Scans the temporal output folder for the job and adds all the output files to catalog.
+     * @deprecated The output directory should be created in this function and not before.
+     *
+     * @param job job.
+     * @param tmpOutdirPath Temporal output directory path.
+     * @throws CatalogException catalogException.
+     * @throws IOException ioException.
+     */
+    @Deprecated
+    public void recordJobOutputOld(Job job, Path tmpOutdirPath) throws CatalogException, IOException {
+        logger.debug("Moving data from temporary folder to catalog folder...");
+
+        // Delete job.status file
+        Path path = Paths.get(tmpOutdirPath.toString(), JOB_STATUS_FILE);
+        if (path.toFile().exists()) {
+            logger.info("Deleting " + JOB_STATUS_FILE + " file: {}", path.toUri());
+            try {
+                ioManager.deleteFile(path.toUri());
+            } catch (CatalogIOException e) {
+                logger.error("Could not delete " + JOB_STATUS_FILE + " file");
+                throw e;
+            }
+        }
+
+        URI tmpOutDirUri = tmpOutdirPath.toUri();
+        /* Scans the output directory from a job or index to find all files. **/
+        logger.debug("Scan the temporal output directory ({}) from a job to find all generated files.", tmpOutDirUri);
+
+        // TODO: Create output directory in catalog
         File outDir;
         try {
             outDir = catalogManager.getFileManager().get(job.getOutDir().getId(), new QueryOptions(), sessionId).getResult().get(0);
@@ -129,11 +231,13 @@ public class ExecutionOutputRecorder {
             logger.warn("CatalogException when scanning temporal directory. Error: {}", e.getMessage());
             throw e;
         }
+
         List<Long> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
         if (!ioManager.exists(tmpOutDirUri)) {
             logger.warn("Output folder doesn't exist");
             return;
         }
+
         List<URI> uriList;
         try {
             uriList = ioManager.listFiles(tmpOutDirUri);
@@ -142,6 +246,7 @@ public class ExecutionOutputRecorder {
             logger.error(e.getMessage());
             throw e;
         }
+
         if (uriList.isEmpty()) {
             try {
                 ioManager.deleteDirectory(tmpOutDirUri);

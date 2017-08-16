@@ -409,7 +409,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     }
 
     @POST
-    @Path("/validator")
+    @Path("/validate")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Validate a VCF file", response = QueryResponse.class)
     public Response validate(
@@ -420,7 +420,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             Map<String, String> params = new HashMap<>();
             params.put("input", file);
 
-            QueryResult<Job> queryResult = catalogManager.getJobManager().create(studyStr, "", "", "opencga-analysis", "variant validator",
+            QueryResult<Job> queryResult = catalogManager.getJobManager().create(studyStr, "", "", "opencga-analysis", "variant validate",
                     null, params, sessionId);
             return createOkResponse(queryResult);
         } catch(Exception e) {
