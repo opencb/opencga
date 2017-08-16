@@ -193,7 +193,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         family.setCreationDate(TimeUtils.getTime());
         family.setDescription(ParamUtils.defaultString(family.getDescription(), ""));
         family.setStatus(new Status());
-        family.setOntologyTerms(ParamUtils.defaultObject(family.getOntologyTerms(), Collections.emptyList()));
         family.setAnnotationSets(ParamUtils.defaultObject(family.getAnnotationSets(), Collections.emptyList()));
         family.setAnnotationSets(validateAnnotationSets(family.getAnnotationSets()));
         family.setRelease(catalogManager.getStudyManager().getCurrentRelease(studyId));

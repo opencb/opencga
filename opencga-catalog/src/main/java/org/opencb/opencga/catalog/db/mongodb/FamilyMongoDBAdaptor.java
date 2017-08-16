@@ -120,19 +120,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
         return null;
     }
 
-    public void addMemberInfoToFamily(QueryResult<Family> familyQueryResult) {
-        if (familyQueryResult.getResult() == null || familyQueryResult.getResult().isEmpty()) {
-            return;
-        }
-        for (Family family : familyQueryResult.getResult()) {
-            family.setFather(getIndividual(family.getFather()));
-            family.setMother(getIndividual(family.getMother()));
-            if (family.getChildren() != null && !family.getChildren().isEmpty()) {
-                family.setChildren(family.getChildren().stream().map(this::getIndividual).collect(Collectors.toList()));
-            }
-        }
-    }
-
     @Override
     public QueryResult<Family> update(long id, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
@@ -256,7 +243,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
             }
         }
         queryResult = endQuery("Get", startTime, documentList);
-        addMemberInfoToFamily(queryResult);
+//        addMemberInfoToFamily(queryResult);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
@@ -305,7 +292,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
             }
         }
         queryResult = endQuery("Get", startTime, documentList);
-        addMemberInfoToFamily(queryResult);
+//        addMemberInfoToFamily(queryResult);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {

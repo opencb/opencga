@@ -38,9 +38,12 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         NAME("name", TEXT, ""),
         MEMBERS("members", TEXT_ARRAY, ""),
         DISEASES("diseases", TEXT_ARRAY, ""),
-        FATHER("father", TEXT, ""),
-        MOTHER("mother", TEXT, ""),
-        MEMBER("member", TEXT, ""),
+        FATHER("father", TEXT, ""), // This is for the WS
+        MOTHER("mother", TEXT, ""), // This is for the WS
+        MEMBER("member", TEXT, ""), // This is for the WS
+        MEMBERS_FATHER("members.father", TEXT, ""),
+        MEMBERS_MOTHER("members.father", TEXT, ""),
+        MEMBERS_MEMBER("members.father", TEXT, ""),
         FATHER_ID("members.father.id", INTEGER, ""),
         MOTHER_ID("members.mother.id", INTEGER, ""),
         MEMBER_ID("members.member.id", INTEGER, ""),
