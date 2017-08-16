@@ -219,15 +219,15 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
             assertEquals(message, originalVariant.getEnd(), exportedVariant.getEnd());
             assertWithConflicts(originalVariant, () -> assertEquals("At variant " + originalVariant, originalVariant.getIds(), exportedVariant.getIds()));
             assertEquals(message, originalVariant.getStudies().size(), exportedVariant.getStudies().size());
-            assertEquals(message, originalVariant.getSampleNames("f", "s"), exportedVariant.getSampleNames("f", "s"));
-            StudyEntry originalSourceEntry = originalVariant.getStudy("s");
-            StudyEntry exportedSourceEntry = exportedVariant.getStudy("s");
-            for (String sampleName : originalSourceEntry.getSamplesName()) {
+            assertEquals(message, originalVariant.getSampleNames(STUDY_NAME), exportedVariant.getSampleNames(STUDY_NAME));
+            StudyEntry originalStudyEntry = originalVariant.getStudy(STUDY_NAME);
+            StudyEntry exportedStudyEntry = exportedVariant.getStudy(STUDY_NAME);
+            for (String sampleName : originalStudyEntry.getSamplesName()) {
                 assertWithConflicts(exportedVariant, () -> assertEquals("For sample '" + sampleName + "', id "
                                 + studyConfiguration.getSampleIds().get(sampleName)
                                 + ", in " + originalVariant,
-                        originalSourceEntry.getSampleData(sampleName, "GT"),
-                        exportedSourceEntry.getSampleData(sampleName, "GT").replace("0/0", "0|0")));
+                        originalStudyEntry.getSampleData(sampleName, "GT"),
+                        exportedStudyEntry.getSampleData(sampleName, "GT").replace("0/0", "0|0")));
             }
         }
         return originalVariants.size();
@@ -262,7 +262,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
     }
 
     protected static VariantDatasetMetadata getMetadata(Path vcfPath) {
-        return new VariantFileMetadata(vcfPath.getFileName().toString(), "").toVariantDatasetMetadata("");
+        return new VariantFileMetadata(vcfPath.getFileName().toString(), "").toVariantDatasetMetadata(STUDY_NAME);
     }
 
     public Map<String, Variant> readVCF(Path vcfPath, Integer lim, Region region, VariantReader variantVcfReader) {

@@ -16,13 +16,11 @@
 
 package org.opencb.opencga.storage.core.variant.io;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
-import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.commons.utils.FileUtils;
 
 import java.io.IOException;
@@ -49,6 +47,12 @@ public abstract class AbstractVariantReader implements VariantReader {
         this.metadataPath = metadataPath;
         this.metadata = metadata;
         this.samplesPositions = Collections.emptyMap();
+        if (metadata.getFiles().isEmpty()) {
+            fileMetadata = new VariantFileMetadata("", "");
+            metadata.getFiles().add(fileMetadata.getImpl());
+        } else {
+            fileMetadata = new VariantFileMetadata(metadata.getFiles().get(0));
+        }
     }
 
     public AbstractVariantReader(Map<String, LinkedHashMap<String, Integer>> samplesPositions) {
@@ -59,12 +63,6 @@ public abstract class AbstractVariantReader implements VariantReader {
 
     @Override
     public boolean pre() {
-        if (metadata.getFiles().isEmpty()) {
-            fileMetadata = new VariantFileMetadata("", "");
-            metadata.getFiles().add(fileMetadata.getImpl());
-        } else {
-            fileMetadata = new VariantFileMetadata(metadata.getFiles().get(0));
-        }
 
         if (metadataPath != null) {
             Files.exists(metadataPath);
