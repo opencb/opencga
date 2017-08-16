@@ -47,7 +47,6 @@ public class Email {
         sb.append(", host='").append(host).append('\'');
         sb.append(", port='").append(port).append('\'');
         sb.append(", user='").append(user).append('\'');
-        sb.append(", password='").append(password).append('\'');
         sb.append(", ssl=").append(ssl);
         sb.append('}');
         return sb.toString();

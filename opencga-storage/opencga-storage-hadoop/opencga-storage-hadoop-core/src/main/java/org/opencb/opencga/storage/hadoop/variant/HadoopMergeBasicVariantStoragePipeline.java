@@ -81,7 +81,7 @@ public class HadoopMergeBasicVariantStoragePipeline extends HadoopDirectVariantS
                                                   HBaseCredentials archiveCredentials, VariantReaderUtils variantReaderUtils,
                                                   ObjectMap options) {
         super(configuration, dbAdaptor, null, conf, archiveCredentials, variantReaderUtils, options);
-        loadArch = loadArch | loadVar;
+        loadArch = loadArch || loadVar;
         loadVar = false;
     }
 

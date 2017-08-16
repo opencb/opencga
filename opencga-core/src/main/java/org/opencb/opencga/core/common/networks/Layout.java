@@ -224,13 +224,15 @@ public class Layout {
                     // getting the coords form the file
 
                     // Grep the file
-                    BufferedReader br = Files.newBufferedReader(outputPath, Charset.defaultCharset());
-                    final Pattern pattern = Pattern.compile("^node.+");
                     String currentLine;
                     List<String> lines = new ArrayList<>();
-                    while ((currentLine = br.readLine()) != null) {
-                        if(pattern.matcher(currentLine).matches()) {
+                    final Pattern pattern = Pattern.compile("^node.+");
+
+                    try (BufferedReader br = Files.newBufferedReader(outputPath, Charset.defaultCharset())) {
+                        while ((currentLine = br.readLine()) != null) {
+                            if (pattern.matcher(currentLine).matches()) {
                                 lines.add(currentLine);
+                            }
                         }
                     }
 

@@ -83,25 +83,23 @@ public class UtilsWSServer extends OpenCGAWSServer {
             process.waitFor();
             int exitValue = process.exitValue();
 
-            BufferedReader br = Files.newBufferedReader(outFilePath, Charset.defaultCharset());
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = br.readLine()) != null) {
-                sb.append(line);
-                sb.append("\n");
+            try (BufferedReader br = Files.newBufferedReader(outFilePath, Charset.defaultCharset())) {
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) {
+                    sb.append(line);
+                    sb.append("\n");
+                }
+                result.put("attributes", sb.toString());
             }
-            br.close();
-            result.put("attributes", sb.toString());
 
-            br = Files.newBufferedReader(outFilePath2, Charset.defaultCharset());
-            ObjectMapper mapper = new ObjectMapper();
-            JsonFactory factory = mapper.getFactory();
-            JsonParser jp = factory.createParser(br);
-            JsonNode jsonNode = mapper.readTree(jp);
-            result.put("results", jsonNode);
-
-            br.close();
-
+            try (BufferedReader br = Files.newBufferedReader(outFilePath2, Charset.defaultCharset())) {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonFactory factory = mapper.getFactory();
+                JsonParser jp = factory.createParser(br);
+                JsonNode jsonNode = mapper.readTree(jp);
+                result.put("results", jsonNode);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             result.put("error", "could not read result files");
@@ -137,31 +135,28 @@ public class UtilsWSServer extends OpenCGAWSServer {
         String command = "Rscript " + scriptPath.toString() + " " + directed + " " + weighted + " " + inFilePath.toString() + " " + randomFolder.toString() + "/";
 
         logger.info(command);
-//        DBObjectMap result = new DBObjectMap();
         Map<String, Object> result = new HashMap<>();
         try {
             Process process = Runtime.getRuntime().exec(command);
             process.waitFor();
-            int exitValue = process.exitValue();
 
-            BufferedReader br = Files.newBufferedReader(outFilePath, Charset.defaultCharset());
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = br.readLine()) != null) {
-                sb.append(line);
-                sb.append("\n");
+            try (BufferedReader br = Files.newBufferedReader(outFilePath, Charset.defaultCharset())) {
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) {
+                    sb.append(line);
+                    sb.append("\n");
+                }
+                result.put("local", sb.toString());
             }
-            br.close();
-            result.put("local", sb.toString());
 
-            br = Files.newBufferedReader(outFilePath2, Charset.defaultCharset());
-            ObjectMapper mapper = new ObjectMapper();
-            JsonFactory factory = mapper.getFactory();
-            JsonParser jp = factory.createParser(br);
-            JsonNode jsonNode = mapper.readTree(jp);
-            result.put("global", jsonNode);
-
-            br.close();
+            try (BufferedReader br = Files.newBufferedReader(outFilePath2, Charset.defaultCharset())) {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonFactory factory = mapper.getFactory();
+                JsonParser jp = factory.createParser(br);
+                JsonNode jsonNode = mapper.readTree(jp);
+                result.put("global", jsonNode);
+            }
 
         } catch (InterruptedException | IOException e) {
             e.printStackTrace();

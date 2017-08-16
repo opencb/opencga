@@ -102,8 +102,8 @@ public class VariantSearchManager {
         this.solrClient = new HttpSolrClient.Builder(storageConfiguration.getSearch().getHost()).build();
 
         // The default implementation is HttpSolrClient and we can set up some parameters
-        ((HttpSolrClient)this.solrClient).setRequestWriter(new BinaryRequestWriter());
-        ((HttpSolrClient)this.solrClient).setSoTimeout(storageConfiguration.getSearch().getTimeout());
+        ((HttpSolrClient) this.solrClient).setRequestWriter(new BinaryRequestWriter());
+        ((HttpSolrClient) this.solrClient).setSoTimeout(storageConfiguration.getSearch().getTimeout());
     }
 
     public boolean isAlive(String collection) {
@@ -165,9 +165,9 @@ public class VariantSearchManager {
      * Create a Solr core from a configuration set directory. By default, the configuration set directory is located
      * inside the folder server/solr/configsets.
      *
-     * @param coreName      Core name
-     * @param configSet     Configuration set name
-     * @throws VariantSearchException    Exception
+     * @param coreName  Core name
+     * @param configSet Configuration set name
+     * @throws VariantSearchException Exception
      */
     public void createCore(String coreName, String configSet) throws VariantSearchException {
         try {
@@ -187,9 +187,9 @@ public class VariantSearchManager {
      * For Solr, collection name, configuration name and number of shards are mandatory in order to create a collection.
      * Number of replicas is optional.
      *
-     * @param collectionName             Collection name
-     * @param configSet                  Configuration name
-     * @throws VariantSearchException    Exception
+     * @param collectionName Collection name
+     * @param configSet      Configuration name
+     * @throws VariantSearchException Exception
      */
     public void createCollection(String collectionName, String configSet) throws VariantSearchException {
         logger.debug("Creating collection: {}, collection={}, config={}, numShards={}, numReplicas={}",
@@ -231,8 +231,8 @@ public class VariantSearchManager {
     /**
      * Check if a given core exists.
      *
-     * @param coreName          Core name
-     * @return                  True or false
+     * @param coreName Core name
+     * @return True or false
      */
     public boolean existsCore(String coreName) {
         try {
@@ -247,9 +247,9 @@ public class VariantSearchManager {
     /**
      * Check if a given collection exists.
      *
-     * @param collectionName            Collection name
-     * @return                          True or false
-     * @throws VariantSearchException   VariantSearchException
+     * @param collectionName Collection name
+     * @return True or false
+     * @throws VariantSearchException VariantSearchException
      */
     public boolean existsCollection(String collectionName) throws VariantSearchException {
         try {
@@ -268,11 +268,11 @@ public class VariantSearchManager {
     /**
      * Load a Solr core/collection from a Avro or JSON file.
      *
-     * @param collection               Collection name
-     * @param path      Path to the file to load
-     * @throws IOException          IOException
-     * @throws VariantSearchException  SolrServerException
-     * @throws StorageEngineException  SolrServerException
+     * @param collection Collection name
+     * @param path       Path to the file to load
+     * @throws IOException            IOException
+     * @throws VariantSearchException SolrServerException
+     * @throws StorageEngineException SolrServerException
      */
     public void load(String collection, Path path) throws IOException, VariantSearchException, StorageEngineException {
         // TODO: can we use VariantReaderUtils as implemented in the function load00 below ?
@@ -294,10 +294,10 @@ public class VariantSearchManager {
     /**
      * Load a Solr core/collection from a variant DB iterator.
      *
-     * @param collection               Collection name
-     * @param variantDBIterator        Iterator to retrieve the variants to load
-     * @throws IOException             IOException
-     * @throws VariantSearchException  VariantSearchException
+     * @param collection        Collection name
+     * @param variantDBIterator Iterator to retrieve the variants to load
+     * @throws IOException            IOException
+     * @throws VariantSearchException VariantSearchException
      */
     public void load(String collection, VariantDBIterator variantDBIterator) throws IOException, VariantSearchException {
         if (variantDBIterator != null) {
@@ -325,12 +325,12 @@ public class VariantSearchManager {
      * Return the list of Variant objects from a Solr core/collection
      * according a given query.
      *
-     * @param collection    Collection name
-     * @param query         Query
-     * @param queryOptions  Query options
-     * @return              List of Variant objects
-     * @throws IOException          IOException
-     * @throws VariantSearchException  VariantSearchException
+     * @param collection   Collection name
+     * @param query        Query
+     * @param queryOptions Query options
+     * @return List of Variant objects
+     * @throws IOException            IOException
+     * @throws VariantSearchException VariantSearchException
      */
     public VariantQueryResult<Variant> query(String collection, Query query, QueryOptions queryOptions)
             throws IOException, VariantSearchException {
@@ -343,7 +343,7 @@ public class VariantSearchManager {
             int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
 
             results = new ArrayList<>(solrResponseBeans.size());
-            for (VariantSearchModel variantSearchModel: solrResponseBeans) {
+            for (VariantSearchModel variantSearchModel : solrResponseBeans) {
                 results.add(variantSearchToVariantConverter.convertToDataModelType(variantSearchModel));
             }
             return new VariantQueryResult<>("", dbTime,
@@ -357,12 +357,12 @@ public class VariantSearchManager {
      * Return the list of VariantSearchModel objects from a Solr core/collection
      * according a given query.
      *
-     * @param collection    Collection name
-     * @param query         Query
-     * @param queryOptions  Query options
-     * @return              List of VariantSearchModel objects
-     * @throws IOException          IOException
-     * @throws VariantSearchException  VariantSearchException
+     * @param collection   Collection name
+     * @param query        Query
+     * @param queryOptions Query options
+     * @return List of VariantSearchModel objects
+     * @throws IOException            IOException
+     * @throws VariantSearchException VariantSearchException
      */
     public VariantQueryResult<VariantSearchModel> nativeQuery(String collection, Query query, QueryOptions queryOptions)
             throws IOException, VariantSearchException {
@@ -393,12 +393,12 @@ public class VariantSearchManager {
      * Return a Solr variant iterator to retrieve VariantSearchModel objects from a Solr core/collection
      * according a given query.
      *
-     * @param collection    Collection name
-     * @param query         Query
-     * @param queryOptions  Query options
-     * @return              Solr VariantSearch iterator
-     * @throws IOException          IOException
-     * @throws VariantSearchException  VariantSearchException
+     * @param collection   Collection name
+     * @param query        Query
+     * @param queryOptions Query options
+     * @return Solr VariantSearch iterator
+     * @throws IOException            IOException
+     * @throws VariantSearchException VariantSearchException
      */
     public VariantSearchIterator nativeIterator(String collection, Query query, QueryOptions queryOptions)
             throws VariantSearchException, IOException {
@@ -414,12 +414,12 @@ public class VariantSearchManager {
      * Return faceted data from a Solr core/collection
      * according a given query.
      *
-     * @param collection    Collection name
-     * @param query         Query
-     * @param queryOptions  Query options (contains the facet and facetRange options)
-     * @return              List of Variant objects
-     * @throws IOException          IOException
-     * @throws VariantSearchException  VariantSearchException
+     * @param collection   Collection name
+     * @param query        Query
+     * @param queryOptions Query options (contains the facet and facetRange options)
+     * @return List of Variant objects
+     * @throws IOException            IOException
+     * @throws VariantSearchException VariantSearchException
      */
     public FacetedQueryResult facetedQuery(String collection, Query query, QueryOptions queryOptions)
             throws IOException, VariantSearchException {
@@ -442,9 +442,9 @@ public class VariantSearchManager {
     /**
      * Insert a variant into Solr.
      *
-     * @param variant                   Variant to insert
-     * @throws IOException              IOException
-     * @throws VariantSearchException   VariantSearchException
+     * @param variant Variant to insert
+     * @throws IOException            IOException
+     * @throws VariantSearchException VariantSearchException
      */
     private void insert(String collection, Variant variant) throws IOException, VariantSearchException {
         VariantSearchModel variantSearchModel = variantSearchToVariantConverter.convertToStorageType(variant);
@@ -465,9 +465,9 @@ public class VariantSearchManager {
     /**
      * Insert a list of variants into Solr.
      *
-     * @param variants  List of variants to insert
-     * @throws IOException          IOException
-     * @throws VariantSearchException  VariantSearchException
+     * @param variants List of variants to insert
+     * @throws IOException            IOException
+     * @throws VariantSearchException VariantSearchException
      */
     private void insert(String collection, List<Variant> variants) throws IOException, VariantSearchException {
         if (variants != null && CollectionUtils.isNotEmpty(variants)) {
@@ -490,37 +490,35 @@ public class VariantSearchManager {
     /**
      * Load a JSON file into the Solr core/collection.
      *
-     * @param path          Path to the JSON file
+     * @param path Path to the JSON file
      * @throws IOException
      * @throws VariantSearchException
      */
     private void loadJson(String collection, Path path) throws IOException, VariantSearchException {
         // This opens json and json.gz files automatically
-        BufferedReader bufferedReader = FileUtils.newBufferedReader(path);
+        try (BufferedReader bufferedReader = FileUtils.newBufferedReader(path)) {
 
-        // TODO: get the buffer size from configuration file
-        List<Variant> variants = new ArrayList<>(DEFAULT_INSERT_SIZE);
+            // TODO: get the buffer size from configuration file
+            List<Variant> variants = new ArrayList<>(DEFAULT_INSERT_SIZE);
 
-        int count = 0;
-        String line;
-        ObjectReader objectReader = new ObjectMapper().readerFor(Variant.class);
-        while ((line = bufferedReader.readLine()) != null) {
-            Variant variant = objectReader.readValue(line);
-            variants.add(variant);
-            count++;
-            if (count % DEFAULT_INSERT_SIZE == 0) {
+            int count = 0;
+            String line;
+            ObjectReader objectReader = new ObjectMapper().readerFor(Variant.class);
+            while ((line = bufferedReader.readLine()) != null) {
+                Variant variant = objectReader.readValue(line);
+                variants.add(variant);
+                count++;
+                if (count % DEFAULT_INSERT_SIZE == 0) {
+                    insert(collection, variants);
+                    variants.clear();
+                }
+            }
+
+            // Insert the remaining variants
+            if (CollectionUtils.isNotEmpty(variants)) {
                 insert(collection, variants);
-                variants.clear();
             }
         }
-
-        // Insert the remaining variants
-        if (CollectionUtils.isNotEmpty(variants)) {
-            insert(collection, variants);
-        }
-
-        // close
-        bufferedReader.close();
     }
 
     private void loadAvro(String collection, Path path) throws IOException, VariantSearchException, StorageEngineException {
@@ -536,7 +534,7 @@ public class VariantSearchManager {
         do {
             variants = reader.read(bufferSize);
             insert(collection, variants);
-        } while (variants.size() == bufferSize);
+        } while (CollectionUtils.isNotEmpty(variants));
 
         reader.close();
     }
@@ -635,13 +633,13 @@ public class VariantSearchManager {
         // process Solr facet fields
         List<FacetedQueryResultItem.Field> fields = new ArrayList<>();
         if (response.getFacetFields() != null) {
-            for (FacetField solrField: response.getFacetFields()) {
+            for (FacetField solrField : response.getFacetFields()) {
                 FacetedQueryResultItem.Field field = new FacetedQueryResultItem().new Field();
                 field.setName(solrField.getName());
 
                 long total = 0;
                 List<FacetedQueryResultItem.Count> counts = new ArrayList<>();
-                for (FacetField.Count solrCount: solrField.getValues()) {
+                for (FacetField.Count solrCount : solrField.getValues()) {
                     countName = solrCount.getName();
                     // discard Ensembl genes and trascripts
                     if (!("genes").equals(field.getName())
@@ -704,10 +702,10 @@ public class VariantSearchManager {
         // process Solr facet range
         List<FacetedQueryResultItem.Range> ranges = new ArrayList<>();
         if (response.getFacetRanges() != null) {
-            for (RangeFacet solrRange: response.getFacetRanges()) {
+            for (RangeFacet solrRange : response.getFacetRanges()) {
                 List<Long> counts = new ArrayList<>();
                 long total = 0;
-                for (Object objCount: solrRange.getCounts()) {
+                for (Object objCount : solrRange.getCounts()) {
                     long count = ((RangeFacet.Count) objCount).getCount();
                     total += count;
                     counts.add(count);
@@ -723,9 +721,9 @@ public class VariantSearchManager {
         Map<String, List<List<String>>> intersectionMap = getInputIntersections(queryOptions);
         if (intersectionMap.size() > 0) {
             if (response.getFacetQuery() != null && response.getFacetQuery().size() > 0) {
-                for (String key: intersectionMap.keySet()) {
+                for (String key : intersectionMap.keySet()) {
                     List<List<String>> intersectionLists = intersectionMap.get(key);
-                    for (List<String> list: intersectionLists) {
+                    for (List<String> list : intersectionLists) {
                         FacetedQueryResultItem.Intersection intersection = new FacetedQueryResultItem().new Intersection();
                         intersection.setName(key);
                         intersection.setSize(list.size());
