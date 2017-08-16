@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.metadata;
 
+import com.google.common.collect.BiMap;
 import org.opencb.biodata.models.metadata.*;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.commons.Aggregation;
@@ -16,9 +17,7 @@ import java.util.*;
  */
 public class VariantMetadataFactory {
 
-
     public VariantMetadataFactory() {
-
     }
 
     public VariantMetadata toVariantMetadata(Collection<StudyConfiguration> studyConfigurations) {
@@ -63,12 +62,10 @@ public class VariantMetadataFactory {
     }
 
     public VariantDatasetMetadata toVariantDatasetMetadata(StudyConfiguration studyConfiguration,
-                                                           Collection<Integer> returnedSamples,
-                                                           Collection<Integer> returnedFiles) {
+                                                           List<Integer> returnedSamples,
+                                                           List<Integer> returnedFiles) {
 
         List<VariantFileMetadata> fileMetadata = new ArrayList<>(studyConfiguration.getIndexedFiles().size());
-        Set<Integer> indexedSampleIds = new HashSet<>();
-        ArrayList<Individual> individuals = new ArrayList<>();
 
         for (Integer fileId : studyConfiguration.getIndexedFiles()) {
             if (returnedFiles != null && !returnedFiles.contains(fileId)) {
@@ -78,26 +75,23 @@ public class VariantMetadataFactory {
             LinkedHashSet<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
 
             List<String> sampleNames = toSampleNames(studyConfiguration, sampleIds);
-            for (Integer sampleId : sampleIds) {
-                String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
-                if (indexedSampleIds.add(sampleId)) {
-                    if (returnedSamples != null && !returnedSamples.contains(sampleId)) {
-                        continue;
-                    }
-                    individuals.add(
-                            Individual.newBuilder()
-                                    .setId(sampleName)
-                                    .setSamples(Collections.singletonList(Sample.newBuilder()
-                                            .setId(sampleName)
-                                            .build()))
-                                    .build());
-                }
-            }
             fileMetadata.add(VariantFileMetadata.newBuilder()
                     .setId(studyConfiguration.getFileIds().inverse().get(fileId))
                     .setAlias(fileId.toString())
                     .setSampleIds(sampleNames)
                     .build());
+        }
+
+        ArrayList<Individual> individuals = new ArrayList<>();
+
+        Collection<String> sampleNames;
+        if (returnedSamples == null) {
+            sampleNames = StudyConfiguration.getSortedIndexedSamplesPosition(studyConfiguration).keySet();
+        } else {
+            sampleNames = toSampleNames(studyConfiguration, returnedSamples);
+        }
+        for (String sampleName : sampleNames) {
+            individuals.add(createIndividual(sampleName));
         }
 
         ArrayList<Cohort> cohorts = new ArrayList<>();
@@ -136,6 +130,15 @@ public class VariantMetadataFactory {
                 .setAggregatedHeader(VariantFileHeader.newBuilder()
                         .setVersion("")
                         .setLines(lines).build())
+                .build();
+    }
+
+    protected Individual createIndividual(String sampleName) {
+        return Individual.newBuilder()
+                .setId(sampleName)
+                .setSamples(Collections.singletonList(Sample.newBuilder()
+                        .setId(sampleName)
+                        .build()))
                 .build();
     }
 
@@ -187,7 +190,8 @@ public class VariantMetadataFactory {
 
     protected List<String> toSampleNames(StudyConfiguration studyConfiguration, Collection<Integer> sampleIds) {
         List<String> sampleNames = new ArrayList<>(sampleIds.size());
-        sampleIds.forEach(sampleId -> sampleNames.add(studyConfiguration.getSampleIds().inverse().get(sampleId)));
+        BiMap<Integer, String> sampleIdToSampleName = studyConfiguration.getSampleIds().inverse();
+        sampleIds.forEach(sampleId -> sampleNames.add(sampleIdToSampleName.get(sampleId)));
         return sampleNames;
     }
 
