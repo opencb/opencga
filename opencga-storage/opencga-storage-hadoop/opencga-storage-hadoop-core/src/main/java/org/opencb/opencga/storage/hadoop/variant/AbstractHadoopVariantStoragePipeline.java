@@ -29,7 +29,6 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
@@ -150,7 +149,8 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     }
 
     @Override
-    protected Pair<Long, Long> processProto(Path input, String fileName, Path output, VariantFileMetadata fileMetadata, Path outputVariantsFile,
+    protected Pair<Long, Long> processProto(Path input, String fileName, Path output,
+                                            VariantFileMetadata fileMetadata, Path outputVariantsFile,
                                             Path outputMetaFile, boolean includeSrc, String parser, boolean generateReferenceBlocks,
                                             int batchSize, String extension, String compression,
                                             BiConsumer<String, RuntimeException> malformatedHandler, boolean failOnError)
@@ -179,7 +179,8 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             if (VariantReaderUtils.isVcf(input.toString())) {
                 InputStream inputStream = FileUtils.newInputStream(input);
 
-                VariantVcfHtsjdkReader reader = new VariantVcfHtsjdkReader(inputStream, fileMetadata.toVariantDatasetMetadata(studyId), normalizer);
+                VariantVcfHtsjdkReader reader = new VariantVcfHtsjdkReader(inputStream, fileMetadata.toVariantDatasetMetadata(studyId),
+                        normalizer);
                 if (null != malformatedHandler) {
                     reader.registerMalformatedVcfHandler(malformatedHandler);
                     reader.setFailOnError(failOnError);

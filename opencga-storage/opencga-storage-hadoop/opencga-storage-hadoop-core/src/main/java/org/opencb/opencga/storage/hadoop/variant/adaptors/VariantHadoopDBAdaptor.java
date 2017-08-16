@@ -86,7 +86,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final AtomicReference<java.sql.Connection> phoenixCon = new AtomicReference<>();
     private final VariantSqlQueryParser queryParser;
     private final VariantHBaseQueryParser hbaseQueryParser;
-    private final HadoopVariantFileMetadataDBAdaptor variantSourceDBAdaptor;
+    private final HadoopVariantFileMetadataDBAdaptor variantFileMetadataDBAdaptor;
     private boolean clientSideSkip;
     private HBaseManager hBaseManager;
 
@@ -110,7 +110,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         ObjectMap options = configuration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getVariant().getOptions();
         this.studyConfigurationManager.set(
                 new StudyConfigurationManager(new HBaseStudyConfigurationDBAdaptor(credentials.getTable(), conf, options, hBaseManager)));
-        this.variantSourceDBAdaptor = new HadoopVariantFileMetadataDBAdaptor(genomeHelper, hBaseManager);
+        this.variantFileMetadataDBAdaptor = new HadoopVariantFileMetadataDBAdaptor(genomeHelper, hBaseManager);
 
         clientSideSkip = !options.getBoolean(PhoenixHelper.PHOENIX_SERVER_OFFSET_AVAILABLE, true);
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable,
@@ -178,7 +178,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public HadoopVariantFileMetadataDBAdaptor getVariantFileMetadataDBAdaptor() {
-        return variantSourceDBAdaptor;
+        return variantFileMetadataDBAdaptor;
     }
 
     @Override
@@ -359,7 +359,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             logger.debug("Column name = " + fileId);
             logger.debug("Chunk size = " + archiveHelper.getChunkSize());
 
-            try (Table table = getConnection().getTable(TableName.valueOf(tableName));) {
+            try (Table table = getConnection().getTable(TableName.valueOf(tableName))) {
                 ResultScanner resScan = table.getScanner(scan);
                 return new VariantHadoopArchiveDBIterator(resScan, archiveHelper, options).setRegion(region);
             } catch (IOException e) {

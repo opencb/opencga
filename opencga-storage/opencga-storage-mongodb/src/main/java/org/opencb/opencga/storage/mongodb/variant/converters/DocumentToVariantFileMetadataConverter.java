@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.mongodb.variant.converters;
 import com.fasterxml.jackson.databind.MapperFeature;
 import org.bson.Document;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 
 /**

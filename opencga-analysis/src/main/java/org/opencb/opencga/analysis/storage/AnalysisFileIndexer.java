@@ -19,26 +19,26 @@ package org.opencb.opencga.analysis.storage;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.JobFactory;
-import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
-import org.opencb.opencga.storage.core.manager.variant.CatalogStudyConfigurationFactory;
-import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
-import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.manager.variant.CatalogStudyConfigurationFactory;
+import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -178,16 +178,16 @@ public class AnalysisFileIndexer {
                         VariantReaderUtils utils = new VariantReaderUtils();
                         try {
                             // Read the VariantSource to get the source file
-                            VariantSource variantSource = utils.readVariantFileMetadata(catalogManager.getFileManager().getUri(inputFile));
-                            Query query = new Query(FileDBAdaptor.QueryParams.NAME.key(), variantSource.getFileName());
+                            VariantFileMetadata fileMetadata = utils.readVariantFileMetadata(catalogManager.getFileManager().getUri(inputFile));
+                            Query query = new Query(FileDBAdaptor.QueryParams.NAME.key(), fileMetadata.getAlias());
                             QueryResult<File> result = catalogManager.getFileManager().get(studyIdByOutDirId, query, null, sessionId);
                             if (result.getResult().size() == 0) {
                                 // TODO: Continue with the transformed file as indexed file?
-                                throw new CatalogException("Unable to find file \"" + variantSource.getFileName() + "\" "
+                                throw new CatalogException("Unable to find file \"" + fileMetadata.getAlias() + "\" "
                                         + "as source file from \"" + inputFile.getName() + "\"");
                             } else if (result.getResult().size() > 1) {
                                 List<String> foundFilesSummary = result.getResult().stream().map(File::getPath).collect(Collectors.toList());
-                                throw new CatalogException("Unable to find single file \"" + variantSource.getFileName() + "\" "
+                                throw new CatalogException("Unable to find single file \"" + fileMetadata.getAlias() + "\" "
                                         + "as source file from \"" + inputFile.getName() + "\". Got multiple versions: " + foundFilesSummary);
                             } else {
                                 externalTransformed = true;

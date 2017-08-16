@@ -82,7 +82,7 @@ public interface VariantFileMetadataDBAdaptor extends AutoCloseable {
         try {
             iterator = iterator(new Query(VariantFileMetadataQueryParam.FILE_ID.key(), fileId), options);
         } catch (IOException e) {
-            throw new StorageEngineException("Error reading VariantSourceDBAdaptor", e);
+            throw new StorageEngineException("Error reading from VariantFileMetadataDBAdaptor", e);
         }
         if (iterator.hasNext()) {
             VariantFileMetadata metadata = iterator.next();

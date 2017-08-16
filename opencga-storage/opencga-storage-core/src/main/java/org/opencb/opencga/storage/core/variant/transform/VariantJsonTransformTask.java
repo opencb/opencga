@@ -37,7 +37,8 @@ public class VariantJsonTransformTask extends VariantTransformTask<String> {
         super(factory, studyId, fileMetadata, outputFileJsonFile, variantStatsTask, includesrc, generateReferenceBlocks);
     }
 
-    public VariantJsonTransformTask(VCFHeader header, VCFHeaderVersion version, String studyId, VariantFileMetadata fileMetadata, Path outputFileJsonFile,
+    public VariantJsonTransformTask(VCFHeader header, VCFHeaderVersion version, String studyId,
+                                    VariantFileMetadata fileMetadata, Path outputFileJsonFile,
                                     VariantGlobalStatsCalculator variantStatsTask, boolean includeSrc, boolean generateReferenceBlocks) {
         super(header, version, studyId, fileMetadata, outputFileJsonFile, variantStatsTask, includeSrc, generateReferenceBlocks);
     }

@@ -220,7 +220,8 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
         ObjectMapper jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
 
-        ObjectWriter variantSourceObjectWriter = jsonObjectMapper.writerFor(org.opencb.biodata.models.variant.metadata.VariantFileMetadata.class);
+        ObjectWriter variantSourceObjectWriter
+                = jsonObjectMapper.writerFor(org.opencb.biodata.models.variant.metadata.VariantFileMetadata.class);
         try {
             String sourceJsonString = variantSourceObjectWriter.writeValueAsString(fileMetadata.getImpl());
             StringDataWriter.write(outputFileJsonFile, Collections.singletonList(sourceJsonString));

@@ -224,6 +224,8 @@ public class VariantStudyMetadata {
                     }
                     format.put(record.getId(), record);
                     break;
+                default:
+                    break;
             }
         }
         return this;

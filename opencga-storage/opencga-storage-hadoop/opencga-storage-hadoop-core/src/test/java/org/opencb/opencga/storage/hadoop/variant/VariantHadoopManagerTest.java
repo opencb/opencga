@@ -23,7 +23,7 @@ import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.*;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
@@ -35,8 +35,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -61,7 +61,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
 
     private VariantHadoopDBAdaptor dbAdaptor;
     private static StudyConfiguration studyConfiguration;
-    private static VariantSource source;
+    private static VariantFileMetadata fileMetadata;
     private static StoragePipelineResult etlResult = null;
 
     @ClassRule
@@ -88,8 +88,8 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
                         .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT, true)
         );
 
-        source = variantStorageManager.readVariantFileMetadata(etlResult.getTransformResult());
-        VariantGlobalStats stats = source.getStats();
+        fileMetadata = variantStorageManager.readVariantFileMetadata(etlResult.getTransformResult());
+        VariantGlobalStats stats = fileMetadata.getStats();
         Assert.assertNotNull(stats);
 
         try (VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor()) {
@@ -139,7 +139,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
 
 
         long count = VariantMergerTableMapper.getTargetVariantType().stream()
-                .map(type -> source.getStats().getVariantTypeCount(type))
+                .map(type -> fileMetadata.getStats().getVariantTypeCount(type))
                 .reduce((a, b) -> a + b)
                 .orElse(0).longValue();
         count  -= 1; // Deletion is in conflict with other variant: 1:10403:ACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC:A
@@ -196,8 +196,8 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
             variantCounts.compute(variant.getType().toString(), (s, integer) -> integer == null ? 1 : (integer + 1));
         });
         System.out.println("End query from Archive table");
-        source.getStats().getVariantTypeCounts().forEach((s, integer) -> assertEquals(integer, variantCounts.getOrDefault(s, 0)));
-        assertEquals(source.getStats().getNumRecords(), numVariants[0]);
+        fileMetadata.getStats().getVariantTypeCounts().forEach((s, integer) -> assertEquals(integer, variantCounts.getOrDefault(s, 0)));
+        assertEquals(fileMetadata.getStats().getNumRecords(), numVariants[0]);
     }
 
     @Test
@@ -222,9 +222,9 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
             return num;
         });
         System.out.println("End query from HBase : " + DB_NAME);
-        System.out.println(source.getStats().getVariantTypeCounts());
+        System.out.println(fileMetadata.getStats().getVariantTypeCounts());
         long count = VariantMergerTableMapper.getTargetVariantType().stream()
-                .map(type -> source.getStats().getVariantTypeCount(type))
+                .map(type -> fileMetadata.getStats().getVariantTypeCount(type))
                 .reduce((a, b) -> a + b).orElse(0).longValue();
         count  -= 1; // Deletion is in conflict with other variant: 1:10403:ACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC:A
         assertEquals(count, numVariants);
@@ -237,7 +237,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
         HBaseManager hm = new HBaseManager(configuration.get());
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
         ArchiveTableHelper archiveHelper = dbAdaptor.getArchiveHelper(studyConfiguration.getStudyId(), FILE_ID);
-        VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(archiveHelper.getFileMetadata());
+        VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(archiveHelper.getFileMetadata().toVariantDatasetMetadata(STUDY_NAME));
         hm.act(tableName, table -> {
             ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());
             for (Result result : resultScanner) {

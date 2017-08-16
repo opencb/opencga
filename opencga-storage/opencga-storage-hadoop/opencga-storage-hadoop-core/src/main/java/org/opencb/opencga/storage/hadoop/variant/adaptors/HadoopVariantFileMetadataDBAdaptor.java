@@ -22,7 +22,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -74,11 +73,6 @@ public class HadoopVariantFileMetadataDBAdaptor implements VariantFileMetadataDB
     @Override
     public QueryResult<Long> count(Query query) {
         throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    public VcfMeta getVcfMeta(int studyId, int fileId, QueryOptions options) throws IOException {
-        return new VcfMeta(getVariantFileMetadata(studyId, fileId, options));
     }
 
     public VariantFileMetadata getVariantFileMetadata(int studyId, int fileId, QueryOptions options)

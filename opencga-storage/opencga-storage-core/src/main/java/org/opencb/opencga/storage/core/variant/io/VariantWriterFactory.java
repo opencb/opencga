@@ -216,8 +216,8 @@ public class VariantWriterFactory {
                         queryOptions.put(RETURNED_SAMPLES.key(), query.get(RETURNED_SAMPLES.key()));
                     }
 
-                    VariantFileMetadataDBAdaptor sourceDBAdaptor = dbAdaptor.getVariantFileMetadataDBAdaptor();
-                    exporter = new VariantVcfDataWriter(studyConfiguration, sourceDBAdaptor, outputStream, query, queryOptions);
+                    VariantFileMetadataDBAdaptor fileMetadataDBAdaptor = dbAdaptor.getVariantFileMetadataDBAdaptor();
+                    exporter = new VariantVcfDataWriter(studyConfiguration, fileMetadataDBAdaptor, outputStream, query, queryOptions);
                 } else {
                     throw new IllegalArgumentException("No study found named " + query.getAsStringList(RETURNED_STUDIES.key()).get(0));
                 }
