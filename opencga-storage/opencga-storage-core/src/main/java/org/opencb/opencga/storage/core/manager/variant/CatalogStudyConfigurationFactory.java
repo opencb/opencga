@@ -19,7 +19,7 @@ package org.opencb.opencga.storage.core.manager.variant;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.commons.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -139,10 +139,9 @@ public class CatalogStudyConfigurationFactory {
         if (aggregationObj != null) {
             String aggregatedType = aggregationObj.toString();
             logger.debug("setting study aggregation to {}", aggregatedType);
-            studyConfiguration.setAggregation(VariantSource.Aggregation.valueOf(
-                    aggregatedType));
+            studyConfiguration.setAggregationStr(aggregatedType);
         } else {
-            studyConfiguration.setAggregation(VariantSource.Aggregation.NONE);
+            studyConfiguration.setAggregation(Aggregation.NONE);
         }
         logger.debug("studyConfiguration aggregation: {}", studyConfiguration.getAggregation());
 

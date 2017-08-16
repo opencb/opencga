@@ -29,7 +29,8 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -68,7 +69,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     private static final QueryOptions QUERY_OPTIONS = new QueryOptions(QueryOptions.SORT, true);
     private static String inputFile;
     private static MongoDBVariantStorageEngine variantStorageManager;
-    private VariantSource source1, source2, source3;
+    private VariantDatasetMetadata metadata1, metadata2, metadata3;
     private StudyConfiguration studyConfiguration, studyConfiguration2;
     private final Integer fileId1 = 10000;
     private final Integer fileId2 = 20000;
@@ -111,7 +112,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         clearDB(VariantStorageBaseTest.DB_NAME);
         variantStorageManager = getVariantStorageEngine();
 
-        source1 = new VariantSource(getFileName(fileId1), fileId1.toString(), studyId1.toString(), studyName1);
+        metadata1 = new VariantFileMetadata(fileId1.toString(), getFileName(fileId1)).toVariantDatasetMetadata(studyId1.toString());
         studyConfiguration = new StudyConfiguration(studyId1, studyName1);
         studyConfiguration.getAttributes().append(DEFAULT_GENOTYPE.key(), defaultGenotype);
         studyConfiguration.getSampleIds().put("NA19600", 1);
@@ -122,7 +123,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         studyConfiguration.getFileIds().put(getFileName(fileId1), fileId1);
         studyConfiguration.getSamplesInFiles().put(fileId1, file1SampleIds);
 
-        source2 = new VariantSource(getFileName(fileId2), fileId2.toString(), studyId2.toString(), studyName2);
+        metadata2 = new VariantFileMetadata(fileId2.toString(), getFileName(fileId2)).toVariantDatasetMetadata(studyId2.toString());
         studyConfiguration2 = new StudyConfiguration(studyId2, studyName2);
         studyConfiguration2.getAttributes().append(DEFAULT_GENOTYPE.key(), defaultGenotype);
         studyConfiguration2.getSampleIds().put("NA19600", 1);
@@ -133,13 +134,13 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         studyConfiguration2.getFileIds().put(getFileName(fileId2), fileId2);
         studyConfiguration2.getSamplesInFiles().put(fileId2, file2SampleIds);
 
-        source3 = new VariantSource(getFileName(fileId3), fileId3.toString(), studyId2.toString(), studyName2);
+        metadata3 = new VariantFileMetadata(fileId3.toString(), getFileName(fileId3)).toVariantDatasetMetadata(studyId2.toString());
         studyConfiguration2.getSampleIds().put("NA00001.X", 5);
         studyConfiguration2.getSampleIds().put("NA00002.X", 6);
         studyConfiguration2.getSampleIds().put("NA00003.X", 7);
         studyConfiguration2.getSampleIds().put("NA00004.X", 8);
         file3SampleIds = new LinkedHashSet<>(Arrays.asList(5, 6, 7, 8));
-        studyConfiguration2.getFileIds().put(source3.getFileName(), fileId3);
+        studyConfiguration2.getFileIds().put(getFileName(fileId3), fileId3);
         studyConfiguration2.getSamplesInFiles().put(fileId3, file3SampleIds);
 
         dbAdaptor = variantStorageManager.getDBAdaptor();
@@ -409,7 +410,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     }
 
     public MongoDBVariantWriteResult loadFile1() throws StorageEngineException {
-        return loadFile1("X", Integer.parseInt(source1.getFileId()), Collections.emptyList());
+        return loadFile1("X", Integer.parseInt(metadata1.getFiles().get(0).getId()), Collections.emptyList());
     }
 
     public MongoDBVariantWriteResult loadFile1(String chromosome, Integer fileId, List<String> chromosomes) throws StorageEngineException {
@@ -422,7 +423,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     }
 
     public MongoDBVariantWriteResult loadFile2() throws StorageEngineException {
-        return loadFile2("X", Integer.parseInt(source2.getFileId()), Collections.emptyList());
+        return loadFile2("X", Integer.parseInt(metadata2.getFiles().get(0).getId()), Collections.emptyList());
     }
 
     public MongoDBVariantWriteResult loadFile2(String chromosome, Integer fileId, List<String> chromosomes) throws StorageEngineException {
@@ -431,11 +432,11 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         System.out.println("chromosome = " + chromosome);
         System.out.println("fileId = " + fileId);
         System.out.println("samples = " + file2SampleIds.stream().map(i -> studyConfiguration2.getSampleIds().inverse().get(i)).collect(Collectors.toList()) + " : " + file2SampleIds);
-        return loadFile(studyConfiguration2, createFile2Variants(chromosome, fileId.toString(), source2.getStudyId()), fileId, chromosomes);
+        return loadFile(studyConfiguration2, createFile2Variants(chromosome, fileId.toString(), metadata2.getId()), fileId, chromosomes);
     }
 
     public MongoDBVariantWriteResult loadFile3() throws StorageEngineException {
-        return loadFile3("X", Integer.parseInt(source3.getFileId()), Collections.emptyList());
+        return loadFile3("X", Integer.parseInt(metadata3.getFiles().get(0).getId()), Collections.emptyList());
     }
 
     public MongoDBVariantWriteResult loadFile3(String chromosome, Integer fileId, List<String> chromosomes) throws StorageEngineException {
@@ -444,7 +445,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         System.out.println("chromosome = " + chromosome);
         System.out.println("fileId = " + fileId);
         System.out.println("samples = " + file3SampleIds.stream().map(i -> studyConfiguration2.getSampleIds().inverse().get(i)).collect(Collectors.toList()) + " : " + file3SampleIds);
-        return loadFile(studyConfiguration2, createFile3Variants(chromosome, fileId.toString(), source3.getStudyId()), fileId, chromosomes);
+        return loadFile(studyConfiguration2, createFile3Variants(chromosome, fileId.toString(), metadata3.getId()), fileId, chromosomes);
     }
 
     public MongoDBVariantWriteResult loadFile(StudyConfiguration studyConfiguration, List<Variant> variants, int fileId)
@@ -511,13 +512,13 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     }
 
     public List<Variant> createFile1Variants() {
-        return createFile1Variants("X", source1.getFileId(), source1.getStudyId());
+        return createFile1Variants("X", metadata1.getFiles().get(0).getId(), metadata1.getId());
     }
     public List<Variant> createFile2Variants() {
-        return createFile2Variants("X", source2.getFileId(), source2.getStudyId());
+        return createFile2Variants("X", metadata2.getFiles().get(0).getId(), metadata2.getId());
     }
     public List<Variant> createFile3Variants() {
-        return createFile3Variants("X", source3.getFileId(), source3.getStudyId());
+        return createFile3Variants("X", metadata3.getFiles().get(0).getId(), metadata3.getId());
     }
 
     @SuppressWarnings("unchecked")

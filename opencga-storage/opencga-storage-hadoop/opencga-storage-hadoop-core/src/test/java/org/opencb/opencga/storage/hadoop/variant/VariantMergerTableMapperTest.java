@@ -25,7 +25,6 @@ import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;

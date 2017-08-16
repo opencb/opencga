@@ -19,8 +19,6 @@ package org.opencb.opencga.storage.mongodb.variant;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;

@@ -21,7 +21,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.commons.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -175,7 +175,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         return STORAGE_ENGINE_DUMMY;
     }
 
-    protected abstract VariantSource.Aggregation getAggregation();
+    protected abstract Aggregation getAggregation();
 
     protected File getFile(int index) throws IOException, CatalogException {
         if (files.get(index) == null) {

@@ -23,7 +23,8 @@ import com.google.common.collect.HashBiMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.commons.Aggregation;
+import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.io.IOException;
@@ -56,7 +57,7 @@ public class StudyConfiguration {
 
     private List<BatchFileOperation> batches;
 
-    private VariantSource.Aggregation aggregation;
+    private Aggregation aggregation;
 
     private Long timeStamp;
 
@@ -125,7 +126,7 @@ public class StudyConfiguration {
         this.calculatedStats = new LinkedHashSet<>();
         this.invalidStats = new LinkedHashSet<>();
         this.batches = new ArrayList<>();
-        this.aggregation = VariantSource.Aggregation.NONE;
+        this.aggregation = Aggregation.NONE;
         this.timeStamp = 0L;
         this.variantMetadata = new VariantStudyMetadata();
         this.attributes = new ObjectMap();
@@ -275,12 +276,20 @@ public class StudyConfiguration {
         return getBatches().get(getBatches().size() - 1);
     }
 
-    public VariantSource.Aggregation getAggregation() {
+    public Aggregation getAggregation() {
         return aggregation;
     }
 
-    public void setAggregation(VariantSource.Aggregation aggregation) {
+    public void setAggregation(Aggregation aggregation) {
         this.aggregation = aggregation;
+    }
+
+    public void setAggregationStr(String aggregation) {
+        this.aggregation = Aggregation.valueOf(aggregation);
+    }
+
+    public boolean isAggregated() {
+        return AggregationUtils.isAggregated(getAggregation());
     }
 
     public Long getTimeStamp() {

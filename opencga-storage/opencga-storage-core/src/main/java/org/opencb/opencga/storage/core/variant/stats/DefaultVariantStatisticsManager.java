@@ -59,7 +59,6 @@ import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import static org.opencb.biodata.models.variant.VariantSource.Aggregation.isAggregated;
 import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.checkStudyConfiguration;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.AND;
@@ -182,8 +181,8 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
 //            fileId = options.getString(VariantStorageEngine.Options.FILE_ID.key());
 
         // if no cohorts provided and the study is aggregated: try to get the cohorts from the tagMap
-        if (cohorts == null || isAggregated(studyConfiguration.getAggregation()) && tagmap != null) {
-            if (isAggregated(studyConfiguration.getAggregation()) && tagmap != null) {
+        if (cohorts == null || studyConfiguration.isAggregated() && tagmap != null) {
+            if (studyConfiguration.isAggregated() && tagmap != null) {
                 cohorts = new LinkedHashMap<>();
                 for (String c : VariantAggregatedStatsCalculator.getCohorts(tagmap)) {
                     cohorts.put(c, Collections.emptySet());
@@ -539,14 +538,14 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
             final Set<Integer> sampleIds;
             if (samples == null || samples.isEmpty()) {
                 //There are not provided samples for this cohort. Take samples from StudyConfiguration
-                if (isAggregated(studyConfiguration.getAggregation())) {
+                if (studyConfiguration.isAggregated()) {
                     samples = Collections.emptySet();
                     sampleIds = Collections.emptySet();
                 } else {
                     sampleIds = studyConfiguration.getCohorts().get(cohortId);
                     if (sampleIds == null || sampleIds.isEmpty()) {
 //                if (sampleIds == null || (sampleIds.isEmpty()
-//                        && VariantSource.Aggregation.NONE.equals(studyConfiguration.getAggregation()))) {
+//                        && Aggregation.NONE.equals(studyConfiguration.getAggregation()))) {
                         //ERROR: StudyConfiguration does not have samples for this cohort, and it is not an aggregated study
                         throw new StorageEngineException("Cohort \"" + cohortName + "\" is empty");
                     }

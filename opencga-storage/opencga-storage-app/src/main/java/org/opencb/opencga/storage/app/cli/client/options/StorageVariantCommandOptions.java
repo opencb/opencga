@@ -18,8 +18,8 @@ package org.opencb.opencga.storage.app.cli.client.options;
 
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.CommaParameterSplitter;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.biodata.models.variant.commons.Aggregation;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -94,7 +94,7 @@ public class StorageVariantCommandOptions {
         public String extraFields;
 
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
-        public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
+        public Aggregation aggregated = Aggregation.NONE;
 
         @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
         public String aggregationMappingFile;
@@ -563,7 +563,7 @@ public class StorageVariantCommandOptions {
         public String fileName;
 
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
-        public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
+        public Aggregation aggregated = Aggregation.NONE;
 
         @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
         public String aggregationMappingFile;

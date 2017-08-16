@@ -2,8 +2,6 @@ package org.opencb.opencga.storage.core.metadata;
 
 import com.google.common.collect.BiMap;
 import org.opencb.biodata.models.metadata.*;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.commons.Aggregation;
 import org.opencb.biodata.models.variant.metadata.*;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -126,7 +124,7 @@ public class VariantMetadataFactory {
                 .setIndividuals(individuals)
                 .setCohorts(cohorts)
                 .setSampleSetType(SampleSetType.COLLECTION)
-                .setAggregation(toAggregation(studyConfiguration.getAggregation()))
+                .setAggregation(studyConfiguration.getAggregation())
                 .setAggregatedHeader(VariantFileHeader.newBuilder()
                         .setVersion("")
                         .setLines(lines).build())
@@ -193,25 +191,6 @@ public class VariantMetadataFactory {
         BiMap<Integer, String> sampleIdToSampleName = studyConfiguration.getSampleIds().inverse();
         sampleIds.forEach(sampleId -> sampleNames.add(sampleIdToSampleName.get(sampleId)));
         return sampleNames;
-    }
-
-    private Aggregation toAggregation(VariantSource.Aggregation aggregation) {
-        if (aggregation == null) {
-            return null;
-        }
-
-        switch (aggregation) {
-            case NONE:
-                return Aggregation.NONE;
-            case BASIC:
-                return Aggregation.BASIC;
-            case EVS:
-                return Aggregation.EVS;
-            case EXAC:
-                return Aggregation.EXAC;
-            default:
-                return Aggregation.valueOf(aggregation.toString());
-        }
     }
 
 //    public Variants.VariantSetMetadata toVariantSetMetadata(StudyConfiguration studyConfiguration) {

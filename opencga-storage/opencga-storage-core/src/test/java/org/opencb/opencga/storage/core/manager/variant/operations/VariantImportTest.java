@@ -17,7 +17,7 @@
 package org.opencb.opencga.storage.core.manager.variant.operations;
 
 import org.junit.Test;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.commons.Aggregation;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.models.Sample;
@@ -41,8 +41,8 @@ import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.Va
 public class VariantImportTest extends AbstractVariantStorageOperationTest {
 
     @Override
-    protected VariantSource.Aggregation getAggregation() {
-        return VariantSource.Aggregation.NONE;
+    protected Aggregation getAggregation() {
+        return Aggregation.NONE;
     }
 
     @Test

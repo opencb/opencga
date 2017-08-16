@@ -30,7 +30,9 @@ import java.util.*;
  * Created on 20/06/17.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
+ * @deprecated Use {@link VariantFileHeader}
  */
+@Deprecated
 public class VariantStudyMetadata {
 
     private Map<String, VariantMetadataRecord> info;    // Map from ID to VariantMetadataRecord

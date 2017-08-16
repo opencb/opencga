@@ -23,8 +23,8 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.biodata.models.variant.commons.Aggregation;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -110,7 +110,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         STUDY_CONFIGURATION("studyConfiguration", ""),      //
 
         STUDY_TYPE("studyType", VariantStudy.StudyType.CASE_CONTROL),
-        AGGREGATED_TYPE("aggregatedType", VariantSource.Aggregation.NONE),
+        AGGREGATED_TYPE("aggregatedType", Aggregation.NONE),
         STUDY_NAME("studyName", "default"),
         STUDY_ID("studyId", -1),
         FILE_ID("fileId", -1),

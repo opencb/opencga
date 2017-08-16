@@ -18,16 +18,12 @@ package org.opencb.opencga.storage.core.variant.stats;
 
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.commons.Aggregation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.biodata.tools.variant.stats.VariantAggregatedEVSStatsCalculator;
-import org.opencb.biodata.tools.variant.stats.VariantAggregatedExacStatsCalculator;
-import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
-import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
+import org.opencb.biodata.tools.variant.stats.*;
 
 import java.util.*;
 
-import static org.opencb.biodata.models.variant.VariantSource.Aggregation.isAggregated;
 
 /**
  * Created by jmmut on 28/01/15.
@@ -37,7 +33,7 @@ public class VariantStatisticsCalculator {
     private int skippedFiles;
     private boolean overwrite;
     private VariantAggregatedStatsCalculator aggregatedCalculator;
-    private VariantSource.Aggregation aggregation;
+    private Aggregation aggregation;
 
     public VariantStatisticsCalculator() {
         this(false);
@@ -60,10 +56,10 @@ public class VariantStatisticsCalculator {
      * if the study is aggregated i.e. it doesn't have sample data, call this before calculate. It is not needed if the
      * study does have samples.
      *
-     * @param aggregation see org.opencb.biodata.models.variant.VariantSource.Aggregation
+     * @param aggregation see {@link Aggregation}
      * @param tagmap      nullable, see org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator()
      */
-    public void setAggregationType(VariantSource.Aggregation aggregation, Properties tagmap) {
+    public void setAggregationType(Aggregation aggregation, Properties tagmap) {
         aggregatedCalculator = null;
         this.aggregation = aggregation;
         switch (this.aggregation) {
@@ -133,7 +129,7 @@ public class VariantStatisticsCalculator {
             // Clear any stats from the input
             study.setStats(new HashMap<>());
 
-            if (!isAggregated(aggregation) && samples != null) {
+            if (!AggregationUtils.isAggregated(aggregation) && samples != null) {
                 for (Map.Entry<String, Set<String>> cohort : samples.entrySet()) {
                     if (overwrite || study.getStats(cohort.getKey()) == null) {
 
@@ -148,7 +144,7 @@ public class VariantStatisticsCalculator {
 
                     }
                 }
-            } else if (aggregatedCalculator != null) { // another way to say that the study is aggregated (!VariantSource.Aggregation
+            } else if (aggregatedCalculator != null) { // another way to say that the study is aggregated (!Aggregation
                 // .NONE.equals(aggregation))
 //                study.setAttributes(removeAttributePrefix(study.getAttributes()));
                 aggregatedCalculator.calculate(variant, study);

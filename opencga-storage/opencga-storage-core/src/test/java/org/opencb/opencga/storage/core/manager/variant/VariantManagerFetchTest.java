@@ -20,7 +20,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.commons.Aggregation;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -50,8 +50,8 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
     }
 
     @Override
-    protected VariantSource.Aggregation getAggregation() {
-        return VariantSource.Aggregation.NONE;
+    protected Aggregation getAggregation() {
+        return Aggregation.NONE;
     }
 
     @Test

@@ -31,7 +31,6 @@ import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderLine;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
@@ -141,7 +140,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             logger.debug("Isolated study configuration");
             studyConfiguration = new StudyConfiguration(Options.STUDY_ID.defaultValue(), "unknown", Options.FILE_ID.defaultValue(),
                     fileName);
-            studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
+            studyConfiguration.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key()));
             options.put(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
         } else {
             studyConfiguration = dbAdaptor.getStudyConfigurationManager().lockAndUpdate(studyId, existingStudyConfiguration -> {
@@ -149,12 +148,12 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                     logger.info("Creating a new StudyConfiguration");
                     StudyConfigurationManager.checkStudyId(studyId);
                     existingStudyConfiguration = new StudyConfiguration(studyId, options.getString(Options.STUDY_NAME.key()));
-                    existingStudyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(),
-                            VariantSource.Aggregation.class, Options.AGGREGATED_TYPE.defaultValue()));
+                    existingStudyConfiguration.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
+                            Options.AGGREGATED_TYPE.defaultValue().toString()));
                 }
                 if (existingStudyConfiguration.getAggregation() == null) {
-                    existingStudyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(),
-                            VariantSource.Aggregation.class, Options.AGGREGATED_TYPE.defaultValue()));
+                    existingStudyConfiguration.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
+                            Options.AGGREGATED_TYPE.defaultValue().toString()));
                 }
                 options.put(Options.FILE_ID.key(), StudyConfigurationManager.checkNewFile(existingStudyConfiguration, fileId, fileName));
                 return existingStudyConfiguration;
@@ -174,7 +173,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         } else {
             fileId = options.getInt(Options.FILE_ID.key());
         }
-//        VariantSource.Aggregation aggregation = options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class, Options
+//        Aggregation aggregation = options.get(Options.AGGREGATED_TYPE.key(), Aggregation.class, Options
 //                .AGGREGATED_TYPE.defaultValue());
         String fileName = input.getFileName().toString();
 //        VariantStudy.StudyType type = options.get(Options.STUDY_TYPE.key(), VariantStudy.StudyType.class,
@@ -549,8 +548,8 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             // First indexed file
             // Use the EXCLUDE_GENOTYPES value from CLI. Write in StudyConfiguration.attributes
             boolean excludeGenotypes = options.getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
-            studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class,
-                    Options.AGGREGATED_TYPE.defaultValue()));
+            studyConfiguration.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
+                    Options.AGGREGATED_TYPE.defaultValue().toString()));
             studyConfiguration.getAttributes().put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
         } else {
             // Not first indexed file

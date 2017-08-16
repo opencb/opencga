@@ -369,7 +369,7 @@ public class AnalysisFileIndexer {
         jobAttributes.put(Job.TYPE, Job.Type.INDEX);
         jobAttributes.put(Job.INDEXED_FILE_ID, originalFile.getId());
         jobAttributes.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key(), VariantStorageEngine.Options.CALCULATE_STATS.defaultValue()));
-//        jobAttributes.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), options.get(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class, VariantStorageEngine.Options.AGGREGATED_TYPE.defaultValue()));
+//        jobAttributes.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), options.get(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), Aggregation.class, VariantStorageEngine.Options.AGGREGATED_TYPE.defaultValue()));
 
         String jobName;
         String jobDescription;
