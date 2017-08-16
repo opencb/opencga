@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.execution.plugins.test;
+package org.opencb.opencga.analysis.old.execution.plugins.test;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.old.models.tool.Manifest;
 import org.opencb.opencga.catalog.old.models.tool.Execution;
 import org.opencb.opencga.catalog.old.models.tool.Option;
-import org.opencb.opencga.analysis.execution.plugins.OpenCGAAnalysis;
+import org.opencb.opencga.analysis.old.execution.plugins.OpenCGAAnalysis;
 
 import java.nio.file.Path;
 import java.util.Arrays;

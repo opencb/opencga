@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.execution.plugins;
+package org.opencb.opencga.analysis.old.execution.plugins;
 
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;

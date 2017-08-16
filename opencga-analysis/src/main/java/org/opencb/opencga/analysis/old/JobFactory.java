@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis;
+package org.opencb.opencga.analysis.old;
 
 import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.datastore.core.QueryResult;

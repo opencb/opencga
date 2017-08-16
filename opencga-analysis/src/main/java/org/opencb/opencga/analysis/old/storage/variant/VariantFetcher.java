@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.storage.variant;
+package org.opencb.opencga.analysis.old.storage.variant;
 
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.core.Region;

@@ -22,11 +22,13 @@ import org.glassfish.jersey.media.multipart.file.StreamDataBodyPart;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.catalog.managers.CatalogManagerTest;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.common.IOUtils;
@@ -35,7 +37,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,7 +47,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by jacobo on 13/06/15.
@@ -318,7 +319,7 @@ public class FileWSServerTest {
     }
 
 
-    public Job index(long fileId, String sessionId) throws IOException, AnalysisExecutionException, CatalogException {
+    public Job index(long fileId, String sessionId) throws IOException, CatalogException {
         System.out.println("\nTesting file index...");
         System.out.println("---------------------");
         System.out.println("\nINPUT PARAMS");
@@ -342,7 +343,7 @@ public class FileWSServerTest {
 
     }
 
-    public Job calculateVariantStats(long cohortId, long outdirId, String sessionId) throws IOException, AnalysisExecutionException, CatalogException {
+    public Job calculateVariantStats(long cohortId, long outdirId, String sessionId) throws IOException, CatalogException {
 
         String json = webTarget.path("cohorts").path(String.valueOf(cohortId)).path("stats")
                 .queryParam("sid", sessionId)

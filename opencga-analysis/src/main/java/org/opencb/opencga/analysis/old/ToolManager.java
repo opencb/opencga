@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis;
+package org.opencb.opencga.analysis.old;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.opencga.analysis.execution.plugins.OpenCGAAnalysis;
-import org.opencb.opencga.analysis.execution.plugins.PluginFactory;
+import org.opencb.opencga.analysis.old.execution.plugins.OpenCGAAnalysis;
+import org.opencb.opencga.analysis.old.execution.plugins.PluginFactory;
 import org.opencb.opencga.catalog.old.models.tool.Execution;
 import org.opencb.opencga.catalog.old.models.tool.Manifest;
 import org.opencb.opencga.catalog.old.models.tool.Option;

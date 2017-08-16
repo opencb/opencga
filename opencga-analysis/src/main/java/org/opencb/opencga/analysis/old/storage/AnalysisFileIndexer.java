@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.storage;
+package org.opencb.opencga.analysis.old.storage;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -24,8 +24,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.JobFactory;
+import org.opencb.opencga.analysis.old.AnalysisExecutionException;
+import org.opencb.opencga.analysis.old.JobFactory;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.manager.variant.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
@@ -107,8 +107,7 @@ public class AnalysisFileIndexer {
      * @throws CatalogException
      * @throws AnalysisExecutionException
      */
-    public QueryResult<Job> index(long fileId, long outDirId, String sessionId, QueryOptions options)
-            throws CatalogException, AnalysisExecutionException {
+    public QueryResult<Job> index(long fileId, long outDirId, String sessionId, QueryOptions options) throws CatalogException, AnalysisExecutionException {
 
         if (options == null) {
             options = new QueryOptions();

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.execution.plugins.ibs;
+package org.opencb.opencga.analysis.old.execution.plugins.ibs;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.tools.variant.algorithm.IdentityByState;
@@ -22,7 +22,7 @@ import org.opencb.biodata.tools.variant.algorithm.IdentityByStateClustering;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.execution.plugins.OpenCGAAnalysis;
+import org.opencb.opencga.analysis.old.execution.plugins.OpenCGAAnalysis;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Sample;

@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.server.rest;
 
-import org.apache.tools.ant.types.Commandline;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.MultiPart;
 import org.junit.AfterClass;
@@ -24,21 +23,14 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
-import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.storage.app.StorageMain;
+import org.opencb.opencga.catalog.models.User;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class OpenCGAWSServerTest {
 
@@ -198,19 +190,6 @@ public class OpenCGAWSServerTest {
 //        fileTest.fetchAlignments(fileBam.getId(), sessionId, queryOptions);
 //        assertEquals(10, alignments.size());
 
-    }
-
-    /**
-     * Do not execute Job using its command line, won't find the opencga-storage.sh
-     * Call directly to the OpenCGAStorageMain
-     */
-    private Job runStorageJob(String sessionId, Job storageJob) throws AnalysisExecutionException, IOException, CatalogException, ExecutionException {
-        String[] args = Commandline.translateCommandline(storageJob.getCommandLine());
-        storageJob.setCommandLine("Executing Storage CLI " + storageJob.getCommandLine());
-        StorageMain.privateMain((Arrays.copyOfRange(args, 1, args.length)));
-        storageJob.setCommandLine("echo 'Executing fake job CLI' " + storageJob.getCommandLine());
-        ExecutorManager.execute(OpenCGAWSServer.catalogManager, storageJob, sessionId);
-        return OpenCGAWSServer.catalogManager.getJobManager().get(storageJob.getId(), null, sessionId).first();
     }
 
 }
