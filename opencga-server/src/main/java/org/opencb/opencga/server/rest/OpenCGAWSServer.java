@@ -32,7 +32,6 @@ import org.apache.log4j.PatternLayout;
 import org.apache.log4j.RollingFileAppender;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.feature.Genotype;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
@@ -50,7 +49,6 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -129,7 +127,6 @@ public class OpenCGAWSServer {
 
         jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
-        jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
         jsonObjectMapper.addMixIn(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);

@@ -21,16 +21,19 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
+import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.*;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceEntryJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 
 import javax.annotation.Nullable;
 import java.io.FileOutputStream;
@@ -116,7 +119,6 @@ public class VariantJsonWriter implements VariantWriter {
         jsonObjectMapper.addMixIn(StudyEntry.class, VariantSourceEntryJsonMixin.class);
         jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
-        jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
 
         try {
