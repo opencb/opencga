@@ -24,8 +24,6 @@ import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CustomVariantAnnotationManagerTestImpl
-        extends CustomVariantAnnotationManagerTest
+public class MongoDBCustomVariantAnnotationManagerTest extends CustomVariantAnnotationManagerTest
         implements MongoDBVariantStorageTest {
-
 }
