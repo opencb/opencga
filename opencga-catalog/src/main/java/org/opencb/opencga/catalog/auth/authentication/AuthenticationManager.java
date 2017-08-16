@@ -58,7 +58,7 @@ public abstract class AuthenticationManager {
      * @throws CatalogException when the token does not correspond to any user or the token has expired.
      */
     public String getUserId(String token) throws CatalogException {
-        if (token == null || token.isEmpty() || ("null").equalsIgnoreCase(token)) {
+        if (token == null || token.isEmpty() || "null".equalsIgnoreCase(token)) {
             return "*";
         }
 

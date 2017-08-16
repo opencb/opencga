@@ -931,11 +931,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
     private void addParentsInfoToAttributes(String userId, long studyId, QueryResult<Individual> queryResult) {
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(FamilyDBAdaptor.QueryParams.FATHER.key(), FamilyDBAdaptor.QueryParams.MOTHER.key()));
+                Arrays.asList(FamilyDBAdaptor.QueryParams.MEMBERS_FATHER.key(), FamilyDBAdaptor.QueryParams.MEMBERS_MOTHER.key()));
         for (Individual individual : queryResult.getResult()) {
             Query query = new Query()
                     .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(FamilyDBAdaptor.QueryParams.CHILDREN_IDS.key(), individual.getId());
+                    .append(FamilyDBAdaptor.QueryParams.MEMBER_ID.key(), individual.getId());
             try {
                 QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions, userId);
                 if (familyQueryResult.getNumResults() == 0) {
@@ -946,8 +946,13 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     individual.setAttributes(new HashMap<>());
                     attributes = individual.getAttributes();
                 }
-                attributes.put(FamilyDBAdaptor.QueryParams.MOTHER.key(), familyQueryResult.first().getMother());
-                attributes.put(FamilyDBAdaptor.QueryParams.FATHER.key(), familyQueryResult.first().getFather());
+                for (Relatives relatives : familyQueryResult.first().getMembers()) {
+                    if (relatives.getMember().getId() == individual.getId()) {
+                        attributes.put(FamilyDBAdaptor.QueryParams.MOTHER.key(), relatives.getMother());
+                        attributes.put(FamilyDBAdaptor.QueryParams.FATHER.key(), relatives.getFather());
+                        break;
+                    }
+                }
 
             } catch (CatalogException e) {
                 logger.warn("Error occurred when trying to fetch parents of individual: {}", e.getMessage(), e);

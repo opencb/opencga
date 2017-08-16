@@ -16,12 +16,14 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
@@ -30,10 +32,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by pfurio on 11/05/17.
@@ -76,36 +79,238 @@ public class FamilyManagerTest extends GenericTest {
 
     @Test
     public void createFamily() throws CatalogException {
-        Individual father = new Individual().setName("John").setSex(Individual.Sex.MALE);
-        Individual mother = new Individual().setName("Sue").setSex(Individual.Sex.FEMALE);
-        List<Individual> children = Arrays.asList(
-                new Individual().setName("son"), new Individual().setName("daughter")
-        );
-        Family family = new Family("family", father, mother, children, false, "", 1);
+        QueryResult<Family> familyQueryResult = createDummyFamily();
 
-        QueryResult<Family> familyQueryResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, familyQueryResult.getNumResults());
-        assertEquals("John", familyQueryResult.first().getFather().getName());
-        assertEquals("Sue", familyQueryResult.first().getMother().getName());
-        assertEquals(2, familyQueryResult.first().getChildren().size());
+        assertEquals(4, familyQueryResult.first().getMembers().size());
+        assertEquals(2, familyQueryResult.first().getDiseases().size());
 
-        QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, FamilyDBAdaptor.QueryParams.CHILDREN.key());
-        Query query = new Query(FamilyDBAdaptor.QueryParams.MOTHER.key(), "Sue");
-        QueryResult<Family> search = familyManager.search(STUDY, query, options, sessionIdUser);
-        assertEquals(null, search.first().getChildren());
-        assertEquals("Sue", search.first().getMother().getName());
-        assertEquals("John", search.first().getFather().getName());
+        boolean motherIdUpdated = false;
+        boolean fatherIdUpdated = false;
+        for (Relatives relatives : familyQueryResult.first().getMembers()) {
+            if (relatives.getMother().getId() > 0) {
+                motherIdUpdated = true;
+            }
+            if (relatives.getFather().getId() > 0) {
+                fatherIdUpdated = true;
+            }
+        }
 
-        options = new QueryOptions(QueryOptions.EXCLUDE, FamilyDBAdaptor.QueryParams.FATHER.key());
-        search = familyManager.search(STUDY, query, options, sessionIdUser);
-        assertEquals(2, search.first().getChildren().size());
-        assertEquals("Sue", search.first().getMother().getName());
-        assertEquals(null, search.first().getFather());
-
-        options = new QueryOptions(QueryOptions.INCLUDE, FamilyDBAdaptor.QueryParams.FATHER.key());
-        search = familyManager.search(STUDY, query, options, sessionIdUser);
-        assertEquals(null, search.first().getChildren());
-        assertEquals(null, search.first().getMother());
-        assertEquals("John", search.first().getFather().getName());
+        assertTrue("Mother id not associated to any children", motherIdUpdated);
+        assertTrue("Father id not associated to any children", fatherIdUpdated);
     }
+
+    private QueryResult<Family> createDummyFamily() throws CatalogException {
+        OntologyTerm disease1 = new OntologyTerm("dis1", "Disease 1", "HPO");
+        OntologyTerm disease2 = new OntologyTerm("dis2", "Disease 2", "HPO");
+
+        Individual father = new Individual().setName("father");
+        Individual mother = new Individual().setName("mother");
+
+        // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
+        // ingesting references to exactly the same object and this test would not work exactly the same way.
+        Individual fatherChildren = new Individual().setName("father");
+        Individual motherChildren = new Individual().setName("mother");
+
+        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), Arrays.asList("dis2"), false);
+        Relatives relMother = new Relatives(mother, null, null, Arrays.asList("dis2"), Collections.emptyList(), false);
+        Relatives relChild1 = new Relatives(new Individual().setName("child1"), fatherChildren, motherChildren,
+                Arrays.asList("dis1", "dis2"), Collections.emptyList(), true);
+        Relatives relChild2 = new Relatives(new Individual().setName("child2"), fatherChildren, motherChildren, Arrays.asList("dis1"),
+                Collections.emptyList(), true);
+
+        Family family = new Family("Martinez-Martinez", Arrays.asList(disease1, disease2),
+                Arrays.asList(relChild1, relChild2, relFather, relMother),"", Collections.emptyList(), Collections.emptyMap());
+
+        return familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+    }
+
+    @Test
+    public void createFamilyMissingMember() throws CatalogException {
+        OntologyTerm disease1 = new OntologyTerm("dis1", "Disease 1", "HPO");
+        OntologyTerm disease2 = new OntologyTerm("dis2", "Disease 2", "HPO");
+
+        Individual father = new Individual().setName("father");
+        Individual mother = new Individual().setName("mother");
+
+        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), Collections.emptyList(), false);
+        Relatives relChild1 = new Relatives(new Individual().setName("child1"), father, mother, Arrays.asList("dis1", "dis2"),
+                Collections.emptyList(), true);
+        Relatives relChild2 = new Relatives(new Individual().setName("child2"), father, mother, Arrays.asList("dis1"),
+                Collections.emptyList(), true);
+
+        Family family = new Family("Martinez-Martinez", Arrays.asList(disease1, disease2),
+                Arrays.asList(relFather, relChild1, relChild2),"", Collections.emptyList(), Collections.emptyMap());
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Missing family member");
+        familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+    }
+
+    @Test
+    public void createFamilyDiseaseNotPassed() throws CatalogException {
+        OntologyTerm disease1 = new OntologyTerm("dis1", "Disease 1", "HPO");
+        OntologyTerm disease2 = new OntologyTerm("dis2", "Disease 2", "HPO");
+
+        Individual father = new Individual().setName("father");
+        Individual mother = new Individual().setName("mother");
+
+        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), Collections.emptyList(), false);
+        Relatives relMother = new Relatives(mother, null, null, Arrays.asList("dis2"), Collections.emptyList(), false);
+        Relatives relChild1 = new Relatives(new Individual().setName("child1"), father, mother, Arrays.asList("dis1", "dis3"),
+                Collections.emptyList(), true);
+        Relatives relChild2 = new Relatives(new Individual().setName("child2"), father, mother, Arrays.asList("dis1"),
+                Collections.emptyList(), true);
+
+        Family family = new Family("Martinez-Martinez", Arrays.asList(disease1, disease2),
+                Arrays.asList(relFather, relMother, relChild1, relChild2),"", Collections.emptyList(), Collections.emptyMap());
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Missing disease");
+        familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+    }
+
+    @Test
+    public void createFamilyRepeatedMember() throws CatalogException {
+        OntologyTerm disease1 = new OntologyTerm("dis1", "Disease 1", "HPO");
+        OntologyTerm disease2 = new OntologyTerm("dis2", "Disease 2", "HPO");
+
+        Individual father = new Individual().setName("father");
+        Individual mother = new Individual().setName("mother");
+
+        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), Collections.emptyList(), false);
+        Relatives relMother = new Relatives(mother, null, null, Arrays.asList("dis2"), Collections.emptyList(), false);
+        Relatives relChild1 = new Relatives(new Individual().setName("child1"), father, mother, Arrays.asList("dis1", "dis2"),
+                Collections.emptyList(), true);
+        Relatives relChild2 = new Relatives(new Individual().setName("child2"), father, mother, Arrays.asList("dis1"),
+                Collections.emptyList(), true);
+
+        Family family = new Family("Martinez-Martinez", Arrays.asList(disease1, disease2),
+                Arrays.asList(relFather, relMother, relChild1, relChild2, relChild1),"", Collections.emptyList(), Collections.emptyMap());
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Multiple members with same name");
+        familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+    }
+
+    @Test
+    public void updateFamilyMembers() throws CatalogException, JsonProcessingException {
+        QueryResult<Family> originalFamily = createDummyFamily();
+
+        Individual father = new Individual().setName("father");
+        Individual mother = new Individual().setName("mother2");
+
+        // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
+        // ingesting references to exactly the same object and this test would not work exactly the same way.
+        Individual fatherChildren = new Individual().setName("father");
+        Individual motherChildren = new Individual().setName("mother2");
+
+        // I do it this way to really leave diseases as null
+        Relatives relFather = new Relatives().setMember(father);
+        Relatives relMother = new Relatives().setMember(mother);
+        Relatives relChild1 = new Relatives(new Individual().setName("child3"), fatherChildren, motherChildren,
+                Arrays.asList("dis1", "dis2"), Collections.emptyList(), true);
+
+        Family family = new Family();
+        family.setMembers(Arrays.asList(relChild1, relFather, relMother));
+        ObjectMapper jsonObjectMapper = catalogManagerResource.generateNewObjectMapper();
+
+        ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(family));
+        params = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), params.get(FamilyDBAdaptor.QueryParams.MEMBERS.key()));
+
+        QueryResult<Family> updatedFamily = familyManager.update(STUDY, originalFamily.first().getName(), params, QueryOptions.empty(),
+                sessionIdUser);
+
+        assertEquals(3, updatedFamily.first().getMembers().size());
+        // Other parameters from the family should not have been stored in the database
+        assertEquals(null, updatedFamily.first().getMembers().get(0).getMember().getName());
+
+        // We store the ids when the family was first created
+        Set<Long> originalFamilyIds = originalFamily.first().getMembers().stream()
+                .map(m -> m.getMember().getId())
+                .collect(Collectors.toSet());
+
+        // Only one id should be the same as in originalFamilyIds (father id)
+        for (Relatives relatives : updatedFamily.first().getMembers()) {
+            if (relatives.getFather().getId() > 0) {
+                assertTrue(originalFamilyIds.contains(relatives.getFather().getId()));
+            }
+            if (relatives.getMother().getId() > 0) {
+                assertTrue(!originalFamilyIds.contains(relatives.getMother().getId()));
+            }
+        }
+    }
+
+    @Test
+    public void updateFamilyMissingMember() throws CatalogException, JsonProcessingException {
+        QueryResult<Family> originalFamily = createDummyFamily();
+
+        Individual father = new Individual().setName("father");
+
+        // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
+        // ingesting references to exactly the same object and this test would not work exactly the same way.
+        Individual fatherChildren = new Individual().setName("father");
+        Individual motherChildren = new Individual().setName("mother2");
+
+        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), Arrays.asList("dis2"), false);
+        Relatives relChild1 = new Relatives(new Individual().setName("child3"), fatherChildren, motherChildren,
+                Arrays.asList("dis1", "dis2"), Collections.emptyList(), true);
+
+        Family family = new Family();
+        family.setMembers(Arrays.asList(relChild1, relFather));
+        ObjectMapper jsonObjectMapper = catalogManagerResource.generateNewObjectMapper();
+
+        ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(family));
+        params = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), params.get(FamilyDBAdaptor.QueryParams.MEMBERS.key()));
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Missing family");
+        familyManager.update(STUDY, originalFamily.first().getName(), params, QueryOptions.empty(), sessionIdUser);
+    }
+
+    @Test
+    public void updateFamilyDisease() throws JsonProcessingException, CatalogException {
+        QueryResult<Family> originalFamily = createDummyFamily();
+
+        OntologyTerm disease1 = new OntologyTerm("dis1", "New name", "New source");
+        OntologyTerm disease2 = new OntologyTerm("dis2", "New name", "New source");
+        OntologyTerm disease3 = new OntologyTerm("dis3", "New name", "New source");
+
+        Family family = new Family();
+        family.setDiseases(Arrays.asList(disease1, disease2, disease3));
+        ObjectMapper jsonObjectMapper = catalogManagerResource.generateNewObjectMapper();
+
+        ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(family));
+        params = new ObjectMap(FamilyDBAdaptor.QueryParams.DISEASES.key(), params.get(FamilyDBAdaptor.QueryParams.DISEASES.key()));
+
+        QueryResult<Family> updatedFamily = familyManager.update(STUDY, originalFamily.first().getName(), params, QueryOptions.empty(),
+                sessionIdUser);
+
+        assertEquals(3, updatedFamily.first().getDiseases().size());
+
+        // Only one id should be the same as in originalFamilyIds (father id)
+        for (OntologyTerm disease : updatedFamily.first().getDiseases()) {
+            assertEquals("New name", disease.getName());
+            assertEquals("New source", disease.getSource());
+        }
+    }
+
+    @Test
+    public void updateFamilyMissingDisease() throws JsonProcessingException, CatalogException {
+        QueryResult<Family> originalFamily = createDummyFamily();
+
+        OntologyTerm disease1 = new OntologyTerm("dis1", "New name", "New source");
+
+        Family family = new Family();
+        family.setDiseases(Arrays.asList(disease1));
+        ObjectMapper jsonObjectMapper = catalogManagerResource.generateNewObjectMapper();
+
+        ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(family));
+        params = new ObjectMap(FamilyDBAdaptor.QueryParams.DISEASES.key(), params.get(FamilyDBAdaptor.QueryParams.DISEASES.key()));
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Missing disease");
+        familyManager.update(STUDY, originalFamily.first().getName(), params, QueryOptions.empty(), sessionIdUser);
+    }
+
 }
