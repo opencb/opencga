@@ -14,10 +14,18 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog;
+package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.log4j.Level;
 import org.junit.rules.ExternalResource;
+import org.opencb.biodata.models.alignment.Alignment;
+import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
@@ -101,6 +109,13 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
     public Path getOpencgaHome() {
         return opencgaHome;
+    }
+
+    public ObjectMapper generateNewObjectMapper() {
+        ObjectMapper jsonObjectMapper = new ObjectMapper();
+        jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+        return jsonObjectMapper;
     }
 
     public static void clearCatalog(Configuration configuration) throws IOException, CatalogException, URISyntaxException {

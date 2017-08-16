@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.search.VariantSearchToVariantConverter;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
@@ -146,11 +147,11 @@ public class SolrQueryParser {
         }
 
         // goal: [((xrefs OR regions) AND cts) OR (genes AND cts)] AND ... AND ...
-        if (consequenceTypes.size() > 0) {
-            if (genes.size() > 0) {
+        if (CollectionUtils.isNotEmpty(consequenceTypes)) {
+            if (CollectionUtils.isNotEmpty(genes)) {
                 // consequence types and genes
                 String or = buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes);
-                if (xrefs.size() == 0 && regions.size() == 0) {
+                if (xrefs.isEmpty() && regions.isEmpty()) {
                     // no xrefs or regions: genes AND cts
                     filterList.add(buildGeneAndCt(genes, consequenceTypes));
                 } else {
@@ -251,7 +252,7 @@ public class SolrQueryParser {
         if (StringUtils.isNotEmpty(query.getString(key))) {
             List<String> gos = Arrays.asList(query.getString(key).split(","));
             Set genesByGo = cellbaseUtils.getGenesByGo(gos);
-            if (genesByGo != null && genesByGo.size() > 0) {
+            if (genesByGo != null && CollectionUtils.isNotEmpty(genesByGo)) {
                 filterList.add(parseCategoryTermValue("xrefs", StringUtils.join(genesByGo, ",")));
             }
         }
@@ -562,7 +563,7 @@ public class SolrQueryParser {
 
             case "<<":
             case "<<=":
-                String rightCloseOperator = op.equals("<<") ? "}" : "]";
+                String rightCloseOperator = ("<<").equals(op) ? "}" : "]";
                 if (StringUtils.isNotEmpty(prefix) && (prefix.startsWith("popFreq_") || prefix.startsWith("stats_"))) {
                     sb.append("(");
                     sb.append("(* -").append(prefix).append(getSolrFieldName(name)).append(":*)");
@@ -576,7 +577,7 @@ public class SolrQueryParser {
                 break;
             case ">>":
             case ">>=":
-                String leftCloseOperator = op.equals(">>") ? "{" : "[";
+                String leftCloseOperator = (">>").equals(op) ? "{" : "[";
                 sb.append("(");
                 if (StringUtils.isNotEmpty(prefix) && (prefix.startsWith("popFreq_") || prefix.startsWith("stats_"))) {
                     sb.append(prefix).append(getSolrFieldName(name)).append(":").append(leftCloseOperator).append(value).append(" TO *]");
@@ -615,13 +616,13 @@ public class SolrQueryParser {
 
         // first, concatenate xrefs and genes in single list
         List<String> ids = new ArrayList<>();
-        if (xrefs != null && xrefs.size() > 0) {
+        if (xrefs != null && CollectionUtils.isNotEmpty(xrefs)) {
             ids.addAll(xrefs);
         }
-        if (genes != null && genes.size() > 0) {
+        if (genes != null && CollectionUtils.isNotEmpty(genes)) {
             ids.addAll(genes);
         }
-        if (ids.size() > 0) {
+        if (CollectionUtils.isNotEmpty(ids)) {
             for (String id : ids) {
                 if (sb.length() > 0) {
                     sb.append(" OR ");
@@ -682,7 +683,7 @@ public class SolrQueryParser {
      */
     private String buildXrefOrRegionAndConsequenceType(List<String> xrefs, List<Region> regions, List<String> cts) {
         String orCts = buildConsequenceTypeOr(cts);
-        if (xrefs.size() == 0 && regions.size() == 0) {
+        if (xrefs.isEmpty() && regions.isEmpty()) {
             // consequences type but no xrefs, no genes, no regions
             // we must make an OR with all consequences types and add it to the "AND" filter list
             return orCts;
@@ -829,7 +830,7 @@ public class SolrQueryParser {
         } else {
             try {
                 Number start, end, gap;
-                if (split[0].equals("start")) {
+                if (("start").equals(split[0])) {
                     start = Integer.parseInt(split[1]);
                     end = Integer.parseInt(split[2]);
                     gap = Integer.parseInt(split[3]);

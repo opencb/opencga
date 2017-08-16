@@ -166,7 +166,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         // TODO: Catch DuplicatedKeyException while inserting META object
 
         MongoDataStore mongoDataStore = mongoManager.get(database, this.configuration);
-        if (mongoDataStore.getCollectionNames().size() > 0) {
+        if (!mongoDataStore.getCollectionNames().isEmpty()) {
             throw new CatalogException("Database " + database + " already exists with the following collections: "
                 + StringUtils.join(mongoDataStore.getCollectionNames()) + ".\nPlease, remove the database or choose a different one.");
         }

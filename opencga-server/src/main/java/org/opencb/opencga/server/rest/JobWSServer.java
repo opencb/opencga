@@ -22,12 +22,10 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.acls.AclParams;
-import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -111,7 +109,7 @@ public class JobWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(job.outDirId) && StringUtils.isEmpty(job.outDir)) {
                 job.outDir = job.outDirId;
             }
-            String userId = catalogManager.getUserManager().getId(sessionId);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
             long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
             Job.JobStatus jobStatus;
             if (Job.JobStatus.isValid(job.status.toString())) {
@@ -131,7 +129,7 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
     private List<File> parseToListOfFiles(List<Long> longList) {
-        if (longList == null || longList.size() == 0) {
+        if (longList == null || longList.isEmpty()) {
             return Collections.emptyList();
         }
         List<File> fileList = new ArrayList<>(longList.size());
@@ -188,8 +186,7 @@ public class JobWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(studyId)) {
                 studyStr = studyId;
             }
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            long studyIdNum = catalogManager.getStudyManager().getId(userId, studyStr);
+
             // TODO this must be changed: only one queryOptions need to be passed
             if (query.containsKey(JobDBAdaptor.QueryParams.NAME.key())
                     && (query.get(JobDBAdaptor.QueryParams.NAME.key()) == null
@@ -199,9 +196,9 @@ public class JobWSServer extends OpenCGAWSServer {
             }
             QueryResult<Job> result;
             if (count) {
-                result = catalogManager.getJobManager().count(Long.toString(studyIdNum), query, sessionId);
+                result = catalogManager.getJobManager().count(studyStr, query, sessionId);
             } else {
-                result = catalogManager.getJobManager().get(studyIdNum, query, queryOptions, sessionId);
+                result = catalogManager.getJobManager().get(studyStr, query, queryOptions, sessionId);
             }
             return createOkResponse(result);
         } catch (Exception e) {
@@ -231,7 +228,7 @@ public class JobWSServer extends OpenCGAWSServer {
 //                                @QueryParam("deleteFiles") boolean deleteFiles) {
         try {
 //            QueryOptions options = new QueryOptions(JobManager.DELETE_FILES, deleteFiles);
-            List<QueryResult<Job>> delete = catalogManager.getJobManager().delete(jobIds, studyStr, queryOptions, sessionId);
+            List<QueryResult<Job>> delete = catalogManager.getJobManager().delete(studyStr, jobIds, queryOptions, sessionId);
             return createOkResponse(delete);
         } catch (CatalogException | IOException e) {
             return createErrorResponse(e);
@@ -278,21 +275,9 @@ public class JobWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "User or group id") @QueryParam("member") String member) {
         try {
             if (StringUtils.isEmpty(member)) {
-                String userId = catalogManager.getUserManager().getId(sessionId);
-                String[] jobNameSplit = jobIdsStr.split(",");
-                AbstractManager.MyResourceIds resource = catalogManager.getJobManager().getIds(jobIdsStr, null, sessionId);
-                List<QueryResult<JobAclEntry>> aclList = new ArrayList<>(resource.getResourceIds().size());
-                for (int i = 0; i < resource.getResourceIds().size(); i++) {
-                    long jobId = resource.getResourceIds().get(i);
-                    QueryResult<JobAclEntry> allJobAcls = catalogManager.getAuthorizationManager().getAllJobAcls(userId, jobId);
-                    allJobAcls.setId(jobNameSplit[i]);
-                    aclList.add(allJobAcls);
-                }
-                return createOkResponse(aclList);
+                return createOkResponse(jobManager.getAcls(null, jobIdsStr, sessionId));
             } else {
-                String userId = catalogManager.getUserManager().getId(sessionId);
-                AbstractManager.MyResourceId resource = catalogManager.getJobManager().getId(jobIdsStr, null, sessionId);
-                return createOkResponse(catalogManager.getAuthorizationManager().getJobAcl(userId, resource.getResourceId(), member));
+                return createOkResponse(jobManager.getAcl(null, jobIdsStr, member, sessionId));
             }
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -310,7 +295,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true) StudyWSServer.MemberAclUpdateOld params) {
         try {
             AclParams aclParams = getAclParams(params.add, params.remove, params.set);
-            return createOkResponse(jobManager.updateAcl(jobIdStr, null, memberId, aclParams, sessionId));
+            return createOkResponse(jobManager.updateAcl(null, jobIdStr, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -328,7 +313,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value="JSON containing the parameters to add ACLs", required = true) JobAcl params) {
         try {
             AclParams aclParams = new AclParams(params.getPermissions(), params.getAction());
-            return createOkResponse(jobManager.updateAcl(params.job, null, memberId, aclParams, sessionId));
+            return createOkResponse(jobManager.updateAcl(null, params.job, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

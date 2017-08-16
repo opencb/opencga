@@ -189,7 +189,6 @@ public class CatalogAnnotationsValidator {
             checkAnnotation(variableMap, annotation);
         }
 
-
     }
 
     public static void checkAnnotation(Map<String, Variable> variableMap, Annotation annotation) throws CatalogException {

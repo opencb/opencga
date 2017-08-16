@@ -17,12 +17,11 @@
 package org.opencb.opencga.catalog.utils;
 
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.models.Account;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AclParams;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.Study;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -75,7 +74,7 @@ public final class CatalogDemo {
             String password = id + "_pass";
             String email = id + "@gmail.com";
             catalogManager.getUserManager().create(id, name, email, password, "organization", 2000L, Account.FULL, null);
-            userSessions.put(id, catalogManager.getUserManager().login(id, password, "localhost").first().getId());
+            userSessions.put(id, catalogManager.getUserManager().login(id, password));
         }
 
         // Create one project per user
@@ -94,8 +93,8 @@ public final class CatalogDemo {
             for (int i = 1; i <= 2; i++) {
                 String name = "Name of study" + i;
                 String alias = "study" + i;
-                studiesTmp.add(catalogManager.getStudyManager().create(projectId, name, alias, Study.Type.FAMILY, null, "Description of "
-                        + alias, null, null, null, null, null, null, null, null, userSession.getValue()).first().getId());
+                studiesTmp.add(catalogManager.getStudyManager().create(String.valueOf(projectId), name, alias, Study.Type.FAMILY, null,
+                        "Description of " + alias, null, null, null, null, null, null, null, null, userSession.getValue()).first().getId());
             }
             studies.put(userSession.getKey(), studiesTmp);
         }

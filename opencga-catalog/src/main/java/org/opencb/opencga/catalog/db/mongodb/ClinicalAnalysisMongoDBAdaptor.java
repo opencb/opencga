@@ -74,11 +74,14 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+    public QueryResult<Long> count(final Query query, final String user, final StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
         if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
             query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
+
+        StudyAclEntry.StudyPermissions studyPermission = studyPermissions;
+
         if (studyPermission == null) {
             studyPermission = StudyAclEntry.StudyPermissions.VIEW_CLINICAL_ANALYSIS;
         }
@@ -159,7 +162,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     private void addReferencesInfoToClinicalAnalysis(QueryResult<ClinicalAnalysis> queryResult) {
-        if (queryResult.getResult() == null || queryResult.getResult().size() == 0) {
+        if (queryResult.getResult() == null || queryResult.getResult().isEmpty()) {
             return;
         }
         for (ClinicalAnalysis clinicalAnalysis : queryResult.getResult()) {
@@ -353,7 +356,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         addReferencesInfoToClinicalAnalysis(clinicalAnalysisQueryResult);
 
         logger.debug("Clinical Analysis get: query : {}, dbTime: {}", bson.toBsonDocument(Document.class,
-                MongoClient.getDefaultCodecRegistry()), qOptions == null ? "" : qOptions.toJson(), clinicalAnalysisQueryResult.getDbTime());
+                MongoClient.getDefaultCodecRegistry()), qOptions.toJson(), clinicalAnalysisQueryResult.getDbTime());
         return endQuery("Get clinical analysis", startTime, clinicalAnalysisQueryResult);
     }
 
@@ -443,7 +446,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         if (authorisation != null && authorisation.size() > 0) {
             andBsonList.add(authorisation);
         }
-        if (andBsonList.size() > 0) {
+        if (!andBsonList.isEmpty()) {
             return Filters.and(andBsonList);
         } else {
             return new Document();

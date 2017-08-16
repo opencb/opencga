@@ -19,7 +19,7 @@ package org.opencb.opencga.server.rest;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.Individual;
@@ -64,7 +64,7 @@ public class SampleWSServerTest {
     public void init() throws Exception {
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
-        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD, "localhost").first().getId();
+        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD);
         studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user", "1000G:phase1");
         in1 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, "in1", "f1", (long) -1, (long) -1, null, "", "", "",
                 "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null,

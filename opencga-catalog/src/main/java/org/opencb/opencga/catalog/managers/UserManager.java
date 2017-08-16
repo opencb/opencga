@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -34,9 +33,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.managers.api.ResourceManager;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.utils.LDAPUtils;
+import org.opencb.opencga.catalog.auth.authentication.LDAPUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
@@ -54,7 +52,7 @@ import java.util.stream.Collectors;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class UserManager extends AbstractManager implements ResourceManager<String, User> {
+public class UserManager extends AbstractManager {
 
     private String INTERNAL_AUTHORIZATION = "internal";
     private Map<String, AuthenticationManager> authenticationManagerMap;
@@ -65,9 +63,9 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
     protected static final Pattern EMAILPATTERN = Pattern.compile(EMAIL_PATTERN);
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
 
-    public UserManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                       DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                       Configuration configuration) {
+    UserManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
+                DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
 
         authenticationManagerMap = new HashMap<>();
@@ -108,8 +106,8 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
             }
         }
 
-        ADMIN_TOKEN =  authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken("admin", "", Session.Type.SYSTEM).first()
-                .getId();
+        ADMIN_TOKEN = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createNonExpiringToken("admin");
+
     }
 
     static void checkEmail(String email) throws CatalogException {
@@ -125,7 +123,7 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
      * @return UserId owner of the sessionId. Empty string if SessionId does not match.
      * @throws CatalogException when the session id does not correspond to any user or the token has expired.
      */
-    public String getId(String sessionId) throws CatalogException {
+    public String getUserId(String sessionId) throws CatalogException {
         return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(sessionId);
     }
 
@@ -144,35 +142,16 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
         userDBAdaptor.updateUserLastModified(userId);
     }
 
-    private String getAuthenticationOriginId(String userId) throws CatalogException {
-        QueryResult<User> user = userDBAdaptor.get(userId, new QueryOptions(), "");
-        if (user == null || user.getNumResults() == 0) {
-            throw new CatalogException(userId + " user not found");
-        }
-        return user.first().getAccount().getAuthOrigin();
-    }
-
-    private AuthenticationOrigin getAuthenticationOrigin(String authOrigin) {
-        if (configuration.getAuthentication().getAuthenticationOrigins() != null) {
-            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
-                if (authOrigin.equals(authenticationOrigin.getId())) {
-                    return authenticationOrigin;
-                }
-            }
-        }
-        return null;
-    }
-
     /**
      * Create a new user.
      *
-     * @param id       User id
+     * @param id           User id
      * @param name         Name
      * @param email        Email
      * @param password     Encrypted Password
      * @param organization Optional organization
-     * @param quota    Maximum user disk quota
-     * @param accountType     User account type. Full or guest.
+     * @param quota        Maximum user disk quota
+     * @param accountType  User account type. Full or guest.
      * @param options      Optional options
      * @return The created user
      * @throws CatalogException If user already exists, or unable to create a new user.
@@ -215,9 +194,8 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
         try {
             catalogIOManagerFactory.getDefault().createUser(user.getId());
             QueryResult<User> queryResult = userDBAdaptor.insert(user, options);
-//            auditManager.recordCreation(AuditRecord.Resource.user, user.getId(), userId, queryResult.first(), null, null);
-            auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.create, AuditRecord.Magnitude.low, user.getId(), id,
-                    null, queryResult.first(), null, null);
+            auditManager.recordCreation(AuditRecord.Resource.user, id, id, queryResult.first(), null, null);
+
             authenticationManagerMap.get(INTERNAL_AUTHORIZATION).newPassword(user.getId(), password);
             return queryResult;
         } catch (CatalogIOException | CatalogDBException e) {
@@ -232,21 +210,22 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
     /**
      * This method can only be run by the admin user. It will import users and groups from other authentication origins such as LDAP,
      * Kerberos, etc into catalog.
-     *
-     * @param authOrigin Id present in the catalog configuration of the authentication origin.
-     * @param accountType Type of the account to be created for the imported users (guest, full).
-     * @param params Object map containing other parameters that are useful to import users.
-     * @param adminPassword Admin password.
-     * @throws CatalogException catalogException
+     * <p>
+     * @param authOrigin    Id present in the catalog configuration of the authentication origin.
+     * @param accountType   Type of the account to be created for the imported users (guest, full).
+     * @param params        Object map containing other parameters that are useful to import users.
+     * @param sessionId     Valid admin token.
      * @return LdapImportResult Object containing a summary of the actions performed.
+     * @throws CatalogException catalogException
      */
-    public LdapImportResult importFromExternalAuthOrigin(String authOrigin, String accountType, ObjectMap params, String adminPassword)
+    public LdapImportResult importFromExternalAuthOrigin(String authOrigin, String accountType, ObjectMap params, String sessionId)
             throws CatalogException {
-        // Validate the admin password.
-        QueryResult<Session> admin;
         try {
-            admin = login("admin", adminPassword, "localhost");
-        } catch (IOException e) {
+            if (!authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(sessionId).equals("admin")) {
+                throw new CatalogException("Token does not belong to admin");
+            }
+        } catch (CatalogException e) {
+            // We build an LdapImportResult that will contain the error message + the input information provided.
             logger.error(e.getMessage(), e);
             LdapImportResult retResult = new LdapImportResult();
             LdapImportResult.Input input = new LdapImportResult.Input(params.getAsStringList("users"), params.getString("group"),
@@ -257,6 +236,603 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
         }
 
         return importFromExternalAuthOrigin(authOrigin, accountType, params);
+    }
+
+    /**
+     * Reads a user from Catalog given a user id.
+     *
+     * @param userId    user id of the object to read
+     * @param options   Read options
+     * @param sessionId sessionId
+     * @return The specified object
+     * @throws CatalogException CatalogException
+     */
+    public QueryResult<User> get(String userId, QueryOptions options, String sessionId) throws CatalogException {
+        return get(userId, null, options, sessionId);
+    }
+
+    /**
+     * Gets the user information.
+     *
+     * @param userId       User id
+     * @param lastModified If lastModified matches with the one in Catalog, return an empty QueryResult.
+     * @param options      QueryOptions
+     * @param sessionId    SessionId of the user performing this operation.
+     * @return The requested user
+     * @throws CatalogException CatalogException
+     */
+    public QueryResult<User> get(String userId, String lastModified, QueryOptions options, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkParameter(userId, "userId");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        checkSessionId(userId, sessionId);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        QueryResult<User> userQueryResult = userDBAdaptor.get(userId, options, lastModified);
+
+        // Remove some unnecessary and prohibited parameters
+        for (User user : userQueryResult.getResult()) {
+            user.setPassword(null);
+            if (user.getProjects() != null) {
+                for (Project project : user.getProjects()) {
+                    if (project.getStudies() != null) {
+                        for (Study study : project.getStudies()) {
+                            study.setVariableSets(null);
+                        }
+                    }
+                }
+            }
+        }
+        return userQueryResult;
+    }
+
+    public QueryResult<User> update(String userId, ObjectMap parameters, QueryOptions options, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkParameter(userId, "userId");
+        ParamUtils.checkObj(parameters, "parameters");
+
+        if (sessionId != null && !sessionId.isEmpty()) {
+            ParamUtils.checkParameter(sessionId, "sessionId");
+            checkSessionId(userId, sessionId);
+            for (String s : parameters.keySet()) {
+                if (!s.matches("name|email|organization|attributes")) {
+                    throw new CatalogDBException("Parameter '" + s + "' can't be changed");
+                }
+            }
+        } else {
+            if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
+                throw new CatalogException("Nor the administrator password nor the session id could be found. The user could not be "
+                        + "updated.");
+            }
+            authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", configuration.getAdmin().getPassword(), true);
+        }
+
+        if (parameters.containsKey("email")) {
+            checkEmail(parameters.getString("email"));
+        }
+        userDBAdaptor.updateUserLastModified(userId);
+        QueryResult<User> queryResult = userDBAdaptor.update(userId, parameters);
+        auditManager.recordUpdate(AuditRecord.Resource.user, userId, userId, parameters, null, null);
+        return queryResult;
+    }
+
+    /**
+     * Delete entries from Catalog.
+     *
+     * @param userIdList Comma separated list of ids corresponding to the objects to delete
+     * @param options    Deleting options.
+     * @param sessionId  sessionId
+     * @return A list with the deleted objects
+     * @throws CatalogException CatalogException.
+     */
+    public List<QueryResult<User>> delete(String userIdList, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(userIdList, "userIdList");
+
+        List<String> userIds = Arrays.asList(userIdList.split(","));
+        List<QueryResult<User>> deletedUsers = new ArrayList<>(userIds.size());
+        for (String userId : userIds) {
+            if (sessionId != null && !sessionId.isEmpty()) {
+                ParamUtils.checkParameter(sessionId, "sessionId");
+                checkSessionId(userId, sessionId);
+            } else {
+                if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
+                    throw new CatalogException("Nor the administrator password nor the session id could be found. The user could not be "
+                            + "deleted.");
+                }
+                authenticationManagerMap.get(INTERNAL_AUTHORIZATION)
+                        .authenticate("admin", configuration.getAdmin().getPassword(), true);
+            }
+
+            QueryResult<User> deletedUser = userDBAdaptor.delete(userId, options);
+            auditManager.recordDeletion(AuditRecord.Resource.user, userId, userId, deletedUser.first(), null, null);
+            deletedUsers.add(deletedUser);
+        }
+        return deletedUsers;
+    }
+
+    /**
+     * Delete the entries satisfying the query.
+     *
+     * @param query     Query of the objects to be deleted.
+     * @param options   Deleting options.
+     * @param sessionId sessionId.
+     * @return A list with the deleted objects.
+     * @throws CatalogException CatalogException
+     * @throws IOException      IOException.
+     */
+    public List<QueryResult<User>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.ID.key());
+        QueryResult<User> userQueryResult = userDBAdaptor.get(query, queryOptions);
+        List<String> userIds = userQueryResult.getResult().stream().map(User::getId).collect(Collectors.toList());
+        String userIdStr = StringUtils.join(userIds, ",");
+        return delete(userIdStr, options, sessionId);
+    }
+
+    public List<QueryResult<User>> restore(String ids, QueryOptions options, String sessionId) throws CatalogException {
+        throw new UnsupportedOperationException();
+    }
+
+    public QueryResult resetPassword(String userId, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(userId, "userId");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        checkSessionId(userId, sessionId);
+
+        String authOrigin = getAuthenticationOriginId(userId);
+        return authenticationManagerMap.get(authOrigin).resetPassword(userId);
+    }
+
+    public void validatePassword(String userId, String password, boolean throwException) throws CatalogException {
+        if (userId.equalsIgnoreCase("admin")) {
+            authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", password, throwException);
+        } else {
+            String authOrigin = getAuthenticationOriginId(userId);
+            authenticationManagerMap.get(authOrigin).authenticate(userId, password, throwException);
+        }
+    }
+
+    public String login(String userId, String password) throws CatalogException, IOException {
+        ParamUtils.checkParameter(userId, "userId");
+        ParamUtils.checkParameter(password, "password");
+
+        String authId;
+        QueryResult<User> user = null;
+        if (!userId.equals("admin")) {
+            try {
+                user = userDBAdaptor.get(userId, new QueryOptions(), null);
+            } catch (CatalogDBException e) {
+                String authOrigin = null;
+                if (authenticationManagerMap.size() == 2) {
+                    for (Map.Entry<String, AuthenticationManager> entry : authenticationManagerMap.entrySet()) {
+                        if (!entry.getKey().equals(INTERNAL_AUTHORIZATION)) {
+                            authOrigin = entry.getKey();
+                            AuthenticationOrigin authenticationOrigin = getAuthenticationOrigin(authOrigin);
+                            // We check if the user can be authenticated
+                            if (authenticationOrigin != null) {
+                                try {
+                                    List<Attributes> userInfoFromLDAP = LDAPUtils.getUserInfoFromLDAP(authenticationOrigin.getHost(),
+                                            Arrays.asList(userId),
+                                            (String) authenticationOrigin.getOptions().get(AuthenticationOrigin.USERS_SEARCH));
+                                    if (userInfoFromLDAP == null || userInfoFromLDAP.isEmpty()) {
+                                        throw new CatalogException("The user id " + userId + " does not exist nor could be found in LDAP.");
+                                    }
+                                    entry.getValue().authenticate(LDAPUtils.getRDN(userInfoFromLDAP.get(0)), password, true);
+                                } catch (NamingException e1) {
+                                    throw new CatalogException(e1);
+                                }
+                            }
+                            break;
+                        }
+                    }
+                } else {
+                    throw new CatalogException("The user id " + userId + " does not exist.");
+                }
+                if (authOrigin == null) {
+                    throw new CatalogException("Unexpected error occurred. Count not detect authorization origin.");
+                }
+                importFromExternalAuthOrigin(authOrigin, Account.GUEST, new ObjectMap("users", userId));
+                user = userDBAdaptor.get(userId, new QueryOptions(), null);
+            }
+
+            // Check that the authentication id is valid
+            authId = user.first().getAccount().getAuthOrigin();
+        } else {
+            authId = INTERNAL_AUTHORIZATION;
+        }
+        AuthenticationOrigin authenticationOrigin = getAuthenticationOrigin(authId);
+
+        if (authenticationOrigin == null) {
+            throw new CatalogException("Could not find authentication origin " + authId + " for user " + userId);
+        }
+
+        if (AuthenticationOrigin.AuthenticationType.LDAP == authenticationOrigin.getType()) {
+            if (user == null) {
+                throw new CatalogException("Internal error: This error should never happen.");
+            }
+            authenticationManagerMap.get(authId).authenticate(((String) user.first().getAttributes().get("LDAP_RDN")), password, true);
+
+            // Fetch current LDAP groups for user
+            List<String> groups;
+            try {
+                groups = fetchGroupsFromLdapUser(user.first(), authenticationOrigin);
+            } catch (NamingException e) {
+                logger.error("{}", e.getMessage(), e);
+                groups = Collections.emptyList();
+            }
+
+            // Resync synced groups of user in OpenCGA
+            studyDBAdaptor.resyncUserWithSyncedGroups(userId, groups, authId);
+        } else {
+            authenticationManagerMap.get(authId).authenticate(userId, password, true);
+        }
+
+        String token = authenticationManagerMap.get(authId).createToken(userId);
+
+        auditManager.recordLogin(userId, true);
+
+        return token;
+    }
+
+    /**
+     * Create a new token if the token provided corresponds to the user and it is not expired yet.
+     *
+     * @param userId user id to whom the token belongs to.
+     * @param token  active token.
+     * @return a new token with the default expiration updated.
+     * @throws CatalogException if the token does not correspond to the user or the token is expired.
+     */
+    public String refreshToken(String userId, String token) throws CatalogException {
+        if (!userId.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
+            throw new CatalogException("Cannot refresh token. The token received does not correspond to " + userId);
+        }
+        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(userId);
+    }
+
+    /**
+     * This method will be only callable by the system. It generates a new session id for the user.
+     *
+     * @param userId           user id for which a session will be generated.
+     * @param adminCredentials Password or active session of the OpenCGA admin.
+     * @return an objectMap containing the new sessionId
+     * @throws CatalogException if the password is not correct or the userId does not exist.
+     */
+    public String getSystemTokenForUser(String userId, String adminCredentials) throws CatalogException {
+        authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", adminCredentials, true);
+        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createNonExpiringToken(userId);
+    }
+
+    /**
+     * Add a new filter to the user account.
+     * <p>
+     * @param userId       user id to whom the filter will be associated.
+     * @param name         Filter name.
+     * @param description  Filter description.
+     * @param bioformat    Bioformat where the filter should be applied.
+     * @param query        Query object.
+     * @param queryOptions Query options object.
+     * @param sessionId    session id of the user asking to store the filter.
+     * @return the created filter.
+     * @throws CatalogException if there already exists a filter with that same name for the user or if the user corresponding to the
+     *                          session id is not the same as the provided user id.
+     */
+    public QueryResult<User.Filter> addFilter(String userId, String name, String description, File.Bioformat bioformat, Query query,
+                                              QueryOptions queryOptions, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(userId, "userId");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(name, "name");
+        ParamUtils.checkObj(bioformat, "bioformat");
+        ParamUtils.checkObj(query, "Query");
+        ParamUtils.checkObj(queryOptions, "QueryOptions");
+        if (description == null) {
+            description = "";
+        }
+
+        String userIdAux = getUserId(sessionId);
+        userDBAdaptor.checkId(userId);
+        if (!userId.equals(userIdAux)) {
+            throw new CatalogException("User " + userIdAux + " is not authorised to store filters for user " + userId);
+        }
+
+        Query queryExists = new Query()
+                .append(UserDBAdaptor.QueryParams.ID.key(), userId)
+                .append(UserDBAdaptor.QueryParams.CONFIGS_FILTERS_NAME.key(), name);
+        if (userDBAdaptor.count(queryExists).first() > 0) {
+            throw new CatalogException("There already exists a filter called " + name + " for user " + userId);
+        }
+
+        User.Filter filter = new User.Filter(name, description, bioformat, query, queryOptions);
+        return userDBAdaptor.addFilter(userId, filter);
+    }
+
+    /**
+     * Update the filter information.
+     * <p>
+     * @param userId    user id to whom the filter should be updated.
+     * @param name      Filter name.
+     * @param params    Map containing the parameters to be updated.
+     * @param sessionId session id of the user asking to update the filter.
+     * @return the updated filter.
+     * @throws CatalogException if the filter could not be updated because the filter name is not correct or if the user corresponding to
+     *                          the session id is not the same as the provided user id.
+     */
+    public QueryResult<User.Filter> updateFilter(String userId, String name, ObjectMap params, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(userId, "userId");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(name, "name");
+
+        String userIdAux = getUserId(sessionId);
+        userDBAdaptor.checkId(userId);
+        if (!userId.equals(userIdAux)) {
+            throw new CatalogException("User " + userIdAux + " is not authorised to update filters for user " + userId);
+        }
+
+        Query queryExists = new Query()
+                .append(UserDBAdaptor.QueryParams.ID.key(), userId)
+                .append(UserDBAdaptor.QueryParams.CONFIGS_FILTERS_NAME.key(), name);
+        if (userDBAdaptor.count(queryExists).first() == 0) {
+            throw new CatalogException("There is no filter called " + name + " for user " + userId);
+        }
+
+        QueryResult<Long> queryResult = userDBAdaptor.updateFilter(userId, name, params);
+        User.Filter filter = getFilter(userId, name);
+        if (filter == null) {
+            throw new CatalogException("Internal error: The filter " + name + " could not be found.");
+        }
+
+        return new QueryResult<>("Update filter", queryResult.getDbTime(), 1, 1, queryResult.getWarningMsg(), queryResult.getErrorMsg(),
+                Arrays.asList(filter));
+    }
+
+    /**
+     * Delete the filter.
+     * <p>
+     * @param userId    user id to whom the filter should be deleted.
+     * @param name      filter name to be deleted.
+     * @param sessionId session id of the user asking to delete the filter.
+     * @return the deleted filter.
+     * @throws CatalogException when the filter cannot be removed or the name is not correct or if the user corresponding to the
+     *                          session id is not the same as the provided user id.
+     */
+    public QueryResult<User.Filter> deleteFilter(String userId, String name, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(userId, "userId");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(name, "name");
+
+        String userIdAux = getUserId(sessionId);
+        userDBAdaptor.checkId(userId);
+        if (!userId.equals(userIdAux)) {
+            throw new CatalogException("User " + userIdAux + " is not authorised to delete filters for user " + userId);
+        }
+
+        User.Filter filter = getFilter(userId, name);
+        if (filter == null) {
+            throw new CatalogException("There is no filter called " + name + " for user " + userId);
+        }
+
+        QueryResult<Long> queryResult = userDBAdaptor.deleteFilter(userId, name);
+        return new QueryResult<>("Delete filter", queryResult.getDbTime(), 1, 1, queryResult.getWarningMsg(), queryResult.getErrorMsg(),
+                Arrays.asList(filter));
+    }
+
+    /**
+     * Retrieves a filter.
+     * <p>
+     * @param userId    user id having the filter stored.
+     * @param name      Filter name to be fetched.
+     * @param sessionId session id of the user fetching the filter.
+     * @return the filter.
+     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
+     */
+    public QueryResult<User.Filter> getFilter(String userId, String name, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(userId, "userId");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(name, "name");
+
+        String userIdAux = getUserId(sessionId);
+        userDBAdaptor.checkId(userId);
+        if (!userId.equals(userIdAux)) {
+            throw new CatalogException("User " + userIdAux + " is not authorised to get filters from user " + userId);
+        }
+
+        User.Filter filter = getFilter(userId, name);
+        if (filter == null) {
+            return new QueryResult<>("Get filter", 0, 0, 0, "", "Filter not found", Arrays.asList());
+        } else {
+            return new QueryResult<>("Get filter", 0, 1, 1, "", "", Arrays.asList(filter));
+        }
+    }
+
+    /**
+     * Retrieves all the user filters.
+     *
+     * @param userId    user id having the filters.
+     * @param sessionId session id of the user fetching the filters.
+     * @return the filters.
+     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
+     */
+    public QueryResult<User.Filter> getAllFilters(String userId, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(userId, "userId");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+
+        String userIdAux = getUserId(sessionId);
+        userDBAdaptor.checkId(userId);
+        if (!userId.equals(userIdAux)) {
+            throw new CatalogException("User " + userIdAux + " is not authorised to get filters from user " + userId);
+        }
+
+        Query query = new Query()
+                .append(UserDBAdaptor.QueryParams.ID.key(), userId);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
+        QueryResult<User> userQueryResult = userDBAdaptor.get(query, queryOptions);
+
+        if (userQueryResult.getNumResults() != 1) {
+            throw new CatalogException("Internal error: User " + userId + " not found.");
+        }
+
+        List<User.Filter> filters = userQueryResult.first().getConfigs().getFilters();
+
+        return new QueryResult<>("Get filters", 0, filters.size(), filters.size(), "", "", filters);
+    }
+
+    /**
+     * Creates or updates a configuration.
+     * <p>
+     * @param userId    user id to whom the config will be associated.
+     * @param name      Name of the configuration (normally, name of the application).
+     * @param config    Configuration to be stored.
+     * @param sessionId session id of the user asking to store the config.
+     * @return the set configuration.
+     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
+     */
+    public QueryResult setConfig(String userId, String name, ObjectMap config, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(userId, "userId");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(name, "name");
+        ParamUtils.checkObj(config, "ObjectMap");
+
+        String userIdAux = getUserId(sessionId);
+        userDBAdaptor.checkId(userId);
+        if (!userId.equals(userIdAux)) {
+            throw new CatalogException("User " + userIdAux + " is not authorised to set configuration for user " + userId);
+        }
+
+        return userDBAdaptor.setConfig(userId, name, config);
+    }
+
+    /**
+     * Deletes a configuration.
+     * <p>
+     * @param userId    user id to whom the configuration should be deleted.
+     * @param name      Name of the configuration to be deleted (normally, name of the application).
+     * @param sessionId session id of the user asking to delete the configuration.
+     * @return the deleted configuration.
+     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id or the configuration
+     *                          did not exist.
+     */
+    public QueryResult deleteConfig(String userId, String name, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(userId, "userId");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(name, "name");
+
+        String userIdAux = getUserId(sessionId);
+        userDBAdaptor.checkId(userId);
+        if (!userId.equals(userIdAux)) {
+            throw new CatalogException("User " + userIdAux + " is not authorised to delete the configuration of user " + userId);
+        }
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
+        QueryResult<User> userQueryResult = userDBAdaptor.get(userId, options, "");
+        if (userQueryResult.getNumResults() == 0) {
+            throw new CatalogException("Internal error: Could not get user " + userId);
+        }
+
+        User.UserConfiguration configs = userQueryResult.first().getConfigs();
+        if (configs == null) {
+            throw new CatalogException("Internal error: Configuration object is null.");
+        }
+
+        if (configs.get(name) == null) {
+            throw new CatalogException("Error: Cannot delete configuration with name " + name + ". Configuration name not found.");
+        }
+
+        QueryResult<Long> queryResult = userDBAdaptor.deleteConfig(userId, name);
+        return new QueryResult("Delete configuration", queryResult.getDbTime(), 1, 1, "", "", Arrays.asList(configs.get(name)));
+    }
+
+    /**
+     * Retrieves a configuration.
+     * <p>
+     * @param userId    user id having the configuration stored.
+     * @param name      Name of the configuration to be fetched (normally, name of the application).
+     * @param sessionId session id of the user attempting to fetch the configuration.
+     * @return the configuration.
+     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id or the configuration
+     *                          does not exist.
+     */
+    public QueryResult getConfig(String userId, String name, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(userId, "userId");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(name, "name");
+
+        String userIdAux = getUserId(sessionId);
+        userDBAdaptor.checkId(userId);
+        if (!userId.equals(userIdAux)) {
+            throw new CatalogException("User " + userIdAux + " is not authorised to fetch the configuration of user " + userId);
+        }
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
+        QueryResult<User> userQueryResult = userDBAdaptor.get(userId, options, "");
+        if (userQueryResult.getNumResults() == 0) {
+            throw new CatalogException("Internal error: Could not get user " + userId);
+        }
+
+        User.UserConfiguration configs = userQueryResult.first().getConfigs();
+        if (configs == null) {
+            throw new CatalogException("Internal error: Configuration object is null.");
+        }
+
+        if (configs.get(name) == null) {
+            throw new CatalogException("Error: Cannot fetch configuration with name " + name + ". Configuration name not found.");
+        }
+
+        return new QueryResult("Get configuration", userQueryResult.getDbTime(), 1, 1, userQueryResult.getWarningMsg(),
+                userQueryResult.getErrorMsg(), Arrays.asList(configs.get(name)));
+    }
+
+
+    private User.Filter getFilter(String userId, String name) throws CatalogException {
+        Query query = new Query()
+                .append(UserDBAdaptor.QueryParams.ID.key(), userId);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
+        QueryResult<User> userQueryResult = userDBAdaptor.get(query, queryOptions);
+
+        if (userQueryResult.getNumResults() != 1) {
+            throw new CatalogException("Internal error: User " + userId + " not found.");
+        }
+
+        for (User.Filter filter : userQueryResult.first().getConfigs().getFilters()) {
+            if (name.equals(filter.getName())) {
+                return filter;
+            }
+        }
+
+        return null;
+    }
+
+    private void checkSessionId(String userId, String jwtToken) throws CatalogException {
+
+        if (!userId.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(jwtToken))) {
+            throw new CatalogException("Invalid sessionId for user: " + userId);
+        }
+    }
+
+    private void checkUserExists(String userId) throws CatalogException {
+        if (userId.toLowerCase().equals("admin")) {
+            throw new CatalogException("Permission denied: It is not allowed the creation of another admin user.");
+        } else if (userId.toLowerCase().equals(ANONYMOUS) || userId.toLowerCase().equals("daemon")) {
+            throw new CatalogException("Permission denied: Cannot create users with special treatments in catalog.");
+        }
+
+        if (userDBAdaptor.exists(userId)) {
+            throw new CatalogException("The user already exists in our database. Please, choose a different one.");
+        }
+    }
+
+    private String getAuthenticationOriginId(String userId) throws CatalogException {
+        QueryResult<User> user = userDBAdaptor.get(userId, new QueryOptions(), "");
+        if (user == null || user.getNumResults() == 0) {
+            throw new CatalogException(userId + " user not found");
+        }
+        return user.first().getAccount().getAuthOrigin();
+    }
+
+    private AuthenticationOrigin getAuthenticationOrigin(String authOrigin) {
+        if (configuration.getAuthentication().getAuthenticationOrigins() != null) {
+            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
+                if (authOrigin.equals(authenticationOrigin.getId())) {
+                    return authenticationOrigin;
+                }
+            }
+        }
+        return null;
     }
 
     private LdapImportResult importFromExternalAuthOrigin(String authOrigin, String accountType, ObjectMap params) throws CatalogException {
@@ -313,7 +889,7 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
             return retResult;
         }
 
-        if (userAttrList.size() == 0) {
+        if (userAttrList.isEmpty()) {
             retResult.setWarningMsg("No users were found. Nothing to do.");
             return retResult;
         }
@@ -433,610 +1009,6 @@ public class UserManager extends AbstractManager implements ResourceManager<Stri
         String userRdn = (String) user.getAttributes().get("LDAP_RDN");
         String base = ((String) authenticationOrigin.getOptions().get(AuthenticationOrigin.USERS_SEARCH));
         return LDAPUtils.getGroupsFromLdapUser(authenticationOrigin.getHost(), userRdn, base);
-    }
-
-    private void checkGroupsFromExternalUser(String userId, List<String> groupIds, List<String> studyIds) throws CatalogException {
-        for (String studyStr : studyIds) {
-            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-            if (studyId < 1) {
-                throw new CatalogException("Study " + studyStr + " not found.");
-            }
-
-            // TODO: What do we do with admin session id when logging in? We will need to update the groups.
-            //catalogManager.getSessionManager().createToken("admin", "private")
-//            for (String groupId : groupIds) {
-//                try {
-//                    catalogManager.getStudyManager().updateGroup(Long.toString(studyId), groupId, userId, null, null, )
-//                } catch (CatalogDBException e) {
-//                    // The user already belonged to the group.
-//                } catch (CatalogException e) {
-//                    // The group does not exist.
-//                }
-//            }
-
-        }
-    }
-
-    @Override
-    public QueryResult<User> get(String userId, QueryOptions options, String sessionId) throws CatalogException {
-        return get(userId, null, options, sessionId);
-    }
-
-    /**
-     * Gets the user information.
-     *
-     * @param userId       User id
-     * @param lastModified If lastModified matches with the one in Catalog, return an empty QueryResult.
-     * @param options      QueryOptions
-     * @param sessionId    SessionId of the user performing this operation.
-     * @return The requested user
-     * @throws CatalogException CatalogException
-     */
-    public QueryResult<User> get(String userId, String lastModified, QueryOptions options, String sessionId)
-            throws CatalogException {
-        ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        checkSessionId(userId, sessionId);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-        QueryResult<User> userQueryResult = userDBAdaptor.get(userId, options, lastModified);
-
-        // Remove some unnecessary and prohibited parameters
-        for (User user : userQueryResult.getResult()) {
-            user.setPassword(null);
-            if (user.getProjects() != null) {
-                for (Project project : user.getProjects()) {
-                    if (project.getStudies() != null) {
-                        for (Study study : project.getStudies()) {
-                            study.setVariableSets(null);
-                        }
-                    }
-                }
-            }
-        }
-        return userQueryResult;
-    }
-
-    @Override
-    public QueryResult<User> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Modify some params from the user profile.
-     * name
-     * email
-     * organization
-     * attributes
-     *
-     * @throws CatalogException
-     */
-    @Override
-    public QueryResult<User> update(String userId, ObjectMap parameters, QueryOptions options, String sessionId)
-            throws CatalogException {
-        ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkObj(parameters, "parameters");
-
-        if (sessionId != null && !sessionId.isEmpty()) {
-            ParamUtils.checkParameter(sessionId, "sessionId");
-            checkSessionId(userId, sessionId);
-            for (String s : parameters.keySet()) {
-                if (!s.matches("name|email|organization|attributes")) {
-                    throw new CatalogDBException("Parameter '" + s + "' can't be changed");
-                }
-            }
-        } else {
-            if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
-                throw new CatalogException("Nor the administrator password nor the session id could be found. The user could not be "
-                        + "updated.");
-            }
-            authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", configuration.getAdmin().getPassword(), true);
-        }
-
-        if (parameters.containsKey("email")) {
-            checkEmail(parameters.getString("email"));
-        }
-        userDBAdaptor.updateUserLastModified(userId);
-        QueryResult<User> queryResult = userDBAdaptor.update(userId, parameters);
-        auditManager.recordUpdate(AuditRecord.Resource.user, userId, userId, parameters, null, null);
-        return queryResult;
-    }
-
-    /**
-     * Delete entries from Catalog.
-     *
-     * @param userIdList Comma separated list of ids corresponding to the objects to delete
-     * @param options   Deleting options.
-     * @param sessionId sessionId
-     * @return A list with the deleted objects
-     * @throws CatalogException CatalogException.
-     */
-    public List<QueryResult<User>> delete(String userIdList, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(userIdList, "userIdList");
-
-        List<String> userIds = Arrays.asList(userIdList.split(","));
-        List<QueryResult<User>> deletedUsers = new ArrayList<>(userIds.size());
-        for (String userId : userIds) {
-            if (sessionId != null && !sessionId.isEmpty()) {
-                ParamUtils.checkParameter(sessionId, "sessionId");
-                checkSessionId(userId, sessionId);
-            } else {
-                if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
-                    throw new CatalogException("Nor the administrator password nor the session id could be found. The user could not be "
-                            + "deleted.");
-                }
-                authenticationManagerMap.get(INTERNAL_AUTHORIZATION)
-                        .authenticate("admin", configuration.getAdmin().getPassword(), true);
-            }
-
-            QueryResult<User> deletedUser = userDBAdaptor.delete(userId, options);
-            auditManager.recordDeletion(AuditRecord.Resource.user, userId, userId, deletedUser.first(), null, null);
-            deletedUsers.add(deletedUser);
-        }
-        return deletedUsers;
-    }
-
-    @Override
-    public List<QueryResult<User>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.ID.key());
-        QueryResult<User> userQueryResult = userDBAdaptor.get(query, queryOptions);
-        List<String> userIds = userQueryResult.getResult().stream().map(User::getId).collect(Collectors.toList());
-        String userIdStr = StringUtils.join(userIds, ",");
-        return delete(userIdStr, options, sessionId);
-    }
-
-    @Override
-    public List<QueryResult<User>> restore(String ids, QueryOptions options, String sessionId) throws CatalogException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<QueryResult<User>> restore(Query query, QueryOptions options, String sessionId) throws CatalogException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
-        throw new NotImplementedException("User: Operation not yet supported");
-    }
-
-    public QueryResult resetPassword(String userId, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        checkSessionId(userId, sessionId);
-
-        String authOrigin = getAuthenticationOriginId(userId);
-        return authenticationManagerMap.get(authOrigin).resetPassword(userId);
-    }
-
-    public void validatePassword(String userId, String password, boolean throwException) throws CatalogException {
-        if (userId.equalsIgnoreCase("admin")) {
-            authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", password, throwException);
-        } else {
-            String authOrigin = getAuthenticationOriginId(userId);
-            authenticationManagerMap.get(authOrigin).authenticate(userId, password, throwException);
-        }
-    }
-
-    public QueryResult<Session> login(String userId, String password, String sessionIp) throws CatalogException, IOException {
-        ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(password, "password");
-        ParamUtils.checkParameter(sessionIp, "sessionIp");
-
-        String authId;
-        QueryResult<User> user = null;
-        if (!userId.equals("admin")) {
-            try {
-                user = userDBAdaptor.get(userId, new QueryOptions(), null);
-            } catch (CatalogDBException e) {
-                String authOrigin = null;
-                if (authenticationManagerMap.size() == 2) {
-                    for (Map.Entry<String, AuthenticationManager> entry : authenticationManagerMap.entrySet()) {
-                        if (!entry.getKey().equals(INTERNAL_AUTHORIZATION)) {
-                            authOrigin = entry.getKey();
-                            AuthenticationOrigin authenticationOrigin = getAuthenticationOrigin(authOrigin);
-                            // We check if the user can be authenticated
-                            try {
-                                List<Attributes> userInfoFromLDAP = LDAPUtils.getUserInfoFromLDAP(authenticationOrigin.getHost(),
-                                        Arrays.asList(userId),
-                                        (String) authenticationOrigin.getOptions().get(AuthenticationOrigin.USERS_SEARCH));
-                                if (userInfoFromLDAP == null || userInfoFromLDAP.size() == 0) {
-                                    throw new CatalogException("The user id " + userId + " does not exist nor could be found in LDAP.");
-                                }
-                                entry.getValue().authenticate(LDAPUtils.getRDN(userInfoFromLDAP.get(0)), password, true);
-                            } catch (NamingException e1) {
-                                throw new CatalogException(e1);
-                            }
-                            break;
-                        }
-                    }
-                } else {
-                    throw new CatalogException("The user id " + userId + " does not exist.");
-                }
-                if (authOrigin == null) {
-                    throw new CatalogException("Unexpected error occurred. Count not detect authorization origin.");
-                }
-                importFromExternalAuthOrigin(authOrigin, Account.GUEST, new ObjectMap("users", userId));
-                user = userDBAdaptor.get(userId, new QueryOptions(), null);
-            }
-
-            // Check that the authentication id is valid
-            authId = user.first().getAccount().getAuthOrigin();
-        } else {
-            authId = INTERNAL_AUTHORIZATION;
-        }
-        AuthenticationOrigin authenticationOrigin = getAuthenticationOrigin(authId);
-
-        if (authenticationOrigin == null) {
-            throw new CatalogException("Could not find authentication origin " + authId + " for user " + userId);
-        }
-
-        if (AuthenticationOrigin.AuthenticationType.LDAP == authenticationOrigin.getType()) {
-            if (user == null) {
-                throw new CatalogException("Internal error: This error should never happen.");
-            }
-            authenticationManagerMap.get(authId).authenticate(((String) user.first().getAttributes().get("LDAP_RDN")), password, true);
-
-            // Fetch current LDAP groups for user
-            List<String> groups;
-            try {
-                groups = fetchGroupsFromLdapUser(user.first(), authenticationOrigin);
-            } catch (NamingException e) {
-                logger.error("{}", e.getMessage(), e);
-                groups = Collections.emptyList();
-            }
-
-            // Resync synced groups of user in OpenCGA
-            studyDBAdaptor.resyncUserWithSyncedGroups(userId, groups, authId);
-        } else {
-            authenticationManagerMap.get(authId).authenticate(userId, password, true);
-        }
-
-        QueryResult<Session> sessionTokenQueryResult =
-                authenticationManagerMap.get(authId).createToken(userId, sessionIp, Session.Type.USER);
-
-        auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.login, AuditRecord.Magnitude.low, userId, userId, null,
-                sessionTokenQueryResult.first(), "User successfully logged in", null);
-
-        return sessionTokenQueryResult;
-    }
-
-    public QueryResult<Session> refreshToken(String userId, String token, String sessionIp) throws CatalogException {
-        if (!userId.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
-            throw new CatalogException("Cannot refresh token. The token received does not correspond to " + userId);
-        }
-        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(userId, sessionIp, Session.Type.USER);
-    }
-
-    /**
-     * This method will be only callable by the system. It generates a new session id for the user.
-     *
-     * @param userId user id for which a session will be generated.
-     * @param adminCredentials Password or active session of the OpenCGA admin.
-     * @return an objectMap containing the new sessionId
-     * @throws CatalogException if the password is not correct or the userId does not exist.
-     */
-    public QueryResult<Session> getSystemTokenForUser(String userId, String adminCredentials) throws CatalogException {
-        authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", adminCredentials, true);
-        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(userId, "localhost", Session.Type.SYSTEM);
-    }
-
-    /**
-     * Add a new filter to the user account.
-     *
-     * @param userId user id to whom the filter will be associated.
-     * @param sessionId session id of the user asking to store the filter.
-     * @param name Filter name.
-     * @param description Filter description.
-     * @param bioformat Bioformat where the filter should be applied.
-     * @param query Query object.
-     * @param queryOptions Query options object.
-     * @return the created filter.
-     * @throws CatalogException if there already exists a filter with that same name for the user or if the user corresponding to the
-     * session id is not the same as the provided user id.
-     */
-    public QueryResult<User.Filter> addFilter(String userId, String sessionId, String name, String description, File.Bioformat bioformat,
-                                              Query query, QueryOptions queryOptions) throws CatalogException {
-        ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkParameter(name, "name");
-        ParamUtils.checkObj(bioformat, "bioformat");
-        ParamUtils.checkObj(query, "Query");
-        ParamUtils.checkObj(queryOptions, "QueryOptions");
-        if (description == null) {
-            description = "";
-        }
-
-        String userIdAux = getId(sessionId);
-        userDBAdaptor.checkId(userId);
-        if (!userId.equals(userIdAux)) {
-            throw new CatalogException("User " + userIdAux + " is not authorised to store filters for user " + userId);
-        }
-
-        Query queryExists = new Query()
-                .append(UserDBAdaptor.QueryParams.ID.key(), userId)
-                .append(UserDBAdaptor.QueryParams.CONFIGS_FILTERS_NAME.key(), name);
-        if (userDBAdaptor.count(queryExists).first() > 0) {
-            throw new CatalogException("There already exists a filter called " + name + " for user " + userId);
-        }
-
-        User.Filter filter = new User.Filter(name, description, bioformat, query, queryOptions);
-        return userDBAdaptor.addFilter(userId, filter);
-    }
-
-    /**
-     * Update the filter information.
-     *
-     *
-     * @param userId user id to whom the filter should be updated.
-     * @param sessionId session id of the user asking to update the filter.
-     * @param name Filter name.
-     * @param params Map containing the parameters to be updated.
-     * @return the updated filter.
-     * @throws CatalogException if the filter could not be updated because the filter name is not correct or if the user corresponding to
-     * the session id is not the same as the provided user id.
-     */
-    public QueryResult<User.Filter> updateFilter(String userId, String sessionId, String name, ObjectMap params) throws CatalogException {
-        ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkParameter(name, "name");
-
-        String userIdAux = getId(sessionId);
-        userDBAdaptor.checkId(userId);
-        if (!userId.equals(userIdAux)) {
-            throw new CatalogException("User " + userIdAux + " is not authorised to update filters for user " + userId);
-        }
-
-        Query queryExists = new Query()
-                .append(UserDBAdaptor.QueryParams.ID.key(), userId)
-                .append(UserDBAdaptor.QueryParams.CONFIGS_FILTERS_NAME.key(), name);
-        if (userDBAdaptor.count(queryExists).first() == 0) {
-            throw new CatalogException("There is no filter called " + name + " for user " + userId);
-        }
-
-        QueryResult<Long> queryResult = userDBAdaptor.updateFilter(userId, name, params);
-        User.Filter filter = getFilter(userId, name);
-        if (filter == null) {
-            throw new CatalogException("Internal error: The filter " + name + " could not be found.");
-        }
-
-        return new QueryResult<>("Update filter", queryResult.getDbTime(), 1, 1, queryResult.getWarningMsg(), queryResult.getErrorMsg(),
-                Arrays.asList(filter));
-    }
-
-    /**
-     * Delete the filter.
-     *
-     *
-     * @param userId user id to whom the filter should be deleted.
-     * @param sessionId session id of the user asking to delete the filter.
-     * @param name filter name to be deleted.
-     * @return the deleted filter.
-     * @throws CatalogException when the filter cannot be removed or the name is not correct or if the user corresponding to the
-     * session id is not the same as the provided user id.
-     */
-    public QueryResult<User.Filter> deleteFilter(String userId, String sessionId, String name) throws CatalogException {
-        ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkParameter(name, "name");
-
-        String userIdAux = getId(sessionId);
-        userDBAdaptor.checkId(userId);
-        if (!userId.equals(userIdAux)) {
-            throw new CatalogException("User " + userIdAux + " is not authorised to delete filters for user " + userId);
-        }
-
-        User.Filter filter = getFilter(userId, name);
-        if (filter == null) {
-            throw new CatalogException("There is no filter called " + name + " for user " + userId);
-        }
-
-        QueryResult<Long> queryResult = userDBAdaptor.deleteFilter(userId, name);
-        return new QueryResult<>("Delete filter", queryResult.getDbTime(), 1, 1, queryResult.getWarningMsg(), queryResult.getErrorMsg(),
-                Arrays.asList(filter));
-    }
-
-    /**
-     * Retrieves a filter.
-     *
-     * @param userId user id having the filter stored.
-     * @param sessionId session id of the user fetching the filter.
-     * @param name Filter name to be fetched.
-     * @return the filter.
-     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
-     */
-    public QueryResult<User.Filter> getFilter(String userId, String sessionId, String name) throws CatalogException {
-        ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkParameter(name, "name");
-
-        String userIdAux = getId(sessionId);
-        userDBAdaptor.checkId(userId);
-        if (!userId.equals(userIdAux)) {
-            throw new CatalogException("User " + userIdAux + " is not authorised to get filters from user " + userId);
-        }
-
-        User.Filter filter = getFilter(userId, name);
-        if (filter == null) {
-            return new QueryResult<>("Get filter", 0, 0, 0, "", "Filter not found", Arrays.asList());
-        } else {
-            return new QueryResult<>("Get filter", 0, 1, 1, "", "", Arrays.asList(filter));
-        }
-    }
-
-    /**
-     * Retrieves all the user filters.
-     *
-     * @param userId user id having the filters.
-     * @param sessionId session id of the user fetching the filters.
-     * @return the filters.
-     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
-     */
-    public QueryResult<User.Filter> getAllFilters(String userId, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-
-        String userIdAux = getId(sessionId);
-        userDBAdaptor.checkId(userId);
-        if (!userId.equals(userIdAux)) {
-            throw new CatalogException("User " + userIdAux + " is not authorised to get filters from user " + userId);
-        }
-
-        Query query = new Query()
-                .append(UserDBAdaptor.QueryParams.ID.key(), userId);
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
-        QueryResult<User> userQueryResult = userDBAdaptor.get(query, queryOptions);
-
-        if (userQueryResult.getNumResults() != 1) {
-            throw new CatalogException("Internal error: User " + userId + " not found.");
-        }
-
-        List<User.Filter> filters = userQueryResult.first().getConfigs().getFilters();
-
-        return new QueryResult<>("Get filters", 0, filters.size(), filters.size(), "", "", filters);
-    }
-
-    /**
-     * Creates or updates a configuration.
-     *
-     * @param userId user id to whom the config will be associated.
-     * @param sessionId session id of the user asking to store the config.
-     * @param name Name of the configuration (normally, name of the application).
-     * @param config Configuration to be stored.
-     * @return the set configuration.
-     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
-     */
-    public QueryResult setConfig(String userId, String sessionId, String name, ObjectMap config) throws CatalogException {
-        ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkParameter(name, "name");
-        ParamUtils.checkObj(config, "ObjectMap");
-
-        String userIdAux = getId(sessionId);
-        userDBAdaptor.checkId(userId);
-        if (!userId.equals(userIdAux)) {
-            throw new CatalogException("User " + userIdAux + " is not authorised to set configuration for user " + userId);
-        }
-
-        return userDBAdaptor.setConfig(userId, name, config);
-    }
-
-    /**
-     * Deletes a configuration.
-     *
-     * @param userId user id to whom the configuration should be deleted.
-     * @param sessionId session id of the user asking to delete the configuration.
-     * @param name Name of the configuration to be deleted (normally, name of the application).
-     * @return the deleted configuration.
-     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id or the configuration
-     * did not exist.
-     */
-    public QueryResult deleteConfig(String userId, String sessionId, String name) throws CatalogException {
-        ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkParameter(name, "name");
-
-        String userIdAux = getId(sessionId);
-        userDBAdaptor.checkId(userId);
-        if (!userId.equals(userIdAux)) {
-            throw new CatalogException("User " + userIdAux + " is not authorised to delete the configuration of user " + userId);
-        }
-
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
-        QueryResult<User> userQueryResult = userDBAdaptor.get(userId, options, "");
-        if (userQueryResult.getNumResults() == 0) {
-            throw new CatalogException("Internal error: Could not get user " + userId);
-        }
-
-        User.UserConfiguration configs = userQueryResult.first().getConfigs();
-        if (configs == null) {
-            throw new CatalogException("Internal error: Configuration object is null.");
-        }
-
-        if (configs.get(name) == null) {
-            throw new CatalogException("Error: Cannot delete configuration with name " + name + ". Configuration name not found.");
-        }
-
-        QueryResult<Long> queryResult = userDBAdaptor.deleteConfig(userId, name);
-        return new QueryResult("Delete configuration", queryResult.getDbTime(), 1, 1, "", "", Arrays.asList(configs.get(name)));
-    }
-
-    /**
-     * Retrieves a configuration.
-     *
-     * @param userId user id having the configuration stored.
-     * @param sessionId session id of the user attempting to fetch the configuration.
-     * @param name Name of the configuration to be fetched (normally, name of the application).
-     * @return the configuration.
-     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id or the configuration
-     * does not exist.
-     */
-    public QueryResult getConfig(String userId, String sessionId, String name) throws CatalogException {
-        ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkParameter(name, "name");
-
-        String userIdAux = getId(sessionId);
-        userDBAdaptor.checkId(userId);
-        if (!userId.equals(userIdAux)) {
-            throw new CatalogException("User " + userIdAux + " is not authorised to fetch the configuration of user " + userId);
-        }
-
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
-        QueryResult<User> userQueryResult = userDBAdaptor.get(userId, options, "");
-        if (userQueryResult.getNumResults() == 0) {
-            throw new CatalogException("Internal error: Could not get user " + userId);
-        }
-
-        User.UserConfiguration configs = userQueryResult.first().getConfigs();
-        if (configs == null) {
-            throw new CatalogException("Internal error: Configuration object is null.");
-        }
-
-        if (configs.get(name) == null) {
-            throw new CatalogException("Error: Cannot fetch configuration with name " + name + ". Configuration name not found.");
-        }
-
-        return new QueryResult("Get configuration", userQueryResult.getDbTime(), 1, 1, userQueryResult.getWarningMsg(),
-                userQueryResult.getErrorMsg(), Arrays.asList(configs.get(name)));
-    }
-
-
-    private User.Filter getFilter(String userId, String name) throws CatalogException {
-        Query query = new Query()
-                .append(UserDBAdaptor.QueryParams.ID.key(), userId);
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
-        QueryResult<User> userQueryResult = userDBAdaptor.get(query, queryOptions);
-
-        if (userQueryResult.getNumResults() != 1) {
-            throw new CatalogException("Internal error: User " + userId + " not found.");
-        }
-
-        for (User.Filter filter : userQueryResult.first().getConfigs().getFilters()) {
-            if (name.equals(filter.getName())) {
-                return filter;
-            }
-        }
-
-        return null;
-    }
-
-    private void checkSessionId(String userId, String jwtToken) throws CatalogException {
-
-        if (!userId.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(jwtToken))) {
-            throw new CatalogException("Invalid sessionId for user: " + userId);
-        }
-    }
-
-    private void checkUserExists(String userId) throws CatalogException {
-        if (userId.toLowerCase().equals("admin")) {
-            throw new CatalogException("Permission denied: It is not allowed the creation of another admin user.");
-        } else if (userId.toLowerCase().equals(ANONYMOUS) || userId.toLowerCase().equals("daemon")) {
-            throw new CatalogException("Permission denied: Cannot create users with special treatments in catalog.");
-        }
-
-        if (userDBAdaptor.exists(userId)) {
-            throw new CatalogException("The user already exists in our database. Please, choose a different one.");
-        }
     }
 
 }

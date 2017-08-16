@@ -56,7 +56,7 @@ public class UserClientTest extends WorkEnvironmentTest {
 
     @Test
     public void logout() {
-        System.out.println("sessionId = " + userClient.login("user1", "user1_pass").first().first().getString("sessionId"));
+        System.out.println("token = " + userClient.login("user1", "user1_pass").first().first().getString("token"));
         assertNotNull(openCGAClient.getSessionId());
         openCGAClient.logout();
         assertEquals(null, openCGAClient.getSessionId());

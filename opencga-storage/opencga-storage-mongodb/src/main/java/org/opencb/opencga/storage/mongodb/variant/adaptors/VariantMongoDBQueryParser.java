@@ -746,7 +746,7 @@ public class VariantMongoDBQueryParser {
 
         Document projection = new Document();
 
-        if (options.containsKey(QueryOptions.SORT) && !options.getString(QueryOptions.SORT).equals("_id")) {
+        if (options.containsKey(QueryOptions.SORT) && !("_id").equals(options.getString(QueryOptions.SORT))) {
             if (options.getBoolean(QueryOptions.SORT)) {
                 options.put(QueryOptions.SORT, "_id");
                 options.putIfAbsent(QueryOptions.ORDER, QueryOptions.ASCENDING);

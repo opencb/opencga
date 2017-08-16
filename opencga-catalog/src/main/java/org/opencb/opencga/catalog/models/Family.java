@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Collections;
@@ -30,17 +31,12 @@ public class Family extends Annotable {
     private long id;
     private String name;
 
-    private Individual father;
-    private Individual mother;
-    private List<Individual> children;
-
-    private boolean parentalConsanguinity;
+    private List<OntologyTerm> diseases;
+    private List<Relatives> members;
 
     private String creationDate;
     private Status status;
     private String description;
-
-    private List<OntologyTerm> ontologyTerms;
 
     private int release;
     private Map<String, Object> attributes;
@@ -48,55 +44,22 @@ public class Family extends Annotable {
     public Family() {
     }
 
-    public Family(String name, Individual father, Individual mother, List<Individual> children, boolean parentalConsanguinity,
-                  String description, int release) {
-        this(name, father, mother, children, parentalConsanguinity, description, Collections.emptyList(), Collections.emptyList(),
-                release, Collections.emptyMap());
-    }
-
-    public Family(String name, Individual father, Individual mother, List<Individual> children, boolean parentalConsanguinity,
-                  String description, List<OntologyTerm> ontologyTerms, List<AnnotationSet> annotationSets, int release,
+    public Family(String name, List<OntologyTerm> diseases, List<Relatives> members, String description, List<AnnotationSet> annotationSets,
                   Map<String, Object> attributes) {
-        this(-1, name, father, mother, children, parentalConsanguinity, TimeUtils.getTime(), new Status(), description, ontologyTerms,
-                annotationSets, release, attributes);
+        this(name, diseases, members, TimeUtils.getTime(), new Status(Status.READY), description, -1, annotationSets, attributes);
     }
 
-    public Family(long id, String name, Individual father, Individual mother, List<Individual> children, boolean parentalConsanguinity,
-                  String creationDate, Status status, String description, List<OntologyTerm> ontologyTerms,
-                  List<AnnotationSet> annotationSets, int release, Map<String, Object> attributes) {
-        this.id = id;
+    public Family(String name, List<OntologyTerm> diseases, List<Relatives> members, String creationDate, Status status, String description,
+                  int release, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.name = name;
-        this.father = father;
-        this.mother = mother;
-        this.children = children;
-        this.parentalConsanguinity = parentalConsanguinity;
-        this.creationDate = creationDate;
-        this.status = status;
+        this.diseases = ParamUtils.defaultObject(diseases, Collections::emptyList);
+        this.members = ParamUtils.defaultObject(members, Collections::emptyList);
+        this.creationDate = ParamUtils.defaultObject(creationDate, TimeUtils::getTime);
+        this.status = ParamUtils.defaultObject(status, new Status());
         this.description = description;
-        this.ontologyTerms = ontologyTerms;
         this.release = release;
-        this.attributes = attributes;
-        this.annotationSets = annotationSets;
-    }
-
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("Family{");
-        sb.append("id=").append(id);
-        sb.append(", name='").append(name).append('\'');
-        sb.append(", father=").append(father);
-        sb.append(", mother=").append(mother);
-        sb.append(", children=").append(children);
-        sb.append(", parentalConsanguinity=").append(parentalConsanguinity);
-        sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", status=").append(status);
-        sb.append(", description='").append(description).append('\'');
-        sb.append(", ontologyTerms=").append(ontologyTerms);
-        sb.append(", release=").append(release);
-        sb.append(", attributes=").append(attributes);
-        sb.append(", annotationSets=").append(annotationSets);
-        sb.append('}');
-        return sb.toString();
+        this.annotationSets = ParamUtils.defaultObject(annotationSets, Collections::emptyList);
+        this.attributes = ParamUtils.defaultObject(attributes, Collections::emptyMap);
     }
 
     public long getId() {
@@ -117,39 +80,21 @@ public class Family extends Annotable {
         return this;
     }
 
-    public Individual getFather() {
-        return father;
+    public List<OntologyTerm> getDiseases() {
+        return diseases;
     }
 
-    public Family setFather(Individual father) {
-        this.father = father;
+    public Family setDiseases(List<OntologyTerm> diseases) {
+        this.diseases = diseases;
         return this;
     }
 
-    public Individual getMother() {
-        return mother;
+    public List<Relatives> getMembers() {
+        return members;
     }
 
-    public Family setMother(Individual mother) {
-        this.mother = mother;
-        return this;
-    }
-
-    public List<Individual> getChildren() {
-        return children;
-    }
-
-    public Family setChildren(List<Individual> children) {
-        this.children = children;
-        return this;
-    }
-
-    public boolean isParentalConsanguinity() {
-        return parentalConsanguinity;
-    }
-
-    public Family setParentalConsanguinity(boolean parentalConsanguinity) {
-        this.parentalConsanguinity = parentalConsanguinity;
+    public Family setMembers(List<Relatives> members) {
+        this.members = members;
         return this;
     }
 
@@ -180,15 +125,6 @@ public class Family extends Annotable {
         return this;
     }
 
-    public List<OntologyTerm> getOntologyTerms() {
-        return ontologyTerms;
-    }
-
-    public Family setOntologyTerms(List<OntologyTerm> ontologyTerms) {
-        this.ontologyTerms = ontologyTerms;
-        return this;
-    }
-
     public int getRelease() {
         return release;
     }
@@ -206,5 +142,4 @@ public class Family extends Annotable {
         this.attributes = attributes;
         return this;
     }
-
 }

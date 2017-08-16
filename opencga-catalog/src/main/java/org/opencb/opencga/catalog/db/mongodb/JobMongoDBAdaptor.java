@@ -92,7 +92,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     @Override
     public QueryResult<Long> extractFilesFromJobs(Query query, List<Long> fileIds) throws CatalogDBException {
-        if (fileIds == null || fileIds.size() == 0) {
+        if (fileIds == null || fileIds.isEmpty()) {
             throw new CatalogDBException("The array of fileIds is empty");
         }
 
@@ -187,14 +187,14 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
 
     @Override
-    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
         if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
             query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
-        if (studyPermission == null) {
-            studyPermission = StudyAclEntry.StudyPermissions.VIEW_JOBS;
-        }
+
+        StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
+                ? StudyAclEntry.StudyPermissions.VIEW_JOBS : studyPermissions);
 
         // Get the study document
         Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));

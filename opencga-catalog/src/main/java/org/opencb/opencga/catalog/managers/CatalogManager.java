@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.audit.CatalogAuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
@@ -32,7 +33,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.managers.api.*;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
@@ -98,8 +98,7 @@ public class CatalogManager implements AutoCloseable {
         //TODO: Check if catalog is empty
         //TODO: Setup catalog if it's empty.
         this.initializeAdmin();
-        auditManager = new CatalogAuditManager(catalogDBAdaptorFactory.getCatalogAuditDbAdaptor(), catalogDBAdaptorFactory
-                .getCatalogUserDBAdaptor(), authorizationManager, configuration);
+        auditManager = new CatalogAuditManager(catalogDBAdaptorFactory.getCatalogAuditDbAdaptor());
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager, this.configuration);
         userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
@@ -161,7 +160,7 @@ public class CatalogManager implements AutoCloseable {
             throw new CatalogException("Failed to create a directory URI from " + configuration.getTempJobsDir());
         }
         CatalogIOManager ioManager = getCatalogIOManagerFactory().get(jobsURI);
-        if (!ioManager.isDirectory(jobsURI) || ioManager.listFiles(jobsURI).size() > 0) {
+        if (!ioManager.isDirectory(jobsURI) || CollectionUtils.isNotEmpty(ioManager.listFiles(jobsURI))) {
             throw new CatalogException("Cannot install openCGA. Jobs folder is not empty.\nPlease, empty it first.");
         }
         catalogDBAdaptorFactory.installCatalogDB(configuration);

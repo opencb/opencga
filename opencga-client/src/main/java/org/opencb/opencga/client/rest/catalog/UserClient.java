@@ -41,29 +41,6 @@ public class UserClient extends CatalogClient<User, User> {
         this.clazz = User.class;
     }
 
-    /*public QueryResponse<User> create(String user, String password, ObjectMap params)throws IOException {
-        //TODO param: method for GET o POST
-        QueryResponse<User> response = null;
-        if (params.containsKey("method") && params.get("method").equals("GET")) {
-            params = addParamsToObjectMap(params, "userId", user, "password", password);
-            try {
-                response = execute(USERS_URL, "create", params, GET, User.class);
-            } catch (IOException e) {
-                System.out.println(e.getMessage());
-            }
-        }else {
-            params = addParamsToObjectMap(params, "userId", user, "password", password);
-            ObjectMapper mapper = new ObjectMapper();
-            try {
-                String json = mapper.writeValueAsString(params);
-                ObjectMap p = new ObjectMap("body", json);
-                response = execute(USERS_URL, "create", p, POST, User.class);
-            } catch (IOException e) {
-                System.out.println(e.getMessage());
-            }
-        }
-        return response;
-    }*/
     public QueryResponse<User> create(String user, String password, ObjectMap params) throws IOException {
         //TODO TEST
         if (params.containsKey("method") && params.get("method").equals("GET")) {
@@ -76,17 +53,7 @@ public class UserClient extends CatalogClient<User, User> {
         ObjectMap p = new ObjectMap("body", json);
         return execute(USERS_URL, "create", p, POST, User.class);
     }
-    /*
-    Deprecated
-    QueryResponse<ObjectMap> login(String user, String password) {
-        QueryResponse<ObjectMap> response = null;
-        try {
-            response = execute(USERS_URL, user, "login", createParamsMap("password", password), GET, ObjectMap.class);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return response;
-    }*/
+
     public QueryResponse<ObjectMap> login(String user, String password) {
         QueryResponse<ObjectMap> response = null;
         ObjectMap p = new ObjectMap("password", password);

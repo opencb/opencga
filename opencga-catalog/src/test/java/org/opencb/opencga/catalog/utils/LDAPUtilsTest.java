@@ -18,9 +18,9 @@ package org.opencb.opencga.catalog.utils;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.opencb.opencga.catalog.auth.authentication.LDAPUtils;
 
 import javax.naming.directory.Attributes;
-import javax.naming.directory.DirContext;
 import java.util.Arrays;
 import java.util.List;
 

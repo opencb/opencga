@@ -21,7 +21,7 @@ import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
@@ -63,7 +63,7 @@ public class JobWSServerTest {
     public void init() throws Exception {
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
-        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD, "localhost").first().getId();
+        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD);
         studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user", "1000G:phase1");
     }
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.utils;
+package org.opencb.opencga.catalog.auth.authentication;
 
 import org.apache.commons.lang3.StringUtils;
 

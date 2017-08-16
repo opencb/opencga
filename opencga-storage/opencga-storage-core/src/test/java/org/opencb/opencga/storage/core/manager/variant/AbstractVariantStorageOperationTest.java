@@ -30,7 +30,7 @@ import org.opencb.opencga.core.config.Policies;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
@@ -101,7 +101,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
             "1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"};
 
     protected FileMetadataReader fileMetadataReader;
-    protected CatalogFileUtils catalogFileUtils;
+    protected FileUtils catalogFileUtils;
     protected org.opencb.opencga.storage.core.manager.variant.VariantStorageManager variantManager;
 
     protected final String dbName = DB_NAME;
@@ -139,27 +139,28 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         variantManager = new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, factory);
 
         fileMetadataReader = FileMetadataReader.get(catalogManager);
-        catalogFileUtils = new CatalogFileUtils(catalogManager);
+        catalogFileUtils = new FileUtils(catalogManager);
         Policies policies = new Policies();
         policies.setUserCreation(Policies.UserCreation.ALWAYS);
 
         User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.FULL, null).first();
-        sessionId = catalogManager.getUserManager().login(userId, "user", "localhost").first().getId();
+        sessionId = catalogManager.getUserManager().login(userId, "user");
         projectAlias = "p1";
         projectId = catalogManager.getProjectManager().create(projectAlias, projectAlias, "Project 1", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
-        studyId = catalogManager.getStudyManager().create(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, "Study 1", null, null,
-                null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)), null,
-                Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), getAggregation()), null, sessionId).first()
+        studyId = catalogManager.getStudyManager().create(String.valueOf(projectId), "s1", "s1", Study.Type.CASE_CONTROL, null, "Study " +
+                "1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)),
+                null, Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), getAggregation()), null, sessionId)
+                .first()
                 .getId();
         studyStr = String.valueOf(studyId);
         outputId = catalogManager.getFileManager().createFolder(studyStr, Paths.get("data", "index").toString(), null,  true, null,
                 QueryOptions.empty(), sessionId).first().getId();
         outputStr = String.valueOf(outputId);
         outputPath = "data/index/";
-        studyId2 = catalogManager.getStudyManager().create(projectId, "s2", "s2", Study.Type.CASE_CONTROL, null, "Study 2", null, null,
-                null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)), null,
-                Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), getAggregation()), null, sessionId).first().getId();
+        studyId2 = catalogManager.getStudyManager().create(String.valueOf(projectId), "s2", "s2", Study.Type.CASE_CONTROL, null, "Study " +
+                "2", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)),
+                null, Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), getAggregation()), null, sessionId).first().getId();
         outputId2 = catalogManager.getFileManager().createFolder(Long.toString(studyId2), Paths.get("data", "index").toString(), null,
                 true, null, QueryOptions.empty(), sessionId).first().getId();
 

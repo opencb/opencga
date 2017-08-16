@@ -22,7 +22,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -37,14 +37,14 @@ public class FileDaemon extends MonitorParentDaemon {
     private int deleteDelay;
     private long deleteDelayMillis;
 
-    private CatalogFileUtils catalogFileUtils;
+    private FileUtils catalogFileUtils;
 
     public FileDaemon(int period, int deleteDelay, String sessionId, CatalogManager catalogManager) throws CatalogDBException {
         super(period, sessionId, catalogManager);
         this.deleteDelay = deleteDelay;
         this.deleteDelayMillis = (long) (deleteDelay * 24 * 60 * 60 * 1000);
 
-        this.catalogFileUtils = new CatalogFileUtils(catalogManager);
+        this.catalogFileUtils = new FileUtils(catalogManager);
     }
 
     @Override
@@ -108,7 +108,7 @@ public class FileDaemon extends MonitorParentDaemon {
                 long deleteTimeMillis = TimeUtils.toDate(file.getStatus().getDate()).toInstant().toEpochMilli();
                 if ((currentTimeMillis - deleteTimeMillis) > deleteDelayMillis) {
                     if (file.getType().equals(File.Type.FILE)) {
-                        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, null, sessionId);
+                        catalogManager.getFileManager().delete(null, Long.toString(file.getId()), null, sessionId);
                     } else {
                         System.out.println("empty block");
                     }

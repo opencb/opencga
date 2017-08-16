@@ -40,7 +40,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Created on 09/05/16
@@ -76,7 +77,7 @@ public class AnalysisMainTest {
 
         User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.FULL, null).first();
 
-        sessionId = catalogManager.getUserManager().login(userId, "user", "localhost").first().getId();
+        sessionId = catalogManager.getUserManager().login(userId, "user");
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
 
@@ -84,9 +85,9 @@ public class AnalysisMainTest {
         datastores.put(File.Bioformat.VARIANT, new DataStore(STORAGE_ENGINE, dbNameVariants));
         datastores.put(File.Bioformat.ALIGNMENT, new DataStore(STORAGE_ENGINE, dbNameAlignments));
 
-        studyId = catalogManager.getStudyManager().create(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, "Study 1", null, null,
-                null, null, datastores, null, Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), VariantSource
-                        .Aggregation.NONE), null, sessionId).first().getId();
+        studyId = catalogManager.getStudyManager().create(String.valueOf(projectId), "s1", "s1", Study.Type.CASE_CONTROL, null, "Study " +
+                "1", null, null, null, null, datastores, null, Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key
+                (), VariantSource.Aggregation.NONE), null, sessionId).first().getId();
         outdirId = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data", "index").toString(), null,
                 true, null, QueryOptions.empty(), sessionId).first().getId();
     }
@@ -146,6 +147,7 @@ public class AnalysisMainTest {
         assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(file2.getId(), null, sessionId).first().getIndex()
                 .getStatus().getName());
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getName());
+
 //        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file2.getId()), null, sessionId).first();
 //        assertEquals(Job.JobStatus.READY, job.getStatus().getName());
 //        assertEquals(outdirId, job.getOutDir().getId());
@@ -191,6 +193,7 @@ public class AnalysisMainTest {
                 "--annotate");
         assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(file5.getId(), null, sessionId).first().getIndex().getStatus().getName());
         assertEquals(Cohort.CohortStatus.INVALID, catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getName());
+
 //        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file5.getId()), null, sessionId).first();
 //        assertEquals(Job.JobStatus.READY, job.getStatus().getName());
 
@@ -250,6 +253,7 @@ public class AnalysisMainTest {
 
         assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(file1.getId(), null, sessionId).first().getIndex().getStatus().getName());
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getName());
+
 //        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), file1.getId()), null, sessionId).first();
 //        assertEquals(Job.JobStatus.READY, job.getStatus().getName());
 
@@ -323,7 +327,7 @@ public class AnalysisMainTest {
                 "--file", bam.getName(),
                 "-o", opencga.createTmpOutdir(studyId, "index", sessionId));
         assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(bam.getId(), null, sessionId).first().getIndex().getStatus().getName());
-        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), bam.getId()), null, sessionId).first();
+        job = catalogManager.getJobManager().get(String.valueOf(studyId), new Query(JobDBAdaptor.QueryParams.INPUT.key(), bam.getId()), null, sessionId).first();
         assertEquals(Job.JobStatus.READY, job.getStatus().getName());
 
         execute("alignment", "query", "--session-id", sessionId, "--file", "user@p1:s1:" + bam.getPath(), "--region", "20");

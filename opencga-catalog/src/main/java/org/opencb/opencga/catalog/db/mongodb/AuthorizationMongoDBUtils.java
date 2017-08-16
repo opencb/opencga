@@ -88,7 +88,7 @@ public class AuthorizationMongoDBUtils {
                     }
                 }
 
-                if (confidentialVariableSets.size() > 0) {
+                if (!confidentialVariableSets.isEmpty()) {
                     // The study contains confidential variable sets so we do have to check if any of the annotations come from
                     // confidential variable sets
                     Iterator<Document> iterator = ((List<Document>) entry.get(ANNOTATION_SETS)).iterator();
@@ -147,16 +147,14 @@ public class AuthorizationMongoDBUtils {
             ));
         }
 
-//        logger.debug("Query for authorised entries: {}", queryDocument.toBsonDocument(Document.class,
-//                MongoClient.getDefaultCodecRegistry()));
         return queryDocument;
     }
 
     public static boolean isUserInMembers(Document study, String user) {
         List<Document> groupDocumentList = study.get(StudyDBAdaptor.QueryParams.GROUPS.key(), ArrayList.class);
-        if (groupDocumentList != null && groupDocumentList.size() > 0) {
+        if (groupDocumentList != null && !groupDocumentList.isEmpty()) {
             for (Document group : groupDocumentList) {
-                if (group.getString("name").equals("@members")) {
+                if (("@members").equals(group.getString("name"))) {
                     List<String> userIds = group.get("userIds", ArrayList.class);
                     for (String userId : userIds) {
                         if (userId.equals(user)) {
@@ -203,9 +201,9 @@ public class AuthorizationMongoDBUtils {
     public static List<String> getGroups(Document study, String user) {
         List<Document> groupDocumentList = study.get(StudyDBAdaptor.QueryParams.GROUPS.key(), ArrayList.class);
         List<String> groups = new ArrayList<>();
-        if (groupDocumentList != null && groupDocumentList.size() > 0) {
+        if (groupDocumentList != null && !groupDocumentList.isEmpty()) {
             for (Document group : groupDocumentList) {
-                if (!group.getString("name").equals("@members")) {
+                if (!("@members").equals(group.getString("name"))) {
                     List<String> userIds = group.get("userIds", ArrayList.class);
                     for (String userId : userIds) {
                         if (user.equals(userId)) {
@@ -240,7 +238,7 @@ public class AuthorizationMongoDBUtils {
                     if (!permissions.containsKey(member)) {
                         permissions.put(member, new HashSet<>());
                     }
-                    if (!split[1].equals("NONE")) {
+                    if (!("NONE").equals(split[1])) {
                         permissions.get(member).add(split[1]);
                     }
                 }
@@ -271,7 +269,7 @@ public class AuthorizationMongoDBUtils {
             patternList.add(Pattern.compile("^" + user));
 
             // 2. Check if the groups have the permission (& not the user)
-            if (groups != null && groups.size() > 0) {
+            if (groups != null && !groups.isEmpty()) {
                 List<String> groupPermissionList = groups.stream().map(group -> group + "_" + permission).collect(Collectors.toList());
                 queryList.add(new Document("$and",
                         Arrays.asList(
@@ -314,7 +312,7 @@ public class AuthorizationMongoDBUtils {
 
         if (!user.equals(ANONYMOUS)) {
             patternList.add(Pattern.compile("^" + user));
-            if (groups != null && groups.size() > 0) {
+            if (groups != null && !groups.isEmpty()) {
                 patternList.addAll(groups.stream().map(group -> Pattern.compile("^" + group)).collect(Collectors.toList()));
             }
 

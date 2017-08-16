@@ -21,14 +21,15 @@ import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
-import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
@@ -40,12 +41,7 @@ import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
@@ -137,15 +133,16 @@ public class FileWSServer extends OpenCGAWSServer {
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                          @QueryParam("study") String studyStr) {
         try {
-            List<QueryResult<File>> queryResults = new LinkedList<>();
-            AbstractManager.MyResourceIds resourceIds = fileManager.getIds(fileStr, studyStr, sessionId);
-
-            for (Long fileId : resourceIds.getResourceIds()) {
-                QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(fileId, queryOptions, sessionId);
-                populateOldDeprecatedSampleIdsField(fileQueryResult);
-                queryResults.add(fileQueryResult);
+            QueryResult<File> fileQueryResult = fileManager.get(studyStr, fileStr, queryOptions, sessionId);
+            populateOldDeprecatedSampleIdsField(fileQueryResult);
+            // We parse the query result to create one queryresult per file
+            List<QueryResult<File>> queryResultList = new ArrayList<>(fileQueryResult.getNumResults());
+            for (File file : fileQueryResult.getResult()) {
+                queryResultList.add(new QueryResult<>(file.getName() + "-" + file.getId(), fileQueryResult.getDbTime(), 1, -1,
+                        fileQueryResult.getWarningMsg(), fileQueryResult.getErrorMsg(), Arrays.asList(file)));
             }
-            return createOkResponse(queryResults);
+
+            return createOkResponse(queryResultList);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -173,33 +170,29 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @ApiOperation(httpMethod = "POST", position = 4, value = "Resource to upload a file by chunks", response = File.class)
-    public Response upload(@ApiParam(hidden = true) @FormDataParam("chunk_content") byte[] chunkBytes,
-                           @ApiParam(hidden = true) @FormDataParam("chunk_content") FormDataContentDisposition contentDisposition,
-                           @FormDataParam("file") InputStream fileInputStream,
-                           @FormDataParam("file") FormDataContentDisposition fileMetaData,
+    public Response upload(
+            @ApiParam(hidden = true) @FormDataParam("chunk_content") byte[] chunkBytes,
+            @ApiParam(hidden = true) @FormDataParam("chunk_content") FormDataContentDisposition contentDisposition,
+            @FormDataParam("file") InputStream fileInputStream,
+            @FormDataParam("file") FormDataContentDisposition fileMetaData,
 
-                           @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_id") String chunk_id,
-                           @ApiParam(hidden = true) @DefaultValue("false") @FormDataParam("last_chunk") String last_chunk,
-                           @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_total") String chunk_total,
-                           @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_size") String chunk_size,
-                           @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_hash") String chunkHash,
-                           @ApiParam(hidden = true) @DefaultValue("false") @FormDataParam("resume_upload") String resume_upload,
+            @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_id") String chunk_id,
+            @ApiParam(hidden = true) @DefaultValue("false") @FormDataParam("last_chunk") String last_chunk,
+            @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_total") String chunk_total,
+            @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_size") String chunk_size,
+            @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_hash") String chunkHash,
+            @ApiParam(hidden = true) @DefaultValue("false") @FormDataParam("resume_upload") String resume_upload,
 
-                           @ApiParam(value = "filename", required = false) @FormDataParam("filename") String filename,
-                           @ApiParam(value = "fileFormat", required = true) @DefaultValue("") @FormDataParam("fileFormat")
-                                   String fileFormat,
-                           @ApiParam(value = "bioformat", required = true) @DefaultValue("") @FormDataParam("bioformat")
-                                   String bioformat,
-                           @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @FormDataParam("studyId")
-                                   String studyIdStr,
-                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                           @FormDataParam("study") String studyStr,
-                           @ApiParam(value = "Path within catalog where the file will be located (default: root folder)",
-                                   required = true) @DefaultValue(".") @FormDataParam("relativeFilePath") String relativeFilePath,
-                           @ApiParam(value = "description", required = false) @DefaultValue("") @FormDataParam("description")
-                                   String description,
-                           @ApiParam(value = "Create the parent directories if they do not exist", required = false)
-                           @DefaultValue("true") @FormDataParam("parents") boolean parents) {
+            @ApiParam(value = "filename", required = false) @FormDataParam("filename") String filename,
+            @ApiParam(value = "fileFormat", required = true) @DefaultValue("") @FormDataParam("fileFormat") String fileFormat,
+            @ApiParam(value = "bioformat", required = true) @DefaultValue("") @FormDataParam("bioformat") String bioformat,
+            @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @FormDataParam("studyId") String studyIdStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @FormDataParam("study") String studyStr,
+            @ApiParam(value = "Path within catalog where the file will be located (default: root folder)",
+                    required = true) @DefaultValue(".") @FormDataParam("relativeFilePath") String relativeFilePath,
+            @ApiParam(value = "description", required = false) @DefaultValue("") @FormDataParam("description")
+                    String description,
+            @ApiParam(value = "Create the parent directories if they do not exist", required = false) @DefaultValue("true") @FormDataParam("parents") boolean parents) {
 
         if (StringUtils.isNotEmpty(studyIdStr)) {
             studyStr = studyIdStr;
@@ -230,9 +223,9 @@ public class FileWSServer extends OpenCGAWSServer {
         java.nio.file.Path filePath = null;
         final long studyId;
         try {
-            String userId1 = catalogManager.getUserManager().getId(sessionId);
+            String userId1 = catalogManager.getUserManager().getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId1, studyStr);
-            String userId = catalogManager.getUserManager().getId(sessionId);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
             catalogManager.getAuthorizationManager().checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPLOAD_FILES);
             // TODO: Improve upload method. Check upload permission not only at study level.
         } catch (Exception e) {
@@ -305,7 +298,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     IOUtils.deleteDirectory(folderPath);
                     try {
                         QueryResult<File> queryResult1 = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.valueOf(fileFormat.toUpperCase()), File.Bioformat.valueOf(bioformat.toUpperCase()), relativeFilePath, null, description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, null, sessionId);
-                        new CatalogFileUtils(catalogManager).upload(completedFilePath.toUri(), queryResult1.first(), null, sessionId, false, false, true, true, Long.MAX_VALUE);
+                        new FileUtils(catalogManager).upload(completedFilePath.toUri(), queryResult1.first(), null, sessionId, false, false, true, true, Long.MAX_VALUE);
                         QueryResult<File> queryResult = catalogManager.getFileManager().get(queryResult1.first().getId(), null, sessionId);
                         File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
                                 new QueryOptions(queryOptions), sessionId, false);
@@ -331,7 +324,9 @@ public class FileWSServer extends OpenCGAWSServer {
             java.nio.file.Path studyPath = null;
 
             try {
-                studyPath = Paths.get(catalogManager.getFileManager().getStudyUri(studyId));
+                QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyStr,
+                        new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key()), sessionId);
+                studyPath = Paths.get(studyQueryResult.first().getUri());
             } catch (CatalogException e) {
                 e.printStackTrace();
                 return createErrorResponse("Upload file", e.getMessage());
@@ -393,7 +388,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
                 // Register the file and move it to the proper directory
                 QueryResult<File> queryResult1 = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.valueOf(fileFormat.toUpperCase()), File.Bioformat.valueOf(bioformat.toUpperCase()), destinationPath, null, description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, null, sessionId);
-                new CatalogFileUtils(catalogManager).upload(tempFilePath.toUri(), queryResult1.first(), null, sessionId, false, false, true, true, Long.MAX_VALUE);
+                new FileUtils(catalogManager).upload(tempFilePath.toUri(), queryResult1.first(), null, sessionId, false, false, true, true, Long.MAX_VALUE);
 
                 QueryResult<File> queryResult = catalogManager.getFileManager().get(queryResult1.first().getId(), null, sessionId);
                 File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
@@ -768,182 +763,6 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @Deprecated
     @GET
-    @Path("/{file}/fetch")
-    @ApiOperation(value = "File fetch [DEPRECATED]", notes = "DEPRECATED. Use .../files/{fileId}/[variants|alignments] or "
-            + ".../studies/{studyId}/[variants|alignments] instead", hidden = true, position = 15)
-    public Response fetch(@PathParam(value = "file") @DefaultValue("") String fileIds,
-                          @ApiParam(value = "region", allowMultiple = true, required = true) @DefaultValue("") @QueryParam("region") String region,
-                          @ApiParam(value = "view_as_pairs", required = false) @DefaultValue("false") @QueryParam("view_as_pairs") boolean view_as_pairs,
-                          @ApiParam(value = "include_coverage", required = false) @DefaultValue("true") @QueryParam("include_coverage") boolean include_coverage,
-                          @ApiParam(value = "process_differences", required = false) @DefaultValue("true") @QueryParam("process_differences") boolean process_differences,
-                          @ApiParam(value = "histogram", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
-                          @ApiParam(value = "GroupBy: [ct, gene, ensemblGene]", required = false) @DefaultValue("") @QueryParam("groupBy") String groupBy,
-                          @ApiParam(value = "variantSource", required = false) @DefaultValue("false") @QueryParam("variantSource") boolean variantSource,
-                          @ApiParam(value = "interval", required = false) @DefaultValue("2000") @QueryParam("interval") int interval) {
-        List<Region> regions = new LinkedList<>();
-        String[] splitFileId = fileIds.split(",");
-        List<Object> results = new LinkedList<>();
-        for (String r : region.split(",")) {
-            regions.add(new Region(r));
-        }
-
-        for (String fileId : splitFileId) {
-            long fileIdNum;
-            File file;
-            URI fileUri;
-
-            try {
-                fileIdNum = catalogManager.getFileManager().getId(fileId, null, sessionId).getResourceId();
-                QueryResult<File> queryResult = catalogManager.getFileManager().get(fileIdNum, null, sessionId);
-                file = queryResult.getResult().get(0);
-                fileUri = catalogManager.getFileManager().getUri(file);
-            } catch (CatalogException e) {
-                e.printStackTrace();
-                return createErrorResponse(e);
-            }
-
-//            if (!file.getType().equals(File.Type.INDEX)) {
-            if (file.getIndex() == null || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
-                return createErrorResponse("", "File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
-                        " is not an indexed file.");
-            }
-//            List<Index> indices = file.getIndices();
-//            Index index = null;
-//            for (Index i : indices) {
-//                if (i.getStorageEngine().equals(backend)) {
-//                    index = i;
-//                }
-//            }
-            ObjectMap indexAttributes = new ObjectMap(file.getIndex().getAttributes());
-            DataStore dataStore = null;
-            try {
-                dataStore = StorageOperation.getDataStore(catalogManager, catalogManager.getFileManager().getStudyId(file.getId()),
-                        file.getBioformat(), sessionId);
-            } catch (CatalogException e) {
-                e.printStackTrace();
-                return createErrorResponse(e);
-            }
-            String storageEngine = dataStore.getStorageEngine();
-            String dbName = dataStore.getDbName();
-//            QueryResult result;
-            QueryResult result;
-            switch (file.getBioformat()) {
-                case ALIGNMENT: {
-                    //TODO: getChunkSize from file.index.attributes?  use to be 200
-                    int chunkSize = indexAttributes.getInt("coverageChunkSize", 200);
-                    QueryOptions queryOptions = new QueryOptions();
-                    queryOptions.put(AlignmentDBAdaptor.QO_FILE_ID, Long.toString(fileIdNum));
-                    queryOptions.put(AlignmentDBAdaptor.QO_BAM_PATH, fileUri.getPath());     //TODO: Make uri-compatible
-                    queryOptions.put(AlignmentDBAdaptor.QO_VIEW_AS_PAIRS, view_as_pairs);
-                    queryOptions.put(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, include_coverage);
-                    queryOptions.put(AlignmentDBAdaptor.QO_PROCESS_DIFFERENCES, process_differences);
-                    queryOptions.put(AlignmentDBAdaptor.QO_INTERVAL_SIZE, interval);
-                    queryOptions.put(AlignmentDBAdaptor.QO_HISTOGRAM, histogram);
-                    queryOptions.put(AlignmentDBAdaptor.QO_COVERAGE_CHUNK_SIZE, chunkSize);
-
-                    if (indexAttributes.containsKey("baiFileId")) {
-                        File baiFile = null;
-                        try {
-                            baiFile = catalogManager.getFileManager().get((long) indexAttributes.getInt("baiFileId"), null, sessionId).getResult().get(0);
-                            URI baiUri = catalogManager.getFileManager().getUri(baiFile);
-                            queryOptions.put(AlignmentDBAdaptor.QO_BAI_PATH, baiUri.getPath());  //TODO: Make uri-compatible
-                        } catch (CatalogException e) {
-                            e.printStackTrace();
-                            logger.error("Can't obtain bai file for file " + fileIdNum, e);
-                        }
-                    }
-
-                    AlignmentDBAdaptor dbAdaptor;
-                    try {
-                        AlignmentStorageEngine alignmentStorageManager = storageEngineFactory.getAlignmentStorageEngine(storageEngine, dbName);
-                        dbAdaptor = alignmentStorageManager.getDBAdaptor();
-                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException e) {
-                        return createErrorResponse(e);
-                    }
-//                    QueryResult alignmentsByRegion;
-                    QueryResult alignmentsByRegion;
-                    if (histogram) {
-                        if (regions.size() != 1) {
-                            return createErrorResponse("", "Histogram fetch only accepts one region.");
-                        }
-                        alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(regions.get(0), new QueryOptions(queryOptions));
-                    } else {
-                        alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(regions, new QueryOptions(queryOptions));
-                    }
-                    result = alignmentsByRegion;
-                    break;
-                }
-
-                case VARIANT: {
-                    String warningMsg = null;
-                    Query query = VariantStorageManager.getVariantQuery(queryOptions);
-                    query.put(VariantQueryParam.REGION.key(), region);
-
-//                    for (Map.Entry<String, List<String>> entry : params.entrySet()) {
-//                        List<String> values = entry.getValue();
-//                        String csv = values.get(0);
-//                        for (int i = 1; i < values.size(); i++) {
-//                            csv += "," + values.get(i);
-//                        }
-//                        queryOptions.add(entry.getKey(), csv);
-//                    }
-//                    queryOptions.put("files", Arrays.asList(Integer.toString(fileIdNum)));
-                    query.put(VariantQueryParam.FILES.key(), fileIdNum);
-
-                    if (params.containsKey("fileId")) {
-                        warningMsg = "Do not use param \"fileI\". Use \"" + VariantQueryParam.RETURNED_FILES.key() + "\" instead";
-                        if (params.get("fileId").get(0).isEmpty()) {
-                            query.put(VariantQueryParam.RETURNED_FILES.key(), fileId);
-                        } else {
-                            List<String> files = params.get("fileId");
-                            query.put(VariantQueryParam.RETURNED_FILES.key(), files);
-                        }
-                    }
-
-                    VariantDBAdaptor dbAdaptor;
-                    try {
-                        dbAdaptor = storageEngineFactory.getVariantStorageEngine(storageEngine, dbName).getDBAdaptor();
-//                        dbAdaptor = new CatalogVariantDBAdaptor(catalogManager, dbAdaptor);
-                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException e) {
-                        return createErrorResponse(e);
-                    }
-//                    QueryResult queryResult;
-                    QueryResult queryResult;
-                    if (histogram) {
-                        queryOptions.put("interval", interval);
-                        queryResult = dbAdaptor.get(new Query(query), new QueryOptions(queryOptions));
-//                    } else if (variantSource) {
-//                        queryOptions.put("fileId", Integer.toString(fileIdNum));
-//                        queryResult = dbAdaptor.getVariantSourceDBAdaptor().getAllSources(queryOptions);
-                    } else if (!groupBy.isEmpty()) {
-                        queryResult = dbAdaptor.groupBy(new Query(query), groupBy, new QueryOptions(queryOptions));
-                    } else {
-                        //With merge = true, will return only one result.
-//                        queryOptions.put("merge", true);
-//                        queryResult = dbAdaptor.getAllVariantsByRegionList(regions, queryOptions).get(0);
-                        queryResult = dbAdaptor.get(new Query(query), new QueryOptions(queryOptions));
-                    }
-                    result = queryResult;
-                    if (warningMsg != null) {
-                        result.setWarningMsg(result.getWarningMsg() == null ? warningMsg : (result.getWarningMsg() + warningMsg));
-                    }
-                    break;
-
-                }
-                default:
-                    return createErrorResponse("", "Unknown bioformat '" + file.getBioformat() + '\'');
-            }
-
-            result.setId(Long.toString(fileIdNum));
-            System.out.println("result = " + result);
-            results.add(result);
-        }
-        System.out.println("results = " + results);
-        return createOkResponse(results);
-    }
-
-    @Deprecated
-    @GET
     @Path("/{file}/variants")
     @ApiOperation(value = "Fetch variants from a VCF/gVCF file [DEPRECATED]", position = 15,
             notes = "Moved to analysis/variants/query", hidden = true, response = QueryResponse.class)
@@ -1134,7 +953,7 @@ public class FileWSServer extends OpenCGAWSServer {
             if (uriList.size() == 1) {
                 // If it is just one uri to be linked, it will return an error response if there is some kind of error.
                 URI myUri = UriUtils.createUri(uriList.get(0));
-                String userId = catalogManager.getUserManager().getId(sessionId);
+                String userId = catalogManager.getUserManager().getUserId(sessionId);
                 long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
                 queryResultList.add(catalogManager.getFileManager().link(myUri, path, studyId, objectMap, sessionId));
             } else {
@@ -1142,7 +961,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     logger.info("uri: {}", uri);
                     try {
                         URI myUri = UriUtils.createUri(uri);
-                        String userId = catalogManager.getUserManager().getId(sessionId);
+                        String userId = catalogManager.getUserManager().getUserId(sessionId);
                         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
                         queryResultList.add(catalogManager.getFileManager().link(myUri, path, studyId, objectMap, sessionId));
                     } catch (URISyntaxException | CatalogException | IOException e) {
@@ -1192,7 +1011,7 @@ public class FileWSServer extends OpenCGAWSServer {
             AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
             File file = catalogManager.getFileManager().get(resource.getResourceId(), null, sessionId).first();
 
-            new CatalogFileUtils(catalogManager).link(file, calculateChecksum, uri, false, true, sessionId);
+            new FileUtils(catalogManager).link(file, calculateChecksum, uri, false, true, sessionId);
             file = catalogManager.getFileManager().get(file.getId(), queryOptions, sessionId).first();
             file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new QueryOptions(queryOptions), sessionId,
                     false);
@@ -1216,7 +1035,7 @@ public class FileWSServer extends OpenCGAWSServer {
             File file = catalogManager.getFileManager().get(resource.getResourceId(), null, sessionId).first();
 
             List<File> files;
-            CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
+            FileUtils catalogFileUtils = new FileUtils(catalogManager);
             FileMetadataReader fileMetadataReader = FileMetadataReader.get(catalogManager);
             if (file.getType() == File.Type.FILE) {
                 File file1 = catalogFileUtils.checkFile(file, false, sessionId);
@@ -1257,7 +1076,7 @@ public class FileWSServer extends OpenCGAWSServer {
             ObjectMap params = new ObjectMap()
                     .append(FileManager.DELETE_EXTERNAL_FILES, deleteExternal)
                     .append(FileManager.SKIP_TRASH, skipTrash);
-            List<QueryResult<File>> result = fileManager.delete(fileIdStr, studyStr, params, sessionId);
+            List<QueryResult<File>> result = fileManager.delete(studyStr, fileIdStr, params, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1307,7 +1126,7 @@ public class FileWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(sampleIds) && !query.containsKey(FileDBAdaptor.QueryParams.SAMPLES.key())) {
                 query.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleIds);
             }
-            QueryResult result = fileManager.groupBy(studyStr, query, queryOptions, fields, sessionId);
+            QueryResult result = fileManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1323,18 +1142,9 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "User or group id") @QueryParam("member") String member) {
         try {
             if (StringUtils.isEmpty(member)) {
-                AbstractManager.MyResourceIds resource = catalogManager.getFileManager().getIds(fileIdStr, studyStr, sessionId);
-                List<QueryResult<FileAclEntry>> aclList = new ArrayList<>(resource.getResourceIds().size());
-                for (int i = 0; i < resource.getResourceIds().size(); i++) {
-                    Long fileId = resource.getResourceIds().get(i);
-                    QueryResult<FileAclEntry> allFileAcls = catalogManager.getAuthorizationManager().getAllFileAcls(resource.getUser(), fileId, true);
-                    allFileAcls.setId(Long.toString(resource.getResourceIds().get(i)));
-                    aclList.add(allFileAcls);
-                }
-                return createOkResponse(aclList);
+                return createOkResponse(fileManager.getAcls(studyStr, fileIdStr, sessionId));
             } else {
-                AbstractManager.MyResourceId resource = catalogManager.getFileManager().getId(fileIdStr, studyStr, sessionId);
-                return createOkResponse(catalogManager.getAuthorizationManager().getFileAcl(resource.getUser(), resource.getResourceId(), member));
+                return createOkResponse(fileManager.getAcl(studyStr, fileIdStr, member, sessionId));
             }
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1388,7 +1198,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true) StudyWSServer.MemberAclUpdateOld params) {
         try {
             File.FileAclParams aclParams = getAclParams(params.add, params.remove, params.set);
-            return createOkResponse(fileManager.updateAcl(fileIdStr, studyStr, memberId, aclParams, sessionId));
+            return createOkResponse(fileManager.updateAcl(studyStr, fileIdStr, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1410,7 +1220,7 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             File.FileAclParams aclParams = new File.FileAclParams(
                     params.getPermissions(), params.getAction(), params.sample);
-            return createOkResponse(fileManager.updateAcl(params.file, studyStr, memberId, aclParams, sessionId));
+            return createOkResponse(fileManager.updateAcl(studyStr, params.file, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1439,7 +1249,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Deprecated
     private void populateOldDeprecatedSampleIdsField(QueryResult<File> queryResult) {
         for (File file : queryResult.getResult()) {
-            if (file.getSamples() != null && file.getSamples().size() > 0) {
+            if (file.getSamples() != null && CollectionUtils.isNotEmpty(file.getSamples())) {
                 List<Long> sampleIds = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
                 file.setSampleIds(sampleIds);
             }

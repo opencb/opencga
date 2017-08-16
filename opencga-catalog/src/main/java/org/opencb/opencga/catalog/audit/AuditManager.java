@@ -16,10 +16,8 @@
 
 package org.opencb.opencga.catalog.audit;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditRecord.Resource;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
@@ -34,6 +32,24 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 public interface AuditManager {
 
     /**
+     * Records a login attempt.
+     *
+     * @param userId      User who performs the creation
+     * @param success     Boolean indicating if the login was successful.
+     * @throws CatalogException CatalogException
+     */
+    default void recordLogin(String userId, boolean success) throws CatalogException {
+        if (success) {
+            recordAction(Resource.user, AuditRecord.Action.login, AuditRecord.Magnitude.low, userId, userId, null, null,
+                    "User successfully logged in", null);
+        } else {
+            recordAction(Resource.user, AuditRecord.Action.login, AuditRecord.Magnitude.high, userId, userId, null, null,
+                    "Wrong user or password", null);
+        }
+    }
+
+
+    /**
      * Records an object creation over the Catalog Database.
      *
      * @param resource    Resource type
@@ -42,27 +58,12 @@ public interface AuditManager {
      * @param object      Created object
      * @param description Optional description
      * @param attributes  Optional attributes
-     * @return Generated AuditRecord
      * @throws CatalogException CatalogException
      */
-    @Deprecated
-    AuditRecord recordCreation(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
-            throws CatalogException;
-
-    /**
-     * Records a object reading over the Catalog Database.
-     *
-     * @param resource    Resource type
-     * @param id          Resource id (either String or Integer)
-     * @param userId      User who performs the creation
-     * @param description Optional description
-     * @param attributes  Optional attributes
-     * @return Generated AuditRecord
-     * @throws CatalogException CatalogException
-     */
-    @Deprecated
-    AuditRecord recordRead(Resource resource, Object id, String userId, String description, ObjectMap attributes)
-            throws CatalogException;
+    default void recordCreation(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
+            throws CatalogException {
+        recordAction(resource, AuditRecord.Action.create, AuditRecord.Magnitude.low, id, userId, null, object, description, attributes);
+    }
 
     /**
      * Record an atomic change over the Catalog Database.
@@ -73,15 +74,15 @@ public interface AuditManager {
      * @param update      Update params
      * @param description Optional description
      * @param attributes  Optional attributes
-     * @return Generated AuditRecord
      * @throws CatalogException CatalogException
      */
-    @Deprecated
-    AuditRecord recordUpdate(Resource resource, Object id, String userId, ObjectMap update, String description, ObjectMap attributes)
-            throws CatalogException;
+    default void recordUpdate(Resource resource, Object id, String userId, ObjectMap update, String description, ObjectMap attributes)
+            throws CatalogException {
+        recordAction(resource, AuditRecord.Action.update, AuditRecord.Magnitude.medium, id, userId, null, update, description, attributes);
+    }
 
     /**
-     * Records a permanent delete over the Catalog Database.
+     * Records a permanent deletion over the Catalog Database.
      *
      * @param resource    Resource type
      * @param id          Resource id (either String or Integer)
@@ -89,12 +90,52 @@ public interface AuditManager {
      * @param object      Deleted object
      * @param description Optional description
      * @param attributes  Optional attributes
-     * @return Generated AuditRecord
      * @throws CatalogException CatalogException
      */
-    @Deprecated
-    AuditRecord recordDeletion(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
-            throws CatalogException;
+    default void recordDeletion(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
+            throws CatalogException {
+        recordAction(resource, AuditRecord.Action.delete, AuditRecord.Magnitude.high, id, userId, object, null, description, attributes);
+    }
+
+    /**
+     * Records a deletion (change of state) over the Catalog Database.
+     *
+     * @param resource    Resource type
+     * @param id          Resource id (either String or Integer)
+     * @param userId      User who performs the deletion
+     * @param before      Previous object state
+     * @param after       Posterior object state
+     * @param description Optional description
+     * @param attributes  Optional attributes
+     * @throws CatalogException CatalogException
+     */
+    default void recordDeletion(Resource resource, Object id, String userId, Object before,  Object after, String description,
+                                ObjectMap attributes) throws CatalogException {
+        recordAction(resource, AuditRecord.Action.delete, AuditRecord.Magnitude.high, id, userId, before, after, description, attributes);
+    }
+
+    /**
+     * Records a restore over the Catalog Database.
+     *
+     * @param resource    Resource type
+     * @param id          Resource id (either String or Integer)
+     * @param userId      User who performs the deletion
+     * @param before      Previous object state
+     * @param after       Posterior object state
+     * @param description Optional description
+     * @param attributes  Optional attributes
+     * @throws CatalogException CatalogException
+     */
+    default void recordRestore(Resource resource, Object id, String userId, Object before,  Object after, String description,
+                                ObjectMap attributes) throws CatalogException {
+        if (before instanceof String && StringUtils.isNotEmpty((String) before)) {
+            before = new ObjectMap("status", before);
+        }
+        if (after instanceof String && StringUtils.isNotEmpty((String) after)) {
+            after = new ObjectMap("status", after);
+        }
+        recordAction(resource, AuditRecord.Action.restore, AuditRecord.Magnitude.high, id, userId, before, after, description, attributes);
+    }
 
     /**
      * Records an object creation over the Catalog Database.
@@ -108,23 +149,10 @@ public interface AuditManager {
      * @param after       Optional Posterior object state
      * @param description Optional description
      * @param attributes  Optional attributes
-     * @return Generated AuditRecord
      * @throws CatalogException CatalogException
      */
-    AuditRecord recordAction(Resource resource, AuditRecord.Action action, AuditRecord.Magnitude importance, Object id, String userId,
+    void recordAction(Resource resource, AuditRecord.Action action, AuditRecord.Magnitude importance, Object id, String userId,
                              Object before, Object after, String description, ObjectMap attributes)
-            throws CatalogException;
-
-    /**
-     * Executes a query over the audit log.
-     *
-     * @param query        Query to execute. Must validate with AuditQueryParam
-     * @param queryOptions Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
-     * @param sessionId    sessionId
-     * @return A QueryResult with a list of all matching AuditRecords
-     * @throws CatalogException CatalogException
-     */
-    QueryResult<AuditRecord> getRecords(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException;
 
 }

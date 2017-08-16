@@ -19,11 +19,12 @@ package org.opencb.opencga.analysis;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.CatalogManagerExternalResource;
+import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.models.*;
 
 import java.io.BufferedReader;
@@ -57,12 +58,12 @@ public class JobFactoryTest {
 
         User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.FULL, null).first();
 
-        sessionId = catalogManager.getUserManager().login(userId, "user", "localhost").first().getId();
+        sessionId = catalogManager.getUserManager().login(userId, "user");
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
-        studyId = catalogManager.getStudyManager().create(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, "Study 1", null, null,
-                null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null, null, null,
-                sessionId).first().getId();
+        studyId = catalogManager.getStudyManager().create(String.valueOf(projectId), "s1", "s1", Study.Type.CASE_CONTROL, null, "Study " +
+                "1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null,
+                null, null, sessionId).first().getId();
         output = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data", "index").toString(), null, false,
                 null, QueryOptions.empty(), sessionId).first();
 
@@ -121,7 +122,7 @@ public class JobFactoryTest {
         Thread.sleep(1000);
         thread.interrupt();
         thread.join();
-        QueryResult<Job> allJobs = catalogManager.getJobManager().get(studyId, null, null, sessionId);
+        QueryResult<Job> allJobs = catalogManager.getJobManager().get(String.valueOf(studyId), (Query) null, null, sessionId);
         assertEquals(1, allJobs.getNumResults());
         Job job = allJobs.first();
         assertEquals(Job.JobStatus.ERROR, job.getStatus().getName());
