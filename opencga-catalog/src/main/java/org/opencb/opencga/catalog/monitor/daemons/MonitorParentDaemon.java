@@ -38,6 +38,8 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by imedina on 16/06/16.
@@ -166,6 +168,30 @@ public abstract class MonitorParentDaemon implements Runnable {
             dbAdaptorFactory.getCatalogJobDBAdaptor().update(job.getId(), params);
         } catch (CatalogException e) {
             logger.error("Could not remove session id from attributes of job {}. ", job.getId(), e);
+        }
+    }
+
+    void buildCommandLine(Map<String, String> params, StringBuilder commandLine, Set<String> knownParams) {
+        for (Map.Entry<String, String> param : params.entrySet()) {
+            commandLine.append(' ');
+            if (knownParams == null || knownParams.contains(param.getKey())) {
+                if (!("false").equalsIgnoreCase(param.getValue())) {
+                    if (param.getKey().length() == 1) {
+                        commandLine.append('-');
+                    } else {
+                        commandLine.append("--");
+                    }
+                    commandLine.append(param.getKey());
+                    if (!param.getValue().equalsIgnoreCase("true")) {
+                        commandLine.append(' ').append(param.getValue());
+                    }
+                }
+            } else {
+                if (!param.getKey().startsWith("-D")) {
+                    commandLine.append("-D");
+                }
+                commandLine.append(param.getKey()).append('=').append(param.getValue());
+            }
         }
     }
 

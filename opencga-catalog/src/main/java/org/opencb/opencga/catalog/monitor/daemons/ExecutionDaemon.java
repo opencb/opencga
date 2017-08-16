@@ -201,17 +201,19 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         String stderr = path.resolve(job.getName() + '_' + job.getId() + ".err").toString();
         String stdout = path.resolve(job.getName() + '_' + job.getId() + ".out").toString();
 
-        StringBuilder commandLine = new StringBuilder(binAnalysis).append(" ");
-        if (job.getToolId().equals("opencga-analysis")) {
-            commandLine.append(job.getExecution()).append(" ");
-        } else {
-            commandLine.append("tools run ");
-        }
-        commandLine.append("--job ").append(job.getId());
-
         // Create token without expiration time for the user
         try {
             String userToken = catalogManager.getUserManager().getSystemTokenForUser(job.getUserId(), sessionId);
+
+            StringBuilder commandLine = new StringBuilder(binAnalysis).append(' ');
+            if (job.getToolId().equals("opencga-analysis")) {
+                commandLine.append(job.getExecution()).append(' ');
+                buildCommandLine(job.getParams(), commandLine, null);
+            } else {
+                commandLine.append("tools run ")
+                        .append("--job ").append(job.getId()).append(' ');
+            }
+            commandLine.append("--outdir ").append(path.toString());
 
             logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.PREPARED, Job.JobStatus.QUEUED);
             try {

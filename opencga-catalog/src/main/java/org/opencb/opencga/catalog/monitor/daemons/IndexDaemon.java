@@ -270,27 +270,7 @@ public class IndexDaemon extends MonitorParentDaemon {
                     "L", "log-level", "merge", "o", "outdir", "overwrite-annotations", "path", "queue", "s", "study",
                     "S", "sid", "session-id",
                     "transform", "transformed-files", "resume"));
-            for (Map.Entry<String, String> param : job.getParams().entrySet()) {
-                commandLine.append(' ');
-                if (knownParams.contains(param.getKey())) {
-                    if (!("false").equalsIgnoreCase(param.getValue())) {
-                        if (param.getKey().length() == 1) {
-                            commandLine.append('-');
-                        } else {
-                            commandLine.append("--");
-                        }
-                        commandLine.append(param.getKey());
-                        if (!param.getValue().equalsIgnoreCase("true")) {
-                            commandLine.append(' ').append(param.getValue());
-                        }
-                    }
-                } else {
-                    if (!param.getKey().startsWith("-D")) {
-                        commandLine.append("-D");
-                    }
-                    commandLine.append(param.getKey()).append('=').append(param.getValue());
-                }
-            }
+            buildCommandLine(job.getParams(), commandLine, knownParams);
         } else {
             commandLine.append(" alignment index");
             for (Map.Entry<String, String> param : job.getParams().entrySet()) {

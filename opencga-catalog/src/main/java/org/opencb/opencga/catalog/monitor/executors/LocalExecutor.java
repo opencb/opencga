@@ -47,7 +47,7 @@ public class LocalExecutor extends AbstractExecutor {
                 executorConfig = getExecutorConfig(job);
 
                 logger.info("Ready to run {}", job.getCommandLine());
-                Command com = new Command(job.getCommandLine());
+                Command com = new Command(getCommandLine(job));
 
                 DataOutputStream dataOutputStream = new DataOutputStream(new FileOutputStream(executorConfig.getStdout()));
                 com.setOutputOutputStream(dataOutputStream);

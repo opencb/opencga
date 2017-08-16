@@ -65,6 +65,11 @@ public abstract class AbstractExecutor {
         }
     }
 
+    // We do it this way to avoid writing the session id in the command line attribute of Job
+    protected String getCommandLine(Job job) {
+        return job.getCommandLine() + " --session-id " + job.getAttributes().get(Job.OPENCGA_USER_TOKEN);
+    }
+
     protected abstract String getStatus(Job job);
 
     public abstract boolean stop(Job job) throws Exception;
