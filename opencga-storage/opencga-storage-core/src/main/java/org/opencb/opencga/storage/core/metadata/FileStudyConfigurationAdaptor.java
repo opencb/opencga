@@ -72,7 +72,6 @@ public class FileStudyConfigurationAdaptor extends StudyConfigurationAdaptor {
 
     @Override
     protected QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
-        long startTime = System.currentTimeMillis();
 
         Path path = getPath(studyConfiguration.getStudyId(), options);
         try {
