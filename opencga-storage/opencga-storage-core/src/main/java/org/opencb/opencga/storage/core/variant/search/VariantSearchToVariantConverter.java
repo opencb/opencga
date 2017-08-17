@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.search;
+package org.opencb.opencga.storage.core.variant.search;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -24,7 +24,7 @@ import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.utils.CollectionUtils;
-import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

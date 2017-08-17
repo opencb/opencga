@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.search.solr;
+package org.opencb.opencga.storage.core.variant.search.solr;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Test;

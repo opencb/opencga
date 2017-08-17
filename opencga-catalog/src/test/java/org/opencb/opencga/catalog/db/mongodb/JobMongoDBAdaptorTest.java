@@ -183,4 +183,31 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertEquals(2, jobQueryResult.first().getOutput().size());
     }
 
+    @Test
+    public void updateInputAndOutputFiles() throws Exception {
+        Job job = new Job();
+        job.setOutDir(new File().setId(5));
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        job.setName("jobName1");
+        QueryResult<Job> insert = catalogJobDBAdaptor.insert(job, studyId, null);
+
+        List<File> fileInput = Arrays.asList(
+                new File().setId(5L).setName("file1"), new File().setId(6L).setName("file2"), new File().setId(7L).setName("file3")
+        );
+        List<File> fileOutput = Arrays.asList(
+                new File().setId(15L).setName("file1"), new File().setId(16L).setName("file2"), new File().setId(17L).setName("file3")
+        );
+        ObjectMap params = new ObjectMap()
+                .append(JobDBAdaptor.QueryParams.INPUT.key(), fileInput)
+                .append(JobDBAdaptor.QueryParams.OUTPUT.key(), fileOutput);
+
+        QueryResult<Job> update = catalogJobDBAdaptor.update(insert.first().getId(), params);
+        assertEquals(3, update.first().getInput().size());
+        assertEquals(3, update.first().getOutput().size());
+
+        assertTrue(Arrays.asList(5L, 6L, 7L).containsAll(update.first().getInput().stream().map(File::getId).collect(Collectors.toList())));
+        assertTrue(Arrays.asList(15L, 16L, 17L)
+                .containsAll(update.first().getOutput().stream().map(File::getId).collect(Collectors.toList())));
+    }
+
 }

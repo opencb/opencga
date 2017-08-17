@@ -118,7 +118,8 @@ public class VepVariantAnnotator extends VariantAnnotator {
                     vepFormatReader.post();
                     vepFormatReader.close();
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    logger.error("Interrupted!", e);
+                    Thread.currentThread().interrupt();
                 }
             }
         });
@@ -144,7 +145,8 @@ public class VepVariantAnnotator extends VariantAnnotator {
                         }
                         logger.debug("thread finished updating annotations");
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        logger.error("interrupt", e);
+                        Thread.currentThread().interrupt();
                     }
                 }
             });
@@ -155,7 +157,7 @@ public class VepVariantAnnotator extends VariantAnnotator {
             executor.awaitTermination(Integer.MAX_VALUE, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             logger.error("annotation interrupted");
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
         }
 
         /** Join

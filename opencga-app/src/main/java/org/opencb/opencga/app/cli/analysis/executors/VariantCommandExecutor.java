@@ -61,7 +61,7 @@ import static org.opencb.opencga.storage.core.manager.variant.operations.Variant
  */
 public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
-//    private AnalysisCliOptionsParser.VariantCommandOptions variantCommandOptions;
+    //    private AnalysisCliOptionsParser.VariantCommandOptions variantCommandOptions;
     private VariantCommandOptions variantCommandOptions;
     private VariantStorageEngine variantStorageEngine;
 

@@ -20,7 +20,6 @@ import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFHeader;
 import org.apache.commons.lang3.StringUtils;
@@ -46,8 +45,8 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
-import org.opencb.opencga.storage.core.search.solr.VariantIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
@@ -177,7 +176,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         StorageVariantCommandOptions.VariantIndexCommandOptions indexVariantsCommandOptions = variantCommandOptions.indexVariantsCommandOptions;
         List<URI> inputUris = new LinkedList<>();
         String inputs[] = indexVariantsCommandOptions.commonIndexOptions.input.split(",");
-        for (String uri: inputs) {
+        for (String uri : inputs) {
             URI variantsUri = UriUtils.createUri(uri);
             if (variantsUri.getScheme().startsWith("file") || variantsUri.getScheme().isEmpty()) {
                 FileUtils.checkFile(Paths.get(variantsUri));
@@ -586,29 +585,24 @@ public class VariantCommandExecutor extends CommandExecutor {
                     formatFieldsType, formatFieldsDescr, sampleNames, converter);
 
             // create the variant context writer
-            OutputStream outputStream = new FileOutputStream(exportVariantsCommandOptions.outFilename);
-            Options writerOptions = null;
-            VariantContextWriter writer = VcfUtils.createVariantContextWriter(outputStream,
-                    vcfHeader.getSequenceDictionary(), writerOptions);
+            try (OutputStream outputStream = new FileOutputStream(exportVariantsCommandOptions.outFilename);
+                 VariantContextWriter writer = VcfUtils.createVariantContextWriter(outputStream,
+                         vcfHeader.getSequenceDictionary(), null)) {
 
-            // write VCF header
-            writer.writeHeader(vcfHeader);
+                // write VCF header
+                writer.writeHeader(vcfHeader);
 
-            // TODO: get study id/name
-            VariantContextToAvroVariantConverter variantContextToAvroVariantConverter =
-                    new VariantContextToAvroVariantConverter(0, Collections.emptyList(), Collections.emptyList());
-            VariantDBIterator iterator = variantStorageEngine.iterator(query, options);
-            while (iterator.hasNext()) {
-                Variant variant = iterator.next();
-                VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
-                System.out.println(variantContext.toString());
-
-                writer.add(variantContext);
+                // TODO: get study id/name
+                VariantContextToAvroVariantConverter variantContextToAvroVariantConverter =
+                        new VariantContextToAvroVariantConverter(0, Collections.emptyList(), Collections.emptyList());
+                VariantDBIterator iterator = variantStorageEngine.iterator(query, options);
+                while (iterator.hasNext()) {
+                    Variant variant = iterator.next();
+                    VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
+                    System.out.println(variantContext.toString());
+                    writer.add(variantContext);
+                }
             }
-
-            // close
-            writer.close();
-            outputStream.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -617,6 +611,7 @@ public class VariantCommandExecutor extends CommandExecutor {
     /**
      * search command
      */
+
     private void search() throws Exception {
         StorageVariantCommandOptions.VariantSearchCommandOptions searchOptions = variantCommandOptions.searchVariantsCommandOptions;
 

@@ -41,9 +41,9 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.*;
-import org.opencb.opencga.storage.core.search.VariantSearchModel;
-import org.opencb.opencga.storage.core.search.solr.VariantSearchIterator;
-import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
@@ -69,9 +69,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.search.solr.VariantSearchManager.QUERY_INTERSECT;
-import static org.opencb.opencga.storage.core.search.solr.VariantSearchManager.SKIP_SEARCH;
-import static org.opencb.opencga.storage.core.search.solr.VariantSearchUtils.*;
+import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.QUERY_INTERSECT;
+import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.SKIP_SEARCH;
+import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchUtils.*;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ID;
 

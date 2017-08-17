@@ -21,12 +21,12 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Thread for monitoring the memory usage of the JDK.
- *
+ * <p>
  * Usage:
- *     MemoryUsageMonitor m = new MemoryUsageMonitor().start();
- *     .....
- *     m.interrupt();
- *
+ * MemoryUsageMonitor m = new MemoryUsageMonitor().start();
+ * .....
+ * m.interrupt();
+ * <p>
  * Created on 11/04/16
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -64,7 +64,9 @@ public class MemoryUsageMonitor extends Thread {
                 logMemory();
                 Thread.sleep(delay);
             }
-        } catch (InterruptedException ignore) {}
+        } catch (InterruptedException ignore) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     public void logMemory() {

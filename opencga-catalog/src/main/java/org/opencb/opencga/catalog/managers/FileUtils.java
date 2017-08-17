@@ -816,46 +816,46 @@ public class FileUtils {
                 return File.Bioformat.NONE;
             }
 
-            FileInputStream fstream = new FileInputStream(path);
-            BufferedReader br = new BufferedReader(new InputStreamReader(fstream));
+            try (FileInputStream fstream = new FileInputStream(path);
+                 BufferedReader br = new BufferedReader(new InputStreamReader(fstream))) {
 
-            String strLine;
-            int numberOfLines = 20;
-
-            int i = 0;
-            boolean names = false;
-            while ((strLine = br.readLine()) != null) {
-                if (strLine.equalsIgnoreCase("")) {
-                    continue;
-                }
-                if (i == numberOfLines) {
-                    break;
-                }
-                if (strLine.startsWith("#")) {
-                    if (strLine.startsWith("#NAMES")) {
-                        names = true;
-                    } else {
+                String strLine;
+                int numberOfLines = 20;
+                int i = 0;
+                boolean names = false;
+                while ((strLine = br.readLine()) != null) {
+                    if (strLine.equalsIgnoreCase("")) {
                         continue;
                     }
-                } else {
-                    String[] fields = strLine.split("\t");
-                    if (fields.length > 2) {
-                        if (names && NumberUtils.isNumber(fields[1])) {
-                            return File.Bioformat.DATAMATRIX_EXPRESSION;
+                    if (i == numberOfLines) {
+                        break;
+                    }
+                    if (strLine.startsWith("#")) {
+                        if (strLine.startsWith("#NAMES")) {
+                            names = true;
+                        } else {
+                            continue;
                         }
-                    } else if (fields.length == 1) {
-                        if (fields[0].split(" ").length == 1 && !NumberUtils.isNumber(fields[0])) {
-                            return File.Bioformat.IDLIST;
-                        }
-                    } else if (fields.length == 2) {
-                        if (!fields[0].contains(" ") && NumberUtils.isNumber(fields[1])) {
-                            return File.Bioformat.IDLIST_RANKED;
+                    } else {
+                        String[] fields = strLine.split("\t");
+                        if (fields.length > 2) {
+                            if (names && NumberUtils.isNumber(fields[1])) {
+                                return File.Bioformat.DATAMATRIX_EXPRESSION;
+                            }
+                        } else if (fields.length == 1) {
+                            if (fields[0].split(" ").length == 1 && !NumberUtils.isNumber(fields[0])) {
+                                return File.Bioformat.IDLIST;
+                            }
+                        } else if (fields.length == 2) {
+                            if (!fields[0].contains(" ") && NumberUtils.isNumber(fields[1])) {
+                                return File.Bioformat.IDLIST_RANKED;
+                            }
                         }
                     }
+                    i++;
                 }
-                i++;
             }
-            br.close();
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -863,8 +863,7 @@ public class FileUtils {
     }
 
     /**
-     *
-     * @param uri       Existing file uri to the file
+     * @param uri Existing file uri to the file
      * @return File.Format. UNKNOWN if can't detect any format.
      */
     public static File.Format detectFormat(URI uri) {
@@ -881,51 +880,52 @@ public class FileUtils {
             extension = com.google.common.io.Files.getFileExtension(path);
         }
 
-        switch (extension.toLowerCase()) {
-            case "vcf":
-                return File.Format.VCF;
-            case "bcf":
-                return File.Format.BCF;
-            case "bam":
-                return File.Format.BAM;
-            case "bai":
-                return File.Format.BAI;
-            case "sam":
-                return File.Format.SAM;
-            case "cram":
-                return File.Format.CRAM;
-            case "ped":
-                return File.Format.PED;
-            case "fastq":
-                return File.Format.FASTQ;
-            case "tsv":
-                return File.Format.TAB_SEPARATED_VALUES;
-            case "csv":
-                return File.Format.COMMA_SEPARATED_VALUES;
-            case "txt":
-            case "log":
-                return File.Format.PLAIN;
-            case "xml":
-                return File.Format.XML;
-            case "json":
-                return File.Format.JSON;
-            case "proto":
-                return File.Format.PROTOCOL_BUFFER;
-            case "avro":
-                return File.Format.AVRO;
-            case "parquet":
-                return File.Format.PARQUET;
-            case "png":
-            case "bmp":
-            case "svg":
-            case "gif":
-            case "jpeg":
-            case "tif":
-                return File.Format.IMAGE;
-            default:
-                break;
+        if (extension != null) {
+            switch (extension.toLowerCase()) {
+                case "vcf":
+                    return File.Format.VCF;
+                case "bcf":
+                    return File.Format.BCF;
+                case "bam":
+                    return File.Format.BAM;
+                case "bai":
+                    return File.Format.BAI;
+                case "sam":
+                    return File.Format.SAM;
+                case "cram":
+                    return File.Format.CRAM;
+                case "ped":
+                    return File.Format.PED;
+                case "fastq":
+                    return File.Format.FASTQ;
+                case "tsv":
+                    return File.Format.TAB_SEPARATED_VALUES;
+                case "csv":
+                    return File.Format.COMMA_SEPARATED_VALUES;
+                case "txt":
+                case "log":
+                    return File.Format.PLAIN;
+                case "xml":
+                    return File.Format.XML;
+                case "json":
+                    return File.Format.JSON;
+                case "proto":
+                    return File.Format.PROTOCOL_BUFFER;
+                case "avro":
+                    return File.Format.AVRO;
+                case "parquet":
+                    return File.Format.PARQUET;
+                case "png":
+                case "bmp":
+                case "svg":
+                case "gif":
+                case "jpeg":
+                case "tif":
+                    return File.Format.IMAGE;
+                default:
+                    break;
+            }
         }
-
         //PLAIN
         return File.Format.UNKNOWN;
     }

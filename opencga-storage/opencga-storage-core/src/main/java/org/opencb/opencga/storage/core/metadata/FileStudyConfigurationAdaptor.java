@@ -62,17 +62,16 @@ public class FileStudyConfigurationAdaptor extends StudyConfigurationAdaptor {
             studyConfiguration = read(path);
         } catch (IOException e) {
             logger.error("Fail at reading StudyConfiguration from " + path, e);
-            return new QueryResult<>(path.getFileName().toString(),
+            return new QueryResult<>(path == null ? "Path is NULL" : path.getFileName().toString(),
                     (int) (System.currentTimeMillis() - startTime), 0, 0, "", e.getMessage(), Collections.<StudyConfiguration>emptyList());
         }
 
-        return new QueryResult<>(path.getFileName().toString(),
+        return new QueryResult<>(path == null ? "Path is NULL" : path.getFileName().toString(),
                 (int) (System.currentTimeMillis() - startTime), 1, 1, "", "", Collections.singletonList(studyConfiguration));
     }
 
     @Override
     protected QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
-        long startTime = System.currentTimeMillis();
 
         Path path = getPath(studyConfiguration.getStudyId(), options);
         try {

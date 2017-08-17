@@ -37,7 +37,6 @@ public class Config {
     protected static Logger logger = LoggerFactory.getLogger(Config.class);
 
     private static String opencgaHome = null;
-//    private static String opencgaLightHome;
     private static boolean log4jReady = false;
 
     private static Map<String, Properties> propertiesMap = new HashMap<>();
@@ -88,23 +87,7 @@ public class Config {
         storageProperties = null;
 
         log4jReady = false;
-//        LogManager.resetConfiguration();
-//        configureLog4j();
     }
-
-//    public static void configureLog4j() {
-//        if (!log4jReady) {
-//            Path path = Paths.get(opencgaHome, "conf", "log4j.properties");
-//            try {
-//                PropertyConfigurator.configure(Files.newInputStream(path));
-//            } catch (IOException e) {
-//                BasicConfigurator.configure();
-//                logger.warn("failed to load log4j.properties, BasicConfigurator will be used.");
-//            }
-//            log4jReady = true;
-//        }
-//    }
-
 
     public static Properties getProperties(String fileName) {
         return getProperties(fileName, null);
@@ -143,17 +126,6 @@ public class Config {
     }
     @Deprecated
     public static Properties getStorageProperties(String basePath) {
-//        opencgaLightHome = basePath;
-
-//		// First time we create the object, a singleton pattern is applied.
-//		if (storageProperties == null) {
-//			loadProperties(storageProperties, Paths.get(basePath, "conf", "localserver.properties"));
-//			return storageProperties;
-//		}
-//
-//		// next times we check last time loaded
-//		checkPopertiesStatus();
-//		return storageProperties;
 
         if (storageProperties == null) {
             Path path = Paths.get(basePath, "conf", STORAGE_PROPERTIES);
@@ -169,7 +141,7 @@ public class Config {
     }
 
     private static void loadProperties(Properties propertiesToLoad, Path propertiesPath) {
-        if (propertiesToLoad != null) {
+        if (propertiesToLoad == null) {
             propertiesToLoad = new Properties();
         }
         try {
@@ -184,8 +156,6 @@ public class Config {
 
     private static void checkPopertiesStatus() {
         if (System.currentTimeMillis() - lastPropertyLoad > 60000) {
-//            loadProperties(accountProperties, Paths.get(opencgaHome, "conf", "account.properties"));
-//            loadProperties(analysisProperties, Paths.get(opencgaHome, "conf", "analysis.properties"));
             loadProperties(storageProperties, Paths.get(opencgaHome, "conf", "storage.properties"));
             lastPropertyLoad = System.currentTimeMillis();
         }

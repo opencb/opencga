@@ -100,10 +100,4 @@ public class UserClient extends CatalogClient<User, User> {
     public QueryResponse<User> resetPassword(ObjectMap params) throws CatalogException, IOException {
         return execute(USERS_URL, getUserId(params), "change-password", params, GET, User.class);
     }
-
-
-
-//    public QueryResponse<User> delete(ObjectMap params) throws CatalogException, IOException {
-//        return super.delete(getUserId(), params);
-//    }
 }

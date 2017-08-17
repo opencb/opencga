@@ -98,13 +98,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         clinicalAnalysisDBAdaptor = dbFactory.getClinicalAnalysisDBAdaptor();
     }
 
-    private StudyAclEntry getSpecialPermissions(String member) {
+    public static StudyAclEntry getSpecialPermissions(String member) {
         for (StudyAclEntry studyAclEntry : SPECIAL_ACL_LIST) {
             if (studyAclEntry.getMember().equals(member)) {
                 return studyAclEntry;
             }
         }
-        return new StudyAclEntry("", Collections.emptyList());
+        return new StudyAclEntry(member, Collections.emptyList());
     }
 
     @Override

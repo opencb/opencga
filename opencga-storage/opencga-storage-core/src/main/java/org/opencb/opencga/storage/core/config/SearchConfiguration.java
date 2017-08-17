@@ -58,7 +58,6 @@ public class SearchConfiguration {
         sb.append("host='").append(host).append('\'');
         sb.append(", mode='").append(mode).append('\'');
         sb.append(", user='").append(user).append('\'');
-        sb.append(", password='").append(password).append('\'');
         sb.append(", active=").append(active);
         sb.append(", timeout=").append(timeout);
         sb.append(", rows=").append(rows);

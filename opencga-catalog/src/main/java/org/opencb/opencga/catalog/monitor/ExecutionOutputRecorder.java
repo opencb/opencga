@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.monitor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
@@ -139,7 +140,6 @@ public class ExecutionOutputRecorder {
             throw e;
         }
 
-        List<Long> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
         if (!ioManager.exists(tmpOutDirUri)) {
             logger.warn("Output folder doesn't exist");
             return;
@@ -167,13 +167,13 @@ public class ExecutionOutputRecorder {
             logger.error("Error processing job output. Temporal job out dir is not empty. " + uriList);
         }
 
-        parameters.put(JobDBAdaptor.QueryParams.OUTPUT.key(), fileIds);
+        parameters.put(JobDBAdaptor.QueryParams.OUTPUT.key(), files);
         parameters.put(JobDBAdaptor.QueryParams.END_TIME.key(), System.currentTimeMillis());
         try {
             catalogManager.getJobManager().update(job.getId(), parameters, null, this.sessionId);
         } catch (CatalogException e) {
             logger.error("Critical error. Could not update job output files from job {} with output {}. Error: {}", job.getId(),
-                    fileIds.toArray(), e.getMessage());
+                    StringUtils.join(files.stream().map(File::getId).collect(Collectors.toList()), ","), e.getMessage());
             throw e;
         }
 
@@ -231,8 +231,6 @@ public class ExecutionOutputRecorder {
             logger.warn("CatalogException when scanning temporal directory. Error: {}", e.getMessage());
             throw e;
         }
-
-        List<Long> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
         if (!ioManager.exists(tmpOutDirUri)) {
             logger.warn("Output folder doesn't exist");
             return;
@@ -261,13 +259,13 @@ public class ExecutionOutputRecorder {
         }
 
         ObjectMap parameters = new ObjectMap();
-        parameters.put(JobDBAdaptor.QueryParams.OUTPUT.key(), fileIds);
+        parameters.put(JobDBAdaptor.QueryParams.OUTPUT.key(), files);
         parameters.put(JobDBAdaptor.QueryParams.END_TIME.key(), System.currentTimeMillis());
         try {
             catalogManager.getJobManager().update(job.getId(), parameters, null, this.sessionId);
         } catch (CatalogException e) {
             logger.error("Critical error. Could not update job output files from job {} with output {}. Error: {}", job.getId(),
-                    fileIds.toArray(), e.getMessage());
+                    StringUtils.join(files.stream().map(File::getId).collect(Collectors.toList()), ","), e.getMessage());
             throw e;
         }
 
