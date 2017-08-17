@@ -16,16 +16,15 @@
 
 package org.opencb.opencga.storage.core.variant.io;
 
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.List;
 
 /**
  * Created on 07/12/16.
@@ -42,19 +41,17 @@ public abstract class VariantImporter {
 
     public void importData(URI inputUri) throws StorageEngineException, IOException {
         VariantMetadataImporter metadataImporter = new VariantMetadataImporter();
-        ExportMetadata exportMetadata = metadataImporter.importMetaData(inputUri, dbAdaptor.getStudyConfigurationManager());
+        VariantMetadata metadata = metadataImporter.importMetaData(inputUri, dbAdaptor.getStudyConfigurationManager());
 
-        importData(inputUri, exportMetadata);
+        importData(inputUri, metadata);
     }
 
-    public void importData(URI input, ExportMetadata remappedMetadata) throws StorageEngineException, IOException {
-        Map<StudyConfiguration, StudyConfiguration> map = remappedMetadata.getStudies().stream()
-                .collect(Collectors.toMap(Function.identity(), Function.identity()));
-        importData(input, remappedMetadata, map);
+    public void importData(URI input, VariantMetadata metadata) throws StorageEngineException, IOException {
+        List<StudyConfiguration> studyConfigurations = new VariantMetadataFactory().toStudyConfigurations(metadata);
+        importData(input, metadata, studyConfigurations);
     }
 
-    public abstract void importData(URI input, ExportMetadata remappedMetadata,
-                                    Map<StudyConfiguration, StudyConfiguration> studiesOldNewMap)
+    public abstract void importData(URI input, VariantMetadata metadata, List<StudyConfiguration> studyConfigurations)
             throws StorageEngineException, IOException;
 
 }

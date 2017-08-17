@@ -17,6 +17,8 @@
 package org.opencb.opencga.storage.core.manager.variant.operations;
 
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -29,7 +31,6 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
-import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -46,6 +47,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.DEFAULT_COHORT_DESCRIPTION;
 
 /**
  * Created on 06/12/16.
@@ -171,15 +174,14 @@ public class VariantExportStorageOperation extends StorageOperation {
             DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
             VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
             ObjectMap options = variantStorageEngine.getOptions();
-            ExportMetadata exportMetadata;
+            VariantMetadata metadata;
+            StudyConfiguration studyConfiguration;
             try (StudyConfigurationManager scm = variantStorageEngine.getStudyConfigurationManager()) {
-                exportMetadata = variantMetadataImporter.importMetaData(inputUri, scm);
+                metadata = variantMetadataImporter.importMetaData(inputUri, scm);
+                studyConfiguration = scm.getStudyConfiguration(((int) studyInfo.getStudyId()), null).first();
             }
-            StudyConfiguration oldSC = VariantMetadataImporter.readMetadata(inputUri).getStudies().get(0);
-            StudyConfiguration newSC = exportMetadata.getStudies().get(0);
-            Map<StudyConfiguration, StudyConfiguration> studiesOldNewMap = Collections.singletonMap(oldSC, newSC);
 
-            variantStorageEngine.importData(inputUri, exportMetadata, studiesOldNewMap, options);
+            variantStorageEngine.importData(inputUri, metadata, Collections.singletonList(studyConfiguration), options);
 
         } catch (Exception e) {
             logger.error("Error importing data");
@@ -210,11 +212,9 @@ public class VariantExportStorageOperation extends StorageOperation {
         }
 
         @Override
-        protected void processStudyConfiguration(Map<Integer, List<Integer>> returnedSamples,
-                                                 StudyConfiguration studyConfiguration) {
-            super.processStudyConfiguration(returnedSamples, studyConfiguration);
-
+        protected void processStudyConfiguration(StudyConfiguration studyConfiguration) {
             studyConfiguration.setStudyId((int) studyId);
+            String studyStr = String.valueOf(studyId);
 
             try {
                 // Create Samples
@@ -223,7 +223,7 @@ public class VariantExportStorageOperation extends StorageOperation {
                 String source = inputUri.resolve(".").relativize(inputUri).getPath();
                 String description = "Sample data imported from " + source;
                 for (Map.Entry<String, Integer> entry : studyConfiguration.getSampleIds().entrySet()) {
-                    Sample sample = catalogManager.getSampleManager().create(Long.toString(studyId), entry.getKey(), source, description,
+                    Sample sample = catalogManager.getSampleManager().create(studyStr, entry.getKey(), source, description,
                             null, false, null, Collections.emptyMap(), QueryOptions.empty(), sessionId).first();
                     samplesMap.put(sample.getName(), (int) sample.getId());
                     samplesIdMap.put(entry.getValue(), (int) sample.getId());
@@ -242,8 +242,14 @@ public class VariantExportStorageOperation extends StorageOperation {
                             newSampleList.add(new Sample().setId(samplesIdMap.get(sampleId)));
                         }
                     }
+
+                    if (cohortName.equals(StudyEntry.DEFAULT_COHORT)) {
+                        description = DEFAULT_COHORT_DESCRIPTION;
+                    } else {
+                        description = "Cohort data imported from " + source;
+                    }
                     Cohort cohort = catalogManager.getCohortManager().create((long) studyConfiguration.getStudyId(), cohortName, Study
-                            .Type.COLLECTION, "", newSampleList, null, Collections.emptyMap(), sessionId).first();
+                            .Type.COLLECTION, description, newSampleList, null, Collections.emptyMap(), sessionId).first();
                     newCohortIds.put(cohortName, (int) cohort.getId());
                     newCohorts.put((int) cohort.getId(), newSampleList.stream().map(Sample::getId).map(Long::intValue)
                             .collect(Collectors.toSet()));
@@ -252,9 +258,6 @@ public class VariantExportStorageOperation extends StorageOperation {
                 studyConfiguration.setCohortIds(newCohortIds);
                 studyConfiguration.setCohorts(newCohorts);
                 studyConfiguration.setCalculatedStats(newCohorts.keySet());
-
-                // Create Files
-                //TODO
 
                 // Update Sample Ids
                 studyConfiguration.setSampleIds(samplesMap);
@@ -269,6 +272,35 @@ public class VariantExportStorageOperation extends StorageOperation {
                     studyConfiguration.getSamplesInFiles().put(entry.getKey(), remappedSamples);
                 }
 
+                // Create Files
+                Map<String, Integer> newFileIds = new HashMap<>();
+                for (Map.Entry<String, Integer> entry : studyConfiguration.getFileIds().entrySet()) {
+                    String fileName = entry.getKey();
+                    Integer oldFileId = entry.getValue();
+
+                    List<Sample> samples = studyConfiguration.getSamplesInFiles()
+                            .get(oldFileId)
+                            .stream()
+                            .map(integer -> new Sample().setId(((long) integer)))
+                            .collect(Collectors.toList());
+
+                    File file = new File(fileName, File.Type.FILE, File.Format.VCF, File.Bioformat.VARIANT, fileName,
+                            "File imported from " + source, null, 0, 0);
+                    file.setIndex(new FileIndex("", "", new FileIndex.IndexStatus(Status.READY, ""), -1, Collections.emptyMap()));
+                    file.setSamples(samples);
+
+                    file = catalogManager.getFileManager().create(studyStr, file, false, null, null, sessionId).first();
+
+                    long fileId = file.getId();
+                    LinkedHashSet<Integer> samplesInFile = studyConfiguration.getSamplesInFiles().remove(oldFileId);
+                    studyConfiguration.getSamplesInFiles().put(((int) fileId), samplesInFile);
+                    newFileIds.put(fileName, (int) fileId);
+                    if (studyConfiguration.getIndexedFiles().remove(oldFileId)) {
+                        studyConfiguration.getIndexedFiles().add((int) fileId);
+                    }
+                }
+                studyConfiguration.getFileIds().clear();
+                studyConfiguration.getFileIds().putAll(newFileIds);
             } catch (CatalogException e) {
                 throw new IllegalArgumentException(e);
             }

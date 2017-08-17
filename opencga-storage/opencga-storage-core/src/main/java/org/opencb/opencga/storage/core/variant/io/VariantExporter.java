@@ -164,11 +164,11 @@ public class VariantExporter {
         }
 
         ExportMetadata exportMetadata = new ExportMetadata(studyConfigurations, query, queryOptions);
-        writeMetadata(exportMetadata, output);
+        writeMetadata(exportMetadata, StringUtils.replace(output, "meta", "meta.old"));
 
         VariantMetadata variantMetadata = new VariantMetadataFactory()
                 .toVariantMetadata(studyConfigurations, returnedSamples, returnedFiles);
-        writeMetadata(variantMetadata, StringUtils.replace(output, "meta", "meta.new"));
+        writeMetadata(variantMetadata, output);
 
     }
 

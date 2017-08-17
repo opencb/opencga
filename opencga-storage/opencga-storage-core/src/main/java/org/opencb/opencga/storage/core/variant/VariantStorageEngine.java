@@ -25,6 +25,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.commons.Aggregation;
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -40,7 +41,10 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.metadata.*;
+import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.search.solr.VariantSearchIterator;
 import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
@@ -199,16 +203,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      *
      * @param inputFile     Variants input file in avro format.
      * @param metadata      Metadata related with the data to be loaded.
-     * @param studiesOldNewMap  Map from old to new StudyConfiguration, in case of name remapping
-     * @param params       Other options
+     * @param studies       Already processed StudyConfigurations
+     * @param params        Other options
      * @throws IOException      if there is any I/O error
      * @throws StorageEngineException  if there si any error loading the variants
      * */
-    public void importData(URI inputFile, ExportMetadata metadata, Map<StudyConfiguration, StudyConfiguration> studiesOldNewMap,
-                           ObjectMap params)
+    public void importData(URI inputFile, VariantMetadata metadata, List<StudyConfiguration> studies, ObjectMap params)
             throws StorageEngineException, IOException {
         VariantImporter variantImporter = newVariantImporter();
-        variantImporter.importData(inputFile, metadata, studiesOldNewMap);
+        variantImporter.importData(inputFile, metadata, studies);
     }
 
     /**

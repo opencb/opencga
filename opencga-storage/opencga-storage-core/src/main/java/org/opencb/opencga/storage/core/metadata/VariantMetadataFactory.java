@@ -3,6 +3,8 @@ package org.opencb.opencga.storage.core.metadata;
 import com.google.common.collect.BiMap;
 import org.opencb.biodata.models.metadata.*;
 import org.opencb.biodata.models.variant.metadata.*;
+import org.opencb.biodata.tools.variant.VariantMetadataManager;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
@@ -49,7 +51,7 @@ public class VariantMetadataFactory {
 //                .setDate(Date.from(Instant.now()).toString())
                 .setDate(TimeUtils.getTime())
                 .setDatasets(datasets)
-                .setVersion("1")
+                .setVersion(GitRepositoryState.get().getDescribeShort())
                 .setSpecies(species)
                 .build();
 
@@ -74,8 +76,8 @@ public class VariantMetadataFactory {
 
             List<String> sampleNames = toSampleNames(studyConfiguration, sampleIds);
             fileMetadata.add(VariantFileMetadata.newBuilder()
-                    .setId(studyConfiguration.getFileIds().inverse().get(fileId))
-                    .setAlias(fileId.toString())
+                    .setId(fileId.toString())
+                    .setAlias(studyConfiguration.getFileIds().inverse().get(fileId))
                     .setSampleIds(sampleNames)
                     .build());
         }
@@ -100,6 +102,11 @@ public class VariantMetadataFactory {
             cohorts.add(getCohort(studyConfiguration, cohortId));
         }
 
+        Map<String, String> attributes = new HashMap<>(studyConfiguration.getAttributes().size());
+        for (String key : studyConfiguration.getAttributes().keySet()) {
+            attributes.put(key, studyConfiguration.getAttributes().getString(key));
+        }
+
         return VariantDatasetMetadata.newBuilder()
                 .setId(studyConfiguration.getStudyName())
                 .setDescription(null)
@@ -110,6 +117,7 @@ public class VariantMetadataFactory {
                 .setSampleSetType(SampleSetType.COLLECTION)
                 .setAggregation(studyConfiguration.getAggregation())
                 .setAggregatedHeader(studyConfiguration.getVariantHeader())
+                .setAttributes(attributes)
                 .build();
     }
 
@@ -137,9 +145,49 @@ public class VariantMetadataFactory {
         return sampleNames;
     }
 
-//    public Variants.VariantSetMetadata toVariantSetMetadata(StudyConfiguration studyConfiguration) {
-//
-//        return null;
-//    }
+    public List<StudyConfiguration> toStudyConfigurations(VariantMetadata variantMetadata) {
+        List<StudyConfiguration> studyConfigurations = new ArrayList<>(variantMetadata.getDatasets().size());
+        int id = 1;
+        VariantMetadataManager metadataManager = new VariantMetadataManager().setVariantMetadata(variantMetadata);
+        for (VariantDatasetMetadata datasetMetadata : variantMetadata.getDatasets()) {
+            StudyConfiguration sc = new StudyConfiguration(id++, datasetMetadata.getId());
+            studyConfigurations.add(sc);
+            List<Sample> samples = metadataManager.getSamples(datasetMetadata.getId());
+            for (Sample sample : samples) {
+                sc.getSampleIds().put(sample.getId(), id++);
+            }
+            for (VariantFileMetadata fileMetadata : datasetMetadata.getFiles()) {
+                int fileId = id++;
+                sc.getIndexedFiles().add(fileId);
+                sc.getFileIds().put(fileMetadata.getAlias(), fileId);
+                List<Integer> sampleIds = toSampleIds(sc, fileMetadata.getSampleIds());
+                sc.getSamplesInFiles().put(fileId, new LinkedHashSet<>(sampleIds));
+            }
+
+            for (Cohort cohort : datasetMetadata.getCohorts()) {
+                int cohortId = id++;
+                sc.getCohortIds().put(cohort.getId(), cohortId);
+                sc.getCalculatedStats().add(cohortId);
+                sc.getCohorts().put(cohortId, new HashSet<>(toSampleIds(sc, cohort.getSampleIds())));
+            }
+
+            sc.setVariantHeader(datasetMetadata.getAggregatedHeader());
+            sc.setAggregation(datasetMetadata.getAggregation());
+            datasetMetadata.getAttributes().forEach(sc.getAttributes()::put);
+        }
+        return studyConfigurations;
+    }
+
+    protected List<Integer> toSampleIds(StudyConfiguration sc, Collection<String> sampleNames) {
+        List<Integer> sampleIds = new ArrayList<>(sampleNames.size());
+        sampleNames.forEach(sampleName -> {
+            Integer sampleId = sc.getSampleIds().get(sampleName);
+            // Skip non exported samples
+            if (sampleId != null) {
+                sampleIds.add(sampleId);
+            }
+        });
+        return sampleIds;
+    }
 
 }
