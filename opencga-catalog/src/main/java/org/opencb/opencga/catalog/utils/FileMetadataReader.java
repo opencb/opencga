@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.alignment.sam.io.AlignmentSamDataReader;
 import org.opencb.biodata.models.alignment.AlignmentHeader;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
 import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -287,7 +286,7 @@ public class FileMetadataReader {
                             sortedSampleNames = new ObjectMap((Map) variantSourceObj).getAsStringList("sampleIds");
                         } else {
                             logger.warn("Unexpected object type of variantSource ({}) in file attributes. Expected {} or {}",
-                                    variantSourceObj.getClass(), VariantSource.class, Map.class);
+                                    variantSourceObj.getClass(), VariantFileMetadata.class, Map.class);
                         }
                     }
 
@@ -487,7 +486,7 @@ public class FileMetadataReader {
             File variantsFile = fileQueryResult.first();
             URI fileUri = catalogManager.getFileManager().getUri(variantsFile);
             try (InputStream is = FileUtils.newInputStream(Paths.get(fileUri.getPath()))) {
-                VariantSource variantSource = new ObjectMapper().readValue(is, VariantSource.class);
+                VariantFileMetadata variantSource = new ObjectMapper().readValue(is, VariantFileMetadata.class);
                 VariantGlobalStats stats = variantSource.getStats();
                 catalogManager.getFileManager().update(inputFile.getId(), new ObjectMap("stats", new ObjectMap(VARIANT_STATS, stats)),
                         new QueryOptions(), sessionId);

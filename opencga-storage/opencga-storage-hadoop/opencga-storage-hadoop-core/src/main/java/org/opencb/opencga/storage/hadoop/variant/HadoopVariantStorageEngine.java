@@ -752,7 +752,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             ) {
                 source = VariantReaderUtils.readVariantFileMetadataFromJson(inputStream);
             } catch (IOException e) {
-                throw new StorageEngineException("Unable to read VariantSource", e);
+                throw new StorageEngineException("Unable to read VariantFileMetadata", e);
             }
             return source;
         }
