@@ -200,9 +200,9 @@ public abstract class AbstractParentClient {
     /**
      * Call to WS using get or post method.
      *
-     * @param path Path of the WS.
+     * @param path   Path of the WS.
      * @param params Params to be passed to the WS.
-     * @param clazz Expected return class.
+     * @param clazz  Expected return class.
      * @param method Method by which the query will be done (GET or POST).
      * @return A queryResponse object containing the results of the query.
      * @throws IOException if the path is wrong and cannot be converted to a proper url.
@@ -239,10 +239,10 @@ public abstract class AbstractParentClient {
             }
 
             logger.debug("POST URL: " + path.getUri().toURL());
-            Object paramBody = params.get("body");
+            Object paramBody = (params == null ? "" : params.get("body"));
             Response body = path.request()
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.sessionId)
-                    .post(Entity.json(paramBody == null ? "" : paramBody));
+                    .post(Entity.json(paramBody));
             jsonString = body.readEntity(String.class);
         }
         return parseResult(jsonString, clazz);
@@ -251,9 +251,9 @@ public abstract class AbstractParentClient {
     /**
      * Call to upload WS.
      *
-     * @param path Path of the WS.
+     * @param path   Path of the WS.
      * @param params Params to be passed to the WS.
-     * @param clazz Expected return class.
+     * @param clazz  Expected return class.
      * @return A queryResponse object containing the results of the query.
      * @throws IOException if the path is wrong and cannot be converted to a proper url.
      */
