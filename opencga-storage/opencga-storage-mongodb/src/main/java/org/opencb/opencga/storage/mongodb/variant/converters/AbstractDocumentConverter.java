@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import org.bson.Document;
+import org.opencb.opencga.core.common.ArrayUtils;
 
 import java.util.Collection;
 import java.util.List;
@@ -69,7 +70,7 @@ public class AbstractDocumentConverter {
             if (!(object == null
                     || ((object instanceof Collection) && ((Collection) object).isEmpty())
                     || ((object instanceof String) && ((String) object).isEmpty())
-                    || ((object instanceof Number) && ((Number) object).doubleValue() == 0))) {
+                    || ((object instanceof Number) && ArrayUtils.equals(((Number) object).doubleValue(), 0)))) {
                 return false;
             }
         }
