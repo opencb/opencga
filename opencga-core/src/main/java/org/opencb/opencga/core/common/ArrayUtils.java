@@ -403,7 +403,7 @@ public class ArrayUtils {
         try {
             Thread.sleep(2);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
         }
         Random r = new Random(System.currentTimeMillis());
         double[] randomList = new double[numElements];

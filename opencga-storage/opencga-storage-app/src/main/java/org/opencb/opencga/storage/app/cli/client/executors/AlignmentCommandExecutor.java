@@ -156,29 +156,30 @@ public class AlignmentCommandExecutor extends CommandExecutor {
             load = indexAlignmentsCommandOptions.load;
         }
 
-        StoragePipeline storagePipeline = alignmentStorageManager.newStoragePipeline(true);
+        try (StoragePipeline storagePipeline = alignmentStorageManager.newStoragePipeline(true)) {
 
-        if (extract) {
-            logger.info("-- Extract alignments -- {}", inputUri);
-            nextFileUri = storagePipeline.extract(inputUri, outdirUri);
-        }
+            if (extract) {
+                logger.info("-- Extract alignments -- {}", inputUri);
+                nextFileUri = storagePipeline.extract(inputUri, outdirUri);
+            }
 
-        if (transform) {
-            logger.info("-- PreTransform alignments -- {}", nextFileUri);
-            nextFileUri = storagePipeline.preTransform(nextFileUri);
-            logger.info("-- Transform alignments -- {}", nextFileUri);
-            nextFileUri = storagePipeline.transform(nextFileUri, null, outdirUri);
-            logger.info("-- PostTransform alignments -- {}", nextFileUri);
-            nextFileUri = storagePipeline.postTransform(nextFileUri);
-        }
+            if (transform) {
+                logger.info("-- PreTransform alignments -- {}", nextFileUri);
+                nextFileUri = storagePipeline.preTransform(nextFileUri);
+                logger.info("-- Transform alignments -- {}", nextFileUri);
+                nextFileUri = storagePipeline.transform(nextFileUri, null, outdirUri);
+                logger.info("-- PostTransform alignments -- {}", nextFileUri);
+                nextFileUri = storagePipeline.postTransform(nextFileUri);
+            }
 
-        if (load) {
-            logger.info("-- PreLoad alignments -- {}", nextFileUri);
-            nextFileUri = storagePipeline.preLoad(nextFileUri, outdirUri);
-            logger.info("-- Load alignments -- {}", nextFileUri);
-            nextFileUri = storagePipeline.load(nextFileUri);
-            logger.info("-- PostLoad alignments -- {}", nextFileUri);
-            nextFileUri = storagePipeline.postLoad(nextFileUri, outdirUri);
+            if (load) {
+                logger.info("-- PreLoad alignments -- {}", nextFileUri);
+                nextFileUri = storagePipeline.preLoad(nextFileUri, outdirUri);
+                logger.info("-- Load alignments -- {}", nextFileUri);
+                nextFileUri = storagePipeline.load(nextFileUri);
+                logger.info("-- PostLoad alignments -- {}", nextFileUri);
+                nextFileUri = storagePipeline.postLoad(nextFileUri, outdirUri);
+            }
         }
     }
 
