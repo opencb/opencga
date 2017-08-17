@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import org.bson.Document;
+import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
@@ -14,6 +15,7 @@ import java.util.stream.Collectors;
  */
 public class AuthorizationMongoDBUtils {
 
+    static final String ADMIN = "admin";
     static final String PRIVATE_OWNER_ID = "_ownerId";
     private static final String PRIVATE_ACL = "_acl";
     private static final String VARIABLE_SETS = "variableSets";
@@ -25,6 +27,9 @@ public class AuthorizationMongoDBUtils {
     public static boolean checkStudyPermission(Document study, String user, String studyPermission) {
         // 0. If the user corresponds with the owner, we don't have to check anything else
         if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
+            return true;
+        }
+        if (ADMIN.equals(user) && checkAdminPermissions(studyPermission)) {
             return true;
         }
 
@@ -62,6 +67,9 @@ public class AuthorizationMongoDBUtils {
 
         // If the user corresponds with the owner, we don't have to check anything else
         if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
+            return entry;
+        }
+        if (ADMIN.equals(user) && checkAdminPermissions(studyPermission)) {
             return entry;
         }
 
@@ -109,6 +117,9 @@ public class AuthorizationMongoDBUtils {
             throws CatalogAuthorizationException {
         // 0. If the user corresponds with the owner, we don't have to check anything else
         if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
+            return new Document();
+        }
+        if (ADMIN.equals(user) && checkAdminPermissions(studyPermission)) {
             return new Document();
         }
 
@@ -323,6 +334,17 @@ public class AuthorizationMongoDBUtils {
         patternList.add(ANONYMOUS_PATTERN);
 
         return new Document(PRIVATE_ACL, new Document("$nin", patternList));
+    }
+
+    private static boolean checkAdminPermissions(String studyPermission) {
+        Set<String> adminPermissions = CatalogAuthorizationManager.getSpecialPermissions(ADMIN).getPermissions()
+                .stream()
+                .map(String::valueOf)
+                .collect(Collectors.toSet());
+        if (adminPermissions.contains(studyPermission)) {
+            return true;
+        }
+        return false;
     }
 
 
