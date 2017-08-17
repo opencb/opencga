@@ -45,7 +45,6 @@ import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -155,19 +154,13 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                                             int batchSize, String extension, String compression,
                                             BiConsumer<String, RuntimeException> malformatedHandler, boolean failOnError)
             throws StorageEngineException {
-        VariantStudyMetadata variantMetadata = new VariantStudyMetadata().addVariantFileHeader(fileMetadata.getHeader());
 
         //Writer
         DataWriter<VcfSliceProtos.VcfSlice> dataWriter = new ProtoFileWriter<>(outputVariantsFile, compression);
 
         // Normalizer
         VariantNormalizer normalizer = new VariantNormalizer(true, true, false);
-        for (VariantStudyMetadata.VariantMetadataRecord record : variantMetadata.getFormat().values()) {
-            normalizer.configure(record.getId(), record.getNumberType(), record.getType());
-        }
-        for (VariantStudyMetadata.VariantMetadataRecord record : variantMetadata.getInfo().values()) {
-            normalizer.configure(record.getId(), record.getNumberType(), record.getType());
-        }
+        normalizer.configure(fileMetadata.getHeader());
         normalizer.setGenerateReferenceBlocks(generateReferenceBlocks);
 
         // Stats calculator

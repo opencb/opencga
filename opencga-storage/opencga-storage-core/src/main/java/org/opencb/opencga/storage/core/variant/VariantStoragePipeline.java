@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.core.variant;
 import com.google.common.collect.BiMap;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.vcf.VCFHeader;
-import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import org.apache.commons.lang3.NotImplementedException;
@@ -32,6 +31,7 @@ import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderLine;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
@@ -48,8 +48,6 @@ import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
-import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata.VariantMetadataRecord;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -72,7 +70,6 @@ import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -140,7 +137,8 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             logger.debug("Isolated study configuration");
             studyConfiguration = new StudyConfiguration(Options.STUDY_ID.defaultValue(), "unknown", Options.FILE_ID.defaultValue(),
                     fileName);
-            studyConfiguration.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key()));
+            studyConfiguration.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
+                    Options.AGGREGATED_TYPE.defaultValue().toString()));
             options.put(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
         } else {
             studyConfiguration = dbAdaptor.getStudyConfigurationManager().lockAndUpdate(studyId, existingStudyConfiguration -> {
@@ -228,7 +226,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         // Read VariantSource
         final VariantFileMetadata metadata = VariantReaderUtils.readVariantFileMetadata(input, metadataTemplate);
 
-        VariantStudyMetadata variantMetadata = new VariantStudyMetadata().addVariantFileHeader(metadata.getHeader());
+        VariantFileHeader variantMetadata = metadata.getHeader();
         String fileName = metadata.getAlias();
         String studyId = String.valueOf(getStudyId());
         boolean generateReferenceBlocks = options.getBoolean(Options.GVCF.key(), false);
@@ -568,9 +566,11 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, fileMetadata, options);
 
         // Check Extra genotype fields
-        VariantStudyMetadata variantMetadata = studyConfiguration.getVariantMetadata();
+        VariantFileHeader variantMetadata = studyConfiguration.getVariantHeader();
+
         if (options.containsKey(Options.EXTRA_GENOTYPE_FIELDS.key())
                 && StringUtils.isNotEmpty(options.getString(Options.EXTRA_GENOTYPE_FIELDS.key()))) {
+
             List<String> extraFields = options.getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
             if (studyConfiguration.getIndexedFiles().isEmpty()) {
                 studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS.key(), extraFields);
@@ -579,63 +579,62 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                     throw new StorageEngineException("Unable to change Stored Extra Fields if there are already indexed files.");
                 }
             }
-            if (!studyConfiguration.getAttributes().containsKey(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key())) {
-                List<String> extraFieldsType = new ArrayList<>(extraFields.size());
-                List<VariantFileHeaderLine> formats = fileMetadata.getHeader().getLines().stream()
-                        .filter(line -> line.getKey().equalsIgnoreCase("FORMAT"))
-                        .collect(Collectors.toList());
-                Map<String, VariantMetadataRecord> map = formats.stream()
-                        .map(VariantMetadataRecord::new)
-                        .collect(Collectors.toMap(VariantMetadataRecord::getId, r -> r));
-                for (String extraField : extraFields) {
-                    VCFHeaderLineType type;
-                    VariantMetadataRecord metadataRecord = map.get(extraField);
-                    if (metadataRecord == null) {
-                        if (extraField.equals(VariantMerger.GENOTYPE_FILTER_KEY)) {
-                            metadataRecord = new VariantMetadataRecord(
-                                    VariantMerger.GENOTYPE_FILTER_KEY,
-                                    VCFHeaderLineCount.UNBOUNDED,
-                                    null,
-                                    VCFHeaderLineType.String,
-                                    "Sample genotype filter. Similar in concept to the FILTER field.");
-                        } else {
-                            throw new StorageEngineException("Unknown FORMAT field '" + extraField + '\'');
-                        }
-                    }
-                    variantMetadata.getFormat().put(metadataRecord.getId(), metadataRecord);
+        }
 
-                    if (Objects.equals(metadataRecord.getNumber(), 1)) {
-                        try {
-                            type = metadataRecord.getType();
-                        } catch (IllegalArgumentException ignore) {
-                            type = VCFHeaderLineType.String;
-                        }
+        List<String> extraFormatFields = studyConfiguration.getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
+
+        studyConfiguration.addVariantFileHeader(fileMetadata.getHeader(), extraFormatFields);
+
+
+        // Check if EXTRA_GENOTYPE_FIELDS_TYPE is filled
+        if (!studyConfiguration.getAttributes().containsKey(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key())) {
+            List<String> extraFieldsType = new ArrayList<>(extraFormatFields.size());
+            Map<String, VariantFileHeaderLine> formats = studyConfiguration.getVariantHeaderLines("FORMAT");
+            for (String extraFormatField : extraFormatFields) {
+                VariantFileHeaderLine line = formats.get(extraFormatField);
+                if (line == null) {
+                    if (extraFormatField.equals(VariantMerger.GENOTYPE_FILTER_KEY)) {
+                        line = new VariantFileHeaderLine(
+                                "FORMAT",
+                                VariantMerger.GENOTYPE_FILTER_KEY,
+                                "Sample genotype filter. Similar in concept to the FILTER field.",
+                                ".",
+                                VCFHeaderLineType.String.toString(), null);
+                        studyConfiguration.getVariantHeader().getLines().add(line);
                     } else {
-                        //Fields with arity != 1 are loaded as String
+                        throw new StorageEngineException("Unknown FORMAT field '" + extraFormatField + '\'');
+                    }
+                }
+
+                VCFHeaderLineType type;
+                if (Objects.equals(line.getNumber(), "1")) {
+                    try {
+                        type = VCFHeaderLineType.valueOf(line.getType());
+                    } catch (IllegalArgumentException ignore) {
                         type = VCFHeaderLineType.String;
                     }
-
-
-                    switch (type) {
-                        case String:
-                        case Float:
-                        case Integer:
-                            break;
-                        case Character:
-                        default:
-                            type = VCFHeaderLineType.String;
-                            break;
-
-                    }
-                    extraFieldsType.add(type.toString());
-                    logger.debug(extraField + " : " + type);
+                } else {
+                    //Fields with arity != 1 are loaded as String
+                    type = VCFHeaderLineType.String;
                 }
-                studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), extraFieldsType);
-            }
-        }
-        List<String> formats = studyConfiguration.getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key());
 
-        variantMetadata.addVariantFileHeader(fileMetadata.getHeader(), formats);
+                switch (type) {
+                    case String:
+                    case Float:
+                    case Integer:
+                        break;
+                    case Character:
+                    default:
+                        type = VCFHeaderLineType.String;
+                        break;
+
+                }
+                extraFieldsType.add(type.toString());
+                logger.debug(extraFormatField + " : " + type);
+            }
+
+            studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), extraFieldsType);
+        }
     }
 
     protected StudyConfiguration checkOrCreateStudyConfiguration(boolean forceFetch) throws StorageEngineException {

@@ -33,12 +33,12 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.exceptions.NotAVariantException;
 import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
-import org.opencb.opencga.storage.core.metadata.VariantStudyMetadata;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -252,13 +252,8 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
         return this;
     }
 
-    public VariantTransformTask<T> configureNormalizer(VariantStudyMetadata variantMetadata) {
-        for (VariantStudyMetadata.VariantMetadataRecord record : variantMetadata.getFormat().values()) {
-            normalizer.configure(record.getId(), record.getNumberType(), record.getType());
-        }
-        for (VariantStudyMetadata.VariantMetadataRecord record : variantMetadata.getInfo().values()) {
-            normalizer.configure(record.getId(), record.getNumberType(), record.getType());
-        }
+    public VariantTransformTask<T> configureNormalizer(VariantFileHeader header) {
+        normalizer.configure(header);
         return this;
     }
 

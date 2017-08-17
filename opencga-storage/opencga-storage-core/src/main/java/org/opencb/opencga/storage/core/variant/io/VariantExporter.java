@@ -173,7 +173,7 @@ public class VariantExporter {
     }
 
     protected void writeMetadata(ExportMetadata exportMetadata, String output) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         File file = Paths.get(output).toFile();
         try (OutputStream os = new GZIPOutputStream(new FileOutputStream(file))) {
             objectMapper.writeValue(os, exportMetadata);

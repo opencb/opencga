@@ -100,22 +100,6 @@ public class VariantMetadataFactory {
             cohorts.add(getCohort(studyConfiguration, cohortId));
         }
 
-        List<VariantFileHeaderLine> lines = new ArrayList<>();
-        if (studyConfiguration.getVariantMetadata() != null) {
-            toVariantFileHeaderLineSimple(lines, "ALT", studyConfiguration.getVariantMetadata().getAlternates());
-            toVariantFileHeaderLineSimple(lines, "FILTER", studyConfiguration.getVariantMetadata().getFilter());
-            toVariantFileHeaderLine(lines, "FORMAT", studyConfiguration.getVariantMetadata().getFormat().values());
-            toVariantFileHeaderLine(lines, "INFO", studyConfiguration.getVariantMetadata().getInfo().values());
-            studyConfiguration.getVariantMetadata().getContig().forEach((contig, length) -> {
-                lines.add(VariantFileHeaderLine
-                        .newBuilder()
-                        .setKey("contig")
-                        .setId(contig)
-                        .setAttributes(Collections.singletonMap("length", String.valueOf(length)))
-                        .build());
-            });
-        }
-
         return VariantDatasetMetadata.newBuilder()
                 .setId(studyConfiguration.getStudyName())
                 .setDescription(null)
@@ -125,9 +109,7 @@ public class VariantMetadataFactory {
                 .setCohorts(cohorts)
                 .setSampleSetType(SampleSetType.COLLECTION)
                 .setAggregation(studyConfiguration.getAggregation())
-                .setAggregatedHeader(VariantFileHeader.newBuilder()
-                        .setVersion("")
-                        .setLines(lines).build())
+                .setAggregatedHeader(studyConfiguration.getVariantHeader())
                 .build();
     }
 
@@ -139,44 +121,6 @@ public class VariantMetadataFactory {
                         .build()))
                 .build();
     }
-
-    protected void toVariantFileHeaderLineSimple(List<VariantFileHeaderLine> lines, String key, Map<String, String> values) {
-        values.forEach((id, description) -> lines.add(VariantFileHeaderLine.newBuilder()
-                .setKey(key)
-                .setId(id)
-                .setDescription(description)
-                .build()));
-    }
-
-    protected void toVariantFileHeaderLine(List<VariantFileHeaderLine> lines, String key,
-                                           Collection<VariantStudyMetadata.VariantMetadataRecord> records) {
-        for (VariantStudyMetadata.VariantMetadataRecord record : records) {
-            String number;
-            switch (record.getNumberType()) {
-                case INTEGER:
-                    number = record.getNumber().toString();
-                    break;
-                case A:
-                case R:
-                case G:
-                    number = record.getNumberType().name();
-                    break;
-                case UNBOUNDED:
-                    number = null;
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unknown value " + record.getNumberType());
-            }
-            lines.add(VariantFileHeaderLine.newBuilder()
-                    .setKey(key)
-                    .setId(record.getId())
-                    .setDescription(record.getDescription())
-                    .setNumber(number)
-                    .setType(record.getType().name())
-                    .build());
-        }
-    }
-
 
     protected Cohort getCohort(StudyConfiguration studyConfiguration, Integer cohortId) {
         return Cohort.newBuilder()

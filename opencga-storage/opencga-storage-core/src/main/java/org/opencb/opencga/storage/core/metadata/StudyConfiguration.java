@@ -24,13 +24,18 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.opencb.biodata.models.variant.commons.Aggregation;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeaderLine;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
@@ -61,9 +66,11 @@ public class StudyConfiguration {
 
     private Long timeStamp;
 
-    private VariantStudyMetadata variantMetadata;
+    private VariantFileHeader variantHeader;
 
     private ObjectMap attributes;
+
+    private Logger logger = LoggerFactory.getLogger(StudyConfiguration.class);
 
     protected StudyConfiguration() {
     }
@@ -90,11 +97,12 @@ public class StudyConfiguration {
         }
         this.aggregation = other.aggregation;
         this.timeStamp = other.timeStamp;
-        if (other.variantMetadata == null) {
-            this.variantMetadata = new VariantStudyMetadata();
+        if (other.variantHeader == null) {
+            this.variantHeader = VariantFileHeader.newBuilder().setVersion("").build();
         } else {
-            this.variantMetadata = new VariantStudyMetadata(other.variantMetadata);
+            this.variantHeader = VariantFileHeader.newBuilder(other.variantHeader).setVersion("").build();
         }
+
         this.attributes = new ObjectMap(other.attributes);
     }
 
@@ -128,7 +136,7 @@ public class StudyConfiguration {
         this.batches = new ArrayList<>();
         this.aggregation = Aggregation.NONE;
         this.timeStamp = 0L;
-        this.variantMetadata = new VariantStudyMetadata();
+        this.variantHeader = VariantFileHeader.newBuilder().setVersion("").build();
         this.attributes = new ObjectMap();
     }
 
@@ -300,12 +308,19 @@ public class StudyConfiguration {
         this.timeStamp = timeStamp;
     }
 
-    public VariantStudyMetadata getVariantMetadata() {
-        return variantMetadata;
+    public VariantFileHeader getVariantHeader() {
+        return variantHeader;
     }
 
-    public StudyConfiguration setVariantMetadata(VariantStudyMetadata variantMetadata) {
-        this.variantMetadata = variantMetadata;
+    public Map<String, VariantFileHeaderLine> getVariantHeaderLines(String key) {
+        return variantHeader.getLines()
+                .stream()
+                .filter(l -> l.getKey().equalsIgnoreCase(key))
+                .collect(Collectors.toMap(VariantFileHeaderLine::getId, l -> l));
+    }
+
+    public StudyConfiguration setVariantHeader(VariantFileHeader header) {
+        this.variantHeader = header;
         return this;
     }
 
@@ -471,4 +486,34 @@ public class StudyConfiguration {
         return samplesPosition;
     }
 
+    public void addVariantFileHeader(VariantFileHeader header, List<String> formats) {
+        Map<String, Map<String, VariantFileHeaderLine>> map = new HashMap<>();
+        for (VariantFileHeaderLine line : this.variantHeader.getLines()) {
+            Map<String, VariantFileHeaderLine> keyMap = map.computeIfAbsent(line.getKey(), key -> new HashMap<>());
+            keyMap.put(line.getId(), line);
+        }
+        for (VariantFileHeaderLine line : header.getLines()) {
+            if (formats == null || !line.getKey().equalsIgnoreCase("format") || formats.contains(line.getId())) {
+                Map<String, VariantFileHeaderLine> keyMap = map.computeIfAbsent(line.getKey(), key -> new HashMap<>());
+                if (keyMap.containsKey(line.getId())) {
+                    VariantFileHeaderLine prevLine = keyMap.get(line.getId());
+                    if (!prevLine.equals(line)) {
+                        logger.warn("Previous header line does not match with new header. previous: " + prevLine + " , new: " + line);
+//                        throw new IllegalArgumentException();
+                    }
+                } else {
+                    keyMap.put(line.getId(), line);
+                    variantHeader.getLines().add(line);
+                }
+            }
+        }
+        header.getAttributes().forEach((key, value) -> {
+            String oldValue = this.variantHeader.getAttributes().put(key, value);
+            if (oldValue != null && !oldValue.equals(value)) {
+                // If the value changes among files, replace it with a dot, as it is an unknown value.
+                this.variantHeader.getAttributes().put(key, ".");
+//                throw new IllegalArgumentException();
+            }
+        });
+    }
 }

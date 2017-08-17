@@ -60,7 +60,7 @@ public class VariantMetadataFactoryTest {
 
         URI uri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
         VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(Paths.get(uri), null);
-        studyConfiguration.getVariantMetadata().addVariantFileHeader(fileMetadata.getHeader());
+        studyConfiguration.addVariantFileHeader(fileMetadata.getHeader(), null);
 
         variantMetadataFactory = new VariantMetadataFactory();
         objectWriter = new ObjectMapper()
