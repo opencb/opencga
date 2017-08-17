@@ -16,11 +16,14 @@
 
 package org.opencb.opencga.storage.core.manager.variant.operations;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.commons.Aggregation;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -28,6 +31,7 @@ import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdap
 
 import java.net.URI;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,10 +49,24 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
         return Aggregation.NONE;
     }
 
-    @Test
-    public void testExportImport() throws Exception {
+    @Before
+    public void setUp() throws Exception {
 
         indexFile(getSmallFile(), new QueryOptions(VariantStorageEngine.Options.CALCULATE_STATS.key(), true), outputId);
+
+        catalogManager.getStudyManager().createVariableSet(studyId, "vs1", false, false, "", null, Arrays.asList(
+                new Variable("name", "", "", Variable.VariableType.TEXT, null, true, false, null, 0, null, null, null, null),
+                new Variable("age", "", "", Variable.VariableType.INTEGER, null, true, false, null, 0, null, null, null, null),
+                new Variable("other", "", "", Variable.VariableType.TEXT, "unknown", false, false, null, 0, null, null, null, null)), sessionId);
+
+        catalogManager.getSampleManager().createAnnotationSet("NA19600", String.valueOf(studyId), "vs1", "as1", new ObjectMap("name", "NA19600").append("age", 30), null, sessionId);
+        catalogManager.getSampleManager().createAnnotationSet("NA19660", String.valueOf(studyId), "vs1", "as1", new ObjectMap("name", "NA19660").append("age", 35).append("other", "unknown"), null, sessionId);
+        catalogManager.getSampleManager().createAnnotationSet("NA19660", String.valueOf(studyId), "vs1", "as2", new ObjectMap("name", "NA19660").append("age", 35).append("other", "asdf"), null, sessionId);
+
+    }
+
+    @Test
+    public void testExportImport() throws Exception {
 
         String export = Paths.get(opencga.createTmpOutdir(studyId, "_EXPORT_", sessionId)).resolve("export.avro.gz").toString();
 
@@ -62,8 +80,6 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
 
     @Test
     public void testExportSomeSamplesImport() throws Exception {
-
-        indexFile(getSmallFile(), new QueryOptions(VariantStorageEngine.Options.CALCULATE_STATS.key(), true), outputId);
 
         String export = Paths.get(opencga.createTmpOutdir(studyId, "_EXPORT_", sessionId)).resolve("export.avro").toString();
 

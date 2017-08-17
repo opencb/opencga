@@ -58,6 +58,7 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
+import org.opencb.opencga.storage.core.variant.io.VariantMetadataExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
@@ -237,7 +238,23 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public void exportData(URI outputFile, VariantOutputFormat outputFormat, Query query, QueryOptions queryOptions)
             throws IOException, StorageEngineException {
-        VariantExporter exporter = newVariantExporter();
+        exportData(outputFile, outputFormat, new VariantMetadataExporter(getStudyConfigurationManager()), query, queryOptions);
+    }
+
+    /**
+     * Exports the result of the given query and the associated metadata.
+     * @param outputFile       Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
+     * @param outputFormat     Variant output format
+     * @param metadataExporter Metadata exporter. Metadata will only be
+     * @param query            Query with the variants to export
+     * @param queryOptions     Query options
+     * @throws IOException  If there is any IO error
+     * @throws StorageEngineException  If there is any error exporting variants
+     */
+    public void exportData(URI outputFile, VariantOutputFormat outputFormat, VariantMetadataExporter metadataExporter,
+                           Query query, QueryOptions queryOptions)
+            throws IOException, StorageEngineException {
+        VariantExporter exporter = newVariantExporter(metadataExporter);
         exporter.export(outputFile, outputFormat, query, queryOptions);
     }
 
@@ -245,11 +262,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * Creates a new {@link VariantExporter} for the current backend.
      * The default implementation iterates locally through the database.
      *
+     * @param metadataExporter metadataExporter
      * @return              new VariantExporter
      * @throws StorageEngineException  if there is an error creating the VariantExporter
      */
-    protected VariantExporter newVariantExporter() throws StorageEngineException {
-        return new VariantExporter(this);
+    protected VariantExporter newVariantExporter(VariantMetadataExporter metadataExporter) throws StorageEngineException {
+        return new VariantExporter(this, metadataExporter);
     }
 
     /**

@@ -18,10 +18,13 @@ package org.opencb.opencga.storage.core.manager.variant.operations;
 
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
@@ -35,6 +38,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.io.VariantMetadataExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantMetadataImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
@@ -130,7 +134,10 @@ public class VariantExportStorageOperation extends StorageOperation {
 //            }
 
             VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
-            variantStorageEngine.exportData(outputFile, outputFormat, query, new QueryOptions(options));
+            CatalogVariantMetadataExporter metadataExporter =
+                    new CatalogVariantMetadataExporter(variantStorageEngine.getStudyConfigurationManager(), sessionId);
+
+            variantStorageEngine.exportData(outputFile, outputFormat, metadataExporter, query, new QueryOptions(options));
 
             if (catalogOutDirId != null && outdir != null) {
                 copyResults(outdir, catalogOutDirId, sessionId).stream().map(File::getUri);
@@ -197,6 +204,92 @@ public class VariantExportStorageOperation extends StorageOperation {
             return studies + ".export";
         } else {
             return studies + '.' + regions.get(0).toString() + ".export";
+        }
+    }
+
+    private final class CatalogVariantMetadataExporter extends VariantMetadataExporter {
+
+        private final String sessionId;
+
+        CatalogVariantMetadataExporter(StudyConfigurationManager studyConfigurationManager, String sessionId) {
+            super(studyConfigurationManager);
+            this.sessionId = sessionId;
+        }
+
+        @Override
+        protected VariantMetadata generateVariantMetadata(List<StudyConfiguration> studyConfigurations,
+                                                          Map<Integer, List<Integer>> returnedSamples,
+                                                          Map<Integer, List<Integer>> returnedFiles) throws StorageEngineException {
+            VariantMetadata metadata = super.generateVariantMetadata(studyConfigurations, returnedSamples, returnedFiles);
+
+            Map<String, Integer> studyConfigurationMap = studyConfigurations.stream()
+                    .collect(Collectors.toMap(StudyConfiguration::getStudyName, StudyConfiguration::getStudyId));
+            try {
+                for (VariantDatasetMetadata datasetMetadata : metadata.getDatasets()) {
+                    int studyId = studyConfigurationMap.get(datasetMetadata.getId());
+
+                    for (org.opencb.biodata.models.metadata.Individual individual : datasetMetadata.getIndividuals()) {
+
+                        fillIndividual(studyId, individual);
+
+                        for (org.opencb.biodata.models.metadata.Sample sample : individual.getSamples()) {
+                            fillSample(studyId, sample);
+                        }
+                    }
+                }
+            } catch (CatalogException e) {
+                throw new StorageEngineException("Error generating VariantMetadata", e);
+            }
+            return metadata;
+        }
+
+        private void fillIndividual(int studyId, org.opencb.biodata.models.metadata.Individual individual) throws CatalogException {
+            Query query = new Query(2)
+                    .append(IndividualDBAdaptor.QueryParams.NAME.key(), individual.getId())
+                    .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
+            Individual catalogIndividual = catalogManager.getIndividualManager().get(query, null, sessionId).first();
+            if (catalogIndividual != null) {
+                individual.setSex(catalogIndividual.getSex().name());
+                individual.setFamily(catalogIndividual.getFamily());
+                individual.setPhenotype(catalogIndividual.getAffectationStatus().toString());
+
+                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.NAME.key());
+                if (catalogIndividual.getMotherId() > 0) {
+                    String motherName = catalogManager.getIndividualManager().get(catalogIndividual.getMotherId(), options, sessionId)
+                            .first().getName();
+                    individual.setMother(motherName);
+                }
+                if (catalogIndividual.getFatherId() > 0) {
+                    String fatherName = catalogManager.getIndividualManager().get(catalogIndividual.getFatherId(), options, sessionId)
+                            .first().getName();
+                    individual.setFather(fatherName);
+                }
+            }
+        }
+
+        private void fillSample(int studyId, org.opencb.biodata.models.metadata.Sample sample) throws CatalogException {
+            Query query = new Query(2)
+                    .append(SampleDBAdaptor.QueryParams.NAME.key(), sample.getId())
+                    .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
+            Sample catalogSample = catalogManager.getSampleManager().get(query, null, sessionId).first();
+            List<AnnotationSet> annotationSets = catalogSample.getAnnotationSets();
+            sample.setAnnotations(new LinkedHashMap<>(sample.getAnnotations()));
+            for (AnnotationSet annotationSet : annotationSets) {
+                String prefix = annotationSets.size() > 1 ? annotationSet.getName() + '.' : "";
+                Set<Annotation> annotations = annotationSet.getAnnotations();
+                for (Annotation annotation : annotations) {
+                    Object value = annotation.getValue();
+                    String stringValue;
+                    if (value instanceof Collection) {
+                        stringValue = ((Collection<?>) value).stream().map(Object::toString).collect(Collectors.joining(","));
+                    } else {
+                        stringValue = value.toString();
+                    }
+                    sample.getAnnotations().put(prefix + annotation.getName(), stringValue);
+                }
+            }
         }
     }
 

@@ -16,40 +16,25 @@
 
 package org.opencb.opencga.storage.core.variant.io;
 
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.ExportMetadata;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
-import java.nio.file.Paths;
-import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * Prints the result of a given query in the selected output format, and the associated metadata.
@@ -64,12 +49,14 @@ public class VariantExporter {
     public static final String METADATA_FILE_EXTENSION = ".meta.json.gz";
     private final VariantStorageEngine engine;
     private final VariantWriterFactory variantWriterFactory;
+    private final VariantMetadataExporter metadataExporter;
 
     private final Logger logger = LoggerFactory.getLogger(VariantExporter.class);
 
-    public VariantExporter(VariantStorageEngine engine) throws StorageEngineException {
+    public VariantExporter(VariantStorageEngine engine, VariantMetadataExporter metadataExporter) throws StorageEngineException {
         this.engine = engine;
         variantWriterFactory = new VariantWriterFactory(engine.getDBAdaptor());
+        this.metadataExporter = metadataExporter;
     }
 
     /**
@@ -94,8 +81,8 @@ public class VariantExporter {
             boolean logProgress = !VariantWriterFactory.isStandardOutput(outputFile);
             exportData(os, outputFormat, query, queryOptions, logProgress);
         }
-        if (!VariantWriterFactory.isStandardOutput(outputFile)) {
-            exportMetaData(query, queryOptions, outputFile + METADATA_FILE_EXTENSION);
+        if (metadataExporter != null && !VariantWriterFactory.isStandardOutput(outputFile)) {
+            metadataExporter.exportMetaData(query, queryOptions, outputFile + METADATA_FILE_EXTENSION);
         }
     }
 
@@ -147,44 +134,6 @@ public class VariantExporter {
         logger.info("Time fetching data: " + variantDBReader.getTimeFetching(TimeUnit.MILLISECONDS) / 1000.0 + 's');
         logger.info("Time converting data: " + variantDBReader.getTimeConverting(TimeUnit.MILLISECONDS) / 1000.0 + 's');
 
-    }
-
-    protected void exportMetaData(Query query, QueryOptions queryOptions, String output)
-            throws IOException, StorageEngineException {
-        StudyConfigurationManager scm = engine.getStudyConfigurationManager();
-
-        Map<Integer, List<Integer>> returnedSamples = VariantQueryUtils.getReturnedSamples(query, queryOptions, scm);
-        Map<Integer, List<Integer>> returnedFiles = new HashMap<>(returnedSamples.size());
-        List<StudyConfiguration> studyConfigurations = new ArrayList<>(returnedSamples.size());
-        Set<VariantField> fields = VariantField.getReturnedFields(queryOptions);
-
-        for (Integer studyId : returnedSamples.keySet()) {
-            studyConfigurations.add(scm.getStudyConfiguration(studyId, QueryOptions.empty()).first());
-            returnedFiles.put(studyId, VariantQueryUtils.getReturnedFiles(query, queryOptions, fields, scm));
-        }
-
-        ExportMetadata exportMetadata = new ExportMetadata(studyConfigurations, query, queryOptions);
-        writeMetadata(exportMetadata, StringUtils.replace(output, "meta", "meta.old"));
-
-        VariantMetadata variantMetadata = new VariantMetadataFactory()
-                .toVariantMetadata(studyConfigurations, returnedSamples, returnedFiles);
-        writeMetadata(variantMetadata, output);
-
-    }
-
-    protected void writeMetadata(ExportMetadata exportMetadata, String output) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        File file = Paths.get(output).toFile();
-        try (OutputStream os = new GZIPOutputStream(new FileOutputStream(file))) {
-            objectMapper.writeValue(os, exportMetadata);
-        }
-    }
-    protected void writeMetadata(VariantMetadata metadata, String output) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        File file = Paths.get(output).toFile();
-        try (OutputStream os = new GZIPOutputStream(new FileOutputStream(file))) {
-            objectMapper.writeValue(os, metadata);
-        }
     }
 
 }
