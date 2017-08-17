@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.analysis;
 import com.beust.jcommander.ParameterException;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.analysis.executors.AlignmentCommandExecutor;
+import org.opencb.opencga.app.cli.analysis.executors.ToolsCommandExecutor;
 import org.opencb.opencga.app.cli.analysis.executors.VariantCommandExecutor;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
@@ -80,6 +81,9 @@ public class AnalysisMain {
                             break;
                         case "alignment":
                             commandExecutor = new AlignmentCommandExecutor(cliOptionsParser.getAlignmentCommandOptions());
+                            break;
+                        case "tools":
+                            commandExecutor = new ToolsCommandExecutor(cliOptionsParser.getToolsCommandOptions());
                             break;
                         default:
                             System.err.printf("ERROR: not valid command passed: '" + parsedCommand + "'");

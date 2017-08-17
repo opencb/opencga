@@ -155,7 +155,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         }
     }
 
-    private void checkRunningJob(Job job) {
+    private void checkRunningJob(Job job) throws CatalogIOException {
         Path tmpOutdirPath = getJobTemporaryFolder(job.getId(), tempJobFolder);
         Job.JobStatus jobStatus;
 

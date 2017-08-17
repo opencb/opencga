@@ -144,7 +144,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
     }
 
-    private void checkRunningJob(Job job) {
+    private void checkRunningJob(Job job) throws CatalogIOException {
         Path tmpOutdirPath = getJobTemporaryFolder(job.getId(), tempJobFolder);
         Job.JobStatus jobStatus;
 
@@ -210,7 +210,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 commandLine.append(job.getExecution()).append(' ');
                 buildCommandLine(job.getParams(), commandLine, null);
             } else {
-                commandLine.append("tools run ")
+                commandLine.append("tools execute ")
                         .append("--job ").append(job.getId()).append(' ');
             }
             commandLine.append("--outdir ").append(path.toString());

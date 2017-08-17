@@ -25,7 +25,7 @@ public class ToolAnalysis {
     private JobManager jobManager;
     private FileManager fileManager;
 
-    ToolAnalysis(Configuration configuration) throws CatalogException, AnalysisToolException {
+    public ToolAnalysis(Configuration configuration) throws CatalogException, AnalysisToolException {
         this.catalogManager = new CatalogManager(configuration);
         this.toolManager = new ToolManager(Paths.get(configuration.getToolDir()));
 
@@ -35,19 +35,18 @@ public class ToolAnalysis {
 
     /**
      * Execute a command tool.
-     *
-     * @param tool tool to be executed.
-     * @param execution execution of the tool to be executed.
-     * @param jobId jobId of the job containing the relevant information.
+     *  @param jobId jobId of the job containing the relevant information.
      * @param outDir directory path where the results will be stored.
      * @param sessionId session id of the user that will execute the tool.
-     * @throws CatalogException if there is any kind of error such as a lack of permissions.
      */
-    public void execute(String tool, String execution, long jobId, String outDir, String sessionId) {
+    public void execute(long jobId, String outDir, String sessionId) {
         try {
             // We get the job information.
             Job job = jobManager.get(jobId, QueryOptions.empty(), sessionId).first();
             long studyId = jobManager.getStudyId(jobId);
+
+            String tool = job.getToolId();
+            String execution = job.getExecution();
 
             // Create the OpenCGA output folder
             fileManager.createFolder(String.valueOf(studyId), (String) job.getAttributes().get(Job.OPENCGA_OUTPUT_DIR),

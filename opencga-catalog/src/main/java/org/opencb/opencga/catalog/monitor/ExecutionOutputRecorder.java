@@ -16,8 +16,7 @@
 
 package org.opencb.opencga.catalog.monitor;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
@@ -58,10 +57,10 @@ public class ExecutionOutputRecorder {
     private final String sessionId;
     private final boolean calculateChecksum = false;    //TODO: Read from config file
     private final FileScanner.FileScannerPolicy fileScannerPolicy = FileScanner.FileScannerPolicy.DELETE; //TODO: Read from config file
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public ExecutionOutputRecorder(CatalogManager catalogManager, String sessionId) {
+    public ExecutionOutputRecorder(CatalogManager catalogManager, String sessionId) throws CatalogIOException {
         this.catalogManager = catalogManager;
+        this.ioManager = catalogManager.getCatalogIOManagerFactory().get("file");
         this.sessionId = sessionId;
     }
 
@@ -96,7 +95,7 @@ public class ExecutionOutputRecorder {
         // parameters to update in the job
         ObjectMap parameters = new ObjectMap();
 
-        logger.debug("Moving data from temporary folder to catalog folder...");
+        logger.debug("Moving data from temporary folder {} to catalog folder...", tmpOutdirPath);
 
         // Delete job.status file
         Path path = Paths.get(tmpOutdirPath.toString(), JOB_STATUS_FILE);
@@ -117,10 +116,11 @@ public class ExecutionOutputRecorder {
         // Create the catalog output directory
         String studyStr = (String) job.getAttributes().get(Job.OPENCGA_STUDY);
         String outputDir = (String) job.getAttributes().get(Job.OPENCGA_OUTPUT_DIR);
+        String userToken = (String) job.getAttributes().get(Job.OPENCGA_USER_TOKEN);
         File outDir;
         try {
              outDir = catalogManager.getFileManager().createFolder(studyStr, outputDir, new File.FileStatus(), true, "",
-                     QueryOptions.empty(), sessionId).first();
+                     QueryOptions.empty(), userToken).first();
              parameters.append(JobDBAdaptor.QueryParams.OUT_DIR.key(), outDir);
         } catch (CatalogException e) {
             logger.error("Cannot find file {}. Error: {}", job.getOutDir().getId(), e.getMessage());

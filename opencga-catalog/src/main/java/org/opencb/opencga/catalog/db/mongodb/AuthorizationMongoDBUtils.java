@@ -26,7 +26,7 @@ public class AuthorizationMongoDBUtils {
 
     public static boolean checkStudyPermission(Document study, String user, String studyPermission) {
         // 0. If the user corresponds with the owner, we don't have to check anything else
-        if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
+        if (ADMIN.equals(user) || study.getString(PRIVATE_OWNER_ID).equals(user)) {
             return true;
         }
         if (ADMIN.equals(user) && checkAdminPermissions(studyPermission)) {
@@ -115,8 +115,8 @@ public class AuthorizationMongoDBUtils {
 
     public static Document getQueryForAuthorisedEntries(Document study, String user, String studyPermission, String entryPermission)
             throws CatalogAuthorizationException {
-        // 0. If the user corresponds with the owner, we don't have to check anything else
-        if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
+        // 0. If the user is the admin or corresponds with the owner, we don't have to check anything else
+        if (ADMIN.equals(user) || study.getString(PRIVATE_OWNER_ID).equals(user)) {
             return new Document();
         }
         if (ADMIN.equals(user) && checkAdminPermissions(studyPermission)) {
