@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.search;
+package org.opencb.opencga.storage.core.variant.search;
 
 import org.apache.solr.client.solrj.beans.Field;
 

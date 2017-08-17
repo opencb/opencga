@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.search.solr;
+package org.opencb.opencga.storage.core.variant.search.solr;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.opencga.storage.core.search.VariantSearchToVariantConverter;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 
 import java.io.IOException;

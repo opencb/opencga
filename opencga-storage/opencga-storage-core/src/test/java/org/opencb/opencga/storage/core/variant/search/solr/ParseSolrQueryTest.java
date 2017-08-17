@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.search.solr;
+package org.opencb.opencga.storage.core.variant.search.solr;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.biodata.models.variant.Variant;
