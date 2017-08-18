@@ -1,5 +1,6 @@
 package org.opencb.opencga.server.rest.analysis;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -29,22 +30,32 @@ public class ToolAnalysisWSService extends AnalysisWSService {
         super(version, uriInfo, httpServletRequest, httpHeaders);
     }
 
+    private class ExecuteParams {
+        public String jobName;
+        public String description;
+        @JsonProperty(required = true)
+        public String toolId;
+        public String execution;
+        @JsonProperty(required = true)
+        public String outDir;
+        @JsonProperty(required = true)
+        public Map<String, String> toolParams;
+
+        public ExecuteParams() {
+        }
+    }
+
     @POST
-    @Path("/run")
+    @Path("/execute")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Run analysis", response = QueryResponse.class)
+    @ApiOperation(value = "Execute an analysis using an internal or external tool", response = QueryResponse.class)
     public Response run(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value = "Job name. If not provided, the name will be equal to toolId_currentDate") @QueryParam("name") String name,
-            @ApiParam(value = "Job description") @QueryParam("description") String description,
-            @ApiParam(value = "Tool id (opencga-analysis, vaast, samtools...)", required = true) @QueryParam("toolId") String toolId,
-            @ApiParam(value = "Execution: '(samtools) view'") @QueryParam("execution") String execution,
-            @ApiParam(value = "File path to store the results", required = true) @QueryParam("outDir") String outDir,
-            @ApiParam(value = "Tool parameters", name = "params", required = true) Map<String, String> params) {
+            @ApiParam(value = "Execution parameters", required = true) ExecuteParams params) {
         try {
-            QueryResult<Job> queryResult = catalogManager.getJobManager().create(studyStr, name, description, toolId, execution, outDir,
-                    params, sessionId);
+            QueryResult<Job> queryResult = catalogManager.getJobManager().create(studyStr, params.jobName, params.description,
+                    params.toolId, params.execution, params.outDir, params.toolParams, sessionId);
             return createOkResponse(queryResult);
         } catch(Exception e) {
             return createErrorResponse(e);
