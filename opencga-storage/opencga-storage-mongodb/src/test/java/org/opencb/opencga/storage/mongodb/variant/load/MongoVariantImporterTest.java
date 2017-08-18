@@ -51,7 +51,9 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
     @Before
     public void setUp() throws Exception {
         studyConfiguration = newStudyConfiguration();
-        runDefaultETL(smallInputUri, variantStorageEngine, studyConfiguration, new ObjectMap(VariantStorageEngine.Options.FILE_ID.key(), 500));
+        runDefaultETL(smallInputUri, variantStorageEngine, studyConfiguration,
+                new ObjectMap(VariantStorageEngine.Options.FILE_ID.key(), 500)
+                        .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "GL,DS"));
     }
 
     @Test

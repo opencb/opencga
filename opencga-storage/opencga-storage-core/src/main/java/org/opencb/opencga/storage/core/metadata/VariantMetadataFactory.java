@@ -107,6 +107,18 @@ public class VariantMetadataFactory {
             attributes.put(key, studyConfiguration.getAttributes().getString(key));
         }
 
+        // Header from the StudyConfiguration stores variable attributes (where the value changes for every file) as unknown values.
+        // We don't want to export those values at the aggregated header.
+        // Copy the header and remove unknown attributes
+        VariantFileHeader studyHeader = studyConfiguration.getVariantHeader();
+        HashMap<String, String> headerAttributes = new HashMap<>();
+        studyHeader.getAttributes().forEach((key, value) -> {
+            if (!StudyConfiguration.UNKNOWN_HEADER_ATTRIBUTE.equals(value)) {
+                headerAttributes.put(key, value);
+            }
+        });
+        VariantFileHeader aggregatedHeader = new VariantFileHeader(studyHeader.getVersion(), studyHeader.getLines(), headerAttributes);
+
         return VariantDatasetMetadata.newBuilder()
                 .setId(studyConfiguration.getStudyName())
                 .setDescription(null)
@@ -116,7 +128,7 @@ public class VariantMetadataFactory {
                 .setCohorts(cohorts)
                 .setSampleSetType(SampleSetType.COLLECTION)
                 .setAggregation(studyConfiguration.getAggregation())
-                .setAggregatedHeader(studyConfiguration.getVariantHeader())
+                .setAggregatedHeader(aggregatedHeader)
                 .setAttributes(attributes)
                 .build();
     }

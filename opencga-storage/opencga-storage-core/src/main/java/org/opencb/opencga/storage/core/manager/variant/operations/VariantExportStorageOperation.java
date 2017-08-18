@@ -37,6 +37,7 @@ import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantMetadataExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantMetadataImporter;
@@ -135,7 +136,7 @@ public class VariantExportStorageOperation extends StorageOperation {
 
             VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
             CatalogVariantMetadataExporter metadataExporter =
-                    new CatalogVariantMetadataExporter(variantStorageEngine.getStudyConfigurationManager(), sessionId);
+                    new CatalogVariantMetadataExporter(variantStorageEngine.getDBAdaptor(), sessionId);
 
             variantStorageEngine.exportData(outputFile, outputFormat, metadataExporter, query, new QueryOptions(options));
 
@@ -211,8 +212,8 @@ public class VariantExportStorageOperation extends StorageOperation {
 
         private final String sessionId;
 
-        CatalogVariantMetadataExporter(StudyConfigurationManager studyConfigurationManager, String sessionId) {
-            super(studyConfigurationManager);
+        CatalogVariantMetadataExporter(VariantDBAdaptor dbAdaptor, String sessionId) {
+            super(dbAdaptor.getStudyConfigurationManager(), dbAdaptor.getVariantFileMetadataDBAdaptor());
             this.sessionId = sessionId;
         }
 
@@ -228,6 +229,8 @@ public class VariantExportStorageOperation extends StorageOperation {
                 for (VariantDatasetMetadata datasetMetadata : metadata.getDatasets()) {
                     int studyId = studyConfigurationMap.get(datasetMetadata.getId());
 
+                    fillStudy(studyId, datasetMetadata);
+
                     for (org.opencb.biodata.models.metadata.Individual individual : datasetMetadata.getIndividuals()) {
 
                         fillIndividual(studyId, individual);
@@ -241,6 +244,14 @@ public class VariantExportStorageOperation extends StorageOperation {
                 throw new StorageEngineException("Error generating VariantMetadata", e);
             }
             return metadata;
+        }
+
+        private void fillStudy(long studyId, VariantDatasetMetadata datasetMetadata) throws CatalogException {
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.DESCRIPTION.key());
+
+            // Just add file description
+            Study study = catalogManager.getStudyManager().get(studyId, options, sessionId).first();
+            datasetMetadata.setDescription(study.getDescription());
         }
 
         private void fillIndividual(int studyId, org.opencb.biodata.models.metadata.Individual individual) throws CatalogException {

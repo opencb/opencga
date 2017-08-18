@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
  */
 public class StudyConfiguration {
 
+    public static final String UNKNOWN_HEADER_ATTRIBUTE = ".";
     private int studyId;
     private String studyName;
 
@@ -511,7 +512,7 @@ public class StudyConfiguration {
             String oldValue = this.variantHeader.getAttributes().put(key, value);
             if (oldValue != null && !oldValue.equals(value)) {
                 // If the value changes among files, replace it with a dot, as it is an unknown value.
-                this.variantHeader.getAttributes().put(key, ".");
+                this.variantHeader.getAttributes().put(key, UNKNOWN_HEADER_ATTRIBUTE);
 //                throw new IllegalArgumentException();
             }
         });

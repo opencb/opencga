@@ -68,9 +68,9 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
     @Test
     public void testExportImport() throws Exception {
 
-        String export = Paths.get(opencga.createTmpOutdir(studyId, "_EXPORT_", sessionId)).resolve("export.avro.gz").toString();
+        String export = Paths.get(opencga.createTmpOutdir(studyId, "_EXPORT_", sessionId)).resolve("export.json.gz").toString();
 
-        variantManager.exportData(export, VariantOutputFormat.AVRO_GZ, String.valueOf(studyId), sessionId);
+        variantManager.exportData(export, VariantOutputFormat.JSON_GZ, String.valueOf(studyId), sessionId);
 
         DummyStudyConfigurationAdaptor.clear();
 

@@ -238,7 +238,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public void exportData(URI outputFile, VariantOutputFormat outputFormat, Query query, QueryOptions queryOptions)
             throws IOException, StorageEngineException {
-        exportData(outputFile, outputFormat, new VariantMetadataExporter(getStudyConfigurationManager()), query, queryOptions);
+        exportData(outputFile, outputFormat, new VariantMetadataExporter(getStudyConfigurationManager(),
+                getDBAdaptor().getVariantFileMetadataDBAdaptor()), query, queryOptions);
     }
 
     /**
