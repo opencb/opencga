@@ -25,8 +25,6 @@ import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Created by pfurio on 22/08/16.
@@ -42,9 +40,8 @@ public class LocalExecutor extends AbstractExecutor {
     @Override
     public void execute(Job job) throws Exception {
         Runnable runnable = () -> {
-            ExecutorConfig executorConfig = null;
             try {
-                executorConfig = getExecutorConfig(job);
+                ExecutorConfig executorConfig = getExecutorConfig(job);
 
                 logger.info("Ready to run {}", job.getCommandLine());
                 Command com = new Command(getCommandLine(job));
@@ -82,28 +79,29 @@ public class LocalExecutor extends AbstractExecutor {
                 closeOutputStreams(com);
             } catch (FileNotFoundException e) {
                 logger.error("Could not create the output/error files", e);
-            } finally {
-                if (executorConfig != null) {
-                    Path outdir = Paths.get(executorConfig.getOutdir());
-                    // The outdir folder may be removed by the IndexDaemon
-                    if (outdir.toFile().exists()) {
-                        String status = status(outdir, job);
-                        if (!status.equals(Job.JobStatus.DONE)
-                                && !status.equals(Job.JobStatus.READY)
-                                && !status.equals(Job.JobStatus.ERROR)) {
-                            logger.error("Job {} finished with status {}. Write {} with status {}",
-                                    job.getId(), status, JOB_STATUS_FILE, Job.JobStatus.ERROR);
-                            try {
-                                Path jobStatusFile = outdir.resolve(JOB_STATUS_FILE);
-                                Job.JobStatus jobStatus = new Job.JobStatus(Job.JobStatus.ERROR, "Job finished with status " + status);
-                                objectMapper.writer().writeValue(jobStatusFile.toFile(), jobStatus);
-                            } catch (IOException e) {
-                                logger.error("Could not write the " + JOB_STATUS_FILE + " with status " + Job.JobStatus.ERROR, e);
-                            }
-                        }
-                    }
-                }
             }
+//            finally {
+//                if (executorConfig != null) {
+//                    Path outdir = Paths.get(executorConfig.getOutdir());
+//                    // The outdir folder may be removed by the IndexDaemon
+//                    if (outdir.toFile().exists()) {
+//                        String status = status(outdir, job);
+//                        if (!status.equals(Job.JobStatus.DONE)
+//                                && !status.equals(Job.JobStatus.READY)
+//                                && !status.equals(Job.JobStatus.ERROR)) {
+//                            logger.error("Job {} finished with status {}. Write {} with status {}",
+//                                    job.getId(), status, JOB_STATUS_FILE, Job.JobStatus.ERROR);
+//                            try {
+//                                Path jobStatusFile = outdir.resolve(JOB_STATUS_FILE);
+//                                Job.JobStatus jobStatus = new Job.JobStatus(Job.JobStatus.ERROR, "Job finished with status " + status);
+//                                objectMapper.writer().writeValue(jobStatusFile.toFile(), jobStatus);
+//                            } catch (IOException e) {
+//                                logger.error("Could not write the " + JOB_STATUS_FILE + " with status " + Job.JobStatus.ERROR, e);
+//                            }
+//                        }
+//                    }
+//                }
+//            }
         };
         Thread thread = new Thread(runnable, "LocalExecutor-" + nextThreadNum());
         thread.start();

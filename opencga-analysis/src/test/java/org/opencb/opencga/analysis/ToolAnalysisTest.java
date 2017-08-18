@@ -7,6 +7,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
@@ -69,12 +70,15 @@ public class ToolAnalysisTest extends GenericTest {
         Path toolDir = Paths.get(getClass().getResource("/tools").toURI());
         Path tmp = Paths.get("/tmp");
 
+        Long studyId = catalogManager.getStudyManager().getId("user", STUDY);
+        catalogManager.getFileManager().link(testBam.toUri(), "bams/", studyId, new ObjectMap("parents", true), sessionIdUser);
+
         Map<String, String> params = new HashMap<>();
-        params.put("input", testBam.toAbsolutePath().toString());
-        params.put("output", "/tmp/test.bam.bai");
+        params.put("input", "test.bam");
+        params.put("output", "test.bam.bai");
 
         QueryResult<Job> jobQueryResult = catalogManager.getJobManager().create(STUDY, "jobName", "", "samtools", "index",
-                "directory/catalog/", params, sessionIdUser);
+                "bams/", params, sessionIdUser);
 
         catalogManager.getConfiguration().setToolDir(toolDir.toString());
         ToolAnalysis toolAnalysis = new ToolAnalysis(catalogManager.getConfiguration());
