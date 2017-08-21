@@ -880,8 +880,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
      * @throws CatalogException if the family object is not valid, or the individuals cannot be created due to a lack of permissions.
      */
     private void checkAndCreateAllIndividualsFromFamily(long studyId, Family family, String sessionId) throws CatalogException {
-        // 1. Start validation of parameters.
 
+        // 1. Start validation of parameters.
         if (family.getMembers() == null || family.getMembers().size() == 0) {
             throw new CatalogException("Missing members in family");
         }
@@ -893,6 +893,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         Map<String, MyFamily> familyMembers = new HashMap<>(family.getMembers().size());
+        Map<String, Set<String>> memberSiblings = new HashMap<>();
         for (Relatives relatives : family.getMembers()) {
             relatives.setDiseases(ParamUtils.defaultObject(relatives.getDiseases(), Collections::emptyList));
             relatives.setCarrier(ParamUtils.defaultObject(relatives.getCarrier(), Collections::emptyList));
@@ -937,7 +938,40 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 throw new CatalogException("Missing carrier disease annotations that some family members: "
                         + StringUtils.join(relatives.getCarrier(), ","));
             }
+
+            // Add any siblings to the siblings map if any
+            if (relatives.getMultiples() != null) {
+                if (relatives.getMultiples().getSiblings() != null && !relatives.getMultiples().getSiblings().isEmpty()) {
+                    memberSiblings.put(individualName, new HashSet<>(relatives.getMultiples().getSiblings()));
+                }
+            }
         }
+
+        // Check all the siblings are properly crossed-referenced
+        for (Map.Entry<String, Set<String>> entry : memberSiblings.entrySet()) {
+            // Add all the siblings to the set
+            Set<String> allSiblings = new HashSet<>(entry.getValue());
+            allSiblings.add(entry.getKey());
+
+            for (String member : entry.getValue()) {
+                // Remove current member from the siblings set
+                allSiblings.remove(member);
+
+                // Check the member (sibling) has exactly the same siblings defined in its set
+                if (memberSiblings.get(member).size() != allSiblings.size()) {
+                    throw new CatalogException("The number of siblings contained by " + member + " does not match the ones "
+                            + "contained by " + entry.getKey());
+                }
+                if (!memberSiblings.get(member).containsAll(allSiblings)) {
+                    throw new CatalogException("Some of the siblings contained by " + member + " does not match the ones "
+                            + "contained by " + entry.getKey());
+                }
+
+                // Restore/add the current member to the siblings set
+                allSiblings.add(member);
+            }
+        }
+
 
         // We will assume that all the founders are in the first level.
         // Look for the founders. hasParents = false

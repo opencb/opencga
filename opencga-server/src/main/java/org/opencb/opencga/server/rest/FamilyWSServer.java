@@ -313,13 +313,14 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public List<String> diseases;
         public List<String> carrier;
         public boolean parentalConsanguinity;
+        public Multiples multiples;
 
         private Relatives toRelatives(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
             Individual realIndividual = member != null ? member.toIndividual(studyStr, studyManager, sessionId) : null;
             Individual realFather = father != null ? father.toIndividual(studyStr, studyManager, sessionId) : null;
             Individual realMother = mother != null ? mother.toIndividual(studyStr, studyManager, sessionId) : null;
 
-            return new Relatives(realIndividual, realFather, realMother, diseases, carrier, parentalConsanguinity);
+            return new Relatives(realIndividual, realFather, realMother, diseases, carrier, multiples, parentalConsanguinity);
         }
 
     }
