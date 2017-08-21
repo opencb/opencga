@@ -13,21 +13,23 @@ public class Relatives {
     private List<String> diseases;
     private List<String> carrier;
     private boolean parentalConsanguinity;
+    private Multiples multiples;
 
     public Relatives() {
     }
 
     public Relatives(Individual member, Individual father, Individual mother) {
-        this(member, father, mother, null, null, false);
+        this(member, father, mother, null, null, null, false);
     }
 
     public Relatives(Individual member, Individual father, Individual mother, List<String> diseases, List<String> carrier,
-                     boolean parentalConsanguinity) {
+                     Multiples multiples, boolean parentalConsanguinity) {
         this.member = member;
         this.father = father;
         this.mother = mother;
         this.diseases = ParamUtils.defaultObject(diseases, Collections::emptyList);
         this.carrier = ParamUtils.defaultObject(carrier, Collections::emptyList);
+        this.multiples = multiples;
         this.parentalConsanguinity = parentalConsanguinity;
     }
 
@@ -41,6 +43,7 @@ public class Relatives {
         sb.append(", diseases=").append(diseases);
         sb.append(", carrier=").append(carrier);
         sb.append(", parentalConsanguinity=").append(parentalConsanguinity);
+        sb.append(", multiples=").append(multiples);
         sb.append('}');
         return sb.toString();
     }
@@ -88,6 +91,15 @@ public class Relatives {
 
     public Relatives setCarrier(List<String> carrier) {
         this.carrier = carrier;
+        return this;
+    }
+
+    public Multiples getMultiples() {
+        return multiples;
+    }
+
+    public Relatives setMultiples(Multiples multiples) {
+        this.multiples = multiples;
         return this;
     }
 
