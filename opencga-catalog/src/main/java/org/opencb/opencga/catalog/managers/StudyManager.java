@@ -76,7 +76,7 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.getProjectIdByStudyId(studyId);
     }
 
-    List<Long> getIds(String userId, String studyStr) throws CatalogException {
+    public List<Long> getIds(String userId, String studyStr) throws CatalogException {
         if (StringUtils.isNumeric(studyStr)) {
             long studyId = Long.parseLong(studyStr);
             if (studyId > configuration.getCatalog().getOffset()) {

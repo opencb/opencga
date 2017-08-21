@@ -32,7 +32,6 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.OntologyTerm;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.AclParams;
-import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.core.exception.VersionException;
 
@@ -125,7 +124,12 @@ public class SampleWSServer extends OpenCGAWSServer {
                 variableSet = Long.toString(variableSetId);
             }
             AbstractManager.MyResourceId resourceId = catalogManager.getFileManager().getId(fileIdStr, studyStr, sessionId);
-            long varSetId = catalogManager.getStudyManager().getVariableSetId(variableSet, studyStr, sessionId).getResourceId();
+            Long varSetId;
+            if (StringUtils.isNotBlank(variableSet)) {
+                varSetId = catalogManager.getStudyManager().getVariableSetId(variableSet, studyStr, sessionId).getResourceId();
+            } else {
+                varSetId = null;
+            }
 
             File pedigreeFile = catalogManager.getFileManager().get(resourceId.getResourceId(), null, sessionId).first();
             CatalogSampleAnnotationsLoader loader = new CatalogSampleAnnotationsLoader(catalogManager);
