@@ -243,7 +243,7 @@ public class FileWSServer extends OpenCGAWSServer {
             e.printStackTrace();
         }
 
-        if (chunkBytes != null) {
+        if (chunkBytes != null && filePath != null) {
 
             java.nio.file.Path completedFilePath = filePath.getParent().resolve("_" + filename);
             java.nio.file.Path folderPath = filePath.getParent().resolve("__" + filename);
@@ -319,7 +319,6 @@ public class FileWSServer extends OpenCGAWSServer {
             return createOkResponse("ok");
 
         } else if (fileInputStream != null) {
-            logger.info("filePath: {}", filePath.toString());
 
             // We obtain the basic studyPath where we will upload the file temporarily
             java.nio.file.Path studyPath = null;
