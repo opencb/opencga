@@ -22,7 +22,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.Dataset;
+import org.opencb.opencga.core.models.Dataset;
 
 import java.util.HashMap;
 import java.util.List;

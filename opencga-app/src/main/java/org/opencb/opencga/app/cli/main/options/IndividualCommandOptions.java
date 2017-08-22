@@ -22,7 +22,7 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
-import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.core.models.Individual;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 

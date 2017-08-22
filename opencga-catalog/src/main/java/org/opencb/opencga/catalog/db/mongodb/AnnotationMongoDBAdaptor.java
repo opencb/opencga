@@ -33,10 +33,13 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.catalog.models.summaries.FeatureCount;
-import org.opencb.opencga.catalog.models.summaries.VariableSummary;
+import org.opencb.opencga.core.models.Annotable;
+import org.opencb.opencga.core.models.Annotation;
+import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.Variable;
+import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.summaries.FeatureCount;
+import org.opencb.opencga.core.models.summaries.VariableSummary;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;

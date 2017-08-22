@@ -5,9 +5,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.DataStore;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.FileIndex;
+import org.opencb.opencga.core.models.DataStore;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.FileIndex;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.models.FileInfo;
@@ -34,7 +34,7 @@ public class VariantRemoveStorageOperation extends StorageOperation {
             throws CatalogException, StorageEngineException, IOException {
 
         // We get the credentials of the Datastore to insert the variants
-        DataStore dataStore = studyInfo.getDataStores().get(org.opencb.opencga.catalog.models.File.Bioformat.VARIANT);
+        DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
 
         // Update study configuration BEFORE executing the operation and fetching files from Catalog
         updateStudyConfiguration(sessionId, studyInfo.getStudyId(), dataStore);
@@ -72,7 +72,7 @@ public class VariantRemoveStorageOperation extends StorageOperation {
             throws CatalogException, StorageEngineException, IOException {
 
         // We get the credentials of the Datastore to insert the variants
-        DataStore dataStore = studyInfo.getDataStores().get(org.opencb.opencga.catalog.models.File.Bioformat.VARIANT);
+        DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
 
         // Update study configuration BEFORE executing the operation and fetching files from Catalog
         updateStudyConfiguration(sessionId, studyInfo.getStudyId(), dataStore);

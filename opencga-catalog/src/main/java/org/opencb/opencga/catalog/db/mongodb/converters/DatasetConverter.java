@@ -18,7 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
-import org.opencb.opencga.catalog.models.Dataset;
+import org.opencb.opencga.core.models.Dataset;
 /**
  * Created by pfurio on 04/05/16.
  */

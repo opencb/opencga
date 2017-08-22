@@ -23,8 +23,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Project;
-import org.opencb.opencga.catalog.models.Status;
+import org.opencb.opencga.core.models.Project;
+import org.opencb.opencga.core.models.Status;
 
 import static org.junit.Assert.*;
 

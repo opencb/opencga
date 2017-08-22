@@ -20,8 +20,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Project;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.core.models.Project;
+import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;

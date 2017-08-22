@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -28,13 +27,10 @@ import org.opencb.opencga.app.cli.main.options.FamilyCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Family;
-import org.opencb.opencga.catalog.models.acls.permissions.FamilyAclEntry;
+import org.opencb.opencga.core.models.Family;
+import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Created by pfurio on 15/05/17.

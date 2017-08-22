@@ -27,11 +27,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
-import org.opencb.opencga.catalog.models.AnnotationSet;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.OntologyTerm;
-import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.acls.AclParams;
+import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.OntologyTerm;
+import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.core.exception.VersionException;
 

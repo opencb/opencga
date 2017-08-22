@@ -36,7 +36,7 @@ import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Metadata;
+import org.opencb.opencga.core.models.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

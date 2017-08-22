@@ -28,8 +28,8 @@ import org.opencb.opencga.app.cli.main.options.JobCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
+import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.acls.permissions.JobAclEntry;
 
 import java.io.IOException;
 import java.util.ArrayList;

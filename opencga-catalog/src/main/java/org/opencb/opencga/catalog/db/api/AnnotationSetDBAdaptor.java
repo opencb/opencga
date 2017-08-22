@@ -21,9 +21,9 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.models.AnnotationSet;
-import org.opencb.opencga.catalog.models.Variable;
-import org.opencb.opencga.catalog.models.summaries.VariableSummary;
+import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.Variable;
+import org.opencb.opencga.core.models.summaries.VariableSummary;
 
 import javax.annotation.Nullable;
 

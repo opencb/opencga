@@ -18,7 +18,7 @@ package org.opencb.opencga.catalog.monitor.executors;
 
 import org.apache.tools.ant.types.Commandline;
 import org.opencb.opencga.core.config.Execution;
-import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.SgeManager;
 import org.opencb.opencga.core.exec.Command;
 import org.opencb.opencga.core.exec.SingleProcess;
@@ -39,7 +39,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.opencb.opencga.catalog.models.Job.JobStatus.*;
+import static org.opencb.opencga.core.models.Job.JobStatus.*;
 
 /**
  * Created by pfurio on 24/08/16.

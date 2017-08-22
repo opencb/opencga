@@ -24,7 +24,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.IOException;

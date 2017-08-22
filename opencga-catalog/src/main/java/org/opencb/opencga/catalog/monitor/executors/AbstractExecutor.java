@@ -18,7 +18,7 @@ package org.opencb.opencga.catalog.monitor.executors;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectReader;
-import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.core.models.Job;
 import org.slf4j.Logger;
 
 import java.io.IOException;

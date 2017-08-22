@@ -20,7 +20,7 @@ import com.beust.jcommander.*;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.GeneralOptions;
-import org.opencb.opencga.catalog.models.Account;
+import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.List;

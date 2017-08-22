@@ -24,9 +24,9 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.Group;
-import org.opencb.opencga.catalog.models.GroupParams;
-import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.core.models.Group;
+import org.opencb.opencga.core.models.GroupParams;
+import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.results.LdapImportResult;
 
