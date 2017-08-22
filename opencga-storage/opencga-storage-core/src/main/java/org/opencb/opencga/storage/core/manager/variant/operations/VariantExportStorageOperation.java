@@ -250,16 +250,14 @@ public class VariantExportStorageOperation extends StorageOperation {
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.DESCRIPTION.key());
 
             // Just add file description
-            Study study = catalogManager.getStudyManager().get(studyId, options, sessionId).first();
+            Study study = catalogManager.getStudyManager().get(String.valueOf(studyId), options, sessionId).first();
             datasetMetadata.setDescription(study.getDescription());
         }
 
-        private void fillIndividual(int studyId, org.opencb.biodata.models.metadata.Individual individual) throws CatalogException {
-            Query query = new Query(2)
-                    .append(IndividualDBAdaptor.QueryParams.NAME.key(), individual.getId())
-                    .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        private void fillIndividual(Integer studyId, org.opencb.biodata.models.metadata.Individual individual) throws CatalogException {
+            Query query = new Query(IndividualDBAdaptor.QueryParams.NAME.key(), individual.getId());
 
-            Individual catalogIndividual = catalogManager.getIndividualManager().get(query, null, sessionId).first();
+            Individual catalogIndividual = catalogManager.getIndividualManager().get(studyId, query, null, sessionId).first();
             if (catalogIndividual != null) {
                 individual.setSex(catalogIndividual.getSex().name());
                 individual.setFamily(catalogIndividual.getFamily());
@@ -267,13 +265,13 @@ public class VariantExportStorageOperation extends StorageOperation {
 
                 QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.NAME.key());
                 if (catalogIndividual.getMotherId() > 0) {
-                    String motherName = catalogManager.getIndividualManager().get(catalogIndividual.getMotherId(), options, sessionId)
-                            .first().getName();
+                    String motherName = catalogManager.getIndividualManager().get(String.valueOf(studyId),
+                            String.valueOf(catalogIndividual.getMotherId()), options, sessionId).first().getName();
                     individual.setMother(motherName);
                 }
                 if (catalogIndividual.getFatherId() > 0) {
-                    String fatherName = catalogManager.getIndividualManager().get(catalogIndividual.getFatherId(), options, sessionId)
-                            .first().getName();
+                    String fatherName = catalogManager.getIndividualManager().get(String.valueOf(studyId),
+                            String.valueOf(catalogIndividual.getFatherId()), options, sessionId).first().getName();
                     individual.setFather(fatherName);
                 }
             }
@@ -284,7 +282,7 @@ public class VariantExportStorageOperation extends StorageOperation {
                     .append(SampleDBAdaptor.QueryParams.NAME.key(), sample.getId())
                     .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
-            Sample catalogSample = catalogManager.getSampleManager().get(query, null, sessionId).first();
+            Sample catalogSample = catalogManager.getSampleManager().get(studyId, query, null, sessionId).first();
             List<AnnotationSet> annotationSets = catalogSample.getAnnotationSets();
             sample.setAnnotations(new LinkedHashMap<>(sample.getAnnotations()));
             for (AnnotationSet annotationSet : annotationSets) {
