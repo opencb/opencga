@@ -404,7 +404,7 @@ public class PhoenixHelper {
         private final List<String> columns;
         private final List<String> include;
 
-        public Index(String indexName, PTable.IndexType indexType, Column ... columns) {
+        public Index(String indexName, PTable.IndexType indexType, Column... columns) {
             this.indexName = indexName;
             this.indexType = indexType;
             this.columns = Arrays.stream(columns).map(Column::column).collect(Collectors.toList());

@@ -112,7 +112,6 @@ public class OpencgaCliOptionsParser {
         studySubCommands.addCommand("files", studyCommandOptions.filesCommandOptions);
         studySubCommands.addCommand("jobs", studyCommandOptions.jobsCommandOptions);
         studySubCommands.addCommand("samples", studyCommandOptions.samplesCommandOptions);
-        studySubCommands.addCommand("variants", studyCommandOptions.variantsCommandOptions);
         studySubCommands.addCommand("help", studyCommandOptions.helpCommandOptions);
         studySubCommands.addCommand("groups", studyCommandOptions.groupsCommandOptions);
         studySubCommands.addCommand("groups-create", studyCommandOptions.groupsCreateCommandOptions);
@@ -181,10 +180,10 @@ public class OpencgaCliOptionsParser {
         familyCommandOptions = new FamilyCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("families", familyCommandOptions);
         JCommander familySubCommands = jCommander.getCommands().get("families");
-        familySubCommands.addCommand("create", familyCommandOptions.createCommandOptions);
+//        familySubCommands.addCommand("create", familyCommandOptions.createCommandOptions);
         familySubCommands.addCommand("info", familyCommandOptions.infoCommandOptions);
         familySubCommands.addCommand("search", familyCommandOptions.searchCommandOptions);
-        familySubCommands.addCommand("update", familyCommandOptions.updateCommandOptions);
+//        familySubCommands.addCommand("update", familyCommandOptions.updateCommandOptions);
         familySubCommands.addCommand("acl", familyCommandOptions.aclsCommandOptions);
         familySubCommands.addCommand("acl-update", familyCommandOptions.aclsUpdateCommandOptions);
         familySubCommands.addCommand("annotation-sets-create", familyCommandOptions.annotationCreateCommandOptions);

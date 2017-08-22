@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -31,7 +32,6 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -274,7 +274,7 @@ public class VariantFetcher implements AutoCloseable {
         if (query.containsKey(key)) {
             for (String id : query.getAsStringList(key)) {
                 if (!id.startsWith("!")) {
-                    String userId = catalogManager.getUserManager().getId(sessionId);
+                    String userId = catalogManager.getUserManager().getUserId(sessionId);
                     long studyId = catalogManager.getStudyManager().getId(userId, id);
                     return studyId > 0 ? studyId : null;
                 }
@@ -294,7 +294,7 @@ public class VariantFetcher implements AutoCloseable {
                             (SampleDBAdaptor.QueryParams.ID.key(), entry.getValue()), new QueryOptions("exclude", Arrays.asList("projects" +
                             ".studies.samples.annotationSets", "projects.studies.samples.attributes")), sessionId);
                     if (samplesQueryResult.getNumResults() != entry.getValue().size()) {
-                        throw new CatalogAuthorizationException("Permission denied. User " + catalogManager.getUserManager().getId
+                        throw new CatalogAuthorizationException("Permission denied. User " + catalogManager.getUserManager().getUserId
                                 (sessionId)
                                 + " can't read all the requested samples");
                     }

@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -28,13 +27,10 @@ import org.opencb.opencga.app.cli.main.options.FamilyCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Family;
-import org.opencb.opencga.catalog.models.acls.permissions.FamilyAclEntry;
+import org.opencb.opencga.core.models.Family;
+import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Created by pfurio on 15/05/17.
@@ -60,18 +56,18 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
         String subCommandString = getParsedSubCommand(familyCommandOptions.jCommander);
         QueryResponse queryResponse = null;
         switch (subCommandString) {
-            case "create":
-                queryResponse = create();
-                break;
+//            case "create":
+//                queryResponse = create();
+//                break;
             case "info":
                 queryResponse = info();
                 break;
             case "search":
                 queryResponse = search();
                 break;
-            case "update":
-                queryResponse = update();
-                break;
+//            case "update":
+//                queryResponse = update();
+//                break;
             case "acl":
                 queryResponse = aclCommandExecutor.acls(familyCommandOptions.aclsCommandOptions, openCGAClient.getFamilyClient());
                 break;
@@ -107,33 +103,33 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
     }
 
 
-    private QueryResponse<Family> create() throws CatalogException, IOException {
-        logger.debug("Creating a new family");
-
-        String studyId = resolveStudy(familyCommandOptions.createCommandOptions.study);
-
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.NAME.key(), familyCommandOptions.createCommandOptions.name);
-        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.DESCRIPTION.key(), familyCommandOptions.createCommandOptions.description);
-        params.put(FamilyDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),
-                familyCommandOptions.createCommandOptions.parentalConsanguinity);
-        if (StringUtils.isNotEmpty(familyCommandOptions.createCommandOptions.father)) {
-            params.put(FamilyDBAdaptor.QueryParams.FATHER.key(), new ObjectMap("name", familyCommandOptions.createCommandOptions.father));
-        }
-        if (StringUtils.isNotEmpty(familyCommandOptions.createCommandOptions.mother)) {
-            params.put(FamilyDBAdaptor.QueryParams.MOTHER.key(), new ObjectMap("name", familyCommandOptions.createCommandOptions.mother));
-        }
-        if (StringUtils.isNotEmpty(familyCommandOptions.createCommandOptions.children)) {
-            List<String> childrenNameList = Arrays.asList(StringUtils.split(familyCommandOptions.createCommandOptions.children, ","));
-            List<ObjectMap> childrenList = new ArrayList<>(childrenNameList.size());
-            for (String name : childrenNameList) {
-                childrenList.add(new ObjectMap("name", name));
-            }
-            params.put(FamilyDBAdaptor.QueryParams.CHILDREN.key(), childrenList);
-        }
-
-        return openCGAClient.getFamilyClient().create(studyId, params);
-    }
+//    private QueryResponse<Family> create() throws CatalogException, IOException {
+//        logger.debug("Creating a new family");
+//
+//        String studyId = resolveStudy(familyCommandOptions.createCommandOptions.study);
+//
+//        ObjectMap params = new ObjectMap();
+//        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.NAME.key(), familyCommandOptions.createCommandOptions.name);
+//        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.DESCRIPTION.key(), familyCommandOptions.createCommandOptions.description);
+//        params.put(FamilyDBAdaptor.QueryParams.MEMBERS_PARENTAL_CONSANGUINITY.key(),
+//                familyCommandOptions.createCommandOptions.parentalConsanguinity);
+//        if (StringUtils.isNotEmpty(familyCommandOptions.createCommandOptions.father)) {
+//            params.put(FamilyDBAdaptor.QueryParams.FATHER.key(), new ObjectMap("name", familyCommandOptions.createCommandOptions.father));
+//        }
+//        if (StringUtils.isNotEmpty(familyCommandOptions.createCommandOptions.mother)) {
+//            params.put(FamilyDBAdaptor.QueryParams.MOTHER.key(), new ObjectMap("name", familyCommandOptions.createCommandOptions.mother));
+//        }
+//        if (StringUtils.isNotEmpty(familyCommandOptions.createCommandOptions.children)) {
+//            List<String> childrenNameList = Arrays.asList(StringUtils.split(familyCommandOptions.createCommandOptions.children, ","));
+//            List<ObjectMap> childrenList = new ArrayList<>(childrenNameList.size());
+//            for (String name : childrenNameList) {
+//                childrenList.add(new ObjectMap("name", name));
+//            }
+//            params.put(FamilyDBAdaptor.QueryParams.MEMBER.key(), childrenList);
+//        }
+//
+//        return openCGAClient.getFamilyClient().create(studyId, params);
+//    }
 
     private QueryResponse<Family> info() throws CatalogException, IOException {
         logger.debug("Getting family information");
@@ -154,13 +150,12 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(FamilyDBAdaptor.QueryParams.NAME.key(), familyCommandOptions.searchCommandOptions.name);
         query.putIfNotEmpty(FamilyDBAdaptor.QueryParams.FATHER.key(), familyCommandOptions.searchCommandOptions.father);
         query.putIfNotEmpty(FamilyDBAdaptor.QueryParams.MOTHER.key(), familyCommandOptions.searchCommandOptions.mother);
-        query.putIfNotEmpty(FamilyDBAdaptor.QueryParams.CHILDREN.key(), familyCommandOptions.searchCommandOptions.children);
-        query.putIfNotEmpty(FamilyDBAdaptor.QueryParams.ONTOLOGIES.key(), familyCommandOptions.searchCommandOptions.ontologies);
+        query.putIfNotEmpty(FamilyDBAdaptor.QueryParams.MEMBER.key(), familyCommandOptions.searchCommandOptions.member);
         query.putIfNotEmpty(FamilyDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), familyCommandOptions.searchCommandOptions.variableSetId);
         query.putIfNotEmpty(FamilyDBAdaptor.QueryParams.ANNOTATION.key(), familyCommandOptions.searchCommandOptions.annotation);
         query.putIfNotEmpty(FamilyDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
                 familyCommandOptions.searchCommandOptions.annotationSetName);
-        query.putIfNotNull(FamilyDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),
+        query.putIfNotNull(FamilyDBAdaptor.QueryParams.MEMBERS_PARENTAL_CONSANGUINITY.key(),
                 familyCommandOptions.searchCommandOptions.parentalConsanguinity);
 
         if (familyCommandOptions.searchCommandOptions.numericOptions.count) {
@@ -176,26 +171,26 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
         }
     }
 
-
-    private QueryResponse<Family> update() throws CatalogException, IOException {
-        logger.debug("Updating individual information");
-
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.NAME.key(), familyCommandOptions.updateCommandOptions.name);
-        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.FATHER_ID.key(), familyCommandOptions.updateCommandOptions.fatherId);
-        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.MOTHER_ID.key(), familyCommandOptions.updateCommandOptions.motherId);
-        if (StringUtils.isNotEmpty(familyCommandOptions.updateCommandOptions.children)) {
-            List<String> childIds = Arrays.asList(StringUtils.split(familyCommandOptions.updateCommandOptions.children, ","));
-            params.put(FamilyDBAdaptor.QueryParams.CHILDREN_IDS.key(), childIds);
-        }
-        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.DESCRIPTION.key(), familyCommandOptions.updateCommandOptions.description);
-        params.putIfNotNull(FamilyDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),
-                familyCommandOptions.updateCommandOptions.parentalConsanguinity);
-
-        return openCGAClient.getFamilyClient().update(familyCommandOptions.updateCommandOptions.family,
-                resolveStudy(familyCommandOptions.updateCommandOptions.study), params);
-    }    
-    
+//
+//    private QueryResponse<Family> update() throws CatalogException, IOException {
+//        logger.debug("Updating individual information");
+//
+//        ObjectMap params = new ObjectMap();
+//        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.NAME.key(), familyCommandOptions.updateCommandOptions.name);
+//        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.FATHER_ID.key(), familyCommandOptions.updateCommandOptions.fatherId);
+//        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.MOTHER_ID.key(), familyCommandOptions.updateCommandOptions.motherId);
+//        if (StringUtils.isNotEmpty(familyCommandOptions.updateCommandOptions.children)) {
+//            List<String> childIds = Arrays.asList(StringUtils.split(familyCommandOptions.updateCommandOptions.children, ","));
+//            params.put(FamilyDBAdaptor.QueryParams.MEMBER_ID.key(), childIds);
+//        }
+//        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.DESCRIPTION.key(), familyCommandOptions.updateCommandOptions.description);
+//        params.putIfNotNull(FamilyDBAdaptor.QueryParams.MEMBERS_PARENTAL_CONSANGUINITY.key(),
+//                familyCommandOptions.updateCommandOptions.parentalConsanguinity);
+//
+//        return openCGAClient.getFamilyClient().update(familyCommandOptions.updateCommandOptions.family,
+//                resolveStudy(familyCommandOptions.updateCommandOptions.study), params);
+//    }
+//
     private QueryResponse<FamilyAclEntry> updateAcl() throws IOException, CatalogException {
         AclCommandOptions.AclsUpdateCommandOptions commandOptions = familyCommandOptions.aclsUpdateCommandOptions;
 

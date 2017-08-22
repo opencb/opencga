@@ -102,7 +102,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String MERGE_ARCHIVE_SCAN_BATCH_SIZE = "opencga.storage.hadoop.hbase.merge.archive.scan.batchsize";
     public static final int DEFAULT_MERGE_ARCHIVE_SCAN_BATCH_SIZE = 500;
     public static final String MERGE_COLLAPSE_DELETIONS      = "opencga.storage.hadoop.hbase.merge.collapse-deletions";
-    public static final boolean DEFAULT_MERGE_COLLAPSE_DELETIONS = true;
+    public static final boolean DEFAULT_MERGE_COLLAPSE_DELETIONS = false;
     public static final String MERGE_LOAD_SPECIFIC_PUT       = "opencga.storage.hadoop.hbase.merge.use_specific_put";
 //    public static final String MERGE_LOAD_STUDY_COLUMNS      = "opencga.storage.hadoop.hbase.merge.study_columns";
     public static final String MERGE_LOAD_SAMPLE_COLUMNS     = "opencga.storage.hadoop.hbase.merge.sample_columns";
@@ -301,7 +301,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
             }
         } catch (InterruptedException e) {
-            Thread.interrupted();
+            Thread.currentThread().interrupted();
             throw new StoragePipelineException("Interrupted!", e, concurrResult);
         } catch (ExecutionException e) {
             throw new StoragePipelineException("Execution exception!", e, concurrResult);

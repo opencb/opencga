@@ -45,9 +45,6 @@ import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.search.VariantSearchModel;
-import org.opencb.opencga.storage.core.search.solr.VariantSearchIterator;
-import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
@@ -61,6 +58,9 @@ import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantMetadataExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.slf4j.Logger;
@@ -74,11 +74,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.search.solr.VariantSearchManager.QUERY_INTERSECT;
-import static org.opencb.opencga.storage.core.search.solr.VariantSearchManager.SKIP_SEARCH;
-import static org.opencb.opencga.storage.core.search.solr.VariantSearchUtils.*;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ID;
+import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.QUERY_INTERSECT;
+import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.SKIP_SEARCH;
+import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchUtils.*;
 
 /**
  * Created by imedina on 13/08/14.

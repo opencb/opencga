@@ -20,7 +20,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
-import org.opencb.opencga.catalog.models.AnnotationSet;
+import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.client.rest.catalog.AnnotationClient;
 
 import java.io.File;

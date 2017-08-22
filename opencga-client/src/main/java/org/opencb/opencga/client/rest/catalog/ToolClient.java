@@ -17,8 +17,8 @@
 package org.opencb.opencga.client.rest.catalog;
 
 
-import org.opencb.opencga.catalog.models.Tool;
-import org.opencb.opencga.catalog.models.acls.permissions.ToolAclEntry;
+import org.opencb.opencga.core.models.Tool;
+import org.opencb.opencga.core.models.acls.permissions.ToolAclEntry;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 

@@ -18,7 +18,7 @@ package org.opencb.opencga.catalog.monitor.executors;
 
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.exec.RunnableProcess;
-import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.core.models.Job;
 import org.slf4j.LoggerFactory;
 
 import java.io.DataOutputStream;

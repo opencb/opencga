@@ -18,8 +18,8 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Job;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,8 +52,8 @@ public class JobConverter extends GenericDocumentComplexConverter<Job> {
         return convertFilesToDocument(Arrays.asList(file)).get(0);
     }
 
-    private List<Document> convertFilesToDocument(List<File> fileList) {
-        if (fileList == null || fileList.size() == 0) {
+    public List<Document> convertFilesToDocument(List<File> fileList) {
+        if (fileList == null || fileList.isEmpty()) {
             return Collections.emptyList();
         }
         List<Document> files = new ArrayList(fileList.size());

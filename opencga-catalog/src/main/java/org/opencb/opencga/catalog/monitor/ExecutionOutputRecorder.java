@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.monitor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
@@ -24,8 +25,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.common.UriUtils;
 import org.slf4j.Logger;
@@ -129,7 +130,6 @@ public class ExecutionOutputRecorder {
             logger.warn("CatalogException when scanning temporal directory. Error: {}", e.getMessage());
             throw e;
         }
-        List<Long> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
         if (!ioManager.exists(tmpOutDirUri)) {
             logger.warn("Output folder doesn't exist");
             return;
@@ -156,13 +156,13 @@ public class ExecutionOutputRecorder {
         }
 
         ObjectMap parameters = new ObjectMap();
-        parameters.put(JobDBAdaptor.QueryParams.OUTPUT.key(), fileIds);
+        parameters.put(JobDBAdaptor.QueryParams.OUTPUT.key(), files);
         parameters.put(JobDBAdaptor.QueryParams.END_TIME.key(), System.currentTimeMillis());
         try {
             catalogManager.getJobManager().update(job.getId(), parameters, null, this.sessionId);
         } catch (CatalogException e) {
             logger.error("Critical error. Could not update job output files from job {} with output {}. Error: {}", job.getId(),
-                    fileIds.toArray(), e.getMessage());
+                    StringUtils.join(files.stream().map(File::getId).collect(Collectors.toList()), ","), e.getMessage());
             throw e;
         }
 

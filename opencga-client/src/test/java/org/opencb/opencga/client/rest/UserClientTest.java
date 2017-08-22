@@ -21,8 +21,8 @@ import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Project;
-import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.core.models.Project;
+import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.client.rest.catalog.UserClient;
 
 import java.io.IOException;
@@ -56,7 +56,7 @@ public class UserClientTest extends WorkEnvironmentTest {
 
     @Test
     public void logout() {
-        System.out.println("sessionId = " + userClient.login("user1", "user1_pass").first().first().getString("sessionId"));
+        System.out.println("token = " + userClient.login("user1", "user1_pass").first().first().getString("token"));
         assertNotNull(openCGAClient.getSessionId());
         openCGAClient.logout();
         assertEquals(null, openCGAClient.getSessionId());

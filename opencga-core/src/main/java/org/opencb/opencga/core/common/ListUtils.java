@@ -230,7 +230,7 @@ public class ListUtils {
         try {
             Thread.sleep(2);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
         }
         Random r = new Random(System.currentTimeMillis());
         List<Double> randomList = new ArrayList<Double>(numElements);

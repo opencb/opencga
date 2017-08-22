@@ -33,7 +33,10 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.core.models.DataStore;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -53,6 +56,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ALTERNATE;
@@ -71,7 +75,7 @@ public class VariantStorageManager extends StorageManager {
     }
 
     public void clearCache(String studyId, String type, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
 
     }
 
@@ -179,7 +183,7 @@ public class VariantStorageManager extends StorageManager {
 
     public void searchIndex(String study, Query query, QueryOptions queryOptions, String sessionId) throws StorageEngineException,
             IOException, VariantSearchException, IllegalAccessException, InstantiationException, ClassNotFoundException, CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, study);
         DataStore dataStore = getDataStore(studyId, sessionId);
         VariantStorageEngine variantStorageEngine =
@@ -212,17 +216,22 @@ public class VariantStorageManager extends StorageManager {
             throws CatalogException, StorageEngineException, IOException, URISyntaxException {
         VariantAnnotationStorageOperation annotOperation = new VariantAnnotationStorageOperation(catalogManager, storageConfiguration);
 
-        List<Long> studyIds;
-        if (StringUtils.isNotEmpty(studies) || StringUtils.isEmpty(project)) {
-            // Only get specific studies if project is missing, or if some study is given
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            studyIds = catalogManager.getStudyManager().getIds(userId, studies);
+        List<String> studyIds;
+        if (StringUtils.isNotEmpty(studies)) {
+            studyIds = Arrays.asList(studies.split(","));
+        } else if (StringUtils.isEmpty(studies) && StringUtils.isEmpty(project)) {
+            // If non study or project is given, read all the studies from the user
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
+            studyIds = catalogManager.getStudyManager().getIds(userId, null).stream()
+                    .map(Object::toString)
+                    .collect(Collectors.toList());
         } else {
+            // If project is present, no study information is needed
             studyIds = Collections.emptyList();
         }
         List<StudyInfo> studiesList = new ArrayList<>(studyIds.size());
-        for (Long studyId : studyIds) {
-            studiesList.add(getStudyInfo(studyId.toString(), Collections.emptyList(), sessionId));
+        for (String studyId : studyIds) {
+            studiesList.add(getStudyInfo(studyId, Collections.emptyList(), sessionId));
         }
         return annotOperation.annotateVariants(project, studiesList, query, outDir, sessionId, config);
     }
@@ -235,7 +244,7 @@ public class VariantStorageManager extends StorageManager {
             throws CatalogException, StorageEngineException, IOException, URISyntaxException {
         VariantStatsStorageOperation statsOperation = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
 
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, study);
         statsOperation.calculateStats(studyId, cohorts, outDir, new QueryOptions(config), sessionId);
     }
@@ -430,7 +439,7 @@ public class VariantStorageManager extends StorageManager {
                             sessionId);
                     if (samplesQueryResult.getNumResults() != entry.getValue().size()) {
                         throw new CatalogAuthorizationException("Permission denied. User "
-                                + catalogManager.getUserManager().getId(sessionId) + " can't read all the requested samples");
+                                + catalogManager.getUserManager().getUserId(sessionId) + " can't read all the requested samples");
                     }
                     samplesMap.put((long) entry.getKey(), samplesQueryResult.getResult());
                 } else {

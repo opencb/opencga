@@ -20,9 +20,9 @@ import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.models.Variable;
-import org.opencb.opencga.catalog.models.VariableSet;
-import org.opencb.opencga.catalog.models.summaries.VariableSetSummary;
+import org.opencb.opencga.core.models.Variable;
+import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -67,7 +67,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
                 studyStr = studyIdStr;
             }
             logger.info("variables: {}", params.variables);
-            String userId = catalogManager.getUserManager().getId(sessionId);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
             long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
             QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().createVariableSet(studyId, params.name,
                     params.unique, params.confidential, params.description, null, params.variables, sessionId);

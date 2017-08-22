@@ -26,7 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
 import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -306,7 +306,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         String userId = job.getUserId();
         String userSessionId = null;
         try {
-            userSessionId = catalogManager.getUserManager().getSystemTokenForUser(userId, sessionId).first().getId();
+            userSessionId = catalogManager.getUserManager().getSystemTokenForUser(userId, sessionId);
         } catch (CatalogException e) {
             logger.warn("Could not obtain a new session id for user {}. ", userId, e);
         }
@@ -332,7 +332,7 @@ public class IndexDaemon extends MonitorParentDaemon {
             for (Map.Entry<String, String> param : job.getParams().entrySet()) {
                 commandLine.append(' ');
                 if (knownParams.contains(param.getKey())) {
-                    if (!param.getValue().equalsIgnoreCase("false")) {
+                    if (!("false").equalsIgnoreCase(param.getValue())) {
                         if (param.getKey().length() == 1) {
                             commandLine.append('-');
                         } else {

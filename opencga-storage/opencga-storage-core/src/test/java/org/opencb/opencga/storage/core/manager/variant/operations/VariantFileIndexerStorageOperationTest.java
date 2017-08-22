@@ -29,10 +29,10 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.catalog.models.Cohort;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.FileIndex;
-import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.core.models.Cohort;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.FileIndex;
+import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -129,7 +129,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         indexFile(inputFile, queryOptions, outputId);
         thrown.expect(CatalogException.class);
         thrown.expectMessage("used in storage");
-        catalogManager.getFileManager().delete(inputFile.getId() + "", null, null, sessionId);
+        catalogManager.getFileManager().delete(null, inputFile.getId() + "", null, sessionId);
     }
 
     @Test
@@ -139,7 +139,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
         File inputFile = getFile(0);
         indexFile(inputFile, queryOptions, outputId);
-        List<QueryResult<Sample>> delete = catalogManager.getSampleManager().delete("200", studyStr, null, sessionId);
+        List<QueryResult<Sample>> delete = catalogManager.getSampleManager().delete(studyStr, "200", null, sessionId);
         assertEquals(1, delete.size());
         assertTrue(delete.get(0).getErrorMsg().contains("delete the cohorts"));
     }
@@ -170,10 +170,8 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         File inputFile = getFile(0);
         File transformedFile = transformFile(inputFile, queryOptions);
 
-        catalogManager.getFileManager().delete(transformedFile.getName(), studyStr,
-                new ObjectMap(FileManager.SKIP_TRASH, true), sessionId);
-        catalogManager.getFileManager().delete(VariantReaderUtils.getMetaFromTransformedFile(transformedFile.getName()), studyStr,
-                new ObjectMap(FileManager.SKIP_TRASH, true), sessionId);
+        catalogManager.getFileManager().delete(studyStr, transformedFile.getName(), new ObjectMap(FileManager.SKIP_TRASH, true), sessionId);
+        catalogManager.getFileManager().delete(studyStr, VariantReaderUtils.getMetaFromTransformedFile(transformedFile.getName()), new ObjectMap(FileManager.SKIP_TRASH, true), sessionId);
 
         indexFile(inputFile, queryOptions, outputId);
     }
@@ -197,7 +195,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("used in storage");
-        catalogManager.getCohortManager().delete("ALL", studyStr, null, sessionId);
+        catalogManager.getCohortManager().delete(studyStr, "ALL", null, sessionId);
     }
 
     @Test

@@ -17,7 +17,7 @@
 package org.opencb.opencga.server.rest.analysis;
 
 import org.opencb.opencga.catalog.managers.JobManager;
-import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 

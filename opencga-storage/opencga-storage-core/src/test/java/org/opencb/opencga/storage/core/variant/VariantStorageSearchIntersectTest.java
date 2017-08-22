@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-import static org.opencb.opencga.storage.core.search.solr.VariantSearchManager.QUERY_INTERSECT;
+import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.QUERY_INTERSECT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 

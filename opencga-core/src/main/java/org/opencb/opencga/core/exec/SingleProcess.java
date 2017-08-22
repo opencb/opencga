@@ -87,6 +87,7 @@ public class SingleProcess {
             }
         } catch (InterruptedException e) {
             logger.error(e.toString());
+            Thread.currentThread().interrupt();
         }
     }
 

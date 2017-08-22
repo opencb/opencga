@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -23,18 +24,17 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.managers.api.IEntryManager;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.models.ClinicalAnalysis;
-import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.Status;
+import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,11 +49,11 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 05/06/17.
  */
-public class ClinicalAnalysisManager extends AbstractManager implements IEntryManager<Long, ClinicalAnalysis> {
+public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
     protected static Logger logger = LoggerFactory.getLogger(CohortManager.class);
 
-    public ClinicalAnalysisManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
+    ClinicalAnalysisManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                                    DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                                    Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
@@ -81,13 +81,13 @@ public class ClinicalAnalysisManager extends AbstractManager implements IEntryMa
             clinicalAnalysisId = Long.parseLong(clinicalStr);
             clinicalDBAdaptor.exists(clinicalAnalysisId);
             studyId = clinicalDBAdaptor.getStudyId(clinicalAnalysisId);
-            userId = catalogManager.getUserManager().getId(sessionId);
+            userId = catalogManager.getUserManager().getUserId(sessionId);
         } else {
             if (clinicalStr.contains(",")) {
                 throw new CatalogException("More than one clinical analysis found");
             }
 
-            userId = catalogManager.getUserManager().getId(sessionId);
+            userId = catalogManager.getUserManager().getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
             Query query = new Query()
@@ -131,9 +131,9 @@ public class ClinicalAnalysisManager extends AbstractManager implements IEntryMa
             clinicalIds = Arrays.asList(Long.parseLong(clinicalStr));
             clinicalDBAdaptor.checkId(clinicalIds.get(0));
             studyId = clinicalDBAdaptor.getStudyId(clinicalIds.get(0));
-            userId = catalogManager.getUserManager().getId(sessionId);
+            userId = catalogManager.getUserManager().getUserId(sessionId);
         } else {
-            userId = catalogManager.getUserManager().getId(sessionId);
+            userId = catalogManager.getUserManager().getUserId(sessionId);
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
             List<String> clinicalSplit = Arrays.asList(clinicalStr.split(","));
@@ -170,15 +170,36 @@ public class ClinicalAnalysisManager extends AbstractManager implements IEntryMa
     }
 
     @Override
-    public DBIterator<ClinicalAnalysis> iterator(String studyStr, Query query, QueryOptions options, String sessionId)
-            throws CatalogException {
-        return null;
+    public QueryResult<ClinicalAnalysis> get(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
+        return clinicalDBAdaptor.get(query, options, userId);
     }
 
+    @Override
+    public DBIterator<ClinicalAnalysis> iterator(String studyStr, Query query, QueryOptions options, String sessionId)
+            throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
+        return clinicalDBAdaptor.iterator(query, options, userId);
+    }
+
+    @Override
     public QueryResult<ClinicalAnalysis> create(String studyStr, ClinicalAnalysis clinicalAnalysis, QueryOptions options,
                                                 String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_CLINICAL_ANALYSIS);
 
@@ -209,25 +230,15 @@ public class ClinicalAnalysisManager extends AbstractManager implements IEntryMa
         return clinicalDBAdaptor.insert(studyId, clinicalAnalysis, options);
     }
 
-    public List<QueryResult<ClinicalAnalysis>> get(String studyStr, String clinicalAnalysis, QueryOptions options, String sessionId)
-            throws CatalogException {
-        MyResourceIds resourceIds = getIds(clinicalAnalysis, studyStr, sessionId);
-
-        Query query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId());
-        List<QueryResult<ClinicalAnalysis>> queryResults = new ArrayList<>(resourceIds.getResourceIds().size());
-        for (Long clinicalAnalysisId : resourceIds.getResourceIds()) {
-            query.append(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), clinicalAnalysisId);
-            QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = clinicalDBAdaptor.get(query, options, resourceIds.getUser());
-            clinicalAnalysisQueryResult.setId(Long.toString(clinicalAnalysisId));
-            queryResults.add(clinicalAnalysisQueryResult);
-        }
-
-        return queryResults;
+    @Override
+    public QueryResult<ClinicalAnalysis> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options,
+                                                String sessionId) throws CatalogException {
+        throw new NotImplementedException("Update clinical analysis not implemented");
     }
 
     public QueryResult<ClinicalAnalysis> search(String studyStr, Query query, QueryOptions options, String sessionId)
             throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         if (query.containsKey("family")) {
@@ -260,7 +271,7 @@ public class ClinicalAnalysisManager extends AbstractManager implements IEntryMa
 
     public QueryResult<ClinicalAnalysis> count(String studyStr, Query query, String sessionId)
             throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         if (query.containsKey("family")) {
@@ -289,14 +300,14 @@ public class ClinicalAnalysisManager extends AbstractManager implements IEntryMa
     }
 
     @Override
-    public List<QueryResult<ClinicalAnalysis>> delete(String entries, @Nullable String studyStr, ObjectMap params, String sessionId)
+    public List<QueryResult<ClinicalAnalysis>> delete(@Nullable String studyStr, String entries, ObjectMap params, String sessionId)
             throws CatalogException, IOException {
         return null;
     }
 
     @Override
-    public QueryResult rank(long studyId, Query query, String field, int numResults, boolean asc, String sessionId) throws
-            CatalogException {
+    public QueryResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String sessionId)
+            throws CatalogException {
         return null;
     }
 
@@ -306,40 +317,4 @@ public class ClinicalAnalysisManager extends AbstractManager implements IEntryMa
         return null;
     }
 
-    @Override
-    public QueryResult<ClinicalAnalysis> get(Long id, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
-    }
-
-    @Override
-    public QueryResult<ClinicalAnalysis> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
-    }
-
-    @Override
-    public QueryResult<ClinicalAnalysis> update(Long id, ObjectMap parameters, QueryOptions options, String sessionId)
-            throws CatalogException {
-        return null;
-    }
-
-    @Override
-    public List<QueryResult<ClinicalAnalysis>> delete(Query query, QueryOptions options, String sessionId)
-            throws CatalogException, IOException {
-        return null;
-    }
-
-    @Override
-    public List<QueryResult<ClinicalAnalysis>> restore(String ids, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
-    }
-
-    @Override
-    public List<QueryResult<ClinicalAnalysis>> restore(Query query, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
-    }
-
-    @Override
-    public void setStatus(String id, @Nullable String status, @Nullable String message, String sessionId) throws CatalogException {
-
-    }
 }

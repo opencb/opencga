@@ -137,13 +137,14 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             default:
                 throw new NotImplementedException(String.format("Output format %s not supported for Hadoop!", transVal));
         }
-        if (!options.containsKey(VariantStorageEngine.Options.GVCF.key())) {
-            options.put(VariantStorageEngine.Options.GVCF.key(), true);
-        }
-        boolean isGvcf = options.getBoolean(VariantStorageEngine.Options.GVCF.key());
-        if (!isGvcf) {
-            throw new NotImplementedException("Only GVCF format supported!!!");
-        }
+        // non gVCF files are supported. Don't force all files to be gVCF
+//        if (!options.containsKey(VariantStorageEngine.Options.GVCF.key())) {
+//            options.put(VariantStorageEngine.Options.GVCF.key(), true);
+//        }
+//        boolean isGvcf = options.getBoolean(VariantStorageEngine.Options.GVCF.key());
+//        if (!isGvcf) {
+//            throw new NotImplementedException("Only GVCF format supported!!!");
+//        }
         return super.preTransform(input);
     }
 

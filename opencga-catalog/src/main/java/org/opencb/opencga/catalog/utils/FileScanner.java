@@ -22,11 +22,11 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +46,7 @@ public class FileScanner {
 
     protected final CatalogManager catalogManager;
 
-    private CatalogFileUtils catalogFileUtils;
+    private FileUtils catalogFileUtils;
 
     public enum FileScannerPolicy {
         DELETE,     //Delete file and file entry. Then create a new one
@@ -57,7 +57,7 @@ public class FileScanner {
 
     public FileScanner(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
-        catalogFileUtils = new CatalogFileUtils(catalogManager);
+        catalogFileUtils = new FileUtils(catalogManager);
     }
 
     /**
@@ -129,7 +129,7 @@ public class FileScanner {
     public Map<String, URI> untrackedFiles(Study study, String sessionId)
             throws CatalogException {
         long studyId = study.getId();
-        URI studyUri = catalogManager.getFileManager().getStudyUri(studyId);
+        URI studyUri = study.getUri();
 
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(studyUri);
         Map<String, URI> linkedFolders = new HashMap<>();
@@ -245,7 +245,7 @@ public class FileScanner {
                     case DELETE:
                         logger.info("Deleting file { id:" + existingFile.getId() + ", path:\"" + existingFile.getPath() + "\" }");
                         // Delete completely the file/folder !
-                        catalogManager.getFileManager().delete(Long.toString(existingFile.getId()), null,
+                        catalogManager.getFileManager().delete(null, Long.toString(existingFile.getId()),
                                 new QueryOptions(FileManager.SKIP_TRASH, true), sessionId);
                         break;
                     case REPLACE:
@@ -268,8 +268,8 @@ public class FileScanner {
                             null, QueryOptions.empty(), sessionId).first();
                 } else {
                     start = System.currentTimeMillis();
-                    File.Format format = FormatDetector.detect(uri);
-                    File.Bioformat bioformat = BioformatDetector.detect(uri);
+                    File.Format format = FileUtils.detectFormat(uri);
+                    File.Bioformat bioformat = FileUtils.detectBioformat(uri);
                     file = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, format, bioformat, filePath,
                             null, "", null, 0, -1, null, jobId, null, null, true, null, null, sessionId).first();
                     end = System.currentTimeMillis();

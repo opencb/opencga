@@ -26,7 +26,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -91,7 +91,7 @@ public class CatalogStudyConfigurationFactory {
 
     public StudyConfiguration getStudyConfiguration(long studyId, StudyConfigurationManager studyConfigurationManager, QueryOptions options,
                                                     String sessionId) throws CatalogException {
-        Study study = catalogManager.getStudyManager().get(studyId, STUDY_QUERY_OPTIONS, sessionId).first();
+        Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), STUDY_QUERY_OPTIONS, sessionId).first();
         StudyConfiguration studyConfiguration = null;
         QueryOptions qOpts = new QueryOptions(options);
 
@@ -113,12 +113,12 @@ public class CatalogStudyConfigurationFactory {
         }
         studyConfiguration.setStudyId((int) study.getId());
         long projectId = catalogManager.getStudyManager().getProjectId(study.getId());
-        String projectAlias = catalogManager.getProjectManager().get(projectId, null, sessionId).first().getAlias();
+        String projectAlias = catalogManager.getProjectManager().get(String.valueOf((Long) projectId), null, sessionId).first().getAlias();
         if (projectAlias.contains("@")) {
             // Already contains user in projectAlias
             studyConfiguration.setStudyName(projectAlias + ':' + study.getAlias());
         } else {
-            String userId = catalogManager.getProjectManager().getUserId(projectId);
+            String userId = catalogManager.getProjectManager().getOwner(projectId);
             studyConfiguration.setStudyName(userId + '@' + projectAlias + ':' + study.getAlias());
         }
 
@@ -274,14 +274,15 @@ public class CatalogStudyConfigurationFactory {
                     .stream()
                     .map(i -> (long) i)
                     .collect(Collectors.toSet());
-            List<Long> cohortFromCatalog = catalogManager.getCohortManager().get(cohortId.longValue(), null, sessionId).first()
+            List<Long> cohortFromCatalog = catalogManager.getCohortManager()
+                    .get(String.valueOf(studyConfiguration.getStudyId()), String.valueOf(cohortId), null, sessionId).first()
                     .getSamples()
                     .stream()
                     .map(Sample::getId)
                     .collect(Collectors.toList());
 
             if (cohortFromCatalog.size() != cohortFromStorage.size() || !cohortFromStorage.containsAll(cohortFromCatalog)) {
-                catalogManager.getCohortManager().update(cohortId.longValue(),
+                catalogManager.getCohortManager().update(String.valueOf(studyConfiguration.getStudyId()), String.valueOf(cohortId),
                         new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), cohortFromStorage),
                         null, sessionId);
             }

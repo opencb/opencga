@@ -125,8 +125,7 @@ public class VariantTableExportDriver extends AbstractAnalysisTableDriver {
     protected void writeMetadata(StudyConfiguration studyConfiguration, String output) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         Path path = new Path(output);
-        FileSystem fs = FileSystem.get(getConf());
-        try (FSDataOutputStream fos = fs.create(path)) {
+        try (FSDataOutputStream fos = FileSystem.get(getConf()).create(path)) {
             objectMapper.writeValue(fos, studyConfiguration);
         }
     }

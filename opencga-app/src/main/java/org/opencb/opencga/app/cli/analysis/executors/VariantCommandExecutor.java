@@ -30,7 +30,7 @@ import org.opencb.opencga.analysis.execution.plugins.hist.VariantHistogramAnalys
 import org.opencb.opencga.analysis.execution.plugins.ibs.IbsAnalysis;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
@@ -61,7 +61,7 @@ import static org.opencb.opencga.storage.core.manager.variant.operations.Variant
  */
 public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
-//    private AnalysisCliOptionsParser.VariantCommandOptions variantCommandOptions;
+    //    private AnalysisCliOptionsParser.VariantCommandOptions variantCommandOptions;
     private VariantCommandOptions variantCommandOptions;
     private VariantStorageEngine variantStorageEngine;
 
@@ -128,7 +128,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         params.putIfNotEmpty(IbsAnalysis.SAMPLES, cliOptions.samples);
         params.putIfNotEmpty(IbsAnalysis.OUTDIR, cliOptions.outdir);
 
-        String userId1 = catalogManager.getUserManager().getId(sessionId);
+        String userId1 = catalogManager.getUserManager().getUserId(sessionId);
         new PluginExecutor(catalogManager, sessionId).execute(IbsAnalysis.class, "default", catalogManager.getStudyManager().getId
                 (userId1, cliOptions.study), params);
 
@@ -394,7 +394,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         Query query = VariantQueryCommandUtils.parseBasicVariantQuery(cliOptions.variantQueryOptions, new Query());
         params.putAll(query);
 
-        String userId1 = catalogManager.getUserManager().getId(sessionId);
+        String userId1 = catalogManager.getUserManager().getUserId(sessionId);
         new PluginExecutor(catalogManager, sessionId)
                 .execute(VariantHistogramAnalysis.class, "default", catalogManager.getStudyManager().getId(userId1, cliOptions.study), params);
 

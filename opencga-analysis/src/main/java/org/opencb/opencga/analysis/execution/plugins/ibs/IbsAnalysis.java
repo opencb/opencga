@@ -25,7 +25,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.execution.plugins.OpenCGAAnalysis;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.catalog.old.models.tool.Execution;
 import org.opencb.opencga.catalog.old.models.tool.Manifest;
 import org.opencb.opencga.catalog.old.models.tool.Option;
@@ -89,7 +89,7 @@ public class IbsAnalysis extends OpenCGAAnalysis {
 
         Query samplesQuery = new Query();
         if (StringUtils.isNotEmpty(params.getString(SAMPLES))) {
-            String userId = catalogManager.getUserManager().getId(sessionId);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
             List<Long> sampleIds = catalogManager.getSampleManager().getIds(params.getString(SAMPLES), String.valueOf(studyId), userId)
                     .getResourceIds();
             samplesQuery.append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
@@ -111,7 +111,7 @@ public class IbsAnalysis extends OpenCGAAnalysis {
         } else {
             Path outfile;
             if (outdir.toAbsolutePath().toFile().isDirectory()) {
-                String alias = catalogManager.getStudyManager().get(studyId, null, sessionId).first().getAlias();
+                String alias = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), null, sessionId).first().getAlias();
                 outfile = outdir.resolve(alias + ".genome.gz");
             } else {
                 outfile = outdir;

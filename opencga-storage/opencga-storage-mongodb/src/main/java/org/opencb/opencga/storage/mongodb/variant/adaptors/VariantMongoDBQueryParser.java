@@ -52,6 +52,7 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.LOADED_GENOTYPES;
 
 /**
  * Created on 31/03/17.
@@ -551,71 +552,95 @@ public class VariantMongoDBQueryParser {
             }
 
             if (isValidParam(query, SAMPLES)) {
-                Set<Integer> files = new HashSet<>();
                 String samples = query.getString(SAMPLES.key());
 
-                boolean filesFilterBySamples = !isValidParam(query, FILES) && defaultStudyConfiguration != null;
-                for (String sample : samples.split(",")) {
-                    int sampleId = studyConfigurationManager.getSampleId(sample, defaultStudyConfiguration);
-                    genotypesFilter.put(sampleId, Arrays.asList(
+                List<String> genotypes;
+                if (defaultStudyConfiguration != null) {
+                    genotypes = defaultStudyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key()).stream()
+                            .filter(gt -> DocumentToSamplesConverter.genotypeToDataModelType(gt).contains("1"))
+                            .collect(Collectors.toList());
+                } else {
+                    genotypes = Arrays.asList(
                             "1",
                             "0/1", "0|1", "1|0",
                             "1/1", "1|1",
                             "1/2", "1|2", "2|1"
-                    ));
-                    if (filesFilterBySamples) {
-                        int filesFromSample = 0;
-                        for (Integer file : defaultStudyConfiguration.getIndexedFiles()) {
-                            if (defaultStudyConfiguration.getSamplesInFiles().get(file).contains(sampleId)) {
-                                files.add(file);
-                                filesFromSample++;
-                                if (filesFromSample > 1) {
-                                    // If there are more than one indexed file per sample, do not use filesFilterBySamples
-                                    filesFilterBySamples = false;
-                                    break;
-                                }
-                            }
-                        }
-                    }
+                    );
                 }
-
-                // If there is no valid files filter, add files filter to speed up this query
-                if (filesFilterBySamples && !files.isEmpty()
-                        && !defaultStudyConfiguration.getIndexedFiles().containsAll(files)) {
-                    addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
-                                    + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD, files, studyBuilder, QueryOperation.AND,
-                            f -> studyConfigurationManager.getFileId(f, false, defaultStudyConfiguration));
+                for (String sample : samples.split(",")) {
+                    if (isNegated(sample)) {
+                        throw VariantQueryException.malformedParam(SAMPLES, samples, "Unsupported negated samples");
+                    }
+                    int sampleId = studyConfigurationManager.getSampleId(sample, defaultStudyConfiguration);
+                    genotypesFilter.put(sampleId, genotypes);
                 }
             }
 
             if (!genotypesFilter.isEmpty()) {
+                Set<Integer> files = new HashSet<>();
+                boolean filesFilterBySamples = !isValidParam(query, FILES) && defaultStudyConfiguration != null;
+
+                List<String> defaultGenotypes;
+                List<String> otherGenotypes;
+                if (defaultStudyConfiguration != null) {
+                    defaultGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
+                    otherGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
+                } else {
+                    defaultGenotypes = DEFAULT_GENOTYPE.defaultValue();
+                    otherGenotypes = Arrays.asList(
+                            "0/0", "0|0",
+                            "0/1", "1/0", "1/1", "-1/-1",
+                            "0|1", "1|0", "1|1", "-1|-1",
+                            "0|2", "2|0", "2|1", "1|2", "2|2",
+                            "0/2", "2/0", "2/1", "1/2", "2/2",
+                            DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
+                }
+
                 for (Map.Entry<Object, List<String>> entry : genotypesFilter.entrySet()) {
                     Object sample = entry.getKey();
                     List<String> genotypes = entry.getValue();
 
                     int sampleId = studyConfigurationManager.getSampleId(sample, defaultStudyConfiguration);
 
+                    if (filesFilterBySamples) {
+                        // We can not filter sample by file if one of the requested genotypes is the unknown genotype
+                        boolean canFilterSampleByFile = !genotypes.contains(DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
+                        if (canFilterSampleByFile) {
+                            for (String genotype : genotypes) {
+                                // Do not filter sample by file if any of the genotypes is negated, or the is a default genotype
+                                if (isNegated(genotype) || defaultGenotypes.contains(genotype)) {
+                                    canFilterSampleByFile = false;
+                                    break;
+                                }
+                            }
+                        }
+                        if (canFilterSampleByFile) {
+                            int filesFromSample = 0;
+                            for (Integer file : defaultStudyConfiguration.getIndexedFiles()) {
+                                if (defaultStudyConfiguration.getSamplesInFiles().get(file).contains(sampleId)) {
+                                    files.add(file);
+                                    filesFromSample++;
+                                    if (filesFromSample > 1) {
+                                        // See #641
+                                        // If there are more than one indexed file per sample, do not use filesFilterBySamples
+                                        filesFilterBySamples = false;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     QueryBuilder genotypesBuilder = QueryBuilder.start();
 
-                    List<String> defaultGenotypes;
-                    if (defaultStudyConfiguration != null) {
-                        defaultGenotypes = defaultStudyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
-                    } else {
-                        defaultGenotypes = Arrays.asList("0/0", "0|0");
-                    }
+
                     for (String genotype : genotypes) {
                         boolean negated = isNegated(genotype);
                         if (negated) {
                             genotype = removeNegation(genotype);
                         }
                         if (defaultGenotypes.contains(genotype)) {
-                            List<String> otherGenotypes = Arrays.asList(
-                                    "0/0", "0|0",
-                                    "0/1", "1/0", "1/1", "-1/-1",
-                                    "0|1", "1|0", "1|1", "-1|-1",
-                                    "0|2", "2|0", "2|1", "1|2", "2|2",
-                                    "0/2", "2/0", "2/1", "1/2", "2/2",
-                                    DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
+
                             if (negated) {
                                 for (String otherGenotype : otherGenotypes) {
                                     if (defaultGenotypes.contains(otherGenotype)) {
@@ -656,7 +681,15 @@ public class VariantMongoDBQueryParser {
                     }
                     studyBuilder.and(genotypesBuilder.get());
                 }
+                // If there is no valid files filter, add files filter to speed up this query
+                if (filesFilterBySamples && !files.isEmpty()
+                        && !files.containsAll(defaultStudyConfiguration.getIndexedFiles())) {
+                    addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
+                                    + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD, files, studyBuilder, QueryOperation.AND,
+                            f -> studyConfigurationManager.getFileId(f, false, defaultStudyConfiguration));
+                }
             }
+
 
             // If Study Query is used then we add a elemMatch query
             DBObject studyQuery = studyBuilder.get();
@@ -746,7 +779,7 @@ public class VariantMongoDBQueryParser {
 
         Document projection = new Document();
 
-        if (options.containsKey(QueryOptions.SORT) && !options.getString(QueryOptions.SORT).equals("_id")) {
+        if (options.containsKey(QueryOptions.SORT) && !("_id").equals(options.getString(QueryOptions.SORT))) {
             if (options.getBoolean(QueryOptions.SORT)) {
                 options.put(QueryOptions.SORT, "_id");
                 options.putIfAbsent(QueryOptions.ORDER, QueryOptions.ASCENDING);

@@ -27,9 +27,9 @@ import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -53,7 +53,7 @@ public class AnalysisDemo {
         File file = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PED, File.Bioformat
                 .PEDIGREE, Paths.get(path, inputFile.getFileName().toString()).toString(), null, "Description", null, 0, -1, null, (long)
                 -1, null, null, true, null, null, sessionId).first();
-        new CatalogFileUtils(catalogManager).upload(sourceUri, file, null, sessionId, false, false, false, false);
+        new FileUtils(catalogManager).upload(sourceUri, file, null, sessionId, false, false, false, false);
         FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new QueryOptions(), sessionId, false);
 
         // Load samples using the pedigree file
@@ -68,7 +68,7 @@ public class AnalysisDemo {
         File file = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.VCF, File.Bioformat
                 .VARIANT, Paths.get(path, inputFile.getFileName().toString()).toString(), null, "Description", null, 0, -1, null, (long)
                 -1, null, null, true, null, null, sessionId).first();
-        new CatalogFileUtils(catalogManager).upload(sourceUri, file, null, sessionId, false, false, false, false);
+        new FileUtils(catalogManager).upload(sourceUri, file, null, sessionId, false, false, false, false);
         FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new QueryOptions(), sessionId, false);
 
 

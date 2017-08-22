@@ -19,7 +19,7 @@ package org.opencb.opencga.catalog.monitor.executors.old;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
 import org.opencb.opencga.core.common.Config;
 import org.slf4j.Logger;

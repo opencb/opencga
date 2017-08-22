@@ -32,8 +32,8 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
@@ -104,7 +104,8 @@ public class AlignmentStorageManager extends StorageManager {
             ObjectWriter objectWriter = new ObjectMapper().typedWriter(AlignmentGlobalStats.class);
             ObjectMap globalStats = new ObjectMap(GLOBAL_STATS, objectWriter.writeValueAsString(stats.first()));
             ObjectMap alignmentStats = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), globalStats);
-            catalogManager.getFileManager().update(fileInfo.getFileId(), alignmentStats, new QueryOptions(), sessionId);
+            catalogManager.getFileManager().update(studyIdStr, String.valueOf(fileInfo.getFileId()), alignmentStats, new QueryOptions(),
+                    sessionId);
 
             // Remove the stats file
             Path statsFile = studyInfo.getWorkspace().resolve(fileInfo.getPath().toFile().getName() + ".stats");
@@ -263,7 +264,7 @@ public class AlignmentStorageManager extends StorageManager {
     private Path getWorkspace(long studyId, String sessionId) throws CatalogException, IOException {
         // Obtain the study uri
         QueryOptions studyOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key());
-        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyId, studyOptions, sessionId);
+        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), studyOptions, sessionId);
         if (studyQueryResult .getNumResults() != 1) {
             logger.error("Critical error: Study {} not found in catalog.", studyId);
             throw new CatalogException("Critical error: Study " + studyId + " not found in catalog");

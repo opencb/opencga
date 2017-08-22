@@ -24,7 +24,8 @@
     <artifactId>opencga</artifactId>
     <version>1.3.0-dev</version>
     <packaging>pom</packaging>
-
+    <name>OpenCGA</name>
+    
     <modules>
         <module>opencga-core</module>
         <module>opencga-app</module>
@@ -445,6 +446,48 @@
                     <reuseForks>false</reuseForks>
                     <!--<argLine>-Xmx1024m -XX:MaxPermSize=256m</argLine>-->
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>2.17</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>8.1</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <configLocation>checkstyle.xml</configLocation>
+                    <excludes>
+                        org/opencb/opencga/core/**,
+                        org/opencb/opencga/app/**,
+                        org/opencb/opencga/analysis/**,
+                        org/opencb/opencga/server/**,
+                        org/opencb/opencga/storage/app/**,
+
+                        org/opencb/opencga/storage/alignment/**,
+                        org/opencb/opencga/storage/variant/**,
+                        org/opencb/opencga/storage/datamanagers/**,
+                    </excludes>
+                    <resourceExcludes>
+                        benchmark/jmeter/**
+                    </resourceExcludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>validate</phase>
+                        <configuration>
+                            <configLocation>checkstyle.xml</configLocation>
+                        </configuration>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

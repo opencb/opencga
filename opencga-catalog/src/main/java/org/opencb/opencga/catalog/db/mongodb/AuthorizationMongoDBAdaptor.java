@@ -31,14 +31,14 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.acls.permissions.*;
+import org.opencb.opencga.core.models.acls.permissions.*;
+import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -71,6 +71,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         ACL("_acl", TEXT_ARRAY, "");
 
         private static Map<String, QueryParams> map = new HashMap<>();
+
         static {
             for (QueryParams param : QueryParams.values()) {
                 map.put(param.key(), param);
@@ -126,8 +127,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     private void initPermissions() {
         this.fullPermissionsMap.put(STUDY_COLLECTION, Arrays.stream(StudyAclEntry.StudyPermissions.values())
-                        .map(StudyAclEntry.StudyPermissions::toString)
-                        .collect(Collectors.toList()));
+                .map(StudyAclEntry.StudyPermissions::toString)
+                .collect(Collectors.toList()));
         this.fullPermissionsMap.put(COHORT_COLLECTION, Arrays.stream(CohortAclEntry.CohortPermissions.values())
                 .map(CohortAclEntry.CohortPermissions::toString)
                 .collect(Collectors.toList()));
@@ -225,14 +226,13 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
      * permissions.
      *
      * @param resourceId Resource id being queried.
-     * @param members Members for which we want to fetch the permissions. If empty, it should return the permissions for all members.
-     * @param entity Entity where the query will be performed.
+     * @param membersList    Members for which we want to fetch the permissions. If empty, it should return the permissions for all members.
+     * @param entity     Entity where the query will be performed.
      * @return A map of user -> List of permissions.
      */
-    private Map<String, List<String>> internalGet(long resourceId, List<String> members, String entity) {
-        if (members == null) {
-            members = Collections.emptyList();
-        }
+    private Map<String, List<String>> internalGet(long resourceId, List<String> membersList, String entity) {
+
+        List<String> members = (membersList == null ? Collections.emptyList() : membersList);
 
         MongoDBCollection collection = dbCollectionMap.get(entity);
 
@@ -242,7 +242,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 Projections.include(QueryParams.ID.key(), QueryParams.ACL.key())));
 
         List<Bson> filters = new ArrayList<>();
-        if (members.size() > 0) {
+        if (CollectionUtils.isNotEmpty(members)) {
             List<Pattern> regexMemberList = new ArrayList<>(members.size());
             for (String member : members) {
                 if (!member.equals(ANONYMOUS)) {
@@ -254,7 +254,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             filters.add(Filters.in(QueryParams.ACL.key(), regexMemberList));
         }
 
-        if (filters.size() > 0) {
+        if (CollectionUtils.isNotEmpty(filters)) {
             Bson filter = filters.size() == 1 ? filters.get(0) : Filters.and(filters);
             aggregation.add(Aggregates.match(filter));
         }
@@ -278,11 +278,11 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 // If _acl was not previously defined, it can be null the first time
                 for (String memberPermission : memberList) {
                     String[] split = memberPermission.split("_", 2);
-                    if (memberSet.size() == 0 || memberSet.contains(split[0])) {
+                    if (memberSet.isEmpty() || memberSet.contains(split[0])) {
                         if (!permissions.containsKey(split[0])) {
                             permissions.put(split[0], new ArrayList<>());
                         }
-                        if (!split[1].equals("NONE")) {
+                        if (!("NONE").equals(split[1])) {
                             permissions.get(split[0]).add(split[1]);
                         }
                     }
@@ -396,13 +396,13 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public void setToMembers(List<Long> resourceIds, List<String> members, List<String> permissions, String entity)
+    public void setToMembers(List<Long> resourceIds, List<String> members, List<String> permissionList, String entity)
             throws CatalogDBException {
         validateCollection(entity);
         MongoDBCollection collection = dbCollectionMap.get(entity);
 
         // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
-        permissions = new ArrayList<>(permissions);
+        List<String> permissions = new ArrayList<>(permissionList);
         permissions.add("NONE");
 
         for (long resourceId : resourceIds) {
@@ -427,13 +427,13 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public void addToMembers(List<Long> resourceIds, List<String> members, List<String> permissions, String entity)
+    public void addToMembers(List<Long> resourceIds, List<String> members, List<String> permissionList, String entity)
             throws CatalogDBException {
         validateCollection(entity);
         MongoDBCollection collection = dbCollectionMap.get(entity);
 
         // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
-        permissions = new ArrayList<>(permissions);
+        List<String> permissions = new ArrayList<>(permissionList);
         permissions.add("NONE");
 
         List<String> myPermissions = createPermissionArray(members, permissions);
@@ -450,15 +450,19 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public void removeFromMembers(List<Long> resourceIds, List<String> members, @Nullable List<String> permissions, String entity)
+    public void removeFromMembers(List<Long> resourceIds, List<String> members, List<String> permissionList, String entity)
             throws CatalogDBException {
-        if (members == null || members.size() == 0) {
+
+        if (members == null || members.isEmpty()) {
             return;
         }
+
         validateCollection(entity);
         MongoDBCollection collection = dbCollectionMap.get(entity);
 
-        if (permissions == null || permissions.size() == 0) {
+        List<String> permissions = permissionList;
+
+        if (permissions == null || permissions.isEmpty()) {
             // We get all possible permissions those members will have to do a full reset
             permissions = fullPermissionsMap.get(entity);
         }
@@ -477,7 +481,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     @Override
     public void resetMembersFromAllEntries(long studyId, List<String> members) throws CatalogDBException {
-        if (members == null || members.size() == 0) {
+        if (members == null || members.isEmpty()) {
             return;
         }
 
@@ -541,7 +545,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     private List<String> createPermissionArray(Map<String, List<String>> memberPermissionsMap) {
         List<String> myPermissions = new ArrayList<>(memberPermissionsMap.size() * 2);
         for (Map.Entry<String, List<String>> stringListEntry : memberPermissionsMap.entrySet()) {
-            if (stringListEntry.getValue().size() == 0) {
+            if (stringListEntry.getValue().isEmpty()) {
                 stringListEntry.getValue().add("NONE");
             }
 
@@ -555,7 +559,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     private List<String> createPermissionArray(List<String> members, List<String> permissions) {
         List<String> writtenPermissions;
-        if (permissions.size() == 0) {
+        if (permissions.isEmpty()) {
             writtenPermissions = Arrays.asList("NONE");
         } else {
             writtenPermissions = permissions;

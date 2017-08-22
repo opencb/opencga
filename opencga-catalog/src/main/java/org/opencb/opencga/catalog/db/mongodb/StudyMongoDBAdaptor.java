@@ -37,8 +37,8 @@ import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.StudyMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
@@ -681,7 +681,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             }
         }
         Study study = studyConverter.convertToDataModelType(studyQueryResult.first());
-        if (study.getVariableSets() == null || study.getVariableSets().size() == 0) {
+        if (study.getVariableSets() == null || study.getVariableSets().isEmpty()) {
             throw new CatalogDBException("Variable set not found.");
         }
         // Check if it is confidential

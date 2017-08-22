@@ -167,71 +167,69 @@ public class LocalAlignmentStoragePipeline implements StoragePipeline {
     private void initDatabase(List<SAMSequenceRecord> sequenceRecordList, Path workspace) {
         Path coverageDBPath = workspace.toAbsolutePath().resolve(COVERAGE_DATABASE_NAME);
         if (!coverageDBPath.toFile().exists()) {
-            Statement stmt;
+
             try {
                 Class.forName("org.sqlite.JDBC");
-                Connection connection = DriverManager.getConnection("jdbc:sqlite:" + coverageDBPath);
-
                 // Create tables
-                stmt = connection.createStatement();
-                String sql = "CREATE TABLE chunk "
-                        + "(id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                        + "chunk_id VARCHAR NOT NULL,"
-                        + "chromosome VARCHAR NOT NULL, "
-                        + "start INT NOT NULL, "
-                        + "end INT NOT NULL); "
-                        + "CREATE UNIQUE INDEX chunk_id_idx ON chunk (chunk_id);"
-                        + "CREATE INDEX chrom_start_end_idx ON chunk (chromosome, start, end);";
-                stmt.executeUpdate(sql);
+                try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + coverageDBPath);
+                     Statement stmt = connection.createStatement()) {
+                    String sql = "CREATE TABLE chunk "
+                            + "(id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                            + "chunk_id VARCHAR NOT NULL,"
+                            + "chromosome VARCHAR NOT NULL, "
+                            + "start INT NOT NULL, "
+                            + "end INT NOT NULL); "
+                            + "CREATE UNIQUE INDEX chunk_id_idx ON chunk (chunk_id);"
+                            + "CREATE INDEX chrom_start_end_idx ON chunk (chromosome, start, end);";
+                    stmt.executeUpdate(sql);
 
-                sql = "CREATE TABLE file "
-                        + "(id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                        + "path VARCHAR NOT NULL,"
-                        + "name VARCHAR NOT NULL);"
-                        + "CREATE UNIQUE INDEX path_idx ON file (path);";
-                stmt.executeUpdate(sql);
+                    sql = "CREATE TABLE file "
+                            + "(id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                            + "path VARCHAR NOT NULL,"
+                            + "name VARCHAR NOT NULL);"
+                            + "CREATE UNIQUE INDEX path_idx ON file (path);";
+                    stmt.executeUpdate(sql);
 
-                sql = "CREATE TABLE mean_coverage "
-                        + "(chunk_id INTEGER,"
-                        + "file_id INTEGER,"
-                        + "v1 INTEGER, "
-                        + "v2 INTEGER, "
-                        + "v3 INTEGER, "
-                        + "v4 INTEGER, "
-                        + "v5 INTEGER, "
-                        + "v6 INTEGER, "
-                        + "v7 INTEGER, "
-                        + "v8 INTEGER,"
-                        + "PRIMARY KEY(chunk_id, file_id));";
-                stmt.executeUpdate(sql);
+                    sql = "CREATE TABLE mean_coverage "
+                            + "(chunk_id INTEGER,"
+                            + "file_id INTEGER,"
+                            + "v1 INTEGER, "
+                            + "v2 INTEGER, "
+                            + "v3 INTEGER, "
+                            + "v4 INTEGER, "
+                            + "v5 INTEGER, "
+                            + "v6 INTEGER, "
+                            + "v7 INTEGER, "
+                            + "v8 INTEGER,"
+                            + "PRIMARY KEY(chunk_id, file_id));";
+                    stmt.executeUpdate(sql);
 
-                // Insert all the chunks
-                String minorChunkSuffix = (MINOR_CHUNK_SIZE / 1000) * 64 + "k";
+                    // Insert all the chunks
+                    String minorChunkSuffix = (MINOR_CHUNK_SIZE / 1000) * 64 + "k";
 
-                PreparedStatement insertChunk = connection.prepareStatement("insert into chunk (chunk_id, chromosome, start, end) "
-                        + "values (?, ?, ?, ?)");
-                connection.setAutoCommit(false);
+                    try (PreparedStatement insertChunk = connection.prepareStatement("insert into chunk (chunk_id, chromosome, start, end) "
+                            + "values (?, ?, ?, ?)")) {
+                        connection.setAutoCommit(false);
 
-                for (SAMSequenceRecord samSequenceRecord : sequenceRecordList) {
-                    String chromosome = samSequenceRecord.getSequenceName();
-                    int sequenceLength = samSequenceRecord.getSequenceLength();
+                        for (SAMSequenceRecord samSequenceRecord : sequenceRecordList) {
+                            String chromosome = samSequenceRecord.getSequenceName();
+                            int sequenceLength = samSequenceRecord.getSequenceLength();
 
-                    int cont = 0;
-                    for (int i = 0; i < sequenceLength; i += 64 * MINOR_CHUNK_SIZE) {
-                        String chunkId = chromosome + "_" + cont + "_" + minorChunkSuffix;
-                        insertChunk.setString(1, chunkId);
-                        insertChunk.setString(2, chromosome);
-                        insertChunk.setInt(3, i + 1);
-                        insertChunk.setInt(4, i + 64 * MINOR_CHUNK_SIZE);
-                        insertChunk.addBatch();
-                        cont++;
+                            int cont = 0;
+                            for (int i = 0; i < sequenceLength; i += 64 * MINOR_CHUNK_SIZE) {
+                                String chunkId = chromosome + "_" + cont + "_" + minorChunkSuffix;
+                                insertChunk.setString(1, chunkId);
+                                insertChunk.setString(2, chromosome);
+                                insertChunk.setInt(3, i + 1);
+                                insertChunk.setInt(4, i + 64 * MINOR_CHUNK_SIZE);
+                                insertChunk.addBatch();
+                                cont++;
+                            }
+                            insertChunk.executeBatch();
+                        }
+                        connection.commit();
                     }
-                    insertChunk.executeBatch();
                 }
-
-                connection.commit();
-                stmt.close();
-                connection.close();
             } catch (Exception e) {
                 System.err.println(e.getClass().getName() + ": " + e.getMessage());
                 System.exit(0);
@@ -251,107 +249,106 @@ public class LocalAlignmentStoragePipeline implements StoragePipeline {
         try {
             // Insert into file table
             Class.forName("org.sqlite.JDBC");
-            Connection connection = DriverManager.getConnection("jdbc:sqlite:" + coverageDBPath);
-            Statement stmt = connection.createStatement();
-            String insertFileSql = "insert into file (path, name) values ('" + absoluteBamPath + "', '" + fileName + "');";
-            stmt.executeUpdate(insertFileSql);
-            stmt.close();
+            try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + coverageDBPath);
+                 Statement stmt = connection.createStatement()) {
+                String insertFileSql = "insert into file (path, name) values ('" + absoluteBamPath + "', '" + fileName + "');";
+                stmt.executeUpdate(insertFileSql);
+                stmt.close();
+                int fileId = -1;
 
-            ResultSet rs = stmt.executeQuery("SELECT id FROM file where path = '" + absoluteBamPath + "';");
-            int fileId = -1;
-            while (rs.next()) {
-                fileId = rs.getInt("id");
-            }
-
-            if (fileId != -1) {
-                Map chunkIdMap = new HashMap<String, Integer>();
-                String sql = "SELECT id, chromosome, start FROM chunk";
-//                        System.out.println(sql);
-                rs = stmt.executeQuery(sql);
-                while (rs.next()) {
-                    chunkIdMap.put(rs.getString("chromosome") + "_" + rs.getInt("start"), rs.getInt("id"));
+                try (ResultSet resultSet = stmt.executeQuery("SELECT id FROM file where path = '" + absoluteBamPath + "';")) {
+                    while (resultSet.next()) {
+                        fileId = resultSet.getInt("id");
+                    }
                 }
 
-                // Iterate file
-                PreparedStatement insertCoverage = connection.prepareStatement("insert into mean_coverage (chunk_id, "
-                        + " file_id, v1, v2, v3, v4, v5, v6, v7, v8) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                connection.setAutoCommit(false);
-
-                BufferedReader bufferedReader = FileUtils.newBufferedReader(coveragePath);
-                // Checkstyle plugin is not happy with assignations inside while/for
-                int chunkId = -1;
-
-                byte[] meanCoverages = new byte[8]; // contains 8 coverages
-                long[] packedCoverages = new long[8]; // contains 8 x 8 coverages
-                int counter1 = 0; // counter for 8-byte mean coverages array
-                int counter2 = 0; // counter for 8-long packed coverages array
-                String prevChromosome = null;
-
-                String line = bufferedReader.readLine();
-                while (line != null) {
-                    String[] fields = line.split("\t");
-
-                    if (prevChromosome == null) {
-                        prevChromosome = fields[1];
-                        System.out.println("Processing chromosome " + prevChromosome + "...");
-                    } else if (!prevChromosome.equals(fields[1])) {
-                        // we have to write the current results into the DB
-                        if (counter1 > 0 || counter2 > 0) {
-                            packedCoverages[counter2] = bytesToLong(meanCoverages);
-                            insertPackedCoverages(insertCoverage, chunkId, fileId, packedCoverages);
-                        }
-                        prevChromosome = fields[1];
-                        System.out.println("Processing chromosome " + prevChromosome + "...");
-
-                        // reset arrays, counters,...
-                        Arrays.fill(meanCoverages, (byte) 0);
-                        Arrays.fill(packedCoverages, 0);
-                        counter2 = 0;
-                        counter1 = 0;
-                        chunkId = -1;
-                    }
-                    if (chunkId == -1) {
-                        String key = fields[1] + "_" + fields[2];
-                        if (chunkIdMap.containsKey(key)) {
-                            chunkId = (int) chunkIdMap.get(key);
-                        } else {
-                            throw new SQLException("Internal error: coverage chunk " + fields[1]
-                                    + ":" + fields[2] + "-, not found in database");
+                if (fileId != -1) {
+                    Map chunkIdMap = new HashMap<String, Integer>();
+                    String sql = "SELECT id, chromosome, start FROM chunk";
+                    try (ResultSet resultSet = stmt.executeQuery(sql)) {
+                        while (resultSet.next()) {
+                            chunkIdMap.put(resultSet.getString("chromosome") + "_" + resultSet.getInt("start"), resultSet.getInt("id"));
                         }
                     }
-                    meanCoverages[counter1] = (byte) Integer.parseInt(fields[4]);
-                    if (++counter1 == 8) {
-                        // packed mean coverages and save into the packed coverages array
+                    // Iterate file
+                    PreparedStatement insertCoverage = connection.prepareStatement("insert into mean_coverage (chunk_id, "
+                            + " file_id, v1, v2, v3, v4, v5, v6, v7, v8) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    connection.setAutoCommit(false);
+
+                    // Checkstyle plugin is not happy with assignations inside while/for
+                    int chunkId = -1;
+                    byte[] meanCoverages = new byte[8]; // contains 8 coverages
+                    long[] packedCoverages = new long[8]; // contains 8 x 8 coverages
+                    int counter1 = 0; // counter for 8-byte mean coverages array
+                    int counter2 = 0; // counter for 8-long packed coverages array
+                    String prevChromosome = null;
+
+                    try (BufferedReader bufferedReader = FileUtils.newBufferedReader(coveragePath)) {
+
+                        String line = bufferedReader.readLine();
+                        while (line != null) {
+                            String[] fields = line.split("\t");
+
+                            if (prevChromosome == null) {
+                                prevChromosome = fields[1];
+                                System.out.println("Processing chromosome " + prevChromosome + "...");
+                            } else if (!prevChromosome.equals(fields[1])) {
+                                // we have to write the current results into the DB
+                                if (counter1 > 0 || counter2 > 0) {
+                                    packedCoverages[counter2] = bytesToLong(meanCoverages);
+                                    insertPackedCoverages(insertCoverage, chunkId, fileId, packedCoverages);
+                                }
+                                prevChromosome = fields[1];
+                                System.out.println("Processing chromosome " + prevChromosome + "...");
+
+                                // reset arrays, counters,...
+                                Arrays.fill(meanCoverages, (byte) 0);
+                                Arrays.fill(packedCoverages, 0);
+                                counter2 = 0;
+                                counter1 = 0;
+                                chunkId = -1;
+                            }
+                            if (chunkId == -1) {
+                                String key = fields[1] + "_" + fields[2];
+                                if (chunkIdMap.containsKey(key)) {
+                                    chunkId = (int) chunkIdMap.get(key);
+                                } else {
+                                    throw new SQLException("Internal error: coverage chunk " + fields[1]
+                                            + ":" + fields[2] + "-, not found in database");
+                                }
+                            }
+                            meanCoverages[counter1] = (byte) Integer.parseInt(fields[4]);
+                            if (++counter1 == 8) {
+                                // packed mean coverages and save into the packed coverages array
+                                packedCoverages[counter2] = bytesToLong(meanCoverages);
+                                if (++counter2 == 8) {
+                                    // write packed coverages array to DB
+                                    insertPackedCoverages(insertCoverage, chunkId, fileId, packedCoverages);
+
+                                    // reset packed coverages array and counter2
+                                    Arrays.fill(packedCoverages, 0);
+                                    counter2 = 0;
+                                    chunkId = -1;
+                                }
+                                // reset mean coverages array and counter1
+                                counter1 = 0;
+                                Arrays.fill(meanCoverages, (byte) 0);
+                            }
+                            line = bufferedReader.readLine();
+                        }
+                        bufferedReader.close();
+                    }
+
+                    if (counter1 > 0 || counter2 > 0) {
                         packedCoverages[counter2] = bytesToLong(meanCoverages);
-                        if (++counter2 == 8) {
-                            // write packed coverages array to DB
-                            insertPackedCoverages(insertCoverage, chunkId, fileId, packedCoverages);
-
-                            // reset packed coverages array and counter2
-                            Arrays.fill(packedCoverages, 0);
-                            counter2 = 0;
-                            chunkId = -1;
-                        }
-                        // reset mean coverages array and counter1
-                        counter1 = 0;
-                        Arrays.fill(meanCoverages, (byte) 0);
+                        insertPackedCoverages(insertCoverage, chunkId, fileId, packedCoverages);
                     }
 
-                    line = bufferedReader.readLine();
+                    // insert batch to the DB
+                    insertCoverage.executeBatch();
                 }
-                bufferedReader.close();
-
-                if (counter1 > 0 || counter2 > 0) {
-                    packedCoverages[counter2] = bytesToLong(meanCoverages);
-                    insertPackedCoverages(insertCoverage, chunkId, fileId, packedCoverages);
-                }
-
-                // insert batch to the DB
-                insertCoverage.executeBatch();
+                connection.commit();
             }
-            connection.commit();
-            stmt.close();
-            connection.close();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         } catch (SQLException e) {
@@ -361,7 +358,7 @@ public class LocalAlignmentStoragePipeline implements StoragePipeline {
 
     private void insertPackedCoverages(PreparedStatement insertCoverage, int chunkId, int fileId,
                                        long[] packedCoverages) throws SQLException {
-        assert(chunkId != -1);
+        assert (chunkId != -1);
 
         insertCoverage.setInt(1, chunkId);
         insertCoverage.setInt(2, fileId);

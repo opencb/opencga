@@ -20,8 +20,8 @@ import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.slf4j.Logger;
@@ -98,7 +98,7 @@ public class JobFactory {
         resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, jobSchedulerName);
         if (simulate) { //Simulate a job. Do not create it.
             jobQueryResult = new QueryResult<>("simulatedJob", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(
-                    new Job(jobName, catalogManager.getUserManager().getId(sessionId), toolName, description, commandLine, outDir,
+                    new Job(jobName, catalogManager.getUserManager().getUserId(sessionId), toolName, description, commandLine, outDir,
                             inputFiles, 1)));
         } else {
             if (execute) {

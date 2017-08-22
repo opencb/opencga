@@ -26,6 +26,8 @@ import java.util.Random;
 
 public class ArrayUtils {
 
+    private static final double EPSILON = 0.000000000000001;
+
 	/*
      *
 	 * GETTING THE MAX OF A INTEGER ARRAY
@@ -104,7 +106,7 @@ public class ArrayUtils {
     }
 
 	/*
-	 * 
+     *
 	 * GETTING THE MIN OF A VECTOR
 	 * 
 	 */
@@ -290,10 +292,10 @@ public class ArrayUtils {
                 if (Double.isNaN(clonedData[i])) {
                     clonedData[i] = min - 3;
                 }
-                if (clonedData[i] == Double.NEGATIVE_INFINITY) {
+                if (equals(clonedData[i],Double.NEGATIVE_INFINITY)) {
                     clonedData[i] = min - 2;
                 }
-                if (clonedData[i] == Double.MIN_VALUE) {
+                if (equals(clonedData[i], Double.MIN_VALUE)) {
                     clonedData[i] = min - 1;
                 }
             }
@@ -310,10 +312,10 @@ public class ArrayUtils {
                 if (Double.isNaN(clonedData[i])) {
                     clonedData[i] = max + 3;
                 }
-                if (clonedData[i] == Double.POSITIVE_INFINITY) {
+                if (equals(clonedData[i], Double.POSITIVE_INFINITY)) {
                     clonedData[i] = max + 2;
                 }
-                if (clonedData[i] == Double.MAX_VALUE) {
+                if (equals(clonedData[i], Double.MAX_VALUE)) {
                     clonedData[i] = max + 1;
                 }
             }
@@ -330,7 +332,7 @@ public class ArrayUtils {
     public static double nonInfinityAndMinValueMin(double[] data) {
         double min = Double.POSITIVE_INFINITY;
         for (int i = 0; i < data.length; i++) {
-            if (data[i] < min && data[i] != Double.NEGATIVE_INFINITY && data[i] != Double.MIN_VALUE) {
+            if (data[i] < min && !equals(data[i], Double.NEGATIVE_INFINITY) && !equals(data[i], Double.MIN_VALUE)) {
                 min = data[i];
             }
         }
@@ -341,7 +343,7 @@ public class ArrayUtils {
     public static double nonInfinityAndMaxValueMax(double[] data) {
         double max = Double.NEGATIVE_INFINITY;
         for (int i = 0; i < data.length; i++) {
-            if (data[i] > max && data[i] != Double.POSITIVE_INFINITY && data[i] != Double.MAX_VALUE) {
+            if (data[i] > max && !equals(data[i], Double.POSITIVE_INFINITY) && !equals(data[i], Double.MAX_VALUE)) {
                 max = data[i];
             }
         }
@@ -403,7 +405,7 @@ public class ArrayUtils {
         try {
             Thread.sleep(2);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
         }
         Random r = new Random(System.currentTimeMillis());
         double[] randomList = new double[numElements];
@@ -743,7 +745,7 @@ public class ArrayUtils {
     }
 
 	/*
-	 * 
+     *
 	 * private methods
 	 * 
 	 */
@@ -799,6 +801,14 @@ public class ArrayUtils {
             array[i] = list.get(i);
         }
         return array;
+    }
+
+    public static boolean equals(final double first, final double second) {
+        return (Math.abs(second - first) < EPSILON);
+    }
+
+    public static boolean equals(final float first, final float second) {
+        return (Math.abs(second - first) < EPSILON);
     }
 
 }

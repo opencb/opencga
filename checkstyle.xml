@@ -21,7 +21,7 @@
 
 <module name="Checker">
     <module name="FileLength">
-        <property name="max" value="3000"/>
+        <property name="max" value="2750"/>
     </module>
     <module name="FileTabCharacter"/>
     <module name="NewlineAtEndOfFile"/>
@@ -117,7 +117,7 @@
         </module>
         <module name="EmptyBlock">
             <!-- all other blocks need a real statement. -->
-            <property name="option" value="stmt"/>
+            <property name="option" value="TEXT"/>
             <property name="tokens" value="LITERAL_DO, LITERAL_ELSE, LITERAL_FINALLY,
           LITERAL_IF, LITERAL_FOR, LITERAL_TRY, LITERAL_WHILE, INSTANCE_INIT,
           STATIC_INIT"/>
@@ -164,13 +164,14 @@
             <property name="message" value="Trailing whitespace"/>
         </module>
         <module name="FileContentsHolder"/>
-    </module>
 
-    <!-- allow warnings to be suppressed -->
-    <module name="SuppressionCommentFilter">
-        <property name="offCommentFormat" value="CSOFF\: ([\w\|]+)"/>
-        <property name="onCommentFormat" value="CSON\: ([\w\|]+)"/>
-        <property name="checkFormat" value="$1"/>
+        <!-- allow warnings to be suppressed -->
+        <module name="SuppressionCommentFilter">
+            <property name="offCommentFormat" value="CSOFF\: ([\w\|]+)"/>
+            <property name="onCommentFormat" value="CSON\: ([\w\|]+)"/>
+            <property name="checkFormat" value="$1"/>
+        </module>
+
     </module>
 
     <module name="SuppressionFilter"/>

@@ -27,12 +27,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
-import org.opencb.opencga.catalog.models.AnnotationSet;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.OntologyTerm;
-import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.acls.AclParams;
-import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
+import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.OntologyTerm;
+import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.core.exception.VersionException;
 
@@ -70,15 +69,15 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr) {
         try {
-            AbstractManager.MyResourceIds resourceIds = sampleManager.getIds(sampleStr, studyStr, sessionId);
-
-            List<QueryResult<Sample>> queryResults = new LinkedList<>();
-            if (resourceIds.getResourceIds() != null && resourceIds.getResourceIds().size() > 0) {
-                for (Long sampleId : resourceIds.getResourceIds()) {
-                    queryResults.add(catalogManager.getSampleManager().get(sampleId, queryOptions, sessionId));
-                }
+            QueryResult<Sample> sampleQueryResult = sampleManager.get(studyStr, sampleStr, queryOptions, sessionId);
+            // We parse the query result to create one queryresult per sample
+            List<QueryResult<Sample>> queryResultList = new ArrayList<>(sampleQueryResult.getNumResults());
+            for (Sample sample : sampleQueryResult.getResult()) {
+                queryResultList.add(new QueryResult<>(sample.getName() + "-" + sample.getId(), sampleQueryResult.getDbTime(), 1, -1,
+                        sampleQueryResult.getWarningMsg(), sampleQueryResult.getErrorMsg(), Arrays.asList(sample)));
             }
-            return createOkResponse(queryResults);
+
+            return createOkResponse(queryResultList);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -125,7 +124,12 @@ public class SampleWSServer extends OpenCGAWSServer {
                 variableSet = Long.toString(variableSetId);
             }
             AbstractManager.MyResourceId resourceId = catalogManager.getFileManager().getId(fileIdStr, studyStr, sessionId);
-            long varSetId = catalogManager.getStudyManager().getVariableSetId(variableSet, studyStr, sessionId).getResourceId();
+            Long varSetId;
+            if (StringUtils.isNotBlank(variableSet)) {
+                varSetId = catalogManager.getStudyManager().getVariableSetId(variableSet, studyStr, sessionId).getResourceId();
+            } else {
+                varSetId = null;
+            }
 
             File pedigreeFile = catalogManager.getFileManager().get(resourceId.getResourceId(), null, sessionId).first();
             CatalogSampleAnnotationsLoader loader = new CatalogSampleAnnotationsLoader(catalogManager);
@@ -204,8 +208,6 @@ public class SampleWSServer extends OpenCGAWSServer {
                                  @QueryParam("study") String studyStr,
                                  @ApiParam(value = "params", required = true) UpdateSamplePOST parameters) {
         try {
-            AbstractManager.MyResourceId resourceId = catalogManager.getSampleManager().getId(sampleStr, studyStr, sessionId);
-
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
             if (params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
                 if (!params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL.key())) {
@@ -218,9 +220,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 throw new CatalogException("Missing parameters to update.");
             }
 
-            QueryResult<Sample> queryResult = catalogManager.getSampleManager().update(resourceId.getResourceId(), params, queryOptions,
-                    sessionId);
-            return createOkResponse(queryResult);
+            return createOkResponse(sampleManager.update(studyStr, sampleStr, params, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -234,7 +234,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                            @QueryParam("study") String studyStr) {
         try {
-            List<QueryResult<Sample>> delete = catalogManager.getSampleManager().delete(sampleStr, studyStr, queryOptions, sessionId);
+            List<QueryResult<Sample>> delete = catalogManager.getSampleManager().delete(studyStr, sampleStr, queryOptions, sessionId);
             return createOkResponse(delete);
         } catch (CatalogException | IOException e) {
             return createErrorResponse(e);
@@ -271,7 +271,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 }
                 query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
             }
-            QueryResult result = sampleManager.groupBy(studyStr, query, queryOptions, fields, sessionId);
+            QueryResult result = sampleManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -444,19 +444,9 @@ public class SampleWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "User or group id") @QueryParam("member") String member) {
         try {
             if (StringUtils.isEmpty(member)) {
-                AbstractManager.MyResourceIds resourceId = catalogManager.getSampleManager().getIds(sampleIdsStr, studyStr, sessionId);
-                List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(resourceId.getResourceIds().size());
-                for (int i = 0; i < resourceId.getResourceIds().size(); i++) {
-                    Long sampleId = resourceId.getResourceIds().get(i);
-                    QueryResult<SampleAclEntry> allSampleAcls = catalogManager.getAuthorizationManager().getAllSampleAcls(resourceId.getUser(), sampleId);
-                    allSampleAcls.setId(Long.toString(resourceId.getResourceIds().get(i)));
-                    sampleAclList.add(allSampleAcls);
-                }
-                return createOkResponse(sampleAclList);
+                return createOkResponse(sampleManager.getAcls(studyStr, sampleIdsStr, sessionId));
             } else {
-                AbstractManager.MyResourceId resourceId = catalogManager.getSampleManager().getId(sampleIdsStr, studyStr, sessionId);
-                return createOkResponse(catalogManager.getAuthorizationManager().getSampleAcl(resourceId.getUser(), resourceId
-                        .getResourceId(), member));
+                return createOkResponse(sampleManager.getAcl(studyStr, sampleIdsStr, member, sessionId));
             }
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -476,7 +466,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true) StudyWSServer.MemberAclUpdateOld params) {
         try {
             Sample.SampleAclParams sampleAclParams = getAclParams(params.add, params.remove, params.set);
-            return createOkResponse(sampleManager.updateAcl(sampleIdStr, studyStr, memberId, sampleAclParams, sessionId));
+            return createOkResponse(sampleManager.updateAcl(studyStr, sampleIdStr, memberId, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -539,7 +529,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         try {
             Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(
                     params.getPermissions(), params.getAction(), params.individual, params.file, params.cohort, params.propagate);
-            return createOkResponse(sampleManager.updateAcl(params.sample, studyStr, memberId, sampleAclParams, sessionId));
+            return createOkResponse(sampleManager.updateAcl(studyStr, params.sample, memberId, sampleAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

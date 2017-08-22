@@ -79,7 +79,7 @@ public class VariantQueryUtils {
 
     /**
      * Check if the object query contains the value param, is not null and, if is an string or a list, is not empty.
-     *
+     * <p>
      * isValidParam(new Query(), PARAM) == false
      * isValidParam(new Query(PARAM.key(), null), PARAM) == false
      * isValidParam(new Query(PARAM.key(), ""), PARAM) == false
@@ -131,7 +131,7 @@ public class VariantQueryUtils {
      * Determines if the given value is a known variant accession or not.
      *
      * @param value Value to check
-     * @return      If is a known accession
+     * @return If is a known accession
      */
     public static boolean isVariantAccession(String value) {
         return value.startsWith("rs") || value.startsWith("VAR_");
@@ -139,12 +139,12 @@ public class VariantQueryUtils {
 
     /**
      * Determines if the given value is a known clinical accession or not.
-     *
+     * <p>
      * ClinVar accession starts with 'RCV'
      * COSMIC mutationId starts with 'COSM'
      *
      * @param value Value to check
-     * @return      If is a known accession
+     * @return If is a known accession
      */
     public static boolean isClinicalAccession(String value) {
         return value.startsWith("RCV") || value.startsWith("COSM");
@@ -152,12 +152,12 @@ public class VariantQueryUtils {
 
     /**
      * Determines if the given value is a known gene accession or not.
-     *
+     * <p>
      * Human Phenotype Ontology (HPO) terms starts with 'HP:'
      * Online Mendelian Inheritance in Man (OMIM) terms starts with 'OMIM:'
      *
      * @param value Value to check
-     * @return      If is a known accession
+     * @return If is a known accession
      */
     public static boolean isGeneAccession(String value) {
         return value.startsWith("HP:") || value.startsWith("OMIM:");
@@ -165,11 +165,11 @@ public class VariantQueryUtils {
 
     /**
      * Determines if the given value is a variant id or not.
-     *
+     * <p>
      * chr:pos:ref:alt
      *
      * @param value Value to check
-     * @return      If is a variant id
+     * @return If is a variant id
      */
     public static boolean isVariantId(String value) {
         int count = StringUtils.countMatches(value, ':');
@@ -178,11 +178,11 @@ public class VariantQueryUtils {
 
     /**
      * Determines if the given value is a variant id or not.
-     *
+     * <p>
      * chr:pos:ref:alt
      *
      * @param value Value to check
-     * @return      If is a variant id
+     * @return If is a variant id
      */
     public static Variant toVariant(String value) {
         Variant variant = null;
@@ -280,23 +280,22 @@ public class VariantQueryUtils {
 
     /**
      * Get list of returned files.
-     *
+     * <p>
      * Use {@link VariantQueryParam#RETURNED_FILES} if defined.
      * If missing, get non negated values from {@link VariantQueryParam#FILES}
      * If missing, get files from samples at {@link VariantQueryParam#SAMPLES}
-     *
+     * <p>
      * Null for undefined returned files. If null, return ALL files.
      * Return NONE if empty list
      *
-     *
-     * @param query     Query with the QueryParams
-     * @param options   Query options
-     * @param fields    Returned fields
-     * @param studyConfigurationManager    StudyConfigurationManager
-     * @return          List of fileIds to return.
+     * @param query                     Query with the QueryParams
+     * @param options                   Query options
+     * @param fields                    Returned fields
+     * @param studyConfigurationManager StudyConfigurationManager
+     * @return List of fileIds to return.
      */
     public static List<Integer> getReturnedFiles(Query query, QueryOptions options, Set<VariantField> fields,
-                                          StudyConfigurationManager studyConfigurationManager) {
+                                                 StudyConfigurationManager studyConfigurationManager) {
         List<Integer> returnedFiles;
         if (!fields.contains(VariantField.STUDIES_FILES)) {
             returnedFiles = Collections.emptyList();
@@ -322,6 +321,11 @@ public class VariantQueryUtils {
         } else {
             List<String> sampleNames = query.getAsStringList(VariantQueryParam.SAMPLES.key());
             StudyConfiguration studyConfiguration = getDefaultStudyConfiguration(query, options, studyConfigurationManager);
+
+            if (studyConfiguration == null) {
+                return null;
+            }
+
             Set<Integer> returnedFilesSet = new LinkedHashSet<>();
             for (String sample : sampleNames) {
                 Integer sampleId = studyConfigurationManager.getSampleId(sample, studyConfiguration);
@@ -365,7 +369,7 @@ public class VariantQueryUtils {
     }
 
     public static Map<String, List<String>> getSamplesMetadata(Query query, QueryOptions options,
-                                                        StudyConfigurationManager studyConfigurationManager) {
+                                                               StudyConfigurationManager studyConfigurationManager) {
         if (query.getBoolean(SAMPLES_METADATA.key(), false)) {
             if (VariantField.getReturnedFields(options).contains(VariantField.STUDIES)) {
                 List<Integer> returnedStudies = getReturnedStudies(query, options, studyConfigurationManager);
@@ -381,7 +385,7 @@ public class VariantQueryUtils {
     }
 
     public static Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options,
-                                                          StudyConfigurationManager studyConfigurationManager) {
+                                                                 StudyConfigurationManager studyConfigurationManager) {
         List<Integer> returnedStudies = getReturnedStudies(query, options, studyConfigurationManager);
         return getReturnedSamples(query, options, returnedStudies, studyId ->
                 studyConfigurationManager.getStudyConfiguration(studyId, options).first());
@@ -469,13 +473,12 @@ public class VariantQueryUtils {
 
     /**
      * Get list of returned samples.
-     *
+     * <p>
      * Null for undefined returned samples. If null, return ALL samples.
      * Return NONE if empty list
      *
-     *
-     * @param query     Query with the QueryParams
-     * @return          List of samples to return.
+     * @param query Query with the QueryParams
+     * @return List of samples to return.
      */
     public static List<String> getReturnedSamplesList(Query query) {
         List<String> samples;
@@ -504,11 +507,10 @@ public class VariantQueryUtils {
     /**
      * Gets a list of elements formats to return.
      *
-     * @see VariantQueryParam#INCLUDE_FORMAT
-     * @see VariantQueryParam#INCLUDE_GENOTYPE
-     *
      * @param query Variants Query
      * @return List of formats to include. Null if undefined or all. Empty list if none.
+     * @see VariantQueryParam#INCLUDE_FORMAT
+     * @see VariantQueryParam#INCLUDE_GENOTYPE
      */
     public static List<String> getIncludeFormats(Query query) {
         final Set<String> formatsSet;
@@ -571,8 +573,8 @@ public class VariantQueryUtils {
     /**
      * Partes the genotype filter.
      *
-     * @param sampleGenotypes   Genotypes filter value
-     * @param map               Initialized map to be filled with the sample to list of genotypes
+     * @param sampleGenotypes Genotypes filter value
+     * @param map             Initialized map to be filled with the sample to list of genotypes
      * @return QueryOperation between samples
      */
     public static QueryOperation parseGenotypeFilter(String sampleGenotypes, Map<Object, List<String>> map) {
@@ -637,7 +639,7 @@ public class VariantQueryUtils {
      * Checks that the filter value list contains only one type of operations.
      *
      * @param value List of values to check
-     * @return  The used operator. Null if no operator is used.
+     * @return The used operator. Null if no operator is used.
      * @throws VariantQueryException if the list contains different operators.
      */
     public static QueryOperation checkOperator(String value) throws VariantQueryException {
@@ -659,7 +661,7 @@ public class VariantQueryUtils {
      *
      * @param value     Value to split
      * @param operation Operation that defines the split delimiter
-     * @return          List of values, without the delimiter
+     * @return List of values, without the delimiter
      */
     public static List<String> splitValue(String value, QueryOperation operation) {
         List<String> list;

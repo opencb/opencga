@@ -20,7 +20,6 @@ import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFHeader;
 import org.apache.commons.lang3.StringUtils;
@@ -33,6 +32,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetedQueryResult;
+import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
@@ -45,8 +45,8 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.search.solr.VariantSearchManager;
-import org.opencb.opencga.storage.core.search.solr.VariantIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
@@ -176,7 +176,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         StorageVariantCommandOptions.VariantIndexCommandOptions indexVariantsCommandOptions = variantCommandOptions.indexVariantsCommandOptions;
         List<URI> inputUris = new LinkedList<>();
         String inputs[] = indexVariantsCommandOptions.commonIndexOptions.input.split(",");
-        for (String uri: inputs) {
+        for (String uri : inputs) {
             URI variantsUri = UriUtils.createUri(uri);
             if (variantsUri.getScheme().startsWith("file") || variantsUri.getScheme().isEmpty()) {
                 FileUtils.checkFile(Paths.get(variantsUri));
@@ -585,29 +585,24 @@ public class VariantCommandExecutor extends CommandExecutor {
                     formatFieldsType, formatFieldsDescr, sampleNames, converter);
 
             // create the variant context writer
-            OutputStream outputStream = new FileOutputStream(exportVariantsCommandOptions.outFilename);
-            Options writerOptions = null;
-            VariantContextWriter writer = VcfUtils.createVariantContextWriter(outputStream,
-                    vcfHeader.getSequenceDictionary(), writerOptions);
+            try (OutputStream outputStream = new FileOutputStream(exportVariantsCommandOptions.outFilename);
+                 VariantContextWriter writer = VcfUtils.createVariantContextWriter(outputStream,
+                         vcfHeader.getSequenceDictionary(), null)) {
 
-            // write VCF header
-            writer.writeHeader(vcfHeader);
+                // write VCF header
+                writer.writeHeader(vcfHeader);
 
-            // TODO: get study id/name
-            VariantContextToAvroVariantConverter variantContextToAvroVariantConverter =
-                    new VariantContextToAvroVariantConverter(0, Collections.emptyList(), Collections.emptyList());
-            VariantDBIterator iterator = variantStorageEngine.iterator(query, options);
-            while (iterator.hasNext()) {
-                Variant variant = iterator.next();
-                VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
-                System.out.println(variantContext.toString());
-
-                writer.add(variantContext);
+                // TODO: get study id/name
+                VariantContextToAvroVariantConverter variantContextToAvroVariantConverter =
+                        new VariantContextToAvroVariantConverter(0, Collections.emptyList(), Collections.emptyList());
+                VariantDBIterator iterator = variantStorageEngine.iterator(query, options);
+                while (iterator.hasNext()) {
+                    Variant variant = iterator.next();
+                    VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
+                    System.out.println(variantContext.toString());
+                    writer.add(variantContext);
+                }
             }
-
-            // close
-            writer.close();
-            outputStream.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -616,6 +611,7 @@ public class VariantCommandExecutor extends CommandExecutor {
     /**
      * search command
      */
+
     private void search() throws Exception {
         StorageVariantCommandOptions.VariantSearchCommandOptions searchOptions = variantCommandOptions.searchVariantsCommandOptions;
 
@@ -676,17 +672,17 @@ public class VariantCommandExecutor extends CommandExecutor {
                     queryOptions.put(QueryOptions.FACET_RANGE, searchOptions.facetRange);
                     FacetedQueryResult facetedQueryResult = variantSearchManager.facetedQuery(dbName, query, queryOptions);
                     if (facetedQueryResult.getResult().getFields() != null
-                            && facetedQueryResult.getResult().getFields().size() > 0) {
+                            && CollectionUtils.isNotEmpty(facetedQueryResult.getResult().getFields())) {
                         System.out.println("Faceted fields (" + facetedQueryResult.getResult().getFields().size() + "):");
                         facetedQueryResult.getResult().getFields().forEach(f -> System.out.println(f.toString()));
                     }
                     if (facetedQueryResult.getResult().getRanges() != null
-                            && facetedQueryResult.getResult().getRanges().size() > 0) {
+                            && CollectionUtils.isNotEmpty(facetedQueryResult.getResult().getRanges())) {
                         System.out.println("Faceted ranges (" + facetedQueryResult.getResult().getRanges().size() + "):");
                         facetedQueryResult.getResult().getRanges().forEach(f -> System.out.println(f.toString()));
                     }
                     if (facetedQueryResult.getResult().getIntersections() != null
-                            && facetedQueryResult.getResult().getIntersections().size() > 0) {
+                            && CollectionUtils.isNotEmpty(facetedQueryResult.getResult().getIntersections())) {
                         System.out.println("Faceted intersections (" + facetedQueryResult.getResult().getIntersections().size() + "):");
                         facetedQueryResult.getResult().getIntersections().forEach(f -> System.out.println(f.toString()));
                     }

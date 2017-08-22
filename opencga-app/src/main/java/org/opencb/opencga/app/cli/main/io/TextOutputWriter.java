@@ -19,13 +19,12 @@ package org.opencb.opencga.app.cli.main.io;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.permissions.AbstractAclEntry;
+import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.acls.permissions.AbstractAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -84,9 +83,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
             case "Individual":
                 printIndividual(queryResponse.getResponse());
                 break;
-            case "Family":
-                printFamily(queryResponse.getResponse());
-                break;
+//            case "Family":
+//                printFamily(queryResponse.getResponse());
+//                break;
             case "Job":
                 printJob(queryResponse.getResponse());
                 break;
@@ -343,37 +342,37 @@ public class TextOutputWriter extends AbstractOutputWriter {
         ps.println(sb.toString());
     }
 
-    private void printFamily(List<QueryResult<Family>> queryResultList) {
-        StringBuilder sb = new StringBuilder();
-        for (QueryResult<Family> queryResult : queryResultList) {
-            // Write header
-            if (writerConfiguration.isHeader()) {
-                sb.append("#NAME\tID\tMOTHER\tFATHER\tPARENTAL_CONSANGUINITY\tCHILDREN\tSTATUS\tCREATION_DATE\n");
-            }
-
-            for (Family family : queryResult.getResult()) {
-                String mother = (family.getMother() != null && StringUtils.isNotEmpty(family.getMother().getName()))
-                        ? family.getMother().getName() + "(" + family.getMother().getId() + ")"
-                        : "NA";
-                String father = (family.getFather() != null && StringUtils.isNotEmpty(family.getFather().getName()))
-                        ? family.getFather().getName() + "(" + family.getFather().getId() + ")"
-                        : "NA";
-                String children = family.getChildren() != null
-                        ? StringUtils.join(
-                                family.getChildren().stream()
-                                    .filter(Objects::nonNull)
-                                    .filter(individual -> StringUtils.isNotEmpty(individual.getName()))
-                                    .map(individual -> individual.getName() + "(" + individual.getId() + ")")
-                                    .collect(Collectors.toList()), ", ")
-                        : "NA";
-                sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n",
-                        family.getName(), family.getId(), mother, father, family.isParentalConsanguinity() ? "true" : "false", children,
-                        family.getStatus().getName(), family.getCreationDate()));
-            }
-        }
-
-        ps.println(sb.toString());
-    }
+//    private void printFamily(List<QueryResult<Family>> queryResultList) {
+//        StringBuilder sb = new StringBuilder();
+//        for (QueryResult<Family> queryResult : queryResultList) {
+//            // Write header
+//            if (writerConfiguration.isHeader()) {
+//                sb.append("#NAME\tID\tMOTHER\tFATHER\tMEMBER\tSTATUS\tCREATION_DATE\n");
+//            }
+//
+//            for (Family family : queryResult.getResult()) {
+//                String mother = (family.getMother() != null && StringUtils.isNotEmpty(family.getMother().getName()))
+//                        ? family.getMother().getName() + "(" + family.getMother().getId() + ")"
+//                        : "NA";
+//                String father = (family.getFather() != null && StringUtils.isNotEmpty(family.getFather().getName()))
+//                        ? family.getFather().getName() + "(" + family.getFather().getId() + ")"
+//                        : "NA";
+//                String children = family.getChildren() != null
+//                        ? StringUtils.join(
+//                                family.getChildren().stream()
+//                                    .filter(Objects::nonNull)
+//                                    .filter(individual -> StringUtils.isNotEmpty(individual.getName()))
+//                                    .map(individual -> individual.getName() + "(" + individual.getId() + ")")
+//                                    .collect(Collectors.toList()), ", ")
+//                        : "NA";
+//                sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
+//                        family.getName(), family.getId(), mother, father, children,
+//                        family.getStatus().getName(), family.getCreationDate()));
+//            }
+//        }
+//
+//        ps.println(sb.toString());
+//    }
 
     private void printJob(List<QueryResult<Job>> queryResultList) {
         StringBuilder sb = new StringBuilder();

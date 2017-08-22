@@ -25,10 +25,11 @@ import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.slf4j.LoggerFactory;
 
 import java.security.NoSuchAlgorithmException;
 
@@ -42,8 +43,11 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
 
     public CatalogAuthenticationManager(DBAdaptorFactory dbAdaptorFactory, Configuration configuration) {
         super(configuration);
+
         this.userDBAdaptor = dbAdaptorFactory.getCatalogUserDBAdaptor();
         this.metaDBAdaptor = dbAdaptorFactory.getCatalogMetaDBAdaptor();
+
+        this.logger = LoggerFactory.getLogger(CatalogAuthenticationManager.class);
     }
 
     public static String cypherPassword(String password) throws CatalogException {
@@ -62,7 +66,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
         if (userId.equals("admin")) {
             storedPassword = metaDBAdaptor.getAdminPassword();
             try {
-                validSessionId = jwtSessionManager.getUserId(password).equals(userId);
+                validSessionId = jwtManager.getUser(password).equals(userId);
             } catch (CatalogAuthenticationException e) {
                 validSessionId = false;
             }
@@ -106,7 +110,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
         QueryResult<User> user =
                 userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.EMAIL.key()), "");
 
-        if (user == null && user.getNumResults() != 1) {
+        if (user == null || user.getNumResults() != 1) {
             throw new CatalogException("Could not retrieve the user e-mail.");
         }
 

@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import java.util.Map;

@@ -41,11 +41,11 @@ import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.Project;
-import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.models.User;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.Project;
+import org.opencb.opencga.core.models.Status;
+import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -158,10 +158,14 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public long getId(String userId, String projectAlias) throws CatalogDBException {
+    public long getId(final String userId, final String projectAliasString) throws CatalogDBException {
+
+        String projectAlias = projectAliasString;
+
         if (projectAlias.contains("@")) {
             projectAlias = projectAlias.split("@", 2)[1];
         }
+
         QueryResult<Document> queryResult = userCollection.find(
                 new BsonDocument("projects.alias", new BsonString(projectAlias))
                         .append("id", new BsonString(userId)),

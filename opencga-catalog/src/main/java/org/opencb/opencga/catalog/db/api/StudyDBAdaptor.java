@@ -24,11 +24,11 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.Group;
-import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.models.Variable;
-import org.opencb.opencga.catalog.models.VariableSet;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.Group;
+import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.Variable;
+import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 
 import javax.annotation.Nullable;
 import java.util.List;

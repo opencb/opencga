@@ -36,7 +36,7 @@ import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Metadata;
+import org.opencb.opencga.core.models.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -166,7 +166,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         // TODO: Catch DuplicatedKeyException while inserting META object
 
         MongoDataStore mongoDataStore = mongoManager.get(database, this.configuration);
-        if (mongoDataStore.getCollectionNames().size() > 0) {
+        if (!mongoDataStore.getCollectionNames().isEmpty()) {
             throw new CatalogException("Database " + database + " already exists with the following collections: "
                 + StringUtils.join(mongoDataStore.getCollectionNames()) + ".\nPlease, remove the database or choose a different one.");
         }

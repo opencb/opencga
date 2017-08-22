@@ -37,10 +37,11 @@ import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.Status;
+import org.opencb.opencga.core.models.acls.permissions.JobAclEntry;
+import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -92,7 +93,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     @Override
     public QueryResult<Long> extractFilesFromJobs(Query query, List<Long> fileIds) throws CatalogDBException {
-        if (fileIds == null || fileIds.size() == 0) {
+        if (fileIds == null || fileIds.isEmpty()) {
             throw new CatalogDBException("The array of fileIds is empty");
         }
 
@@ -187,14 +188,14 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
 
     @Override
-    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
         if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
             query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
-        if (studyPermission == null) {
-            studyPermission = StudyAclEntry.StudyPermissions.VIEW_JOBS;
-        }
+
+        StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
+                ? StudyAclEntry.StudyPermissions.VIEW_JOBS : studyPermissions);
 
         // Get the study document
         Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), query.getLong(QueryParams.STUDY_ID.key()));
@@ -297,12 +298,13 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                 QueryParams.OUT_DIR_ID.key(), };
         filterLongParams(parameters, jobParameters, acceptedLongParams);
 
-        String[] acceptedIntegerListParams = {QueryParams.OUTPUT.key()};
-        filterIntegerListParams(parameters, jobParameters, acceptedIntegerListParams);
+        if (parameters.containsKey(QueryParams.INPUT.key())) {
+            List<File> fileList = parameters.getAsList(QueryParams.INPUT.key(), File.class);
+            jobParameters.put(QueryParams.INPUT.key(), jobConverter.convertFilesToDocument(fileList));
+        }
         if (parameters.containsKey(QueryParams.OUTPUT.key())) {
-            for (Integer fileId : parameters.getAsIntegerList(QueryParams.OUTPUT.key())) {
-                dbAdaptorFactory.getCatalogFileDBAdaptor().checkId(fileId);
-            }
+            List<File> fileList = parameters.getAsList(QueryParams.OUTPUT.key(), File.class);
+            jobParameters.put(QueryParams.OUTPUT.key(), jobConverter.convertFilesToDocument(fileList));
         }
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key()};

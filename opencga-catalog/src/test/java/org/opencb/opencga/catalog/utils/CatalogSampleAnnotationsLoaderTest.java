@@ -28,9 +28,9 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.core.models.*;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -66,17 +66,16 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
 
         userId = "user1";
         catalogManager.getUserManager().create(userId, userId, "asdasd@asd.asd", userId, "", -1L, Account.FULL, QueryOptions.empty());
-        QueryResult<Session> login = catalogManager.getUserManager().login(userId, userId, "localhost");
-        sessionId = login.first().getId();
+        sessionId = catalogManager.getUserManager().login(userId, userId);
         Project project = catalogManager.getProjectManager().create("default", "def", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).getResult().get(0);
-        Study study = catalogManager.getStudyManager().create(project.getId(), "default", "def", Study.Type.FAMILY, null, "", null, null,
-                null, null, null, null, null, null, sessionId).getResult().get(0);
+        Study study = catalogManager.getStudyManager().create(String.valueOf(project.getId()), "default", "def", Study.Type.FAMILY, null,
+                "", null, null, null, null, null, null, null, null, sessionId).getResult().get(0);
         studyId = study.getId();
         pedFile = catalogManager.getFileManager().create(Long.toString(studyId), File.Type.FILE, File.Format.PED, File.Bioformat
                 .OTHER_PED, "data/" + pedFileName, null, "", null, 0, -1, null, (long) -1, null, null, true, null, null, sessionId)
                 .getResult().get(0);
-        new CatalogFileUtils(catalogManager).upload(pedFileURL.toURI(), pedFile, null, sessionId, false, false, false, true, 10000000);
+        new FileUtils(catalogManager).upload(pedFileURL.toURI(), pedFile, null, sessionId, false, false, false, true, 10000000);
         pedFile = catalogManager.getFileManager().get(pedFile.getId(), null, sessionId).getResult().get(0);
     }
 

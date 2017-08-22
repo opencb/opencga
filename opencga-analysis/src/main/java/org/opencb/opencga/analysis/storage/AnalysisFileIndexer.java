@@ -30,11 +30,11 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.CatalogStudyConfigurationFactory;
@@ -129,13 +129,13 @@ public class AnalysisFileIndexer {
 
 
         /** Query catalog for user data. **/
-        String userId = catalogManager.getUserManager().getId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         File inputFile = catalogManager.getFileManager().get(fileId, null, sessionId).first();
         File originalFile;
         File outDir = catalogManager.getFileManager().get(outDirId, null, sessionId).first();
         long studyIdByOutDirId = catalogManager.getFileManager().getStudyId(outDirId);
         long studyIdByInputFileId = catalogManager.getFileManager().getStudyId(inputFile.getId());
-        Study study = catalogManager.getStudyManager().get(studyIdByOutDirId, null, sessionId).getResult().get(0);
+        Study study = catalogManager.getStudyManager().get(String.valueOf((Long) studyIdByOutDirId), null, sessionId).getResult().get(0);
 
         if (inputFile.getType() != File.Type.FILE) {
             throw new CatalogException("Expected file type = " + File.Type.FILE + " instead of " + inputFile.getType());
@@ -313,7 +313,8 @@ public class AnalysisFileIndexer {
                 updateParams.append(CohortDBAdaptor.QueryParams.SAMPLES.key(), new ArrayList<>(samples));
             }
             if (!updateParams.isEmpty()) {
-                catalogManager.getCohortManager().update(defaultCohort.getId(), updateParams, new QueryOptions(), sessionId);
+                catalogManager.getCohortManager().update(null, String.valueOf(defaultCohort.getId()), updateParams, new QueryOptions(),
+                        sessionId);
             }
         }
 

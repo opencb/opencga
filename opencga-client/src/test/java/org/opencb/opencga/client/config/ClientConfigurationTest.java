@@ -17,7 +17,7 @@
 package org.opencb.opencga.client.config;
 
 import org.junit.Test;
-import org.opencb.opencga.catalog.models.Project;
+import org.opencb.opencga.core.models.Project;
 
 import java.io.FileOutputStream;
 import java.io.IOException;

@@ -19,7 +19,7 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang.NotImplementedException;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.models.DiseasePanel;
+import org.opencb.opencga.core.models.DiseasePanel;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;

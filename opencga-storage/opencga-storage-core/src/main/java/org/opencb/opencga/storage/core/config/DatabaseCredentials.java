@@ -59,7 +59,6 @@ public class DatabaseCredentials {
         final StringBuilder sb = new StringBuilder("DatabaseCredentials{");
         sb.append("hosts=").append(hosts);
         sb.append(", user='").append(user).append('\'');
-        sb.append(", password='").append(password).append('\'');
         sb.append(", options=").append(options);
         sb.append('}');
         return sb.toString();

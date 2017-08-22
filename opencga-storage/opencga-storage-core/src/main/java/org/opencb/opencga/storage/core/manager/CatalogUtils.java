@@ -166,7 +166,7 @@ public class CatalogUtils {
             List<String> values = splitValue(value, op);
             for (String id : values) {
                 if (!VariantQueryUtils.isNegated(id) && !id.isEmpty()) {
-                    String userId = catalogManager.getUserManager().getId(sessionId);
+                    String userId = catalogManager.getUserManager().getUserId(sessionId);
                     studies.add(catalogManager.getStudyManager().getId(userId, id));
                 }
             }
@@ -186,7 +186,7 @@ public class CatalogUtils {
         if (id == null) {
             id = getAnyStudyId(query, VariantQueryParam.RETURNED_STUDIES, sessionId);
             if (id == null) {
-                String userId = catalogManager.getUserManager().getId(sessionId);
+                String userId = catalogManager.getUserManager().getUserId(sessionId);
                 id = catalogManager.getStudyManager().getId(userId, null);
                 if (id < 0) {
                     throw new CatalogException("Missing StudyId. Unable to get any variant!");

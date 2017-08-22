@@ -20,7 +20,7 @@ import org.apache.commons.collections.map.LinkedMap;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.core.models.User;
 
 import java.util.List;
 import java.util.Map;
@@ -50,7 +50,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
     }
 
     default void checkIds(List<String> userIds) throws CatalogDBException {
-        if (userIds == null || userIds.size() == 0) {
+        if (userIds == null || userIds.isEmpty()) {
             throw CatalogDBException.newInstance("No users to be checked.");
         }
 

@@ -39,7 +39,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.acls.AclParams;
+import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.VersionException;
@@ -217,7 +217,7 @@ public class OpenCGAWSServer {
             logger.info("|  * Server logfile: " + configDirPath.getParent().resolve("logs").resolve("server.log"));
             initLogger(configDirPath.getParent().resolve("logs"));
         } else {
-            logger.error("No valid configuration directory provided: '{}'", configDirPath.toString());
+            logger.error("No valid configuration directory provided: '{}'");
         }
 
         logger.info("========================================================================\n");

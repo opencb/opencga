@@ -24,15 +24,14 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Account;
-import org.opencb.opencga.catalog.models.Project;
-import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.models.acls.AclParams;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.Account;
+import org.opencb.opencga.core.models.Project;
+import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 
 import java.io.IOException;
 
@@ -73,9 +72,9 @@ public class ProjectManagerTest extends GenericTest {
         catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null);
         catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.FULL, null);
 
-        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD, "127.0.0.1").first().getId();
-        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD, "127.0.0.1").first().getId();
-        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD, "127.0.0.1").first().getId();
+        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
+        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD);
+        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD);
 
         project1 = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
@@ -85,17 +84,18 @@ public class ProjectManagerTest extends GenericTest {
         project3 = catalogManager.getProjectManager().create("project 1", "p1", "", "", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser3).first().getId();
 
-        studyId = catalogManager.getStudyManager().create(project1, "Phase 1", "phase1", Study.Type.TRIO, null, "Done", null, null, null,
-                null, null, null, null, null, sessionIdUser).first().getId();
-        studyId2 = catalogManager.getStudyManager().create(project1, "Phase 3", "phase3", Study.Type.CASE_CONTROL, null, "d", null, null,
-                null, null, null, null, null, null, sessionIdUser).first().getId();
-        studyId3 = catalogManager.getStudyManager().create(project2, "Study 1", "s1", Study.Type.CONTROL_SET, null, "", null, null, null,
-                null, null, null, null, null, sessionIdUser2).first().getId();
+        studyId = catalogManager.getStudyManager().create(String.valueOf(project1), "Phase 1", "phase1", Study.Type.TRIO, null, "Done",
+                null, null, null, null, null, null, null, null, sessionIdUser).first().getId();
+        studyId2 = catalogManager.getStudyManager().create(String.valueOf(project1), "Phase 3", "phase3", Study.Type.CASE_CONTROL, null,
+                "d", null, null, null, null, null, null, null, null, sessionIdUser).first().getId();
+        studyId3 = catalogManager.getStudyManager().create(String.valueOf(project2), "Study 1", "s1", Study.Type.CONTROL_SET, null, "",
+                null, null, null, null, null, null, null, null, sessionIdUser2).first().getId();
     }
 
     @Test
     public void getOwnProjectNoStudies() throws CatalogException {
-        QueryResult<Project> projectQueryResult = catalogManager.getProjectManager().get(project3, null, sessionIdUser3);
+        QueryResult<Project> projectQueryResult = catalogManager.getProjectManager().get(String.valueOf((Long) project3), null,
+                sessionIdUser3);
         assertEquals(1, projectQueryResult.getNumResults());
     }
 
@@ -109,7 +109,8 @@ public class ProjectManagerTest extends GenericTest {
         }
 
         // Create a new study in project2 with some dummy permissions for user
-        long s2 = catalogManager.getStudyManager().create(project2, "Study 2", "s2", Study.Type.CONTROL_SET, null, "", null, null, null, null, null, null, null, null, sessionIdUser2).first().getId();
+        long s2 = catalogManager.getStudyManager().create(String.valueOf(project2), "Study 2", "s2", Study.Type.CONTROL_SET, null, "",
+                null, null, null, null, null, null, null, null, sessionIdUser2).first().getId();
         Study.StudyAclParams aclParams2 = new Study.StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_STUDY.toString(), AclParams.Action.ADD, null);
         catalogManager.getStudyManager().updateAcl(Long.toString(s2), "user", aclParams2, sessionIdUser2).get(0);
 
@@ -129,7 +130,8 @@ public class ProjectManagerTest extends GenericTest {
         assertEquals("user2@pmp", queryResult.first().getAlias());
 
         // Add permissions to user in a study of user3
-        long s3 = catalogManager.getStudyManager().create(project3, "StudyProject3", "s3", Study.Type.CONTROL_SET, null, "", null, null, null, null, null, null, null, null, sessionIdUser3).first().getId();
+        long s3 = catalogManager.getStudyManager().create(String.valueOf(project3), "StudyProject3", "s3", Study.Type.CONTROL_SET, null,
+                "", null, null, null, null, null, null, null, null, sessionIdUser3).first().getId();
         Study.StudyAclParams aclParams = new Study.StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_STUDY.toString(), AclParams.Action.ADD, null);
         catalogManager.getStudyManager().updateAcl(Long.toString(s3), "user", aclParams, sessionIdUser3).get(0);
 
@@ -158,7 +160,8 @@ public class ProjectManagerTest extends GenericTest {
 
         ObjectMap objectMap = new ObjectMap();
         objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), 55);
-        QueryResult<Project> update = catalogManager.getProjectManager().update(myProject, objectMap, null, sessionIdUser);
+        QueryResult<Project> update = catalogManager.getProjectManager().update(String.valueOf((Long) myProject), objectMap, null,
+                sessionIdUser);
 
         assertEquals(1, update.getNumResults());
         assertEquals("Homo sapiens", update.first().getOrganism().getScientificName());
@@ -169,7 +172,7 @@ public class ProjectManagerTest extends GenericTest {
         objectMap = new ObjectMap();
         objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), "common");
 
-        update = catalogManager.getProjectManager().update(myProject, objectMap, null, sessionIdUser);
+        update = catalogManager.getProjectManager().update(String.valueOf((Long) myProject), objectMap, null, sessionIdUser);
 
         assertEquals(1, update.getNumResults());
         assertEquals("Homo sapiens", update.first().getOrganism().getScientificName());
@@ -182,6 +185,6 @@ public class ProjectManagerTest extends GenericTest {
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Cannot update organism");
-        catalogManager.getProjectManager().update(myProject, objectMap, null, sessionIdUser);
+        catalogManager.getProjectManager().update(String.valueOf((Long) myProject), objectMap, null, sessionIdUser);
     }
 }

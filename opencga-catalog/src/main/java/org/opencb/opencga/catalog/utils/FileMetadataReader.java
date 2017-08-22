@@ -26,13 +26,12 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
-import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.core.models.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,12 +57,12 @@ public class FileMetadataReader {
     private final CatalogManager catalogManager;
     protected static Logger logger = LoggerFactory.getLogger(FileMetadataReader.class);
     public static final String CREATE_MISSING_SAMPLES = "createMissingSamples";
-    private final CatalogFileUtils catalogFileUtils;
+    private final FileUtils catalogFileUtils;
 
 
     public FileMetadataReader(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
-        catalogFileUtils = new CatalogFileUtils(catalogManager);
+        catalogFileUtils = new FileUtils(catalogManager);
     }
 
     /**
@@ -84,8 +83,8 @@ public class FileMetadataReader {
                                     QueryOptions options, String sessionId) throws CatalogException {
 
         File.Type type = fileUri.getPath().endsWith("/") ? File.Type.DIRECTORY : File.Type.FILE;
-        File.Format format = FormatDetector.detect(fileUri);
-        File.Bioformat bioformat = BioformatDetector.detect(fileUri);
+        File.Format format = FileUtils.detectFormat(fileUri);
+        File.Bioformat bioformat = FileUtils.detectBioformat(fileUri);
 
         if (path.endsWith("/")) {
             path += Paths.get(fileUri.getPath()).getFileName().toString();
@@ -141,10 +140,10 @@ public class FileMetadataReader {
         //Get metadata information
 
 //        start = System.currentTimeMillis();
-        File.Format format = FormatDetector.detect(fileUri);
+        File.Format format = FileUtils.detectFormat(fileUri);
 //        logger.trace("FormatDetector = " + (System.currentTimeMillis() - start) / 1000.0);
 //        start = System.currentTimeMillis();
-        File.Bioformat bioformat = BioformatDetector.detect(fileUri);
+        File.Bioformat bioformat = FileUtils.detectBioformat(fileUri);
 //        logger.trace("BioformatDetector = " + (System.currentTimeMillis() - start) / 1000.0);
 
         if (format != File.Format.UNKNOWN && !format.equals(file.getFormat())) {
@@ -166,7 +165,7 @@ public class FileMetadataReader {
             switch (bioformat) {
                 case ALIGNMENT: {
 //                    start = System.currentTimeMillis();
-                    study = catalogManager.getStudyManager().get(studyId, STUDY_QUERY_OPTIONS, sessionId).first();
+                    study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), STUDY_QUERY_OPTIONS, sessionId).first();
 //                    logger.trace("getStudy = " + (System.currentTimeMillis() - start) / 1000.0);
 
                     AlignmentHeader alignmentHeader = readAlignmentHeader(study, file, fileUri);
@@ -179,7 +178,7 @@ public class FileMetadataReader {
                 }
                 case VARIANT: {
 //                    start = System.currentTimeMillis();
-                    study = catalogManager.getStudyManager().get(studyId, STUDY_QUERY_OPTIONS, sessionId).first();
+                    study = catalogManager.getStudyManager().get(String.valueOf((Long) studyId), STUDY_QUERY_OPTIONS, sessionId).first();
 //                    logger.trace("getStudy = " + (System.currentTimeMillis() - start) / 1000.0);
 
                     VariantFileMetadata fileMetadata;
@@ -427,7 +426,7 @@ public class FileMetadataReader {
 
     public static VariantFileMetadata readVariantFileMetadata(File file, URI fileUri)
             throws IOException {
-        if (file.getFormat() == File.Format.VCF || FormatDetector.detect(fileUri) == File.Format.VCF) {
+        if (file.getFormat() == File.Format.VCF || FileUtils.detectFormat(fileUri) == File.Format.VCF) {
             VariantFileMetadata metadata = new VariantFileMetadata(String.valueOf(file.getId()), file.getName());
             return VariantFileUtils.readVariantFileMetadata(Paths.get(fileUri.getPath()), metadata);
         } else {
@@ -438,8 +437,8 @@ public class FileMetadataReader {
     public static AlignmentHeader readAlignmentHeader(Study study, File file, URI fileUri) {
         if (file.getFormat() == File.Format.SAM
                 || file.getFormat() == File.Format.BAM
-                || FormatDetector.detect(fileUri) == File.Format.SAM
-                || FormatDetector.detect(fileUri) == File.Format.BAM) {
+                || FileUtils.detectFormat(fileUri) == File.Format.SAM
+                || FileUtils.detectFormat(fileUri) == File.Format.BAM) {
             AlignmentSamDataReader reader = new AlignmentSamDataReader(Paths.get(fileUri), study.getName());
             try {
                 reader.open();
@@ -485,7 +484,7 @@ public class FileMetadataReader {
 
             File variantsFile = fileQueryResult.first();
             URI fileUri = catalogManager.getFileManager().getUri(variantsFile);
-            try (InputStream is = FileUtils.newInputStream(Paths.get(fileUri.getPath()))) {
+            try (InputStream is = org.opencb.commons.utils.FileUtils.newInputStream(Paths.get(fileUri.getPath()))) {
                 VariantFileMetadata variantSource = new ObjectMapper().readValue(is, VariantFileMetadata.class);
                 VariantGlobalStats stats = variantSource.getStats();
                 catalogManager.getFileManager().update(inputFile.getId(), new ObjectMap("stats", new ObjectMap(VARIANT_STATS, stats)),

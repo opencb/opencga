@@ -49,18 +49,16 @@ public class VariantAnnotationJsonDataWriter implements DataWriter<VariantAnnota
         /** Open output stream **/
         OutputStreamWriter writer;
         try {
-            OutputStream outputStream;
-            if (gzip) {
-                outputStream = new GZIPOutputStream(new FileOutputStream(outputPath.toFile()));
-            } else {
-                outputStream = new FileOutputStream(outputPath.toFile());
-            }
+            OutputStream outputStream = gzip
+                    ? new GZIPOutputStream(new FileOutputStream(outputPath.toFile()))
+                    : new FileOutputStream(outputPath.toFile());
             writer = new OutputStreamWriter(outputStream, Charsets.UTF_8);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
 
         /** Initialize Json serializer**/
+
 
         JsonFactory factory = new JsonFactory();
         factory.setRootValueSeparator("\n");

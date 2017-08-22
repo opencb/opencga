@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.storage.core.manager.CatalogUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -72,11 +72,11 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         }
 
         transformFilter(query, VariantQueryParam.STUDIES, value -> {
-            String userId = catalogManager.getUserManager().getId(sessionId);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
             return catalogManager.getStudyManager().getId(userId, value);
         });
         transformFilter(query, VariantQueryParam.RETURNED_STUDIES, value -> {
-            String userId = catalogManager.getUserManager().getId(sessionId);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
             return catalogManager.getStudyManager().getId(userId, value);
         });
         transformFilter(query, VariantQueryParam.COHORTS, value ->

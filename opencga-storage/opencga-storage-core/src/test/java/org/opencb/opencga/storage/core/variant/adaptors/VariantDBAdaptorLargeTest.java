@@ -43,6 +43,7 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
 /**
  * Tests that all the VariantDBAdaptor filters and methods work correctly with more than one study loaded.
@@ -246,7 +247,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetAllVariants_returnedStudiesEmpty() {
-        query.append(RETURNED_STUDIES.key(), VariantQueryUtils.NONE);
+        query.append(RETURNED_STUDIES.key(), NONE);
 
 //        thrown.expect(VariantQueryException.class); //StudyNotFound exception
         queryResult = dbAdaptor.get(query, options);
@@ -285,15 +286,57 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
     }
 
     @Test
+    public void testGetAllVariants_genotypes() {
+        List<Integer> indexedFiles = new ArrayList<>(studyConfiguration1.getIndexedFiles());
+        // Sample from
+        List<Integer> file1Samples = new ArrayList<>(studyConfiguration1.getSamplesInFiles().get(indexedFiles.get(0)));
+        List<Integer> file2Samples = new ArrayList<>(studyConfiguration1.getSamplesInFiles().get(indexedFiles.get(1)));
+        String f1_s1 = studyConfiguration1.getSampleIds().inverse().get(file1Samples.get(0));
+        String f1_s2 = studyConfiguration1.getSampleIds().inverse().get(file1Samples.get(1));
+        String f2_s1 = studyConfiguration1.getSampleIds().inverse().get(file2Samples.get(0));
+        String f2_s2 = studyConfiguration1.getSampleIds().inverse().get(file2Samples.get(1));
+        String study = studyConfiguration1.getStudyName();
+        Query query = new Query(STUDIES.key(), study)
+                .append(RETURNED_STUDIES.key(), ALL)
+                .append(UNKNOWN_GENOTYPE.key(), "./.")
+                .append(RETURNED_SAMPLES.key(), ALL);
+        QueryResult<Variant> allVariants = dbAdaptor.get(new Query(UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions());
+
+        query.put(GENOTYPE.key(), f1_s1 + IS + "1|1" + AND + f2_s1 + IS + "0|1");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(study, allOf(
+                withSampleData(f1_s1, "GT", is("1|1")),
+                withSampleData(f2_s1, "GT", is("0|1"))))));
+
+        query.put(GENOTYPE.key(), f1_s1 + IS + "1|1" + AND + f1_s2 + IS + "0|1");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(study, allOf(
+                withSampleData(f1_s1, "GT", is("1|1")),
+                withSampleData(f1_s2, "GT", is("0|1"))))));
+
+        query.put(GENOTYPE.key(), f1_s1 + IS + "1|1" + AND + f1_s2 + IS + "0/0" + OR + "0|0");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(study, allOf(
+                withSampleData(f1_s1, "GT", is("1|1")),
+                withSampleData(f1_s2, "GT", anyOf(is("0|0"), is("0/0")))))));
+
+        query.put(GENOTYPE.key(), f1_s1 + IS + "1|1" + AND + f2_s1 + IS + "0/0" + OR + "0|0");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(study, allOf(
+                withSampleData(f1_s1, "GT", is("1|1")),
+                withSampleData(f2_s1, "GT", anyOf(is("0|0"), is("0/0")))))));
+    }
+
+    @Test
     public void testGetAllVariants_negatedGenotypes() {
         Iterator<Map.Entry<String, Integer>> it = studyConfiguration1.getSampleIds().entrySet().iterator();
         String s1 = it.next().getKey();
         String s2 = it.next().getKey();
         String study = studyConfiguration1.getStudyName();
         Query query = new Query(STUDIES.key(), study)
-                .append(RETURNED_STUDIES.key(), VariantQueryUtils.ALL)
+                .append(RETURNED_STUDIES.key(), ALL)
                 .append(UNKNOWN_GENOTYPE.key(), "./.")
-                .append(RETURNED_SAMPLES.key(), VariantQueryUtils.ALL);
+                .append(RETURNED_SAMPLES.key(), ALL);
         QueryResult<Variant> allVariants = dbAdaptor.get(new Query(UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions());
 
         //Get all variants with not 1|1 for s1
@@ -390,7 +433,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
     public void testGetAllVariants_filterStudies2_AND_3() {
         String studyIds = studyConfiguration2.getStudyName() + ';' + studyConfiguration3.getStudyName();
         Query query = new Query(STUDIES.key(), studyIds)
-                .append(RETURNED_STUDIES.key(), VariantQueryUtils.ALL);
+                .append(RETURNED_STUDIES.key(), ALL);
         QueryResult<Variant> queryResult = dbAdaptor.get(query, options);
 
         assertThat(queryResult, everyResult(allVariants,
@@ -398,9 +441,9 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
 
 
         query = new Query(STUDIES.key(), studyIds).append(FILES.key(), Arrays.asList(file3, file4, file5))
-                .append(RETURNED_STUDIES.key(), VariantQueryUtils.ALL)
-                .append(RETURNED_FILES.key(), VariantQueryUtils.ALL)
-                .append(RETURNED_SAMPLES.key(), VariantQueryUtils.ALL);
+                .append(RETURNED_STUDIES.key(), ALL)
+                .append(RETURNED_FILES.key(), ALL)
+                .append(RETURNED_SAMPLES.key(), ALL);
         queryResult = dbAdaptor.get(query, options);
 
         assertThat(queryResult, everyResult(allVariants,
@@ -412,7 +455,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
     public void testGetAllVariants_filterStudies2_not_3() {
         String studyIds = studyConfiguration2.getStudyName() + ";!" + studyConfiguration3.getStudyName();
         query = new Query(STUDIES.key(), studyIds)
-                .append(RETURNED_STUDIES.key(), VariantQueryUtils.ALL);
+                .append(RETURNED_STUDIES.key(), ALL);
         queryResult = dbAdaptor.get(query, options);
 
         assertThat(queryResult, everyResult(allVariants,
@@ -420,9 +463,9 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
 
 
         query = new Query(STUDIES.key(), studyIds).append(FILES.key(), Arrays.asList(file3, file4))
-                .append(RETURNED_STUDIES.key(), VariantQueryUtils.ALL)
-                .append(RETURNED_FILES.key(), VariantQueryUtils.ALL)
-                .append(RETURNED_SAMPLES.key(), VariantQueryUtils.ALL);
+                .append(RETURNED_STUDIES.key(), ALL)
+                .append(RETURNED_FILES.key(), ALL)
+                .append(RETURNED_SAMPLES.key(), ALL);
         queryResult = dbAdaptor.get(query, options);
 
         assertThat(queryResult, everyResult(allVariants,
@@ -434,8 +477,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         long count = dbAdaptor.count(new Query(STUDIES.key(), studyConfiguration1.getStudyName())).first();
 
         Query query = new Query().append(FILES.key(), Arrays.asList(file1, file2))
-                .append(RETURNED_FILES.key(), VariantQueryUtils.ALL)
-                .append(RETURNED_SAMPLES.key(), VariantQueryUtils.ALL);
+                .append(RETURNED_FILES.key(), ALL)
+                .append(RETURNED_SAMPLES.key(), ALL);
         QueryResult<Variant> queryResult = dbAdaptor.get(query, options);
 
         assertThat(queryResult, everyResult(allVariants,
@@ -443,9 +486,9 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         assertEquals(count, queryResult.getNumResults());
 
         query = new Query().append(FILES.key(), Arrays.asList(file1, file2)).append(STUDIES.key(), studyConfiguration1.getStudyName())
-                .append(RETURNED_STUDIES.key(), VariantQueryUtils.ALL)
-                .append(RETURNED_FILES.key(), VariantQueryUtils.ALL)
-                .append(RETURNED_SAMPLES.key(), VariantQueryUtils.ALL);
+                .append(RETURNED_STUDIES.key(), ALL)
+                .append(RETURNED_FILES.key(), ALL)
+                .append(RETURNED_SAMPLES.key(), ALL);
         queryResult = dbAdaptor.get(query, options);
 
         assertThat(queryResult, everyResult(allVariants,
@@ -453,8 +496,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         assertEquals(count, queryResult.getNumResults());
 
         query = new Query().append(FILES.key(), Arrays.asList(file1, file2)).append(STUDIES.key(), studyConfiguration1.getStudyName())
-                .append(RETURNED_STUDIES.key(), VariantQueryUtils.ALL)
-                .append(RETURNED_FILES.key(), VariantQueryUtils.ALL);
+                .append(RETURNED_STUDIES.key(), ALL)
+                .append(RETURNED_FILES.key(), ALL);
         queryResult = dbAdaptor.get(query, options);
 
         List<Integer> expectedSamplesIds = new ArrayList<>(studyConfiguration1.getSamplesInFiles().get(file1));
@@ -519,9 +562,9 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
 
         // FILTER+FILE1,FILE2
         query = new Query(FILES.key(), file1 + "," + file2).append(FILTER.key(), "PASS")
-                .append(RETURNED_STUDIES.key(), VariantQueryUtils.ALL)
-                .append(RETURNED_FILES.key(), VariantQueryUtils.ALL)
-                .append(RETURNED_SAMPLES.key(), VariantQueryUtils.ALL);
+                .append(RETURNED_STUDIES.key(), ALL)
+                .append(RETURNED_FILES.key(), ALL)
+                .append(RETURNED_SAMPLES.key(), ALL);
         queryResult = dbAdaptor.get(query, null);
         assertThat(queryResult, everyResult(allVariants,
                 withStudy(studyConfiguration1.getStudyName(), withFileId(anyOf(hasItem(file1.toString()), hasItem(file2.toString()))))));
@@ -531,9 +574,9 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
 
         // FILTER+FILE1;!FILE2
         query = new Query(FILES.key(), file1 + ";!" + file2).append(FILTER.key(), "PASS")
-                .append(RETURNED_STUDIES.key(), VariantQueryUtils.ALL)
-                .append(RETURNED_FILES.key(), VariantQueryUtils.ALL)
-                .append(RETURNED_SAMPLES.key(), VariantQueryUtils.ALL);
+                .append(RETURNED_STUDIES.key(), ALL)
+                .append(RETURNED_FILES.key(), ALL)
+                .append(RETURNED_SAMPLES.key(), ALL);
         queryResult = dbAdaptor.get(query, null);
         assertThat(queryResult, everyResult(allVariants,
                 withStudy(studyConfiguration1.getStudyName(), withFileId(allOf(hasItem(file1.toString()), not(hasItem(file2.toString())))))));
@@ -543,9 +586,9 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
 
         // FILTER+STUDY
         query = new Query(STUDIES.key(), studyConfiguration1.getStudyId()).append(FILTER.key(), "PASS")
-                .append(RETURNED_STUDIES.key(), VariantQueryUtils.ALL)
-                .append(RETURNED_FILES.key(), VariantQueryUtils.ALL)
-                .append(RETURNED_SAMPLES.key(), VariantQueryUtils.ALL);
+                .append(RETURNED_STUDIES.key(), ALL)
+                .append(RETURNED_FILES.key(), ALL)
+                .append(RETURNED_SAMPLES.key(), ALL);
         queryResult = dbAdaptor.get(query, null);
         assertThat(queryResult, everyResult(allVariants, withStudy(studyConfiguration1.getStudyName())));
 
@@ -554,10 +597,10 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
 
         // FILTER+FILE+STUDY
         query = new Query(FILES.key(), file1 + "," + file2)
-                .append(RETURNED_FILES.key(), VariantQueryUtils.ALL)
+                .append(RETURNED_FILES.key(), ALL)
                 .append(STUDIES.key(), studyConfiguration1.getStudyId())
-                .append(RETURNED_STUDIES.key(), VariantQueryUtils.ALL)
-                .append(RETURNED_SAMPLES.key(), VariantQueryUtils.ALL)
+                .append(RETURNED_STUDIES.key(), ALL)
+                .append(RETURNED_SAMPLES.key(), ALL)
                 .append(FILTER.key(), "PASS");
         queryResult = dbAdaptor.get(query, null);
         assertThat(queryResult, everyResult(allVariants,

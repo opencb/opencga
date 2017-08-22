@@ -60,58 +60,57 @@ public class IOUtils {
     }
 
     public static List<String> head(Path path, int numLines) throws IOException {
-        BufferedReader br = Files.newBufferedReader(path, Charset.defaultCharset());
         List<String> lines = new ArrayList<String>(numLines);
-        String line;
-        int cont = 0;
-        while ((line = br.readLine()) != null && cont++ < numLines) {
-            lines.add(line);
+
+        try (BufferedReader br = Files.newBufferedReader(path, Charset.defaultCharset())) {
+            String line;
+            int cont = 0;
+            while ((line = br.readLine()) != null && cont++ < numLines) {
+                lines.add(line);
+            }
         }
-        br.close();
         return lines;
     }
 
     public static InputStream headOffset(Path path, int offsetLine, int numLines) throws IOException {
-        BufferedReader br = Files.newBufferedReader(path, Charset.defaultCharset());
         StringBuilder sb = new StringBuilder();
-
-        int cont = 0;
-        String line;
-        while ((line = br.readLine()) != null) {
-            if (cont >= offsetLine) {
-                if (cont < numLines) {
-                    sb.append(line + "\n");
-                } else {
-                    break;
+        try (BufferedReader br = Files.newBufferedReader(path, Charset.defaultCharset())) {
+            int cont = 0;
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (cont >= offsetLine) {
+                    if (cont < numLines) {
+                        sb.append(line + "\n");
+                    } else {
+                        break;
+                    }
                 }
+                cont++;
             }
-            cont++;
         }
-        br.close();
-
         InputStream inputStream = new ByteArrayInputStream(sb.toString().getBytes());
         return inputStream;
     }
 
     public static InputStream grepFile(Path path, String pattern, boolean ignoreCase, boolean multi) throws IOException {
-        BufferedReader br = Files.newBufferedReader(path, Charset.defaultCharset());
         StringBuilder sb = new StringBuilder();
-        Pattern pat;
-        if (ignoreCase) {
-            pat = Pattern.compile(pattern, Pattern.CASE_INSENSITIVE);
-        } else {
-            pat = Pattern.compile(pattern);
-        }
-        String line;
-        while ((line = br.readLine()) != null) {
-            if (pat.matcher(line).matches()) {
-                sb.append(line + "\n");
-                if (!multi) {
-                    break;
+        try (BufferedReader br = Files.newBufferedReader(path, Charset.defaultCharset())) {
+            Pattern pat;
+            if (ignoreCase) {
+                pat = Pattern.compile(pattern, Pattern.CASE_INSENSITIVE);
+            } else {
+                pat = Pattern.compile(pattern);
+            }
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (pat.matcher(line).matches()) {
+                    sb.append(line + "\n");
+                    if (!multi) {
+                        break;
+                    }
                 }
             }
         }
-        br.close();
         InputStream inputStream = new ByteArrayInputStream(sb.toString().getBytes());
         return inputStream;
     }
@@ -168,22 +167,22 @@ public class IOUtils {
                 pat = Pattern.compile(pattern);
             }
         }
-        BufferedReader br = Files.newBufferedReader(path, Charset.defaultCharset());
         List<String> list = new ArrayList<String>();
-        String line = "";
-        String[] fields;
-        while ((line = br.readLine()) != null) {
-            line = line.trim();
-            if (!line.equals("") && pat != null && pat.matcher(line).matches()) {
-                fields = line.split(fieldSeparatorRegEx, -1);
-                if (numColumn >= fields.length) {
-                    list.add(null);
-                } else {
-                    list.add(fields[numColumn]);
+        try (BufferedReader br = Files.newBufferedReader(path, Charset.defaultCharset())) {
+            String line = "";
+            String[] fields;
+            while ((line = br.readLine()) != null) {
+                line = line.trim();
+                if (!line.equals("") && pat != null && pat.matcher(line).matches()) {
+                    fields = line.split(fieldSeparatorRegEx, -1);
+                    if (numColumn >= fields.length) {
+                        list.add(null);
+                    } else {
+                        list.add(fields[numColumn]);
+                    }
                 }
             }
         }
-        br.close();
         return list;
     }
 
@@ -197,35 +196,32 @@ public class IOUtils {
 //        FileUtils.checkDirectory(dest.getParentFile(), true); //
         if (Files.exists(destParent)) {
             // /mnt/commons/test/job.zip ---> ¿/mnt/commons/test exists?
-            BufferedInputStream origin = null;
             int BUFFER_SIZE = 1024;
             byte[] data = new byte[BUFFER_SIZE];
 
             OutputStream destination = new FileOutputStream(dest);
-            ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(destination));
 
-            for (int i = 0; i < files.length; i++) {
-                if (files[i].isFile() && files[i].exists()) {
-                    String filename = files[i].getAbsolutePath();
-                    files[i].getName();
-                    System.out.println("Adding: " + filename);
-                    FileInputStream fi = new FileInputStream(filename);
-                    origin = new BufferedInputStream(fi, BUFFER_SIZE);
-                    // Setup the entry in the zip file
-                    ZipEntry zipEntry = new ZipEntry(filename.substring(filename.lastIndexOf("/")));
-                    out.putNextEntry(zipEntry);
-                    // Read data from the source file and write it out to the zip
-                    // file
-                    int count;
-                    while ((count = origin.read(data, 0, BUFFER_SIZE)) != -1) {
-                        out.write(data, 0, count);
+            try (ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(destination))) {
+                for (int i = 0; i < files.length; i++) {
+                    if (files[i].isFile() && files[i].exists()) {
+                        String filename = files[i].getAbsolutePath();
+                        files[i].getName();
+                        System.out.println("Adding: " + filename);
+                        try (FileInputStream fi = new FileInputStream(filename);
+                             BufferedInputStream origin = new BufferedInputStream(fi, BUFFER_SIZE)) {
+                            // Setup the entry in the zip file
+                            ZipEntry zipEntry = new ZipEntry(filename.substring(filename.lastIndexOf("/")));
+                            out.putNextEntry(zipEntry);
+                            // Read data from the source file and write it out to the zip
+                            // file
+                            int count;
+                            while ((count = origin.read(data, 0, BUFFER_SIZE)) != -1) {
+                                out.write(data, 0, count);
+                            }
+                        }
                     }
-                    // Close the source file
-                    origin.close();
                 }
             }
-            // Close the zip file
-            out.close();
         }
     }
 
@@ -261,17 +257,17 @@ public class IOUtils {
                     }
                     // if we reached here, the File object f was not a directory
                     // create a FileInputStream on top of f
-                    FileInputStream fis = new FileInputStream(f);
-                    // create a new zip entry
-                    // ZipEntry anEntry = new ZipEntry(f.getPath());
-                    ZipEntry anEntry = new ZipEntry(zipPath + "/" + f.getName());
-                    // place the zip entry in the ZipOutputStream object
-                    zos.putNextEntry(anEntry);
-                    // now write the content of the file to the ZipOutputStream
-                    while ((bytesIn = fis.read(readBuffer)) != -1) {
-                        zos.write(readBuffer, 0, bytesIn);
+                    try (FileInputStream fis = new FileInputStream(f)) {
+                        // create a new zip entry
+                        // ZipEntry anEntry = new ZipEntry(f.getPath());
+                        ZipEntry anEntry = new ZipEntry(zipPath + "/" + f.getName());
+                        // place the zip entry in the ZipOutputStream object
+                        zos.putNextEntry(anEntry);
+                        // now write the content of the file to the ZipOutputStream
+                        while ((bytesIn = fis.read(readBuffer)) != -1) {
+                            zos.write(readBuffer, 0, bytesIn);
+                        }
                     }
-                    fis.close();
 
                 }
             }
@@ -307,17 +303,17 @@ public class IOUtils {
                 }
                 // if we reached here, the File object f was not a directory
                 // create a FileInputStream on top of f
-                FileInputStream fis = new FileInputStream(f);
-                // create a new zip entry
-                // ZipEntry anEntry = new ZipEntry(f.getPath());
-                ZipEntry anEntry = new ZipEntry(zipPath + "/" + f.getName());
-                // place the zip entry in the ZipOutputStream object
-                zos.putNextEntry(anEntry);
-                // now write the content of the file to the ZipOutputStream
-                while ((bytesIn = fis.read(readBuffer)) != -1) {
-                    zos.write(readBuffer, 0, bytesIn);
+                try (FileInputStream fis = new FileInputStream(f)) {
+                    // create a new zip entry
+                    // ZipEntry anEntry = new ZipEntry(f.getPath());
+                    ZipEntry anEntry = new ZipEntry(zipPath + "/" + f.getName());
+                    // place the zip entry in the ZipOutputStream object
+                    zos.putNextEntry(anEntry);
+                    // now write the content of the file to the ZipOutputStream
+                    while ((bytesIn = fis.read(readBuffer)) != -1) {
+                        zos.write(readBuffer, 0, bytesIn);
+                    }
                 }
-                fis.close();
 
             }
 
@@ -345,13 +341,14 @@ public class IOUtils {
     }
 
     public static String toString(File file) throws IOException {
-        BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
         StringBuilder result = new StringBuilder();
         String line = "";
-        while ((line = bufferedReader.readLine()) != null) {
-            result.append(line).append(System.getProperty("line.separator"));
+
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(file))) {
+            while ((line = bufferedReader.readLine()) != null) {
+                result.append(line).append(System.getProperty("line.separator"));
+            }
         }
-        bufferedReader.close();
         return result.toString().trim();
     }
 }

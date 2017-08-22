@@ -20,10 +20,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Annotation;
-import org.opencb.opencga.catalog.models.AnnotationSet;
-import org.opencb.opencga.catalog.models.Variable;
-import org.opencb.opencga.catalog.models.VariableSet;
+import org.opencb.opencga.core.models.Annotation;
+import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.Variable;
+import org.opencb.opencga.core.models.VariableSet;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -188,7 +188,6 @@ public class CatalogAnnotationsValidator {
         for (Annotation annotation : annotationSet.getAnnotations()) {
             checkAnnotation(variableMap, annotation);
         }
-
 
     }
 

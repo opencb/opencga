@@ -200,9 +200,9 @@ public abstract class AbstractParentClient {
     /**
      * Call to WS using get or post method.
      *
-     * @param path Path of the WS.
+     * @param path   Path of the WS.
      * @param params Params to be passed to the WS.
-     * @param clazz Expected return class.
+     * @param clazz  Expected return class.
      * @param method Method by which the query will be done (GET or POST).
      * @return A queryResponse object containing the results of the query.
      * @throws IOException if the path is wrong and cannot be converted to a proper url.
@@ -230,18 +230,6 @@ public abstract class AbstractParentClient {
                     .get().readEntity(String.class);
         } else if (method.equalsIgnoreCase(POST)) {
             // TODO we still have to check the limit of the query, and keep querying while there are more results
-//            Form form = new Form();
-//            if (params != null) {
-//                for (String s : params.keySet()) {
-//                    Object value = params.get(s);
-//                    if (value instanceof Number) {
-//                        form.param(s, (Integer.toString((int) params.get(s))));
-//                    } else {
-//                        form.param(s, ((String) params.get(s)));
-//                    }
-//                }
-//            }
-
             if (params != null) {
                 for (String s : params.keySet()) {
                     if (!s.equals("body")) {
@@ -250,14 +238,12 @@ public abstract class AbstractParentClient {
                 }
             }
 
-//            ObjectMap json = new ObjectMap("body", params.get("body"));
-
             logger.debug("POST URL: " + path.getUri().toURL());
+            Object paramBody = (params == null ? "" : params.get("body"));
             Response body = path.request()
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.sessionId)
-                    .post(Entity.json(params.get("body")));
+                    .post(Entity.json(paramBody));
             jsonString = body.readEntity(String.class);
-//            jsonString = path.request().post(Entity.json(params.get("body")), String.class);
         }
         return parseResult(jsonString, clazz);
     }
@@ -265,9 +251,9 @@ public abstract class AbstractParentClient {
     /**
      * Call to upload WS.
      *
-     * @param path Path of the WS.
+     * @param path   Path of the WS.
      * @param params Params to be passed to the WS.
-     * @param clazz Expected return class.
+     * @param clazz  Expected return class.
      * @return A queryResponse object containing the results of the query.
      * @throws IOException if the path is wrong and cannot be converted to a proper url.
      */
@@ -325,7 +311,7 @@ public abstract class AbstractParentClient {
         return objectMap;
     }
 
-    protected ObjectMap addParamsToObjectMap(ObjectMap objectMap, String key, Object value, Object ... params) {
+    protected ObjectMap addParamsToObjectMap(ObjectMap objectMap, String key, Object value, Object... params) {
         objectMap = createIfNull(objectMap);
         objectMap.put(key, value);
         if (params != null && params.length > 0) {

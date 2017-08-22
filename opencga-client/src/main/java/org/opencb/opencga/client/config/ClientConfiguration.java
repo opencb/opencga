@@ -18,7 +18,7 @@ package org.opencb.opencga.client.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.opencb.opencga.catalog.models.Project;
+import org.opencb.opencga.core.models.Project;
 
 import java.io.IOException;
 import java.io.InputStream;

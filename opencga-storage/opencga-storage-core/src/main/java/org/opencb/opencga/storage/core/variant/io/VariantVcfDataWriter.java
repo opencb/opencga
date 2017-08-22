@@ -586,7 +586,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         addStats(studyEntry, attributes);
 
         variantContextBuilder.start(adjustedRange.getLeft())
-                .stop(adjustedRange.getLeft() + refAllele.length() - 1) //TODO mh719: check what happens for Insertions
+                .stop(adjustedRange.getLeft() + refAllele.length() - 1L) //TODO mh719: check what happens for Insertions
                 .chr(variant.getChromosome())
                 .filter(filter); // TODO jmmut: join attributes from different source entries? what to do on a collision?
 

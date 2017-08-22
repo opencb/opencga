@@ -23,10 +23,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.DataStore;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.models.Project;
+import org.opencb.opencga.core.models.DataStore;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -89,13 +89,11 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
             final Project.Organism organism;
 
             if (studyInfos == null || studyInfos.isEmpty()) {
-                String userId = catalogManager.getUserManager().getId(sessionId);
-                long projectId = catalogManager.getProjectManager().getId(userId, projectStr);
-                Project project = catalogManager.getProjectManager().get(projectId, null, sessionId).first();
+                Project project = catalogManager.getProjectManager().get(projectStr, null, sessionId).first();
                 studyStr = null;
                 alias = project.getAlias();
                 organism = project.getOrganism();
-                dataStore = getDataStoreByProjectId(catalogManager, projectId, File.Bioformat.VARIANT, sessionId);
+                dataStore = getDataStoreByProjectId(catalogManager, project.getId(), File.Bioformat.VARIANT, sessionId);
                 studyIds = Collections.emptyList();
             } else {
                 StudyInfo info = studyInfos.get(0);

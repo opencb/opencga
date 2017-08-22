@@ -22,7 +22,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.Family;
+import org.opencb.opencga.core.models.Family;
 
 import java.util.Map;
 
@@ -36,13 +36,18 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
     enum QueryParams implements QueryParam {
         ID("id", INTEGER, ""),
         NAME("name", TEXT, ""),
-        PARENTAL_CONSANGUINITY("parentalConsanguinity", BOOLEAN, ""),
-        FATHER("father", TEXT, ""),
-        MOTHER("mother", TEXT, ""),
-        CHILDREN("children", TEXT_ARRAY, ""),
-        FATHER_ID("fatherId", INTEGER, ""),
-        MOTHER_ID("motherId", INTEGER, ""),
-        CHILDREN_IDS("childrenIds", INTEGER_ARRAY, ""),
+        MEMBERS("members", TEXT_ARRAY, ""),
+        DISEASES("diseases", TEXT_ARRAY, ""),
+        FATHER("father", TEXT, ""), // This is for the WS
+        MOTHER("mother", TEXT, ""), // This is for the WS
+        MEMBER("member", TEXT, ""), // This is for the WS
+        MEMBERS_FATHER("members.father", TEXT, ""),
+        MEMBERS_MOTHER("members.father", TEXT, ""),
+        MEMBERS_MEMBER("members.father", TEXT, ""),
+        FATHER_ID("members.father.id", INTEGER, ""),
+        MOTHER_ID("members.mother.id", INTEGER, ""),
+        MEMBER_ID("members.member.id", INTEGER, ""),
+        MEMBERS_PARENTAL_CONSANGUINITY("members.parentalConsanguinity", BOOLEAN, ""),
         CREATION_DATE("creationDate", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
@@ -56,14 +61,6 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
 
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
-
-        ONTOLOGIES("ontologies", TEXT_ARRAY, ""), // Alias in the webservice to ONTOLOGY_TERMS
-        ONTOLOGY_TERMS("ontologyTerms", TEXT_ARRAY, ""),
-        ONTOLOGY_TERMS_ID("ontologyTerms.id", TEXT, ""),
-        ONTOLOGY_TERMS_NAME("ontologyTerms.name", TEXT, ""),
-        ONTOLOGY_TERMS_SOURCE("ontologyTerms.source", TEXT, ""),
-        ONTOLOGY_TERMS_AGE_OF_ONSET("ontologyTerms.ageOfOnset", TEXT, ""),
-        ONTOLOGY_TERMS_MODIFIERS("ontologyTerms.modifiers", TEXT_ARRAY, ""),
 
         VARIABLE_SET_ID("variableSetId", INTEGER, ""),
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
