@@ -18,6 +18,7 @@ import java.util.List;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.IS;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.NOT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.OR;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverterTest.ANY;
@@ -220,6 +221,19 @@ public class VariantMongoDBQueryParserTest {
                         .append("$and", Collections.singletonList(
                                 new Document("$or", Arrays.asList(
                                         new Document(GENOTYPES_FIELD + ".?/?", 10101)))))));
+
+        checkEqualDocuments(expected, mongoQuery);
+    }
+
+    @Test
+    public void testQueryNegatedGenotypes() {
+        Document mongoQuery = parser.parseQuery(new Query().append(STUDIES.key(), "study_1")
+                .append(GENOTYPE.key(), "sample_10101" + IS + NOT + "1/1"));
+
+        Document expected = new Document(STUDIES_FIELD,
+                new Document("$elemMatch", new Document()
+                        .append(STUDYID_FIELD, 1)
+                        .append("$and", Collections.singletonList(ANY))));
 
         checkEqualDocuments(expected, mongoQuery);
     }

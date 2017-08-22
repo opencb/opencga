@@ -568,6 +568,9 @@ public class VariantMongoDBQueryParser {
                     );
                 }
                 for (String sample : samples.split(",")) {
+                    if (isNegated(sample)) {
+                        throw VariantQueryException.malformedParam(SAMPLES, samples, "Unsupported negated samples");
+                    }
                     int sampleId = studyConfigurationManager.getSampleId(sample, defaultStudyConfiguration);
                     genotypesFilter.put(sampleId, genotypes);
                 }
@@ -600,10 +603,12 @@ public class VariantMongoDBQueryParser {
                     int sampleId = studyConfigurationManager.getSampleId(sample, defaultStudyConfiguration);
 
                     if (filesFilterBySamples) {
+                        // We can not filter sample by file if one of the requested genotypes is the unknown genotype
                         boolean canFilterSampleByFile = !genotypes.contains(DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
                         if (canFilterSampleByFile) {
-                            for (String defaultGenotype : defaultGenotypes) {
-                                if (genotypes.contains(defaultGenotype)) {
+                            for (String genotype : genotypes) {
+                                // Do not filter sample by file if any of the genotypes is negated, or the is a default genotype
+                                if (isNegated(genotype) || defaultGenotypes.contains(genotype)) {
                                     canFilterSampleByFile = false;
                                     break;
                                 }
