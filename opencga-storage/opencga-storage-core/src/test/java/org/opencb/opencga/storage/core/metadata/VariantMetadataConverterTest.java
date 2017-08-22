@@ -25,11 +25,11 @@ import java.util.LinkedHashSet;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantMetadataFactoryTest {
+public class VariantMetadataConverterTest {
 
 
     private StudyConfiguration studyConfiguration;
-    private VariantMetadataFactory variantMetadataFactory;
+    private VariantMetadataConverter variantMetadataConverter;
     private ObjectWriter objectWriter;
 
     @Before
@@ -62,7 +62,7 @@ public class VariantMetadataFactoryTest {
         VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(Paths.get(uri), null);
         studyConfiguration.addVariantFileHeader(fileMetadata.getHeader(), null);
 
-        variantMetadataFactory = new VariantMetadataFactory();
+        variantMetadataConverter = new VariantMetadataConverter();
         objectWriter = new ObjectMapper()
                 .configure(SerializationConfig.Feature.REQUIRE_SETTERS_FOR_GETTERS, true)
                 .setSerializationInclusion(JsonSerialize.Inclusion.NON_EMPTY)
@@ -72,7 +72,7 @@ public class VariantMetadataFactoryTest {
     @Test
     public void toVariantMetadataTest() throws IOException {
 
-        VariantMetadata variantMetadata = variantMetadataFactory.toVariantMetadata(Collections.singletonList(studyConfiguration));
+        VariantMetadata variantMetadata = variantMetadataConverter.toVariantMetadata(Collections.singletonList(studyConfiguration));
         System.out.println("variantMetadata = " + objectWriter.writeValueAsString(variantMetadata));
 
     }

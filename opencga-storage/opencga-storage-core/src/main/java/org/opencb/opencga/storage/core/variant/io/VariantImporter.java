@@ -19,7 +19,7 @@ package org.opencb.opencga.storage.core.variant.io;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
+import org.opencb.opencga.storage.core.metadata.VariantMetadataConverter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.IOException;
@@ -47,7 +47,7 @@ public abstract class VariantImporter {
     }
 
     public void importData(URI input, VariantMetadata metadata) throws StorageEngineException, IOException {
-        List<StudyConfiguration> studyConfigurations = new VariantMetadataFactory().toStudyConfigurations(metadata);
+        List<StudyConfiguration> studyConfigurations = new VariantMetadataConverter().toStudyConfigurations(metadata);
         importData(input, metadata, studyConfigurations);
     }
 

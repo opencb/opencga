@@ -22,7 +22,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
+import org.opencb.opencga.storage.core.metadata.VariantMetadataConverter;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,7 +49,7 @@ public class VariantMetadataImporter {
 
         // Load metadata
         VariantMetadata metadata = readMetadata(inputUri);
-        List<StudyConfiguration> studyConfigurations = new VariantMetadataFactory().toStudyConfigurations(metadata);
+        List<StudyConfiguration> studyConfigurations = new VariantMetadataConverter().toStudyConfigurations(metadata);
 
         for (StudyConfiguration studyConfiguration : studyConfigurations) {
             processStudyConfiguration(studyConfiguration);

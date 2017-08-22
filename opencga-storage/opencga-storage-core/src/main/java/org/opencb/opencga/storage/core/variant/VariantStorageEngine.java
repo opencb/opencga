@@ -41,10 +41,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
-import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.*;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
@@ -55,7 +52,7 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
-import org.opencb.opencga.storage.core.variant.io.VariantMetadataExporter;
+import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
@@ -238,7 +235,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public void exportData(URI outputFile, VariantOutputFormat outputFormat, Query query, QueryOptions queryOptions)
             throws IOException, StorageEngineException {
-        exportData(outputFile, outputFormat, new VariantMetadataExporter(getStudyConfigurationManager(),
+        exportData(outputFile, outputFormat, new VariantMetadataFactory(getStudyConfigurationManager(),
                 getDBAdaptor().getVariantFileMetadataDBAdaptor()), query, queryOptions);
     }
 
@@ -246,16 +243,16 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * Exports the result of the given query and the associated metadata.
      * @param outputFile       Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
      * @param outputFormat     Variant output format
-     * @param metadataExporter Metadata exporter. Metadata will only be
+     * @param metadataFactory  Metadata factory. Metadata will only be generated if the outputFile is defined.
      * @param query            Query with the variants to export
      * @param queryOptions     Query options
      * @throws IOException  If there is any IO error
      * @throws StorageEngineException  If there is any error exporting variants
      */
-    public void exportData(URI outputFile, VariantOutputFormat outputFormat, VariantMetadataExporter metadataExporter,
+    public void exportData(URI outputFile, VariantOutputFormat outputFormat, VariantMetadataFactory metadataFactory,
                            Query query, QueryOptions queryOptions)
             throws IOException, StorageEngineException {
-        VariantExporter exporter = newVariantExporter(metadataExporter);
+        VariantExporter exporter = newVariantExporter(metadataFactory);
         exporter.export(outputFile, outputFormat, query, queryOptions);
     }
 
@@ -263,12 +260,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * Creates a new {@link VariantExporter} for the current backend.
      * The default implementation iterates locally through the database.
      *
-     * @param metadataExporter metadataExporter
+     * @param metadataFactory metadataFactory
      * @return              new VariantExporter
      * @throws StorageEngineException  if there is an error creating the VariantExporter
      */
-    protected VariantExporter newVariantExporter(VariantMetadataExporter metadataExporter) throws StorageEngineException {
-        return new VariantExporter(this, metadataExporter);
+    protected VariantExporter newVariantExporter(VariantMetadataFactory metadataFactory) throws StorageEngineException {
+        return new VariantExporter(this, metadataFactory);
     }
 
     /**

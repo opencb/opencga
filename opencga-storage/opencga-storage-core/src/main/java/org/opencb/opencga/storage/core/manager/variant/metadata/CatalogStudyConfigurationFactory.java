@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.manager.variant;
+package org.opencb.opencga.storage.core.manager.variant.metadata;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.StudyEntry;
