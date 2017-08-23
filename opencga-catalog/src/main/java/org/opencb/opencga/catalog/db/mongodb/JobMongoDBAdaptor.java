@@ -39,10 +39,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.Tool;
-import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -412,12 +409,13 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                 QueryParams.OUT_DIR_ID.key(), };
         filterLongParams(parameters, jobParameters, acceptedLongParams);
 
-        String[] acceptedIntegerListParams = {QueryParams.OUTPUT.key()};
-        filterIntegerListParams(parameters, jobParameters, acceptedIntegerListParams);
+        if (parameters.containsKey(QueryParams.INPUT.key())) {
+            List<File> fileList = parameters.getAsList(QueryParams.INPUT.key(), File.class);
+            jobParameters.put(QueryParams.INPUT.key(), jobConverter.convertFilesToDocument(fileList));
+        }
         if (parameters.containsKey(QueryParams.OUTPUT.key())) {
-            for (Integer fileId : parameters.getAsIntegerList(QueryParams.OUTPUT.key())) {
-                dbAdaptorFactory.getCatalogFileDBAdaptor().checkId(fileId);
-            }
+            List<File> fileList = parameters.getAsList(QueryParams.OUTPUT.key(), File.class);
+            jobParameters.put(QueryParams.OUTPUT.key(), jobConverter.convertFilesToDocument(fileList));
         }
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key()};
