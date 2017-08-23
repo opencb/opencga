@@ -220,7 +220,7 @@ public abstract class CommandExecutor {
     }
 
     /**
-     * This method attempts to load general configuration from CLI 'conf' parameter, if not exists then loads JAR storage-configuration.yml.
+     * This method attempts to load general configuration from CLI 'conf' parameter, if not exists then loads JAR configuration.yml.
      *
      * @throws IOException If any IO problem occurs
      */
@@ -235,13 +235,13 @@ public abstract class CommandExecutor {
         } else {
             privateLogger.debug("Loading configuration from JAR file");
             this.configuration = Configuration
-                    .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml"));
+                    .load(Configuration.class.getClassLoader().getResourceAsStream("configuration.yml"));
         }
     }
 
     /**
      * This method attempts to first data configuration from CLI parameter, if not present then uses
-     * the configuration from installation directory, if not exists then loads JAR storage-configuration.yml.
+     * the configuration from installation directory, if not exists then loads JAR client-configuration.yml.
      *
      * @throws IOException If any IO problem occurs
      */
@@ -274,7 +274,7 @@ public abstract class CommandExecutor {
         } else {
             privateLogger.debug("Loading storage configuration from JAR file");
             this.storageConfiguration = StorageConfiguration
-                    .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
+                    .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
         }
     }
 
