@@ -25,9 +25,9 @@ import org.opencb.opencga.app.cli.main.executors.catalog.commons.AnnotationComma
 import org.opencb.opencga.app.cli.main.options.SampleCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
+import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 
 import java.io.IOException;
 import java.util.Arrays;

@@ -21,7 +21,7 @@ import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.core.models.Individual;
 
 import javax.ws.rs.client.WebTarget;
 import java.io.IOException;

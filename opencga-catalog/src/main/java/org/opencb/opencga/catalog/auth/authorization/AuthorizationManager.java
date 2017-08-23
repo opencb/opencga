@@ -18,7 +18,7 @@ package org.opencb.opencga.catalog.auth.authorization;
 
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.acls.permissions.*;
+import org.opencb.opencga.core.models.acls.permissions.*;
 
 import javax.annotation.Nullable;
 import java.util.EnumSet;

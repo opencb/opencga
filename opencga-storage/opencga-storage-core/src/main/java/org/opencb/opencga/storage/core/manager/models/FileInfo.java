@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.storage.core.manager.models;
 
-import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.core.models.File;
 
 import java.nio.file.Path;
 

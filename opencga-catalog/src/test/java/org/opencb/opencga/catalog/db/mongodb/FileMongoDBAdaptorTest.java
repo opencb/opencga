@@ -26,10 +26,10 @@ import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 
 import java.io.IOException;
 import java.util.*;

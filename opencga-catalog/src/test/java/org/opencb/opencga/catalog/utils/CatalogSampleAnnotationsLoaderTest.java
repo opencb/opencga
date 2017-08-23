@@ -30,7 +30,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.core.models.*;
 
 import java.io.IOException;
 import java.net.URISyntaxException;

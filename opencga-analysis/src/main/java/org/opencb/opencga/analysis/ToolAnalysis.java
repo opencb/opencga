@@ -10,9 +10,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.JobManager;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

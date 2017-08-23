@@ -4,7 +4,7 @@ import org.bson.Document;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 
 import java.util.*;
 import java.util.regex.Pattern;

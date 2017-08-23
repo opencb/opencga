@@ -6,8 +6,8 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.models.Job;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;

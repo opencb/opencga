@@ -35,7 +35,7 @@ import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.acls.permissions.*;
+import org.opencb.opencga.core.models.acls.permissions.*;
 import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.LoggerFactory;
 

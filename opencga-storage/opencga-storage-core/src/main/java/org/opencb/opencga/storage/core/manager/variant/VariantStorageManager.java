@@ -33,7 +33,10 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.core.models.DataStore;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -53,6 +56,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ALTERNATE;
@@ -213,9 +217,16 @@ public class VariantStorageManager extends StorageManager {
         VariantAnnotationStorageOperation annotOperation = new VariantAnnotationStorageOperation(catalogManager, storageConfiguration);
 
         List<String> studyIds;
-        if (StringUtils.isNotEmpty(studies) || StringUtils.isEmpty(project)) {
+        if (StringUtils.isNotEmpty(studies)) {
             studyIds = Arrays.asList(studies.split(","));
+        } else if (StringUtils.isEmpty(studies) && StringUtils.isEmpty(project)) {
+            // If non study or project is given, read all the studies from the user
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
+            studyIds = catalogManager.getStudyManager().getIds(userId, null).stream()
+                    .map(Object::toString)
+                    .collect(Collectors.toList());
         } else {
+            // If project is present, no study information is needed
             studyIds = Collections.emptyList();
         }
         List<StudyInfo> studiesList = new ArrayList<>(studyIds.size());

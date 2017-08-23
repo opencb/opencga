@@ -33,10 +33,10 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.acls.AclParams;
-import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
+import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.*;

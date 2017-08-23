@@ -15,9 +15,9 @@ import org.opencb.hpg.bigdata.analysis.tools.Status;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
-import org.opencb.opencga.catalog.models.Account;
-import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.core.models.Account;
+import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.Study;
 
 import java.io.IOException;
 import java.nio.file.Path;

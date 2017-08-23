@@ -18,7 +18,7 @@ package org.opencb.opencga.catalog.utils;
 
 import org.junit.Test;
 import org.opencb.opencga.catalog.managers.FileUtils;
-import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.core.models.File;
 
 import java.net.URI;
 

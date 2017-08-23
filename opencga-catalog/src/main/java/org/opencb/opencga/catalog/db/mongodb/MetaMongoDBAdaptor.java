@@ -31,7 +31,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Metadata;
+import org.opencb.opencga.core.models.Metadata;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.slf4j.LoggerFactory;
 

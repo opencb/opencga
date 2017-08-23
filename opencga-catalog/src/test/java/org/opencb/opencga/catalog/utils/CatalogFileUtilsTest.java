@@ -28,7 +28,6 @@ import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.CatalogManagerTest;
-import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -36,6 +35,9 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.Account;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Study;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileOutputStream;

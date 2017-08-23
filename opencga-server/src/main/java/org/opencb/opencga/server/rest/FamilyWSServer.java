@@ -24,8 +24,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
-import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.AclParams;
+import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -313,13 +313,14 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public List<String> diseases;
         public List<String> carrier;
         public boolean parentalConsanguinity;
+        public Multiples multiples;
 
         private Relatives toRelatives(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
             Individual realIndividual = member != null ? member.toIndividual(studyStr, studyManager, sessionId) : null;
             Individual realFather = father != null ? father.toIndividual(studyStr, studyManager, sessionId) : null;
             Individual realMother = mother != null ? mother.toIndividual(studyStr, studyManager, sessionId) : null;
 
-            return new Relatives(realIndividual, realFather, realMother, diseases, carrier, parentalConsanguinity);
+            return new Relatives(realIndividual, realFather, realMother, diseases, carrier, multiples, parentalConsanguinity);
         }
 
     }

@@ -29,9 +29,9 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManagerTest;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
 import javax.ws.rs.client.Entity;

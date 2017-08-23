@@ -23,7 +23,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.core.models.User;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;

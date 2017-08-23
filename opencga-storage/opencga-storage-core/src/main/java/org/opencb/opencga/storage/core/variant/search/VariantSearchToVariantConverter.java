@@ -24,6 +24,7 @@ import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.utils.CollectionUtils;
+import org.opencb.opencga.core.common.ArrayUtils;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,12 +119,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         // prepare protein substitution scores: sift and polyphen
         List<Score> scores;
         ProteinVariantAnnotation proteinAnnotation = new ProteinVariantAnnotation();
-        if (variantSearchModel.getSift() != MISSING_VALUE || variantSearchModel.getPolyphen() != MISSING_VALUE) {
+        if (!ArrayUtils.equals(variantSearchModel.getSift(), MISSING_VALUE)
+                || !ArrayUtils.equals(variantSearchModel.getPolyphen(), MISSING_VALUE)) {
             scores = new ArrayList<>();
-            if (variantSearchModel.getSift() != MISSING_VALUE) {
+            if (!ArrayUtils.equals(variantSearchModel.getSift(), MISSING_VALUE)) {
                 scores.add(new Score(variantSearchModel.getSift(), "sift", variantSearchModel.getSiftDesc()));
             }
-            if (variantSearchModel.getPolyphen() != MISSING_VALUE) {
+            if (!ArrayUtils.equals(variantSearchModel.getPolyphen(), MISSING_VALUE)) {
                 scores.add(new Score(variantSearchModel.getPolyphen(), "polyphen", variantSearchModel.getPolyphenDesc()));
             }
             proteinAnnotation.setSubstitutionScores(scores);
@@ -169,23 +171,23 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
         // Set conservations scores
         scores = new ArrayList<>();
-        if (variantSearchModel.getPhylop() != MISSING_VALUE) {
+        if (!ArrayUtils.equals(variantSearchModel.getPhylop(), MISSING_VALUE)) {
             scores.add(new Score(variantSearchModel.getPhylop(), "phylop", ""));
         }
-        if (variantSearchModel.getPhastCons() != MISSING_VALUE) {
+        if (!ArrayUtils.equals(variantSearchModel.getPhastCons(), MISSING_VALUE)) {
             scores.add(new Score(variantSearchModel.getPhastCons(), "phastCons", ""));
         }
-        if (variantSearchModel.getGerp() != MISSING_VALUE) {
+        if (!ArrayUtils.equals(variantSearchModel.getGerp(), MISSING_VALUE)) {
             scores.add(new Score(variantSearchModel.getGerp(), "gerp", ""));
         }
         variantAnnotation.setConservation(scores);
 
         // Set CADD scores
         scores = new ArrayList<>();
-        if (variantSearchModel.getCaddRaw() != MISSING_VALUE) {
+        if (!ArrayUtils.equals(variantSearchModel.getCaddRaw(), MISSING_VALUE)) {
             scores.add(new Score(variantSearchModel.getCaddRaw(), "cadd_raw", ""));
         }
-        if (variantSearchModel.getCaddScaled() != MISSING_VALUE) {
+        if (!ArrayUtils.equals(variantSearchModel.getCaddScaled(), MISSING_VALUE)) {
             scores.add(new Score(variantSearchModel.getCaddScaled(), "cadd_scaled", ""));
         }
         variantAnnotation.setFunctionalScore(scores);
@@ -544,7 +546,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
 
         // If sift not exist we set it to -100.0
-        if (sift == 10) {
+        if (ArrayUtils.equals(sift, 10)) {
             sift = MISSING_VALUE;
         }
 

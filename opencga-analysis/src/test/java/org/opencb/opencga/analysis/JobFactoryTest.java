@@ -26,7 +26,7 @@ import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.analysis.old.JobFactory;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.core.models.*;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;

@@ -26,19 +26,19 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.old.AnalysisExecutionException;
 import org.opencb.opencga.analysis.old.JobFactory;
-import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
-import org.opencb.opencga.storage.core.manager.variant.CatalogStudyConfigurationFactory;
-import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
-import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.manager.variant.CatalogStudyConfigurationFactory;
+import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -107,7 +107,8 @@ public class AnalysisFileIndexer {
      * @throws CatalogException
      * @throws AnalysisExecutionException
      */
-    public QueryResult<Job> index(long fileId, long outDirId, String sessionId, QueryOptions options) throws CatalogException, AnalysisExecutionException {
+    public QueryResult<Job> index(long fileId, long outDirId, String sessionId, QueryOptions options)
+            throws CatalogException, AnalysisExecutionException {
 
         if (options == null) {
             options = new QueryOptions();

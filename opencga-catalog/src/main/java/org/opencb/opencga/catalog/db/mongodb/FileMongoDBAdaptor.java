@@ -39,11 +39,11 @@ import org.opencb.opencga.catalog.db.mongodb.converters.FileConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.Status;
+import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
+import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 

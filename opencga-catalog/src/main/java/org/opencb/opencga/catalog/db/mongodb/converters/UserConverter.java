@@ -17,7 +17,7 @@
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
-import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.core.models.User;
 
 /**
  * Created by pfurio on 19/01/16.

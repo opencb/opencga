@@ -21,10 +21,10 @@ import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.models.Cohort;
-import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.core.models.Cohort;
+import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.Study;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;

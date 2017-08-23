@@ -19,8 +19,8 @@ package org.opencb.opencga.catalog.db.api;
 import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.AnnotationSet;
-import org.opencb.opencga.catalog.models.Cohort;
+import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.Cohort;
 
 import java.util.Map;
 

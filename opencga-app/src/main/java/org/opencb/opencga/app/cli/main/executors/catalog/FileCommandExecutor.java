@@ -25,9 +25,9 @@ import org.opencb.opencga.app.cli.main.options.FileCommandOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.FileTree;
-import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.FileTree;
+import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.common.UriUtils;
 
 import java.io.IOException;

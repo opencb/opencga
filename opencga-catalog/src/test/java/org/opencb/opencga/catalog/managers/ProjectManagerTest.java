@@ -27,9 +27,11 @@ import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.AclParams;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.Account;
+import org.opencb.opencga.core.models.Project;
+import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 
 import java.io.IOException;
 

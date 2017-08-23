@@ -16,10 +16,10 @@
 
 package org.opencb.opencga.storage.core.manager.models;
 
-import org.opencb.opencga.catalog.models.DataStore;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Project;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.core.models.DataStore;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Project;
+import org.opencb.opencga.core.models.Study;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;

@@ -29,10 +29,12 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.core.models.*;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -82,7 +84,7 @@ public class FamilyManagerTest extends GenericTest {
         QueryResult<Family> familyQueryResult = createDummyFamily();
 
         assertEquals(1, familyQueryResult.getNumResults());
-        assertEquals(4, familyQueryResult.first().getMembers().size());
+        assertEquals(5, familyQueryResult.first().getMembers().size());
         assertEquals(2, familyQueryResult.first().getDiseases().size());
 
         boolean motherIdUpdated = false;
@@ -112,17 +114,82 @@ public class FamilyManagerTest extends GenericTest {
         Individual fatherChildren = new Individual().setName("father");
         Individual motherChildren = new Individual().setName("mother");
 
-        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), Arrays.asList("dis2"), false);
-        Relatives relMother = new Relatives(mother, null, null, Arrays.asList("dis2"), Collections.emptyList(), false);
+        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), Arrays.asList("dis2"), null, false);
+        Relatives relMother = new Relatives(mother, null, null, Arrays.asList("dis2"), Collections.emptyList(), null, false);
         Relatives relChild1 = new Relatives(new Individual().setName("child1"), fatherChildren, motherChildren,
-                Arrays.asList("dis1", "dis2"), Collections.emptyList(), true);
+                Arrays.asList("dis1", "dis2"), Collections.emptyList(), new Multiples("multiples", Arrays.asList("child2", "child3")),
+                true);
         Relatives relChild2 = new Relatives(new Individual().setName("child2"), fatherChildren, motherChildren, Arrays.asList("dis1"),
-                Collections.emptyList(), true);
+                Collections.emptyList(), new Multiples("multiples", Arrays.asList("child1", "child3")), true);
+        Relatives relChild3 = new Relatives(new Individual().setName("child3"), fatherChildren, motherChildren, Arrays.asList("dis1"),
+                Collections.emptyList(), new Multiples("multiples", Arrays.asList("child1", "child2")), true);
 
         Family family = new Family("Martinez-Martinez", Arrays.asList(disease1, disease2),
-                Arrays.asList(relChild1, relChild2, relFather, relMother),"", Collections.emptyList(), Collections.emptyMap());
+                Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother),"", Collections.emptyList(), Collections.emptyMap());
 
         return familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+    }
+
+    @Test
+    public void createFamilyMissingMultiple() throws CatalogException {
+        OntologyTerm disease1 = new OntologyTerm("dis1", "Disease 1", "HPO");
+        OntologyTerm disease2 = new OntologyTerm("dis2", "Disease 2", "HPO");
+
+        Individual father = new Individual().setName("father");
+        Individual mother = new Individual().setName("mother");
+
+        // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
+        // ingesting references to exactly the same object and this test would not work exactly the same way.
+        Individual fatherChildren = new Individual().setName("father");
+        Individual motherChildren = new Individual().setName("mother");
+
+        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), Arrays.asList("dis2"), null, false);
+        Relatives relMother = new Relatives(mother, null, null, Arrays.asList("dis2"), Collections.emptyList(), null, false);
+        Relatives relChild1 = new Relatives(new Individual().setName("child1"), fatherChildren, motherChildren,
+                Arrays.asList("dis1", "dis2"), Collections.emptyList(), new Multiples("multiples", Arrays.asList("child2", "child3")),
+                true);
+        Relatives relChild2 = new Relatives(new Individual().setName("child2"), fatherChildren, motherChildren, Arrays.asList("dis1"),
+                Collections.emptyList(), new Multiples("multiples", Arrays.asList("child1", "child3")), true);
+        Relatives relChild3 = new Relatives(new Individual().setName("child3"), fatherChildren, motherChildren, Arrays.asList("dis1"),
+                Collections.emptyList(), new Multiples("multiples", Arrays.asList("child1")), true);
+
+        Family family = new Family("Martinez-Martinez", Arrays.asList(disease1, disease2),
+                Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother),"", Collections.emptyList(), Collections.emptyMap());
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("does not match");
+        familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+    }
+
+    @Test
+    public void createFamilyMissingMultiple2() throws CatalogException {
+        OntologyTerm disease1 = new OntologyTerm("dis1", "Disease 1", "HPO");
+        OntologyTerm disease2 = new OntologyTerm("dis2", "Disease 2", "HPO");
+
+        Individual father = new Individual().setName("father");
+        Individual mother = new Individual().setName("mother");
+
+        // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
+        // ingesting references to exactly the same object and this test would not work exactly the same way.
+        Individual fatherChildren = new Individual().setName("father");
+        Individual motherChildren = new Individual().setName("mother");
+
+        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), Arrays.asList("dis2"), null, false);
+        Relatives relMother = new Relatives(mother, null, null, Arrays.asList("dis2"), Collections.emptyList(), null, false);
+        Relatives relChild1 = new Relatives(new Individual().setName("child1"), fatherChildren, motherChildren,
+                Arrays.asList("dis1", "dis2"), Collections.emptyList(), new Multiples("multiples", Arrays.asList("child2", "child3")),
+                true);
+        Relatives relChild2 = new Relatives(new Individual().setName("child2"), fatherChildren, motherChildren, Arrays.asList("dis1"),
+                Collections.emptyList(), new Multiples("multiples", Arrays.asList("child1", "child3")), true);
+        Relatives relChild3 = new Relatives(new Individual().setName("child3"), fatherChildren, motherChildren, Arrays.asList("dis1"),
+                Collections.emptyList(), new Multiples("multiples", Arrays.asList("child1", "child20")), true);
+
+        Family family = new Family("Martinez-Martinez", Arrays.asList(disease1, disease2),
+                Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother),"", Collections.emptyList(), Collections.emptyMap());
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("does not match");
+        familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
     }
 
     @Test
@@ -133,11 +200,11 @@ public class FamilyManagerTest extends GenericTest {
         Individual father = new Individual().setName("father");
         Individual mother = new Individual().setName("mother");
 
-        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), Collections.emptyList(), false);
+        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), Collections.emptyList(), null, false);
         Relatives relChild1 = new Relatives(new Individual().setName("child1"), father, mother, Arrays.asList("dis1", "dis2"),
-                Collections.emptyList(), true);
+                Collections.emptyList(), null, true);
         Relatives relChild2 = new Relatives(new Individual().setName("child2"), father, mother, Arrays.asList("dis1"),
-                Collections.emptyList(), true);
+                Collections.emptyList(), null, true);
 
         Family family = new Family("Martinez-Martinez", Arrays.asList(disease1, disease2),
                 Arrays.asList(relFather, relChild1, relChild2),"", Collections.emptyList(), Collections.emptyMap());
@@ -155,12 +222,12 @@ public class FamilyManagerTest extends GenericTest {
         Individual father = new Individual().setName("father");
         Individual mother = new Individual().setName("mother");
 
-        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), Collections.emptyList(), false);
-        Relatives relMother = new Relatives(mother, null, null, Arrays.asList("dis2"), Collections.emptyList(), false);
+        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), Collections.emptyList(), null, false);
+        Relatives relMother = new Relatives(mother, null, null, Arrays.asList("dis2"), Collections.emptyList(), null, false);
         Relatives relChild1 = new Relatives(new Individual().setName("child1"), father, mother, Arrays.asList("dis1", "dis3"),
-                Collections.emptyList(), true);
+                Collections.emptyList(), null, true);
         Relatives relChild2 = new Relatives(new Individual().setName("child2"), father, mother, Arrays.asList("dis1"),
-                Collections.emptyList(), true);
+                Collections.emptyList(), null, true);
 
         Family family = new Family("Martinez-Martinez", Arrays.asList(disease1, disease2),
                 Arrays.asList(relFather, relMother, relChild1, relChild2),"", Collections.emptyList(), Collections.emptyMap());
@@ -178,12 +245,12 @@ public class FamilyManagerTest extends GenericTest {
         Individual father = new Individual().setName("father");
         Individual mother = new Individual().setName("mother");
 
-        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), Collections.emptyList(), false);
-        Relatives relMother = new Relatives(mother, null, null, Arrays.asList("dis2"), Collections.emptyList(), false);
+        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), Collections.emptyList(), null, false);
+        Relatives relMother = new Relatives(mother, null, null, Arrays.asList("dis2"), Collections.emptyList(), null, false);
         Relatives relChild1 = new Relatives(new Individual().setName("child1"), father, mother, Arrays.asList("dis1", "dis2"),
-                Collections.emptyList(), true);
+                Collections.emptyList(), null, true);
         Relatives relChild2 = new Relatives(new Individual().setName("child2"), father, mother, Arrays.asList("dis1"),
-                Collections.emptyList(), true);
+                Collections.emptyList(), null, true);
 
         Family family = new Family("Martinez-Martinez", Arrays.asList(disease1, disease2),
                 Arrays.asList(relFather, relMother, relChild1, relChild2, relChild1),"", Collections.emptyList(), Collections.emptyMap());
@@ -209,7 +276,7 @@ public class FamilyManagerTest extends GenericTest {
         Relatives relFather = new Relatives().setMember(father);
         Relatives relMother = new Relatives().setMember(mother);
         Relatives relChild1 = new Relatives(new Individual().setName("child3"), fatherChildren, motherChildren,
-                Arrays.asList("dis1", "dis2"), Collections.emptyList(), true);
+                Arrays.asList("dis1", "dis2"), Collections.emptyList(), null, true);
 
         Family family = new Family();
         family.setMembers(Arrays.asList(relChild1, relFather, relMother));
@@ -252,9 +319,9 @@ public class FamilyManagerTest extends GenericTest {
         Individual fatherChildren = new Individual().setName("father");
         Individual motherChildren = new Individual().setName("mother2");
 
-        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), Arrays.asList("dis2"), false);
+        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), Arrays.asList("dis2"), null, false);
         Relatives relChild1 = new Relatives(new Individual().setName("child3"), fatherChildren, motherChildren,
-                Arrays.asList("dis1", "dis2"), Collections.emptyList(), true);
+                Arrays.asList("dis1", "dis2"), Collections.emptyList(), null, true);
 
         Family family = new Family();
         family.setMembers(Arrays.asList(relChild1, relFather));

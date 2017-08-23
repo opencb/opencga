@@ -18,7 +18,7 @@ package org.opencb.opencga.catalog.db.api;
 
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.core.models.Job;
 
 import java.util.HashMap;
 import java.util.List;

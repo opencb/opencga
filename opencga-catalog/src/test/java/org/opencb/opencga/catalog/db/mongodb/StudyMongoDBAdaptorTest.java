@@ -17,14 +17,11 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import org.junit.Test;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.core.models.*;
 
 import java.util.Arrays;
 import java.util.Collections;

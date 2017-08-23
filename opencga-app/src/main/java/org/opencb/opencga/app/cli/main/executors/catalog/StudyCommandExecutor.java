@@ -30,12 +30,12 @@ import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.catalog.models.summaries.StudySummary;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.summaries.StudySummary;
 
 import java.io.IOException;
 import java.util.ArrayList;

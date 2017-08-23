@@ -18,7 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
-import org.opencb.opencga.catalog.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.ClinicalAnalysis;
 
 /**
  * Created by pfurio on 05/06/17.

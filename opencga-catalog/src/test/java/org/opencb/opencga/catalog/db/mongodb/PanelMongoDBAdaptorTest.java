@@ -20,7 +20,7 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.DiseasePanel;
+import org.opencb.opencga.core.models.DiseasePanel;
 
 import java.util.Arrays;
 import java.util.Collections;

@@ -26,8 +26,8 @@ import org.opencb.opencga.app.cli.main.options.PanelCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.DiseasePanel;
-import org.opencb.opencga.catalog.models.acls.permissions.DiseasePanelAclEntry;
+import org.opencb.opencga.core.models.DiseasePanel;
+import org.opencb.opencga.core.models.acls.permissions.DiseasePanelAclEntry;
 
 import java.io.IOException;
 

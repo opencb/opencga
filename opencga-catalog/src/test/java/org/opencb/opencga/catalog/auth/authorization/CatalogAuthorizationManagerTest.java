@@ -37,11 +37,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.AclParams;
-import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
-import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
+import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
+import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.config.Configuration;
 
 import javax.annotation.Nullable;

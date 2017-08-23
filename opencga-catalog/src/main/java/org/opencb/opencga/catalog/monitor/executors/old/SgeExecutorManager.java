@@ -20,7 +20,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.SgeManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

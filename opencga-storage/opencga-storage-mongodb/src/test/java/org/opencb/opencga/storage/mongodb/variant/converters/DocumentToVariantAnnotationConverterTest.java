@@ -28,6 +28,7 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -41,8 +42,8 @@ public class DocumentToVariantAnnotationConverterTest {
 
     private VariantAnnotation variantAnnotation;
     private Document dbObject;
-    private static final Document ANY = new Document();
-    private static final List ANY_LIST = Arrays.asList();
+    public static final Document ANY = new Document();
+    public static final List ANY_LIST = Arrays.asList();
 
 
     @Before
@@ -275,14 +276,20 @@ public class DocumentToVariantAnnotationConverterTest {
 
     }
 
-    public void checkEqualDocuments(Document expected, Document actual) {
+    public static void checkEqualDocuments(Document expected, Document actual) {
         checkEqualObjects(expected, actual, "");
     }
 
-    private void checkEqualObjects(Object expected, Object actual, String path) {
+    private static void checkEqualObjects(Object expected, Object actual, String path) {
         if (expected == ANY || expected == ANY_LIST) {
             // Accept ANY field. Ignore
             return;
+        }
+        if (expected instanceof Map) {
+            expected = new Document((Map) expected);
+        }
+        if (actual instanceof Map) {
+            actual = new Document((Map) actual);
         }
         if (expected instanceof Document && actual instanceof Document) {
             checkEqualObjects((Document) expected, (Document) actual, path);
@@ -292,12 +299,12 @@ public class DocumentToVariantAnnotationConverterTest {
                 checkEqualObjects(((List) expected).get(i), ((List) actual).get(i), path + '[' + i + ']');
             }
         } else {
-            assertEquals("Throught " + path, expected, actual);
+            assertEquals("Through " + path, expected, actual);
         }
     }
 
-    private void checkEqualObjects(Document expected, Document actual, String path) {
-        assertEquals("Throught " + path, expected.keySet(), actual.keySet());
+    private static void checkEqualObjects(Document expected, Document actual, String path) {
+        assertEquals("Through " + path, expected.keySet(), actual.keySet());
         for (String key : expected.keySet()) {
             Object e = expected.get(key);
             Object a = actual.get(key);
