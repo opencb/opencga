@@ -18,11 +18,9 @@ package org.opencb.opencga.client.rest.catalog;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
-import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
 
@@ -41,9 +39,9 @@ public class FamilyClient extends AnnotationClient<Family, FamilyAclEntry> {
         this.aclClass = FamilyAclEntry.class;
     }
 
-    public QueryResponse<Family> create(String studyId, ObjectMap bodyParams) throws CatalogException, IOException {
+    public QueryResponse<Family> create(String studyId, ObjectMap bodyParams) throws IOException {
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull(FamilyDBAdaptor.QueryParams.STUDY.key(), studyId);
+        params.putIfNotNull(STUDY, studyId);
         params.putIfNotNull("body", bodyParams);
         return execute(FAMILY_URL, "create", params, POST, Family.class);
     }

@@ -16,14 +16,17 @@
 
 package org.opencb.opencga.client.rest;
 
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.client.rest.catalog.UserClient;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.User;
-import org.opencb.opencga.client.rest.catalog.UserClient;
 
 import java.io.IOException;
 
@@ -45,7 +48,7 @@ public class UserClientTest extends WorkEnvironmentTest {
     }
 
     @Test
-    public void login() throws CatalogException {
+    public void login() throws ClientException {
         String sessionId = openCGAClient.login("user1", "user1_pass");
         assertEquals(sessionId, openCGAClient.getSessionId());
 
@@ -77,7 +80,7 @@ public class UserClientTest extends WorkEnvironmentTest {
 
 
     @Test
-    public void getProjectsLogout() throws IOException, CatalogException {
+    public void getProjectsLogout() throws IOException, ClientException {
         openCGAClient.logout();
 
         QueryResponse<Project> projects = userClient.getProjects(new QueryOptions("userId", "user1"));

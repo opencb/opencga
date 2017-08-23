@@ -21,7 +21,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 
@@ -74,7 +73,7 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
         return execute(category, "search", myQuery, GET, clazz);
     }
 
-    public QueryResponse<T> update(String id, @Nullable String study, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<T> update(String id, @Nullable String study, ObjectMap params) throws IOException {
         //TODO Check that everything is correct
         if (params.containsKey("method") && params.get("method").equals("GET")) {
             params.remove("method");
@@ -88,7 +87,7 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
         return execute(category, id, "update", p, POST, clazz);
     }
 
-    public QueryResponse<T> delete(String id, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<T> delete(String id, ObjectMap params) throws IOException {
         return execute(category, id, "delete", params, GET, clazz);
     }
 
@@ -98,7 +97,7 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
         return execute(category, id, "acl", params, GET, aclClass);
     }
 
-    public QueryResponse<A> updateAcl(String memberId, ObjectMap queryParams, ObjectMap bodyParams) throws CatalogException, IOException {
+    public QueryResponse<A> updateAcl(String memberId, ObjectMap queryParams, ObjectMap bodyParams) throws IOException {
         ObjectMap myParams = new ObjectMap(queryParams);
         myParams.put("body", bodyParams);
         return execute(category, null, "acl", memberId, "update", myParams, POST, aclClass);

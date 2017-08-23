@@ -20,10 +20,10 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.User;
-import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
 
@@ -72,32 +72,30 @@ public class UserClient extends CatalogClient<User, User> {
         QueryResponse<ObjectMap> response = null;
         try {
             response = execute(USERS_URL, getUserId(null), "logout", null, GET, ObjectMap.class);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (CatalogException e) {
-            e.printStackTrace();
+        } catch (IOException | ClientException e) {
+            logger.error("{}", e.getMessage(), e);
         }
         return response;
     }
 
-    public QueryResponse<User> get(QueryOptions options) throws IOException, CatalogException {
+    public QueryResponse<User> get(QueryOptions options) throws IOException, ClientException {
         return super.get(getUserId(options), options);
     }
 
-    public QueryResponse<Project> getProjects(QueryOptions options) throws IOException, CatalogException {
+    public QueryResponse<Project> getProjects(QueryOptions options) throws IOException, ClientException {
         String userId = getUserId(options);
         return execute(USERS_URL, userId, "projects", options, GET, Project.class);
     }
 
     public QueryResponse<User> changePassword(String currentPassword, String newPassword, ObjectMap params)
-            throws CatalogException, IOException {
+            throws ClientException, IOException {
         ObjectMapper mapper = new ObjectMapper();
         params = addParamsToObjectMap(params, "password", currentPassword, "npassword", newPassword);
         String json = mapper.writeValueAsString(params);
         ObjectMap objectMap = new ObjectMap("body", json);
         return execute(USERS_URL, getUserId(params), "change-password", objectMap, POST, User.class);
     }
-    public QueryResponse<User> resetPassword(ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<User> resetPassword(ObjectMap params) throws ClientException, IOException {
         return execute(USERS_URL, getUserId(params), "change-password", params, GET, User.class);
     }
 }

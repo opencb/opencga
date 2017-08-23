@@ -18,10 +18,9 @@ package org.opencb.opencga.client.rest.catalog;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.DiseasePanel;
 import org.opencb.opencga.core.models.acls.permissions.DiseasePanelAclEntry;
-import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
 
@@ -40,7 +39,7 @@ public class PanelClient extends CatalogClient<DiseasePanel, DiseasePanelAclEntr
     }
 
     public QueryResponse<DiseasePanel> create(String studyId, String name, String disease, ObjectMap params)
-            throws CatalogException, IOException {
+            throws IOException {
         params = addParamsToObjectMap(params, "studyId", studyId, "name", name, "disease", disease);
         return execute(PANEL_URL, "create", params, GET, DiseasePanel.class);
     }

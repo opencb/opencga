@@ -26,6 +26,7 @@ import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.UserCommandOptions;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.User;
@@ -101,7 +102,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         createOutput(queryResponse);
     }
 
-    private void login() throws CatalogException, IOException {
+    private void login() throws ClientException, IOException {
         logger.debug("Login");
 
         String user = usersCommandOptions.loginCommandOptions.user;
@@ -159,7 +160,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
                 usersCommandOptions.createCommandOptions.password, params);
     }
 
-    private QueryResponse<User> info() throws CatalogException, IOException {
+    private QueryResponse<User> info() throws ClientException, IOException {
         logger.debug("User info");
 
         QueryOptions queryOptions = new QueryOptions();
@@ -189,7 +190,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         return userQueryResponse;
     }
 
-    private QueryResponse<Project> projects() throws CatalogException, IOException {
+    private QueryResponse<Project> projects() throws ClientException, IOException {
         logger.debug("List all projects and studies of user");
 
         QueryOptions queryOptions = new QueryOptions();
@@ -207,7 +208,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getUserClient().getProjects(queryOptions);
     }
 
-    private void resetPasword() throws CatalogException, IOException {
+    private void resetPasword() throws ClientException, IOException {
         logger.debug("Resetting the user password and sending a new one to the e-mail stored in catalog.");
 
         ObjectMap params = new ObjectMap();
@@ -222,7 +223,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
 //        openCGAClient.getUserClient().delete(usersCommandOptions.deleteCommandOptions.user, new ObjectMap());
     }
 
-    private QueryResponse<User> update() throws CatalogException, IOException {
+    private QueryResponse<User> update() throws ClientException, IOException {
         logger.debug("Updating user");
 
         ObjectMap params = new ObjectMap();
@@ -233,7 +234,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getUserClient().update(usersCommandOptions.updateCommandOptions.user, null, params);
     }
 
-    private QueryResponse<User> changePassword () throws CatalogException, IOException {
+    private QueryResponse<User> changePassword () throws ClientException, IOException {
         return openCGAClient.getUserClient().changePassword(usersCommandOptions.changePasswordCommandOptions.password,
                 usersCommandOptions.changePasswordCommandOptions.npassword, new ObjectMap());
     }

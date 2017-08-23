@@ -23,14 +23,13 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.models.summaries.StudySummary;
-import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
 
@@ -49,7 +48,7 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
     }
 
     public QueryResponse<Study> create(String projectId, String studyName, String studyAlias, ObjectMap params)
-            throws CatalogException, IOException {
+            throws IOException {
         if (params.containsKey("method")) {
             if (params.get("method").equals("GET")) {
                 params = addParamsToObjectMap(params, "projectId", projectId, "name", studyName, "alias", studyAlias);
@@ -82,40 +81,40 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
         p.putAll(options);
         return execute(category, "search", p, POST, clazz);
     }
-    public QueryResponse<StudySummary> getSummary(String studyId, QueryOptions options) throws CatalogException, IOException {
+    public QueryResponse<StudySummary> getSummary(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "summary", options, GET, StudySummary.class);
     }
 
-    public QueryResponse<Sample> getSamples(String studyId, QueryOptions options) throws CatalogException, IOException {
+    public QueryResponse<Sample> getSamples(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "samples", options, GET, Sample.class);
     }
 
-    public QueryResponse<File> getFiles(String studyId, QueryOptions options) throws CatalogException, IOException {
+    public QueryResponse<File> getFiles(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "files", options, GET, File.class);
     }
 
-    public QueryResponse<Job> getJobs(String studyId, QueryOptions options) throws CatalogException, IOException {
+    public QueryResponse<Job> getJobs(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "jobs", options, GET, Job.class);
     }
 
-    public QueryResponse<ObjectMap> getStatus(String studyId, QueryOptions options) throws CatalogException, IOException {
+    public QueryResponse<ObjectMap> getStatus(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "status", options, GET, ObjectMap.class);
     }
 
-    public QueryResponse<Variant> getVariants(String studyId, QueryOptions options) throws CatalogException, IOException {
+    public QueryResponse<Variant> getVariants(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "variants", options, GET, Variant.class);
     }
 
-    public QueryResponse<Long> countVariants(String studyId, QueryOptions options) throws CatalogException, IOException {
+    public QueryResponse<Long> countVariants(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "variants", options, GET, Long.class);
     }
 
-    public QueryResponse<ObjectMap> getVariantsGeneric(String studyId, QueryOptions options) throws CatalogException, IOException {
+    public QueryResponse<ObjectMap> getVariantsGeneric(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "variants", options, GET, ObjectMap.class);
     }
 
     public QueryResponse<Alignment> getAlignments(String studyId, String sampleId, String fileId, String region, Query query,
-                                                  QueryOptions options) throws CatalogException, IOException {
+                                                  QueryOptions options) throws IOException {
         ObjectMap params = new ObjectMap(query);
         params.putAll(options);
         params = addParamsToObjectMap(params, "sampleId", sampleId, "fileId", fileId, "region", region);
@@ -127,42 +126,41 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
         return execute(STUDY_URL, studyId, "alignments", params, GET, Alignment.class);
     }
 
-    public QueryResponse scanFiles(String studyId, QueryOptions options) throws CatalogException, IOException {
+    public QueryResponse scanFiles(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "scanFiles", options, GET, Object.class);
     }
 
-    public QueryResponse resyncFiles(String studyId, QueryOptions options) throws CatalogException, IOException {
+    public QueryResponse resyncFiles(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "resyncFiles", options, GET, Object.class);
     }
 
-    public QueryResponse<ObjectMap> createGroup(String studyId, String groupId, String users) throws CatalogException, IOException {
+    public QueryResponse<ObjectMap> createGroup(String studyId, String groupId, String users) throws IOException {
         ObjectMap bodyParams = new ObjectMap();
         bodyParams.putIfNotEmpty("name", groupId);
         bodyParams.putIfNotEmpty("users", users);
         return execute(STUDY_URL, studyId, "groups", null, "create", new ObjectMap("body", bodyParams), POST, ObjectMap.class);
     }
 
-    public QueryResponse<ObjectMap> deleteGroup(String studyId, String groupId, QueryOptions options)
-            throws CatalogException, IOException {
+    public QueryResponse<ObjectMap> deleteGroup(String studyId, String groupId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "groups", groupId, "delete", options, GET, ObjectMap.class);
     }
 
-    public QueryResponse<ObjectMap> updateGroup(String studyId, String groupId, ObjectMap objectMap) throws CatalogException, IOException {
+    public QueryResponse<ObjectMap> updateGroup(String studyId, String groupId, ObjectMap objectMap) throws IOException {
         ObjectMap bodyParams = new ObjectMap("body", objectMap);
         return execute(STUDY_URL, studyId, "groups", groupId, "update", bodyParams, POST, ObjectMap.class);
     }
 
-    public QueryResponse<ObjectMap> updateGroupMember(String studyId, ObjectMap objectMap) throws CatalogException, IOException {
+    public QueryResponse<ObjectMap> updateGroupMember(String studyId, ObjectMap objectMap) throws IOException {
         ObjectMap bodyParams = new ObjectMap("body", objectMap);
         return execute(STUDY_URL, studyId, "groups", "members", "update", bodyParams, POST, ObjectMap.class);
     }
 
-    public QueryResponse<ObjectMap> groups(String studyId, ObjectMap objectMap) throws CatalogException, IOException {
+    public QueryResponse<ObjectMap> groups(String studyId, ObjectMap objectMap) throws IOException {
         ObjectMap params = new ObjectMap(objectMap);
         return execute(STUDY_URL, studyId, "groups", params, GET, ObjectMap.class);
     }
 
-    public QueryResponse<Study> update(String studyId, String study, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<Study> update(String studyId, String study, ObjectMap params) throws IOException {
         if (params.containsKey("method")) {
             if (params.get("method").equals("GET")) {
                 params.remove("method");
@@ -176,7 +174,7 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
         return execute(STUDY_URL, studyId, "update", p, POST, Study.class);
     }
 
-    public QueryResponse<Study> delete(String studyId, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<Study> delete(String studyId, ObjectMap params) throws IOException {
         return execute(STUDY_URL, studyId, "delete", params, GET, Study.class);
     }
 }

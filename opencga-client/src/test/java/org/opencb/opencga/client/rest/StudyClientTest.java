@@ -22,16 +22,15 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.client.rest.catalog.StudyClient;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.rest.catalog.StudyClient;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 /**
@@ -44,7 +43,7 @@ public class StudyClientTest {
 
     private static WSTestServer wsTestServer;
 
-    public StudyClientTest() throws CatalogException {
+    public StudyClientTest() throws ClientException {
         try {
             clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration.yml"));
 //            clientConfiguration.getRest().setHost("http://localhost:8890/opencga/webservices/rest");
