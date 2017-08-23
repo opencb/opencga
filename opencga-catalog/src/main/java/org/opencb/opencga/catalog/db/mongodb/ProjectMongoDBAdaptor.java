@@ -577,8 +577,10 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         }
         List<Bson> aggregates = new ArrayList<>();
 
+        Bson bsonQuery = parseQuery(query);
+        aggregates.add(Aggregates.match(bsonQuery));
         aggregates.add(Aggregates.unwind("$projects"));
-        aggregates.add(Aggregates.match(parseQuery(query)));
+        aggregates.add(Aggregates.match(bsonQuery));
 
         // Check include
         if (options != null && options.get(QueryOptions.INCLUDE) != null) {
