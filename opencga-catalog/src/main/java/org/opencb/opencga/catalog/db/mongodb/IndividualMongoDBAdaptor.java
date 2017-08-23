@@ -278,7 +278,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     @Override
     public QueryResult<Individual> update(long id, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
-        Bson query = parseQuery(new Query(QueryParams.ID.key(), id), true);
+        Bson query = parseQuery(new Query(QueryParams.ID.key(), id), false);
         Map<String, Object> myParams = getValidatedUpdateParams(parameters);
 
         if (myParams.isEmpty()) {

@@ -102,21 +102,21 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         queryAux.append(QueryParams.OUT_DIR_ID.key(), fileIds);
         ObjectMap params = new ObjectMap(QueryParams.OUT_DIR_ID.key(), -1);
         Document update = new Document("$set", params);
-        QueryResult<UpdateResult> update1 = jobCollection.update(parseQuery(queryAux, true), update, multi);
+        QueryResult<UpdateResult> update1 = jobCollection.update(parseQuery(queryAux, false), update, multi);
         logger.debug("{} out of {} documents changed to have outDirId = -1", update1.first().getMatchedCount(),
                 update1.first().getModifiedCount());
 
         queryAux = new Query(query);
         queryAux.append(QueryParams.INPUT_ID.key(), fileIds);
         update = new Document("$pull", new Document(QueryParams.INPUT.key(), new Document("id", new Document("$in", fileIds))));
-        QueryResult<UpdateResult> update2 = jobCollection.update(parseQuery(queryAux, true), update, multi);
+        QueryResult<UpdateResult> update2 = jobCollection.update(parseQuery(queryAux, false), update, multi);
         logger.debug("{} out of {} documents changed to pull input file ids", update2.first().getMatchedCount(),
                 update2.first().getModifiedCount());
 
         queryAux = new Query(query);
         queryAux.append(QueryParams.OUTPUT_ID.key(), fileIds);
         update = new Document("$pull", new Document(QueryParams.OUTPUT.key(), new Document("id", new Document("$in", fileIds))));
-        QueryResult<UpdateResult> update3 = jobCollection.update(parseQuery(queryAux, true), update, multi);
+        QueryResult<UpdateResult> update3 = jobCollection.update(parseQuery(queryAux, false), update, multi);
         logger.debug("{} out of {} documents changed to pull input file ids", update3.first().getMatchedCount(),
                 update3.first().getModifiedCount());
 
@@ -230,7 +230,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public QueryResult<Job> update(long id, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
-        Bson query = parseQuery(new Query(QueryParams.ID.key(), id), true);
+        Bson query = parseQuery(new Query(QueryParams.ID.key(), id), false);
         Map<String, Object> myParams = getValidatedUpdateParams(parameters);
 
         if (myParams.isEmpty()) {
