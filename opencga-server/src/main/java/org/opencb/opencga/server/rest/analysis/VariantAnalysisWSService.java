@@ -21,10 +21,7 @@ import io.swagger.annotations.*;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.FacetedQueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.core.models.Job;
@@ -39,6 +36,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
@@ -406,6 +404,26 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         try {
             return createOkResponse("[PENDING]");
         } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/validate")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Validate a VCF file", response = QueryResponse.class)
+    public Response validate(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                    String studyStr,
+            @ApiParam(value = "VCF file id, name or path", required = true) @QueryParam("file") String file) {
+        try {
+            Map<String, String> params = new HashMap<>();
+            params.put("input", file);
+
+            QueryResult<Job> queryResult = catalogManager.getJobManager().create(studyStr, "", "", "opencga-analysis", "variant validate",
+                    null, params, sessionId);
+            return createOkResponse(queryResult);
+        } catch(Exception e) {
             return createErrorResponse(e);
         }
     }

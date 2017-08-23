@@ -35,7 +35,7 @@ public abstract class AbstractExecutor {
     public static final String OUTDIR = "outdir";
     public static final String NUM_THREADS = "num_threads";
     public static final String MAX_MEM = "max_mem";
-    public static final String JOB_STATUS_FILE = "job.status";
+    public static final String JOB_STATUS_FILE = "status.json";
     public static final String OUT_LOG_EXTENSION = ".out";
     public static final String ERR_LOG_EXTENSION = ".err";
 
@@ -63,6 +63,11 @@ public abstract class AbstractExecutor {
             logger.warn("Job status file could not be read.");
             return getStatus(job);
         }
+    }
+
+    // We do it this way to avoid writing the session id in the command line attribute of Job
+    protected String getCommandLine(Job job) {
+        return job.getCommandLine() + " --session-id " + job.getAttributes().get(Job.OPENCGA_USER_TOKEN);
     }
 
     protected abstract String getStatus(Job job);

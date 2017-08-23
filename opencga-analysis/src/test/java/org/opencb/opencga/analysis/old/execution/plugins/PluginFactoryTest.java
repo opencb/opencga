@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.execution.plugins;
+package org.opencb.opencga.analysis.old.execution.plugins;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.old.models.tool.Manifest;
-import org.opencb.opencga.analysis.execution.plugins.test.TestAnalysis;
+import org.opencb.opencga.analysis.old.execution.plugins.test.TestAnalysis;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.LoggerFactory;

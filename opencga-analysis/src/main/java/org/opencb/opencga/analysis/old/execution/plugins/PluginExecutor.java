@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.execution.plugins;
+package org.opencb.opencga.analysis.old.execution.plugins;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.AnalysisExecutionException;
+import org.opencb.opencga.analysis.old.AnalysisExecutionException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.Job;
@@ -45,7 +45,7 @@ public class PluginExecutor {
     }
 
     public int execute(Job job) throws CatalogException, AnalysisExecutionException {
-        return execute(job.getToolName(), job.getExecution(), catalogManager.getJobManager().getStudyId(job.getId()), job.getParams());
+        return execute(job.getToolId(), job.getExecution(), catalogManager.getJobManager().getStudyId(job.getId()), job.getParams());
     }
 
     public int execute(String pluginId, String execution, long studyId, Map<String, String> params)

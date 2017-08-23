@@ -21,10 +21,9 @@ import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.AbstractParentClient;
+import org.opencb.opencga.core.models.Job;
 
 import java.io.IOException;
 
@@ -39,7 +38,7 @@ public class AlignmentClient extends AbstractParentClient {
         super(userId, sessionId, configuration);
     }
 
-    public QueryResponse<Job> index(String fileIds, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<Job> index(String fileIds, ObjectMap params) throws IOException {
         if (params == null) {
             params = new ObjectMap();
         }
@@ -47,7 +46,7 @@ public class AlignmentClient extends AbstractParentClient {
         return execute(ALIGNMENT_URL, "index", params, GET, Job.class);
     }
 
-    public QueryResponse<ReadAlignment> query(String fileIds, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<ReadAlignment> query(String fileIds, ObjectMap params) throws IOException {
         if (params == null) {
             params = new ObjectMap();
         }
@@ -55,7 +54,7 @@ public class AlignmentClient extends AbstractParentClient {
         return execute(ALIGNMENT_URL, "query", params, GET, ReadAlignment.class);
     }
 
-    public QueryResponse<AlignmentGlobalStats> stats(String fileIds, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<AlignmentGlobalStats> stats(String fileIds, ObjectMap params) throws IOException {
         if (params == null) {
             params = new ObjectMap();
         }
@@ -63,7 +62,7 @@ public class AlignmentClient extends AbstractParentClient {
         return execute(ALIGNMENT_URL, "stats", params, GET, AlignmentGlobalStats.class);
     }
 
-    public QueryResponse<RegionCoverage> coverage(String fileIds, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<RegionCoverage> coverage(String fileIds, ObjectMap params) throws IOException {
         if (params == null) {
             params = new ObjectMap();
         }

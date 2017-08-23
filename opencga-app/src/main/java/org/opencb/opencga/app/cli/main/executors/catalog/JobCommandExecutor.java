@@ -28,6 +28,7 @@ import org.opencb.opencga.app.cli.main.options.JobCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.acls.permissions.JobAclEntry;
 
@@ -89,7 +90,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         createOutput(queryResponse);
     }
 
-    private QueryResponse<Job> create() throws CatalogException, IOException {
+    private QueryResponse<Job> create() throws ClientException, IOException {
         logger.debug("Creating a new job");
 
         String studyId = resolveStudy(jobsCommandOptions.createCommandOptions.study);

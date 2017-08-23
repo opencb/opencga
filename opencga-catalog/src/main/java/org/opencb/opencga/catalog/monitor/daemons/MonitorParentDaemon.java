@@ -17,7 +17,12 @@
 package org.opencb.opencga.catalog.monitor.daemons;
 
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
@@ -25,11 +30,15 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.catalog.monitor.executors.ExecutorManager;
+import org.opencb.opencga.core.models.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by imedina on 16/06/16.
@@ -96,5 +105,88 @@ public abstract class MonitorParentDaemon implements Runnable {
         this.exit = exit;
     }
 
+    static Path getJobTemporaryFolder(long jobId, Path tempJobFolder) {
+        return tempJobFolder.resolve(getJobTemporaryFolderName(jobId));
+    }
+
+    static String getJobTemporaryFolderName(long jobId) {
+        return "J_" + jobId;
+    }
+
+    void executeJob(Job job) {
+        try {
+            executorManager.execute(job);
+        } catch (Exception e) {
+            logger.error("Error executing job {}.", job.getId(), e);
+        }
+    }
+
+    void checkQueuedJob(Job job, Path tempJobFolder, CatalogIOManager catalogIOManager) {
+
+        Path tmpOutdirPath = getJobTemporaryFolder(job.getId(), tempJobFolder);
+        if (!tmpOutdirPath.toFile().exists()) {
+            logger.warn("Attempting to create the temporal output directory again");
+            try {
+                catalogIOManager.createDirectory(tmpOutdirPath.toUri());
+            } catch (CatalogIOException e) {
+                logger.error("Could not create the temporal output directory to run the job");
+            }
+        } else {
+            String status = executorManager.status(tmpOutdirPath, job);
+            if (!status.equalsIgnoreCase(Job.JobStatus.UNKNOWN) && !status.equalsIgnoreCase(Job.JobStatus.QUEUED)) {
+                try {
+                    logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.QUEUED, Job.JobStatus.RUNNING);
+                    setNewStatus(job.getId(), Job.JobStatus.RUNNING, "The job is running");
+                } catch (CatalogException e) {
+                    logger.warn("Could not update job {} to status running", job.getId());
+                }
+            }
+        }
+    }
+
+    void setNewStatus(long jobId, String status, String message) throws CatalogDBException {
+        ObjectMap parameters = new ObjectMap();
+        parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_NAME.key(), status);
+        parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_MSG.key(), message);
+        dbAdaptorFactory.getCatalogJobDBAdaptor().update(jobId, parameters);
+    }
+
+    void cleanPrivateJobInformation(Job job) {
+        // Remove the session id from the job attributes
+        job.getAttributes().remove(Job.OPENCGA_USER_TOKEN);
+        job.getAttributes().remove(Job.OPENCGA_OUTPUT_DIR);
+        job.getAttributes().remove(Job.OPENCGA_STUDY);
+
+        ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
+        try {
+            dbAdaptorFactory.getCatalogJobDBAdaptor().update(job.getId(), params);
+        } catch (CatalogException e) {
+            logger.error("Could not remove session id from attributes of job {}. ", job.getId(), e);
+        }
+    }
+
+    void buildCommandLine(Map<String, String> params, StringBuilder commandLine, Set<String> knownParams) {
+        for (Map.Entry<String, String> param : params.entrySet()) {
+            commandLine.append(' ');
+            if (knownParams == null || knownParams.contains(param.getKey())) {
+                if (!("false").equalsIgnoreCase(param.getValue())) {
+                    if (param.getKey().length() == 1) {
+                        commandLine.append('-');
+                    } else {
+                        commandLine.append("--");
+                    }
+                    commandLine.append(param.getKey());
+                    if (!param.getValue().equalsIgnoreCase("true")) {
+                        commandLine.append(' ').append(param.getValue());
+                    }
+                }
+            } else {
+                if (!param.getKey().startsWith("-D")) {
+                    commandLine.append("-D");
+                }
+                commandLine.append(param.getKey()).append('=').append(param.getValue());
+            }
+        }
+    }
 
 }

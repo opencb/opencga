@@ -123,7 +123,7 @@ public class IndexDaemon extends MonitorParentDaemon {
                     QueryResult<Job> queuedJobs = jobDBAdaptor.get(QUEUED_JOBS_QUERY, QUERY_OPTIONS);
                     logger.debug("Checking queued jobs. {} queued jobs found", queuedJobs.getNumResults());
                     for (Job job : queuedJobs.getResult()) {
-                        checkQueuedJob(job);
+                        checkQueuedJob(job, tempJobFolder, catalogIOManager);
                     }
                 } catch (CatalogException e) {
                     logger.warn("Cannot obtain queued jobs", e);
@@ -155,8 +155,8 @@ public class IndexDaemon extends MonitorParentDaemon {
         }
     }
 
-    private void checkRunningJob(Job job) {
-        Path tmpOutdirPath = getJobTemporaryFolder(job.getId());
+    private void checkRunningJob(Job job) throws CatalogIOException {
+        Path tmpOutdirPath = getJobTemporaryFolder(job.getId(), tempJobFolder);
         Job.JobStatus jobStatus;
 
         ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, this.sessionId);
@@ -228,68 +228,9 @@ public class IndexDaemon extends MonitorParentDaemon {
         }
     }
 
-    private void checkQueuedJob(Job job) {
-
-        Path tmpOutdirPath = getJobTemporaryFolder(job.getId());
-        if (!tmpOutdirPath.toFile().exists()) {
-            logger.warn("Attempting to create the temporal output directory again");
-            try {
-                catalogIOManager.createDirectory(tmpOutdirPath.toUri());
-            } catch (CatalogIOException e) {
-                logger.error("Could not create the temporal output directory to run the job");
-            }
-        } else {
-            String status = executorManager.status(tmpOutdirPath, job);
-            if (!status.equalsIgnoreCase(Job.JobStatus.UNKNOWN) && !status.equalsIgnoreCase(Job.JobStatus.QUEUED)) {
-                try {
-                    logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.QUEUED, Job.JobStatus.RUNNING);
-                    setNewStatus(job.getId(), Job.JobStatus.RUNNING, "The job is running");
-                } catch (CatalogException e) {
-                    logger.warn("Could not update job {} to status running", job.getId());
-                }
-            }
-//
-//            Path jobStatusFile = tmpOutdirPath.resolve(JOB_STATUS_FILE);
-//            if (jobStatusFile.toFile().exists()) {
-//                Job.JobStatus jobStatus = null;
-//                try {
-//                    jobStatus = objectReader.readValue(jobStatusFile.toFile());
-//                } catch (IOException e) {
-//                    logger.warn("Could not read job status file.");
-//                    // TODO: Add a maximum number of attempts....
-//                }
-//                if (jobStatus != null && !jobStatus.getName().equalsIgnoreCase(Job.JobStatus.QUEUED)) {
-//                    ObjectMap objectMap = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING);
-//                    try {
-//                        catalogManager.getJobManager().update(job.getId(), objectMap, new QueryOptions(), sessionId);
-//                    } catch (CatalogException e) {
-//                        logger.warn("Could not update job {} to status running", job.getId());
-//                    }
-//                }
-//            } else {
-//                String status = executorManager.status(job);
-//                if (!status.equalsIgnoreCase(Job.JobStatus.QUEUED)) {
-//                    ObjectMap objectMap = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING);
-//                    try {
-//                        catalogManager.getJobManager().update(job.getId(), objectMap, new QueryOptions(), sessionId);
-//                    } catch (CatalogException e) {
-//                        logger.warn("Could not update job {} to status running", job.getId());
-//                    }
-//                }
-//            }
-        }
-    }
-
-    private void setNewStatus(long jobId, String status, String message) throws CatalogDBException {
-        ObjectMap parameters = new ObjectMap();
-        parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_NAME.key(), status);
-        parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_MSG.key(), message);
-        jobDBAdaptor.update(jobId, parameters);
-    }
-
     private void queuePreparedIndex(Job job) {
         // Create the temporal output directory.
-        Path path = getJobTemporaryFolder(job.getId());
+        Path path = getJobTemporaryFolder(job.getId(), tempJobFolder);
         try {
             catalogIOManager.createDirectory(path.toUri());
         } catch (CatalogIOException e) {
@@ -298,7 +239,7 @@ public class IndexDaemon extends MonitorParentDaemon {
             // TODO: Maximum attemps ... -> Error !
         }
 
-        // Defined where the stdout and stderr will be stored
+        // Define where the stdout and stderr will be stored
         String stderr = path.resolve(job.getName() + '_' + job.getId() + ".err").toString();
         String stdout = path.resolve(job.getName() + '_' + job.getId() + ".out").toString();
 
@@ -310,7 +251,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         } catch (CatalogException e) {
             logger.warn("Could not obtain a new session id for user {}. ", userId, e);
         }
-        job.getParams().put("sid", userSessionId);
+        job.getAttributes().put(Job.OPENCGA_USER_TOKEN, userSessionId);
 
         // TODO: This command line could be created outside this class
         // Build the command line.
@@ -327,29 +268,8 @@ public class IndexDaemon extends MonitorParentDaemon {
                     "aggregated", "aggregation-mapping-file", "annotate", "annotator", "bgzip", "calculate-stats",
                     "exclude-genotypes", "file", "gvcf", "h", "help", "include-extra-fields", "load", "log-file",
                     "L", "log-level", "merge", "o", "outdir", "overwrite-annotations", "path", "queue", "s", "study",
-                    "S", "sid", "session-id",
                     "transform", "transformed-files", "resume"));
-            for (Map.Entry<String, String> param : job.getParams().entrySet()) {
-                commandLine.append(' ');
-                if (knownParams.contains(param.getKey())) {
-                    if (!("false").equalsIgnoreCase(param.getValue())) {
-                        if (param.getKey().length() == 1) {
-                            commandLine.append('-');
-                        } else {
-                            commandLine.append("--");
-                        }
-                        commandLine.append(param.getKey());
-                        if (!param.getValue().equalsIgnoreCase("true")) {
-                            commandLine.append(' ').append(param.getValue());
-                        }
-                    }
-                } else {
-                    if (!param.getKey().startsWith("-D")) {
-                        commandLine.append("-D");
-                    }
-                    commandLine.append(param.getKey()).append('=').append(param.getValue());
-                }
-            }
+            buildCommandLine(job.getParams(), commandLine, knownParams);
         } else {
             commandLine.append(" alignment index");
             for (Map.Entry<String, String> param : job.getParams().entrySet()) {
@@ -369,7 +289,7 @@ public class IndexDaemon extends MonitorParentDaemon {
 //            updateObjectMap.put(JobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
             ObjectMap updateObjectMap = new ObjectMap();
             updateObjectMap.put(JobDBAdaptor.QueryParams.COMMAND_LINE.key(), commandLine.toString());
-            job.getAttributes().put("sessionId", userSessionId);
+//            job.getAttributes().put("sessionId", userSessionId);
 
             updateObjectMap.put(JobDBAdaptor.QueryParams.START_TIME.key(), System.currentTimeMillis());
             updateObjectMap.put(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
@@ -382,11 +302,7 @@ public class IndexDaemon extends MonitorParentDaemon {
             QueryResult<Job> update = jobDBAdaptor.update(job.getId(), updateObjectMap);
             if (update.getNumResults() == 1) {
                 job = update.first();
-                try {
-                    executorManager.execute(job);
-                } catch (Exception e) {
-                    logger.error("Error executing job {}.", job.getId(), e);
-                }
+                executeJob(job);
             } else {
                 logger.error("Could not update nor run job {}" + job.getId());
             }
@@ -396,23 +312,6 @@ public class IndexDaemon extends MonitorParentDaemon {
 
     }
 
-    private Path getJobTemporaryFolder(long jobId) {
-        return getJobTemporaryFolder(jobId, tempJobFolder);
-    }
-
-    public static Path getJobTemporaryFolder(long jobId, Path tempJobFolder) {
-        return tempJobFolder.resolve(getJobTemporaryFolderName(jobId));
-    }
-
-    public static Path getJobTemporaryFolder(long jobId, String tempJobFolder) {
-        URI uri = URI.create(tempJobFolder);
-        return Paths.get(uri.getPath()).resolve(getJobTemporaryFolderName(jobId));
-    }
-
-    public static String getJobTemporaryFolderName(long jobId) {
-        return "J_" + jobId;
-    }
-
     private long getRunningOrQueuedJobs() throws CatalogException {
         Query runningJobsQuery = new Query()
                 .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Arrays.asList(Job.JobStatus.RUNNING, Job.JobStatus.QUEUED))
@@ -420,7 +319,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         return jobDBAdaptor.get(runningJobsQuery, QueryOptions.empty()).getNumTotalResults();
     }
 
-    private void closeSessionId(Job job) {
+    void closeSessionId(Job job) {
 
         // Remove the session id from the job attributes
         job.getAttributes().remove("sessionId");

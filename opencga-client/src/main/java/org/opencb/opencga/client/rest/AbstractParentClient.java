@@ -29,8 +29,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +67,8 @@ public abstract class AbstractParentClient {
     private static final int DEFAULT_SKIP = 0;
     protected static final String GET = "GET";
     protected static final String POST = "POST";
+
+    protected static final String STUDY = "study";
 
     protected Logger logger;
 
@@ -340,13 +342,13 @@ public abstract class AbstractParentClient {
         return this;
     }
 
-    public String getUserId(ObjectMap options) throws CatalogException {
+    public String getUserId(ObjectMap options) throws ClientException {
         String userId = this.userId;
         if (options != null && options.containsKey("userId")) {
             userId = options.getString("userId");
         }
         if (userId == null || userId.isEmpty()) {
-            throw new CatalogException("Missing user id");
+            throw new ClientException("Missing user id");
         }
         return userId;
     }

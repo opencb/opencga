@@ -22,10 +22,9 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.AbstractParentClient;
+import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.results.VariantQueryResult;
 
 import java.io.IOException;
@@ -48,19 +47,19 @@ public class VariantClient extends AbstractParentClient {
         jsonObjectMapper.addMixIn(QueryResponse.class, QueryResponseMixing.class);
     }
 
-    public QueryResponse<Job> index(String fileIds, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<Job> index(String fileIds, ObjectMap params) throws IOException {
         params.append("file", fileIds);
         return execute(VARIANT_URL, "index", params, GET, Job.class);
     }
 
-    public QueryResponse<Variant> query(ObjectMap params, QueryOptions options) throws CatalogException, IOException {
+    public QueryResponse<Variant> query(ObjectMap params, QueryOptions options) throws IOException {
         if (options != null) {
             params.putAll(options);
         }
         return execute(VARIANT_URL, "query", params, GET, Variant.class);
     }
 
-    public VariantQueryResult<Variant> query2(ObjectMap params, QueryOptions options) throws CatalogException, IOException {
+    public VariantQueryResult<Variant> query2(ObjectMap params, QueryOptions options) throws IOException {
         if (options != null) {
             params.putAll(options);
         }
@@ -71,14 +70,14 @@ public class VariantClient extends AbstractParentClient {
 //        return ((VariantQueryResult<Variant>) query(params, options).getResponse().get(0));
 //    }
 
-    public QueryResponse<Long> count(ObjectMap params, QueryOptions options) throws CatalogException, IOException {
+    public QueryResponse<Long> count(ObjectMap params, QueryOptions options) throws IOException {
         if (options != null) {
             params.putAll(options);
         }
         return execute(VARIANT_URL, "query", params, GET, Long.class);
     }
 
-    public QueryResponse<ObjectMap> genericQuery(ObjectMap params, QueryOptions options) throws CatalogException, IOException {
+    public QueryResponse<ObjectMap> genericQuery(ObjectMap params, QueryOptions options) throws IOException {
         if (options != null) {
             params.putAll(options);
         }

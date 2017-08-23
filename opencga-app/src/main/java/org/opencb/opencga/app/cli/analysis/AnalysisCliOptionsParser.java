@@ -22,8 +22,8 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
+import org.opencb.opencga.app.cli.analysis.options.ToolsCommandOptions;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 
 import java.util.List;
@@ -98,12 +98,12 @@ public class AnalysisCliOptionsParser {
         alignmentSubCommands.addCommand("coverage", alignmentCommandOptions.coverageAlignmentCommandOptions);
 //        alignmentSubCommands.addCommand("annotate", alignmentCommandOptions.annotateVariantCommandOptions);
 
-        toolsCommandOptions = new ToolsCommandOptions();
+        toolsCommandOptions = new ToolsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("tools", toolsCommandOptions);
         JCommander toolsSubCommands = jCommander.getCommands().get("tools");
-        toolsSubCommands.addCommand("install", toolsCommandOptions.installToolCommandOptions);
         toolsSubCommands.addCommand("list", toolsCommandOptions.listToolCommandOptions);
         toolsSubCommands.addCommand("show", toolsCommandOptions.showToolCommandOptions);
+        toolsSubCommands.addCommand("execute", toolsCommandOptions.executeToolCommandOptions);
     }
 
     public void parse(String[] args) throws ParameterException {
@@ -245,53 +245,6 @@ public class AnalysisCliOptionsParser {
             this.deleteVariantCommandOptions = new DeleteVariantCommandOptions();
         }
     }
-
-
-    /*
-     * Alignment CLI options
-     */
-//    @Parameters(commandNames = {"alignment"}, commandDescription = "Implement several tools for the genomic alignment analysis")
-//    public class AlignmentCommandOptions extends CommandOptions {
-//
-//        final IndexAlignmentCommandOptions indexAlignmentCommandOptions;
-//        final QueryAlignmentCommandOptions queryAlignmentCommandOptions;
-//        final QueryGRPCAlignmentCommandOptions queryGRPCAlignmentCommandOptions;
-//        final StatsAlignmentCommandOptions statsAlignmentCommandOptions;
-//        final CoverageAlignmentCommandOptions coverageAlignmentCommandOptions;
-////        final AnnotateVariantCommandOptions annotateVariantCommandOptions;
-////        final DeleteVariantCommandOptions deleteVariantCommandOptions;
-//
-//        AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
-//
-//        public AlignmentCommandOptions() {
-//            this.indexAlignmentCommandOptions = new IndexAlignmentCommandOptions();
-//            this.queryAlignmentCommandOptions = new QueryAlignmentCommandOptions();
-//            this.queryGRPCAlignmentCommandOptions = new QueryGRPCAlignmentCommandOptions();
-//            this.statsAlignmentCommandOptions = new StatsAlignmentCommandOptions();
-//            this.coverageAlignmentCommandOptions = new CoverageAlignmentCommandOptions();
-//        }
-//    }
-
-
-    /*
-     * Tools CLI options
-     */
-    @Parameters(commandNames = {"tools"}, commandDescription = "Implements different tools for working with tools")
-    public class ToolsCommandOptions extends CommandOptions {
-
-        InstallToolCommandOptions installToolCommandOptions;
-        ListToolCommandOptions listToolCommandOptions;
-        ShowToolCommandOptions showToolCommandOptions;
-
-        GeneralCliOptions.CommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
-
-        public ToolsCommandOptions() {
-            this.installToolCommandOptions = new InstallToolCommandOptions();
-            this.listToolCommandOptions = new ListToolCommandOptions();
-            this.showToolCommandOptions = new ShowToolCommandOptions();
-        }
-    }
-
 
     /**
      * Auxiliary class for Database connection.
@@ -953,48 +906,6 @@ public class AnalysisCliOptionsParser {
 //        boolean contained;
 //
 //    }
-
-    /*
-     *  Tools SUB-COMMANDS
-     */
-
-
-    @Parameters(commandNames = {"install"}, commandDescription = "Install and check a new tool")
-    public class InstallToolCommandOptions extends CatalogDatabaseCommandOptions {
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
-
-
-        @Parameter(names = {"-i", "--input"}, description = "File with the new tool to be installed", required = true, arity = 1)
-        public String study;
-
-    }
-
-    @Parameters(commandNames = {"list"}, commandDescription = "Print a summary list of all tools")
-    public class ListToolCommandOptions extends CatalogDatabaseCommandOptions {
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
-
-
-        @Parameter(names = {"--filter"}, description = "Some kind of filter", arity = 1)
-        public String study;
-
-    }
-
-    @Parameters(commandNames = {"show"}, commandDescription = "Show a summary of the tool")
-    public class ShowToolCommandOptions extends CatalogDatabaseCommandOptions {
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
-
-
-        @Parameter(names = {"--tool-id"}, description = "Full name of the study where the file is classified", arity = 1)
-        public String study;
-
-    }
-
 
 
     public void printUsage() {

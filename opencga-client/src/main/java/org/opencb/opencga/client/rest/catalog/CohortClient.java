@@ -20,12 +20,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.acls.permissions.CohortAclEntry;
-import org.opencb.opencga.client.config.ClientConfiguration;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -46,33 +44,33 @@ public class CohortClient extends AnnotationClient<Cohort, CohortAclEntry> {
     }
 
     public QueryResponse<Cohort> create(String studyId, @Nullable String variableSetId, @Nullable String variable, ObjectMap bodyParams)
-            throws CatalogException, IOException {
+            throws IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("body", bodyParams);
-        params.putIfNotNull(CohortDBAdaptor.QueryParams.STUDY.key(), studyId);
-        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId);
-        params.putIfNotEmpty(variable, variable);
+        params.putIfNotNull(STUDY, studyId);
+        params.putIfNotEmpty("variableSet", variableSetId);
+        params.putIfNotEmpty("variable", variable);
         return execute(COHORT_URL, "create", params, POST, Cohort.class);
     }
 
-    public QueryResponse<Object> getStats(String cohortId, Query query, QueryOptions options) throws CatalogException, IOException {
+    public QueryResponse<Object> getStats(String cohortId, Query query, QueryOptions options) throws IOException {
         ObjectMap params = new ObjectMap(query);
         params.putAll(options);
         return execute(COHORT_URL, cohortId, "stats", params, GET, Object.class);
     }
 
-    public QueryResponse<Sample> getSamples(String cohortId, Query query, QueryOptions options) throws CatalogException, IOException {
+    public QueryResponse<Sample> getSamples(String cohortId, Query query, QueryOptions options) throws IOException {
         ObjectMap params = new ObjectMap(query);
         params.putAll(options);
         return execute(COHORT_URL, cohortId, "samples", params, GET, Sample.class);
     }
 
-    public QueryResponse<Cohort> annotate(String cohortId, String annotateSetName, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<Cohort> annotate(String cohortId, String annotateSetName, ObjectMap params) throws IOException {
         params = addParamsToObjectMap(params, "annotateSetName", annotateSetName);
         return execute(COHORT_URL, cohortId, "annotate", params, GET, Cohort.class);
     }
 
-    public QueryResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws IOException {
         params = addParamsToObjectMap(params, "study", studyId, "fields", fields);
         return execute(COHORT_URL, "groupBy", params, GET, ObjectMap.class);
     }

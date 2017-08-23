@@ -18,8 +18,8 @@ package org.opencb.opencga.client.rest;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.analysis.AlignmentClient;
 import org.opencb.opencga.client.rest.analysis.VariantClient;
 import org.opencb.opencga.client.rest.catalog.*;
@@ -46,7 +46,7 @@ public class OpenCGAClient {
         this(null, clientConfiguration);
     }
 
-    public OpenCGAClient(String user, String password, ClientConfiguration clientConfiguration) throws CatalogException {
+    public OpenCGAClient(String user, String password, ClientConfiguration clientConfiguration) throws ClientException {
         init(null, clientConfiguration);
 
         login(user, password);
@@ -140,9 +140,9 @@ public class OpenCGAClient {
      * @param user userId.
      * @param password Password.
      * @return the sessionId of the user logged in. Null if the user or password is incorrect.
-     * @throws CatalogException when it is not possible logging in.
+     * @throws ClientException when it is not possible logging in.
      */
-    public String login(String user, String password) throws CatalogException {
+    public String login(String user, String password) throws ClientException {
         UserClient userClient = getUserClient();
         QueryResponse<ObjectMap> login = userClient.login(user, password);
         String sessionId;
@@ -160,7 +160,7 @@ public class OpenCGAClient {
             setSessionId(sessionId);
             setUserId(user);
         } else {
-            throw new CatalogException(login.getError());
+            throw new ClientException(login.getError());
         }
 
         return sessionId;

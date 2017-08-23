@@ -33,7 +33,7 @@
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-catalog</artifactId>
+            <artifactId>opencga-core</artifactId>
         </dependency>
 
         <dependency>

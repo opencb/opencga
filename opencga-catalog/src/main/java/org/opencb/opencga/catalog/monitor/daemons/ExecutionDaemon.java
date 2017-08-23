@@ -16,17 +16,28 @@
 
 package org.opencb.opencga.catalog.monitor.daemons;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
+import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.models.Job;
 
-import java.util.Map;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Created by imedina on 16/06/16.
@@ -34,13 +45,19 @@ import java.util.Map;
 public class ExecutionDaemon extends MonitorParentDaemon {
 
     private int runningJobs;
-    private String binHome;
+    private String binAnalysis;
+    private Path tempJobFolder;
 
+    private CatalogIOManager catalogIOManager;
     private JobDBAdaptor jobDBAdaptor;
 
-    public ExecutionDaemon(int interval, String sessionId, CatalogManager catalogManager, String appHome) throws CatalogDBException {
+    public ExecutionDaemon(int interval, String sessionId, CatalogManager catalogManager, String appHome)
+            throws CatalogDBException, URISyntaxException, CatalogIOException {
         super(interval, sessionId, catalogManager);
-        this.binHome = appHome + "/bin/";
+        URI uri = UriUtils.createUri(catalogManager.getConfiguration().getTempJobsDir());
+        this.tempJobFolder = Paths.get(uri.getPath());
+        this.catalogIOManager = catalogManager.getCatalogIOManagerFactory().get("file");
+        this.binAnalysis = appHome + "/bin/opencga-analysis.sh";
         this.jobDBAdaptor = dbAdaptorFactory.getCatalogJobDBAdaptor();
     }
 
@@ -75,91 +92,158 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             RUNNING JOBS
              */
             try {
-                QueryResult<Job> runningJobs = jobDBAdaptor.get(runningJobsQuery, queryOptions);
-                logger.debug("Checking running jobs. {} running jobs found", runningJobs.getNumResults());
-                for (Job job : runningJobs.getResult()) {
-                    checkRunningJob(job);
+                QueryResult<Long> count = jobDBAdaptor.count(runningJobsQuery);
+                logger.debug("Checking running jobs. {} running jobs found", count.first());
+            } catch (CatalogException e) {
+                logger.error("{}", e.getMessage(), e);
+            }
+
+            try (DBIterator<Job> iterator = jobDBAdaptor.iterator(runningJobsQuery, queryOptions)) {
+                while (iterator.hasNext()) {
+                    checkRunningJob(iterator.next());
                 }
             } catch (CatalogException e) {
-                e.printStackTrace();
+                logger.error("{}", e.getMessage(), e);
             }
 
             /*
             QUEUED JOBS
              */
             try {
-                QueryResult<Job> queuedJobs = jobDBAdaptor.get(queuedJobsQuery, queryOptions);
-                logger.debug("Checking queued jobs. {} running jobs found", queuedJobs.getNumResults());
-                for (Job job : queuedJobs.getResult()) {
-                    checkQueuedJob(job);
+                QueryResult<Long> count = jobDBAdaptor.count(queuedJobsQuery);
+                logger.debug("Checking queued jobs. {} jobs found", count.first());
+            } catch (CatalogException e) {
+                logger.error("{}", e.getMessage(), e);
+            }
+
+            try (DBIterator<Job> iterator = jobDBAdaptor.iterator(queuedJobsQuery, queryOptions)) {
+                while (iterator.hasNext()) {
+                    checkQueuedJob(iterator.next(), tempJobFolder, catalogIOManager);
                 }
             } catch (CatalogException e) {
-                e.printStackTrace();
+                logger.error("{}", e.getMessage(), e);
             }
 
             /*
             PREPARED JOBS
              */
             try {
-                QueryResult<Job> preparedJobs = jobDBAdaptor.get(preparedJobsQuery, queryOptions);
-                logger.debug("Checking prepared jobs. {} running jobs found", preparedJobs.getNumResults());
-                for (Job job : preparedJobs.getResult()) {
-                    checkPreparedJob(job);
-                }
+                QueryResult<Long> count = jobDBAdaptor.count(preparedJobsQuery);
+                logger.debug("Checking prepared jobs. {} jobs found", count.first());
             } catch (CatalogException e) {
-                e.printStackTrace();
+                logger.error("{}", e.getMessage(), e);
             }
 
-
+            try (DBIterator<Job> iterator = jobDBAdaptor.iterator(preparedJobsQuery, queryOptions)) {
+                while (iterator.hasNext()) {
+                    checkPreparedJob(iterator.next());
+                }
+            } catch (CatalogException e) {
+                logger.error("{}", e.getMessage(), e);
+            }
         }
     }
 
-    private void checkRunningJob(Job job) {
-        logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.RUNNING, Job.JobStatus.READY);
+    private void checkRunningJob(Job job) throws CatalogIOException {
+        Path tmpOutdirPath = getJobTemporaryFolder(job.getId(), tempJobFolder);
+        Job.JobStatus jobStatus;
 
-        try {
-            jobDBAdaptor.setStatus(job.getId(), Job.JobStatus.READY);
-        } catch (CatalogException e) {
-            logger.error("Could not update job {}. {}", job.getId(), e.getMessage());
-            e.printStackTrace();
-        }
-    }
+        ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, this.sessionId);
+        if (!tmpOutdirPath.toFile().exists()) {
+            jobStatus = new Job.JobStatus(Job.JobStatus.ERROR, "Temporal output directory not found");
+            try {
+                logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.RUNNING, jobStatus.getName());
+                outputRecorder.updateJobStatus(job, jobStatus);
+            } catch (CatalogException e) {
+                logger.warn("Could not update job {} to status error", job.getId(), e);
+            } finally {
+                cleanPrivateJobInformation(job);
+            }
+        } else {
+            String status = executorManager.status(tmpOutdirPath, job);
+            if (!status.equalsIgnoreCase(Job.JobStatus.UNKNOWN) && !status.equalsIgnoreCase(Job.JobStatus.RUNNING)) {
+                logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.RUNNING, status);
+                try {
+                    outputRecorder.updateJobStatus(job, new Job.JobStatus(status));
+                } catch (CatalogException e) {
+                    logger.error("{}", e.getMessage(), e);
+                    return;
+                }
 
-    private void checkQueuedJob(Job job) {
-        logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.QUEUED, Job.JobStatus.RUNNING);
-
-        try {
-            logger.info("Running job {}" + job.getName());
-
-            jobDBAdaptor.setStatus(job.getId(), Job.JobStatus.RUNNING);
-        } catch (CatalogException e) {
-            logger.error("Could not update job {}. {}", job.getId(), e.getMessage());
-            e.printStackTrace();
+                try {
+                    outputRecorder.recordJobOutput(job, tmpOutdirPath);
+                } catch (CatalogException | IOException e) {
+                    logger.error("{}", e.getMessage(), e);
+                    try {
+                        outputRecorder.updateJobStatus(job, new Job.JobStatus(Job.JobStatus.ERROR));
+                    } catch (CatalogException e1) {
+                        logger.error("{}", e1.getMessage(), e1);
+                    }
+                } finally {
+                    cleanPrivateJobInformation(job);
+                }
+            }
         }
     }
 
     private void checkPreparedJob(Job job) {
-        StringBuilder commandLine = new StringBuilder(binHome).append(job.getExecutable()).append(" ");
-        for (Map.Entry<String, String> param : job.getParams().entrySet()) {
-            commandLine
-                    .append("--")
-                    .append(param.getKey())
-                    .append(" ")
-                    .append(param.getValue())
-                    .append(" ");
-        }
-
-        logger.info("Updating job {} from {} to {}", commandLine.toString(), Job.JobStatus.PREPARED, Job.JobStatus.QUEUED);
-
+        // Create the temporal output directory.
+        Path path = getJobTemporaryFolder(job.getId(), tempJobFolder);
         try {
-            jobDBAdaptor.setStatus(job.getId(), Job.JobStatus.QUEUED);
-        } catch (CatalogException e) {
-            logger.error("Could not update job {}. {}", job.getId(), e.getMessage());
-            e.printStackTrace();
+            catalogIOManager.createDirectory(path.toUri());
+        } catch (CatalogIOException e) {
+            logger.warn("Could not create the temporal output directory " + path + " to run the job", e);
+            return;
+            // TODO: Maximum attemps ... -> Error !
         }
 
+        // Define where the stdout and stderr will be stored
+        String stderr = path.resolve(job.getName() + '_' + job.getId() + ".err").toString();
+        String stdout = path.resolve(job.getName() + '_' + job.getId() + ".out").toString();
+
+        // Create token without expiration time for the user
+        try {
+            String userToken = catalogManager.getUserManager().getSystemTokenForUser(job.getUserId(), sessionId);
+
+            StringBuilder commandLine = new StringBuilder(binAnalysis).append(' ');
+            if (job.getToolId().equals("opencga-analysis")) {
+                commandLine.append(job.getExecution()).append(' ');
+                buildCommandLine(job.getParams(), commandLine, null);
+            } else {
+                commandLine.append("tools execute ")
+                        .append("--job ").append(job.getId()).append(' ');
+            }
+            commandLine.append("--outdir ").append(path.toString());
+
+            logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.PREPARED, Job.JobStatus.QUEUED);
+            try {
+                job.getAttributes().put(Job.OPENCGA_USER_TOKEN, userToken);
+
+                job.getResourceManagerAttributes().put(AbstractExecutor.STDOUT, stdout);
+                job.getResourceManagerAttributes().put(AbstractExecutor.STDERR, stderr);
+                job.getResourceManagerAttributes().put(AbstractExecutor.OUTDIR, path.toString());
+
+                ObjectMap params = new ObjectMap()
+                        .append(JobDBAdaptor.QueryParams.COMMAND_LINE.key(), commandLine.toString())
+                        .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED)
+                        .append(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes())
+                        .append(JobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key(), job.getResourceManagerAttributes());
+
+                QueryResult<Job> update = jobDBAdaptor.update(job.getId(), params);
+                if (update.getNumResults() == 1) {
+                    job = update.first();
+                    executeJob(job);
+                } else {
+                    logger.error("Could not update nor run job {}" + job.getId());
+                }
+            } catch (CatalogException e) {
+                logger.error("Could not update job {}. {}", job.getId(), e.getMessage());
+                e.printStackTrace();
+            }
+
+        } catch (CatalogException e) {
+            logger.error("{}", e.getMessage(), e);
+        }
     }
-
-
 
 }

@@ -75,8 +75,6 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
 
     String getStatus(long jobId, String sessionId) throws CatalogDBException;
 
-    QueryResult<ObjectMap> incJobVisits(long jobId) throws CatalogDBException;
-
     long getStudyId(long jobId) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
@@ -93,7 +91,7 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         EXECUTION("execution", TEXT_ARRAY, ""),
         //PARAMS,
         COMMAND_LINE("commandLine", TEXT_ARRAY, ""),
-        VISITS("visits", INTEGER_ARRAY, ""),
+        VISITED("visited", BOOLEAN, ""),
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),

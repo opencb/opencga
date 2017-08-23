@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis;
+package org.opencb.opencga.analysis.old;
 
 
 public class AnalysisExecutionException extends Exception {

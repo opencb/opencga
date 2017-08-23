@@ -25,10 +25,10 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
-import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
+import org.opencb.opencga.analysis.old.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.CatalogManagerTest;
+import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.core.common.Config;
 
 import javax.ws.rs.client.Client;

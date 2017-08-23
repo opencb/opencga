@@ -87,7 +87,7 @@ public class JobWSServerTest {
         Job job = response.getResponse().get(0).first();
 
         assertEquals(jobName, job.getName());
-        assertEquals(toolName, job.getToolName());
+        assertEquals(toolName, job.getToolId());
         assertEquals(description, job.getDescription());
         assertEquals(commandLine, job.getCommandLine());
         assertEquals(status.toString(), job.getStatus().getName());
@@ -114,7 +114,7 @@ public class JobWSServerTest {
         Job job = response.getResponse().get(0).first();
 
         assertEquals(jobName, job.getName());
-        assertEquals(toolName, job.getToolName());
+        assertEquals(toolName, job.getToolId());
         assertEquals(description, job.getDescription());
         assertEquals(10, job.getStartTime());
         assertEquals(20, job.getEndTime());

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.execution.plugins.hist;
+package org.opencb.opencga.analysis.old.execution.plugins.hist;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Region;
@@ -22,7 +22,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.execution.plugins.OpenCGAAnalysis;
+import org.opencb.opencga.analysis.old.execution.plugins.OpenCGAAnalysis;
 import org.opencb.opencga.catalog.old.models.tool.Execution;
 import org.opencb.opencga.catalog.old.models.tool.Manifest;
 import org.opencb.opencga.catalog.old.models.tool.Option;

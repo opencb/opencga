@@ -1,0 +1,149 @@
+{
+  "contact" : {
+    "name" : "John",
+    "email" : "rd@sanger.ac.uk"
+  },
+  "id" : "samtools",
+  "name" : "Samtools",
+  "version" : "0.1.19-96b5f2294a",
+  "description" : "samtools (Tools for alignments in the SAM format)",
+  "website" : "http://samtools.sourceforge.net/",
+  "publication" : "https://academic.oup.com/bioinformatics/article-lookup/doi/10.1093/bioinformatics/btp352",
+  "language" : {
+    "name" : "C",
+    "version" : ""
+  },
+  "dependencies" : [ ],
+  "settings" : {
+    "separator" : " ",
+    "env" : "",
+    "posix" : true
+  },
+  "executions" : [ {
+    "id" : "view",
+    "bin" : "samtools view",
+    "description" : "SAM<->BAM conversion",
+    "usage" : "samtools view [options] <in.bam>|<in.sam> [region1 [...]]",
+    "params" : [ {
+      "name" : "b",
+      "description" : "output BAM",
+      "flag" : true,
+      "position" : 0,
+      "hidden" : false,
+      "dataType" : "BOOLEAN"
+    }, {
+      "name" : "h",
+      "description" : "print header for the SAM output",
+      "flag" : true,
+      "position" : 0,
+      "hidden" : false,
+      "dataType" : "BOOLEAN"
+    }, {
+      "name" : "H",
+      "description" : "print header only (no alignments)",
+      "flag" : false,
+      "position" : 0,
+      "hidden" : false,
+      "dataType" : "BOOLEAN"
+    }, {
+      "name" : "S",
+      "description" : "input is SAM",
+      "flag" : false,
+      "position" : 0,
+      "hidden" : false,
+      "dataType" : "BOOLEAN"
+    }, {
+      "name" : "o",
+      "description" : "Output file name",
+      "defaultValue" : null,
+      "flag" : false,
+      "required" : true,
+      "output" : true,
+      "redirection" : false,
+      "position" : 0,
+      "hidden" : false,
+      "dataType" : "FILE"
+    }, {
+      "name" : "input",
+      "description" : "Input file names",
+      "defaultValue" : null,
+      "flag" : false,
+      "required" : true,
+      "output" : false,
+      "redirection" : false,
+      "position" : 1,
+      "hidden" : true,
+      "dataType" : "FILE"
+    } ]
+  }, {
+    "id" : "sort",
+    "bin" : "samtools sort",
+    "description" : "Sort alignment file",
+    "usage" : "oskar.sh --tool 'samtools sort' [options] -h --input <in.bam> <out.prefix>",
+    "params" : [ {
+      "name" : "n",
+      "description" : "sort by read name",
+      "flag" : false,
+      "position" : 0,
+      "hidden" : false,
+      "dataType" : "BOOLEAN"
+    }, {
+      "name" : "f",
+      "description" : "use <out.prefix> as full file name instead of prefix",
+      "flag" : false,
+      "position" : 0,
+      "hidden" : false,
+      "dataType" : "BOOLEAN"
+    }, {
+      "name" : "output",
+      "description" : "out.prefix",
+      "defaultValue" : null,
+      "flag" : false,
+      "required" : true,
+      "output" : true,
+      "redirection" : false,
+      "position" : 2,
+      "hidden" : false,
+      "dataType" : "FILE"
+    }, {
+      "name" : "input",
+      "description" : "Input bam file",
+      "defaultValue" : null,
+      "flag" : false,
+      "required" : true,
+      "output" : false,
+      "redirection" : false,
+      "position" : 1,
+      "hidden" : true,
+      "dataType" : "FILE"
+    } ]
+  }, {
+    "id" : "index",
+    "bin" : "samtools index",
+    "description" : "Index alignment",
+    "usage" : "samtools index <in.bam> [out.index]",
+    "params" : [ {
+      "name" : "output",
+      "description" : "out.index file",
+      "defaultValue" : null,
+      "flag" : false,
+      "required" : true,
+      "output" : true,
+      "redirection" : false,
+      "position" : 2,
+      "hidden" : true,
+      "dataType" : "FILE"
+    }, {
+      "name" : "input",
+      "description" : "Input bam file",
+      "defaultValue" : null,
+      "flag" : false,
+      "required" : true,
+      "output" : false,
+      "redirection" : false,
+      "position" : 1,
+      "hidden" : true,
+      "dataType" : "FILE"
+    } ]
+  } ]
+}

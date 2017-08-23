@@ -137,11 +137,12 @@ public class JobManager extends ResourceManager<Job> {
         return new MyResourceIds(userId, studyId, jobIds);
     }
 
-    public QueryResult<ObjectMap> visit(long jobId, String sessionId) throws CatalogException {
+    public QueryResult<Job> visit(long jobId, String sessionId) throws CatalogException {
         MyResourceId resource = getId(Long.toString(jobId), null, sessionId);
 
         authorizationManager.checkJobPermission(resource.getStudyId(), jobId, resource.getUser(), JobAclEntry.JobPermissions.VIEW);
-        return jobDBAdaptor.incJobVisits(jobId);
+        ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.VISITED.key(), true);
+        return jobDBAdaptor.update(jobId, params);
     }
 
     public QueryResult<Job> create(long studyId, String name, String toolName, String description, String executor,
@@ -149,10 +150,24 @@ public class JobManager extends ResourceManager<Job> {
                                    List<File> inputFiles, List<File> outputFiles, Map<String, Object> attributes,
                                    Map<String, Object> resourceManagerAttributes, Job.JobStatus status, long startTime,
                                    long endTime, QueryOptions options, String sessionId) throws CatalogException {
-        Job job = new Job(-1, name, "", toolName, null, "", description, startTime, endTime, "", executor, "", commandLine, 0, status,
+        Job job = new Job(-1, name, "", toolName, null, "", description, startTime, endTime, executor, "", commandLine, false, status,
                 -1, new File().setId(outDirId), inputFiles, outputFiles, Collections.emptyList(), params, -1, attributes,
-                resourceManagerAttributes, "", "");
+                resourceManagerAttributes);
         return create(String.valueOf(studyId), job, options, sessionId);
+    }
+
+    public QueryResult<Job> create(String studyStr, String jobName, String description, String toolId, String execution, String outDir,
+                                   Map<String, String> params, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(toolId, "toolId");
+        if (StringUtils.isEmpty(jobName)) {
+            jobName = toolId + "_" + TimeUtils.getTime();
+        }
+        ObjectMap attributes = new ObjectMap();
+        attributes.putIfNotNull(Job.OPENCGA_OUTPUT_DIR, outDir);
+        attributes.putIfNotNull(Job.OPENCGA_STUDY, studyStr);
+        Job job = new Job(jobName, toolId, execution, Job.Type.ANALYSIS, description, params, attributes);
+
+        return create(studyStr, job, QueryOptions.empty(), sessionId);
     }
 
     @Override
@@ -163,9 +178,9 @@ public class JobManager extends ResourceManager<Job> {
 
         ParamUtils.checkObj(job, "Job");
         ParamUtils.checkParameter(job.getName(), "Name");
-        ParamUtils.checkParameter(job.getToolName(), "toolName");
-        ParamUtils.checkParameter(job.getCommandLine(), "commandLine");
-        ParamUtils.checkObj(job.getOutDir(), "outDir");
+        ParamUtils.checkParameter(job.getToolId(), "toolId");
+//        ParamUtils.checkParameter(job.getCommandLine(), "commandLine");
+//        ParamUtils.checkObj(job.getOutDir(), "outDir");
         job.setDescription(ParamUtils.defaultString(job.getDescription(), ""));
         job.setCreationDate(ParamUtils.defaultString(job.getCreationDate(), TimeUtils.getTime()));
         job.setStatus(ParamUtils.defaultObject(job.getStatus(), new Job.JobStatus(Job.JobStatus.PREPARED)));
@@ -181,18 +196,20 @@ public class JobManager extends ResourceManager<Job> {
         // FIXME check inputFiles? is a null conceptually valid?
 //        URI tmpOutDirUri = createJobOutdir(studyId, randomString, sessionId);
 
-        authorizationManager.checkFilePermission(studyId, job.getOutDir().getId(), userId, FileAclEntry.FilePermissions.WRITE);
         for (File inputFile : job.getInput()) {
             authorizationManager.checkFilePermission(studyId, inputFile.getId(), userId, FileAclEntry.FilePermissions.VIEW);
         }
-        QueryOptions fileQueryOptions = new QueryOptions("include", Arrays.asList(
-                "projects.studies.files.id",
-                "projects.studies.files.type",
-                "projects.studies.files.path"));
-        File outDir = fileDBAdaptor.get(job.getOutDir().getId(), fileQueryOptions).first();
+        if (job.getOutDir() != null) {
+            authorizationManager.checkFilePermission(studyId, job.getOutDir().getId(), userId, FileAclEntry.FilePermissions.WRITE);
+            QueryOptions fileQueryOptions = new QueryOptions("include", Arrays.asList(
+                    "projects.studies.files.id",
+                    "projects.studies.files.type",
+                    "projects.studies.files.path"));
+            File outDir = fileDBAdaptor.get(job.getOutDir().getId(), fileQueryOptions).first();
 
-        if (!outDir.getType().equals(File.Type.DIRECTORY)) {
-            throw new CatalogException("Bad outDir type. Required type : " + File.Type.DIRECTORY);
+            if (!outDir.getType().equals(File.Type.DIRECTORY)) {
+                throw new CatalogException("Bad outDir type. Required type : " + File.Type.DIRECTORY);
+            }
         }
 
         QueryResult<Job> queryResult = jobDBAdaptor.insert(job, studyId, options);
