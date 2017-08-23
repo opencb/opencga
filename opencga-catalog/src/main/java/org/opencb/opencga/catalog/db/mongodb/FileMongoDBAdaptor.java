@@ -154,7 +154,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     @Override
     public QueryResult<File> update(long id, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
-        Bson query = parseQuery(new Query(QueryParams.ID.key(), id), true);
+        Bson query = parseQuery(new Query(QueryParams.ID.key(), id), false);
         Map<String, Object> myParams = getValidatedUpdateParams(parameters);
 
         if (myParams.isEmpty()) {
@@ -188,7 +188,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         }
 
         // We perform the update.
-        Bson queryBson = parseQuery(query, true);
+        Bson queryBson = parseQuery(query, false);
         Map<String, Object> fileParameters = getValidatedUpdateParams(parameters);
 
         if (!fileParameters.isEmpty()) {
