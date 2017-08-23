@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.monitor.daemons;
 
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -114,16 +113,11 @@ public abstract class MonitorParentDaemon implements Runnable {
         return "J_" + jobId;
     }
 
-    void executeJob(Job job, QueryResult<Job> update) {
-        if (update.getNumResults() == 1) {
-            job = update.first();
-            try {
-                executorManager.execute(job);
-            } catch (Exception e) {
-                logger.error("Error executing job {}.", job.getId(), e);
-            }
-        } else {
-            logger.error("Could not update nor run job {}" + job.getId());
+    void executeJob(Job job) {
+        try {
+            executorManager.execute(job);
+        } catch (Exception e) {
+            logger.error("Error executing job {}.", job.getId(), e);
         }
     }
 

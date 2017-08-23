@@ -230,7 +230,12 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                         .append(JobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key(), job.getResourceManagerAttributes());
 
                 QueryResult<Job> update = jobDBAdaptor.update(job.getId(), params);
-                executeJob(job, update);
+                if (update.getNumResults() == 1) {
+                    job = update.first();
+                    executeJob(job);
+                } else {
+                    logger.error("Could not update nor run job {}" + job.getId());
+                }
             } catch (CatalogException e) {
                 logger.error("Could not update job {}. {}", job.getId(), e.getMessage());
                 e.printStackTrace();

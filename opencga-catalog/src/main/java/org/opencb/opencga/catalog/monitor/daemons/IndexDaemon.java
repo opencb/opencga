@@ -251,7 +251,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         } catch (CatalogException e) {
             logger.warn("Could not obtain a new session id for user {}. ", userId, e);
         }
-        job.getParams().put("sid", userSessionId);
+        job.getAttributes().put(Job.OPENCGA_USER_TOKEN, userSessionId);
 
         // TODO: This command line could be created outside this class
         // Build the command line.
@@ -268,7 +268,6 @@ public class IndexDaemon extends MonitorParentDaemon {
                     "aggregated", "aggregation-mapping-file", "annotate", "annotator", "bgzip", "calculate-stats",
                     "exclude-genotypes", "file", "gvcf", "h", "help", "include-extra-fields", "load", "log-file",
                     "L", "log-level", "merge", "o", "outdir", "overwrite-annotations", "path", "queue", "s", "study",
-                    "S", "sid", "session-id",
                     "transform", "transformed-files", "resume"));
             buildCommandLine(job.getParams(), commandLine, knownParams);
         } else {
@@ -290,7 +289,7 @@ public class IndexDaemon extends MonitorParentDaemon {
 //            updateObjectMap.put(JobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
             ObjectMap updateObjectMap = new ObjectMap();
             updateObjectMap.put(JobDBAdaptor.QueryParams.COMMAND_LINE.key(), commandLine.toString());
-            job.getAttributes().put("sessionId", userSessionId);
+//            job.getAttributes().put("sessionId", userSessionId);
 
             updateObjectMap.put(JobDBAdaptor.QueryParams.START_TIME.key(), System.currentTimeMillis());
             updateObjectMap.put(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
@@ -301,7 +300,12 @@ public class IndexDaemon extends MonitorParentDaemon {
             updateObjectMap.put(JobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key(), job.getResourceManagerAttributes());
 
             QueryResult<Job> update = jobDBAdaptor.update(job.getId(), updateObjectMap);
-            executeJob(job, update);
+            if (update.getNumResults() == 1) {
+                job = update.first();
+                executeJob(job);
+            } else {
+                logger.error("Could not update nor run job {}" + job.getId());
+            }
         } catch (CatalogException e) {
             logger.error("Could not update job {}.", job.getId(), e);
         }
