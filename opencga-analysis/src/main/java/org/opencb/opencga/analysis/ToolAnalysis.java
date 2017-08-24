@@ -42,17 +42,17 @@ public class ToolAnalysis {
 
     /**
      * Execute a command tool.
-     *  @param jobId jobId of the job containing the relevant information.
-     * @param outDir directory path where the results will be stored.
+     * @param jobId jobId of the job containing the relevant information.
      * @param sessionId session id of the user that will execute the tool.
      */
-    public void execute(long jobId, String outDir, String sessionId) {
+    public void execute(long jobId, String sessionId) {
         try {
-            Path outDirPath = Paths.get(outDir);
-
             // We get the job information.
             Job job = jobManager.get(jobId, QueryOptions.empty(), sessionId).first();
             long studyId = jobManager.getStudyId(jobId);
+
+            String outDir = (String) job.getAttributes().get(Job.OPENCGA_TMP_DIR);
+            Path outDirPath = Paths.get(outDir);
 
             String tool = job.getToolId();
             String execution = job.getExecution();

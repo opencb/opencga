@@ -34,9 +34,6 @@ public class ToolsCommandOptions {
         @Parameter(names = {"--job"}, description = "Job id containing the information of the job to be executed", required = true,
                 arity = 1)
         public String job;
-
-        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
-        public String outdir;
     }
 
     @Parameters(commandNames = {"list"}, commandDescription = "Print a summary list of all tools")

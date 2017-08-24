@@ -36,10 +36,10 @@ public class SGEExecutor extends AbstractExecutor {
     }
 
     @Override
-    public void execute(Job job) throws Exception {
+    public void execute(Job job, String token) throws Exception {
         ExecutorConfig executorConfig = getExecutorConfig(job);
         // TODO: Check job name below !
-        sgeManager.queueJob(job.getToolId(), "", -1, getCommandLine(job), executorConfig);
+        sgeManager.queueJob(job.getToolId(), "", -1, getCommandLine(job, token), executorConfig);
     }
 
     @Override

@@ -251,7 +251,6 @@ public class IndexDaemon extends MonitorParentDaemon {
         } catch (CatalogException e) {
             logger.warn("Could not obtain a new session id for user {}. ", userId, e);
         }
-        job.getAttributes().put(Job.OPENCGA_USER_TOKEN, userSessionId);
 
         // TODO: This command line could be created outside this class
         // Build the command line.
@@ -302,7 +301,7 @@ public class IndexDaemon extends MonitorParentDaemon {
             QueryResult<Job> update = jobDBAdaptor.update(job.getId(), updateObjectMap);
             if (update.getNumResults() == 1) {
                 job = update.first();
-                executeJob(job);
+                executeJob(job, userSessionId);
             } else {
                 logger.error("Could not update nor run job {}" + job.getId());
             }

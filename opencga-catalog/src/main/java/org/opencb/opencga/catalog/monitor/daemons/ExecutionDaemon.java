@@ -171,7 +171,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 }
 
                 try {
-                    outputRecorder.recordJobOutput(job, tmpOutdirPath);
+                    String userToken = catalogManager.getUserManager().getSystemTokenForUser(job.getUserId(), sessionId);
+                    outputRecorder.recordJobOutput(job, tmpOutdirPath, userToken);
                 } catch (CatalogException | IOException e) {
                     logger.error("{}", e.getMessage(), e);
                     try {
@@ -208,16 +209,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             StringBuilder commandLine = new StringBuilder(binAnalysis).append(' ');
             if (job.getToolId().equals("opencga-analysis")) {
                 commandLine.append(job.getExecution()).append(' ');
-                buildCommandLine(job.getParams(), commandLine, null);
             } else {
-                commandLine.append("tools execute ")
-                        .append("--job ").append(job.getId()).append(' ');
+                commandLine.append("tools execute ");
             }
-            commandLine.append("--outdir ").append(path.toString());
+            commandLine.append("--job ").append(job.getId()).append(' ');
 
             logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.PREPARED, Job.JobStatus.QUEUED);
             try {
-                job.getAttributes().put(Job.OPENCGA_USER_TOKEN, userToken);
+                job.getAttributes().put(Job.OPENCGA_TMP_DIR, path.toString());
 
                 job.getResourceManagerAttributes().put(AbstractExecutor.STDOUT, stdout);
                 job.getResourceManagerAttributes().put(AbstractExecutor.STDERR, stderr);
@@ -232,7 +231,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 QueryResult<Job> update = jobDBAdaptor.update(job.getId(), params);
                 if (update.getNumResults() == 1) {
                     job = update.first();
-                    executeJob(job);
+                    executeJob(job, userToken);
                 } else {
                     logger.error("Could not update nor run job {}" + job.getId());
                 }

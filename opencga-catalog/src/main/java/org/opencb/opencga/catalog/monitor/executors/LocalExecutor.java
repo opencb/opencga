@@ -38,13 +38,13 @@ public class LocalExecutor extends AbstractExecutor {
     }
 
     @Override
-    public void execute(Job job) throws Exception {
+    public void execute(Job job, String token) throws Exception {
         Runnable runnable = () -> {
             try {
                 ExecutorConfig executorConfig = getExecutorConfig(job);
 
                 logger.info("Ready to run {}", job.getCommandLine());
-                Command com = new Command(getCommandLine(job));
+                Command com = new Command(getCommandLine(job, token));
 
                 DataOutputStream dataOutputStream = new DataOutputStream(new FileOutputStream(executorConfig.getStdout()));
                 com.setOutputOutputStream(dataOutputStream);

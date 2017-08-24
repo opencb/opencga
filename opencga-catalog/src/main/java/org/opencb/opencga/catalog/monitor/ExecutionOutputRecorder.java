@@ -24,16 +24,14 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.catalog.utils.FileScanner;
-import org.opencb.opencga.core.common.UriUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -68,16 +66,16 @@ public class ExecutionOutputRecorder {
     public void recordJobOutputAndPostProcess(Job job, boolean jobFailed) throws CatalogException {
 
     }
-
-    public void recordJobOutputAndPostProcess(Job job, String status) throws CatalogException, IOException, URISyntaxException {
-        /** Modifies the job to set the output and endTime. **/
-        URI uri = UriUtils.createUri(catalogManager.getConfiguration().getTempJobsDir());
-        Path tmpOutdirPath = Paths.get(uri.getPath()).resolve("J_" + job.getId());
-//        Path tmpOutdirPath = Paths.get(catalogManager.getCatalogConfiguration().getTempJobsDir(), "J_" + job.getId());
-        this.ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutdirPath.toUri());
-        recordJobOutput(job, tmpOutdirPath);
-        updateJobStatus(job, new Job.JobStatus(status));
-    }
+//
+//    public void recordJobOutputAndPostProcess(Job job, String status) throws CatalogException, IOException, URISyntaxException {
+//        /** Modifies the job to set the output and endTime. **/
+//        URI uri = UriUtils.createUri(catalogManager.getConfiguration().getTempJobsDir());
+//        Path tmpOutdirPath = Paths.get(uri.getPath()).resolve("J_" + job.getId());
+////        Path tmpOutdirPath = Paths.get(catalogManager.getCatalogConfiguration().getTempJobsDir(), "J_" + job.getId());
+//        this.ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutdirPath.toUri());
+//        recordJobOutput(job, tmpOutdirPath);
+//        updateJobStatus(job, new Job.JobStatus(status));
+//    }
 
     @Deprecated
     public void recordJobOutputOld(Job job) {
@@ -88,10 +86,11 @@ public class ExecutionOutputRecorder {
      *
      * @param job job.
      * @param tmpOutdirPath Temporal output directory path.
+     * @param userToken valid token.
      * @throws CatalogException catalogException.
      * @throws IOException ioException.
      */
-    public void recordJobOutput(Job job, Path tmpOutdirPath) throws CatalogException, IOException {
+    public void recordJobOutput(Job job, Path tmpOutdirPath, String userToken) throws CatalogException, IOException {
         // parameters to update in the job
         ObjectMap parameters = new ObjectMap();
 
@@ -116,7 +115,7 @@ public class ExecutionOutputRecorder {
         // Create the catalog output directory
         String studyStr = (String) job.getAttributes().get(Job.OPENCGA_STUDY);
         String outputDir = (String) job.getAttributes().get(Job.OPENCGA_OUTPUT_DIR);
-        String userToken = (String) job.getAttributes().get(Job.OPENCGA_USER_TOKEN);
+//        String userToken = (String) job.getAttributes().get(Job.OPENCGA_USER_TOKEN);
         File outDir;
         try {
              outDir = catalogManager.getFileManager().createFolder(studyStr, outputDir, new File.FileStatus(), true, "",

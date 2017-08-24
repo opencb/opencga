@@ -30,9 +30,11 @@ public class Job {
     @Deprecated
     public static final String TYPE = "type";
     public static final String INDEXED_FILE_ID = "indexedFileId";
+
     public static final String OPENCGA_OUTPUT_DIR = "OPENCGA_OUTPUT_DIR";
+    public static final String OPENCGA_TMP_DIR = "OPENCGA_TMP_DIR";
     public static final String OPENCGA_STUDY = "OPENCGA_STUDY";
-    public static final String OPENCGA_USER_TOKEN = "OPENCGA_USER_TOKEN";
+
     /* ResourceManagerAttributes known keys */
     public static final String JOB_SCHEDULER_NAME = "jobSchedulerName";
     /* Errors */

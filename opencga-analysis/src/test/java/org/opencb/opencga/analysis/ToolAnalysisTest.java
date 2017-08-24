@@ -82,7 +82,7 @@ public class ToolAnalysisTest extends GenericTest {
 
         catalogManager.getConfiguration().setToolDir(toolDir.toString());
         ToolAnalysis toolAnalysis = new ToolAnalysis(catalogManager.getConfiguration());
-        toolAnalysis.execute(jobQueryResult.first().getId(), "/tmp", sessionIdUser);
+        toolAnalysis.execute(jobQueryResult.first().getId(), sessionIdUser);
 
         ObjectReader reader = new ObjectMapper().reader(Status.class);
         Status status = reader.readValue(tmp.resolve("status.json").toFile());

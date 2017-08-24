@@ -113,9 +113,9 @@ public abstract class MonitorParentDaemon implements Runnable {
         return "J_" + jobId;
     }
 
-    void executeJob(Job job) {
+    void executeJob(Job job, String token) {
         try {
-            executorManager.execute(job);
+            executorManager.execute(job, token);
         } catch (Exception e) {
             logger.error("Error executing job {}.", job.getId(), e);
         }
@@ -153,7 +153,7 @@ public abstract class MonitorParentDaemon implements Runnable {
 
     void cleanPrivateJobInformation(Job job) {
         // Remove the session id from the job attributes
-        job.getAttributes().remove(Job.OPENCGA_USER_TOKEN);
+        job.getAttributes().remove(Job.OPENCGA_TMP_DIR);
         job.getAttributes().remove(Job.OPENCGA_OUTPUT_DIR);
         job.getAttributes().remove(Job.OPENCGA_STUDY);
 

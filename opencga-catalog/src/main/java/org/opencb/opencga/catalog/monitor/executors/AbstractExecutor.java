@@ -48,7 +48,7 @@ public abstract class AbstractExecutor {
         objectReader = objectMapper.reader(Job.JobStatus.class);
     }
 
-    public abstract void execute(Job job) throws Exception;
+    public abstract void execute(Job job, String token) throws Exception;
 
     public String status(Path jobOutput, Job job) {
         Path jobStatusFilePath = jobOutput.resolve(JOB_STATUS_FILE);
@@ -66,8 +66,8 @@ public abstract class AbstractExecutor {
     }
 
     // We do it this way to avoid writing the session id in the command line attribute of Job
-    protected String getCommandLine(Job job) {
-        return job.getCommandLine() + " --session-id " + job.getAttributes().get(Job.OPENCGA_USER_TOKEN);
+    protected String getCommandLine(Job job, String token) {
+        return job.getCommandLine() + " --session-id " + token;
     }
 
     protected abstract String getStatus(Job job);
