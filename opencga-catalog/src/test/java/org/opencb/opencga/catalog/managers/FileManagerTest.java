@@ -87,8 +87,9 @@ public class FileManagerTest extends GenericTest {
     private long s_9;
 
     /* TYPE_FILE UTILS */
-    public static java.io.File createDebugFile() throws IOException {
-        String fileTestName = "/tmp/fileTest " + StringUtils.randomString(5);
+    public java.io.File createDebugFile() throws IOException {
+        String fileTestName = catalogManagerResource.getOpencgaHome()
+                .resolve("fileTest " + StringUtils.randomString(5)).toAbsolutePath().toString();
         return createDebugFile(fileTestName);
     }
 
