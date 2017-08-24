@@ -50,7 +50,7 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
 
         FAMILY_ID("family.id", INTEGER, ""),
         PROBAND_ID("proband.id", INTEGER, ""),
-        SAMPLE_ID("sample.id", INTEGER, ""),
+        SAMPLE_ID("proband.samples.id", INTEGER, ""),
 
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.

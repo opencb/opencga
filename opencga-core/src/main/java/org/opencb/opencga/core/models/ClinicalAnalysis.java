@@ -28,9 +28,8 @@ public class ClinicalAnalysis {
     private String description;
     private Type type;
 
-    private Family family;
     private Individual proband;
-    private Sample sample;
+    private Family family;
 
     private String creationDate;
     private Status status;
@@ -44,15 +43,14 @@ public class ClinicalAnalysis {
     public ClinicalAnalysis() {
     }
 
-    public ClinicalAnalysis(long id, String name, String description, Type type, Family family, Individual proband, Sample sample,
-                            String creationDate, Status status, int release, Map<String, Object> attributes) {
+    public ClinicalAnalysis(long id, String name, String description, Type type, Family family, Individual proband, String creationDate,
+                            Status status, int release, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.type = type;
         this.family = family;
         this.proband = proband;
-        this.sample = sample;
         this.creationDate = creationDate;
         this.status = status;
         this.release = release;
@@ -68,7 +66,6 @@ public class ClinicalAnalysis {
         sb.append(", type=").append(type);
         sb.append(", family=").append(family);
         sb.append(", proband=").append(proband);
-        sb.append(", sample=").append(sample);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", release=").append(release);
@@ -128,15 +125,6 @@ public class ClinicalAnalysis {
 
     public ClinicalAnalysis setProband(Individual proband) {
         this.proband = proband;
-        return this;
-    }
-
-    public Sample getSample() {
-        return sample;
-    }
-
-    public ClinicalAnalysis setSample(Sample sample) {
-        this.sample = sample;
         return this;
     }
 

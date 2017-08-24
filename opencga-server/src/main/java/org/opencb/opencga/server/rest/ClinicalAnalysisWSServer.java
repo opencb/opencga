@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by pfurio on 05/06/17.
@@ -131,20 +132,38 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
         }
     }
 
+    private static class SampleParams {
+        public String name;
+    }
+
+    private static class ProbandParams {
+        public String name;
+        public List<SampleParams> samples;
+    }
+
     private static class ClinicalAnalysisParameters {
         public String name;
         public String description;
         public ClinicalAnalysis.Type type;
 
         public String family;
-        public String proband;
-        public String sample;
+        public ProbandParams proband;
 
         public Map<String, Object> attributes;
 
         public ClinicalAnalysis toClinicalAnalysis() {
-            return new ClinicalAnalysis(-1, name, description, type, new Family().setName(family), new Individual().setName(proband),
-                    new Sample().setName(sample), null, null, 1, attributes);
+
+            Individual individual = new Individual();
+            individual.setName(proband.name);
+            if (proband.samples != null) {
+                List<Sample> sampleList = proband.samples.stream()
+                        .map(sample -> new Sample().setName(sample.name))
+                        .collect(Collectors.toList());
+                individual.setSamples(sampleList);
+            }
+
+            return new ClinicalAnalysis(-1, name, description, type, new Family().setName(family), individual, null,
+                    null, 1, attributes);
         }
     }
 

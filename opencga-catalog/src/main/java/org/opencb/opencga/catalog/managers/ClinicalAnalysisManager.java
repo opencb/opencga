@@ -27,14 +27,18 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.opencga.core.models.Status;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.Family;
+import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.Status;
+import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -208,6 +212,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         ParamUtils.checkAlias(clinicalAnalysis.getName(), "name", configuration.getCatalog().getOffset());
         ParamUtils.checkObj(clinicalAnalysis.getType(), "type");
 
+        ParamUtils.checkObj(clinicalAnalysis.getProband(), "proband");
+        ParamUtils.checkObj(clinicalAnalysis.getProband().getSamples(), "proband samples");
+        ParamUtils.checkObj(clinicalAnalysis.getFamily(), "family");
+
         clinicalAnalysis.setCreationDate(TimeUtils.getTime());
         clinicalAnalysis.setDescription(ParamUtils.defaultString(clinicalAnalysis.getDescription(), ""));
 
@@ -223,9 +231,37 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 Long.toString(studyId), sessionId);
         clinicalAnalysis.getProband().setId(probandResource.getResourceId());
 
-        MyResourceId sampleResource = catalogManager.getSampleManager().getId(clinicalAnalysis.getSample().getName(),
-                Long.toString(studyId), sessionId);
-        clinicalAnalysis.getSample().setId(sampleResource.getResourceId());
+        // Check the proband is an actual member of the family
+        Query query = new Query()
+                .append(FamilyDBAdaptor.QueryParams.ID.key(), familyResource.getResourceId())
+                .append(FamilyDBAdaptor.QueryParams.MEMBER_ID.key(), probandResource.getResourceId());
+        QueryResult<Family> count = catalogManager.getFamilyManager().count(Long.toString(studyId), query, sessionId);
+        if (count.getNumTotalResults() == 0) {
+            throw new CatalogException("The member " + clinicalAnalysis.getProband().getName() + " does not belong to the family "
+                    + clinicalAnalysis.getFamily().getName());
+        }
+
+        String sampleNames = clinicalAnalysis.getProband().getSamples().stream().map(Sample::getName).collect(Collectors.joining(","));
+        MyResourceIds sampleResources = catalogManager.getSampleManager().getIds(sampleNames, Long.toString(studyId), sessionId);
+        if (sampleResources.getResourceIds().size() < clinicalAnalysis.getProband().getSamples().size()) {
+            throw new CatalogException("Missing some samples. Found " + sampleResources.getResourceIds().size() + " out of "
+                    + clinicalAnalysis.getProband().getSamples().size());
+        }
+        // We populate the sample array with only the ids
+        List<Sample> samples = sampleResources.getResourceIds().stream()
+                .map(sampleId -> new Sample().setId(sampleId))
+                .collect(Collectors.toList());
+        clinicalAnalysis.getProband().setSamples(samples);
+
+        // Check those samples are actually samples from the proband
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleResources.getResourceIds())
+                .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), probandResource.getResourceId());
+        QueryResult<Sample> countSamples = catalogManager.getSampleManager().count(Long.toString(studyId), query, sessionId);
+        if (countSamples.getNumTotalResults() < sampleResources.getResourceIds().size()) {
+            throw new CatalogException("Not all the samples belong to the proband. Only " + countSamples.getNumTotalResults()
+                    + " out of the " + sampleResources.getResourceIds().size() + " belong to the individual.");
+        }
 
         return clinicalDBAdaptor.insert(studyId, clinicalAnalysis, options);
     }
@@ -259,8 +295,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_ID.key(), probandResource.getResourceId());
             query.remove("proband");
         }
-
-
 
         query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(query, options, userId);
