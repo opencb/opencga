@@ -45,6 +45,13 @@ public class ClinicalAnalysis {
         SINGLE, DUO, TRIO, FAMILY, AUTO, MULTISAMPLE
     }
 
+    // Todo: Think about a better place to have this enum
+    public enum Action {
+        ADD,
+        SET,
+        REMOVE
+    }
+
     public ClinicalAnalysis() {
     }
 

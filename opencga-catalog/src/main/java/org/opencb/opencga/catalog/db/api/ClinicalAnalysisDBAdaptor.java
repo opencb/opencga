@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -51,6 +52,8 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         FAMILY_ID("family.id", INTEGER, ""),
         PROBAND_ID("proband.id", INTEGER, ""),
         SAMPLE_ID("proband.samples.id", INTEGER, ""),
+        INTERPRETATIONS("intepretations", TEXT_ARRAY, ""),
+        INTERPRETATIONS_ID("intepretations.id", TEXT_ARRAY, ""),
 
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
@@ -120,5 +123,12 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
     QueryResult<ClinicalAnalysis> get(long clinicalAnalysisId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long clinicalAnalysisId) throws CatalogDBException;
+
+    QueryResult<Long> setInterpretations(long clinicalAnalysisId, List<ClinicalAnalysis.ClinicalInterpretation> interpretationList);
+
+    QueryResult<Long> addInterpretation(long clinicalAnalysisId, ClinicalAnalysis.ClinicalInterpretation interpretation)
+            throws CatalogDBException;
+
+    QueryResult<Long> removeInterpretation(long clinicalAnalysisId, String interpretationId) throws CatalogDBException;
 
 }

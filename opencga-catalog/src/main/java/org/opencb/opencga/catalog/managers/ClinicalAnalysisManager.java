@@ -25,10 +25,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -38,6 +35,7 @@ import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Status;
+import org.opencb.opencga.core.models.acls.permissions.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -272,6 +270,55 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                                                 String sessionId) throws CatalogException {
         throw new NotImplementedException("Update clinical analysis not implemented");
     }
+
+    public QueryResult<ClinicalAnalysis> updateInterpretation(String studyStr, String clinicalAnalysisStr,
+                                                List<ClinicalAnalysis.ClinicalInterpretation> interpretations,
+                                                ClinicalAnalysis.Action action, QueryOptions queryOptions, String sessionId)
+            throws CatalogException {
+
+        MyResourceId resource = getId(clinicalAnalysisStr, studyStr, sessionId);
+        authorizationManager.checkClinicalAnalysisPermission(resource.getStudyId(), resource.getResourceId(), resource.getUser(),
+                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
+
+        ParamUtils.checkObj(interpretations, "interpretations");
+        ParamUtils.checkObj(action, "action");
+
+        if (action != ClinicalAnalysis.Action.REMOVE) {
+            // Check the jobIds from the interpretations exist
+            List<Long> jobIds = interpretations.stream()
+                    .map(ClinicalAnalysis.ClinicalInterpretation::getJobId)
+                    .collect(Collectors.toList());
+
+            Query query = new Query()
+                    .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), resource.getStudyId())
+                    .append(JobDBAdaptor.QueryParams.ID.key(), jobIds);
+            QueryResult<Long> count = jobDBAdaptor.count(query);
+            if (count.getNumTotalResults() < jobIds.size()) {
+                throw new CatalogException("Detected invalid job ids");
+            }
+        }
+
+        switch (action) {
+            case ADD:
+                for (ClinicalAnalysis.ClinicalInterpretation interpretation : interpretations) {
+                    clinicalDBAdaptor.addInterpretation(resource.getResourceId(), interpretation);
+                }
+                break;
+            case SET:
+                clinicalDBAdaptor.setInterpretations(resource.getResourceId(), interpretations);
+                break;
+            case REMOVE:
+                for (ClinicalAnalysis.ClinicalInterpretation interpretation : interpretations) {
+                    clinicalDBAdaptor.removeInterpretation(resource.getResourceId(), interpretation.getId());
+                }
+                break;
+            default:
+                throw new CatalogException("Unexpected action found");
+        }
+
+        return clinicalDBAdaptor.get(resource.getResourceId(), queryOptions);
+    }
+
 
     public QueryResult<ClinicalAnalysis> search(String studyStr, Query query, QueryOptions options, String sessionId)
             throws CatalogException {

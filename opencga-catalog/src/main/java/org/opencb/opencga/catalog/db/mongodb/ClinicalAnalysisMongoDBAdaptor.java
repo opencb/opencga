@@ -20,6 +20,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -41,12 +42,14 @@ import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.fixComplexQueryParam;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocument;
 
 /**
  * Created by pfurio on 05/06/17.
@@ -119,6 +122,40 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
         return null;
+    }
+
+    @Override
+    public QueryResult<Long> setInterpretations(long clinicalAnalysisId, List<ClinicalAnalysis.ClinicalInterpretation> interpretationList) {
+        return null;
+    }
+
+    @Override
+    public QueryResult<Long> addInterpretation(long clinicalAnalysisId, ClinicalAnalysis.ClinicalInterpretation interpretation)
+            throws CatalogDBException {
+        long startTime = startQuery();
+
+        Document match = new Document()
+                .append(PRIVATE_ID, clinicalAnalysisId)
+                .append(QueryParams.INTERPRETATIONS_ID.key(), new Document("$ne", interpretation.getId()));
+        Document update = new Document("$push", new Document(QueryParams.INTERPRETATIONS.key(),
+                getMongoDBDocument(interpretation, "ClinicalInterpretation")));
+
+        QueryResult<UpdateResult> updateResult = clinicalCollection.update(match, update, QueryOptions.empty());
+
+        return endQuery("addInterpretation", startTime, Arrays.asList(updateResult.first().getModifiedCount()));
+    }
+
+    @Override
+    public QueryResult<Long> removeInterpretation(long clinicalAnalysisId, String interpretationId) throws CatalogDBException {
+        long startTime = startQuery();
+
+        Document match = new Document()
+                .append(PRIVATE_ID, clinicalAnalysisId)
+                .append(QueryParams.INTERPRETATIONS_ID.key(), interpretationId);
+        Document update = new Document("$pull", new Document(QueryParams.INTERPRETATIONS.key(), new Document("id", interpretationId)));
+        QueryResult<UpdateResult> updateResult = clinicalCollection.update(match, update, QueryOptions.empty());
+
+        return endQuery("removeInterpretation", startTime, Arrays.asList(updateResult.first().getModifiedCount()));
     }
 
     @Override
