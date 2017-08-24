@@ -148,6 +148,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 
         public String family;
         public ProbandParams proband;
+        public List<ClinicalAnalysis.ClinicalInterpretation> interpretations;
 
         public Map<String, Object> attributes;
 
@@ -162,8 +163,8 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
                 individual.setSamples(sampleList);
             }
 
-            return new ClinicalAnalysis(-1, name, description, type, new Family().setName(family), individual, null,
-                    null, 1, attributes);
+            return new ClinicalAnalysis(-1, name, description, type, new Family().setName(family), individual, interpretations, null, null,
+                    1, attributes);
         }
     }
 
