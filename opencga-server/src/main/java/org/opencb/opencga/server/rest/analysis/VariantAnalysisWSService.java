@@ -21,6 +21,7 @@ import io.swagger.annotations.*;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -503,6 +504,31 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             return createErrorResponse(e);
         }
     }
+
+    @GET
+    @Path("/metadata")
+    @ApiOperation(value = "", position = 15, response = VariantMetadata.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "studies", value = STUDIES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "files", value = FILES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "samples", value = SAMPLES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "returnedStudies", value = RETURNED_STUDIES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "returnedSamples", value = RETURNED_SAMPLES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "returnedFiles", value = RETURNED_FILES_DESCR, dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query")
+    })
+    public Response metadata() {
+        try {
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            Query query = VariantStorageManager.getVariantQuery(queryOptions);
+            return createOkResponse(variantManager.getMetadata(query, queryOptions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
 }
 
 

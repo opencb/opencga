@@ -110,7 +110,7 @@ public class VariantExporter {
 
         // Task<Variant, Variant>
         ParallelTaskRunner.TaskWithException<Variant, Variant, Exception> progressTask;
-        if (logProgress) {
+        if (!logProgress) {
             progressTask = batch -> batch;
         } else {
             final Query finalQuery = query;
