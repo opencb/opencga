@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.variant;
 
 import com.google.common.collect.BiMap;
 import htsjdk.tribble.readers.LineIterator;
+import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFHeaderVersion;
@@ -542,17 +543,18 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             }
         }
 
+        final boolean excludeGenotypes;
         if (studyConfiguration.getIndexedFiles().isEmpty()) {
             // First indexed file
             // Use the EXCLUDE_GENOTYPES value from CLI. Write in StudyConfiguration.attributes
-            boolean excludeGenotypes = options.getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
+            excludeGenotypes = options.getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
             studyConfiguration.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
                     Options.AGGREGATED_TYPE.defaultValue().toString()));
             studyConfiguration.getAttributes().put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
         } else {
             // Not first indexed file
             // Use the EXCLUDE_GENOTYPES value from StudyConfiguration. Ignore CLI value
-            boolean excludeGenotypes = studyConfiguration.getAttributes()
+            excludeGenotypes = studyConfiguration.getAttributes()
                     .getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
             options.put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
         }
@@ -583,15 +585,23 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
         List<String> extraFormatFields = studyConfiguration.getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
 
-        studyConfiguration.addVariantFileHeader(fileMetadata.getHeader(), extraFormatFields);
+        List<String> formatsFields;
+        if (excludeGenotypes) {
+            formatsFields = extraFormatFields;
+        } else {
+            formatsFields = new ArrayList<>(extraFormatFields.size() + 1);
+            formatsFields.add(VCFConstants.GENOTYPE_KEY);
+            formatsFields.addAll(extraFormatFields);
+        }
+        studyConfiguration.addVariantFileHeader(fileMetadata.getHeader(), formatsFields);
 
 
         // Check if EXTRA_GENOTYPE_FIELDS_TYPE is filled
         if (!studyConfiguration.getAttributes().containsKey(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key())) {
             List<String> extraFieldsType = new ArrayList<>(extraFormatFields.size());
-            Map<String, VariantFileHeaderLine> formats = studyConfiguration.getVariantHeaderLines("FORMAT");
+            Map<String, VariantFileHeaderLine> formatsMap = studyConfiguration.getVariantHeaderLines("FORMAT");
             for (String extraFormatField : extraFormatFields) {
-                VariantFileHeaderLine line = formats.get(extraFormatField);
+                VariantFileHeaderLine line = formatsMap.get(extraFormatField);
                 if (line == null) {
                     if (extraFormatField.equals(VariantMerger.GENOTYPE_FILTER_KEY)) {
                         line = new VariantFileHeaderLine(
