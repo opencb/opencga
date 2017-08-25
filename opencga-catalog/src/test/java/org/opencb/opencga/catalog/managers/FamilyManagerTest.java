@@ -102,7 +102,7 @@ public class FamilyManagerTest extends GenericTest {
         assertTrue("Father id not associated to any children", fatherIdUpdated);
     }
 
-    public QueryResult<Family> createDummyFamily() throws CatalogException {
+    private QueryResult<Family> createDummyFamily() throws CatalogException {
         OntologyTerm disease1 = new OntologyTerm("dis1", "Disease 1", "HPO");
         OntologyTerm disease2 = new OntologyTerm("dis2", "Disease 2", "HPO");
 

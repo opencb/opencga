@@ -205,7 +205,6 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         for (ClinicalAnalysis clinicalAnalysis : queryResult.getResult()) {
             clinicalAnalysis.setFamily(getFamily(clinicalAnalysis.getFamily()));
             clinicalAnalysis.setProband(getIndividual(clinicalAnalysis.getProband()));
-//            clinicalAnalysis.setSample(getSample(clinicalAnalysis.getSample()));
         }
     }
 

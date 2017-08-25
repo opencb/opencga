@@ -530,14 +530,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Fa
                         addOrQuery("name", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
                     case FATHER_ID:
-                        addAutoOrQuery("father.id", queryParam.key(), query, queryParam.type(), andBsonList);
-                        break;
                     case MOTHER_ID:
-                        addAutoOrQuery("mother.id", queryParam.key(), query, queryParam.type(), andBsonList);
-                        break;
                     case MEMBER_ID:
-                        addAutoOrQuery("children.id", queryParam.key(), query, queryParam.type(), andBsonList);
-                        break;
                     case NAME:
                     case DESCRIPTION:
                     case RELEASE:

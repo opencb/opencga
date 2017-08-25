@@ -29,6 +29,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.Individual;
@@ -38,6 +39,7 @@ import org.slf4j.Logger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 12/09/14.
@@ -138,6 +140,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     protected Individual getIndividual(Individual individual) {
         Individual retIndividual = individual;
         if (individual != null && individual.getId() > 0) {
+            // Fetch individual information
             QueryResult<Individual> individualQueryResult = null;
             try {
                 individualQueryResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(individual.getId(),
@@ -147,6 +150,16 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             }
             if (individualQueryResult != null && individualQueryResult.getNumResults() == 1) {
                 retIndividual = individualQueryResult.first();
+
+                // Fetch samples from individual
+                List<Long> samples = individual.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+                Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), samples);
+                try {
+                    QueryResult<Sample> sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, QueryOptions.empty());
+                    retIndividual.setSamples(sampleQueryResult.getResult());
+                } catch (CatalogDBException e) {
+                    logger.error(e.getMessage(), e);
+                }
             }
         }
         return retIndividual;
