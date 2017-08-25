@@ -30,7 +30,7 @@ public class ToolAnalysisWSService extends AnalysisWSService {
         super(version, uriInfo, httpServletRequest, httpHeaders);
     }
 
-    private class ExecuteParams {
+    private static class ExecuteParams {
         public String jobName;
         public String description;
         @JsonProperty(required = true)
@@ -47,12 +47,11 @@ public class ToolAnalysisWSService extends AnalysisWSService {
 
     @POST
     @Path("/execute")
-    @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Execute an analysis using an internal or external tool", response = QueryResponse.class)
     public Response run(
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
-                    String studyStr,
-            @ApiParam(value = "Execution parameters", required = true) ExecuteParams params) {
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study")String studyStr,
+            @ApiParam(value = "Json containing the execution parameters", required = true) ExecuteParams params) {
         try {
             QueryResult<Job> queryResult = catalogManager.getJobManager().create(studyStr, params.jobName, params.description,
                     params.toolId, params.execution, params.outDir, params.toolParams, sessionId);
