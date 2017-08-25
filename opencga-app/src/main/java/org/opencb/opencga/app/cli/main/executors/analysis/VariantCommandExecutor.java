@@ -29,9 +29,11 @@ import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.variant.converters.VariantContextToAvroVariantConverter;
 import org.opencb.biodata.tools.variant.converters.VariantContextToProtoVariantConverter;
+import org.opencb.biodata.tools.variant.converters.avro.VariantDatasetMetadataToVCFHeaderConverter;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.app.cli.analysis.executors.VariantQueryCommandUtils;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
@@ -283,7 +285,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private void printVcf(VariantQueryResult<Variant> variantQueryResult, Iterator<VariantProto.Variant> variantIterator, String study,
-                          List<String> samples, List<String> annotations, PrintStream outputStream) {
+                          List<String> samples, List<String> annotations, PrintStream outputStream) throws CatalogException, IOException {
 //        logger.debug("Samples from variantQueryResult: {}", variantQueryResult.getSamples());
 //
 //        Map<String, List<String>> samplePerStudy = new HashMap<>();
@@ -379,8 +381,10 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             formats = VcfUtils.DEFAULT_SAMPLE_FORMAT;
         }
 
-        // TODO: modify VcfUtils in biodata project to take into account the formatArities
-        VCFHeader vcfHeader = VcfUtils.createVCFHeader(cohorts, annotations, formats, formatTypes, formatDescriptions, samples, null);
+        VariantMetadata metadata = openCGAClient.getVariantClient().metadata(new ObjectMap(VariantQueryParam.STUDIES.key(), study)
+                .append(VariantQueryParam.SAMPLES.key(), samples), new QueryOptions(QueryOptions.EXCLUDE, "files")).firstResult();
+
+        VCFHeader vcfHeader = new VariantDatasetMetadataToVCFHeaderConverter().convert(metadata.getDatasets().get(0), annotations);
         VariantContextWriter variantContextWriter = VcfUtils.createVariantContextWriter(outputStream, vcfHeader.getSequenceDictionary(), null);
         variantContextWriter.writeHeader(vcfHeader);
 
