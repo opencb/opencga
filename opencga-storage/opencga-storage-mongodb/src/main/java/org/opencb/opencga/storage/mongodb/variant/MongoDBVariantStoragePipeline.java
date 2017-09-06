@@ -27,7 +27,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -258,7 +258,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         Path input = Paths.get(inputUri.getPath());
 
         VariantFileMetadata fileMetadata = readVariantFileMetadata(inputUri, null);
-        VariantDatasetMetadata metadata = fileMetadata.toVariantDatasetMetadata(String.valueOf(getStudyId()));
+        VariantStudyMetadata metadata = fileMetadata.toVariantDatasetMetadata(String.valueOf(getStudyId()));
         int numRecords = fileMetadata.getStats().getNumRecords();
         int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());
         int bulkSize = options.getInt(BULK_SIZE.key(), batchSize);

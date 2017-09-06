@@ -26,7 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.variant.converters.VariantContextToAvroVariantConverter;
+import org.opencb.biodata.tools.variant.converters.avro.VariantAvroToVariantContextConverter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -45,17 +45,20 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationAdaptor;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
 import java.io.*;
@@ -593,12 +596,12 @@ public class VariantCommandExecutor extends CommandExecutor {
                 writer.writeHeader(vcfHeader);
 
                 // TODO: get study id/name
-                VariantContextToAvroVariantConverter variantContextToAvroVariantConverter =
-                        new VariantContextToAvroVariantConverter(0, Collections.emptyList(), Collections.emptyList());
+                VariantAvroToVariantContextConverter variantContextToAvroVariantConverter =
+                        new VariantAvroToVariantContextConverter(0, Collections.emptyList(), Collections.emptyList());
                 VariantDBIterator iterator = variantStorageEngine.iterator(query, options);
                 while (iterator.hasNext()) {
                     Variant variant = iterator.next();
-                    VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
+                    VariantContext variantContext = variantContextToAvroVariantConverter.convert(variant);
                     System.out.println(variantContext.toString());
                     writer.add(variantContext);
                 }

@@ -32,8 +32,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.exceptions.NotAVariantException;
-import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
@@ -73,7 +73,7 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
     protected final AtomicLong normTime = new AtomicLong(0);
     protected final List<BiConsumer<String, RuntimeException>> errorHandlers = new ArrayList<>();
     protected boolean failOnError = false;
-    private VariantDatasetMetadata metadata;
+    private VariantStudyMetadata metadata;
 
     public VariantTransformTask(VariantFactory factory,
                                 String studyId, VariantFileMetadata fileMetadata, Path outputFileJsonFile,

@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.core.manager.variant.metadata;
 
-import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
@@ -42,12 +42,12 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
         Map<String, Integer> studyConfigurationMap = studyConfigurations.stream()
                 .collect(Collectors.toMap(StudyConfiguration::getStudyName, StudyConfiguration::getStudyId));
         try {
-            for (VariantDatasetMetadata datasetMetadata : metadata.getDatasets()) {
-                int studyId = studyConfigurationMap.get(datasetMetadata.getId());
+            for (VariantStudyMetadata studyMetadata : metadata.getStudies()) {
+                int studyId = studyConfigurationMap.get(studyMetadata.getId());
 
-                fillStudy(studyId, datasetMetadata);
+                fillStudy(studyId, studyMetadata);
 
-                for (org.opencb.biodata.models.metadata.Individual individual : datasetMetadata.getIndividuals()) {
+                for (org.opencb.biodata.models.metadata.Individual individual : studyMetadata.getIndividuals()) {
 
                     fillIndividual(studyId, individual);
 
@@ -62,7 +62,7 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
         return metadata;
     }
 
-    private void fillStudy(long studyId, VariantDatasetMetadata datasetMetadata) throws CatalogException {
+    private void fillStudy(long studyId, VariantStudyMetadata datasetMetadata) throws CatalogException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.DESCRIPTION.key());
 
         // Just add file description

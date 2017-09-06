@@ -28,7 +28,7 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice.Builder;
@@ -139,7 +139,7 @@ public class ArchiveTableHelper extends GenomeHelper {
         return meta.get();
     }
 
-    public VariantDatasetMetadata getDatasetMetadata() {
+    public VariantStudyMetadata getStudyMetadata() {
         return meta.get().toVariantDatasetMetadata(String.valueOf(getStudyId()));
     }
 

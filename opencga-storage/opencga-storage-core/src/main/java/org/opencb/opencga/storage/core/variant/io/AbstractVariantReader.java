@@ -20,7 +20,7 @@ import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.commons.utils.FileUtils;
 
 import java.io.IOException;
@@ -38,12 +38,12 @@ import java.util.*;
 public abstract class AbstractVariantReader implements VariantReader {
 
     private Path metadataPath;
-    private VariantDatasetMetadata metadata;
+    private VariantStudyMetadata metadata;
     private LinkedHashMap<String, Integer> samplesPosition;
     private Map<String, LinkedHashMap<String, Integer>> samplesPositions;
     private VariantFileMetadata fileMetadata;
 
-    public AbstractVariantReader(Path metadataPath, VariantDatasetMetadata metadata) {
+    public AbstractVariantReader(Path metadataPath, VariantStudyMetadata metadata) {
         this.metadataPath = metadataPath;
         this.metadata = metadata;
         this.samplesPositions = Collections.emptyMap();

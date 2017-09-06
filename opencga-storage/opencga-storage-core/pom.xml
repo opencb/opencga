@@ -153,6 +153,15 @@
             <artifactId>commons-datastore-core</artifactId>
             <version>${java-common-libs.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>biodata-models</artifactId>
+            <version>0.9.0-nvm</version>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>biodata-models</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
