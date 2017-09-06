@@ -83,10 +83,6 @@
             <artifactId>jjwt</artifactId>
             <version>0.7.0</version>
         </dependency>
-        <dependency>
-            <groupId>org.opencb.biodata</groupId>
-            <artifactId>biodata-models</artifactId>
-        </dependency>
 
     </dependencies>
 
