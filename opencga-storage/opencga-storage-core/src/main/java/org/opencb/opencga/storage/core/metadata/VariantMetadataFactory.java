@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.core.metadata;
 
-import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -57,9 +57,9 @@ public class VariantMetadataFactory {
         Map<String, StudyConfiguration> studyConfigurationMap = studyConfigurations.stream()
                 .collect(Collectors.toMap(StudyConfiguration::getStudyName, Function.identity()));
 
-        for (VariantDatasetMetadata datasetMetadata : metadata.getDatasets()) {
-            StudyConfiguration studyConfiguration = studyConfigurationMap.get(datasetMetadata.getId());
-            List<Integer> fileIds = datasetMetadata.getFiles().stream()
+        for (VariantStudyMetadata studyMetadata : metadata.getStudies()) {
+            StudyConfiguration studyConfiguration = studyConfigurationMap.get(studyMetadata.getId());
+            List<Integer> fileIds = studyMetadata.getFiles().stream()
                     .map(fileMetadata -> {
                         Integer fileId = studyConfiguration.getFileIds().get(fileMetadata.getId());
                         if (fileId == null) {
@@ -72,8 +72,8 @@ public class VariantMetadataFactory {
                     .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.FILE_ID.key(), fileIds);
             try {
                 fileMetadataDBAdaptor.iterator(query, new QueryOptions()).forEachRemaining(fileMetadata -> {
-                    datasetMetadata.getFiles().removeIf(file -> file.getId().equals(fileMetadata.getId()));
-                    datasetMetadata.getFiles().add(fileMetadata.getImpl());
+                    studyMetadata.getFiles().removeIf(file -> file.getId().equals(fileMetadata.getId()));
+                    studyMetadata.getFiles().add(fileMetadata.getImpl());
                 });
             } catch (IOException e) {
                 throw new RuntimeException(e);

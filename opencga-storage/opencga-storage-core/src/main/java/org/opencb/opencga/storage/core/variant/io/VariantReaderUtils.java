@@ -20,9 +20,9 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
-import org.opencb.biodata.tools.variant.VariantFileUtils;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
+import org.opencb.biodata.tools.variant.metadata.VariantMetadataUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroReader;
@@ -60,7 +60,7 @@ public class VariantReaderUtils {
      * @return  VariantReader
      * @throws StorageEngineException if the format is not valid or there is an error reading
      */
-    public static VariantReader getVariantReader(Path input, VariantDatasetMetadata metadata) throws StorageEngineException {
+    public static VariantReader getVariantReader(Path input, VariantStudyMetadata metadata) throws StorageEngineException {
         String fileName = input.getFileName().toString();
         if (isJson(fileName)) {
             return getVariantJsonReader(input, metadata);
@@ -81,7 +81,7 @@ public class VariantReaderUtils {
         return new StorageEngineException("Variants input file format not supported for file: " + input);
     }
 
-    protected static VariantJsonReader getVariantJsonReader(Path input, VariantDatasetMetadata metadata) throws StorageEngineException {
+    protected static VariantJsonReader getVariantJsonReader(Path input, VariantStudyMetadata metadata) throws StorageEngineException {
         VariantJsonReader variantJsonReader;
         if (isJson(input.toString())) {
             String sourceFile = getMetaFromTransformedFile(input.toAbsolutePath().toString());
@@ -92,7 +92,7 @@ public class VariantReaderUtils {
         return variantJsonReader;
     }
 
-    protected static VariantAvroReader getVariantAvroReader(Path input, VariantDatasetMetadata metadata) throws StorageEngineException {
+    protected static VariantAvroReader getVariantAvroReader(Path input, VariantStudyMetadata metadata) throws StorageEngineException {
         VariantAvroReader variantAvroReader;
         if (isAvro(input.toString())) {
             String sourceFile = getMetaFromTransformedFile(input.toAbsolutePath().toString());
@@ -184,7 +184,7 @@ public class VariantReaderUtils {
 
         VariantReader reader = getVariantReader(input, metadata.toVariantDatasetMetadata(""));
         try {
-            metadata = VariantFileUtils.readVariantFileMetadata(reader, metadata);
+            metadata = VariantMetadataUtils.readVariantFileMetadata(reader, metadata);
         } catch (IOException e) {
             throw new StorageEngineException("Unable to read VariantSource", e);
         }

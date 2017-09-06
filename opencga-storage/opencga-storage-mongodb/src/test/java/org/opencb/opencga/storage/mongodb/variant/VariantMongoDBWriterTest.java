@@ -30,7 +30,7 @@ import org.junit.runners.Parameterized.Parameters;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -69,7 +69,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     private static final QueryOptions QUERY_OPTIONS = new QueryOptions(QueryOptions.SORT, true);
     private static String inputFile;
     private static MongoDBVariantStorageEngine variantStorageManager;
-    private VariantDatasetMetadata metadata1, metadata2, metadata3;
+    private VariantStudyMetadata metadata1, metadata2, metadata3;
     private StudyConfiguration studyConfiguration, studyConfiguration2;
     private final Integer fileId1 = 10000;
     private final Integer fileId2 = 20000;

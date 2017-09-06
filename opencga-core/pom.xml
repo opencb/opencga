@@ -39,10 +39,12 @@
         <dependency>
             <groupId>org.opencb.biodata</groupId>
             <artifactId>biodata-formats</artifactId>
+            <version>${biodata.version}</version>
         </dependency>
         <dependency>
             <groupId>org.opencb.biodata</groupId>
             <artifactId>biodata-models</artifactId>
+            <version>${biodata.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.mortbay.jetty</groupId>
@@ -53,6 +55,7 @@
         <dependency>
             <groupId>org.opencb.biodata</groupId>
             <artifactId>biodata-tools</artifactId>
+            <version>${biodata.version}</version>
         </dependency>
 
         <dependency>

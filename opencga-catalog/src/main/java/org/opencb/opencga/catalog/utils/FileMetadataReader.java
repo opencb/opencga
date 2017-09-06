@@ -21,7 +21,7 @@ import org.opencb.biodata.formats.alignment.sam.io.AlignmentSamDataReader;
 import org.opencb.biodata.models.alignment.AlignmentHeader;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
-import org.opencb.biodata.tools.variant.VariantFileUtils;
+import org.opencb.biodata.tools.variant.metadata.VariantMetadataUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -428,7 +428,8 @@ public class FileMetadataReader {
             throws IOException {
         if (file.getFormat() == File.Format.VCF || FileUtils.detectFormat(fileUri) == File.Format.VCF) {
             VariantFileMetadata metadata = new VariantFileMetadata(String.valueOf(file.getId()), file.getName());
-            return VariantFileUtils.readVariantFileMetadata(Paths.get(fileUri.getPath()), metadata);
+            metadata.setId(String.valueOf(file.getId()));
+            return VariantMetadataUtils.readVariantFileMetadata(Paths.get(fileUri.getPath()), metadata);
         } else {
             return null;
         }

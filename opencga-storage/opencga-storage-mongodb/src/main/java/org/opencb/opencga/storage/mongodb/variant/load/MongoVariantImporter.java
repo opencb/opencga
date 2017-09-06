@@ -22,10 +22,10 @@ import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
-import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
-import org.opencb.biodata.tools.variant.VariantMetadataManager;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
+import org.opencb.biodata.tools.variant.metadata.VariantMetadataManager;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
@@ -115,7 +115,7 @@ public class MongoVariantImporter extends VariantImporter {
             VariantMetadataManager metadataManager = new VariantMetadataManager().setVariantMetadata(metadata);
 
             studies.forEach((sc) -> {
-                VariantDatasetMetadata datasetMetadata = metadataManager.getVariantDatasetMetadata(sc.getStudyName());
+                VariantStudyMetadata datasetMetadata = metadataManager.getVariantDatasetMetadata(sc.getStudyName());
                 this.studiesIdRemap.put(sc.getStudyName(), String.valueOf(sc.getStudyId()));
 
                 sc.getFileIds().forEach((name, id) -> fileIdRemap.put(name, String.valueOf(id)));

@@ -27,7 +27,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -344,7 +344,7 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
             if (fileName.endsWith(".gz")) {
                 is = new GZIPInputStream(is);
             }
-            VariantDatasetMetadata metadata = new VariantFileMetadata(fileName, fileName).toVariantDatasetMetadata("s");
+            VariantStudyMetadata metadata = new VariantFileMetadata(fileName, fileName).toVariantDatasetMetadata("s");
             ParallelTaskRunner<Variant, Void> ptr = new ParallelTaskRunner<>(
                     new VariantVcfHtsjdkReader(is, metadata),
                     variantList -> {

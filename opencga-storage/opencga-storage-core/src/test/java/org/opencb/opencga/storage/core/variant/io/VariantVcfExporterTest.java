@@ -24,7 +24,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -261,7 +261,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
         return variantMap;
     }
 
-    protected static VariantDatasetMetadata getMetadata(Path vcfPath) {
+    protected static VariantStudyMetadata getMetadata(Path vcfPath) {
         return new VariantFileMetadata(vcfPath.getFileName().toString(), "").toVariantDatasetMetadata(STUDY_NAME);
     }
 

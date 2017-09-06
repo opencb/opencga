@@ -2,11 +2,11 @@ package org.opencb.opencga.storage.core.metadata;
 
 import com.google.common.collect.BiMap;
 import org.opencb.biodata.models.metadata.*;
-import org.opencb.biodata.models.variant.metadata.VariantDatasetMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
-import org.opencb.biodata.tools.variant.VariantMetadataManager;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
+import org.opencb.biodata.tools.variant.metadata.VariantMetadataManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -32,14 +32,14 @@ public class VariantMetadataConverter {
     public VariantMetadata toVariantMetadata(Collection<StudyConfiguration> studyConfigurations,
                                              Map<Integer, List<Integer>> returnedSamples,
                                              Map<Integer, List<Integer>> returnedFiles) {
-        List<VariantDatasetMetadata> datasets = new ArrayList<>();
+        List<VariantStudyMetadata> studies = new ArrayList<>();
         String specie = "hsapiens";
         String assembly = null;
         for (StudyConfiguration studyConfiguration : studyConfigurations) {
-            VariantDatasetMetadata variantDatasetMetadata = toVariantDatasetMetadata(studyConfiguration,
+            VariantStudyMetadata variantDatasetMetadata = toVariantDatasetMetadata(studyConfiguration,
                     returnedSamples == null ? null : returnedSamples.get(studyConfiguration.getStudyId()),
                     returnedFiles == null ? null : returnedFiles.get(studyConfiguration.getStudyId()));
-            datasets.add(variantDatasetMetadata);
+            studies.add(variantDatasetMetadata);
             if (studyConfiguration.getAttributes().containsKey(VariantAnnotationManager.SPECIES)) {
                 specie = studyConfiguration.getAttributes().getString(VariantAnnotationManager.SPECIES);
             }
@@ -54,19 +54,19 @@ public class VariantMetadataConverter {
                 .build();
         return VariantMetadata.newBuilder()
 //                .setDate(Date.from(Instant.now()).toString())
-                .setDate(TimeUtils.getTime())
-                .setDatasets(datasets)
+                .setCreationDate(TimeUtils.getTime())
+                .setStudies(studies)
                 .setVersion(GitRepositoryState.get().getDescribeShort())
                 .setSpecies(species)
                 .build();
 
     }
 
-    public VariantDatasetMetadata toVariantDatasetMetadata(StudyConfiguration studyConfiguration) {
+    public VariantStudyMetadata toVariantDatasetMetadata(StudyConfiguration studyConfiguration) {
         return toVariantDatasetMetadata(studyConfiguration, null, null);
     }
 
-    public VariantDatasetMetadata toVariantDatasetMetadata(StudyConfiguration studyConfiguration,
+    public VariantStudyMetadata toVariantDatasetMetadata(StudyConfiguration studyConfiguration,
                                                            List<Integer> returnedSamples,
                                                            List<Integer> returnedFiles) {
 
@@ -124,7 +124,7 @@ public class VariantMetadataConverter {
         });
         VariantFileHeader aggregatedHeader = new VariantFileHeader(studyHeader.getVersion(), studyHeader.getLines(), headerAttributes);
 
-        return VariantDatasetMetadata.newBuilder()
+        return VariantStudyMetadata.newBuilder()
                 .setId(studyConfiguration.getStudyName())
                 .setDescription(null)
                 .setStats(null)
@@ -163,10 +163,10 @@ public class VariantMetadataConverter {
     }
 
     public List<StudyConfiguration> toStudyConfigurations(VariantMetadata variantMetadata) {
-        List<StudyConfiguration> studyConfigurations = new ArrayList<>(variantMetadata.getDatasets().size());
+        List<StudyConfiguration> studyConfigurations = new ArrayList<>(variantMetadata.getStudies().size());
         int id = 1;
         VariantMetadataManager metadataManager = new VariantMetadataManager().setVariantMetadata(variantMetadata);
-        for (VariantDatasetMetadata datasetMetadata : variantMetadata.getDatasets()) {
+        for (VariantStudyMetadata datasetMetadata : variantMetadata.getStudies()) {
             StudyConfiguration sc = new StudyConfiguration(id++, datasetMetadata.getId());
             studyConfigurations.add(sc);
             List<Sample> samples = metadataManager.getSamples(datasetMetadata.getId());
