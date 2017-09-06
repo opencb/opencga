@@ -63,7 +63,7 @@ public class VariantMetadataFactory {
                     .map(fileMetadata -> {
                         Integer fileId = studyConfiguration.getFileIds().get(fileMetadata.getId());
                         if (fileId == null) {
-                            fileId = studyConfiguration.getFileIds().get(fileMetadata.getAlias());
+                            fileId = studyConfiguration.getFileIds().get(fileMetadata.getPath());
                         }
                         return fileId;
                     }).collect(Collectors.toList());

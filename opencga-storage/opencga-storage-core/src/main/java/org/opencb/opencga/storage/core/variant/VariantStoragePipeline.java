@@ -175,7 +175,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 //        Aggregation aggregation = options.get(Options.AGGREGATED_TYPE.key(), Aggregation.class, Options
 //                .AGGREGATED_TYPE.defaultValue());
         String fileName = input.getFileName().toString();
-//        VariantStudy.StudyType type = options.get(Options.STUDY_TYPE.key(), VariantStudy.StudyType.class,
+//        Type type = options.get(Options.STUDY_TYPE.key(), Type.class,
 //                Options.STUDY_TYPE.defaultValue());
         return new VariantFileMetadata(fileId.toString(), fileName);
     }
@@ -608,7 +608,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                                 "Sample genotype filter. Similar in concept to the FILTER field.",
                                 ".",
                                 VCFHeaderLineType.String.toString(), null);
-                        studyConfiguration.getVariantHeader().getLines().add(line);
+                        studyConfiguration.getVariantHeader().getComplexLines().add(line);
                     } else {
                         throw new StorageEngineException("Unknown FORMAT field '" + extraFormatField + '\'');
                     }

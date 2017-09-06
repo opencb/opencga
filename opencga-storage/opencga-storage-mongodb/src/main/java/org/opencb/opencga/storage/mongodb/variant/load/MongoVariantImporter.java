@@ -120,7 +120,7 @@ public class MongoVariantImporter extends VariantImporter {
 
                 sc.getFileIds().forEach((name, id) -> fileIdRemap.put(name, String.valueOf(id)));
                 for (VariantFileMetadata fileMetadata : datasetMetadata.getFiles()) {
-                    String id = fileIdRemap.get(fileMetadata.getAlias());
+                    String id = fileIdRemap.get(fileMetadata.getPath());
                     if (id != null) {
                         fileIdRemap.put(fileMetadata.getId(), id);
                     }

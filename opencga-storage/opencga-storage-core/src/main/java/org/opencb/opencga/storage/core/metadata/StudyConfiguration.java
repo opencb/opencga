@@ -23,7 +23,7 @@ import com.google.common.collect.HashBiMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.opencb.biodata.models.variant.commons.Aggregation;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderLine;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
@@ -314,7 +314,7 @@ public class StudyConfiguration {
     }
 
     public Map<String, VariantFileHeaderLine> getVariantHeaderLines(String key) {
-        return variantHeader.getLines()
+        return variantHeader.getComplexLines()
                 .stream()
                 .filter(l -> l.getKey().equalsIgnoreCase(key))
                 .collect(Collectors.toMap(VariantFileHeaderLine::getId, l -> l));
@@ -489,11 +489,11 @@ public class StudyConfiguration {
 
     public void addVariantFileHeader(VariantFileHeader header, List<String> formats) {
         Map<String, Map<String, VariantFileHeaderLine>> map = new HashMap<>();
-        for (VariantFileHeaderLine line : this.variantHeader.getLines()) {
+        for (VariantFileHeaderLine line : this.variantHeader.getComplexLines()) {
             Map<String, VariantFileHeaderLine> keyMap = map.computeIfAbsent(line.getKey(), key -> new HashMap<>());
             keyMap.put(line.getId(), line);
         }
-        for (VariantFileHeaderLine line : header.getLines()) {
+        for (VariantFileHeaderLine line : header.getComplexLines()) {
             if (formats == null || !line.getKey().equalsIgnoreCase("format") || formats.contains(line.getId())) {
                 Map<String, VariantFileHeaderLine> keyMap = map.computeIfAbsent(line.getKey(), key -> new HashMap<>());
                 if (keyMap.containsKey(line.getId())) {
@@ -504,15 +504,15 @@ public class StudyConfiguration {
                     }
                 } else {
                     keyMap.put(line.getId(), line);
-                    variantHeader.getLines().add(line);
+                    variantHeader.getComplexLines().add(line);
                 }
             }
         }
-        header.getAttributes().forEach((key, value) -> {
-            String oldValue = this.variantHeader.getAttributes().put(key, value);
+        header.getSimpleLines().forEach((key, value) -> {
+            String oldValue = this.variantHeader.getSimpleLines().put(key, value);
             if (oldValue != null && !oldValue.equals(value)) {
                 // If the value changes among files, replace it with a dot, as it is an unknown value.
-                this.variantHeader.getAttributes().put(key, UNKNOWN_HEADER_ATTRIBUTE);
+                this.variantHeader.getSimpleLines().put(key, UNKNOWN_HEADER_ATTRIBUTE);
 //                throw new IllegalArgumentException();
             }
         });

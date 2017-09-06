@@ -82,7 +82,7 @@ public class VariantMetadataConverter {
             List<String> sampleNames = toSampleNames(studyConfiguration, sampleIds);
             fileMetadata.add(VariantFileMetadata.newBuilder()
                     .setId(fileId.toString())
-                    .setAlias(studyConfiguration.getFileIds().inverse().get(fileId))
+                    .setPath(studyConfiguration.getFileIds().inverse().get(fileId))
                     .setSampleIds(sampleNames)
                     .build());
         }
@@ -117,12 +117,13 @@ public class VariantMetadataConverter {
         // Copy the header and remove unknown attributes
         VariantFileHeader studyHeader = studyConfiguration.getVariantHeader();
         HashMap<String, String> headerAttributes = new HashMap<>();
-        studyHeader.getAttributes().forEach((key, value) -> {
+        studyHeader.getSimpleLines().forEach((key, value) -> {
             if (!StudyConfiguration.UNKNOWN_HEADER_ATTRIBUTE.equals(value)) {
                 headerAttributes.put(key, value);
             }
         });
-        VariantFileHeader aggregatedHeader = new VariantFileHeader(studyHeader.getVersion(), studyHeader.getLines(), headerAttributes);
+        VariantFileHeader aggregatedHeader = new VariantFileHeader(studyHeader.getVersion(), studyHeader.getComplexLines(),
+                headerAttributes);
 
         return VariantStudyMetadata.newBuilder()
                 .setId(studyConfiguration.getStudyName())
@@ -131,7 +132,7 @@ public class VariantMetadataConverter {
                 .setFiles(fileMetadata)
                 .setIndividuals(individuals)
                 .setCohorts(cohorts)
-                .setSampleSetType(SampleSetType.COLLECTION)
+                .setSampleSetType(SampleSetType.UNKNOWN)
                 .setAggregation(studyConfiguration.getAggregation())
                 .setAggregatedHeader(aggregatedHeader)
                 .setAttributes(attributes)
@@ -151,7 +152,7 @@ public class VariantMetadataConverter {
         return Cohort.newBuilder()
                 .setId(studyConfiguration.getCohortIds().inverse().get(cohortId))
                 .setSampleIds(toSampleNames(studyConfiguration, studyConfiguration.getCohorts().get(cohortId)))
-                .setSampleSetType(SampleSetType.COLLECTION)
+                .setSampleSetType(SampleSetType.UNKNOWN)
                 .build();
     }
 
@@ -176,7 +177,7 @@ public class VariantMetadataConverter {
             for (VariantFileMetadata fileMetadata : datasetMetadata.getFiles()) {
                 int fileId = id++;
                 sc.getIndexedFiles().add(fileId);
-                sc.getFileIds().put(fileMetadata.getAlias(), fileId);
+                sc.getFileIds().put(fileMetadata.getPath(), fileId);
                 List<Integer> sampleIds = toSampleIds(sc, fileMetadata.getSampleIds());
                 sc.getSamplesInFiles().put(fileId, new LinkedHashSet<>(sampleIds));
             }

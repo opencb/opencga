@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.core.manager.variant.operations;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.biodata.models.variant.commons.Aggregation;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -408,7 +408,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         return new CatalogException("Cohort list null or empty");
     }
 
-    static IllegalArgumentException missingAggregationMappingFile(org.opencb.biodata.models.variant.commons.Aggregation aggregation) {
+    static IllegalArgumentException missingAggregationMappingFile(Aggregation aggregation) {
         return new IllegalArgumentException("Unable to calculate statistics for an aggregated study of type "
                 + "\"" + aggregation + "\" without an aggregation mapping file.");
     }

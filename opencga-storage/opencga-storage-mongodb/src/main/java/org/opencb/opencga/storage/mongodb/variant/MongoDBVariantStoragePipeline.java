@@ -25,7 +25,7 @@ import org.bson.Document;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.commons.ProgressLogger;
@@ -145,13 +145,12 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             if (options.containsKey(DEFAULT_GENOTYPE.key())) {
                 defaultGenotype = new HashSet<>(options.getAsStringList(DEFAULT_GENOTYPE.key()));
             } else {
-                VariantStudy.StudyType studyType = options.get(Options.STUDY_TYPE.key(), VariantStudy.StudyType.class, Options.STUDY_TYPE
+                SampleSetType studyType = options.get(Options.STUDY_TYPE.key(), SampleSetType.class, Options.STUDY_TYPE
                         .defaultValue());
                 switch (studyType) {
                     case FAMILY:
                     case TRIO:
                     case PAIRED:
-                    case PAIRED_TUMOR:
                         defaultGenotype = Collections.singleton(DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
                         logger.debug("Do not compress genotypes. Default genotype : {}", defaultGenotype);
                         break;

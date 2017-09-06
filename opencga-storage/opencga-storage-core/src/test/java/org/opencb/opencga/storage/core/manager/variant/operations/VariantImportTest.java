@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.core.manager.variant.operations;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.biodata.models.variant.commons.Aggregation;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;

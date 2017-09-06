@@ -18,8 +18,8 @@ package org.opencb.opencga.storage.app.cli.client.options;
 
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.CommaParameterSplitter;
-import org.opencb.biodata.models.variant.VariantStudy;
-import org.opencb.biodata.models.variant.commons.Aggregation;
+import org.opencb.biodata.models.metadata.SampleSetType;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -162,7 +162,7 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"-t", "--study-type"}, description = "One of the following: FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, " +
                 "PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES", arity = 1, hidden = true)
-        public VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
+        public SampleSetType studyType = SampleSetType.CASE_CONTROL;
 
         @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage" +
                 ".core.StudyConfiguration", arity = 1)

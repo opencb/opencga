@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
 import org.opencb.biodata.models.variant.*;
+import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -101,7 +102,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 
         StoragePipelineResult etlResult;
         ObjectMap options = new ObjectMap()
-                .append(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.CONTROL)
+                .append(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
         runDefaultETL(getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
@@ -201,7 +202,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         StudyConfiguration studyConfigurationMultiFile = new StudyConfiguration(1, "multi");
         StudyConfiguration studyConfigurationBatchFile = new StudyConfiguration(2, "batch");
 
-        options.putIfAbsent(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.COLLECTION);
+        options.putIfAbsent(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.UNKNOWN);
         options.putIfAbsent(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
         options.putIfAbsent(VariantStorageEngine.Options.ANNOTATE.key(), false);
 
@@ -287,7 +288,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 
         StoragePipelineResult etlResult;
         ObjectMap options = new ObjectMap()
-                .append(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.CONTROL)
+                .append(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
 
@@ -332,7 +333,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 
         StoragePipelineResult etlResult;
         ObjectMap options = new ObjectMap()
-                .append(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.CONTROL)
+                .append(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
 
@@ -725,7 +726,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         StudyConfiguration studyConfiguration2 = new StudyConfiguration(2, "Study2");
 
         ObjectMap options = new ObjectMap(params)
-                .append(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.CONTROL)
+                .append(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
         //Study1
