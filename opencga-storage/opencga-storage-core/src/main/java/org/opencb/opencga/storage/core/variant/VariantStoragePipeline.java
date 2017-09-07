@@ -33,7 +33,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
-import org.opencb.biodata.models.variant.metadata.VariantFileHeaderLine;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.commons.ProgressLogger;
@@ -228,7 +228,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         final VariantFileMetadata metadata = VariantReaderUtils.readVariantFileMetadata(input, metadataTemplate);
 
         VariantFileHeader variantMetadata = metadata.getHeader();
-        String fileName = metadata.getAlias();
+        String fileName = metadata.getPath();
         String studyId = String.valueOf(getStudyId());
         boolean generateReferenceBlocks = options.getBoolean(Options.GVCF.key(), false);
 
@@ -519,7 +519,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
          */
 
         int fileId;
-        String fileName = fileMetadata.getAlias();
+        String fileName = fileMetadata.getPath();
         try {
             fileId = Integer.parseInt(fileMetadata.getId());
         } catch (NumberFormatException e) {
@@ -562,7 +562,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
         fileId = StudyConfigurationManager.checkNewFile(studyConfiguration, fileId, fileName);
         options.put(Options.FILE_ID.key(), fileId);
-        studyConfiguration.getFileIds().put(fileMetadata.getAlias(), fileId);
+        studyConfiguration.getFileIds().put(fileMetadata.getPath(), fileId);
 //        studyConfiguration.getHeaders().put(fileId, source.getMetadata().get(VariantFileUtils.VARIANT_FILE_HEADER).toString());
 
         StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, fileMetadata, options);
@@ -597,12 +597,12 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         // Check if EXTRA_GENOTYPE_FIELDS_TYPE is filled
         if (!studyConfiguration.getAttributes().containsKey(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key())) {
             List<String> extraFieldsType = new ArrayList<>(extraFormatFields.size());
-            Map<String, VariantFileHeaderLine> formatsMap = studyConfiguration.getVariantHeaderLines("FORMAT");
+            Map<String, VariantFileHeaderComplexLine> formatsMap = studyConfiguration.getVariantHeaderLines("FORMAT");
             for (String extraFormatField : extraFormatFields) {
-                VariantFileHeaderLine line = formatsMap.get(extraFormatField);
+                VariantFileHeaderComplexLine line = formatsMap.get(extraFormatField);
                 if (line == null) {
                     if (extraFormatField.equals(VariantMerger.GENOTYPE_FILTER_KEY)) {
-                        line = new VariantFileHeaderLine(
+                        line = new VariantFileHeaderComplexLine(
                                 "FORMAT",
                                 VariantMerger.GENOTYPE_FILTER_KEY,
                                 "Sample genotype filter. Similar in concept to the FILTER field.",

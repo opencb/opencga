@@ -182,7 +182,7 @@ public class VariantReaderUtils {
             }
         }
 
-        VariantReader reader = getVariantReader(input, metadata.toVariantDatasetMetadata(""));
+        VariantReader reader = getVariantReader(input, metadata.toVariantStudyMetadata(""));
         try {
             metadata = VariantMetadataUtils.readVariantFileMetadata(reader, metadata);
         } catch (IOException e) {

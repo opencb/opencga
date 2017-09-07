@@ -179,15 +179,15 @@ public class AnalysisFileIndexer {
                         try {
                             // Read the VariantSource to get the source file
                             VariantFileMetadata fileMetadata = utils.readVariantFileMetadata(catalogManager.getFileManager().getUri(inputFile));
-                            Query query = new Query(FileDBAdaptor.QueryParams.NAME.key(), fileMetadata.getAlias());
+                            Query query = new Query(FileDBAdaptor.QueryParams.NAME.key(), fileMetadata.getPath());
                             QueryResult<File> result = catalogManager.getFileManager().get(studyIdByOutDirId, query, null, sessionId);
                             if (result.getResult().size() == 0) {
                                 // TODO: Continue with the transformed file as indexed file?
-                                throw new CatalogException("Unable to find file \"" + fileMetadata.getAlias() + "\" "
+                                throw new CatalogException("Unable to find file \"" + fileMetadata.getPath() + "\" "
                                         + "as source file from \"" + inputFile.getName() + "\"");
                             } else if (result.getResult().size() > 1) {
                                 List<String> foundFilesSummary = result.getResult().stream().map(File::getPath).collect(Collectors.toList());
-                                throw new CatalogException("Unable to find single file \"" + fileMetadata.getAlias() + "\" "
+                                throw new CatalogException("Unable to find single file \"" + fileMetadata.getPath() + "\" "
                                         + "as source file from \"" + inputFile.getName() + "\". Got multiple versions: " + foundFilesSummary);
                             } else {
                                 externalTransformed = true;

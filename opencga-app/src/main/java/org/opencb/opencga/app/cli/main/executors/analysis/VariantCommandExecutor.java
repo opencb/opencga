@@ -32,7 +32,7 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.variant.converters.avro.VariantAvroToVariantContextConverter;
-import org.opencb.biodata.tools.variant.converters.avro.VariantDatasetMetadataToVCFHeaderConverter;
+import org.opencb.biodata.tools.variant.converters.avro.VariantStudyMetadataToVCFHeaderConverter;
 import org.opencb.biodata.tools.variant.converters.proto.VariantProtoToVariantContextConverter;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.app.cli.analysis.executors.VariantQueryCommandUtils;
@@ -384,7 +384,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         VariantMetadata metadata = openCGAClient.getVariantClient().metadata(new ObjectMap(VariantQueryParam.STUDIES.key(), study)
                 .append(VariantQueryParam.SAMPLES.key(), samples), new QueryOptions(QueryOptions.EXCLUDE, "files")).firstResult();
 
-        VCFHeader vcfHeader = new VariantDatasetMetadataToVCFHeaderConverter().convert(metadata.getStudies().get(0), annotations);
+        VCFHeader vcfHeader = new VariantStudyMetadataToVCFHeaderConverter().convert(metadata.getStudies().get(0), annotations);
         VariantContextWriter variantContextWriter = VcfUtils.createVariantContextWriter(outputStream, vcfHeader.getSequenceDictionary(), null);
         variantContextWriter.writeHeader(vcfHeader);
 

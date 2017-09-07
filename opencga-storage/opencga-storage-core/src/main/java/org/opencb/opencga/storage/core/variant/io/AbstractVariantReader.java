@@ -71,7 +71,7 @@ public abstract class AbstractVariantReader implements VariantReader {
                 VariantFileMetadata readMetadata = VariantReaderUtils.readVariantFileMetadataFromJson(inputStream);
 
                 fileMetadata.setId(readMetadata.getId());
-                fileMetadata.setAlias(readMetadata.getAlias());
+                fileMetadata.setPath(readMetadata.getPath());
                 fileMetadata.setHeader(readMetadata.getHeader());
                 fileMetadata.setSamplesPosition(readMetadata.getSamplesPosition());
                 fileMetadata.setStats(readMetadata.getStats());

@@ -112,7 +112,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         clearDB(VariantStorageBaseTest.DB_NAME);
         variantStorageManager = getVariantStorageEngine();
 
-        metadata1 = new VariantFileMetadata(fileId1.toString(), getFileName(fileId1)).toVariantDatasetMetadata(studyId1.toString());
+        metadata1 = new VariantFileMetadata(fileId1.toString(), getFileName(fileId1)).toVariantStudyMetadata(studyId1.toString());
         studyConfiguration = new StudyConfiguration(studyId1, studyName1);
         studyConfiguration.getAttributes().append(DEFAULT_GENOTYPE.key(), defaultGenotype);
         studyConfiguration.getSampleIds().put("NA19600", 1);
@@ -123,7 +123,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         studyConfiguration.getFileIds().put(getFileName(fileId1), fileId1);
         studyConfiguration.getSamplesInFiles().put(fileId1, file1SampleIds);
 
-        metadata2 = new VariantFileMetadata(fileId2.toString(), getFileName(fileId2)).toVariantDatasetMetadata(studyId2.toString());
+        metadata2 = new VariantFileMetadata(fileId2.toString(), getFileName(fileId2)).toVariantStudyMetadata(studyId2.toString());
         studyConfiguration2 = new StudyConfiguration(studyId2, studyName2);
         studyConfiguration2.getAttributes().append(DEFAULT_GENOTYPE.key(), defaultGenotype);
         studyConfiguration2.getSampleIds().put("NA19600", 1);
@@ -134,7 +134,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         studyConfiguration2.getFileIds().put(getFileName(fileId2), fileId2);
         studyConfiguration2.getSamplesInFiles().put(fileId2, file2SampleIds);
 
-        metadata3 = new VariantFileMetadata(fileId3.toString(), getFileName(fileId3)).toVariantDatasetMetadata(studyId2.toString());
+        metadata3 = new VariantFileMetadata(fileId3.toString(), getFileName(fileId3)).toVariantStudyMetadata(studyId2.toString());
         studyConfiguration2.getSampleIds().put("NA00001.X", 5);
         studyConfiguration2.getSampleIds().put("NA00002.X", 6);
         studyConfiguration2.getSampleIds().put("NA00003.X", 7);

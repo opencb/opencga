@@ -468,7 +468,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         checkLoadedVariants(dbAdaptor, studyConfiguration, true, false, getExpectedNumLoadedVariants(fileMetadata));
 
         VariantReader reader = VariantReaderUtils.getVariantReader(Paths.get(etlResult.getTransformResult().getPath()),
-                new VariantFileMetadata("2", "").toVariantDatasetMetadata(String.valueOf(STUDY_ID)));
+                new VariantFileMetadata("2", "").toVariantStudyMetadata(String.valueOf(STUDY_ID)));
 
         reader.open();
         reader.pre();
@@ -609,7 +609,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
             throws StorageEngineException {
         long start = System.currentTimeMillis();
         VariantFileMetadata source = new VariantFileMetadata("6", VCF_TEST_FILE_NAME);
-        VariantReader variantReader = VariantReaderUtils.getVariantReader(Paths.get(variantsJson.getPath()), source.toVariantDatasetMetadata(String.valueOf(studyConfiguration.getStudyId())));
+        VariantReader variantReader = VariantReaderUtils.getVariantReader(Paths.get(variantsJson.getPath()), source.toVariantStudyMetadata(String.valueOf(studyConfiguration.getStudyId())));
 
         variantReader.open();
         variantReader.pre();

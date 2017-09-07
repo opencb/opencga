@@ -216,7 +216,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     if (doLoad && !error) {
                         // Read the VariantSource to get the original fileName (it may be different from the
                         // nextUri.getFileName if this is the transformed file)
-                        String fileName = storageETL.readVariantFileMetadata(nextUri, null).getAlias();
+                        String fileName = storageETL.readVariantFileMetadata(nextUri, null).getPath();
                         // Get latest study configuration from DB, might have been changed since
                         StudyConfiguration studyConfiguration = storageETL.getStudyConfiguration();
                         // Get file ID for the provided file name

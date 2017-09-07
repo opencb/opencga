@@ -257,8 +257,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         Path input = Paths.get(inputUri.getPath());
 
         VariantFileMetadata fileMetadata = readVariantFileMetadata(inputUri, null);
-        VariantStudyMetadata metadata = fileMetadata.toVariantDatasetMetadata(String.valueOf(getStudyId()));
-        int numRecords = fileMetadata.getStats().getNumRecords();
+        VariantStudyMetadata metadata = fileMetadata.toVariantStudyMetadata(String.valueOf(getStudyId()));
+        int numRecords = fileMetadata.getStats().getNumVariants();
         int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());
         int bulkSize = options.getInt(BULK_SIZE.key(), batchSize);
         int loadThreads = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
@@ -475,9 +475,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             if (fileIds.contains(fileId)) {
                 if (fileMetadata.getStats().getChromosomeCounts().size() == 1) {
                     chromosomesToLoad.addAll(fileMetadata.getStats().getChromosomeCounts().keySet());
-                    byChromosomeFiles.add(fileMetadata.getAlias());
+                    byChromosomeFiles.add(fileMetadata.getPath());
                 } else {
-                    wholeGenomeFiles.add(fileMetadata.getAlias());
+                    wholeGenomeFiles.add(fileMetadata.getPath());
                 }
             }
             // If the file is indexed, add to the map of chromosome->fileId
@@ -707,7 +707,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         }
 
         logger.info("============================================================");
-        logger.info("Check loaded file '" + fileMetadata.getAlias() + "' (" + fileId + ')');
+        logger.info("Check loaded file '" + fileMetadata.getPath() + "' (" + fileId + ')');
         if (expectedSkippedVariants != writeResult.getSkippedVariants()) {
             logger.error("Wrong number of skipped variants. Expected " + expectedSkippedVariants + " and got " + writeResult
                     .getSkippedVariants());

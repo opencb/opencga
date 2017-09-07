@@ -49,7 +49,7 @@ public class VcfSliceReducer extends TableReducer<ImmutableBytesWritable, VcfSli
 
         helper = new ArchiveTableHelper(context.getConfiguration());
         converterFromSlice = new VcfSliceToVariantListConverter(helper.getFileMetadata()
-                .toVariantDatasetMetadata(String.valueOf(helper.getStudyId())));
+                .toVariantStudyMetadata(String.valueOf(helper.getStudyId())));
         converterToSlice = new VariantToVcfSliceConverter();
     }
 

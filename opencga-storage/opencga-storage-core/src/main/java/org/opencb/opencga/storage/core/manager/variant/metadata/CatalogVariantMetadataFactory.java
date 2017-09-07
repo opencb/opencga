@@ -62,12 +62,12 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
         return metadata;
     }
 
-    private void fillStudy(long studyId, VariantStudyMetadata datasetMetadata) throws CatalogException {
+    private void fillStudy(long studyId, VariantStudyMetadata studyMetadata) throws CatalogException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.DESCRIPTION.key());
 
         // Just add file description
         Study study = catalogManager.getStudyManager().get(String.valueOf(studyId), options, sessionId).first();
-        datasetMetadata.setDescription(study.getDescription());
+        studyMetadata.setDescription(study.getDescription());
     }
 
     private void fillIndividual(Integer studyId, org.opencb.biodata.models.metadata.Individual individual) throws CatalogException {

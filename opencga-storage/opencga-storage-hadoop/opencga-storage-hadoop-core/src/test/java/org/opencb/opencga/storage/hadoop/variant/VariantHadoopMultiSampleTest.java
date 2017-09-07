@@ -357,7 +357,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         Path path = Paths.get(getResourceUri("s1_s2.genome.vcf"));
         VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(path, null);
 
-        VariantReader variantReader = new VariantVcfHtsjdkReader(new FileInputStream(path.toFile()), fileMetadata.toVariantDatasetMetadata(STUDY_NAME));
+        VariantReader variantReader = new VariantVcfHtsjdkReader(new FileInputStream(path.toFile()), fileMetadata.toVariantStudyMetadata(STUDY_NAME));
         variantReader.open();
         variantReader.pre();
         Map<String, Variant> expectedVariants = new LinkedHashMap<>();

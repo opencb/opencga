@@ -262,7 +262,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
     }
 
     protected static VariantStudyMetadata getMetadata(Path vcfPath) {
-        return new VariantFileMetadata(vcfPath.getFileName().toString(), "").toVariantDatasetMetadata(STUDY_NAME);
+        return new VariantFileMetadata(vcfPath.getFileName().toString(), "").toVariantStudyMetadata(STUDY_NAME);
     }
 
     public Map<String, Variant> readVCF(Path vcfPath, Integer lim, Region region, VariantReader variantVcfReader) {

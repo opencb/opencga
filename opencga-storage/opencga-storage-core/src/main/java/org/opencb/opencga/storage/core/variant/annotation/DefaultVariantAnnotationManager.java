@@ -344,7 +344,7 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
             if (fileName.endsWith(".gz")) {
                 is = new GZIPInputStream(is);
             }
-            VariantStudyMetadata metadata = new VariantFileMetadata(fileName, fileName).toVariantDatasetMetadata("s");
+            VariantStudyMetadata metadata = new VariantFileMetadata(fileName, fileName).toVariantStudyMetadata("s");
             ParallelTaskRunner<Variant, Void> ptr = new ParallelTaskRunner<>(
                     new VariantVcfHtsjdkReader(is, metadata),
                     variantList -> {

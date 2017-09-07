@@ -81,7 +81,7 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
                                 boolean includesrc, boolean generateReferenceBlocks) {
         this.factory = factory;
         this.fileMetadata = fileMetadata;
-        this.metadata = fileMetadata.toVariantDatasetMetadata(studyId);
+        this.metadata = fileMetadata.toVariantStudyMetadata(studyId);
         this.outputFileJsonFile = outputFileJsonFile;
         this.variantStatsTask = variantStatsTask;
         this.includeSrc = includesrc;
@@ -99,7 +99,7 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
         this.variantStatsTask = variantStatsTask;
         this.factory = null;
         this.fileMetadata = fileMetadata;
-        this.metadata = fileMetadata.toVariantDatasetMetadata(studyId);
+        this.metadata = fileMetadata.toVariantStudyMetadata(studyId);
         this.outputFileJsonFile = outputFileJsonFile;
         this.includeSrc = includeSrc;
 

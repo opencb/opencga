@@ -2,10 +2,7 @@ package org.opencb.opencga.storage.core.metadata;
 
 import com.google.common.collect.BiMap;
 import org.opencb.biodata.models.metadata.*;
-import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
-import org.opencb.biodata.models.variant.metadata.VariantFileMetadata;
-import org.opencb.biodata.models.variant.metadata.VariantMetadata;
-import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
+import org.opencb.biodata.models.variant.metadata.*;
 import org.opencb.biodata.tools.variant.metadata.VariantMetadataManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -36,10 +33,10 @@ public class VariantMetadataConverter {
         String specie = "hsapiens";
         String assembly = null;
         for (StudyConfiguration studyConfiguration : studyConfigurations) {
-            VariantStudyMetadata variantDatasetMetadata = toVariantDatasetMetadata(studyConfiguration,
+            VariantStudyMetadata studyMetadata = toVariantStudyMetadata(studyConfiguration,
                     returnedSamples == null ? null : returnedSamples.get(studyConfiguration.getStudyId()),
                     returnedFiles == null ? null : returnedFiles.get(studyConfiguration.getStudyId()));
-            studies.add(variantDatasetMetadata);
+            studies.add(studyMetadata);
             if (studyConfiguration.getAttributes().containsKey(VariantAnnotationManager.SPECIES)) {
                 specie = studyConfiguration.getAttributes().getString(VariantAnnotationManager.SPECIES);
             }
@@ -62,13 +59,13 @@ public class VariantMetadataConverter {
 
     }
 
-    public VariantStudyMetadata toVariantDatasetMetadata(StudyConfiguration studyConfiguration) {
-        return toVariantDatasetMetadata(studyConfiguration, null, null);
+    public VariantStudyMetadata toVariantStudyMetadata(StudyConfiguration studyConfiguration) {
+        return toVariantStudyMetadata(studyConfiguration, null, null);
     }
 
-    public VariantStudyMetadata toVariantDatasetMetadata(StudyConfiguration studyConfiguration,
-                                                           List<Integer> returnedSamples,
-                                                           List<Integer> returnedFiles) {
+    public VariantStudyMetadata toVariantStudyMetadata(StudyConfiguration studyConfiguration,
+                                                       List<Integer> returnedSamples,
+                                                       List<Integer> returnedFiles) {
 
         List<VariantFileMetadata> fileMetadata = new ArrayList<>(studyConfiguration.getIndexedFiles().size());
 
@@ -116,14 +113,14 @@ public class VariantMetadataConverter {
         // We don't want to export those values at the aggregated header.
         // Copy the header and remove unknown attributes
         VariantFileHeader studyHeader = studyConfiguration.getVariantHeader();
-        HashMap<String, String> headerAttributes = new HashMap<>();
-        studyHeader.getSimpleLines().forEach((key, value) -> {
-            if (!StudyConfiguration.UNKNOWN_HEADER_ATTRIBUTE.equals(value)) {
-                headerAttributes.put(key, value);
+        List<VariantFileHeaderSimpleLine> headerSimpleLines = new ArrayList<>(studyHeader.getSimpleLines().size());
+        studyHeader.getSimpleLines().forEach(line -> {
+            if (!StudyConfiguration.UNKNOWN_HEADER_ATTRIBUTE.equals(line.getValue())) {
+                headerSimpleLines.add(line);
             }
         });
         VariantFileHeader aggregatedHeader = new VariantFileHeader(studyHeader.getVersion(), studyHeader.getComplexLines(),
-                headerAttributes);
+                headerSimpleLines);
 
         return VariantStudyMetadata.newBuilder()
                 .setId(studyConfiguration.getStudyName())
@@ -167,14 +164,14 @@ public class VariantMetadataConverter {
         List<StudyConfiguration> studyConfigurations = new ArrayList<>(variantMetadata.getStudies().size());
         int id = 1;
         VariantMetadataManager metadataManager = new VariantMetadataManager().setVariantMetadata(variantMetadata);
-        for (VariantStudyMetadata datasetMetadata : variantMetadata.getStudies()) {
-            StudyConfiguration sc = new StudyConfiguration(id++, datasetMetadata.getId());
+        for (VariantStudyMetadata studyMetadata : variantMetadata.getStudies()) {
+            StudyConfiguration sc = new StudyConfiguration(id++, studyMetadata.getId());
             studyConfigurations.add(sc);
-            List<Sample> samples = metadataManager.getSamples(datasetMetadata.getId());
+            List<Sample> samples = metadataManager.getSamples(studyMetadata.getId());
             for (Sample sample : samples) {
                 sc.getSampleIds().put(sample.getId(), id++);
             }
-            for (VariantFileMetadata fileMetadata : datasetMetadata.getFiles()) {
+            for (VariantFileMetadata fileMetadata : studyMetadata.getFiles()) {
                 int fileId = id++;
                 sc.getIndexedFiles().add(fileId);
                 sc.getFileIds().put(fileMetadata.getPath(), fileId);
@@ -182,16 +179,16 @@ public class VariantMetadataConverter {
                 sc.getSamplesInFiles().put(fileId, new LinkedHashSet<>(sampleIds));
             }
 
-            for (Cohort cohort : datasetMetadata.getCohorts()) {
+            for (Cohort cohort : studyMetadata.getCohorts()) {
                 int cohortId = id++;
                 sc.getCohortIds().put(cohort.getId(), cohortId);
                 sc.getCalculatedStats().add(cohortId);
                 sc.getCohorts().put(cohortId, new HashSet<>(toSampleIds(sc, cohort.getSampleIds())));
             }
 
-            sc.setVariantHeader(datasetMetadata.getAggregatedHeader());
-            sc.setAggregation(datasetMetadata.getAggregation());
-            datasetMetadata.getAttributes().forEach(sc.getAttributes()::put);
+            sc.setVariantHeader(studyMetadata.getAggregatedHeader());
+            sc.setAggregation(studyMetadata.getAggregation());
+            studyMetadata.getAttributes().forEach(sc.getAttributes()::put);
         }
         return studyConfigurations;
     }

@@ -115,11 +115,11 @@ public class MongoVariantImporter extends VariantImporter {
             VariantMetadataManager metadataManager = new VariantMetadataManager().setVariantMetadata(metadata);
 
             studies.forEach((sc) -> {
-                VariantStudyMetadata datasetMetadata = metadataManager.getVariantDatasetMetadata(sc.getStudyName());
+                VariantStudyMetadata studyMetadata = metadataManager.getVariantStudyMetadata(sc.getStudyName());
                 this.studiesIdRemap.put(sc.getStudyName(), String.valueOf(sc.getStudyId()));
 
                 sc.getFileIds().forEach((name, id) -> fileIdRemap.put(name, String.valueOf(id)));
-                for (VariantFileMetadata fileMetadata : datasetMetadata.getFiles()) {
+                for (VariantFileMetadata fileMetadata : studyMetadata.getFiles()) {
                     String id = fileIdRemap.get(fileMetadata.getPath());
                     if (id != null) {
                         fileIdRemap.put(fileMetadata.getId(), id);

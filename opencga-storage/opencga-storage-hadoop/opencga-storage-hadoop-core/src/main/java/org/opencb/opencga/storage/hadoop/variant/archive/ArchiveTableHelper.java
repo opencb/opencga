@@ -140,7 +140,7 @@ public class ArchiveTableHelper extends GenomeHelper {
     }
 
     public VariantStudyMetadata getStudyMetadata() {
-        return meta.get().toVariantDatasetMetadata(String.valueOf(getStudyId()));
+        return meta.get().toVariantStudyMetadata(String.valueOf(getStudyId()));
     }
 
     public byte[] getColumn() {

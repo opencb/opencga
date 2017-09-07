@@ -173,7 +173,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             if (VariantReaderUtils.isVcf(input.toString())) {
                 InputStream inputStream = FileUtils.newInputStream(input);
 
-                VariantVcfHtsjdkReader reader = new VariantVcfHtsjdkReader(inputStream, fileMetadata.toVariantDatasetMetadata(studyId),
+                VariantVcfHtsjdkReader reader = new VariantVcfHtsjdkReader(inputStream, fileMetadata.toVariantStudyMetadata(studyId),
                         normalizer);
                 if (null != malformatedHandler) {
                     reader.registerMalformatedVcfHandler(malformatedHandler);
@@ -181,7 +181,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                 }
                 dataReader = reader;
             } else {
-                dataReader = VariantReaderUtils.getVariantReader(input, fileMetadata.toVariantDatasetMetadata(studyId));
+                dataReader = VariantReaderUtils.getVariantReader(input, fileMetadata.toVariantStudyMetadata(studyId));
             }
         } catch (IOException e) {
             throw new StorageEngineException("Unable to read from " + input, e);
@@ -419,8 +419,8 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                 Integer readFileId = Integer.parseInt(readFileMetadata.getId());
                 logger.debug("Found fileMetadata for file id {} with registered id {} ", loadedFileId, readFileId);
                 if (!studyConfiguration.getFileIds().inverse().containsKey(readFileId)) {
-                    StudyConfigurationManager.checkNewFile(studyConfiguration, readFileId, readFileMetadata.getAlias());
-                    studyConfiguration.getFileIds().put(readFileMetadata.getAlias(), readFileId);
+                    StudyConfigurationManager.checkNewFile(studyConfiguration, readFileId, readFileMetadata.getPath());
+                    studyConfiguration.getFileIds().put(readFileMetadata.getPath(), readFileId);
 //                    studyConfiguration.getHeaders().put(readFileId, readFileMetadata.getMetadata()
 //                            .get(VariantFileUtils.VARIANT_FILE_HEADER).toString());
                     StudyConfigurationManager.checkAndUpdateStudyConfiguration(studyConfiguration, readFileId, readFileMetadata, options);
@@ -432,7 +432,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             }
             logger.info("Found pending in DB: " + pendingFiles);
 
-            fileId = StudyConfigurationManager.checkNewFile(studyConfiguration, fileId, fileMetadata.getAlias());
+            fileId = StudyConfigurationManager.checkNewFile(studyConfiguration, fileId, fileMetadata.getPath());
 
             if (!loadArch) {
                 //If skip archive loading, input fileId must be already in archiveTable, so "pending to be loaded"
