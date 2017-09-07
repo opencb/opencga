@@ -32,7 +32,7 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
-import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
+import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.DataWriter;
@@ -165,7 +165,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
         normalizer.setGenerateReferenceBlocks(generateReferenceBlocks);
 
         // Stats calculator
-        VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(String.valueOf(getStudyId()), fileMetadata);
+        VariantSetStatsCalculator statsCalculator = new VariantSetStatsCalculator(String.valueOf(getStudyId()), fileMetadata);
 
         final VariantReader dataReader;
         try {

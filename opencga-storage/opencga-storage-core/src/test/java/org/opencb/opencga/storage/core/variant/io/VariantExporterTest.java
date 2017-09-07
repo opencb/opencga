@@ -21,16 +21,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageTest;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.file.Paths;
@@ -43,7 +41,7 @@ import static org.junit.Assert.assertTrue;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantExporterTest extends VariantStorageBaseTest {
+public class VariantExporterTest extends VariantStorageBaseTest implements DummyVariantStorageTest {
 
     @Before
     public void setUp() throws Exception {
@@ -56,21 +54,6 @@ public class VariantExporterTest extends VariantStorageBaseTest {
     @After
     public void tearDown() throws Exception {
         DummyStudyConfigurationAdaptor.writeAll(getTmpRootDir());
-    }
-
-    @Override
-    public VariantStorageEngine getVariantStorageEngine() throws Exception {
-        try (InputStream is = DummyVariantStorageEngine.class.getClassLoader().getResourceAsStream("storage-configuration.yml")) {
-            StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
-            DummyVariantStorageEngine storageManager = new DummyVariantStorageEngine();
-            storageManager.setConfiguration(storageConfiguration, DummyVariantStorageEngine.STORAGE_ENGINE_ID);
-            return storageManager;
-        }
-    }
-
-    @Override
-    public void clearDB(String dbName) throws Exception {
-        DummyStudyConfigurationAdaptor.clear();
     }
 
     @Test

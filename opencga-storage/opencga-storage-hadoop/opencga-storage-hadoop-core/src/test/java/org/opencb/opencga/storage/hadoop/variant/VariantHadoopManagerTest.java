@@ -26,7 +26,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
-import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
+import org.opencb.biodata.models.variant.stats.VariantSetStats;
 import org.opencb.biodata.tools.variant.converters.proto.VcfSliceToVariantListConverter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -89,7 +89,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
         );
 
         fileMetadata = variantStorageManager.readVariantFileMetadata(etlResult.getTransformResult());
-        VariantGlobalStats stats = fileMetadata.getStats();
+        VariantSetStats stats = fileMetadata.getStats();
         Assert.assertNotNull(stats);
 
         try (VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor()) {
@@ -197,7 +197,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
         });
         System.out.println("End query from Archive table");
         fileMetadata.getStats().getVariantTypeCounts().forEach((s, integer) -> assertEquals(integer, variantCounts.getOrDefault(s, 0)));
-        assertEquals(fileMetadata.getStats().getNumRecords(), numVariants[0]);
+        assertEquals(fileMetadata.getStats().getNumVariants(), numVariants[0]);
     }
 
     @Test

@@ -36,7 +36,7 @@ import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
-import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
+import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
@@ -67,7 +67,7 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
     protected final VariantContextToVariantConverter converter;
     protected final VariantNormalizer normalizer;
     protected final Path outputFileJsonFile;
-    protected final VariantGlobalStatsCalculator variantStatsTask;
+    protected final VariantSetStatsCalculator variantStatsTask;
     protected final AtomicLong htsConvertTime = new AtomicLong(0);
     protected final AtomicLong biodataConvertTime = new AtomicLong(0);
     protected final AtomicLong normTime = new AtomicLong(0);
@@ -77,7 +77,7 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
 
     public VariantTransformTask(VariantFactory factory,
                                 String studyId, VariantFileMetadata fileMetadata, Path outputFileJsonFile,
-                                VariantGlobalStatsCalculator variantStatsTask,
+                                VariantSetStatsCalculator variantStatsTask,
                                 boolean includesrc, boolean generateReferenceBlocks) {
         this.factory = factory;
         this.fileMetadata = fileMetadata;
@@ -94,7 +94,7 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
 
     public VariantTransformTask(VCFHeader header, VCFHeaderVersion version,
                                 String studyId, VariantFileMetadata fileMetadata, Path outputFileJsonFile,
-                                VariantGlobalStatsCalculator variantStatsTask,
+                                VariantSetStatsCalculator variantStatsTask,
                                 boolean includeSrc, boolean generateReferenceBlocks) {
         this.variantStatsTask = variantStatsTask;
         this.factory = null;

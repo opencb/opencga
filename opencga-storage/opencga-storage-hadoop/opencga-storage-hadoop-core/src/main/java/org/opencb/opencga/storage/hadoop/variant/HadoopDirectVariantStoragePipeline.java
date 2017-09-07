@@ -119,7 +119,7 @@ public class HadoopDirectVariantStoragePipeline extends AbstractHadoopVariantSto
 
             ProgressLogger progressLogger = new ProgressLogger("Loaded slices:");
             if (fileMetadata.getStats() != null) {
-                progressLogger.setApproximateTotalCount(fileMetadata.getStats().getNumRecords());
+                progressLogger.setApproximateTotalCount(fileMetadata.getStats().getNumVariants());
             }
 
             loadFromProto(input, table, helper, progressLogger);
@@ -129,7 +129,7 @@ public class HadoopDirectVariantStoragePipeline extends AbstractHadoopVariantSto
             ProgressLogger progressLogger;
             if (fileMetadata.getStats() != null) {
                 progressLogger = new ProgressLogger("Loaded variants for file \"" + input.getFileName() + "\" :",
-                        fileMetadata.getStats().getNumRecords());
+                        fileMetadata.getStats().getNumVariants());
             } else {
                 progressLogger = new ProgressLogger("Loaded variants for file \"" + input.getFileName() + "\" :");
             }

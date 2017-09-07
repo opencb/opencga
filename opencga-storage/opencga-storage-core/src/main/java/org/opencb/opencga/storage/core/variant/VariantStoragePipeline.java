@@ -35,7 +35,7 @@ import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
-import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
+import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -293,7 +293,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 //
 //            //Runner
 //            VariantRunner vr = new VariantRunner(source, reader, pedReader, writers,
-//                    Collections.singletonList(new VariantGlobalStatsCalculator(source)), batchSize);
+//                    Collections.singletonList(new VariantSetStatsCalculator(source)), batchSize);
 //
 //            logger.info("Single thread transform...");
 //            start = System.currentTimeMillis();
@@ -331,7 +331,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             if (parser.equalsIgnoreCase(HTSJDK_PARSER)) {
                 logger.info("Using HTSJDK to read variants.");
                 Pair<VCFHeader, VCFHeaderVersion> header = readHtsHeader(input);
-                VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(studyId, metadata);
+                VariantSetStatsCalculator statsCalculator = new VariantSetStatsCalculator(studyId, metadata);
                 taskSupplier = () -> new VariantAvroTransformTask(header.getKey(), header.getValue(), studyId, metadata, outputMetaFile,
                         statsCalculator, includeSrc, generateReferenceBlocks)
                         .setFailOnError(failOnError)
@@ -341,7 +341,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 // TODO Create a utility to determine which extensions are variants files
                 final VariantVcfFactory factory = createVariantVcfFactory(fileName);
                 logger.info("Using Biodata to read variants.");
-                VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(studyId, metadata);
+                VariantSetStatsCalculator statsCalculator = new VariantSetStatsCalculator(studyId, metadata);
                 taskSupplier = () -> new VariantAvroTransformTask(factory, studyId, metadata, outputMetaFile, statsCalculator,
                         includeSrc, generateReferenceBlocks)
                         .setFailOnError(failOnError)
@@ -391,7 +391,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             if (parser.equalsIgnoreCase(HTSJDK_PARSER)) {
                 logger.info("Using HTSJDK to read variants.");
                 Pair<VCFHeader, VCFHeaderVersion> header = readHtsHeader(input);
-                VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(studyId, metadata);
+                VariantSetStatsCalculator statsCalculator = new VariantSetStatsCalculator(studyId, metadata);
                 taskSupplier = () -> new VariantJsonTransformTask(header.getKey(), header.getValue(), studyId, metadata,
                         outputMetaFile, statsCalculator, includeSrc, generateReferenceBlocks)
                         .setFailOnError(failOnError)
@@ -401,7 +401,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 // TODO Create a utility to determine which extensions are variants files
                 final VariantVcfFactory factory = createVariantVcfFactory(fileName);
                 logger.info("Using Biodata to read variants.");
-                VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(studyId, metadata);
+                VariantSetStatsCalculator statsCalculator = new VariantSetStatsCalculator(studyId, metadata);
                 taskSupplier = () -> new VariantJsonTransformTask(factory, studyId, metadata, outputMetaFile, statsCalculator,
                         includeSrc, generateReferenceBlocks)
                         .setFailOnError(failOnError)

@@ -20,7 +20,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
+import org.opencb.biodata.models.variant.stats.VariantSetStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -309,7 +309,7 @@ public class FileManager extends ResourceManager<File> {
             Path statsFile = Paths.get(json.getUri().getRawPath());
             try (InputStream is = FileUtils.newInputStream(statsFile)) {
                 VariantFileMetadata fileMetadata = new ObjectMapper().readValue(is, VariantFileMetadata.class);
-                VariantGlobalStats stats = fileMetadata.getStats();
+                VariantSetStats stats = fileMetadata.getStats();
                 params = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_STATS, stats));
                 update(vcf.getId(), params, new QueryOptions(), sessionId);
             } catch (IOException e) {

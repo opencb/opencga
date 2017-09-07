@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.alignment.sam.io.AlignmentSamDataReader;
 import org.opencb.biodata.models.alignment.AlignmentHeader;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
+import org.opencb.biodata.models.variant.stats.VariantSetStats;
 import org.opencb.biodata.tools.variant.metadata.VariantMetadataUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -487,7 +487,7 @@ public class FileMetadataReader {
             URI fileUri = catalogManager.getFileManager().getUri(variantsFile);
             try (InputStream is = org.opencb.commons.utils.FileUtils.newInputStream(Paths.get(fileUri.getPath()))) {
                 VariantFileMetadata variantSource = new ObjectMapper().readValue(is, VariantFileMetadata.class);
-                VariantGlobalStats stats = variantSource.getStats();
+                VariantSetStats stats = variantSource.getStats();
                 catalogManager.getFileManager().update(inputFile.getId(), new ObjectMap("stats", new ObjectMap(VARIANT_STATS, stats)),
                         new QueryOptions(), sessionId);
             } catch (IOException e) {

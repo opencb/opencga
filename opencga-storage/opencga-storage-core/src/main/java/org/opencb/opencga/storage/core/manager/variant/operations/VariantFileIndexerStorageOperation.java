@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.core.manager.variant.operations;
 
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
+import org.opencb.biodata.models.variant.stats.VariantSetStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -513,7 +513,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             if (!metaFile.toFile().exists()) {
                 throw new IOException("Stats file not found.");
             }
-            VariantGlobalStats stats;
+            VariantSetStats stats;
             try {
                 VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(metaFile, null);
                 stats = fileMetadata.getStats();
