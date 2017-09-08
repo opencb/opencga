@@ -65,7 +65,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
-import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_STATS;
+import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_STATS;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -310,7 +310,7 @@ public class FileManager extends ResourceManager<File> {
             try (InputStream is = FileUtils.newInputStream(statsFile)) {
                 VariantFileMetadata fileMetadata = new ObjectMapper().readValue(is, VariantFileMetadata.class);
                 VariantSetStats stats = fileMetadata.getStats();
-                params = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_STATS, stats));
+                params = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_FILE_STATS, stats));
                 update(vcf.getId(), params, new QueryOptions(), sessionId);
             } catch (IOException e) {
                 throw new CatalogException("Error reading file \"" + statsFile + "\"", e);

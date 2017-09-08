@@ -217,6 +217,13 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
         synchronized (variantStatsTask) {
             variantStatsTask.post();
         }
+        writeVariantFileMetadata(fileMetadata, outputFileJsonFile);
+        logger.debug("Time txt2hts: " + this.htsConvertTime.get());
+        logger.debug("Time hts2biodata: " + this.biodataConvertTime.get());
+        logger.debug("Time normalization: " + this.normTime.get());
+    }
+
+    public static void writeVariantFileMetadata(VariantFileMetadata fileMetadata, Path outputFileJsonFile) {
         ObjectMapper jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
 
@@ -228,9 +235,6 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
-        logger.debug("Time txt2hts: " + this.htsConvertTime.get());
-        logger.debug("Time hts2biodata: " + this.biodataConvertTime.get());
-        logger.debug("Time normalization: " + this.normTime.get());
     }
 
     public boolean isIncludeSrc() {

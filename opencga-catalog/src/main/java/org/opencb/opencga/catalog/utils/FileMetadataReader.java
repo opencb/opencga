@@ -48,7 +48,10 @@ import java.util.stream.Collectors;
  */
 public class FileMetadataReader {
 
+    public static final String VARIANT_FILE_STATS = "variantFileStats";
+    @Deprecated
     public static final String VARIANT_STATS = "variantStats";
+
     @Deprecated
     public static final String VARIANT_SOURCE = "variantSource";
     public static final String VARIANT_FILE_METADATA = "variantFileMetadata";
@@ -488,14 +491,13 @@ public class FileMetadataReader {
             try (InputStream is = org.opencb.commons.utils.FileUtils.newInputStream(Paths.get(fileUri.getPath()))) {
                 VariantFileMetadata variantSource = new ObjectMapper().readValue(is, VariantFileMetadata.class);
                 VariantSetStats stats = variantSource.getStats();
-                catalogManager.getFileManager().update(inputFile.getId(), new ObjectMap("stats", new ObjectMap(VARIANT_STATS, stats)),
+                catalogManager.getFileManager().update(inputFile.getId(), new ObjectMap("stats", new ObjectMap(VARIANT_FILE_STATS, stats)),
                         new QueryOptions(), sessionId);
             } catch (IOException e) {
                 throw new CatalogException("Error reading file \"" + fileUri + "\"", e);
             }
         }
     }
-
 
 
     public static FileMetadataReader get(CatalogManager catalogManager) {

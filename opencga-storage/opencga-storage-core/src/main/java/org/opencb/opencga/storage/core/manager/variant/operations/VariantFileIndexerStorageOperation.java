@@ -55,7 +55,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_STATS;
+import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_STATS;
 
 /**
  * Created by imedina on 17/08/16.
@@ -520,7 +520,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             } catch (StorageEngineException e) {
                 throw new CatalogException("Error reading file \"" + metaFile + "\"", e);
             }
-            ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_STATS, stats));
+            ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_FILE_STATS, stats));
             fileManager.update(inputFile.getId(), params, new QueryOptions(), sessionId);
         }
 //        long studyId = catalogManager.getStudyIdByJobId(job.getId());

@@ -235,7 +235,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         Query searchQuery = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), "data/index/")
                 .append(FileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".variants.(json|avro)");
         File transformedFile = catalogManager.getFileManager().get(studyId, searchQuery, new QueryOptions(), sessionId).first();
-        assertNotNull(inputFile.getStats().get(FileMetadataReader.VARIANT_STATS));
+        assertNotNull(inputFile.getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
         return transformedFile;
     }
 

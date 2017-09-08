@@ -47,6 +47,13 @@ public abstract class AdminCommandExecutor extends CommandExecutor {
         return this;
     }
 
+    protected void setCatalogDatabaseCredentials(AdminCliOptionsParser.CatalogDatabaseCommandOptions catalogDatabaseOptions,
+                                                 AdminCliOptionsParser.AdminCommonCommandOptions adminOptions) throws CatalogException {
+        setCatalogDatabaseCredentials(catalogDatabaseOptions.databaseHost,
+                catalogDatabaseOptions.prefix, catalogDatabaseOptions.databaseUser,
+                catalogDatabaseOptions.databasePassword,
+                adminOptions.adminPassword);
+    }
     protected void setCatalogDatabaseCredentials(String host, String prefix, String user, String password, String adminPassword)
             throws CatalogException {
 
