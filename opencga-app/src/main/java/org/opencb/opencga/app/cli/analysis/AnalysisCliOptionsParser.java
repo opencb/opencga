@@ -16,28 +16,28 @@
 
 package org.opencb.opencga.app.cli.analysis;
 
-import com.beust.jcommander.*;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
+import com.beust.jcommander.ParametersDelegate;
 import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.utils.CommandLineUtils;
+import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VARIANT_REMOVE_COMMAND;
 
 /**
  * Created by imedina on 02/03/15.
  */
-public class AnalysisCliOptionsParser {
+public class AnalysisCliOptionsParser extends CliOptionsParser {
 
-    private final JCommander jCommander;
-
-    private final GeneralCliOptions.GeneralOptions generalOptions;
     private final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
     private final GeneralCliOptions.DataModelOptions dataModelOptions;
     private final GeneralCliOptions.NumericOptions numericOptions;
@@ -51,9 +51,6 @@ public class AnalysisCliOptionsParser {
 
 
     public AnalysisCliOptionsParser() {
-        generalOptions = new GeneralCliOptions.GeneralOptions();
-
-        jCommander = new JCommander(generalOptions);
         jCommander.setProgramName("opencga-analysis.sh");
 
         commonCommandOptions = new GeneralCliOptions.CommonCommandOptions();
@@ -105,24 +102,7 @@ public class AnalysisCliOptionsParser {
         toolsSubCommands.addCommand("show", toolsCommandOptions.showToolCommandOptions);
     }
 
-    public void parse(String[] args) throws ParameterException {
-        jCommander.parse(args);
-    }
-
-    public String getCommand() {
-        return (jCommander.getParsedCommand() != null) ? jCommander.getParsedCommand() : "";
-    }
-
-    public String getSubCommand() {
-        String parsedCommand = jCommander.getParsedCommand();
-        if (jCommander.getCommands().containsKey(parsedCommand)) {
-            String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
-            return subCommand != null ? subCommand: "";
-        } else {
-            return null;
-        }
-    }
-
+    @Override
     public boolean isHelp() {
         String parsedCommand = jCommander.getParsedCommand();
         if (parsedCommand != null) {
@@ -994,8 +974,7 @@ public class AnalysisCliOptionsParser {
 
     }
 
-
-
+    @Override
     public void printUsage() {
         String parsedCommand = getCommand();
         if (parsedCommand.isEmpty()) {
@@ -1028,23 +1007,6 @@ public class AnalysisCliOptionsParser {
                 System.err.println("");
             }
         }
-    }
-
-    private void printMainUsage() {
-        for (String s : jCommander.getCommands().keySet()) {
-            System.err.printf("%14s  %s\n", s, jCommander.getCommandDescription(s));
-        }
-    }
-
-    private void printCommands(JCommander commander) {
-        for (Map.Entry<String, JCommander> entry : commander.getCommands().entrySet()) {
-            System.err.printf("%14s  %s\n", entry.getKey(), commander.getCommandDescription(entry.getKey()));
-        }
-    }
-
-
-    public GeneralCliOptions.GeneralOptions getGeneralOptions() {
-        return generalOptions;
     }
 
     public GeneralCliOptions.CommonCommandOptions getCommonOptions() {

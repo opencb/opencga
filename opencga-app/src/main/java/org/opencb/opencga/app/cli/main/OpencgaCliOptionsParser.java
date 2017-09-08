@@ -17,8 +17,8 @@
 package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.JCommander;
-import com.beust.jcommander.ParameterException;
 import org.opencb.commons.utils.CommandLineUtils;
+import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
@@ -31,11 +31,8 @@ import java.util.*;
 /**
  * Created by imedina on AdminMain.
  */
-public class OpencgaCliOptionsParser {
+public class OpencgaCliOptionsParser extends CliOptionsParser {
 
-    private final JCommander jCommander;
-
-    private final GeneralCliOptions.GeneralOptions generalOptions;
     private final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
     private final GeneralCliOptions.DataModelOptions dataModelOptions;
     private final GeneralCliOptions.NumericOptions numericOptions;
@@ -66,9 +63,6 @@ public class OpencgaCliOptionsParser {
     }
 
     public OpencgaCliOptionsParser(boolean interactive) {
-        generalOptions = new GeneralCliOptions.GeneralOptions();
-
-        jCommander = new JCommander(generalOptions);
         jCommander.setExpandAtSign(false);
 
         commonCommandOptions = new GeneralCliOptions.CommonCommandOptions();
@@ -276,25 +270,7 @@ public class OpencgaCliOptionsParser {
 
     }
 
-
-    public void parse(String[] args) throws ParameterException {
-        jCommander.parse(args);
-    }
-
-    public String getCommand() {
-        return (jCommander.getParsedCommand() != null) ? jCommander.getParsedCommand() : "";
-    }
-
-    public String getSubCommand() {
-        String parsedCommand = jCommander.getParsedCommand();
-        if (jCommander.getCommands().containsKey(parsedCommand)) {
-            String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
-            return subCommand != null ? subCommand: "";
-        } else {
-            return null;
-        }
-    }
-
+    @Override
     public boolean isHelp() {
         String parsedCommand = jCommander.getParsedCommand();
         if (parsedCommand != null) {
@@ -307,7 +283,7 @@ public class OpencgaCliOptionsParser {
         return commonCommandOptions.help;
     }
 
-
+    @Override
     public void printUsage() {
         String parsedCommand = getCommand();
         if (parsedCommand.isEmpty()) {
@@ -341,8 +317,8 @@ public class OpencgaCliOptionsParser {
         }
     }
 
-
-    private void printMainUsage() {
+    @Override
+    protected void printMainUsage() {
         Set<String> analysisCommands = new HashSet<>(Arrays.asList("alignments", "variant"));
 
         System.err.println("Catalog commands:");
@@ -359,16 +335,6 @@ public class OpencgaCliOptionsParser {
                 System.err.printf("%14s  %s\n", command, jCommander.getCommandDescription(command));
             }
         }
-    }
-
-    private void printCommands(JCommander commander) {
-        for (Map.Entry<String, JCommander> entry : commander.getCommands().entrySet()) {
-            System.err.printf("%14s  %s\n", entry.getKey(), commander.getCommandDescription(entry.getKey()));
-        }
-    }
-
-    public GeneralCliOptions.GeneralOptions getGeneralOptions() {
-        return generalOptions;
     }
 
     public GeneralCliOptions.CommonCommandOptions getCommonCommandOptions() {

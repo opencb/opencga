@@ -18,37 +18,33 @@ package org.opencb.opencga.app.cli.admin;
 
 import com.beust.jcommander.*;
 import org.opencb.commons.utils.CommandLineUtils;
+import org.opencb.opencga.app.cli.CliOptionsParser;
+import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.app.cli.GeneralCliOptions.GeneralOptions;
+import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.List;
-import java.util.Map;
 
 
 /**
  * Created by imedina on 02/03/15.
  */
-public class AdminCliOptionsParser {
+public class AdminCliOptionsParser extends CliOptionsParser {
 
-    private final JCommander jCommander;
-
-    private final GeneralOptions generalOptions;
     private final AdminCommonCommandOptions commonCommandOptions;
 
-    private CatalogCommandOptions catalogCommandOptions;
-    private UsersCommandOptions usersCommandOptions;
-    private AuditCommandOptions auditCommandOptions;
-    private ToolsCommandOptions toolsCommandOptions;
-    private ServerCommandOptions serverCommandOptions;
-    private AdminCliOptionsParser.MetaCommandOptions metaCommandOptions;
+    private final CatalogCommandOptions catalogCommandOptions;
+    private final UsersCommandOptions usersCommandOptions;
+    private final AuditCommandOptions auditCommandOptions;
+    private final ToolsCommandOptions toolsCommandOptions;
+    private final ServerCommandOptions serverCommandOptions;
+    private final AdminCliOptionsParser.MetaCommandOptions metaCommandOptions;
+    private final MigrationCommandOptions migrationCommandOptions;
 
 
     public AdminCliOptionsParser() {
-        generalOptions = new GeneralOptions();
-
-        jCommander = new JCommander(generalOptions);
         jCommander.setProgramName("opencga-admin.sh");
 
         commonCommandOptions = new AdminCommonCommandOptions();
@@ -100,26 +96,15 @@ public class AdminCliOptionsParser {
         this.jCommander.addCommand("meta", this.metaCommandOptions);
         JCommander metaSubCommands = this.jCommander.getCommands().get("meta");
         metaSubCommands.addCommand("update", this.metaCommandOptions.metaKeyCommandOptions);
+
+        this.migrationCommandOptions = new MigrationCommandOptions(jCommander, commonCommandOptions);
+        this.jCommander.addCommand("migration", this.migrationCommandOptions);
+        JCommander migrationSubCommands = this.jCommander.getCommands().get("migration");
+        migrationSubCommands.addCommand("v1.3.0", this.migrationCommandOptions.getMigrate130CommandOptions());
+
     }
 
-    public void parse(String[] args) throws ParameterException {
-        jCommander.parse(args);
-    }
-
-    public String getCommand() {
-        return (jCommander.getParsedCommand() != null) ? jCommander.getParsedCommand() : "";
-    }
-
-    public String getSubCommand() {
-        String parsedCommand = jCommander.getParsedCommand();
-        if (jCommander.getCommands().containsKey(parsedCommand)) {
-            String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
-            return subCommand != null ? subCommand : "";
-        } else {
-            return null;
-        }
-    }
-
+    @Override
     public boolean isHelp() {
         String parsedCommand = jCommander.getParsedCommand();
         if (parsedCommand != null) {
@@ -146,13 +131,7 @@ public class AdminCliOptionsParser {
         }
 
         public String getParsedSubCommand() {
-            String parsedCommand = jCommander.getParsedCommand();
-            if (jCommander.getCommands().containsKey(parsedCommand)) {
-                String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
-                return subCommand != null ? subCommand : "";
-            } else {
-                return "";
-            }
+            return CommandExecutor.getParsedSubCommand(jCommander);
         }
     }
 
@@ -173,17 +152,17 @@ public class AdminCliOptionsParser {
     @Parameters(commandNames = {"catalog"}, commandDescription = "Implements different tools interact with Catalog database")
     public class CatalogCommandOptions extends CommandOptions {
 
-        DemoCatalogCommandOptions demoCatalogCommandOptions;
-        InstallCatalogCommandOptions installCatalogCommandOptions;
-        DeleteCatalogCommandOptions deleteCatalogCommandOptions;
-        IndexCatalogCommandOptions indexCatalogCommandOptions;
-        CleanCatalogCommandOptions cleanCatalogCommandOptions;
-        StatsCatalogCommandOptions statsCatalogCommandOptions;
-        DumpCatalogCommandOptions dumpCatalogCommandOptions;
-        ImportCatalogCommandOptions importCatalogCommandOptions;
-        DaemonCatalogCommandOptions daemonCatalogCommandOptions;
+        public DemoCatalogCommandOptions demoCatalogCommandOptions;
+        public InstallCatalogCommandOptions installCatalogCommandOptions;
+        public DeleteCatalogCommandOptions deleteCatalogCommandOptions;
+        public IndexCatalogCommandOptions indexCatalogCommandOptions;
+        public CleanCatalogCommandOptions cleanCatalogCommandOptions;
+        public StatsCatalogCommandOptions statsCatalogCommandOptions;
+        public DumpCatalogCommandOptions dumpCatalogCommandOptions;
+        public ImportCatalogCommandOptions importCatalogCommandOptions;
+        public DaemonCatalogCommandOptions daemonCatalogCommandOptions;
 
-        AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         public CatalogCommandOptions() {
             this.demoCatalogCommandOptions = new DemoCatalogCommandOptions();
@@ -204,14 +183,14 @@ public class AdminCliOptionsParser {
     @Parameters(commandNames = {"users"}, commandDescription = "Implements different tools for working with users")
     public class UsersCommandOptions extends CommandOptions {
 
-        CreateUserCommandOptions createUserCommandOptions;
-        ImportCommandOptions importCommandOptions;
-        SyncCommandOptions syncCommandOptions;
-        DeleteUserCommandOptions deleteUserCommandOptions;
-        StatsUserCommandOptions statsUserCommandOptions;
-        QuotaUserCommandOptions QuotaUserCommandOptions;
+        public CreateUserCommandOptions createUserCommandOptions;
+        public ImportCommandOptions importCommandOptions;
+        public SyncCommandOptions syncCommandOptions;
+        public DeleteUserCommandOptions deleteUserCommandOptions;
+        public StatsUserCommandOptions statsUserCommandOptions;
+        public QuotaUserCommandOptions QuotaUserCommandOptions;
 
-        AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         public UsersCommandOptions() {
             this.createUserCommandOptions = new CreateUserCommandOptions();
@@ -232,7 +211,7 @@ public class AdminCliOptionsParser {
         QueryAuditCommandOptions queryAuditCommandOptions;
         StatsAuditCommandOptions statsAuditCommandOptions;
 
-        AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         public AuditCommandOptions() {
             this.queryAuditCommandOptions = new QueryAuditCommandOptions();
@@ -266,10 +245,10 @@ public class AdminCliOptionsParser {
     @Parameters(commandNames = {"server"}, commandDescription = "Manage REST and gRPC servers")
     public class ServerCommandOptions extends CommandOptions {
 
-        RestServerCommandOptions restServerCommandOptions;
-        GrpcServerCommandOptions grpcServerCommandOptions;
+        public RestServerCommandOptions restServerCommandOptions;
+        public GrpcServerCommandOptions grpcServerCommandOptions;
 
-        AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         public ServerCommandOptions() {
             this.restServerCommandOptions = new RestServerCommandOptions();
@@ -280,8 +259,8 @@ public class AdminCliOptionsParser {
     @Parameters( commandNames = {"meta"}, commandDescription = "Manage Meta data")
     public class MetaCommandOptions extends AdminCliOptionsParser.CommandOptions {
 
-        MetaKeyCommandOptions metaKeyCommandOptions;
-        AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+        public MetaKeyCommandOptions metaKeyCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         public MetaCommandOptions() {
             this.metaKeyCommandOptions = new MetaKeyCommandOptions();
@@ -291,7 +270,7 @@ public class AdminCliOptionsParser {
     /**
      * Auxiliary class for Database connection.
      */
-    class CatalogDatabaseCommandOptions {
+    public static class CatalogDatabaseCommandOptions {
 
         @Parameter(names = {"-d", "--database-prefix"}, description = "Prefix name of the catalog database. If not present this is read "
                 + "from configuration.yml.")
@@ -677,6 +656,7 @@ public class AdminCliOptionsParser {
     }
 
 
+    @Override
     public void printUsage() {
         String parsedCommand = getCommand();
         if (parsedCommand.isEmpty()) {
@@ -711,22 +691,6 @@ public class AdminCliOptionsParser {
         }
     }
 
-    private void printMainUsage() {
-        for (String s : jCommander.getCommands().keySet()) {
-            System.err.printf("%14s  %s\n", s, jCommander.getCommandDescription(s));
-        }
-    }
-
-    private void printCommands(JCommander commander) {
-        for (Map.Entry<String, JCommander> entry : commander.getCommands().entrySet()) {
-            System.err.printf("%14s  %s\n", entry.getKey(), commander.getCommandDescription(entry.getKey()));
-        }
-    }
-
-
-    public GeneralOptions getGeneralOptions() {
-        return generalOptions;
-    }
 
     public AdminCommonCommandOptions getCommonOptions() {
         return commonCommandOptions;
@@ -756,4 +720,7 @@ public class AdminCliOptionsParser {
         return this.metaCommandOptions;
     }
 
+    public MigrationCommandOptions getMigrationCommandOptions() {
+        return migrationCommandOptions;
+    }
 }

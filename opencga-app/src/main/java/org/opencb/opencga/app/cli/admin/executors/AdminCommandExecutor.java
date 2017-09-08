@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.admin;
+package org.opencb.opencga.app.cli.admin.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
+import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 import java.util.Collections;
