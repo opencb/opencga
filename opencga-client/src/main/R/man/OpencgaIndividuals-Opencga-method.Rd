@@ -2,8 +2,8 @@
 % Please edit documentation in R/OpencgaClasses.R
 \docType{methods}
 \name{OpencgaIndividuals,Opencga-method}
-\alias{OpencgaIndividuals}
 \alias{OpencgaIndividuals,Opencga-method}
+\alias{OpencgaIndividuals}
 \title{A method to query Opencga Individuals}
 \usage{
 \S4method{OpencgaIndividuals}{Opencga}(object, id = NULL, action, params, ...)
@@ -12,4 +12,3 @@
 This method allow the user to create, update and explore
 Individuals data and metadta
 }
-

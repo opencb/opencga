@@ -3,46 +3,85 @@
 # fetchOpencga
 # createURL
 # ParseResponse
-base <- "http://localhost:8080/opencga/webservices/rest/v1"
-#' A method to query and manipulate user data in Opencga
-#' 
-#' This method to query and manipulate user data in Opencga
-#'   
+#base <- "http://localhost:8080/opencga/webservices/rest/v1"
+
+#source("R/.opencgaConfig.R")
+
+#' #' Read OpenCGA configuration
+#' #'
+#' #' @param conf a list or the path to a file (in "JSON" or "YAML" format) containing the host and version configurations to set OpenCGA connection
+#' #'
+#' #' @return a OpencgaConfig object
+#' #' 
+#' #' @examples
+#' #' # Configuration in list format
+#' #' conf <- list(version="v1",
+#' #'              rest=list(host="http://localhost:8080/opencga/"))
+#' #' con <- OpencgaReadConfig(conf)
+#' #' 
+#' #' # Configuration in file format ("YAML" or "JSON")
+#' #' conf <- "/path/to/conf/client-configuration.yml"
+#' #' con <- OpencgaReadConfig(conf)
+#' #' 
 #' #' @export
-#' OpencgaCreateUser <- function(baseurl, userid, name, passwd, email, organization){
-#'   require(jsonlite)
-#'   userid <- paste0("userid=", userid)
-#'   name <- paste0("name=", name)
-#'   email <- paste0("email=", email)
-#'   passwd <-paste0("password=", passwd)
-#'   organization <- paste0("organization=",organization)
-#'   url <- paste(baseurl, "/users/create?",userid, name, email, organization, passwd)
-#'   res <- fromJSON(url)
-#'   return(res$response$result)
+#' OpencgaReadConfig <- function(conf){
+#'   if (class(conf) == "list"){
+#'     # read from R object
+#'     conf <- read.conf.list(conf)
+#'   }else if(class(conf) == "character"){
+#'     # read from file
+#'     conf <- read.conf.file(conf)
+#'   }
+#'   ocgaConf <- new(Class = "OpencgaConfig", host=conf$host, version=conf$version)
+#'   return(ocgaConf)
 #' }
+
+
+#' @title Login to OpenCGA Web Services
+#' 
+#' @description
 #' A function to login Opencga web services
+#' 
 #' @aliases OpencgaLogin
-#' @param baseurl a character specifying the host url
-#' @param userid a charatcer the username
-#' @param passwd a charcter the user password
+#' @param conf an object of type OpencgaConfig
+#' @param userid a charatcer with the username
+#' @param passwd a charcter with the user password
+#' #@param version a character with the OpenCGA version to use
 #' @param logical whether to launch a graphical interface, FALSE by default
-#' @param ... Any other arguments
+#' #@param ... Any other arguments
+#' 
 #' @return an Opencga class object
+#' 
 #' @export
-OpencgaLogin <- function(baseurl, userid=NULL, passwd=NULL, interactive=FALSE){
+OpencgaLogin <- function(conf, userid=NULL, passwd=NULL, interactive=FALSE){
+  if (class(conf) == "OpencgaConfig"){
+    host <- slot(object = conf, name = "host")
+    version <- slot(object = conf, name = "version")
+  }else{
+    stop("Please, provide a valid config object. See OpencgaConfig.")
+  }
+  
+  baseurl <- paste0(host, "/webservices/rest/", version,"/users")
+  
   if(interactive==TRUE){
     cred <- user_login()
-    url <- paste(baseurl,"/users/",cred$user,"/login","?password=", cred$pass,
-                 sep="")
-  }else{
-    url <- paste(baseurl,"/users/", userid, "/login","?password=", passwd,
-                 sep="")
+    user <- cred$user
+    passwd <- cred$pass
   }
-  res <- fromJSON(url)
-  userId <- unlist(res$response$result[[1]]$userId)
-  sessionId <- unlist(res$response$result[[1]]$sessionId)
-  return(new("Opencga",baseurl=baseurl, sessionID=sessionId, userID=userId))
+  baseurl <- paste(baseurl, userid, "login", sep="/")
+  
+  # Send request
+  query <- POST(baseurl, body = list(password = passwd), encode = "json")
+  
+  # check query status
+  warn_for_status(query)
+  stop_for_status(query)
+  
+  res <- content(query)
+  sessionId <- res$response[[1]]$result[[1]]$sessionId
+  return(new("Opencga", baseurl=baseurl, sessionID=sessionId, userID=userid))
 }
+
 # Workforce function
 excuteOpencga <- function(object, category, id, action, params, ...){
   baseurl <- object@baseurl
@@ -187,3 +226,19 @@ getOpencgaDocs <- function(category, action,  requiredOnly=FALSE){
 
 
 
+#' A method to query and manipulate user data in Opencga
+#' 
+#' This method to query and manipulate user data in Opencga
+#'   
+#' #' @export
+#' OpencgaCreateUser <- function(baseurl, userid, name, passwd, email, organization){
+#'   require(jsonlite)
+#'   userid <- paste0("userid=", userid)
+#'   name <- paste0("name=", name)
+#'   email <- paste0("email=", email)
+#'   passwd <-paste0("password=", passwd)
+#'   organization <- paste0("organization=",organization)
+#'   url <- paste(baseurl, "/users/create?",userid, name, email, organization, passwd)
+#'   res <- fromJSON(url)
+#'   return(res$response$result)
+#' }

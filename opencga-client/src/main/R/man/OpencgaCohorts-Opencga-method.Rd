@@ -2,8 +2,8 @@
 % Please edit documentation in R/OpencgaClasses.R
 \docType{methods}
 \name{OpencgaCohorts,Opencga-method}
-\alias{OpencgaCohorts}
 \alias{OpencgaCohorts,Opencga-method}
+\alias{OpencgaCohorts}
 \title{A method to query Opencga cohorts}
 \usage{
 \S4method{OpencgaCohorts}{Opencga}(object, id, action, params, ...)
@@ -12,4 +12,3 @@
 This method allow the user to create, update and explore
 cohorts data and metadta
 }
-

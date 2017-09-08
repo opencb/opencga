@@ -1,22 +1,35 @@
 require(methods)
 require(miniUI)
 require(shiny)
+
 #' @include OpencgaFunctions.R
+
+#' This class defines the OpencgaConfig object
+OpencgaConfig <- setClass("OpencgaConfig", slots = c(host="character",
+                                               version="character"))
+# constructor
+OpencgaConfig <- function(host, version){
+  new("OpencgaConfig", host=host, version=version)
+}
+
+setMethod("show", signature = "OpencgaConfig", definition = function(object){
+  cat("| An object of class ", class(object), "\n", sep = "")
+  cat(paste("\tHost:", object@host))
+  cat(paste("\n\tVersion:", object@version))
+})
+
 #' This class defines the Opencga object
 Opencga <- setClass("Opencga", slots = c(baseurl="character",
     userID="character", sessionID="character"))
 
 ## A constructor function
-
 Opencga <- function(baseurl, userID, sessionID){
   new("Opencga", baseurl=baseurl, userID=userID, sessionID=sessionID)
 }
 
-
-
-setMethod("show",signature = "Opencga",definition = function(object){
-  cat("|An object of class ", class(object), "\n", sep = "")
-  cat("|This object is required by all Opencga Methods")
+setMethod("show", signature = "Opencga", definition = function(object){
+  cat("| An object of class ", class(object), "\n", sep = "")
+  cat("| This object is required by all Opencga Methods")
 })
 
 setGeneric("OpencgaUser", function(object, category, id=NULL, action, params=NULL,...)

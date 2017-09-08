@@ -18,4 +18,3 @@ A dataframe
 This method allow users to lookup required 
 to query Opencga Data
 }
-

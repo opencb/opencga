@@ -2,8 +2,8 @@
 % Please edit documentation in R/OpencgaClasses.R
 \docType{methods}
 \name{OpencgaUser,Opencga-method}
-\alias{OpencgaUser}
 \alias{OpencgaUser,Opencga-method}
+\alias{OpencgaUser}
 \title{A method to query user data}
 \usage{
 \S4method{OpencgaUser}{Opencga}(object, category, id = NULL, action,
@@ -16,4 +16,3 @@ This method allow the user to create, update, and explore user
 \details{
 A method to query user data
 }
-

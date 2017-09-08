@@ -2,39 +2,54 @@
 % Please edit documentation in R/OpencgaFunctions.R
 \name{OpencgaLogin}
 \alias{OpencgaLogin}
-\title{A method to query and manipulate user data in Opencga}
+\title{Login to OpenCGA Web Services}
 \usage{
-OpencgaLogin(baseurl, userid = NULL, passwd = NULL, interactive = FALSE)
+OpencgaLogin(conf, userid = NULL, passwd = NULL, interactive = FALSE)
 }
 \arguments{
-\item{baseurl}{a character specifying the host url}
+\item{conf}{an object of type OpencgaConfig}
 
-\item{userid}{a charatcer the username}
+\item{userid}{a charatcer with the username}
 
-\item{passwd}{a charcter the user password}
+\item{passwd}{a charcter with the user password
+#@param version a character with the OpenCGA version to use}
 
-\item{logical}{whether to launch a graphical interface, FALSE by default}
-
-\item{...}{Any other arguments}
+\item{logical}{whether to launch a graphical interface, FALSE by default
+#@param ... Any other arguments}
 }
 \value{
 an Opencga class object
 }
 \description{
-This method to query and manipulate user data in Opencga
-  
-#' @export
-OpencgaCreateUser <- function(baseurl, userid, name, passwd, email, organization){
-  require(jsonlite)
-  userid <- paste0("userid=", userid)
-  name <- paste0("name=", name)
-  email <- paste0("email=", email)
-  passwd <-paste0("password=", passwd)
-  organization <- paste0("organization=",organization)
-  url <- paste(baseurl, "/users/create?",userid, name, email, organization, passwd)
-  res <- fromJSON(url)
-  return(res$response$result)
-}
 A function to login Opencga web services
 }
-
+\details{
+#' Read OpenCGA configuration
+#'
+#' @param conf a list or the path to a file (in "JSON" or "YAML" format) containing the host and version configurations to set OpenCGA connection
+#'
+#' @return a OpencgaConfig object
+#' 
+#' @examples
+#' # Configuration in list format
+#' conf <- list(version="v1",
+#'              rest=list(host="http://localhost:8080/opencga/"))
+#' con <- OpencgaReadConfig(conf)
+#' 
+#' # Configuration in file format ("YAML" or "JSON")
+#' conf <- "/path/to/conf/client-configuration.yml"
+#' con <- OpencgaReadConfig(conf)
+#' 
+#' @export
+OpencgaReadConfig <- function(conf){
+  if (class(conf) == "list"){
+    # read from R object
+    conf <- read.conf.list(conf)
+  }else if(class(conf) == "character"){
+    # read from file
+    conf <- read.conf.file(conf)
+  }
+  ocgaConf <- new(Class = "OpencgaConfig", host=conf$host, version=conf$version)
+  return(ocgaConf)
+}
+}

@@ -18,4 +18,3 @@ cgaVariantParam(region = character(), chromosome = character(),
 \description{
 This class is used to store Opencga parameters for filtering queries
 }
-

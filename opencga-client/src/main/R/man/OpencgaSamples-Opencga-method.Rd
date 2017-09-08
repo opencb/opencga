@@ -2,14 +2,14 @@
 % Please edit documentation in R/OpencgaClasses.R
 \docType{methods}
 \name{OpencgaSamples,Opencga-method}
-\alias{OpencgaSamples}
 \alias{OpencgaSamples,Opencga-method}
+\alias{OpencgaSamples}
 \title{A method to query Opencga Samples}
 \usage{
-\S4method{OpencgaSamples}{Opencga}(object, id, action, params, ...)
+\S4method{OpencgaSamples}{Opencga}(object, id = NULL, action, params = NULL,
+  ...)
 }
 \description{
 This method allow the user to create, update and explore
 Samples data and metadta
 }
-

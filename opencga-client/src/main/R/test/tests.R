@@ -1,7 +1,41 @@
 library(opencgaR)
-base <- "http://localhost:8080/opencga/webservices/rest/v1"
-cga <- OpencgaLogin(baseurl=base, userid = "mano", passwd = '1234')
+
+## Test reading config
+##############################
+# Configuration in list format
+conf <- list(version="v1",
+             rest=list(host="http://localhost:8080/opencga/"))
+con <- opencgaReadConfig(conf)
+
+# Configuration in file format ("YAML" or "JSON")
+conf <- "/Users/mbleda/appl/opencga/build/conf/client-configuration.yml"
+con <- OpencgaReadConfig(conf)
+
+
+
+
+
+
+## Test reading config
+##############################
+# Configuration in list format
+conf <- list(version="v1",
+             rest=list(host="http://localhost:8080/opencga/"))
+con <- OpencgaReadConfig(conf)
+
+# Configuration in file format ("YAML" or "JSON")
+conf <- "/Users/mbleda/appl/opencga/build/conf/client-configuration.yml"
+con <- OpencgaReadConfig(conf)
+
+## Test connection to OpenCGA
+##############################
+# Connect to OpenCGA
+cga <- OpencgaLogin(conf = con, userid = "user1", passwd = "user1_pass")
 cga
+
+debug(OpencgaStudy)
+
+
 res1 <- OpencgaStudy(object = cga, id = 2, action = "files")
 
 # cga <- OpencgaLogin(baseurl = base,interactive = T)

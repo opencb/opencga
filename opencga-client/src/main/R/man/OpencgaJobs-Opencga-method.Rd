@@ -2,8 +2,8 @@
 % Please edit documentation in R/OpencgaClasses.R
 \docType{methods}
 \name{OpencgaJobs,Opencga-method}
-\alias{OpencgaJobs}
 \alias{OpencgaJobs,Opencga-method}
+\alias{OpencgaJobs}
 \title{A method to query Opencga Jobs}
 \usage{
 \S4method{OpencgaJobs}{Opencga}(object, id, action, params, ...)
@@ -12,4 +12,3 @@
 This method allow the user to create, update and explore
 jobs data and metadta
 }
-

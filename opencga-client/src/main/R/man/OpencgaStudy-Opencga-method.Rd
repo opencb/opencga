@@ -2,8 +2,8 @@
 % Please edit documentation in R/OpencgaClasses.R
 \docType{methods}
 \name{OpencgaStudy,Opencga-method}
-\alias{OpencgaStudy}
 \alias{OpencgaStudy,Opencga-method}
+\alias{OpencgaStudy}
 \title{A method to query Opencga studies}
 \usage{
 \S4method{OpencgaStudy}{Opencga}(object, id = NULL, action, params = NULL,
@@ -16,4 +16,3 @@ study data and metadta
 \details{
 A method to query Studies
 }
-

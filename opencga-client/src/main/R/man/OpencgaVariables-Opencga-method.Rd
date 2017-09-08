@@ -2,8 +2,8 @@
 % Please edit documentation in R/OpencgaClasses.R
 \docType{methods}
 \name{OpencgaVariables,Opencga-method}
-\alias{OpencgaVariables}
 \alias{OpencgaVariables,Opencga-method}
+\alias{OpencgaVariables}
 \title{A method to query Opencga Variables}
 \usage{
 \S4method{OpencgaVariables}{Opencga}(object, id, action, params, ...)
@@ -12,4 +12,3 @@
 This method allow the user to create, update and explore
 vaiables data and metadta
 }
-

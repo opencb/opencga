@@ -9,15 +9,18 @@ License: GPL-3
 LazyData: TRUE
 Depends:
     R(>= 3.2.2),
-    jsonlite,methods
+    jsonlite,methods,httr,configr
 Imports:
     stringi
 Enhances: shiny,miniUI
-Collate:
+Collate: 
+    'AllClasses.R'
     'OpencgaFunctions.R'
     'OpencgaClasses.R'
+    'OpencgaR-methods.R'
     'login.R'
-RoxygenNote: 5.0.1.9000
+    'opencgaConfig.R'
+RoxygenNote: 6.0.1
 VignetteBuilder: knitr
 Suggests:
     BiocStyle,
