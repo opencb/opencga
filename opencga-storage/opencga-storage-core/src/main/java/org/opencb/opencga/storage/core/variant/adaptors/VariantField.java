@@ -61,6 +61,7 @@ public enum VariantField {
     ANNOTATION_GENE_TRAIT_ASSOCIATION(ANNOTATION, "annotation.geneTraitAssociation"),
     ANNOTATION_GENE_DRUG_INTERACTION(ANNOTATION, "annotation.geneDrugInteraction"),
     ANNOTATION_VARIANT_TRAIT_ASSOCIATION(ANNOTATION, "annotation.variantTraitAssociation"),
+    ANNOTATION_TRAIT_ASSOCIATION(ANNOTATION, "annotation.traitAssociation"),
     ANNOTATION_FUNCTIONAL_SCORE(ANNOTATION, "annotation.functionalScore"),
     ANNOTATION_ADDITIONAL_ATTRIBUTES(ANNOTATION, "annotation.additionalAttributes");
 
