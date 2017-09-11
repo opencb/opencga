@@ -506,7 +506,6 @@ public class DocumentToVariantAnnotationConverter
                         exonOverlapDocuments.add(new Document(CT_EXON_OVERLAP_NUMBER_FIELD, exonOverlap.getNumber())
                                         .append(CT_EXON_OVERLAP_PERCENTAGE_FIELD, exonOverlap.getPercentage()));
                     }
-                    System.out.println("exonOverlapDocuments = " + exonOverlapDocuments);
                     ct.put(CT_EXON_OVERLAP_FIELD, exonOverlapDocuments);
                 }
                 putNotNull(ct, CT_TRANSCRIPT_ANNOT_FLAGS, consequenceType.getTranscriptAnnotationFlags());
