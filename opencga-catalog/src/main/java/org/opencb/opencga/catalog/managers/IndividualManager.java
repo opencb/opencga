@@ -27,7 +27,6 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
@@ -35,13 +34,13 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,7 +135,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
         QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options, userId);
-        addParentsInfoToAttributes(userId, studyId, individualQueryResult);
 
         return individualQueryResult;
     }
@@ -151,7 +149,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<Individual> queryResult = individualDBAdaptor.get(query, options, userId);
 //        authorizationManager.filterIndividuals(userId, studyId, queryResult.getResult());
-        addParentsInfoToAttributes(userId, studyId, queryResult);
         return queryResult;
     }
 
@@ -928,37 +925,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
 
     // **************************   Private methods  ******************************** //
-
-    private void addParentsInfoToAttributes(String userId, long studyId, QueryResult<Individual> queryResult) {
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(FamilyDBAdaptor.QueryParams.MEMBERS_FATHER.key(), FamilyDBAdaptor.QueryParams.MEMBERS_MOTHER.key()));
-        for (Individual individual : queryResult.getResult()) {
-            Query query = new Query()
-                    .append(FamilyDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(FamilyDBAdaptor.QueryParams.MEMBER_ID.key(), individual.getId());
-            try {
-                QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions, userId);
-                if (familyQueryResult.getNumResults() == 0) {
-                    continue;
-                }
-                Map<String, Object> attributes = individual.getAttributes();
-                if (attributes == null) {
-                    individual.setAttributes(new HashMap<>());
-                    attributes = individual.getAttributes();
-                }
-                for (Relatives relatives : familyQueryResult.first().getMembers()) {
-                    if (relatives.getMember().getId() == individual.getId()) {
-                        attributes.put(FamilyDBAdaptor.QueryParams.MOTHER.key(), relatives.getMother());
-                        attributes.put(FamilyDBAdaptor.QueryParams.FATHER.key(), relatives.getFather());
-                        break;
-                    }
-                }
-
-            } catch (CatalogException e) {
-                logger.warn("Error occurred when trying to fetch parents of individual: {}", e.getMessage(), e);
-            }
-        }
-    }
 
     private List<Long> getSamplesFromIndividuals(MyResourceIds resourceIds) throws CatalogDBException {
         // Look for all the samples belonging to the individual

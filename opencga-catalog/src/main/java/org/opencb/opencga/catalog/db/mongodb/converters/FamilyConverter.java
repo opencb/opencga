@@ -50,17 +50,20 @@ public class FamilyConverter extends GenericDocumentComplexConverter<Family> {
             for (int i = 0; i < memberList.size(); i++) {
                 Document relativesDocument = memberList.get(i);
 
-                Document member = (Document) relativesDocument.get("member");
-                long individualId = member != null ? (member.getInteger("id") <= 0 ? -1L : member.getInteger("id").longValue()) : -1L;
-                relativesDocument.put("member", individualId > 0 ? new Document("id", individualId) : new Document());
+                Document replacementDocument = new Document();
 
-                Document father = (Document) relativesDocument.get("father");
-                long fatherId = father != null ? (father.getInteger("id") == 0 ? -1L : father.getInteger("id").longValue()) : -1L;
-                relativesDocument.put("father", fatherId > 0 ? new Document("id", fatherId) : new Document());
+//                Document father = (Document) relativesDocument.get("father");
+//                long fatherId = father != null ? (father.getInteger("id") == 0 ? -1L : father.getInteger("id").longValue()) : -1L;
+//                replacementDocument.put("father", fatherId > 0 ? new Document("id", fatherId) : new Document());
+//
+//                Document mother = (Document) relativesDocument.get("mother");
+//                long motherId = mother != null ? (mother.getInteger("id") == 0 ? -1L : mother.getInteger("id").longValue()) : -1L;
+//                replacementDocument.put("mother", motherId > 0 ? new Document("id", motherId) : new Document());
 
-                Document mother = (Document) relativesDocument.get("mother");
-                long motherId = mother != null ? (mother.getInteger("id") == 0 ? -1L : mother.getInteger("id").longValue()) : -1L;
-                relativesDocument.put("mother", motherId > 0 ? new Document("id", motherId) : new Document());
+                replacementDocument.put("id", relativesDocument.getInteger("id") <= 0
+                        ? -1L : relativesDocument.getInteger("id").longValue());
+
+                memberList.set(i, replacementDocument);
             }
         }
     }

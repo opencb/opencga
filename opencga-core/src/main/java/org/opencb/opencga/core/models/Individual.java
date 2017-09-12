@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.core.models;
 
-import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.acls.AclParams;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,6 +31,11 @@ public class Individual extends Annotable {
 
     private long id;
     private String name;
+
+    private Individual father;
+    private Individual mother;
+    private Multiples multiples;
+
     @Deprecated
     private long fatherId;
     @Deprecated
@@ -83,6 +88,18 @@ public class Individual extends Annotable {
                 attributes);
     }
 
+    public Individual(long id, String name, Individual father, Individual mother, Multiples multiples, Sex sex, KaryotypicSex karyotypicSex,
+                      String ethnicity, Population population, LifeStatus lifeStatus, AffectationStatus affectationStatus,
+                      String dateOfBirth, boolean parentalConsanguinity, int release, List<AnnotationSet> annotationSets,
+                      List<OntologyTerm> ontologyTermList) {
+        this(id, name, father, mother, multiples, -1, -1, null, sex, karyotypicSex, ethnicity, null, population, dateOfBirth,
+                release, TimeUtils.getTime(), new Status(), lifeStatus, affectationStatus, ontologyTermList, new ArrayList<>(),
+                parentalConsanguinity, annotationSets, Collections.emptyMap());
+        if (population == null) {
+            new Population();
+        }
+    }
+
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
                       String ethnicity, Population population, LifeStatus lifeStatus, AffectationStatus affectationStatus,
                       String dateOfBirth, boolean parentalConsanguinity, int release, List<AnnotationSet> annotationSets,
@@ -118,6 +135,37 @@ public class Individual extends Annotable {
         this.affectationStatus = affectationStatus;
         this.ontologyTerms = ontologyTerms;
         this.samples = samples;
+        this.annotationSets = annotationSets;
+        this.attributes = attributes;
+    }
+
+    public Individual(long id, String name, Individual father, Individual mother, Multiples multiples, long fatherId, long motherId,
+                      String family, Sex sex, KaryotypicSex karyotypicSex, String ethnicity, Species species, Population population,
+                      String dateOfBirth, int release, String creationDate, Status status, LifeStatus lifeStatus,
+                      AffectationStatus affectationStatus, List<OntologyTerm> ontologyTerms, List<Sample> samples,
+                      boolean parentalConsanguinity, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+        this.id = id;
+        this.name = name;
+        this.father = father;
+        this.mother = mother;
+        this.multiples = multiples;
+        this.fatherId = fatherId;
+        this.motherId = motherId;
+        this.family = family;
+        this.sex = sex;
+        this.karyotypicSex = karyotypicSex;
+        this.ethnicity = ethnicity;
+        this.species = species;
+        this.population = population;
+        this.dateOfBirth = dateOfBirth;
+        this.release = release;
+        this.creationDate = creationDate;
+        this.status = status;
+        this.lifeStatus = lifeStatus;
+        this.affectationStatus = affectationStatus;
+        this.ontologyTerms = ontologyTerms;
+        this.samples = samples;
+        this.parentalConsanguinity = parentalConsanguinity;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
     }
@@ -303,6 +351,33 @@ public class Individual extends Annotable {
 
     public Individual setFamily(String family) {
         this.family = family;
+        return this;
+    }
+
+    public Individual getFather() {
+        return father;
+    }
+
+    public Individual setFather(Individual father) {
+        this.father = father;
+        return this;
+    }
+
+    public Individual getMother() {
+        return mother;
+    }
+
+    public Individual setMother(Individual mother) {
+        this.mother = mother;
+        return this;
+    }
+
+    public Multiples getMultiples() {
+        return multiples;
+    }
+
+    public Individual setMultiples(Multiples multiples) {
+        this.multiples = multiples;
         return this;
     }
 

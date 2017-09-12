@@ -32,7 +32,7 @@ public class Family extends Annotable {
     private String name;
 
     private List<OntologyTerm> diseases;
-    private List<Relatives> members;
+    private List<Individual> members;
 
     private String creationDate;
     private Status status;
@@ -44,12 +44,12 @@ public class Family extends Annotable {
     public Family() {
     }
 
-    public Family(String name, List<OntologyTerm> diseases, List<Relatives> members, String description, List<AnnotationSet> annotationSets,
+    public Family(String name, List<OntologyTerm> diseases, List<Individual> members, String description, List<AnnotationSet> annotationSets,
                   Map<String, Object> attributes) {
         this(name, diseases, members, TimeUtils.getTime(), new Status(Status.READY), description, -1, annotationSets, attributes);
     }
 
-    public Family(String name, List<OntologyTerm> diseases, List<Relatives> members, String creationDate, Status status, String description,
+    public Family(String name, List<OntologyTerm> diseases, List<Individual> members, String creationDate, Status status, String description,
                   int release, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.name = name;
         this.diseases = defaultObject(diseases, Collections::emptyList);
@@ -89,11 +89,11 @@ public class Family extends Annotable {
         return this;
     }
 
-    public List<Relatives> getMembers() {
+    public List<Individual> getMembers() {
         return members;
     }
 
-    public Family setMembers(List<Relatives> members) {
+    public Family setMembers(List<Individual> members) {
         this.members = members;
         return this;
     }

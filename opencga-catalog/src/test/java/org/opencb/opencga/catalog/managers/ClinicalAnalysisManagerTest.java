@@ -61,23 +61,32 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         OntologyTerm disease1 = new OntologyTerm("dis1", "Disease 1", "HPO");
         OntologyTerm disease2 = new OntologyTerm("dis2", "Disease 2", "HPO");
 
-        Individual father = new Individual().setName("father");
-        Individual mother = new Individual().setName("mother");
+        Individual father = new Individual().setName("father").setOntologyTerms(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual mother = new Individual().setName("mother").setOntologyTerms(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual fatherChildren = new Individual().setName("father");
-        Individual motherChildren = new Individual().setName("mother");
+        Individual relFather = new Individual().setName("father").setOntologyTerms(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
+        Individual relMother = new Individual().setName("mother").setOntologyTerms(Arrays.asList(new OntologyTerm("dis2", "dis2", "OT")));
 
-        Relatives relFather = new Relatives(father, null, null, Arrays.asList("dis1"), Arrays.asList("dis2"), null, false);
-        Relatives relMother = new Relatives(mother, null, null, Arrays.asList("dis2"), Collections.emptyList(), null, false);
-        Relatives relChild1 = new Relatives(new Individual().setName("child1"), fatherChildren, motherChildren,
-                Arrays.asList("dis1", "dis2"), Collections.emptyList(), new Multiples("multiples", Arrays.asList("child2", "child3")),
-                true);
-        Relatives relChild2 = new Relatives(new Individual().setName("child2"), fatherChildren, motherChildren, Arrays.asList("dis1"),
-                Collections.emptyList(), new Multiples("multiples", Arrays.asList("child1", "child3")), true);
-        Relatives relChild3 = new Relatives(new Individual().setName("child3"), fatherChildren, motherChildren, Arrays.asList("dis1"),
-                Collections.emptyList(), new Multiples("multiples", Arrays.asList("child1", "child2")), true);
+        Individual relChild1 = new Individual().setName("child1")
+                .setOntologyTerms(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT"), new OntologyTerm("dis2", "dis2", "OT")))
+                .setFather(father)
+                .setMother(mother)
+                .setMultiples(new Multiples("multiples", Arrays.asList("child2", "child3")))
+                .setParentalConsanguinity(true);
+        Individual relChild2 = new Individual().setName("child2")
+                .setOntologyTerms(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
+                .setFather(father)
+                .setMother(mother)
+                .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child3")))
+                .setParentalConsanguinity(true);
+        Individual relChild3 = new Individual().setName("child3")
+                .setOntologyTerms(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")))
+                .setFather(father)
+                .setMother(mother)
+                .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child2")))
+                .setParentalConsanguinity(true);
 
         Family family = new Family("family", Arrays.asList(disease1, disease2),
                 Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother),"", Collections.emptyList(), Collections.emptyMap());

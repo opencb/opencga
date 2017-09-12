@@ -24,9 +24,9 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -306,23 +306,41 @@ public class FamilyWSServer extends OpenCGAWSServer {
         }
     }
 
-    private static class RelativesPOST {
-        public IndividualWSServer.IndividualPOST member;
-        public IndividualWSServer.IndividualPOST father;
-        public IndividualWSServer.IndividualPOST mother;
-        public List<String> diseases;
-        public List<String> carrier;
-        public boolean parentalConsanguinity;
+    protected static class IndividualPOST {
+        public String name;
+
+        public IndividualPOST father;
+        public IndividualPOST mother;
         public Multiples multiples;
 
-        private Relatives toRelatives(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
-            Individual realIndividual = member != null ? member.toIndividual(studyStr, studyManager, sessionId) : null;
-            Individual realFather = father != null ? father.toIndividual(studyStr, studyManager, sessionId) : null;
-            Individual realMother = mother != null ? mother.toIndividual(studyStr, studyManager, sessionId) : null;
+        public Individual.Sex sex;
+        public String ethnicity;
+        public Boolean parentalConsanguinity;
+        public Individual.Population population;
+        public String dateOfBirth;
+        public Individual.KaryotypicSex karyotypicSex;
+        public Individual.LifeStatus lifeStatus;
+        public Individual.AffectationStatus affectationStatus;
+        public List<CommonModels.AnnotationSetParams> annotationSets;
+        public List<OntologyTerm> ontologyTerms;
+        public Map<String, Object> attributes;
 
-            return new Relatives(realIndividual, realFather, realMother, diseases, carrier, multiples, parentalConsanguinity);
+
+        public Individual toIndividual(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
+            List<AnnotationSet> annotationSetList = new ArrayList<>();
+            if (annotationSets != null) {
+                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
+                    if (annotationSet != null) {
+                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
+                    }
+                }
+            }
+
+            return new Individual(-1, name, father.toIndividual(studyStr, studyManager, sessionId),
+                    mother.toIndividual(studyStr, studyManager, sessionId), multiples, sex, karyotypicSex, ethnicity, population,
+                    lifeStatus,  affectationStatus, dateOfBirth, parentalConsanguinity != null ? parentalConsanguinity : false, 1,
+                    annotationSetList, ontologyTerms);
         }
-
     }
 
     private static class FamilyPOST {
@@ -330,7 +348,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
         public String description;
 
         public List<OntologyTerm> diseases;
-        public List<RelativesPOST> members;
+        public List<IndividualPOST> members;
 
         public Map<String, Object> attributes;
     }
@@ -349,9 +367,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 }
             }
 
-            List<Relatives> relatives = new ArrayList<>(members.size());
-            for (RelativesPOST member : members) {
-                relatives.add(member.toRelatives(studyStr, studyManager, sessionId));
+            List<Individual> relatives = new ArrayList<>(members.size());
+            for (IndividualPOST member : members) {
+                relatives.add(member.toIndividual(studyStr, studyManager, sessionId));
             }
 
             return new Family(name, diseases, relatives, description, annotationSetList, attributes);

@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.managers.IndividualManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Multiples;
 import org.opencb.opencga.core.models.OntologyTerm;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.exception.VersionException;
@@ -504,12 +505,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     protected static class IndividualPOST {
         public String name;
-        @Deprecated
-        public String family;
-        @Deprecated
-        public long fatherId;
-        @Deprecated
-        public long motherId;
+
+        public String father;
+        public String mother;
+        public Multiples multiples;
+
         public Individual.Sex sex;
         public String ethnicity;
         public Boolean parentalConsanguinity;
@@ -533,9 +533,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 }
             }
 
-            return new Individual(-1, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, population, lifeStatus,
-                    affectationStatus, dateOfBirth, parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList,
-                    ontologyTerms);
+            return new Individual(-1, name, new Individual().setName(father), new Individual().setName(mother), multiples, sex,
+                    karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth,
+                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, ontologyTerms);
         }
     }
 
