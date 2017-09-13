@@ -884,6 +884,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         Map<String, MyFamily> familyMembers = new HashMap<>(family.getMembers().size());
         Map<String, Set<String>> memberSiblings = new HashMap<>();
         for (Individual individual : family.getMembers()) {
+            ParamUtils.checkAlias(individual.getName(), "member name", configuration.getCatalog().getOffset());
+
             individual.setOntologyTerms(ParamUtils.defaultObject(individual.getOntologyTerms(), Collections::emptyList));
 
             // Check if the individual is correct or can be created
