@@ -3,14 +3,22 @@ package org.opencb.opencga.app.cli.admin.executors.migration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.google.common.base.Throwables;
+import htsjdk.variant.vcf.VCFHeaderLineCount;
+import htsjdk.variant.vcf.VCFHeaderLineType;
 import org.apache.avro.generic.GenericRecord;
+import org.bson.Document;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.legacy.VariantGlobalStats;
 import org.opencb.biodata.models.variant.avro.legacy.VariantSource;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.stats.VariantSetStats;
+import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
@@ -29,7 +37,6 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
-import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.metadata.VariantSourceToVariantFileMetadataConverter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -37,6 +44,7 @@ import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJs
 import org.opencb.opencga.storage.core.variant.transform.VariantTransformTask;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
+import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantFileMetadataConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +58,11 @@ import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 
+import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.exists;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_FILES;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_STUDIES;
+
 /**
  * Executes all migration scripts related with the issue #673
  * Created on 13/09/17.
@@ -58,10 +71,13 @@ import java.util.zip.GZIPInputStream;
  */
 public class NewVariantMetadataMigration {
 
+    protected static final String BACKUP_COLLECTION_SUFIX = "_bk_1_1_x";
     private final ObjectMapper objectMapper;
     private final Logger logger = LoggerFactory.getLogger(NewVariantMetadataMigration.class);
     private final StorageConfiguration storageConfiguration;
     private final CatalogManager catalogManager;
+    protected static final QueryOptions UPSER_OPTIONS = new QueryOptions(MongoDBCollection.UPSERT, true).append(MongoDBCollection.REPLACE, true);
+    protected static final QueryOptions REPLACE_OPTIONS = new QueryOptions(MongoDBCollection.REPLACE, true);
 
     public NewVariantMetadataMigration(StorageConfiguration storageConfiguration, CatalogManager catalogManager, MigrationCommandOptions.MigrateV1_3_0CommandOptions options) {
         this.storageConfiguration = storageConfiguration;
@@ -82,7 +98,7 @@ public class NewVariantMetadataMigration {
      */
     public void migrate(String sessionId) throws CatalogException, IOException {
         VariantSourceToVariantFileMetadataConverter converter = new VariantSourceToVariantFileMetadataConverter();
-//        VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
+        StorageEngineFactory.configure(storageConfiguration);
 
         Query vcfFilesQuery = new Query()
                 .append(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.VCF)
@@ -118,9 +134,9 @@ public class NewVariantMetadataMigration {
         ObjectMap options = etlConfiguration.getOptions();
         DatabaseCredentials database = etlConfiguration.getDatabase();
 
-        MongoCredentials credentials = null;
+        MongoCredentials credentials;
         try {
-            credentials = new MongoCredentials(database, "");
+            credentials = new MongoCredentials(database, null);
         } catch (IllegalOpenCGACredentialsException e) {
             throw Throwables.propagate(e);
         }
@@ -136,7 +152,6 @@ public class NewVariantMetadataMigration {
             }
         }
     }
-
 
     private void migrateCatalogFileMetadata(String sessionId, VariantSourceToVariantFileMetadataConverter converter, Query vcfFilesQuery, Study study) throws IOException, CatalogException {
         try (DBIterator<File> iterator = catalogManager.getFileManager()
@@ -220,11 +235,101 @@ public class NewVariantMetadataMigration {
     }
 
     private void migrateFilesCollection(MongoDataStore mongoDataStore, ObjectMap options) {
+        String filesCollectionName = options.getString(COLLECTION_FILES.key(), COLLECTION_FILES.defaultValue());
+        MongoDBCollection filesCollection = mongoDataStore.getCollection(filesCollectionName);
+        MongoDBCollection filesBkCollection = mongoDataStore.getCollection(filesCollectionName + BACKUP_COLLECTION_SUFIX);
 
+        GenericDocumentComplexConverter<VariantSource> variantSourceConverter = new GenericDocumentComplexConverter<>(VariantSource.class);
+        VariantSourceToVariantFileMetadataConverter variantFileMetadataConverter = new VariantSourceToVariantFileMetadataConverter();
+        DocumentToVariantFileMetadataConverter documentToVariantFileMetadataConverter = new DocumentToVariantFileMetadataConverter();
+
+        variantSourceConverter.getObjectMapper().addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+
+        logger.info("Migrate '" + filesCollectionName + "' collection from db " + mongoDataStore.getDatabaseName());
+        for (Document document : filesCollection.nativeQuery().find(exists("fileId", true), new QueryOptions())) {
+            logger.info("Migrate VariantSource " + document.getString("studyName"));
+
+            // Save backup
+            filesBkCollection.update(eq("_id", document.get("_id")), document, UPSER_OPTIONS);
+
+            // Migrate
+            VariantSource variantSource = variantSourceConverter.convertToDataModelType(document);
+            VariantFileMetadata variantFileMetadata = variantFileMetadataConverter.convert(variantSource);
+            Document newDocument = documentToVariantFileMetadataConverter.convertToStorageType(variantSource.getStudyId(), variantFileMetadata);
+
+            // Save new version
+            filesCollection.update(eq("_id", newDocument.get("_id")), newDocument, REPLACE_OPTIONS);
+        }
     }
 
     private void migrateStudiesCollection(MongoDataStore mongoDataStore, ObjectMap options) {
+        String studiesCollectionName = options.getString(COLLECTION_STUDIES.key(), COLLECTION_STUDIES.defaultValue());
+        MongoDBCollection studiesCollection = mongoDataStore.getCollection(studiesCollectionName);
+        MongoDBCollection studiesBkCollection = mongoDataStore.getCollection(studiesCollectionName + BACKUP_COLLECTION_SUFIX);
 
+        GenericDocumentComplexConverter<VariantStudyMetadata> variantStudyMetadataConverter = new GenericDocumentComplexConverter<>(VariantStudyMetadata.class);
+        GenericDocumentComplexConverter<VariantFileHeader> variantFileHeaderConverter = new GenericDocumentComplexConverter<>(VariantFileHeader.class);
+        variantFileHeaderConverter.getObjectMapper().addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+
+        logger.info("Migrate '" + studiesCollectionName + "' collection from db " + mongoDataStore.getDatabaseName());
+        for (Document studyConfigurationDocument : studiesCollection.nativeQuery().find(exists("variantMetadata", true), new QueryOptions())) {
+            Document variantMetadataObject = studyConfigurationDocument.get("variantMetadata", Document.class);
+            if (variantMetadataObject == null) {
+                continue;
+            }
+            logger.info("Migrate StudyConfiguration " + studyConfigurationDocument.getString("studyName"));
+            // Save backup
+            studiesBkCollection.update(eq("_id", studyConfigurationDocument.get("_id")), studyConfigurationDocument, UPSER_OPTIONS);
+
+            //Migrate model
+            VariantStudyMetadata variantStudyMetadata = variantStudyMetadataConverter.convertToDataModelType(variantMetadataObject);
+            VariantFileHeader variantFileHeader = new VariantFileHeader(null, new LinkedList<>(), new LinkedList<>());
+            for (VariantStudyMetadata.VariantMetadataRecord record : variantStudyMetadata.info.values()) {
+                variantFileHeader.getComplexLines().add(toComplexLine("INFO", record));
+            }
+            for (VariantStudyMetadata.VariantMetadataRecord record : variantStudyMetadata.format.values()) {
+                variantFileHeader.getComplexLines().add(toComplexLine("FORMAT", record));
+            }
+            if (!variantStudyMetadata.format.containsKey("GT")
+                    && !studyConfigurationDocument.get("attributes", Document.class).getBoolean("exclude&#46;genotypes", true)) {
+                variantFileHeader.getComplexLines().add(new VariantFileHeaderComplexLine(
+                        "FORMAT",
+                        VariantMerger.GT_KEY,
+                        "Genotype",
+                        "1",
+                        VCFHeaderLineType.String.toString(), null));
+            }
+            variantStudyMetadata.alternates.forEach((alt, description)
+                    -> variantFileHeader.getComplexLines().add(
+                            new VariantFileHeaderComplexLine("ALT", alt, description, null, null, Collections.emptyMap())));
+            variantStudyMetadata.filter.forEach((filter, description)
+                    -> variantFileHeader.getComplexLines().add(
+                            new VariantFileHeaderComplexLine("FILTER", filter, description, null, null, Collections.emptyMap())));
+            variantStudyMetadata.contig.forEach((contig, length)
+                    -> variantFileHeader.getComplexLines().add(
+                            new VariantFileHeaderComplexLine("contig", contig, null, null, null, Collections.singletonMap("length", String.valueOf(length)))));
+
+            // Save new version
+            studyConfigurationDocument.remove("variantMetadata");
+            studyConfigurationDocument.put("variantHeader", variantFileHeaderConverter.convertToStorageType(variantFileHeader));
+            studiesCollection.update(eq("_id", studyConfigurationDocument.get("_id")), studyConfigurationDocument, REPLACE_OPTIONS);
+        }
+    }
+
+    private VariantFileHeaderComplexLine toComplexLine(String key, VariantStudyMetadata.VariantMetadataRecord record) {
+        String number;
+        switch (record.numberType) {
+            case INTEGER:
+                number = record.number.toString();
+                break;
+            case UNBOUNDED:
+                number = ".";
+                break;
+            default:
+                number = record.numberType.toString();
+                break;
+        }
+        return new VariantFileHeaderComplexLine(key, record.id, record.description, number, record.type.toString(), Collections.emptyMap());
     }
 
     private <T> T getObject(Map<String, Object> attributes, String key, Class<T> clazz) throws java.io.IOException {
@@ -233,6 +338,24 @@ public class NewVariantMetadataMigration {
             return null;
         } else {
             return objectMapper.readValue(objectMapper.writeValueAsString(value), clazz);
+        }
+    }
+
+
+    public static class VariantStudyMetadata {
+        public Map<String, VariantMetadataRecord> info = new HashMap<>();    // Map from ID to VariantMetadataRecord
+        public Map<String, VariantMetadataRecord> format = new HashMap<>();  // Map from ID to VariantMetadataRecord
+
+        public Map<String, String> alternates = new HashMap<>(); // Symbolic alternates
+        public Map<String, String> filter = new HashMap<>();
+        public LinkedHashMap<String, Long> contig = new LinkedHashMap<>();
+
+        public static class VariantMetadataRecord {
+            public String id;
+            public VCFHeaderLineCount numberType;
+            public Integer number;
+            public VCFHeaderLineType type;
+            public String description;
         }
     }
 }
