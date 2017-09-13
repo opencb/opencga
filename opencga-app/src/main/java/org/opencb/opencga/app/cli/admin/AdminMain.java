@@ -92,6 +92,7 @@ public class AdminMain {
                     if (commandExecutor != null) {
                         try {
                             commandExecutor.loadConfiguration();
+                            commandExecutor.loadStorageConfiguration();
                         } catch (IOException ex) {
                             if (commandExecutor.getLogger() == null) {
                                 ex.printStackTrace();
