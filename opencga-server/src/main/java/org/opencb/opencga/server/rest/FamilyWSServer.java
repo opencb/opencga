@@ -336,10 +336,10 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 }
             }
 
-            return new Individual(-1, name, father.toIndividual(studyStr, studyManager, sessionId),
-                    mother.toIndividual(studyStr, studyManager, sessionId), multiples, sex, karyotypicSex, ethnicity, population,
-                    lifeStatus,  affectationStatus, dateOfBirth, parentalConsanguinity != null ? parentalConsanguinity : false, 1,
-                    annotationSetList, ontologyTerms);
+            return new Individual(-1, name, father != null ? father.toIndividual(studyStr, studyManager, sessionId) : null,
+                    mother != null ? mother.toIndividual(studyStr, studyManager, sessionId) : null, multiples, sex, karyotypicSex,
+                    ethnicity, population, lifeStatus,  affectationStatus, dateOfBirth,
+                    parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, ontologyTerms);
         }
     }
 
