@@ -628,7 +628,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 //        VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getStudyConfigurationManager(),
 //                variantStorageEngine.getCellBaseUtils(), variantStorageEngine.getConfiguration());
         VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getStudyConfigurationManager(),
-                null, variantStorageEngine.getConfiguration());
+                variantStorageEngine.getConfiguration());
         boolean querying = true;
 
         // create the database, this method checks if it exists and the solrConfig name

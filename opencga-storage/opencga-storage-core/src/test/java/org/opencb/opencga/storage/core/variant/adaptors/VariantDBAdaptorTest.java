@@ -782,6 +782,18 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
         totalResults = result.getNumResults();
 
+        genes = Arrays.asList("MMP11", "KLK15", "HPR", "GZMA", "METAP1D", "MMP23B");
+        // Last 3 genes does not match with that GO term
+        List<String> extraGenes = Arrays.asList("MMP11", "KLK15", "HPR", "GZMA", "METAP1D", "MMP23B", "MIB2", "ADSL", "BRCA2");
+        query = new Query(ANNOT_GO.key(), "GO:0006508").append(GENE.key(), extraGenes);
+        result = variantStorageEngine.get(query, null);
+        System.out.println("numResults: " + result.getNumResults());
+        for (Variant variant : result.getResult()) {
+            System.out.println(variant);
+        }
+        assertNotEquals(0, result.getNumResults());
+        assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
+
         query = new Query(ANNOT_GO.key(), "GO:0000050");
         result = variantStorageEngine.get(query, null);
         System.out.println("numResults: " + result.getNumResults());

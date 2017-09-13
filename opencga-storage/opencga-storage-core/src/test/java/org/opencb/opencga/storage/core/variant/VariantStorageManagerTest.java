@@ -709,7 +709,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         VariantDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
 
 
-        VariantSearchManager variantSearchManager = new VariantSearchManager(null, null, variantStorageEngine.getConfiguration());
+        VariantSearchManager variantSearchManager = new VariantSearchManager(null, variantStorageEngine.getConfiguration());
         // FIXME Collection is not in the configuration any more
 //        variantSearchManager.load(variantStorageEngine.getConfiguration().getSearch().getCollection(), dbAdaptor.iterator());
     }
