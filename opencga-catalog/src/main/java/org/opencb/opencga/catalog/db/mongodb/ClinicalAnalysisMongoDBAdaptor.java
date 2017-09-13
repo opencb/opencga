@@ -134,11 +134,13 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             throws CatalogDBException {
         long startTime = startQuery();
 
+        Document clinicalInterpretation = getMongoDBDocument(interpretation, "ClinicalInterpretation");
+        clinicalConverter.validateInterpretation(clinicalInterpretation);
+
         Document match = new Document()
                 .append(PRIVATE_ID, clinicalAnalysisId)
                 .append(QueryParams.INTERPRETATIONS_ID.key(), new Document("$ne", interpretation.getId()));
-        Document update = new Document("$push", new Document(QueryParams.INTERPRETATIONS.key(),
-                getMongoDBDocument(interpretation, "ClinicalInterpretation")));
+        Document update = new Document("$push", new Document(QueryParams.INTERPRETATIONS.key(), clinicalInterpretation));
 
         QueryResult<UpdateResult> updateResult = clinicalCollection.update(match, update, QueryOptions.empty());
 
@@ -204,7 +206,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         }
         for (ClinicalAnalysis clinicalAnalysis : queryResult.getResult()) {
             clinicalAnalysis.setFamily(getFamily(clinicalAnalysis.getFamily()));
-            clinicalAnalysis.setProband(getIndividual(clinicalAnalysis.getProband()));
+            clinicalAnalysis.setSubject(getIndividual(clinicalAnalysis.getSubject()));
         }
     }
 

@@ -32,7 +32,7 @@ public class ClinicalAnalysis {
     private String description;
     private Type type;
 
-    private Individual proband;
+    private Individual subject;
     private Family family;
     private List<ClinicalInterpretation> interpretations;
 
@@ -55,7 +55,7 @@ public class ClinicalAnalysis {
     public ClinicalAnalysis() {
     }
 
-    public ClinicalAnalysis(long id, String name, String description, Type type, Family family, Individual proband,
+    public ClinicalAnalysis(long id, String name, String description, Type type, Family family, Individual subject,
                             List <ClinicalInterpretation> interpretations, String creationDate, Status status, int release,
                             Map<String, Object> attributes) {
         this.id = id;
@@ -63,7 +63,7 @@ public class ClinicalAnalysis {
         this.description = description;
         this.type = type;
         this.family = family;
-        this.proband = proband;
+        this.subject = subject;
         this.interpretations = defaultObject(interpretations, ArrayList::new);
         this.creationDate = creationDate;
         this.status = status;
@@ -78,7 +78,7 @@ public class ClinicalAnalysis {
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", type=").append(type);
-        sb.append(", proband=").append(proband);
+        sb.append(", subject=").append(subject);
         sb.append(", family=").append(family);
         sb.append(", interpretations=").append(interpretations);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -134,12 +134,12 @@ public class ClinicalAnalysis {
         return this;
     }
 
-    public Individual getProband() {
-        return proband;
+    public Individual getSubject() {
+        return subject;
     }
 
-    public ClinicalAnalysis setProband(Individual proband) {
-        this.proband = proband;
+    public ClinicalAnalysis setSubject(Individual subject) {
+        this.subject = subject;
         return this;
     }
 
@@ -195,19 +195,19 @@ public class ClinicalAnalysis {
         return object;
     }
 
-    public class ClinicalInterpretation {
+    public static class ClinicalInterpretation {
 
         private String id;
         private String name;
-        private long jobId;
+        private File file;
 
         public ClinicalInterpretation() {
         }
 
-        public ClinicalInterpretation(String id, String name, long jobId) {
+        public ClinicalInterpretation(String id, String name, File file) {
             this.id = id;
             this.name = name;
-            this.jobId = jobId;
+            this.file = file;
         }
 
 
@@ -216,7 +216,7 @@ public class ClinicalAnalysis {
             final StringBuilder sb = new StringBuilder("Interpretation{");
             sb.append("id='").append(id).append('\'');
             sb.append(", name='").append(name).append('\'');
-            sb.append(", jobId=").append(jobId);
+            sb.append(", file=").append(file);
             sb.append('}');
             return sb.toString();
         }
@@ -240,12 +240,12 @@ public class ClinicalAnalysis {
             return this;
         }
 
-        public long getJobId() {
-            return jobId;
+        public File getFile() {
+            return file;
         }
 
-        public ClinicalInterpretation setJobId(long jobId) {
-            this.jobId = jobId;
+        public ClinicalInterpretation setFile(File file) {
+            this.file = file;
             return this;
         }
     }
