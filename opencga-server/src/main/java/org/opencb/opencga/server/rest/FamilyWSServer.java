@@ -306,12 +306,21 @@ public class FamilyWSServer extends OpenCGAWSServer {
         }
     }
 
+    protected static class MultiplesParameters {
+        private String type;
+        private List<String> siblings;
+
+        public Multiples toMultiples() {
+            return new Multiples(type, siblings);
+        }
+    }
+
     protected static class IndividualPOST {
         public String name;
 
-        public IndividualPOST father;
-        public IndividualPOST mother;
-        public Multiples multiples;
+        public String father;
+        public String mother;
+        public MultiplesParameters multiples;
 
         public Individual.Sex sex;
         public String ethnicity;
@@ -336,9 +345,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 }
             }
 
-            return new Individual(-1, name, father != null ? father.toIndividual(studyStr, studyManager, sessionId) : null,
-                    mother != null ? mother.toIndividual(studyStr, studyManager, sessionId) : null, multiples, sex, karyotypicSex,
-                    ethnicity, population, lifeStatus,  affectationStatus, dateOfBirth,
+            return new Individual(-1, name, father != null ? new Individual().setName(father) : null,
+                    mother != null ? new Individual().setName(mother) : null, multiples != null ? multiples.toMultiples() : null, sex,
+                    karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth,
                     parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSetList, ontologyTerms);
         }
     }
