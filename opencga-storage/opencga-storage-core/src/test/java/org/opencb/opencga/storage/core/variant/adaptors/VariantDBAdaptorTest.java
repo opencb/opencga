@@ -825,7 +825,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         QueryResult<Variant> result = variantStorageEngine.get(query, null);
         assertEquals(0, result.getNumResults());
 
-        for (String tissue : Arrays.asList("skin", "brain")) {
+        for (String tissue : Arrays.asList("umbilical cord", "midbrain")) {
 
             query = new Query(ANNOT_EXPRESSION.key(), tissue);
             result = variantStorageEngine.get(query, null);
