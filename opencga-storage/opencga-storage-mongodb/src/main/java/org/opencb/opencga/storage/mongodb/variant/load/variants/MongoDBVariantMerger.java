@@ -480,6 +480,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     ids.addAll(variant.getNames());
                 }
                 emptyVar.setType(variant.getType());
+                emptyVar.setSv(variant.getSv());
                 variant.getStudies().get(0).setSamplesPosition(getSamplesPosition(fileId));
                 List<AlternateCoordinate> fileAlternates = variant.getStudies().get(0).getSecondaryAlternates();
                 if (!alternates.isEmpty() && !alternates.equals(fileAlternates)) {

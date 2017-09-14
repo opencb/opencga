@@ -18,7 +18,10 @@ package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.StructuralVariation;
 import org.opencb.commons.utils.CryptoUtils;
+
+import java.util.function.Supplier;
 
 /**
  * Creates a sorted key for MongoDB.
@@ -38,40 +41,103 @@ public class VariantStringIdConverter {
 
     public static final String SEPARATOR = ":";
     public static final char SEPARATOR_CHAR = ':';
+    protected static final int CHR = 0;
+    protected static final int POS = 1;
+    protected static final int REF = 2;
+    protected static final int ALT = 3;
+    protected static final int CI_POS_L = 4;
+    protected static final int CI_POS_R = 5;
+    protected static final int CI_END_L = 6;
+    protected static final int CI_END_R = 7;
+    protected static final int CN = 8;
 
     public Variant convertToDataModelType(String object) {
         String[] split = object.split(SEPARATOR, -1);
-        return new Variant(split[0].trim(), Integer.parseInt(split[1].trim()), split[2], split[3]);
+        return new Variant(split[CHR].trim(), Integer.parseInt(split[POS].trim()), split[REF], split[ALT]).setSv(buildSv(split));
     }
 
     public Variant buildVariant(String variantId, int end, String reference, String alternate) {
         String[] split = variantId.split(SEPARATOR, -1);
-        return new Variant(split[0].trim(), Integer.parseInt(split[1].trim()), end, reference, alternate);
+        return new Variant(split[CHR].trim(), Integer.parseInt(split[POS].trim()), end, reference, alternate).setSv(buildSv(split));
+    }
+
+    private StructuralVariation buildSv(String[] split) {
+        if (split.length > CI_POS_L) {
+            return new StructuralVariation(
+                    getInt(split, CI_POS_L),
+                    getInt(split, CI_POS_R),
+                    getInt(split, CI_END_L),
+                    getInt(split, CI_END_R),
+                    getInt(split, CN),
+                    null, null, null);
+        } else {
+            return null;
+        }
+    }
+
+    private Integer getInt(String[] split, int idx) {
+        if (split.length > idx) {
+            return Integer.valueOf(split[idx]);
+        } else {
+            return null;
+        }
     }
 
     public String buildId(Variant variant) {
-        return buildId(variant.getChromosome(), variant.getStart(), variant.getReference(), variant.getAlternate());
+        return buildId(variant.getChromosome(), variant.getStart(), variant.getReference(), variant.getAlternate(), variant.getSv());
     }
 
-    public String buildId(String chromosome, int start, String reference, String alternate) {
+    public String buildId(String chromosome, Integer start, String reference, String alternate) {
+        return buildId(chromosome, start, reference, alternate, null);
+    }
+
+    private String buildId(String chromosome, int start, String reference, String alternate, StructuralVariation sv) {
         StringBuilder stringBuilder = buildId(chromosome, start, new StringBuilder());
 
         stringBuilder.append(SEPARATOR_CHAR);
 
         if (reference.length() > Variant.SV_THRESHOLD) {
-            stringBuilder.append(new String(CryptoUtils.encryptSha1(reference)));
+            reduce(stringBuilder, reference);
         } else if (!reference.equals("-")) {
             stringBuilder.append(reference);
         }
         stringBuilder.append(SEPARATOR_CHAR);
         if (alternate.length() > Variant.SV_THRESHOLD) {
-            stringBuilder.append(new String(CryptoUtils.encryptSha1(alternate)));
+            reduce(stringBuilder, alternate);
         } else if (!alternate.equals("-")) {
             stringBuilder.append(alternate);
         }
+
+        //
+        if (sv != null) {
+            stringBuilder
+                    .append(SEPARATOR_CHAR)
+                    .append(get(sv::getCiStartLeft, 0))
+                    .append(SEPARATOR_CHAR)
+                    .append(get(sv::getCiStartRight, 0))
+                    .append(SEPARATOR_CHAR)
+                    .append(get(sv::getCiEndLeft, 0))
+                    .append(SEPARATOR_CHAR)
+                    .append(get(sv::getCiEndRight, 0));
+            if (sv.getCopyNumber() != null) {
+                stringBuilder
+                        .append(SEPARATOR_CHAR)
+                        .append(sv.getCopyNumber());
+            }
+        }
+
         return stringBuilder.toString();
     }
 
+    private StringBuilder reduce(StringBuilder stringBuilder, String str) {
+        return stringBuilder.append(new String(CryptoUtils.encryptSha1(str)));
+//        return stringBuilder.append(str.charAt(0)).append('_').append(str.hashCode()).append('_').append(str.length());
+    }
+
+    private <T> T get(Supplier<T> supplier, T defaultValue) {
+        T t = supplier.get();
+        return t == null ? defaultValue : t;
+    }
 
 
     public static String buildId(String chromosome, int start) {
@@ -91,7 +157,7 @@ public class VariantStringIdConverter {
     }
 
     protected static StringBuilder appendChromosome(String chromosome, StringBuilder stringBuilder) {
-        if (chromosome.length() == 1 && Character.isDigit(chromosome.charAt(0))) {
+        if (chromosome.length() == 1 && Character.isDigit(chromosome.charAt(CHR))) {
             stringBuilder.append(' ');
         }
         return stringBuilder.append(chromosome);

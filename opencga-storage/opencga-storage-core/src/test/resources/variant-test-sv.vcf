@@ -1,0 +1,54 @@
+##fileformat=VCFv4.2
+##FILTER=<ID=PASS,Description="All filters passed">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Float,Description="Genotype quality">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth for tier1 (used+filtered)">
+##FORMAT=<ID=PS,Number=1,Type=String,Description="Phase set">
+##FORMAT=<ID=CN,Number=1,Type=Integer,Description="Copy number genotype for imprecise events">
+##FORMAT=<ID=CNQ,Number=1,Type=Float,Description="Copy number genotype quality for imprecise events">
+##FORMAT=<ID=CNL,Number=G,Type=Float,Description="Copy number genotype likelihood for imprecise events">
+##FORMAT=<ID=CNP,Number=G,Type=Float,Description="Copy number posterior probabilities">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the variant described in this record">
+##INFO=<ID=CIPOS,Number=2,Type=Integer,Description="Confidence interval around POS for imprecise variants">
+##INFO=<ID=CIEND,Number=2,Type=Integer,Description="Confidence interval around END for imprecise variants">
+##INFO=<ID=HOMLEN,Number=.,Type=Integer,Description="Length of base pair identical micro-homology at event breakpoints">
+##INFO=<ID=HOMSEQ,Number=.,Type=String,Description="Sequence of base pair identical micro-homology at event breakpoints">
+##INFO=<ID=SVLEN,Number=.,Type=Integer,Description="Difference in length between REF and ALT alleles">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=RIGHT_SVINSSEQ,Number=1,Type=String,Description="Right insertion sequence">
+##INFO=<ID=LEFT_SVINSSEQ,Number=1,Type=String,Description="Left insertion sequence">
+##ALT=<ID=DEL,Description="Deletion">
+##ALT=<ID=DEL:ME:ALU,Description="Deletion of ALU element">
+##ALT=<ID=DEL:ME:L1,Description="Deletion of L1 element">
+##ALT=<ID=DUP,Description="Duplication">
+##ALT=<ID=DUP:TANDEM,Description="Tandem Duplication">
+##ALT=<ID=INS,Description="Insertion of novel sequence">
+##ALT=<ID=INS:ME:ALU,Description="Insertion of ALU element">
+##ALT=<ID=INS:ME:L1,Description="Insertion of L1 element">
+##ALT=<ID=INV,Description="Inversion">
+##ALT=<ID=CNV,Description="Copy number variable region">
+##ALT=<ID=CN0,Description="Copy number allele: 0 copies">
+##ALT=<ID=CN1,Description="Copy number allele: 1 copy">
+##ALT=<ID=CN2,Description="Copy number allele: 2 copies">
+##ALT=<ID=CN3,Description="Copy number allele: 3 copies">
+##ALT=<ID=CN4,Description="Copy number allele: 4 copies">
+##ALT=<ID=CN5,Description="Copy number allele: 5 copies">
+##ALT=<ID=CN6,Description="Copy number allele: 6 copies">
+##ALT=<ID=CN7,Description="Copy number allele: 7 copies">
+##ALT=<ID=CN8,Description="Copy number allele: 8 copies">
+##ALT=<ID=CN9,Description="Copy number allele: 9 copies">
+##ALT=<ID=CN10,Description="Copy number allele: 10 copies">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE_1	SAMPLE_2
+1	500000	.	T	C	.	PASS	.	GT	0/1	0/1
+1	600000	.	T	<DEL>	.	PASS	SVTYPE=DEL;END=600250;SVLEN=-205;CIPOS=-56,20;CIEND=-10,62	GT	0/1	0/1
+1	650000	.	C	<CN0>	.	PASS	SVTYPE=DEL;END=650100;CIEND=0,48;CIPOS=-49,0;NS=2504	GT	0/1	0/1
+1	700000	.	C	<DEL:ME:ALU>	SVTYPE=DEL;END=700297;SVLEN=-297;CIPOS=-22,18;CIEND=-12,32	PASS	.	GT	0/1	0/1
+1	800000	.	A	<INS>	.	PASS	SVTYPE=INS;END=800000;SVLEN=6027;CIPOS=-16,22;RIGHT_SVINSSEQ=ACCACACCCACACAACACACA;LEFT_SVINSSEQ=TGTGGTGTGTGTGGTGTG	GT	0/1	0/1
+1	850000	.	A	<INS>	.	PASS	SVTYPE=INS;END=800000;SVINSSEQ=ACCACACCCACACAACACACAACCACACCCACACAACACACAACCACACCCACACAACACACAACCACACCCACACAACACACAACCACACCCACACAACACACAACCACACCCACACAACACACAACCACACCCACACAACACACAACCACACCCACACAACACACAACCACACCCACACAACACACAACCACACCCACACAACACACAACCACACCCACACAACACACA	GT	0/1	0/1
+1	900000	.	G	<INS:ME:L1>	.	PASS	SVTYPE=INS;END=900000;SVLEN=6027;CIPOS=-16,22	GT	0/1	0/1
+1	1000000	.	A	<DUP>	.	PASS	SVTYPE=DUP;END=1021100;SVLEN=21100;CIPOS=-500,500;CIEND=-500,500	GT	0/1	0/1
+1	1100000	.	T	<DUP:TANDEM>	.	PASS	SVTYPE=DUP;END=1100076;SVLEN=76;CIPOS=-10,10;CIEND=-10,10	GT	0/1	0/1
+1	1200000	.	C	<CN2>	.	PASS	SVTYPE=DUP;CIEND=-150,150;CIPOS=-150,150;END=1204000	GT	0/1	0/1
+1	1300000	.	G	<CNV>	.	PASS	SVTYPE=CNV;CIEND=-150,150;CIPOS=-150,150;END=1304000	GT:CN	0/1:0	0/1:5
+1	1400000	.	C	<CN7>	.	PASS	SVTYPE=CNV;CIEND=-150,150;CIPOS=-150,150;END=1404000	GT	0/1	0/1
+1	1500000	.	T	G	.	PASS	.	GT	0/1	0/1

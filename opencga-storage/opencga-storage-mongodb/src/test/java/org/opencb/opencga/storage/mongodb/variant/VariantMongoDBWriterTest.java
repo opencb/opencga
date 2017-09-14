@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
+import htsjdk.tribble.readers.LineIterator;
+import htsjdk.variant.vcf.VCFHeader;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
@@ -27,9 +29,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.tools.variant.VariantNormalizer;
+import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -674,6 +679,59 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         MongoDBVariantWriteResult resultMergeFile3 = mergeVariants(studyConfiguration2, fileId3, null);
         assertEqualsResult(new MongoDBVariantWriteResult(2, 0, 0, 0, 0, 0), resultMergeFile2);
         assertEqualsResult(new MongoDBVariantWriteResult(2, 0, 2, 0, 0, 2), resultMergeFile3);
+    }
+
+    @Test
+    public void testLoadImpreciseSVVariants() throws Exception {
+        StudyConfiguration sc = new StudyConfiguration(1, "s1");
+        List<Variant> variants = readVariants(sc, "/variant-test-sv.vcf", 1);
+        List<Variant> variants2 = readVariants(sc, "/variant-test-sv.vcf", 2, "_2");
+
+        MongoDBVariantWriteResult result = stageVariants(sc, variants, 1);
+        mergeVariants(sc, 1, result);
+        System.out.println("result1 = " + result);
+
+        result = stageVariants(sc, variants2, 2);
+        mergeVariants(sc, 2, result);
+        System.out.println("result2 = " + result);
+
+    }
+
+    protected List<Variant> readVariants(StudyConfiguration sc, String fileName, Integer fileId) {
+        return readVariants(sc, fileName, fileId, "");
+    }
+    protected List<Variant> readVariants(StudyConfiguration sc, String fileName, Integer fileId, String sampleSufix) {
+        FullVcfCodec codec = new FullVcfCodec();
+        LineIterator lineIterator = codec.makeSourceFromStream(getClass().getResourceAsStream(fileName));
+        VCFHeader header = (VCFHeader) codec.readActualHeader(lineIterator);
+        VariantNormalizer normalizer = new VariantNormalizer().configure(header);
+        VariantSource source = new VariantSource("file", fileId.toString(), String.valueOf(sc.getStudyId()), "study");
+
+        VariantVcfHtsjdkReader reader = new VariantVcfHtsjdkReader(getClass().getResourceAsStream(fileName), source, normalizer);
+        reader.open();
+        reader.pre();
+        List<Variant> variants = reader.read(1000000);
+        reader.post();
+        reader.close();
+
+
+        sc.getAttributes().append(DEFAULT_GENOTYPE.key(), defaultGenotype);
+        LinkedHashSet<Integer> sampleIds = new LinkedHashSet<>();
+        LinkedHashMap<String, Integer> samplesPosition = new LinkedHashMap<>();
+        for (String sample : source.getSamples()) {
+            sample = sample + sampleSufix;
+            sc.getSampleIds().putIfAbsent(sample, sc.getSampleIds().size() + 1);
+            sampleIds.add(sc.getSampleIds().get(sample));
+            samplesPosition.put(sample, samplesPosition.size());
+        }
+        sc.getFileIds().put(getFileName(fileId), fileId);
+        sc.getSamplesInFiles().put(fileId, sampleIds);
+
+        for (Variant variant : variants) {
+            variant.getStudies().get(0).setSortedSamplesPosition(samplesPosition);
+        }
+
+        return variants;
     }
 
     public void assertEqualsResult(MongoDBVariantWriteResult expected, MongoDBVariantWriteResult result) {

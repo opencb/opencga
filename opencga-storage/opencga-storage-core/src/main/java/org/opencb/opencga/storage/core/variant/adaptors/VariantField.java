@@ -38,6 +38,7 @@ public enum VariantField {
     LENGTH,
     TYPE,
     HGVS,
+    SV,
 
     STUDIES("studies", "sourceEntries"),
     STUDIES_SAMPLES_DATA(STUDIES, "studies.samplesData", "samples", "samplesData"),
