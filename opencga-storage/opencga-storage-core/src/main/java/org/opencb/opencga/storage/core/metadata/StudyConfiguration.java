@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.metadata;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.BiMap;
@@ -298,6 +299,7 @@ public class StudyConfiguration {
         this.aggregation = Aggregation.valueOf(aggregation);
     }
 
+    @JsonIgnore
     public boolean isAggregated() {
         return AggregationUtils.isAggregated(getAggregation());
     }
