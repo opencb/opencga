@@ -734,7 +734,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                                     + "the expected sex: " + sex);
                         }
 
-                        individual = individualQueryResult.first();
+                        individual.setId(individualQueryResult.first().getId());
+                        individual.setFather(individualQueryResult.first().getFather());
+                        individual.setMother(individualQueryResult.first().getMother());
+                        individual.setMultiples(individualQueryResult.first().getMultiples());
                     } else {
                         // The individual has to be created.
                         if (sex != null && sex != individual.getSex()) {
@@ -882,14 +885,39 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         Map<String, MyFamily> familyMembers = new HashMap<>(family.getMembers().size());
-        Map<String, Set<String>> memberSiblings = new HashMap<>();
+
+        // Just in case some or all the individuals already existed, we create a map of id -> name because the names are used to validate
+        // the family is correct. However, when individuals are fetched, father and mother names are lost (not stored in the individual db)
+        Map<Long, String> individualNameMap = new HashMap<>();
         for (Individual individual : family.getMembers()) {
             ParamUtils.checkAlias(individual.getName(), "member name", configuration.getCatalog().getOffset());
-
-            individual.setOntologyTerms(ParamUtils.defaultObject(individual.getOntologyTerms(), Collections::emptyList));
-
+//            individual.setOntologyTerms(ParamUtils.defaultObject(individual.getOntologyTerms(), Collections::emptyList));
             // Check if the individual is correct or can be created
-            individual = checkAndCreateIndividual(studyId, individual, null, false, sessionId);
+            checkAndCreateIndividual(studyId, individual, null, false, sessionId);
+            if (individual.getId() > 0) {
+                individualNameMap.put(individual.getId(), individual.getName());
+            }
+        }
+        if (individualNameMap.size() > 0) {
+            // We probably need to assign names were needed
+            for (Individual individual : family.getMembers()) {
+                if (individual.getMother() != null && individual.getMother().getId() > 0) {
+                    String motherName = individualNameMap.get(individual.getMother().getId());
+                    if (StringUtils.isEmpty(motherName)) {
+                        throw new CatalogException("Incomplete family. Mother name not found under id " + individual.getMother().getId());
+                    }
+                }
+                if (individual.getFather() != null && individual.getFather().getId() > 0) {
+                    String fatherName = individualNameMap.get(individual.getFather().getId());
+                    if (StringUtils.isEmpty(fatherName)) {
+                        throw new CatalogException("Incomplete family. Father name not found under id " + individual.getFather().getId());
+                    }
+                }
+            }
+        }
+
+        Map<String, Set<String>> memberSiblings = new HashMap<>();
+        for (Individual individual : family.getMembers()) {
             String individualName = individual.getName();
             if (familyMembers.containsKey(individualName) && familyMembers.get(individualName).getIndividual() != null) {
                 throw new CatalogException("Multiple members with same name " + individual.getName() + " found");
@@ -1014,6 +1042,16 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
         }
     }
+
+//    /**
+//     * Auxiliar method to get either the id of an individual or the name to be used as a unique identifier of the individual.
+//     *
+//     * @param individual individual.
+//     * @return the id or name.
+//     */
+//    private String getIndividualIdOrName(Individual individual) {
+//        return individual.getId() > 0 ? String.valueOf(individual.getId()) : individual.getName();
+//    }
 
     private void populateFamily(List<Set<String>> familyLevels, Map<String, MyFamily> familyMembers, int level) {
         for (String individualName : familyLevels.get(level)) {

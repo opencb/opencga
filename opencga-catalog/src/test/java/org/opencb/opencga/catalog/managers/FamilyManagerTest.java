@@ -34,8 +34,6 @@ import org.opencb.opencga.core.models.*;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -81,7 +79,7 @@ public class FamilyManagerTest extends GenericTest {
 
     @Test
     public void createFamily() throws CatalogException {
-        QueryResult<Family> familyQueryResult = createDummyFamily();
+        QueryResult<Family> familyQueryResult = createDummyFamily("Martinez-Martinez");
 
         assertEquals(1, familyQueryResult.getNumResults());
         assertEquals(5, familyQueryResult.first().getMembers().size());
@@ -100,9 +98,30 @@ public class FamilyManagerTest extends GenericTest {
 
         assertTrue("Mother id not associated to any children", motherIdUpdated);
         assertTrue("Father id not associated to any children", fatherIdUpdated);
+
+        // Create family again with individuals already created
+        familyQueryResult = createDummyFamily("Other-Family-Name");
+
+        assertEquals(1, familyQueryResult.getNumResults());
+        assertEquals(5, familyQueryResult.first().getMembers().size());
+        assertEquals(2, familyQueryResult.first().getDiseases().size());
+
+        motherIdUpdated = false;
+        fatherIdUpdated = false;
+        for (Individual relatives : familyQueryResult.first().getMembers()) {
+            if (relatives.getMother().getId() > 0) {
+                motherIdUpdated = true;
+            }
+            if (relatives.getFather().getId() > 0) {
+                fatherIdUpdated = true;
+            }
+        }
+
+        assertTrue("Mother id not associated to any children", motherIdUpdated);
+        assertTrue("Father id not associated to any children", fatherIdUpdated);
     }
 
-    private QueryResult<Family> createDummyFamily() throws CatalogException {
+    private QueryResult<Family> createDummyFamily(String familyName) throws CatalogException {
         OntologyTerm disease1 = new OntologyTerm("dis1", "Disease 1", "HPO");
         OntologyTerm disease2 = new OntologyTerm("dis2", "Disease 2", "HPO");
 
@@ -133,7 +152,7 @@ public class FamilyManagerTest extends GenericTest {
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child2")))
                 .setParentalConsanguinity(true);
 
-        Family family = new Family("Martinez-Martinez", Arrays.asList(disease1, disease2),
+        Family family = new Family(familyName, Arrays.asList(disease1, disease2),
                 Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother),"", Collections.emptyList(), Collections.emptyMap());
 
         return familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
@@ -364,7 +383,7 @@ public class FamilyManagerTest extends GenericTest {
 
     @Test
     public void updateFamilyMissingMember() throws CatalogException, JsonProcessingException {
-        QueryResult<Family> originalFamily = createDummyFamily();
+        QueryResult<Family> originalFamily = createDummyFamily("Martinez-Martinez");
 
         Individual father = new Individual().setName("father").setOntologyTerms(Arrays.asList(new OntologyTerm("dis1", "dis1", "OT")));
         Individual mother = new Individual().setName("mother2");
@@ -388,13 +407,13 @@ public class FamilyManagerTest extends GenericTest {
         params = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), params.get(FamilyDBAdaptor.QueryParams.MEMBERS.key()));
 
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("Missing sibling");
+        thrown.expectMessage("Incomplete family");
         familyManager.update(STUDY, originalFamily.first().getName(), params, QueryOptions.empty(), sessionIdUser);
     }
 
     @Test
     public void updateFamilyDisease() throws JsonProcessingException, CatalogException {
-        QueryResult<Family> originalFamily = createDummyFamily();
+        QueryResult<Family> originalFamily = createDummyFamily("Martinez-Martinez");
 
         OntologyTerm disease1 = new OntologyTerm("dis1", "New name", "New source");
         OntologyTerm disease2 = new OntologyTerm("dis2", "New name", "New source");
@@ -421,7 +440,7 @@ public class FamilyManagerTest extends GenericTest {
 
     @Test
     public void updateFamilyMissingDisease() throws JsonProcessingException, CatalogException {
-        QueryResult<Family> originalFamily = createDummyFamily();
+        QueryResult<Family> originalFamily = createDummyFamily("Martinez-Martinez");
 
         OntologyTerm disease1 = new OntologyTerm("dis1", "New name", "New source");
 
