@@ -28,6 +28,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -38,7 +39,8 @@ import java.util.stream.Collectors;
 public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotator {
     private static final int TIMEOUT = 10000;
 
-    private CellBaseClient cellBaseClient = null;
+    private final CellBaseClient cellBaseClient;
+    private final Function<Variant, String> variantSerializer;
 
     public CellBaseRestVariantAnnotator(StorageConfiguration storageConfiguration, ObjectMap options) throws VariantAnnotatorException {
         super(storageConfiguration, options);
@@ -52,12 +54,20 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
         checkNotNull(cellbaseRest, "cellbase hosts");
         ClientConfiguration clientConfiguration = storageConfiguration.getCellbase().toClientConfiguration();
         clientConfiguration.getRest().setTimeout(TIMEOUT);
-        CellBaseClient cellBaseClient;
         cellBaseClient = new CellBaseClient(species, assembly, clientConfiguration);
-        this.cellBaseClient = cellBaseClient;
 
         logger.info("Annotating with Cellbase REST. host '{}', version '{}', species '{}', assembly '{}'",
                 cellbaseRest, cellbaseVersion, species, assembly);
+
+        if (impreciseVariants) {
+            // If the cellbase sever supports imprecise variants, use the original toString, which adds the CIPOS and CIEND
+            variantSerializer = Variant::toString;
+        } else {
+            variantSerializer = variant -> variant.getChromosome()
+                    + ':' + variant.getStart()
+                    + ':' + (variant.getReference().isEmpty() ? "-" : variant.getReference())
+                    + ':' + (variant.getAlternate().isEmpty() ? "-" : variant.getAlternate());
+        }
     }
 
     @Override
@@ -67,7 +77,7 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
         }
         try {
             QueryResponse<VariantAnnotation> queryResponse = cellBaseClient.getVariantClient()
-                    .getAnnotations(variants.stream().map(Variant::toString).collect(Collectors.toList()),
+                    .getAnnotations(variants.stream().map(variantSerializer).collect(Collectors.toList()),
                             queryOptions, true);
             return getVariantAnnotationList(variants, queryResponse.getResponse());
         } catch (IOException e) {

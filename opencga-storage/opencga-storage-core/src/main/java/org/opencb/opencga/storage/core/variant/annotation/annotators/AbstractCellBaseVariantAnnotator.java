@@ -39,6 +39,8 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
     public static final String ANNOTATOR_CELLBASE_USE_CACHE = "annotator.cellbase.use_cache";
     public static final String ANNOTATOR_CELLBASE_INCLUDE = "annotator.cellbase.include";
     public static final String ANNOTATOR_CELLBASE_EXCLUDE = "annotator.cellbase.exclude";
+    // Imprecise variants supported by cellbase (REST only)
+    public static final String ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS = "annotator.cellbase.imprecise_variants";
     public static final int CELLBASE_VARIANT_THRESHOLD = 5000;
 
     protected static Logger logger = LoggerFactory.getLogger(AbstractCellBaseVariantAnnotator.class);
@@ -46,6 +48,7 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
     protected final String assembly;
     protected final String cellbaseVersion;
     protected final QueryOptions queryOptions;
+    protected final boolean impreciseVariants;
 
     public AbstractCellBaseVariantAnnotator(StorageConfiguration storageConfiguration, ObjectMap params) throws VariantAnnotatorException {
         super(storageConfiguration, params);
@@ -63,6 +66,7 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
         if (!params.getBoolean(ANNOTATOR_CELLBASE_USE_CACHE)) {
             queryOptions.append("useCache", false);
         }
+        impreciseVariants = params.getBoolean(ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS, true);
 
         checkNotNull(cellbaseVersion, "cellbase version");
         checkNotNull(species, "species");
