@@ -27,6 +27,7 @@ import org.bson.Document;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,6 +157,9 @@ public class DocumentToVariantAnnotationConverter
         scoreFieldMap.put(CADD_RAW, ANNOTATION_FIELD + "." + FUNCTIONAL_CADD_RAW_FIELD);
         SCORE_FIELD_MAP = Collections.unmodifiableMap(scoreFieldMap);
     }
+
+    private final VariantTraitAssociationToEvidenceEntryConverter traitAssociationConverter
+            = new VariantTraitAssociationToEvidenceEntryConverter();
 
     public DocumentToVariantAnnotationConverter() {
         jsonObjectMapper = new ObjectMapper();
@@ -356,6 +360,7 @@ public class DocumentToVariantAnnotationConverter
         //Clinical Data
         if (object.containsKey(CLINICAL_DATA_FIELD)) {
             va.setVariantTraitAssociation(parseClinicalData((Document) object.get(CLINICAL_DATA_FIELD)));
+            va.setTraitAssociation(traitAssociationConverter.convert(va.getVariantTraitAssociation()));
         }
 
         if (customAnnotation != null) {
@@ -506,7 +511,6 @@ public class DocumentToVariantAnnotationConverter
                         exonOverlapDocuments.add(new Document(CT_EXON_OVERLAP_NUMBER_FIELD, exonOverlap.getNumber())
                                         .append(CT_EXON_OVERLAP_PERCENTAGE_FIELD, exonOverlap.getPercentage()));
                     }
-                    System.out.println("exonOverlapDocuments = " + exonOverlapDocuments);
                     ct.put(CT_EXON_OVERLAP_FIELD, exonOverlapDocuments);
                 }
                 putNotNull(ct, CT_TRANSCRIPT_ANNOT_FLAGS, consequenceType.getTranscriptAnnotationFlags());
