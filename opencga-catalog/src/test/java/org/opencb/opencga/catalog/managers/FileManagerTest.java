@@ -456,11 +456,9 @@ public class FileManagerTest extends GenericTest {
     }
 
     @Test
-    public void testUnlinkFolder() throws CatalogException, IOException {
+    public void testUnlinkFile() throws CatalogException, IOException {
         URI uri = Paths.get(catalogManager.getStudyUri(studyId)).resolve("data").toUri();
         catalogManager.link(uri, "myDirectory", Long.toString(studyId), new ObjectMap("parents", true), sessionIdUser);
-
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(uri);
 
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
@@ -470,25 +468,20 @@ public class FileManagerTest extends GenericTest {
 
         System.out.println("Number of files/folders linked = " + fileQueryResultLinked.getNumResults());
 
-        // Now we try to unlink them
-        catalogManager.getFileManager().unlink("myDirectory/data/", Long.toString(studyId), sessionIdUser);
-        fileQueryResultLinked = catalogManager.searchFile(studyId, query, sessionIdUser);
+        // Now we try to unlink the file
+        catalogManager.getFileManager().unlink("myDirectory/data/test/folder/test_0.5K.txt", Long.toString(studyId), sessionIdUser);
+        fileQueryResultLinked = catalogManager.getFileManager().get(35L, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, fileQueryResultLinked.getNumResults());
+        assertTrue(fileQueryResultLinked.first().getPath().contains(".REMOVED"));
+        assertEquals(fileQueryResultLinked.first().getPath().indexOf(".REMOVED"),
+                fileQueryResultLinked.first().getPath().lastIndexOf(".REMOVED"));
 
-        query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .append(FileDBAdaptor.QueryParams.PATH.key(), "~myDirectory/*")
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED);
-        QueryResult<File> fileQueryResultUnlinked = catalogManager.searchFile(studyId, query, sessionIdUser);
-        assertEquals(6, fileQueryResultUnlinked.getNumResults());
-
-        String myPath = "myDirectory/data.REMOVED";
-        for (File file : fileQueryResultUnlinked.getResult()) {
-            assertTrue("File name should have been modified", file.getPath().contains(myPath));
-            assertEquals("Status should be to REMOVED", File.FileStatus.REMOVED, file.getStatus().getName());
-            assertEquals("Name should not have changed", file.getName(), file.getName());
-            assertTrue("File uri: " + file.getUri() + " should exist", ioManager.exists(file.getUri()));
-        }
+        // We send the unlink command again
+        catalogManager.getFileManager().unlink("35", Long.toString(studyId), sessionIdUser);
+        fileQueryResultLinked = catalogManager.getFileManager().get(35L, QueryOptions.empty(), sessionIdUser);
+        // We check REMOVED is only contained once in the path
+        assertEquals(fileQueryResultLinked.first().getPath().indexOf(".REMOVED"),
+                fileQueryResultLinked.first().getPath().lastIndexOf(".REMOVED"));
     }
 
     @Test

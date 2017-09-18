@@ -2047,6 +2047,13 @@ public class FileManager extends AbstractManager implements IFileManager {
         String basePath = Paths.get(file.getPath()).toString();
         String suffixedPath = basePath + suffixName;
         if (file.getType().equals(File.Type.FILE)) {
+            if (fileQueryResult.first().getStatus().getName().equals(File.FileStatus.REMOVED)) {
+                return fileQueryResult;
+            }
+            if (!fileQueryResult.first().getStatus().getName().equals(File.FileStatus.READY)) {
+                throw new CatalogException("Cannot unlink. Unexpected file status: " + fileQueryResult.first().getStatus().getName());
+            }
+
             logger.debug("Unlinking file {}", file.getUri().toString());
 
             ObjectMap update = new ObjectMap()
@@ -2086,6 +2093,10 @@ public class FileManager extends AbstractManager implements IFileManager {
                         }
 
                         File file = fileQueryResult.first();
+                        if (!file.getStatus().getName().equals(File.FileStatus.READY)) {
+                            logger.warn("Not unlinking file {}, file status: {}", file.getPath(), file.getStatus().getName());
+                            return FileVisitResult.CONTINUE;
+                        }
 
                         ObjectMap update = new ObjectMap()
                                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED)
@@ -2151,6 +2162,10 @@ public class FileManager extends AbstractManager implements IFileManager {
                             }
 
                             File file = fileQueryResult.first();
+                            if (!file.getStatus().getName().equals(File.FileStatus.READY)) {
+                                logger.warn("Not unlinking folder {}, folder status: {}", file.getPath(), file.getStatus().getName());
+                                return FileVisitResult.CONTINUE;
+                            }
 
                             ObjectMap update = new ObjectMap()
                                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED)
