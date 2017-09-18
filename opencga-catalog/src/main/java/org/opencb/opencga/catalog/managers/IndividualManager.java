@@ -45,7 +45,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import javax.ws.rs.client.Entity;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
