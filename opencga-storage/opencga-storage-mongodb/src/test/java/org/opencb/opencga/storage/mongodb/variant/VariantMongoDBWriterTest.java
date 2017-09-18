@@ -92,7 +92,9 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         List<Object[]> parameters = new ArrayList<>();
         for (boolean cleanWhileLoading : new boolean[]{true, false}) {
             for (String defaultGenotype : Arrays.asList(UNKNOWN_GENOTYPE, "0/0")) {
-                parameters.add(new Object[]{cleanWhileLoading, defaultGenotype});
+                for (boolean ignoreOverlapping : new boolean[]{true, false}) {
+                    parameters.add(new Object[]{cleanWhileLoading, defaultGenotype, ignoreOverlapping});
+                }
             }
         }
         return parameters;
@@ -104,10 +106,18 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     @Parameter(1)
     public String defaultGenotype;
 
+    @Parameter(2)
+    public boolean ignoreOverlappingVariants;
+
     @Before
     public void setUp() throws Exception {
-        logger.info("cleanWhileLoading " + cleanWhileLoading);
-        logger.info("defaultGenotype = " + defaultGenotype);
+        System.out.println("====================================================");
+        System.out.println(" #        CONFIGURATION");
+        System.out.println(" # cleanWhileLoading = " + cleanWhileLoading);
+        System.out.println(" # defaultGenotype = " + defaultGenotype);
+        System.out.println(" # overlappingVariants = " + !ignoreOverlappingVariants);
+        System.out.println(" #     (ignoreOverlapping = " + ignoreOverlappingVariants + ')');
+        System.out.println("====================================================");
         ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
         stderr.setThreshold(Level.toLevel("debug"));
 
@@ -486,7 +496,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stage, studyConfiguration.getStudyId(), chromosomes);
         MongoDBVariantMerger dbMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
-                studyConfiguration.getIndexedFiles(), false, false);
+                studyConfiguration.getIndexedFiles(), false, ignoreOverlappingVariants);
         boolean resume = false;
         MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(variantsCollection, dbAdaptor.getStageCollection(),
                 dbAdaptor.getStudiesCollection(), studyConfiguration, fileIds, resume, cleanWhileLoading, null);
@@ -682,24 +692,43 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     }
 
     @Test
-    public void testLoadImpreciseSVVariants() throws Exception {
+    public void testLoad1ImpreciseSVVariants() throws Exception {
         StudyConfiguration sc = new StudyConfiguration(1, "s1");
         List<Variant> variants = readVariants(sc, "/variant-test-sv.vcf", 1);
         List<Variant> variants2 = readVariants(sc, "/variant-test-sv.vcf", 2, "_2");
 
         MongoDBVariantWriteResult result = stageVariants(sc, variants, 1);
-        mergeVariants(sc, 1, result);
-        System.out.println("result1 = " + result);
+        result = mergeVariants(sc, 1, result);
+        assertEqualsResult(new MongoDBVariantWriteResult(17, 0, 0, 0, 0, 0), result);
 
         result = stageVariants(sc, variants2, 2);
-        mergeVariants(sc, 2, result);
-        System.out.println("result2 = " + result);
+        result = mergeVariants(sc, 2, result);
+        assertEqualsResult(new MongoDBVariantWriteResult(0, 17, 0, 0, 0, 0), result);
+
+    }
+
+    @Test
+    public void testLoad2ImpreciseSVVariants() throws Exception {
+        StudyConfiguration sc = new StudyConfiguration(1, "s1");
+        List<Variant> variants = readVariants(sc, "/variant-test-sv.vcf", 1);
+
+        MongoDBVariantWriteResult result = stageVariants(sc, variants, 1);
+        result = mergeVariants(sc, 1, result);
+        assertEqualsResult(new MongoDBVariantWriteResult(17, 0, 0, 0, 0, 0), result);
+
+        // Despite there are overlapping variants between the two files, the number of overlapping variants MUST be 0.
+        // Do not check overlaps with Structural Variants!
+        List<Variant> variants2 = readVariants(sc, "/variant-test-sv_2.vcf", 2);
+        result = stageVariants(sc, variants2, 2);
+        result = mergeVariants(sc, 2, result);
+        assertEqualsResult(new MongoDBVariantWriteResult(6, 11, 6, 0, 0, 0), result);
 
     }
 
     protected List<Variant> readVariants(StudyConfiguration sc, String fileName, Integer fileId) {
         return readVariants(sc, fileName, fileId, "");
     }
+
     protected List<Variant> readVariants(StudyConfiguration sc, String fileName, Integer fileId, String sampleSufix) {
         FullVcfCodec codec = new FullVcfCodec();
         LineIterator lineIterator = codec.makeSourceFromStream(getClass().getResourceAsStream(fileName));
@@ -740,6 +769,10 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         if (defaultGenotype.equals(UNKNOWN_GENOTYPE)) {
             // If defaultGenotype is the unknown, overlapping missing variants won't not be updated
             expected.setUpdatedMissingVariants(0);
+        }
+        if (ignoreOverlappingVariants) {
+            // If ignoring overlapping variants, there wont be overlapped variants!
+            expected.setOverlappedVariants(0);
         }
         assertEquals(expected, result);
     }

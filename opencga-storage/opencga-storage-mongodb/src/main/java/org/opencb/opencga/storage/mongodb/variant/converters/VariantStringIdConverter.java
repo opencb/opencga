@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.StructuralVariation;
 import org.opencb.commons.utils.CryptoUtils;
@@ -50,6 +50,7 @@ public class VariantStringIdConverter {
     protected static final int CI_END_L = 6;
     protected static final int CI_END_R = 7;
     protected static final int CN = 8;
+    protected static final char INS_SEQ_SEPARATOR = '_';
 
     public Variant convertToDataModelType(String object) {
         String[] split = object.split(SEPARATOR, -1);
@@ -58,7 +59,19 @@ public class VariantStringIdConverter {
 
     public Variant buildVariant(String variantId, int end, String reference, String alternate) {
         String[] split = variantId.split(SEPARATOR, -1);
-        return new Variant(split[CHR].trim(), Integer.parseInt(split[POS].trim()), end, reference, alternate).setSv(buildSv(split));
+        String chr = split[CHR].trim();
+        int start = Integer.parseInt(split[POS].trim());
+        StructuralVariation sv = buildSv(split);
+        if (StringUtils.contains(alternate, INS_SEQ_SEPARATOR)) {
+            String[] alternateSplit = StringUtils.split(alternate, INS_SEQ_SEPARATOR);
+            alternate = alternateSplit[0];
+            if (sv == null) {
+                sv = new StructuralVariation(start, start, end, end, null, null, null, null);
+            }
+            sv.setRightSvInsSeq(alternateSplit[1]);
+            sv.setLeftSvInsSeq(alternateSplit[2]);
+        }
+        return new Variant(chr, start, end, reference, alternate).setSv(sv);
     }
 
     private StructuralVariation buildSv(String[] split) {
@@ -96,6 +109,8 @@ public class VariantStringIdConverter {
 
         stringBuilder.append(SEPARATOR_CHAR);
 
+        alternate = buildSVAlternate(alternate, sv);
+
         if (reference.length() > Variant.SV_THRESHOLD) {
             reduce(stringBuilder, reference);
         } else if (!reference.equals("-")) {
@@ -108,7 +123,7 @@ public class VariantStringIdConverter {
             stringBuilder.append(alternate);
         }
 
-        //
+        // All symbolic variants have a non null SV.
         if (sv != null) {
             stringBuilder
                     .append(SEPARATOR_CHAR)
@@ -129,9 +144,18 @@ public class VariantStringIdConverter {
         return stringBuilder.toString();
     }
 
+    public String buildSVAlternate(String alternate, StructuralVariation sv) {
+        if (sv != null) {
+            if (StringUtils.isNotEmpty(sv.getLeftSvInsSeq()) || StringUtils.isNotEmpty(sv.getRightSvInsSeq())) {
+                alternate = alternate + INS_SEQ_SEPARATOR + sv.getLeftSvInsSeq() + INS_SEQ_SEPARATOR + sv.getRightSvInsSeq();
+            }
+        }
+        return alternate;
+    }
+
     private StringBuilder reduce(StringBuilder stringBuilder, String str) {
         return stringBuilder.append(new String(CryptoUtils.encryptSha1(str)));
-//        return stringBuilder.append(str.charAt(0)).append('_').append(str.hashCode()).append('_').append(str.length());
+//        return stringBuilder.append(str.charAt(0)).append('~').append(str.hashCode()).append('~').append(str.length());
     }
 
     private <T> T get(Supplier<T> supplier, T defaultValue) {

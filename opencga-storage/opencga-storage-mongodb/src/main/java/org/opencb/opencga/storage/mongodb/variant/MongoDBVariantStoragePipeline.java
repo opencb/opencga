@@ -80,7 +80,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             VariantType.SYMBOLIC,
 //            VariantType.CNV,
 //            VariantType.DUPLICATION,
-            VariantType.INVERSION,
+//            VariantType.INVERSION,
             VariantType.TRANSLOCATION,
             VariantType.BREAKEND));
 
