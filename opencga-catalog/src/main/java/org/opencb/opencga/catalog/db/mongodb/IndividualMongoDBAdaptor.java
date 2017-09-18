@@ -24,12 +24,10 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.*;
@@ -326,12 +324,12 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         filterEnumParams(parameters, individualParameters, acceptedEnums);
 
         String[] acceptedIntParams = {QueryParams.FATHER_ID.key(), QueryParams.MOTHER_ID.key()};
-        filterIntParams(parameters, individualParameters, acceptedIntParams);
+        filterLongParams(parameters, individualParameters, acceptedIntParams);
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, individualParameters, acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.ONTOLOGY_TERMS.key()};
+        final String[] acceptedObjectParams = {QueryParams.ONTOLOGY_TERMS.key(), QueryParams.MULTIPLES.key()};
         filterObjectParams(parameters, individualParameters, acceptedObjectParams);
 
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
@@ -339,11 +337,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             individualParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
-        //Check individualIds exists
-        String[] individualIdParams = {"fatherId", "motherId"};
+        //Check individualIds exist
+        String[] individualIdParams = {QueryParams.FATHER_ID.key(), QueryParams.MOTHER_ID.key()};
         for (String individualIdParam : individualIdParams) {
             if (individualParameters.containsKey(individualIdParam)) {
-                Integer individualId1 = (Integer) individualParameters.get(individualIdParam);
+                Long individualId1 = (Long) individualParameters.get(individualIdParam);
                 if (individualId1 > 0 && !exists(individualId1)) {
                     throw CatalogDBException.idNotFound("Individual " + individualIdParam, individualId1);
                 }

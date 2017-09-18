@@ -70,8 +70,11 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
     enum QueryParams implements QueryParam {
         ID("id", DECIMAL, ""),
         NAME("name", TEXT, ""),
-        FATHER_ID("fatherId", DECIMAL, ""),
-        MOTHER_ID("motherId", DECIMAL, ""),
+        FATHER("father", TEXT, ""),
+        MOTHER("mother", TEXT, ""),
+        FATHER_ID("father.id", DECIMAL, ""),
+        MOTHER_ID("mother.id", DECIMAL, ""),
+        MULTIPLES("multiples", TEXT, ""),
         FAMILY("family", TEXT, ""),
         SEX("sex", TEXT, ""),
         ETHNICITY("ethnicity", TEXT, ""),

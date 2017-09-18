@@ -41,6 +41,8 @@
 
 {"collection": "individual", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true, "background": true}}
 {"collection": "individual", "fields": {"family": 1, "_studyId": 1}, "options": {"background": true}}
+{"collection": "individual", "fields": {"mother.id": 1}, "options": {"background": true}}
+{"collection": "individual", "fields": {"father.id": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"acl.member": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"status.name": 1, "_studyId": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"ontologyTerms.id": 1}, "options": {"background": true}}

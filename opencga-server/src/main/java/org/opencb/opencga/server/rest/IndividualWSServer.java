@@ -122,8 +122,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
                       + "alias") @QueryParam("study") String studyStr,
               @ApiParam(value = "DEPRECATED: id", hidden = true) @QueryParam("id") String id,
               @ApiParam(value = "name", required = false) @QueryParam("name") String name,
-              @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") String fatherId,
-              @ApiParam(value = "motherId", required = false) @QueryParam("motherId") String motherId,
+              @ApiParam(value = "(DEPRECATED) User father instead", required = false) @QueryParam("fatherId") String fatherId,
+              @ApiParam(value = "father", required = false) @QueryParam("father") String father,
+              @ApiParam(value = "(DEPRECATED) User mother instead", required = false) @QueryParam("motherId") String motherId,
+              @ApiParam(value = "mother", required = false) @QueryParam("mother") String mother,
               @ApiParam(value = "family", required = false) @QueryParam("family") String family,
               @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
               @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
@@ -154,6 +156,14 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
+            }
+            if (StringUtils.isNotEmpty(fatherId)) {
+                query.remove("fatherId");
+                query.append("father", fatherId);
+            }
+            if (StringUtils.isNotEmpty(motherId)) {
+                query.remove("motherId");
+                query.append("mother", motherId);
             }
             QueryResult<Individual> queryResult;
             if (count) {

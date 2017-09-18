@@ -45,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import javax.ws.rs.client.Entity;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -295,8 +296,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
 
-        query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-        QueryResult<Individual> queryResult = individualDBAdaptor.get(query, options, userId);
+        Query finalQuery = new Query(query);
+        fixQuery(studyId, finalQuery, sessionId);
+
+        finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Individual> queryResult = individualDBAdaptor.get(finalQuery, options, userId);
 //        authorizationManager.filterIndividuals(userId, studyId, queryResultAux.getResult());
 
         return queryResult;
@@ -307,8 +311,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         String userId = userManager.getUserId(sessionId);
         long studyId = studyManager.getId(userId, studyStr);
 
-        query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-        QueryResult<Long> queryResultAux = individualDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
+        Query finalQuery = new Query(query);
+        fixQuery(studyId, finalQuery, sessionId);
+
+        finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Long> queryResultAux = individualDBAdaptor.count(finalQuery, userId, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
     }
@@ -449,9 +456,22 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         }
                     }
                     break;
-                case FATHER_ID:
-                case MOTHER_ID:
-                case FAMILY:
+                case MULTIPLES:
+                    // Check individual names exist
+                    Map<String, Object> multiples = (Map<String, Object>) param.getValue();
+                    List<String> siblingList = (List<String>) multiples.get("siblings");
+                    query = new Query()
+                            .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                            .append(IndividualDBAdaptor.QueryParams.NAME.key(), StringUtils.join(siblingList, ","));
+                    QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
+                    QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
+                    if (individualQueryResult.getNumResults() < siblingList.size()) {
+                        int missing = siblingList.size() - individualQueryResult.getNumResults();
+                        throw new CatalogDBException("Missing " + missing + " siblings in the database.");
+                    }
+                    break;
+                case FATHER:
+                case MOTHER:
                 case ETHNICITY:
                 case POPULATION_DESCRIPTION:
                 case POPULATION_NAME:
@@ -463,6 +483,19 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 default:
                     throw new CatalogException("Cannot update " + queryParam);
             }
+        }
+
+        if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.FATHER.key()))) {
+            MyResourceId tmpResource =
+                    getId(parameters.getString(IndividualDBAdaptor.QueryParams.FATHER.key()), String.valueOf(studyId), sessionId);
+            parameters.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
+            parameters.put(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), tmpResource.getResourceId());
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()))) {
+            MyResourceId tmpResource =
+                    getId(parameters.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()), String.valueOf(studyId), sessionId);
+            parameters.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
+            parameters.put(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), tmpResource.getResourceId());
         }
 
 //        options.putAll(parameters); //FIXME: Use separated params and options, or merge
@@ -936,6 +969,22 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()));
 
         return sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
+    }
+
+    // Checks if father or mother are in query and transforms them into father.id and mother.id respectively
+    private void fixQuery(long studyId, Query query, String sessionId) throws CatalogException {
+        if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.FATHER.key()))) {
+            MyResourceId resource =
+                    getId(query.getString(IndividualDBAdaptor.QueryParams.FATHER.key()), String.valueOf(studyId), sessionId);
+            query.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
+            query.append(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), resource.getResourceId());
+        }
+        if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()))) {
+            MyResourceId resource =
+                    getId(query.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()), String.valueOf(studyId), sessionId);
+            query.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
+            query.append(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), resource.getResourceId());
+        }
     }
 
 }

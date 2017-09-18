@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
@@ -104,8 +105,7 @@ public class WSServerTestUtils {
     }
 
     public WebTarget getWebTarget() {
-        Client webClient = ClientBuilder.newClient();
-        webClient.register(MultiPartFeature.class);
+        Client webClient = ClientBuilder.newClient(new ClientConfig().register(MultiPartFeature.class));
         return webClient.target(restURL);
     }
 
