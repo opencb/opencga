@@ -317,13 +317,20 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         while (iterator.hasNext()) {
             Document document = iterator.next();
             if (document.get(studyIdStr) != null) {
-                previousDocument = document;
-                previousVariant = STAGE_TO_VARIANT_CONVERTER.convertToDataModelType(previousDocument);
+                Variant variant = STAGE_TO_VARIANT_CONVERTER.convertToDataModelType(document);
+                if (variant.isSV()) {
+                    // Directly process all Structural Variants
+                    // Do never check if a SV overlaps with any other variant
+                    processVariants(null, document, variant, mongoDBOps);
+                } else {
+                    previousDocument = document;
+                    previousVariant = variant;
 
-                chromosome = previousVariant.getChromosome();
-                start = previousVariant.getStart();
-                end = getEnd(previousVariant);
-                break;
+                    chromosome = previousVariant.getChromosome();
+                    start = previousVariant.getStart();
+                    end = getEnd(previousVariant);
+                    break;
+                }
             }
         }
 
@@ -332,6 +339,14 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             Variant variant = STAGE_TO_VARIANT_CONVERTER.convertToDataModelType(document);
             Document study = document.get(studyIdStr, Document.class);
             if (study != null) {
+
+                if (variant.isSV()) {
+                    // Directly process all Structural Variants
+                    // Do never check if a SV overlaps with any other variant
+                    processVariants(null, document, variant, mongoDBOps);
+                    continue;
+                }
+
                 if (checkOverlappings && variant.overlapWith(chromosome, start, end, true)) {
                     // If the variant overlaps with the last one, add to the overlappedVariants list.
                     // Do not process any variant yet!
