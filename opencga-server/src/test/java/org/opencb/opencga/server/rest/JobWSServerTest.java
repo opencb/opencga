@@ -67,6 +67,12 @@ public class JobWSServerTest {
         studyId = OpenCGAWSServer.catalogManager.getStudyManager().getId("user", "1000G:phase1");
     }
 
+    @After
+    public void after() throws Exception {
+        // It is here to avoid restarting the server again and again
+        serverTestUtils.setUp();
+    }
+
     @Test
     public void createReadyJobPostTest() throws CatalogException, IOException {
         File folder = OpenCGAWSServer.catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), File

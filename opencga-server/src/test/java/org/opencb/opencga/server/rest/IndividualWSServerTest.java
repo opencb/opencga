@@ -107,6 +107,11 @@ public class IndividualWSServerTest {
                 "", "", Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, null, sessionId).first().getId();
     }
 
+    @After
+    public void after() throws Exception {
+        // It is here to avoid restarting the server again and again
+        serverTestUtils.setUp();
+    }
 
     @Test
     public void createIndividualTest() throws IOException {

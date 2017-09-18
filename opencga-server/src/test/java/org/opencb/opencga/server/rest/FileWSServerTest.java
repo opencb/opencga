@@ -103,6 +103,12 @@ public class FileWSServerTest {
         Files.copy(this.getClass().getClassLoader().getResourceAsStream(fileName), ROOT_DIR.resolve("data").resolve(fileName));
     }
 
+    @After
+    public void after() throws Exception {
+        // It is here to avoid restarting the server again and again
+        serverTestUtils.setUp();
+    }
+
     @Test
     public void linkFolderTest() throws IOException {
 
