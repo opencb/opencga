@@ -1488,7 +1488,8 @@ public class FileManager extends AbstractManager implements IFileManager {
                             // Look for the file in catalog
                             Query query = new Query()
                                     .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                                    .append(FileDBAdaptor.QueryParams.URI.key(), path.toUri().toString());
+                                    .append(FileDBAdaptor.QueryParams.URI.key(), path.toUri().toString())
+                                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
 
                             QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
 
@@ -1551,7 +1552,8 @@ public class FileManager extends AbstractManager implements IFileManager {
 //                                    }
                                     Query query = new Query()
                                             .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                                            .append(FileDBAdaptor.QueryParams.URI.key(), folderUri);
+                                            .append(FileDBAdaptor.QueryParams.URI.key(), folderUri)
+                                            .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
 
                                     QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, QueryOptions.empty());
 
