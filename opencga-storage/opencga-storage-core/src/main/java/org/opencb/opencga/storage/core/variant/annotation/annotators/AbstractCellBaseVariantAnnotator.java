@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.variant.annotation.annotators;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -29,6 +30,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -42,6 +45,9 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
     // Imprecise variants supported by cellbase (REST only)
     public static final String ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS = "annotator.cellbase.imprecise_variants";
     public static final int CELLBASE_VARIANT_THRESHOLD = 5000;
+
+    public static final String ADDITIONAL_ATTRIBUTES_KEY = "opencga";
+    public static final String ADDITIONAL_ATTRIBUTES_VARIANT_ID = "id";
 
     protected static Logger logger = LoggerFactory.getLogger(AbstractCellBaseVariantAnnotator.class);
     protected final String species;
@@ -122,9 +128,31 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
 
     protected List<VariantAnnotation> getVariantAnnotationList(List<Variant> variants, List<QueryResult<VariantAnnotation>> queryResults) {
         List<VariantAnnotation> variantAnnotationList = new ArrayList<>(variants.size());
+        Iterator<Variant> iterator = variants.iterator();
         if (queryResults != null) {
             for (QueryResult<VariantAnnotation> queryResult : queryResults) {
-                variantAnnotationList.addAll(queryResult.getResult());
+                for (VariantAnnotation variantAnnotation : queryResult.getResult()) {
+                    Variant variant = iterator.next();
+                    if (!variant.getChromosome().equals(variantAnnotation.getChromosome())
+                            || !variant.getStart().equals(variantAnnotation.getStart())
+                            || !variant.getReference().equals(variantAnnotation.getReference())
+                            || !variant.getAlternate().equals(variantAnnotation.getAlternate())) {
+                        throw new IllegalArgumentException("Variants not in the expected order!");
+                    }
+                    if (variant.isSV()) {
+                        // Variant annotation class does not have information about Structural Variations.
+                        // Store the original Variant.toString as an additional attribute.
+                        AdditionalAttribute additionalAttribute =
+                                new AdditionalAttribute(Collections.singletonMap(ADDITIONAL_ATTRIBUTES_VARIANT_ID, variant.toString()));
+                        if (variantAnnotation.getAdditionalAttributes() == null) {
+                            variantAnnotation
+                                    .setAdditionalAttributes(Collections.singletonMap(ADDITIONAL_ATTRIBUTES_KEY, additionalAttribute));
+                        } else {
+                            variantAnnotation.getAdditionalAttributes().put(ADDITIONAL_ATTRIBUTES_KEY, additionalAttribute);
+                        }
+                    }
+                    variantAnnotationList.add(variantAnnotation);
+                }
             }
         }
         return variantAnnotationList;

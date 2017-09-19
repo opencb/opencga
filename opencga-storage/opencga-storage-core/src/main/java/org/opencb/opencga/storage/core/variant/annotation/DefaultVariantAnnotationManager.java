@@ -41,6 +41,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.commons.io.avro.AvroDataReader;
 import org.opencb.commons.io.avro.AvroDataWriter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -61,6 +62,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.zip.GZIPInputStream;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
 
 /**
  * Two steps annotation pipeline.
@@ -153,8 +156,8 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
         } else {
             iteratorQueryOptions = new QueryOptions(params);
         }
-        List<String> include = Arrays.asList("chromosome", "start", "end", "alternate", "reference");
-        iteratorQueryOptions.add("include", include);
+        List<VariantField> include = Arrays.asList(CHROMOSOME, START, END, REFERENCE, ALTERNATE, SV);
+        iteratorQueryOptions.add(QueryOptions.INCLUDE, include);
 
         int batchSize = 200;
         int numThreads = 8;
