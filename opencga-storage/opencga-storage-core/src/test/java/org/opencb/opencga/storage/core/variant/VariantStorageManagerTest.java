@@ -757,9 +757,19 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         variantStorageEngine.getDBAdaptor().getVariantSourceDBAdaptor().iterator(new Query(), new QueryOptions()).forEachRemaining(vs -> {
             assertNotEquals("2", vs.getFileId());
         });
+    }
 
+    @Test
+    public void loadSVFilesTest() throws Exception {
+        URI input = getResourceUri("variant-test-sv.vcf");
+        StudyConfiguration studyConfiguration = new StudyConfiguration(1, "s1");
+        runDefaultETL(input, variantStorageEngine, studyConfiguration, new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), 1));
+        URI input2 = getResourceUri("variant-test-sv_2.vcf");
+        runDefaultETL(input2, variantStorageEngine, studyConfiguration, new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), 2));
 
-
+        for (Variant variant : variantStorageEngine.getDBAdaptor()) {
+            assertNotNull(variant.getAnnotation());
+        }
     }
 
 }

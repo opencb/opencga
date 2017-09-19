@@ -89,7 +89,7 @@ public class VariantStringIdConverter {
     }
 
     private Integer getInt(String[] split, int idx) {
-        if (split.length > idx) {
+        if (split.length > idx && StringUtils.isNotEmpty(split[idx])) {
             return Integer.valueOf(split[idx]);
         } else {
             return null;
@@ -112,13 +112,13 @@ public class VariantStringIdConverter {
         alternate = buildSVAlternate(alternate, sv);
 
         if (reference.length() > Variant.SV_THRESHOLD) {
-            reduce(stringBuilder, reference);
+            reduce(stringBuilder, reference, sv);
         } else if (!reference.equals("-")) {
             stringBuilder.append(reference);
         }
         stringBuilder.append(SEPARATOR_CHAR);
         if (alternate.length() > Variant.SV_THRESHOLD) {
-            reduce(stringBuilder, alternate);
+            reduce(stringBuilder, alternate, sv);
         } else if (!alternate.equals("-")) {
             stringBuilder.append(alternate);
         }
@@ -127,13 +127,13 @@ public class VariantStringIdConverter {
         if (sv != null) {
             stringBuilder
                     .append(SEPARATOR_CHAR)
-                    .append(get(sv::getCiStartLeft, 0))
+                    .append(get(sv::getCiStartLeft))
                     .append(SEPARATOR_CHAR)
-                    .append(get(sv::getCiStartRight, 0))
+                    .append(get(sv::getCiStartRight))
                     .append(SEPARATOR_CHAR)
-                    .append(get(sv::getCiEndLeft, 0))
+                    .append(get(sv::getCiEndLeft))
                     .append(SEPARATOR_CHAR)
-                    .append(get(sv::getCiEndRight, 0));
+                    .append(get(sv::getCiEndRight));
             if (sv.getCopyNumber() != null) {
                 stringBuilder
                         .append(SEPARATOR_CHAR)
@@ -153,14 +153,23 @@ public class VariantStringIdConverter {
         return alternate;
     }
 
-    private StringBuilder reduce(StringBuilder stringBuilder, String str) {
-        return stringBuilder.append(new String(CryptoUtils.encryptSha1(str)));
-//        return stringBuilder.append(str.charAt(0)).append('~').append(str.hashCode()).append('~').append(str.length());
+    private void reduce(StringBuilder stringBuilder, String allele, StructuralVariation sv) {
+        // FIXME: Use the same method to reduce long alleles from all variants
+        if (sv == null) {
+            stringBuilder.append(new String(CryptoUtils.encryptSha1(allele)));
+        } else {
+            stringBuilder.append(allele.charAt(0)).append('~').append(allele.hashCode()).append('~').append(allele.length());
+        }
     }
 
     private <T> T get(Supplier<T> supplier, T defaultValue) {
         T t = supplier.get();
         return t == null ? defaultValue : t;
+    }
+
+    private <T> String get(Supplier<T> supplier) {
+        T t = supplier.get();
+        return t == null ? "" : t.toString();
     }
 
 
