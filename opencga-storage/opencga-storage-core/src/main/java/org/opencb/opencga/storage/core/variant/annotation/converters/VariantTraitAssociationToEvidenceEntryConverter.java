@@ -72,7 +72,7 @@ public class VariantTraitAssociationToEvidenceEntryConverter implements Converte
         if (CollectionUtils.isNotEmpty(clinVar.getGeneNames())) {
             genomicFeatures = clinVar.getGeneNames()
                     .stream()
-                    .map(geneName -> new GenomicFeature(FeatureTypes.Gene, null, Collections.singletonMap(SYMBOL, geneName)))
+                    .map(geneName -> new GenomicFeature(FeatureTypes.gene, null, Collections.singletonMap(SYMBOL, geneName)))
                     .collect(Collectors.toList());
         } else {
             genomicFeatures = null;
@@ -103,7 +103,7 @@ public class VariantTraitAssociationToEvidenceEntryConverter implements Converte
         List<GenomicFeature> genomicFeatures;
         if (cosmic.getGeneName() != null) {
             genomicFeatures = Collections.singletonList(
-                    new GenomicFeature(FeatureTypes.Gene, null, Collections.singletonMap(SYMBOL, cosmic.getGeneName())));
+                    new GenomicFeature(FeatureTypes.gene, null, Collections.singletonMap(SYMBOL, cosmic.getGeneName())));
         } else {
             genomicFeatures = null;
         }
