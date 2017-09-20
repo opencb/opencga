@@ -233,10 +233,30 @@ public class DocumentToVariantAnnotationConverterTest {
                                         .append("traits", singletonList("APOE4(-)-FREIBURG"))
                                         .append("geneNames", singletonList("APOE"))
                                         .append("reviewStatus", "CLASSIFIED_BY_SINGLE_SUBMITTER"),
-                                ANY,
-                                ANY,
-                                ANY,
-                                ANY
+                                new Document()
+                                        .append("accession", "RCV000019455")
+                                        .append("clinicalSignificance", "Pathogenic")
+                                        .append("traits", singletonList("Familial type 3 hyperlipoproteinemia"))
+                                        .append("geneNames", singletonList("APOE"))
+                                        .append("reviewStatus", "CLASSIFIED_BY_SINGLE_SUBMITTER"),
+                                new Document()
+                                        .append("accession", "RCV000019438")
+                                        .append("clinicalSignificance", "Pathogenic")
+                                        .append("traits", singletonList("Familial type 3 hyperlipoproteinemia"))
+                                        .append("geneNames", singletonList("APOE"))
+                                        .append("reviewStatus", "CLASSIFIED_BY_SINGLE_SUBMITTER"),
+                                new Document()
+                                        .append("accession", "RCV000019448")
+                                        .append("clinicalSignificance", "Pathogenic")
+                                        .append("traits", singletonList("ALZHEIMER DISEASE 2, DUE TO APOE4 ISOFORM"))
+                                        .append("geneNames", singletonList("APOE"))
+                                        .append("reviewStatus", "CLASSIFIED_BY_SINGLE_SUBMITTER"),
+                                new Document()
+                                        .append("accession", "RCV000019458")
+                                        .append("clinicalSignificance", "Pathogenic")
+                                        .append("traits", singletonList("APOE4 VARIANT"))
+                                        .append("geneNames", singletonList("APOE"))
+                                        .append("reviewStatus", "CLASSIFIED_BY_SINGLE_SUBMITTER")
                         )))
                 .append(XREFS_FIELD, ANY_LIST)
                 .append(POPULATION_FREQUENCIES_FIELD, ANY_LIST)
