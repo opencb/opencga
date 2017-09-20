@@ -768,7 +768,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         runDefaultETL(input2, variantStorageEngine, studyConfiguration, new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), 2));
 
         for (Variant variant : variantStorageEngine.getDBAdaptor()) {
-            assertNotNull(variant.getAnnotation());
+            assertNotNull(variant.toString(), variant.getAnnotation());
         }
     }
 

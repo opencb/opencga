@@ -323,7 +323,9 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
             Document mongoSv = new Document();
             mongoSv.put(SV_CISTART_FIELD, Arrays.asList(sv.getCiStartLeft(), sv.getCiStartRight()));
             mongoSv.put(SV_CIEND_FIELD, Arrays.asList(sv.getCiEndLeft(), sv.getCiEndRight()));
-            putNotNull(mongoSv, SV_CN_FIELD, sv.getCopyNumber());
+            if (sv.getCopyNumber() != null) {
+                mongoSv.put(SV_CN_FIELD, sv.getCopyNumber());
+            }
             if (StringUtils.isNotEmpty(sv.getLeftSvInsSeq()) || StringUtils.isNotEmpty(sv.getRightSvInsSeq())) {
                 mongoSv.put(SV_INS_SEQ, Arrays.asList(sv.getLeftSvInsSeq(), sv.getRightSvInsSeq()));
             }
