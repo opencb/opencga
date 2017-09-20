@@ -74,7 +74,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 
         assertTrue(studyConfiguration.getIndexedFiles().contains(6));
         checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
-        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, getExpectedNumLoadedVariants(source));
+        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, true, getExpectedNumLoadedVariants(source));
     }
 
     @Test
@@ -88,7 +88,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 
         assertTrue(studyConfiguration.getIndexedFiles().contains(6));
         VariantSource variantSource = checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
-        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, getExpectedNumLoadedVariants
+        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, true, getExpectedNumLoadedVariants
                 (variantSource));
     }
 
@@ -144,7 +144,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(9));
 
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
-        checkLoadedVariants(dbAdaptor, studyConfigurationMultiFile, true, false, expectedNumVariants);
+        checkLoadedVariants(dbAdaptor, studyConfigurationMultiFile, true, false, false, expectedNumVariants);
 
 
         //Load, in a new study, the same dataset in one single file
@@ -330,7 +330,6 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         clearDB(DB_NAME);
         StudyConfiguration studyConfiguration = new StudyConfiguration(1, "multiRegion");
 
-        StoragePipelineResult etlResult;
         ObjectMap options = new ObjectMap()
                 .append(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.CONTROL)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)
@@ -342,14 +341,14 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         assertTrue(studyConfiguration.getCohorts().containsKey(defaultCohortId));
         assertEquals(2504, studyConfiguration.getCohorts().get(defaultCohortId).size());
         assertTrue(studyConfiguration.getIndexedFiles().contains(5));
-        checkLoadedVariants(getVariantStorageEngine().getDBAdaptor(), studyConfiguration, true, false, -1);
+        checkLoadedVariants(getVariantStorageEngine().getDBAdaptor(), studyConfiguration, true, false, false, -1);
 
         runDefaultETL(getResourceUri("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageEngine,
 //        runDefaultETL(getResourceUri("1k.chr21.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"), variantStorageManager,
                 studyConfiguration, options.append(VariantStorageEngine.Options.FILE_ID.key(), 6));
 
         assertTrue(studyConfiguration.getIndexedFiles().contains(6));
-        checkLoadedVariants(getVariantStorageEngine().getDBAdaptor(), studyConfiguration, true, false, -1);
+        checkLoadedVariants(getVariantStorageEngine().getDBAdaptor(), studyConfiguration, true, false, false, -1);
 
         assertEquals(studyConfiguration.getSamplesInFiles().get(5), studyConfiguration.getSamplesInFiles().get(6));
 
@@ -444,7 +443,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 
         assertTrue(studyConfiguration.getIndexedFiles().contains(6));
         VariantSource variantSource = checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
-        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, false, false, getExpectedNumLoadedVariants
+        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, false, false, false, getExpectedNumLoadedVariants
                 (variantSource));
 
     }
@@ -464,7 +463,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         VariantSource source = VariantReaderUtils.readVariantSource(Paths.get(etlResult.getTransformResult().getPath()), null);
         checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration, source.getStats().getNumRecords());
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
-        checkLoadedVariants(dbAdaptor, studyConfiguration, true, false, getExpectedNumLoadedVariants(source));
+        checkLoadedVariants(dbAdaptor, studyConfiguration, true, false, false, getExpectedNumLoadedVariants(source));
 
         VariantReader reader = VariantReaderUtils.getVariantReader(Paths.get(etlResult.getTransformResult().getPath()),
                 new VariantSource("", "2", STUDY_NAME, STUDY_NAME));
@@ -640,6 +639,11 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 
     private void checkLoadedVariants(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration,
                                      boolean includeSamples, boolean includeSrc, int expectedNumVariants) {
+        checkLoadedVariants(dbAdaptor, studyConfiguration, includeSamples, includeSrc, false, expectedNumVariants);
+    }
+
+    private void checkLoadedVariants(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration,
+                                     boolean includeSamples, boolean includeSrc, boolean includeAnnotation, int expectedNumVariants) {
         long start = System.currentTimeMillis();
         int numVariants = 0;
         String expectedStudyId = studyConfiguration.getStudyName();
@@ -680,6 +684,9 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
                             studyConfiguration.getCohorts().get(cohortId).size(),
                             entry.getValue().getStats().get(cohortName).getGenotypesCount().values().stream().reduce((a, b) -> a + b)
                                     .orElse(0).intValue());
+                }
+                if (includeAnnotation) {
+                    assertNotNull(variant.toString(), variant.getAnnotation());
                 }
             }
         }
@@ -770,6 +777,8 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         for (Variant variant : variantStorageEngine.getDBAdaptor()) {
             assertNotNull(variant.toString(), variant.getAnnotation());
         }
+
+        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyConfiguration, true, false, true, 24);
     }
 
 }

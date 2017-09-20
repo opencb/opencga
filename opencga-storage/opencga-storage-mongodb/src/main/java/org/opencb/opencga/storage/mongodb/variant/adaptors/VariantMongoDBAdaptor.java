@@ -816,8 +816,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             // )
 
             if (!cohorts.isEmpty()) {
-                String id = variantConverter.buildStorageId(wrapper.getChromosome(), wrapper.getPosition(),
-                        variantStats.getRefAllele(), variantStats.getAltAllele());
+                String id = variantConverter.buildStorageId(new Variant(wrapper.getChromosome(), wrapper.getPosition(),
+                        variantStats.getRefAllele(), variantStats.getAltAllele()).setSv(wrapper.getSv()));
 
 
                 Document find = new Document("_id", id);
@@ -850,6 +850,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             variantsCollection.update(pullQueriesBulkList, pullUpdatesBulkList, new QueryOptions());
         }
         BulkWriteResult writeResult = variantsCollection.update(pushQueriesBulkList, pushUpdatesBulkList, new QueryOptions()).first();
+        if (writeResult.getMatchedCount() != pushQueriesBulkList.size()) {
+            logger.warn("Could not update stats from some variants: "
+                    + writeResult.getMatchedCount() + " != " + pushQueriesBulkList.size() + " , "
+                    + (pushQueriesBulkList.size() - writeResult.getMatchedCount()) + " non loaded stats");
+        }
         int writes = writeResult.getModifiedCount();
 
 

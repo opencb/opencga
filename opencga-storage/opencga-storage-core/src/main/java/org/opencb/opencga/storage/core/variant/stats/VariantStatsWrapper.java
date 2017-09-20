@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.stats;
 
+import org.opencb.biodata.models.variant.avro.StructuralVariation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 
 import java.util.Map;
@@ -26,6 +27,7 @@ import java.util.Map;
 public class VariantStatsWrapper {
     private String chromosome;
     private int position;
+    private StructuralVariation sv;
     private Map<String, VariantStats> cohortStats;
 
     public VariantStatsWrapper() {
@@ -34,10 +36,11 @@ public class VariantStatsWrapper {
         this.cohortStats = null;
     }
 
-    public VariantStatsWrapper(String chromosome, int position, Map<String, VariantStats> cohortStats) {
+    public VariantStatsWrapper(String chromosome, int position, Map<String, VariantStats> cohortStats, StructuralVariation sv) {
         this.chromosome = chromosome;
         this.position = position;
         this.cohortStats = cohortStats;
+        this.sv = sv;
     }
 
     public String getChromosome() {
@@ -62,5 +65,14 @@ public class VariantStatsWrapper {
 
     public void setCohortStats(Map<String, VariantStats> cohortStats) {
         this.cohortStats = cohortStats;
+    }
+
+    public StructuralVariation getSv() {
+        return sv;
+    }
+
+    public VariantStatsWrapper setSv(StructuralVariation sv) {
+        this.sv = sv;
+        return this;
     }
 }

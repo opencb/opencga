@@ -160,7 +160,7 @@ public class VariantStatisticsCalculator {
 //
 //            }
             variantStatsWrappers.add(
-                    new VariantStatsWrapper(variant.getChromosome(), variant.getStart(), study.getStats()));
+                    new VariantStatsWrapper(variant.getChromosome(), variant.getStart(), study.getStats(), variant.getSv()));
         }
         return variantStatsWrappers;
     }

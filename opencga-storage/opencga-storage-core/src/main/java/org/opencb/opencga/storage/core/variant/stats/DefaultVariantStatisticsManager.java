@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.google.common.base.Throwables;
 import org.apache.avro.generic.GenericRecord;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -286,6 +287,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
             this.progressLogger = progressLogger;
             jsonObjectMapper = new ObjectMapper(new JsonFactory());
             jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
+            jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
             variantsWriter = jsonObjectMapper.writerFor(VariantStatsWrapper.class);
             this.variantSourceStats = variantSourceStats;
             this.tagmap = tagmap;
@@ -310,7 +312,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
                         defaultCohortAbsent = true;
                     }
                 } catch (JsonProcessingException e) {
-                    e.printStackTrace();
+                    throw Throwables.propagate(e);
                 }
             }
 
